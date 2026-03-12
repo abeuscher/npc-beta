@@ -1,0 +1,29 @@
+# Dependencies — rebuilt inside container
+vendor/
+node_modules/
+
+# Local environment — never bake secrets into an image
+.env
+.env.local
+.env.*.local
+
+# Version control
+.git/
+.gitignore
+
+# Dev tooling
+.github/
+.vscode/
+*.md
+
+# Test artifacts
+coverage/
+.phpunit.result.cache
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+public/hot
+public/build

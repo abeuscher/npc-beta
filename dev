@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# dev — shorthand wrapper for common Docker Compose commands
+#
+# Usage:
+#   ./dev artisan migrate
+#   ./dev composer require some/package
+#   ./dev shell              (open a bash shell inside the app container)
+#   ./dev up                 (start all services)
+#   ./dev down               (stop all services)
+#   ./dev build              (rebuild the app image)
+#   ./dev logs               (tail all service logs)
+#   ./dev fresh              (wipe and re-migrate the database)
+
+CONTAINER="nonprofitcrm_app"
+
+case "$1" in
+    artisan)
+        shift
+        docker compose exec app php artisan "$@"
+        ;;
+    composer)
+        shift
+        docker compose exec app composer "$@"
+        ;;
+    shell)
+        docker compose exec app bash
+        ;;
+    up)
+        docker compose up -d
+        ;;
+    down)
+        docker compose down
+        ;;
+    build)
+        docker compose build --no-cache
+        ;;
+    logs)
+        docker compose logs -f
+        ;;
+    fresh)
+        docker compose exec app php artisan migrate:fresh --seed
+        ;;
+    *)
+        docker compose exec app "$@"
+        ;;
+esac
