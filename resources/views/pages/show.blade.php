@@ -7,8 +7,12 @@
     <main>
         <h1>{{ $page->title }}</h1>
 
-        <div class="page-content">
-            {!! $page->content !!}
-        </div>
+        @if ($page->content)
+            <div class="page-content">
+                {!! $page->content !!}
+            </div>
+        @endif
+
+        <x-page-widgets :widgets="$widgets" />
     </main>
 @endsection

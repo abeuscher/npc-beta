@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Models\SiteSetting;
+use App\Widgets\BlogRollWidget;
+use App\Widgets\CollectionListWidget;
+use App\Widgets\RichTextWidget;
+use App\Widgets\WidgetRegistry;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,6 +18,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        WidgetRegistry::register([
+            CollectionListWidget::class,
+            BlogRollWidget::class,
+            RichTextWidget::class,
+        ]);
+
         try {
             $settings = SiteSetting::all()->keyBy('key');
             config([

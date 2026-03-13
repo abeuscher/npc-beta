@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use Illuminate\Support\Collection;
 
 class PageController extends Controller
 {
@@ -12,7 +13,9 @@ class PageController extends Controller
             ->where('is_published', true)
             ->firstOrFail();
 
-        return view('pages.show', compact('page'));
+        $widgets = $this->resolveWidgets($page);
+
+        return view('pages.show', compact('page', 'widgets'));
     }
 
     public function show(string $slug)
@@ -21,6 +24,21 @@ class PageController extends Controller
             ->where('is_published', true)
             ->firstOrFail();
 
-        return view('pages.show', compact('page'));
+        $widgets = $this->resolveWidgets($page);
+
+        return view('pages.show', compact('page', 'widgets'));
+    }
+
+    private function resolveWidgets(Page $page): Collection
+    {
+        return $page->pageWidgets()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($pw) => [
+                'instance' => $pw->typeInstance(),
+                'config'   => $pw->config ?? [],
+                'data'     => $pw->typeInstance()?->resolveData($pw->config ?? []) ?? [],
+            ]);
     }
 }

@@ -1,5 +1,5 @@
 # Information Architecture
-*Last updated: March 2026 (Session 006). Collections layer added. Three domains fully defined.*
+*Last updated: March 2026 (Session 007 post-session). Widget system redesigned. Sessions 008–009 planned.*
 
 ---
 
@@ -20,10 +20,10 @@ Tracks people and organizations: who they are, what they've done, what they owe,
 | `Contact` | ✅ Built | A person. The central record. |
 | `Organization` | ✅ Built | A company, foundation, government body, or other entity. Contacts belong to organizations. |
 | `Membership` | ✅ Built | A contact's membership status, tier, and dates. One active membership per contact at a time. |
-| `Tag` | ✅ Built | Flat label for segmenting contacts and organizations (polymorphic). |
+| `Tag` | ✅ Built | Flat label for segmenting contacts and organizations (polymorphic). CRM-scoped only — CMS content uses `CmsTag`. |
 | `Note` | ✅ Built | Timestamped log entry attached to a contact or organization (activity stream). |
-| `Event` | ⬜ Deferred | Events attended by contacts. Session 005+. |
-| `EventRegistration` | ⬜ Deferred | Contact-event junction with optional fee. Session 005+. |
+| `Event` | ⬜ Deferred | Events attended by contacts. |
+| `EventRegistration` | ⬜ Deferred | Contact-event junction with optional fee. |
 
 ### Content — CMS
 
@@ -31,13 +31,16 @@ Manages what the public website displays.
 
 | Model | Status | Description |
 |-------|--------|-------------|
-| `Page` | ✅ Built | Static or semi-static web page with slug, content, and SEO fields. |
-| `Post` | ✅ Built | News article or blog entry. Dated, authored, slugged. |
+| `Page` | ✅ Built | Public web page. `content` field will be removed in Session 009 — page body becomes an ordered block stack. |
+| `Post` | ✅ Built | News article or blog entry. Dated, authored, slugged. Body remains a single rich text field for now. |
 | `NavigationItem` | ✅ Built | Menu entry: label, link target (page/post/URL), parent, sort order. |
 | `Collection` | ✅ Built | User-defined typed data bucket (Board Members, Sponsors, FAQs, etc.). Schema stored as JSONB. |
-| `CollectionItem` | ✅ Built | A single item belonging to a Collection. Data stored as JSONB keyed by field schema. |
-| Media library | ⬜ Deferred | Spatie Media Library UI. Session 005+. |
-| Form builder | ⬜ Deferred | Public-facing forms. Later. |
+| `CollectionItem` | ✅ Built | A single item belonging to a Collection. Data stored as JSONB. Has a system-level `CmsTag` relationship for query filtering. |
+| `CmsTag` | ⬜ Session 008 | Flat label for tagging collection items. Separate from CRM `Tag`. Supports include/exclude query filtering on widget data. |
+| `WidgetType` | ⬜ Session 008 | Developer-defined content component. Stored in DB with handle, label, Blade template (server mode) or JS variable + code (client mode), plus CSS and JS snippets. Declares which collections it consumes. |
+| `PageWidget` | ✅ Built (foundation) | An instance of a WidgetType placed on a Page. Holds per-placement query config (limit, order, tag filters) and sort_order. Will be extended in Session 008. |
+| Media library | ⬜ Deferred | Spatie Media Library UI. |
+| Form builder | ⬜ Deferred | Public-facing forms. |
 
 ### Finance — Accounting and Fundraising
 
@@ -49,8 +52,28 @@ Tracks money. Connects to QuickBooks. Feeds donation receipts.
 | `Campaign` | ✅ Built (scaffold) | Named fundraising drive. Donations roll up to it. |
 | `Fund` | ✅ Built (scaffold) | Internal accounting bucket. Maps to a QuickBooks class. |
 | `Transaction` | ✅ Built (scaffold) | Low-level money record. Every donation produces a transaction. |
-| QuickBooks sync | ⬜ Deferred | Session 005+. |
-| Stripe webhooks | ⬜ Deferred | Session 005+. |
+| QuickBooks sync | ⬜ Deferred | |
+| Stripe webhooks | ⬜ Deferred | |
+
+---
+
+## Widget System Architecture
+
+### Two rendering modes
+
+**Server mode** — Developer writes a Blade template. Collection data is injected as PHP variables named by handle (`$blog_posts`, `$board_members`, etc.). CSS and JS are inlined on the page when the widget is active. Standard PHP/Blade; SEO-friendly; JS is enhancement only.
+
+**Client mode** — Developer names a JS variable (e.g. `boardMembers`). Server writes `window.boardMembers = [...]` into the page. A single code field (any valid JS/HTML/CSS) runs against it. No restrictions. This is a power-user escape hatch and carries the corresponding risk.
+
+### Two admin interfaces
+
+**Widget Type Manager** (Session 008) — Developer-facing CRUD for registering widget types. Sets the template/code, declares which collections the widget consumes, and defines per-collection query defaults.
+
+**Page Builder** (Session 009) — Content editor UI for composing page content as an ordered block stack. Each block is either a text block (inline WYSIWYG) or a widget block. Supports drag-to-reorder and per-block query configuration (limit, order, tag include/exclude).
+
+### Query filtering
+
+Each widget instance can configure per-collection: limit, order field + direction, include-tags (any match), exclude-tags (none match). Tags use the `CmsTag` system, which is separate from CRM tags.
 
 ---
 
@@ -102,6 +125,8 @@ Filament sidebar groups, ordered:
 │  Posts             (heroicon-o-newspaper)           sort: 2
 │  Navigation        (heroicon-o-bars-3)              sort: 3
 │  Collections       (heroicon-o-circle-stack)        sort: 4
+│  Widgets           (heroicon-o-puzzle-piece)        sort: 5  ← Session 008
+│  CMS Tags          (heroicon-o-tag)                 sort: 6  ← Session 008
 └────────────────────────────────────┘
 
 ┌─ Finance ──────────────────────────┐
@@ -127,8 +152,8 @@ Group sort order: CRM → Content → Finance → Settings.
 | CRM | Event | Has a page. Attended by contacts. |
 | CRM | EventRegistration | Contact ↔ Event junction. Optional fee. |
 | CRM/Auth | Contact ↔ User link | Required for member portal gating. |
+| Content | Post block editor | Posts gain block stack like pages. Deferred past Session 009. |
 | Content | Media Library UI | Spatie Media Library management in admin. |
-| Content | Post Categories & Tags | Taxonomy for blog. |
 | Content | Form Builder | Public-facing forms (newsletter, contact, donations). |
 | Finance | QuickBooks API | Outbound sync from Transaction mirror. |
 | Finance | Stripe Webhooks | Keeps Transaction mirror current. |
