@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Filament\Resources\OrganizationResource\RelationManagers;
+
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+
+class NotesRelationManager extends RelationManager
+{
+    protected static string $relationship = 'notes';
+
+    public function form(Form $form): Form
+    {
+        return $form->schema([
+            Forms\Components\Textarea::make('body')
+                ->label('Note')
+                ->required()
+                ->rows(4)
+                ->columnSpanFull(),
+
+            Forms\Components\DateTimePicker::make('occurred_at')
+                ->label('Occurred At')
+                ->default(now()),
+
+            Forms\Components\Hidden::make('author_id')
+                ->default(fn () => Auth::id()),
+        ]);
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('body')->limit(80)->label('Note'),
+                Tables\Columns\TextColumn::make('author.name')->label('Author'),
+                Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
+            ])
+            ->defaultSort('occurred_at', 'desc')
+            ->headerActions([Tables\Actions\CreateAction::make()])
+            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
+            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
+    }
+}

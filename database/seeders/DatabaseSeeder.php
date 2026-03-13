@@ -2,7 +2,16 @@
 
 namespace Database\Seeders;
 
+use App\Models\Campaign;
+use App\Models\Contact;
+use App\Models\Donation;
+use App\Models\Fund;
+use App\Models\Membership;
+use App\Models\NavigationItem;
+use App\Models\Organization;
 use App\Models\Page;
+use App\Models\Post;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +40,8 @@ class DatabaseSeeder extends Seeder
         $adminPassword = env('ADMIN_PASSWORD');
         $adminName     = env('ADMIN_NAME', 'Admin');
 
+        $admin = null;
+
         if ($adminEmail && $adminPassword) {
             $admin = User::firstOrCreate(
                 ['email' => $adminEmail],
@@ -45,13 +56,219 @@ class DatabaseSeeder extends Seeder
         }
 
         // ── Home page ────────────────────────────────────────────────────────
-        Page::firstOrCreate(
+        $homePage = Page::firstOrCreate(
             ['slug' => 'home'],
             [
                 'title'        => 'Welcome',
                 'content'      => '<p>Welcome to the site. Edit this page in the admin panel.</p>',
                 'is_published' => true,
                 'published_at' => now(),
+            ]
+        );
+
+        // ── Demo data (local only) ───────────────────────────────────────────
+        if (app()->environment('local')) {
+            $this->seedDemo($homePage, $admin);
+        }
+    }
+
+    private function seedDemo(Page $homePage, ?User $admin): void
+    {
+        // Organizations
+        $foundation = Organization::firstOrCreate(
+            ['name' => 'Greenfield Family Foundation'],
+            ['type' => 'foundation', 'website' => 'https://example.org', 'city' => 'Springfield', 'state' => 'IL']
+        );
+
+        $corporate = Organization::firstOrCreate(
+            ['name' => 'Apex Industries'],
+            ['type' => 'corporate', 'website' => 'https://apex.example.com', 'city' => 'Chicago', 'state' => 'IL']
+        );
+
+        $government = Organization::firstOrCreate(
+            ['name' => 'Springfield Parks Department'],
+            ['type' => 'government', 'city' => 'Springfield', 'state' => 'IL']
+        );
+
+        // Tags
+        $tagDonor      = Tag::firstOrCreate(['name' => 'major-donor'], ['color' => '#e11d48']);
+        $tagNewsletter = Tag::firstOrCreate(['name' => 'newsletter'], ['color' => '#2563eb']);
+
+        // Contacts
+        $contacts = [];
+
+        $contacts[] = Contact::firstOrCreate(
+            ['email' => 'alice@example.com'],
+            [
+                'first_name'      => 'Alice',
+                'last_name'       => 'Hartwell',
+                'type'            => 'individual',
+                'organization_id' => $foundation->id,
+                'city'            => 'Springfield',
+                'state'           => 'IL',
+                'phone'           => '555-0101',
+            ]
+        );
+
+        $contacts[] = Contact::firstOrCreate(
+            ['email' => 'bob@example.com'],
+            [
+                'first_name'      => 'Bob',
+                'last_name'       => 'Nguyen',
+                'type'            => 'individual',
+                'organization_id' => $corporate->id,
+                'city'            => 'Chicago',
+                'state'           => 'IL',
+            ]
+        );
+
+        $contacts[] = Contact::firstOrCreate(
+            ['email' => 'carol@example.com'],
+            [
+                'first_name'      => 'Carol',
+                'last_name'       => 'Okafor',
+                'type'            => 'individual',
+                'organization_id' => $government->id,
+                'city'            => 'Springfield',
+                'state'           => 'IL',
+            ]
+        );
+
+        for ($i = 4; $i <= 10; $i++) {
+            $contacts[] = Contact::firstOrCreate(
+                ['email' => "demo{$i}@example.com"],
+                [
+                    'first_name' => "Demo{$i}",
+                    'last_name'  => 'User',
+                    'type'       => 'individual',
+                    'city'       => 'Springfield',
+                    'state'      => 'IL',
+                ]
+            );
+        }
+
+        // Tags on contacts
+        $contacts[0]->tags()->syncWithoutDetaching([$tagDonor->id, $tagNewsletter->id]);
+        $contacts[1]->tags()->syncWithoutDetaching([$tagNewsletter->id]);
+
+        // Memberships
+        Membership::firstOrCreate(
+            ['contact_id' => $contacts[0]->id, 'tier' => 'sustaining'],
+            [
+                'status'      => 'active',
+                'starts_on'   => '2026-01-01',
+                'expires_on'  => '2026-12-31',
+                'amount_paid' => 500.00,
+            ]
+        );
+
+        Membership::firstOrCreate(
+            ['contact_id' => $contacts[2]->id, 'tier' => 'individual'],
+            [
+                'status'      => 'active',
+                'starts_on'   => '2026-01-01',
+                'expires_on'  => '2026-12-31',
+                'amount_paid' => 75.00,
+            ]
+        );
+
+        Membership::firstOrCreate(
+            ['contact_id' => $contacts[3]->id, 'tier' => 'family'],
+            [
+                'status'      => 'expired',
+                'starts_on'   => '2025-01-01',
+                'expires_on'  => '2025-12-31',
+                'amount_paid' => 150.00,
+            ]
+        );
+
+        // Campaign and funds
+        $campaign = Campaign::firstOrCreate(
+            ['name' => 'Annual Fund 2026'],
+            [
+                'description' => 'Our annual operating campaign.',
+                'goal_amount' => 50000.00,
+                'starts_on'   => '2026-01-01',
+                'ends_on'     => '2026-12-31',
+                'is_active'   => true,
+            ]
+        );
+
+        $generalFund = Fund::firstOrCreate(
+            ['code' => 'GEN-OP'],
+            ['name' => 'General Operating', 'description' => 'Day-to-day operating expenses.', 'is_active' => true]
+        );
+
+        $scholarshipFund = Fund::firstOrCreate(
+            ['code' => 'SCHOLAR'],
+            ['name' => 'Scholarship Fund', 'description' => 'Student scholarship awards.', 'is_active' => true]
+        );
+
+        // Donations
+        Donation::firstOrCreate(
+            ['contact_id' => $contacts[0]->id, 'donated_on' => '2026-02-14'],
+            [
+                'campaign_id'  => $campaign->id,
+                'fund_id'      => $generalFund->id,
+                'amount'       => 2500.00,
+                'method'       => 'check',
+                'reference'    => '1042',
+                'is_anonymous' => false,
+            ]
+        );
+
+        Donation::firstOrCreate(
+            ['contact_id' => $contacts[1]->id, 'donated_on' => '2026-03-01'],
+            [
+                'campaign_id'  => $campaign->id,
+                'fund_id'      => $scholarshipFund->id,
+                'amount'       => 1000.00,
+                'method'       => 'card',
+                'is_anonymous' => false,
+            ]
+        );
+
+        Donation::firstOrCreate(
+            ['contact_id' => $contacts[2]->id, 'donated_on' => '2026-03-10'],
+            [
+                'fund_id'      => $generalFund->id,
+                'amount'       => 250.00,
+                'method'       => 'ach',
+                'is_anonymous' => true,
+            ]
+        );
+
+        // Published post
+        $newsPost = Post::firstOrCreate(
+            ['slug' => 'news'],
+            [
+                'title'        => 'Welcome to Our News Section',
+                'excerpt'      => 'Stay up to date with the latest from our organization.',
+                'content'      => '<p>This is the first post. More news coming soon.</p>',
+                'author_id'    => $admin?->id,
+                'is_published' => true,
+                'published_at' => now(),
+            ]
+        );
+
+        // Navigation items
+        NavigationItem::firstOrCreate(
+            ['label' => 'Home'],
+            [
+                'page_id'    => $homePage->id,
+                'sort_order' => 1,
+                'target'     => '_self',
+                'is_visible' => true,
+            ]
+        );
+
+        NavigationItem::firstOrCreate(
+            ['label' => 'News'],
+            [
+                'post_id'    => $newsPost->id,
+                'sort_order' => 2,
+                'target'     => '_self',
+                'is_visible' => true,
             ]
         );
     }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
+use App\Models\Organization;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -26,6 +27,13 @@ class ContactResource extends Resource
 
             Forms\Components\Section::make('Contact Type')
                 ->schema([
+                    Forms\Components\Select::make('organization_id')
+                        ->label('Organization')
+                        ->relationship('organization', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->nullable(),
+
                     Forms\Components\Select::make('type')
                         ->options([
                             'individual' => 'Individual',
@@ -198,7 +206,9 @@ class ContactResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            \App\Filament\Resources\ContactResource\RelationManagers\NotesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
