@@ -64,7 +64,12 @@ class PostResource extends Resource
             Forms\Components\Section::make('Publication')->schema([
                 Forms\Components\Toggle::make('is_published')
                     ->label('Published')
-                    ->live(),
+                    ->live()
+                    ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
+                        if ($state && ! $get('published_at')) {
+                            $set('published_at', now());
+                        }
+                    }),
 
                 Forms\Components\DateTimePicker::make('published_at')
                     ->label('Publish Date')

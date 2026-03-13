@@ -11,6 +11,7 @@ use App\Models\NavigationItem;
 use App\Models\Organization;
 use App\Models\Page;
 use App\Models\Post;
+use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -53,6 +54,26 @@ class DatabaseSeeder extends Seeder
             );
 
             $admin->assignRole('super_admin');
+        }
+
+        // ── Site settings (installation defaults) ───────────────────────────
+        $siteSettingDefaults = [
+            ['key' => 'site_name',        'value' => 'My Organization',    'group' => 'general', 'type' => 'string'],
+            ['key' => 'base_url',         'value' => 'http://localhost',   'group' => 'general', 'type' => 'string'],
+            ['key' => 'blog_prefix',      'value' => 'news',               'group' => 'general', 'type' => 'string'],
+            ['key' => 'site_description', 'value' => '',                   'group' => 'general', 'type' => 'string'],
+            ['key' => 'timezone',         'value' => 'America/Chicago',    'group' => 'general', 'type' => 'string'],
+            ['key' => 'contact_email',    'value' => '',                   'group' => 'general', 'type' => 'string'],
+            ['key' => 'use_pico',         'value' => 'false',              'group' => 'styles',  'type' => 'boolean'],
+            ['key' => 'custom_css_path',  'value' => null,                 'group' => 'styles',  'type' => 'string'],
+            ['key' => 'logo_path',        'value' => null,                 'group' => 'styles',  'type' => 'string'],
+        ];
+
+        foreach ($siteSettingDefaults as $setting) {
+            SiteSetting::firstOrCreate(
+                ['key' => $setting['key']],
+                ['value' => $setting['value'], 'group' => $setting['group'], 'type' => $setting['type']]
+            );
         }
 
         // ── Home page ────────────────────────────────────────────────────────

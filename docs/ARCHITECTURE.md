@@ -1,5 +1,5 @@
 # Nonprofit Platform — Technical Overview
-*Last updated: March 2026. Contact entity built. Twill removed. Filament-only stack confirmed. Page model, public routing, and Blade layout built.*
+*Last updated: March 2026. SiteSetting infrastructure added. Public frontend wired up with Alpine.js, optional Pico CSS, and custom CSS upload. Blog routes, PostController, and blog views delivered. Two-tier data boundary established (enforced in session 006).*
 
 > This document and the software it describes are being developed with agentic AI assistance. This will be declared in the project README.
 
@@ -24,7 +24,7 @@ One installation per client. One server, one database, one codebase instance. No
 |-------|--------|
 | Framework | Laravel 11 |
 | Admin Panel | Filament PHP (Livewire-based) |
-| Public Frontend | Laravel Blade + Livewire + Alpine.js (Pico CSS optional via `THEME_PICO`; custom CSS via `@stack('styles')`) |
+| Public Frontend | Laravel Blade + Livewire + Alpine.js (Pico CSS optional via CMS Settings; custom CSS uploadable via admin; `@stack('styles')` hook available) |
 | Member Auth | Laravel auth middleware (web guard, public routes) |
 | Database | PostgreSQL |
 | Caching | Redis |
@@ -92,8 +92,11 @@ Event, Event Registration, Event Ticket/Tier, Waitlist Entry, Waiver
 ### Commerce
 Product, Product Category, Order, Order Line Item
 
+### Site Configuration
+~~SiteSetting~~ ✅ **Built** — DB-driven key/value config table. Boot-time merge into `config('site.*')`. Filament CMS Settings page for general settings and styles (Pico CSS toggle, custom CSS/SCSS upload, logo upload). Finance Settings page placeholder. See `docs/decisions/011-site-settings-pattern.md`.
+
 ### Content (Filament-managed, Blade-rendered)
-~~Page~~ ✅ **Built** (migration, model, Filament resource, controller, Blade templates, tests), Post, Navigation Menu, Media/Asset, Form, Form Submission
+~~Page~~ ✅ **Built** (migration, model, Filament resource, controller, Blade templates, tests), ~~Post~~ ✅ **Built** (PostController, blog index/show views, config-driven URL prefix), Navigation Menu ✅ **Built** (NavigationItem, public nav rendered in layout), Media/Asset, Form, Form Submission
 
 ### Infrastructure
 Address (multi, labeled, defaults to single), Tag, Note, Audit Log, Custom Field Definition, Attachment, System Activity Event
@@ -183,6 +186,14 @@ The full stack runs in Docker Compose. Four containers: PHP-FPM (app), Nginx (we
 App files live on the host and are bind-mounted into the container — edit in your IDE, changes are reflected immediately. No rebuild required for code changes.
 
 Service hostnames inside Docker: `postgres`, `redis`. These are the values used in `.env`.
+
+**Agentic workflow note:** When Claude writes a migration, it should immediately run `docker compose exec app php artisan migrate` (and seed if appropriate) without pausing to ask. This is a personal machine with a local Docker database — there is no security concern. Interrupting the session to ask the user to run migrations is unnecessary friction.
+
+---
+
+## Two-Tier Data Boundary ✅ (established session 005, enforced session 006)
+
+Content data (Pages, Posts, NavigationItems) and future custom Collections are surfaceable to the public frontend. CRM data (Contacts, Memberships, Donations) is **never** surfaced by the public component/widget system. This is an architectural boundary enforced in session 006.
 
 ---
 
