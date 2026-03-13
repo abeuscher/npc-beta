@@ -1,5 +1,5 @@
 # Information Architecture
-*Last updated: March 2026 (Session 004). All three primary domains defined. Models, migrations, and Filament resources built.*
+*Last updated: March 2026 (Session 006). Collections layer added. Three domains fully defined.*
 
 ---
 
@@ -34,6 +34,8 @@ Manages what the public website displays.
 | `Page` | ✅ Built | Static or semi-static web page with slug, content, and SEO fields. |
 | `Post` | ✅ Built | News article or blog entry. Dated, authored, slugged. |
 | `NavigationItem` | ✅ Built | Menu entry: label, link target (page/post/URL), parent, sort order. |
+| `Collection` | ✅ Built | User-defined typed data bucket (Board Members, Sponsors, FAQs, etc.). Schema stored as JSONB. |
+| `CollectionItem` | ✅ Built | A single item belonging to a Collection. Data stored as JSONB keyed by field schema. |
 | Media library | ⬜ Deferred | Spatie Media Library UI. Session 005+. |
 | Form builder | ⬜ Deferred | Public-facing forms. Later. |
 
@@ -99,6 +101,7 @@ Filament sidebar groups, ordered:
 │  Pages             (heroicon-o-document-text)       sort: 1
 │  Posts             (heroicon-o-newspaper)           sort: 2
 │  Navigation        (heroicon-o-bars-3)              sort: 3
+│  Collections       (heroicon-o-circle-stack)        sort: 4
 └────────────────────────────────────┘
 
 ┌─ Finance ──────────────────────────┐

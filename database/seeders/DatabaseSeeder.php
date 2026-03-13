@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Campaign;
+use App\Models\Collection;
+use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Fund;
@@ -61,6 +63,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'site_name',        'value' => 'My Organization',    'group' => 'general', 'type' => 'string'],
             ['key' => 'base_url',         'value' => 'http://localhost',   'group' => 'general', 'type' => 'string'],
             ['key' => 'blog_prefix',      'value' => 'news',               'group' => 'general', 'type' => 'string'],
+            ['key' => 'events_prefix',    'value' => 'events',             'group' => 'general', 'type' => 'string'],
             ['key' => 'site_description', 'value' => '',                   'group' => 'general', 'type' => 'string'],
             ['key' => 'timezone',         'value' => 'America/Chicago',    'group' => 'general', 'type' => 'string'],
             ['key' => 'contact_email',    'value' => '',                   'group' => 'general', 'type' => 'string'],
@@ -87,10 +90,52 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // ── System collections (all environments) ────────────────────────────
+        $this->seedSystemCollections();
+
         // ── Demo data (local only) ───────────────────────────────────────────
         if (app()->environment('local')) {
             $this->seedDemo($homePage, $admin);
         }
+    }
+
+    private function seedSystemCollections(): void
+    {
+        Collection::firstOrCreate(
+            ['handle' => 'blog_posts'],
+            [
+                'name'        => 'Blog Posts',
+                'description' => 'System collection — backed by the Post model. Not editable.',
+                'source_type' => 'blog_posts',
+                'fields'      => [
+                    ['key' => 'title',        'label' => 'Title',          'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
+                    ['key' => 'excerpt',      'label' => 'Excerpt',        'type' => 'textarea', 'required' => false, 'helpText' => '', 'options' => []],
+                    ['key' => 'published_at', 'label' => 'Published Date', 'type' => 'date',     'required' => false, 'helpText' => '', 'options' => []],
+                    ['key' => 'slug',         'label' => 'Post Slug',      'type' => 'text',     'required' => true,  'helpText' => 'The Post model\'s URL slug.', 'options' => []],
+                ],
+                'is_public'   => true,
+                'is_active'   => true,
+            ]
+        );
+
+        Collection::firstOrCreate(
+            ['handle' => 'events'],
+            [
+                'name'        => 'Events',
+                'description' => 'System collection — will be backed by the Event model in a future session.',
+                'source_type' => 'events',
+                'fields'      => [
+                    ['key' => 'title',            'label' => 'Event Title',       'type' => 'text',     'required' => true,  'helpText' => '',                                          'options' => []],
+                    ['key' => 'starts_at',        'label' => 'Start Date & Time', 'type' => 'date',     'required' => true,  'helpText' => '',                                          'options' => []],
+                    ['key' => 'ends_at',          'label' => 'End Date & Time',   'type' => 'date',     'required' => false, 'helpText' => '',                                          'options' => []],
+                    ['key' => 'location',         'label' => 'Location',          'type' => 'text',     'required' => false, 'helpText' => '',                                          'options' => []],
+                    ['key' => 'description',      'label' => 'Description',       'type' => 'textarea', 'required' => false, 'helpText' => '',                                          'options' => []],
+                    ['key' => 'registration_url', 'label' => 'Registration URL',  'type' => 'url',      'required' => false, 'helpText' => 'External ticketing or registration link.', 'options' => []],
+                ],
+                'is_public'   => true,
+                'is_active'   => true,
+            ]
+        );
     }
 
     private function seedDemo(Page $homePage, ?User $admin): void
@@ -271,6 +316,44 @@ class DatabaseSeeder extends Seeder
                 'published_at' => now(),
             ]
         );
+
+        // Collections — Board Members
+        $boardCollection = Collection::firstOrCreate(
+            ['handle' => 'board_members'],
+            [
+                'name'        => 'Board Members',
+                'source_type' => 'custom',
+                'is_public'   => true,
+                'is_active'   => true,
+                'fields'      => [
+                    ['key' => 'name',      'label' => 'Full Name',        'type' => 'text',     'required' => true,  'helpText' => '', 'options' => []],
+                    ['key' => 'title',     'label' => 'Title or Role',    'type' => 'text',     'required' => false, 'helpText' => '', 'options' => []],
+                    ['key' => 'bio',       'label' => 'Biography',        'type' => 'textarea', 'required' => false, 'helpText' => '', 'options' => []],
+                    ['key' => 'is_active', 'label' => 'Currently Active', 'type' => 'toggle',   'required' => false, 'helpText' => '', 'options' => []],
+                ],
+            ]
+        );
+
+        $boardMembers = [
+            ['name' => 'Margaret Osei',  'title' => 'Board Chair', 'bio' => 'Margaret has served on the board since 2019.', 'is_active' => true],
+            ['name' => 'David Reyes',    'title' => 'Treasurer',   'bio' => 'David brings 20 years of nonprofit finance experience.', 'is_active' => true],
+            ['name' => 'Yuki Tanaka',    'title' => 'Secretary',   'bio' => 'Yuki joined the board in 2022.', 'is_active' => true],
+        ];
+
+        foreach ($boardMembers as $i => $member) {
+            $exists = CollectionItem::where('collection_id', $boardCollection->id)
+                ->whereJsonContains('data', ['name' => $member['name']])
+                ->exists();
+
+            if (! $exists) {
+                CollectionItem::create([
+                    'collection_id' => $boardCollection->id,
+                    'data'          => $member,
+                    'sort_order'    => $i + 1,
+                    'is_published'  => true,
+                ]);
+            }
+        }
 
         // Navigation items
         NavigationItem::firstOrCreate(
