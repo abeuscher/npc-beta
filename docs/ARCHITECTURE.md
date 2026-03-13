@@ -1,5 +1,5 @@
 # Nonprofit Platform — Technical Overview
-*Last updated: March 2026. Environment bootstrapped and running.*
+*Last updated: March 2026. Contact entity built. Twill removed. Filament-only stack confirmed. Page model, public routing, and Blade layout built.*
 
 > This document and the software it describes are being developed with agentic AI assistance. This will be declared in the project README.
 
@@ -22,10 +22,10 @@ One installation per client. One server, one database, one codebase instance. No
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Laravel |
-| CMS | Twill (Laravel-native, Area 17) |
+| Framework | Laravel 11 |
 | Admin Panel | Filament PHP (Livewire-based) |
-| Member Auth | Laravel Breeze or Jetstream |
+| Public Frontend | Laravel Blade + Livewire + Alpine.js (Pico CSS optional via `THEME_PICO`; custom CSS via `@stack('styles')`) |
+| Member Auth | Laravel auth middleware (web guard, public routes) |
 | Database | PostgreSQL |
 | Caching | Redis |
 | Real-time | Laravel Echo + Soketi |
@@ -37,7 +37,6 @@ One installation per client. One server, one database, one codebase instance. No
 | Activity Logging | Spatie Laravel Activity Log |
 | Media | Spatie Laravel Media Library |
 | Permissions | Spatie Laravel Permission |
-| Performance Monitoring | Spatie Slow Query Log + DB::listen() |
 | Testing | Pest PHP |
 | Local Dev | Docker Compose (app, nginx, postgres, redis) |
 | Deployment | Docker container — target TBD (Forge, Fly.io, or VPS) |
@@ -46,13 +45,13 @@ One installation per client. One server, one database, one codebase instance. No
 
 ## Application Structure ✅
 
-**Twill** — content layer. Pages, posts, navigation, media. Content editors live here.
+**Filament** — the sole admin panel. Manages all data: contacts, members, donations, grants, events, pages, and content. CRM staff and content editors both work here. Access is tiered by Spatie role.
 
-**Filament** — CRM admin layer. Contacts, members, donations, grants, events, reporting. Admin users live here.
+**Public website** — Laravel Blade templates rendered by controllers, with Livewire components for interactive surfaces (event registration, donation forms, member signup, newsletter signup). Filament manages all content that the public site displays.
 
-**Member portal** — Laravel-rendered, separately authenticated. Members see gated content and their own records. They never enter the admin panel.
+**Member portal** — Laravel auth middleware on public routes. Members log in through a standard Laravel login form, not the Filament panel. Gated content and member-specific views live here.
 
-**Integration boundaries are narrow and explicit.** Events and forms span both Twill and Filament. That boundary is documented per module as it is built.
+**One stack, one runtime, one login.** Filament uses the `web` guard. The public site uses the same `web` guard for member auth. No secondary panels, no auth bridges, no two-runtime complexity.
 
 ---
 
@@ -79,7 +78,7 @@ Default roles: Super Admin, CRM Manager, CMS Editor, Finance Manager, Events Man
 ## Core Entities 🔄
 
 ### People & Organizations
-Contact, Household, Family, Organization, Relationship, Volunteer
+~~Contact~~ ✅ **Built** (migration, model, Filament resource, factory, tests), Household, Family, Organization, Relationship, Volunteer
 
 ### Membership
 Membership (with full history), Membership Tier, Role
@@ -93,8 +92,8 @@ Event, Event Registration, Event Ticket/Tier, Waitlist Entry, Waiver
 ### Commerce
 Product, Product Category, Order, Order Line Item
 
-### Content (Twill)
-Page, Post, Navigation Menu, Media/Asset, Form, Form Submission
+### Content (Filament-managed, Blade-rendered)
+~~Page~~ ✅ **Built** (migration, model, Filament resource, controller, Blade templates, tests), Post, Navigation Menu, Media/Asset, Form, Form Submission
 
 ### Infrastructure
 Address (multi, labeled, defaults to single), Tag, Note, Audit Log, Custom Field Definition, Attachment, System Activity Event
@@ -191,9 +190,11 @@ Service hostnames inside Docker: `postgres`, `redis`. These are the values used 
 
 | Approach | Reason |
 |----------|--------|
+| Twill as CMS layer | Two-runtime problem (Livewire vs Vue SPA); model contract shim fragility; must-have features are data problems not editorial problems. See `docs/decisions/004-twill-plus-filament.md` (superseded). |
 | WordPress as foundation | Security surface area, overhead, architectural conflict with Laravel |
 | Laravel as WordPress plugin | Two full stacks fighting each other |
 | Headless CMS + SPA | Adds integration surface, worse editor experience for target users |
+| Inertia.js SPA for public site | JS build pipeline overhead; Livewire adequate for expected traffic and interactivity |
 | Multi-tenancy shared database | Risk of data bleed; per-client server is cleaner |
 | EAV for custom fields | Query performance degrades at scale |
 | MySQL | No viable JSONB support |

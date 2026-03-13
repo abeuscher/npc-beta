@@ -6,7 +6,6 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.0",
-        "area17/twill": "^3.3",
         "filament/filament": "^3.2",
         "laravel/cashier": "^15.4",
         "spatie/laravel-permission": "^6.7",
@@ -18,10 +17,12 @@
         "predis/predis": "^2.2"
     },
     "require-dev": {
-        "pestphp/pest": "^2.35",
-        "pestphp/pest-plugin-laravel": "^2.4",
+        "barryvdh/laravel-debugbar": "^3.13",
+        "fakerphp/faker": "^1.24",
         "laravel/pint": "^1.16",
-        "barryvdh/laravel-debugbar": "^3.13"
+        "mockery/mockery": "^1.6",
+        "pestphp/pest": "^2.35",
+        "pestphp/pest-plugin-laravel": "^2.4"
     },
     "autoload": {
         "psr-4": {

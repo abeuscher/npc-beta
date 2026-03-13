@@ -1,7 +1,9 @@
 # 004 — Twill (CMS) + Filament (CRM Admin) as Dual Admin Layers
 
 **Date:** March 2026
-**Status:** Decided
+**Status:** ~~Decided~~ **Superseded** — see `docs/decisions/009-filament-only-blade-frontend.md`
+
+> This decision was reversed in session 002. Twill was removed from the project entirely. The rationale is documented in the ADR linked above and in `sessions/002.md`.
 
 ---
 
