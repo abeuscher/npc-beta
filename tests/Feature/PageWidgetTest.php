@@ -11,11 +11,14 @@ uses(TestCase::class, RefreshDatabase::class);
 function makeWidgetType(array $overrides = []): WidgetType
 {
     return WidgetType::create(array_merge([
-        'handle'      => 'text_block',
-        'label'       => 'Text Block',
-        'render_mode' => 'server',
-        'collections' => [],
-        'template'    => '{!! $content ?? \'\' !!}',
+        'handle'        => 'text_block',
+        'label'         => 'Text Block',
+        'render_mode'   => 'server',
+        'collections'   => [],
+        'config_schema' => [
+            ['key' => 'content', 'type' => 'richtext', 'label' => 'Content'],
+        ],
+        'template'      => '{!! $config[\'content\'] ?? \'\' !!}',
     ], $overrides));
 }
 

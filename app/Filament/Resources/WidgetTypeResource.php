@@ -67,6 +67,38 @@ class WidgetTypeResource extends Resource
                     ->columnSpanFull(),
             ])->columns(2),
 
+            Forms\Components\Section::make('Singleton Fields')
+                ->description('Fields the editor fills in per block instance. Values are stored in page_widgets.config.')
+                ->schema([
+                    Forms\Components\Repeater::make('config_schema')
+                        ->schema([
+                            Forms\Components\TextInput::make('key')
+                                ->required()
+                                ->rules(['alpha_dash'])
+                                ->helperText('Lowercase with underscores, e.g. heading_text'),
+
+                            Forms\Components\TextInput::make('label')
+                                ->required(),
+
+                            Forms\Components\Select::make('type')
+                                ->required()
+                                ->options([
+                                    'text'      => 'Text',
+                                    'textarea'  => 'Textarea',
+                                    'richtext'  => 'Rich Text',
+                                    'url'       => 'URL',
+                                    'number'    => 'Number',
+                                    'toggle'    => 'Toggle',
+                                ])
+                                ->default('text'),
+                        ])
+                        ->columns(3)
+                        ->defaultItems(0)
+                        ->reorderable()
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? null),
+                ]),
+
             Forms\Components\Section::make('Server Mode')
                 ->schema([
                     Forms\Components\Textarea::make('template')

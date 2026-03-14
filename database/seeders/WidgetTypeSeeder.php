@@ -9,13 +9,16 @@ class WidgetTypeSeeder extends Seeder
 {
     public function run(): void
     {
-        WidgetType::firstOrCreate(
+        WidgetType::updateOrCreate(
             ['handle' => 'text_block'],
             [
-                'label'       => 'Text Block',
-                'render_mode' => 'server',
-                'collections' => [],
-                'template'    => '{!! $content ?? \'\' !!}',
+                'label'         => 'Text Block',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'content', 'type' => 'richtext', 'label' => 'Content'],
+                ],
+                'template'      => '{!! $config[\'content\'] ?? \'\' !!}',
             ]
         );
     }

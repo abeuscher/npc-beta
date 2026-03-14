@@ -3,14 +3,16 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
+use App\Livewire\PageBuilder;
 use App\Models\Page;
+use App\Models\SiteSetting;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
-use App\Livewire\PageBuilder;
 
 class PageResource extends Resource
 {
@@ -43,6 +45,25 @@ class PageResource extends Resource
                     ->rules(['alpha_dash'])
                     ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
                     ->helperText('URL-safe identifier. Auto-generated from title on create.'),
+
+                Forms\Components\Placeholder::make('public_url')
+                    ->label('Public URL')
+                    ->content(function ($record): HtmlString|string {
+                        if (! $record) {
+                            return '—';
+                        }
+                        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                        $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
+                        $url  = $base . $path;
+
+                        return new HtmlString(
+                            '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
+                            'class="text-primary-600 hover:underline text-sm font-mono">' .
+                            e($url) . '</a> ' .
+                            '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
+                        );
+                    })
+                    ->columnSpanFull(),
             ])->columns(2),
 
             Forms\Components\Section::make('Publication')
