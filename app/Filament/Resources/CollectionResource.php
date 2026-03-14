@@ -35,11 +35,11 @@ class CollectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?string $navigationLabel = 'Collections';
+    protected static ?string $navigationLabel = 'Collection Manager';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

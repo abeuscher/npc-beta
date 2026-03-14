@@ -18,6 +18,8 @@ class NoteResource extends Resource
 
     protected static ?string $navigationGroup = 'CRM';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form

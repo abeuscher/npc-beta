@@ -32,10 +32,11 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->navigationGroups([
-                NavigationGroup::make('CRM'),
-                NavigationGroup::make('Content'),
-                NavigationGroup::make('Finance'),
-                NavigationGroup::make('Settings'),
+                NavigationGroup::make('CRM')->collapsed(),
+                NavigationGroup::make('Content')->collapsed(),
+                NavigationGroup::make('Finance')->collapsed(),
+                NavigationGroup::make('Tools')->collapsed(),
+                NavigationGroup::make('Settings')->collapsed(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

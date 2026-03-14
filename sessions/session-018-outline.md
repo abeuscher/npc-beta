@@ -1,65 +1,61 @@
-# Session 018 Outline — Help System
+# Session 017 Outline — Import/Export: Extended
 
 > **Session Preparation**: This is a planning outline, not a complete implementation prompt.
-> At the start of this session, review the full admin UI as it exists. The help system should
-> be designed around the actual screens and workflows users encounter, not a theoretical list.
-> Walk through the admin panel before writing the prompt.
+> At the start of this session, review the import/export infrastructure built in session 016.
+> The goal is to extend it to more data types and more source system presets without
+> rebuilding the core. Session 016's architecture should be designed with this extension in mind.
 
 ---
 
 ## Goal
 
-Build the skeleton of a context-sensitive help system for the admin UI. The goal is not to fill in all the content — content comes later — but to establish the architecture: where help lives, how it's triggered, how it's stored, and how it can be maintained without a code deployment.
+Extend the import/export system to cover additional data types (Donations, Memberships, Events registrants) and add presets for more specific source systems. Also address any usability problems discovered after clients used the session 016 importer.
 
 ---
 
 ## Key Decisions to Make at Session Start
 
-- **Help content storage**: In the database (admin-editable via Filament), in Markdown files (developer-maintained, version-controlled), or both? Database is more flexible for non-developers; files are simpler to maintain and version. A hybrid (files with DB override) is possible.
-- **Trigger mechanism**: Help icon (?) next to fields/sections that opens a panel or tooltip? Dedicated "Help" sidebar panel? Inline collapsed accordion? Decide the UX pattern.
-- **Scope**: Admin UI only, or also public-facing help (FAQ, knowledge base for members)? Likely admin only for this session.
-- **Standard or custom**: Is there a Filament help/documentation plugin worth evaluating, or do we build a simple custom implementation? Check available packages at session start.
-- **Context specificity**: Help can be global (one article per page), per-resource, or per-field. Decide the granularity level for v1.
+- **Which data types to add**: Based on what clients actually need. Likely: Donations (with fund/campaign mapping), Memberships (with tier/status), EventRegistrations. Prioritise by client demand.
+- **Donation import complexity**: Donations link to Contacts, Funds, and Campaigns. The importer must handle lookups (find or create the linked record). Decide how much auto-creation of linked records is acceptable.
+- **More presets**: Which source systems remain from session 016? Add the next most-requested ones. Common candidates: Bloomerang full export, QuickBooks contacts, DonorSnap, NeonCRM.
+- **Export improvements**: Are there export formats beyond CSV needed? (e.g. JSON for API consumers, XLSX for finance staff)
+- **Import history**: Should there be an audit log of past imports (who imported what, when, how many records)?
 
 ---
 
 ## Scope (draft — refine at session start)
 
 **In:**
-- Help content storage mechanism (DB, files, or hybrid — decided at session start)
-- Context-sensitive help trigger in the Filament admin UI (icon or panel)
-- At least the skeleton structure seeded with placeholder content for 5-10 key screens
-- An admin interface for editing help content (if DB-based)
-- A clear extension pattern so content can be filled in without a developer
+- Import for 2-3 additional data types (priority determined at session start)
+- Additional source system presets
+- Import history / audit log (if not built in session 016)
+- Export for additional data types
+- Any fixes/improvements from session 016 based on real usage
 
 **Out:**
-- Public-facing knowledge base or FAQ (future)
-- Search across help content (future)
-- Video embeds or interactive walkthroughs
+- Real-time sync with external systems (API-based, not file-based — future feature)
+- Custom field creation on import (unless deferred from session 016)
 
 ---
 
 ## Rough Build List
 
-- Help content storage: model/migration (if DB) or `resources/help/` directory (if files)
-- Help panel or tooltip Blade component
-- Filament layout modification to inject help trigger into resource pages
-- Seed/create placeholder content for key screens
-- If DB: Filament resource for managing help content (admin only)
-- Tests: help content resolves for a given context key; missing content degrades gracefully
+- Extend ImportJob to handle additional models
+- New FieldMapper presets for additional source systems
+- Import history model and Filament view
+- Additional export actions on relevant resources
+- Tests for new data types and presets
 
 ---
 
 ## Open Questions at Planning Time
 
-- Who will write the help content — developers, or a non-technical admin? This determines whether DB or files is the right storage.
-- Is there a preferred UX pattern from the user (tooltip, sidebar panel, modal)?
-- Should help be localisation-aware (multi-language)?
+- What import problems did clients encounter after session 016? Fix those first.
+- Is XLSX support worth adding, or is CSV sufficient?
 
 ---
 
 ## What This Unlocks
 
-- Help content can be filled in alongside any future feature session
-- Non-developer staff can maintain help content without code changes (if DB-based)
-- Foundation for a public knowledge base if needed later
+- Full data portability for all core entities
+- Client onboarding is self-service for common source systems

@@ -54,7 +54,18 @@ class PageController extends Controller
                 $collectionData[$handle] = WidgetDataResolver::resolve($handle, $perHandleConfig);
             }
 
-            if ($widgetType->render_mode === 'server') {
+            if ($widgetType->handle === 'text_block') {
+                // Text blocks store HTML directly in query_config['content'].
+                $html = $pw->query_config['content'] ?? '';
+
+                $blocks[] = [
+                    'handle'      => $widgetType->handle,
+                    'instance_id' => $pw->id,
+                    'html'        => $html,
+                    'css'         => '',
+                    'js'          => '',
+                ];
+            } elseif ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
                     ? Blade::render($widgetType->template, $collectionData)
                     : '';

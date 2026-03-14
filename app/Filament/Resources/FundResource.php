@@ -18,6 +18,8 @@ class FundResource extends Resource
 
     protected static ?string $navigationGroup = 'Finance';
 
+    protected static ?string $navigationLabel = 'Funds & Grants';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form

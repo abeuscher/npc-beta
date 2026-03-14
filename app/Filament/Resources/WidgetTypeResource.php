@@ -18,9 +18,11 @@ class WidgetTypeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationLabel = 'Widget Manager';
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {

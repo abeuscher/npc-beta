@@ -18,7 +18,7 @@ class CmsTagResource extends Resource
 
     protected static ?string $navigationGroup = 'Content';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {

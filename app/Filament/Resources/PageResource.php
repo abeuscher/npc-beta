@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use App\Livewire\PageBuilder;
 
 class PageResource extends Resource
 {
@@ -42,9 +43,6 @@ class PageResource extends Resource
                     ->rules(['alpha_dash'])
                     ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
                     ->helperText('URL-safe identifier. Auto-generated from title on create.'),
-
-                Forms\Components\RichEditor::make('content')
-                    ->columnSpanFull(),
             ])->columns(2),
 
             Forms\Components\Section::make('Publication')
@@ -71,6 +69,17 @@ class PageResource extends Resource
                 ->columns(1)
                 ->collapsible()
                 ->collapsed(),
+
+            Forms\Components\Section::make('Page Builder')
+                ->description('Add and arrange content blocks for this page.')
+                ->schema([
+                    Forms\Components\Livewire::make(
+                        PageBuilder::class,
+                        fn ($record) => $record ? ['pageId' => $record->id] : []
+                    )->columnSpanFull(),
+                ])
+                ->hidden(fn ($record) => $record === null)
+                ->columnSpanFull(),
         ]);
     }
 

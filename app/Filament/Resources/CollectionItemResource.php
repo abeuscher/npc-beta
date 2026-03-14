@@ -19,7 +19,9 @@ class CollectionItemResource extends Resource
 
     protected static ?string $navigationGroup = 'Content';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationLabel = 'Collections';
+
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {

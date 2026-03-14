@@ -1,5 +1,5 @@
 # Information Architecture
-*Last updated: March 2026 (Session 007 post-session). Widget system redesigned. Sessions 008–009 planned.*
+*Last updated: March 2026 (Session 009 post-session). Page builder complete. Nav restructured — Tools group added, Notes hidden.*
 
 ---
 
@@ -113,35 +113,51 @@ Filament sidebar groups, ordered:
 
 ```
 ┌─ CRM ──────────────────────────────┐
-│  Contacts          (heroicon-o-users)               sort: 1
-│  Organizations     (heroicon-o-building-office)     sort: 2
-│  Memberships       (heroicon-o-identification)      sort: 3
-│  Tags              (heroicon-o-tag)                 sort: 4
-│  Notes             (heroicon-o-chat-bubble-left-ellipsis)  sort: 5
+│  Contacts          (heroicon-o-users)                         sort: 1
+│  Organizations     (heroicon-o-building-office)               sort: 2
+│  Memberships       (heroicon-o-identification)                sort: 3
+│  CRM Tags          (heroicon-o-tag)                           sort: 4
+│  Events            (heroicon-o-calendar)                      sort: 5  ⬜ future
 └────────────────────────────────────┘
 
 ┌─ Content ──────────────────────────┐
-│  Pages             (heroicon-o-document-text)       sort: 1
-│  Posts             (heroicon-o-newspaper)           sort: 2
-│  Navigation        (heroicon-o-bars-3)              sort: 3
-│  Collections       (heroicon-o-circle-stack)        sort: 4
-│  Widgets           (heroicon-o-puzzle-piece)        sort: 5  ← Session 008
-│  CMS Tags          (heroicon-o-tag)                 sort: 6  ← Session 008
+│  Pages             (heroicon-o-document-text)                 sort: 1
+│  Blog Posts        (heroicon-o-newspaper)                     sort: 2
+│  Collections       (heroicon-o-square-3-stack-3d)             sort: 3  (CollectionItems)
+│  Navigation        (heroicon-o-bars-3)                        sort: 4
+│  CMS Tags          (heroicon-o-tag)                           sort: 5
 └────────────────────────────────────┘
 
 ┌─ Finance ──────────────────────────┐
-│  Donations         (heroicon-o-heart)               sort: 1
-│  Campaigns         (heroicon-o-megaphone)           sort: 2
-│  Funds             (heroicon-o-banknotes)           sort: 3
-│  Transactions      (heroicon-o-receipt-percent)     sort: 4
+│  Donations         (heroicon-o-heart)                         sort: 1
+│  Campaigns         (heroicon-o-megaphone)                     sort: 2
+│  Funds & Grants    (heroicon-o-banknotes)                     sort: 3
+│  Transactions      (heroicon-o-receipt-percent)               sort: 4
+└────────────────────────────────────┘
+
+┌─ Tools ────────────────────────────┐
+│  Widget Manager    (heroicon-o-puzzle-piece)                  sort: 1  (WidgetTypeResource)
+│  Collection Manager(heroicon-o-circle-stack)                  sort: 2  (CollectionResource)
+│  Import            —                                          sort: 3  ⬜ future
+│  Export            —                                          sort: 4  ⬜ future
 └────────────────────────────────────┘
 
 ┌─ Settings ─────────────────────────┐
-│  Users             (heroicon-o-user-circle)         sort: 1
+│  CRM               (heroicon-o-user-circle)                   sort: 1  (UserResource)
+│  CMS               —                                          sort: 2  ⬜ future (SiteSettingResource)
+│  Finance           —                                          sort: 3  ⬜ future
+└────────────────────────────────────┘
+
+┌─ Integrations ─────────────────────┐  ⬜ future group
+│  MailChimp         —
+│  QuickBooks        —
+│  Other             —
 └────────────────────────────────────┘
 ```
 
-Group sort order: CRM → Content → Finance → Settings.
+Group sort order (AdminPanelProvider): CRM → Content → Finance → Tools → Settings.
+
+Notes hidden from navigation (`$shouldRegisterNavigation = false`) — accessible via Contact/Organization relation managers only.
 
 ---
 

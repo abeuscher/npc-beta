@@ -20,7 +20,7 @@ class NavigationItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Navigation';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
