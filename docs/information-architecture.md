@@ -1,5 +1,5 @@
 # Information Architecture
-*Last updated: March 2026 (Session 009 post-session). Page builder complete. Nav restructured — Tools group added, Notes hidden.*
+*Last updated: March 2026 (Session 011 post-session). Contact taxonomy formalised — see Contact Taxonomy section and ADR 014.*
 
 ---
 
@@ -17,8 +17,9 @@ Tracks people and organizations: who they are, what they've done, what they owe,
 
 | Model | Status | Description |
 |-------|--------|-------------|
-| `Contact` | ✅ Built | A person. The central record. |
-| `Organization` | ✅ Built | A company, foundation, government body, or other entity. Contacts belong to organizations. |
+| `Contact` | ✅ Built | A person. Always an individual. The central CRM record. |
+| `Organization` | ✅ Built | A company, foundation, government body, or other entity. Contacts affiliate with organizations. Organizations can be donors. |
+| `Household` | ✅ Built | A named mailing group of contacts sharing a canonical address. Admin-managed for beta; self-service deferred to member portal session. |
 | `Membership` | ✅ Built | A contact's membership status, tier, and dates. One active membership per contact at a time. |
 | `Tag` | ✅ Built | Flat label for segmenting contacts and organizations (polymorphic). CRM-scoped only — CMS content uses `CmsTag`. |
 | `Note` | ✅ Built | Timestamped log entry attached to a contact or organization (activity stream). |
@@ -54,6 +55,50 @@ Tracks money. Connects to QuickBooks. Feeds donation receipts.
 | `Transaction` | ✅ Built (scaffold) | Low-level money record. Every donation produces a transaction. |
 | QuickBooks sync | ⬜ Deferred | |
 | Stripe webhooks | ⬜ Deferred | |
+
+---
+
+## Contact Taxonomy
+*Decided: Session 011 (extended). See ADR 014.*
+
+### Contact is always a person
+
+`Contact` has no `type` field. Every contact record is an individual person. `first_name`, `last_name`, `prefix`, and `preferred_name` are always the name fields.
+
+- **Organization** is a separate first-class model for companies, foundations, and other entities. Contacts affiliate with organizations via `organization_id`. Organizations can be donors.
+- **Household** is a separate grouping model for mailing purposes (see below).
+
+### Roles — derived, never stored
+
+A contact can hold multiple roles simultaneously. Roles are computed from related records, never stored as columns or flags:
+
+| Role | Derived from | Query scope |
+|------|-------------|-------------|
+| **Member** | Has an active `Membership` record (`status = 'active'`) | `Contact::isMember()` / `scopeIsMember()` |
+| **Donor** | Has at least one `Donation` record | `Contact::isDonor()` / `scopeIsDonor()` |
+| **Public Donor** | Has at least one non-anonymous `Donation` | `scopeIsPublicDonor()` |
+| **Registrant** | Has at least one `EventRegistration` *(session 012)* | *(stub reserved)* |
+
+### Households
+
+A `Household` groups contacts who share a mailing address. It has a **name** (e.g., "Smith Household") used on correspondence, and a full set of address fields that is the canonical mailing address for all members.
+
+- Contacts belong to a household via `household_id` (nullable FK)
+- When a contact is added to a household, their personal address fields are overwritten with the household address
+- Admin can sync the household address to all members at any time via the Households admin panel
+- **Beta scope:** household membership is admin-managed only. Self-service household creation, invite flow, and address resolution in the member portal are deferred to the portal session
+
+### Organizations as donors
+
+An `Organization` can be the source of a donation (`donations.organization_id`). This covers foundation grants, corporate gifts, and other institutional giving. `donations.contact_id` and `donations.organization_id` are both nullable — exactly one must be set per donation (enforced at the application layer).
+
+### Anonymous donations
+
+An anonymous donation (`donations.is_anonymous = true`) still has a contact (or organization) record. The anonymity flag lives at the donation level. Public-facing views respect it.
+
+### Contact ↔ User link
+
+Deferred to the member portal session. No `user_id` on contacts yet.
 
 ---
 
@@ -116,8 +161,9 @@ Filament sidebar groups, ordered:
 │  Contacts          (heroicon-o-users)                         sort: 1
 │  Organizations     (heroicon-o-building-office)               sort: 2
 │  Memberships       (heroicon-o-identification)                sort: 3
-│  CRM Tags          (heroicon-o-tag)                           sort: 4
-│  Events            (heroicon-o-calendar)                      sort: 5  ⬜ future
+│  Households        (heroicon-o-home)                          sort: 4
+│  CRM Tags          (heroicon-o-tag)                           sort: 5
+│  Events            (heroicon-o-calendar)                      sort: 6  ⬜ future
 └────────────────────────────────────┘
 
 ┌─ Content ──────────────────────────┐

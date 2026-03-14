@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
-use App\Models\Organization;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -25,7 +24,7 @@ class ContactResource extends Resource
     {
         return $form->schema([
 
-            Forms\Components\Section::make('Contact Type')
+            Forms\Components\Section::make('Affiliation')
                 ->schema([
                     Forms\Components\Select::make('organization_id')
                         ->label('Organization')
@@ -33,39 +32,22 @@ class ContactResource extends Resource
                         ->searchable()
                         ->preload()
                         ->nullable(),
-
-                    Forms\Components\Select::make('type')
-                        ->options([
-                            'individual' => 'Individual',
-                            'organization' => 'Organization',
-                        ])
-                        ->default('individual')
-                        ->required()
-                        ->live(),
                 ]),
 
             Forms\Components\Section::make('Name')
                 ->schema([
-                    Forms\Components\TextInput::make('organization_name')
-                        ->label('Organization Name')
-                        ->visible(fn (Forms\Get $get) => $get('type') === 'organization')
-                        ->requiredIf('type', 'organization'),
-
                     Forms\Components\TextInput::make('prefix')
                         ->label('Prefix')
-                        ->placeholder('Mr, Ms, Dr…')
-                        ->visible(fn (Forms\Get $get) => $get('type') === 'individual'),
-
-                    Forms\Components\TextInput::make('first_name')
-                        ->label('First Name')
-                        ->visible(fn (Forms\Get $get) => $get('type') === 'individual'),
-
-                    Forms\Components\TextInput::make('last_name')
-                        ->label('Last Name')
-                        ->visible(fn (Forms\Get $get) => $get('type') === 'individual'),
+                        ->placeholder('Mr, Ms, Dr…'),
 
                     Forms\Components\TextInput::make('preferred_name')
                         ->label('Preferred Name'),
+
+                    Forms\Components\TextInput::make('first_name')
+                        ->label('First Name'),
+
+                    Forms\Components\TextInput::make('last_name')
+                        ->label('Last Name'),
                 ])
                 ->columns(2),
 
@@ -131,8 +113,8 @@ class ContactResource extends Resource
                         ->options([
                             'manual' => 'Manual Entry',
                             'import' => 'Import',
-                            'form' => 'Web Form',
-                            'api' => 'API',
+                            'form'   => 'Web Form',
+                            'api'    => 'API',
                         ])
                         ->nullable(),
 
@@ -155,19 +137,33 @@ class ContactResource extends Resource
                     ->searchable(query: function ($query, string $search) {
                         $query->where(function ($q) use ($search) {
                             $q->where('first_name', 'ilike', "%{$search}%")
-                                ->orWhere('last_name', 'ilike', "%{$search}%")
-                                ->orWhere('organization_name', 'ilike', "%{$search}%");
+                                ->orWhere('last_name', 'ilike', "%{$search}%");
                         });
                     })
                     ->sortable(query: fn ($query, $direction) => $query->orderByRaw(
-                        "COALESCE(organization_name, last_name) {$direction}"
+                        "COALESCE(last_name, first_name) {$direction}"
                     )),
 
-                Tables\Columns\BadgeColumn::make('type')
-                    ->colors([
-                        'primary' => 'individual',
-                        'success' => 'organization',
-                    ]),
+                Tables\Columns\TextColumn::make('roles')
+                    ->label('Roles')
+                    ->getStateUsing(function (Contact $record): string {
+                        $roles = [];
+                        if ($record->isMember()) {
+                            $roles[] = 'Member';
+                        }
+                        if ($record->isDonor()) {
+                            $roles[] = 'Donor';
+                        }
+
+                        return implode(', ', $roles);
+                    })
+                    ->placeholder('—')
+                    ->color('gray'),
+
+                Tables\Columns\TextColumn::make('household.name')
+                    ->label('Household')
+                    ->placeholder('—')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
@@ -189,19 +185,30 @@ class ContactResource extends Resource
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'individual' => 'Individual',
-                        'organization' => 'Organization',
-                    ]),
-
                 Tables\Filters\TernaryFilter::make('do_not_contact')
                     ->label('Do Not Contact'),
 
                 Tables\Filters\TernaryFilter::make('is_deceased')
                     ->label('Deceased'),
+
+                Tables\Filters\Filter::make('is_member')
+                    ->label('Members only')
+                    ->query(fn ($query) => $query->isMember()),
+
+                Tables\Filters\Filter::make('is_donor')
+                    ->label('Donors only')
+                    ->query(fn ($query) => $query->isDonor()),
+
+                Tables\Filters\Filter::make('in_household')
+                    ->label('In a household')
+                    ->query(fn ($query) => $query->whereNotNull('household_id')),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'household',
+                'memberships' => fn ($q) => $q->where('status', 'active'),
+                'donations',
+            ]));
     }
 
     public static function getRelations(): array
@@ -214,9 +221,9 @@ class ContactResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListContacts::route('/'),
+            'index'  => Pages\ListContacts::route('/'),
             'create' => Pages\CreateContact::route('/create'),
-            'edit' => Pages\EditContact::route('/{record}/edit'),
+            'edit'   => Pages\EditContact::route('/{record}/edit'),
         ];
     }
 }

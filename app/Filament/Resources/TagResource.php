@@ -20,7 +20,7 @@ class TagResource extends Resource
 
     protected static ?string $navigationLabel = 'CRM Tags';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {

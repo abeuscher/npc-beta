@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,11 +19,10 @@ class Contact extends Model
 
     protected $fillable = [
         'organization_id',
-        'type',
+        'household_id',
         'prefix',
         'first_name',
         'last_name',
-        'organization_name',
         'preferred_name',
         'email',
         'email_secondary',
@@ -42,24 +42,28 @@ class Contact extends Model
     ];
 
     protected $casts = [
-        'custom_data' => SchemalessAttributes::class,
-        'is_deceased' => 'boolean',
+        'custom_data'    => SchemalessAttributes::class,
+        'is_deceased'    => 'boolean',
         'do_not_contact' => 'boolean',
     ];
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
 
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
     }
 
+    public function household(): BelongsTo
+    {
+        return $this->belongsTo(Household::class);
+    }
+
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
-    }
-
-    public function activeMembership(): ?Membership
-    {
-        return $this->memberships()->where('status', 'active')->latest('starts_on')->first();
     }
 
     public function tags(): MorphToMany
@@ -77,14 +81,68 @@ class Contact extends Model
         return $this->hasMany(Donation::class);
     }
 
-    public function getDisplayNameAttribute(): string
+    // EventRegistration relationship — model and migration added in session 012
+    // public function registrations(): HasMany
+    // {
+    //     return $this->hasMany(\App\Models\EventRegistration::class);
+    // }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    public function activeMembership(): ?Membership
     {
-        if ($this->type === 'organization') {
-            return $this->organization_name ?? '';
+        return $this->memberships()->where('status', 'active')->latest('starts_on')->first();
+    }
+
+    // -------------------------------------------------------------------------
+    // Scopes — role-based filtering
+    // -------------------------------------------------------------------------
+
+    public function scopeIsMember(Builder $query): Builder
+    {
+        return $query->whereHas('memberships', fn ($q) => $q->where('status', 'active'));
+    }
+
+    public function scopeIsDonor(Builder $query): Builder
+    {
+        return $query->whereHas('donations');
+    }
+
+    public function scopeIsPublicDonor(Builder $query): Builder
+    {
+        return $query->whereHas('donations', fn ($q) => $q->where('is_anonymous', false));
+    }
+
+    // -------------------------------------------------------------------------
+    // Role helpers
+    // -------------------------------------------------------------------------
+
+    public function isMember(): bool
+    {
+        if ($this->relationLoaded('memberships')) {
+            return $this->memberships->where('status', 'active')->isNotEmpty();
         }
 
-        $parts = array_filter([$this->first_name, $this->last_name]);
+        return $this->memberships()->where('status', 'active')->exists();
+    }
 
-        return implode(' ', $parts);
+    public function isDonor(): bool
+    {
+        if ($this->relationLoaded('donations')) {
+            return $this->donations->isNotEmpty();
+        }
+
+        return $this->donations()->exists();
+    }
+
+    // -------------------------------------------------------------------------
+    // Accessors
+    // -------------------------------------------------------------------------
+
+    public function getDisplayNameAttribute(): string
+    {
+        return implode(' ', array_filter([$this->first_name, $this->last_name]));
     }
 }
