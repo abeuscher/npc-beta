@@ -1,6 +1,8 @@
 @extends('layouts.public', [
-    'title'       => $page->meta_title ?? $page->title,
-    'description' => $page->meta_description,
+    'title'         => $page->meta_title ?? $page->title,
+    'description'   => $page->meta_description,
+    'inlineStyles'  => $inlineStyles ?? '',
+    'inlineScripts' => $inlineScripts ?? '',
 ])
 
 @section('content')
@@ -13,6 +15,6 @@
             </div>
         @endif
 
-        <x-page-widgets :widgets="$widgets" />
+        <x-page-widgets :blocks="$blocks ?? []" />
     </main>
 @endsection

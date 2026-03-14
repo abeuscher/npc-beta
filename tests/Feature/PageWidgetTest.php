@@ -2,98 +2,91 @@
 
 use App\Models\Page;
 use App\Models\PageWidget;
-use App\Widgets\RichTextWidget;
-use App\Widgets\WidgetRegistry;
+use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-beforeEach(function () {
-    // Ensure widgets are registered for tests
-    WidgetRegistry::register([
-        \App\Widgets\CollectionListWidget::class,
-        \App\Widgets\BlogRollWidget::class,
-        \App\Widgets\RichTextWidget::class,
-    ]);
-});
+function makeWidgetType(array $overrides = []): WidgetType
+{
+    return WidgetType::create(array_merge([
+        'handle'      => 'text_block',
+        'label'       => 'Text Block',
+        'render_mode' => 'server',
+        'collections' => [],
+        'template'    => '{!! $content ?? \'\' !!}',
+    ], $overrides));
+}
 
 it('can be created and associated with a page', function () {
-    $page = Page::create([
+    $page       = Page::create([
         'title'        => 'Test Page',
         'slug'         => 'test-page',
         'is_published' => true,
     ]);
+    $widgetType = makeWidgetType();
 
     $widget = PageWidget::create([
-        'page_id'     => $page->id,
-        'widget_type' => 'rich_text',
-        'config'      => ['content' => '<p>Hello</p>'],
-        'sort_order'  => 0,
-        'is_active'   => true,
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'config'         => ['content' => '<p>Hello</p>'],
+        'sort_order'     => 0,
+        'is_active'      => true,
     ]);
 
     expect($widget->page_id)->toBe($page->id)
         ->and($widget->config['content'])->toBe('<p>Hello</p>');
 });
 
-it('typeInstance returns the correct widget class', function () {
-    $page = Page::create([
+it('widgetType relationship returns the correct WidgetType model', function () {
+    $page       = Page::create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-2',
         'is_published' => true,
     ]);
+    $widgetType = makeWidgetType(['handle' => 'text_block_2', 'label' => 'Text Block 2']);
 
     $widget = PageWidget::create([
-        'page_id'     => $page->id,
-        'widget_type' => 'rich_text',
-        'config'      => ['content' => 'hello'],
-        'sort_order'  => 0,
-        'is_active'   => true,
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'config'         => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
     ]);
 
-    expect($widget->typeInstance())->toBeInstanceOf(RichTextWidget::class);
+    expect($widget->widgetType)->toBeInstanceOf(WidgetType::class)
+        ->and($widget->widgetType->handle)->toBe('text_block_2');
 });
 
-it('typeInstance returns null for an unregistered type', function () {
-    $page = Page::create([
-        'title'        => 'Test Page',
-        'slug'         => 'test-page-3',
-        'is_published' => true,
-    ]);
+it('widgetType returns null when widget_type_id is missing', function () {
+    $widget = new PageWidget();
 
-    $widget = PageWidget::create([
-        'page_id'     => $page->id,
-        'widget_type' => 'nonexistent_type',
-        'config'      => [],
-        'sort_order'  => 0,
-        'is_active'   => true,
-    ]);
-
-    expect($widget->typeInstance())->toBeNull();
+    expect($widget->widgetType)->toBeNull();
 });
 
 it('inactive widgets are excluded when loading for a page', function () {
-    $page = Page::create([
+    $page       = Page::create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-4',
         'is_published' => true,
     ]);
+    $widgetType = makeWidgetType();
 
     PageWidget::create([
-        'page_id'     => $page->id,
-        'widget_type' => 'rich_text',
-        'config'      => ['content' => 'Active'],
-        'sort_order'  => 0,
-        'is_active'   => true,
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'config'         => ['content' => 'Active'],
+        'sort_order'     => 0,
+        'is_active'      => true,
     ]);
 
     PageWidget::create([
-        'page_id'     => $page->id,
-        'widget_type' => 'rich_text',
-        'config'      => ['content' => 'Inactive'],
-        'sort_order'  => 1,
-        'is_active'   => false,
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'config'         => ['content' => 'Inactive'],
+        'sort_order'     => 1,
+        'is_active'      => false,
     ]);
 
     $active = $page->pageWidgets()

@@ -123,7 +123,7 @@ it('respects the limit parameter', function () {
         ]);
     }
 
-    $result = WidgetDataResolver::resolve('items', limit: 3);
+    $result = WidgetDataResolver::resolve('items', ['limit' => 3]);
 
     expect($result)->toHaveCount(3);
 });

@@ -23,6 +23,11 @@
         <link rel="stylesheet" href="{{ asset(config('site.custom_css')) }}">
     @endif
 
+    {{-- Inline CSS collected from active page widgets --}}
+    @if (!empty($inlineStyles))
+        <style>{!! $inlineStyles !!}</style>
+    @endif
+
     {{-- Custom stylesheet hook — push styles onto this stack from any view --}}
     @stack('styles')
 </head>
@@ -91,6 +96,11 @@
         contactEmail: @json(config('site.contact_email', '')),
     };
     </script>
+
+    {{-- Inline JS collected from active page widgets --}}
+    @if (!empty($inlineScripts))
+        <script>{!! $inlineScripts !!}</script>
+    @endif
 
     @stack('scripts')
 </body>

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
-use App\Filament\Resources\PageResource\RelationManagers\PageWidgetsRelationManager;
 use App\Models\Page;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -107,13 +106,6 @@ class PageResource extends Resource
                     ->falseLabel('Unpublished only'),
             ])
             ->defaultSort('updated_at', 'desc');
-    }
-
-    public static function getRelationManagers(): array
-    {
-        return [
-            PageWidgetsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array

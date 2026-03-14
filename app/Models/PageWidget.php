@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Widgets\Widget;
-use App\Widgets\WidgetRegistry;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,16 +13,18 @@ class PageWidget extends Model
 
     protected $fillable = [
         'page_id',
-        'widget_type',
+        'widget_type_id',
         'label',
         'config',
+        'query_config',
         'sort_order',
         'is_active',
     ];
 
     protected $casts = [
-        'config'    => 'array',
-        'is_active' => 'boolean',
+        'config'       => 'array',
+        'query_config' => 'array',
+        'is_active'    => 'boolean',
     ];
 
     public function page(): BelongsTo
@@ -32,11 +32,8 @@ class PageWidget extends Model
         return $this->belongsTo(Page::class);
     }
 
-    /**
-     * Resolve the widget class from the registry and return an instance, or null.
-     */
-    public function typeInstance(): ?Widget
+    public function widgetType(): BelongsTo
     {
-        return WidgetRegistry::get($this->widget_type);
+        return $this->belongsTo(WidgetType::class);
     }
 }

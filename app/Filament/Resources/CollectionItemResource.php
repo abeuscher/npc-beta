@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CollectionItemResource\Pages;
+use App\Models\Collection;
 use App\Models\CollectionItem;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -16,8 +17,9 @@ class CollectionItemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';
 
-    // Items are managed exclusively through the CollectionResource relation manager.
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $navigationGroup = 'Content';
+
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
@@ -66,6 +68,10 @@ class CollectionItemResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('collection.name')
+                    ->label('Collection')
+                    ->sortable(),
+
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')
                     ->boolean(),
@@ -101,6 +107,11 @@ class CollectionItemResource extends Resource
                     ->label('Updated')
                     ->dateTime()
                     ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('collection_id')
+                    ->label('Collection')
+                    ->options(fn () => Collection::orderBy('name')->pluck('name', 'id')->all()),
             ])
             ->defaultSort('sort_order');
     }

@@ -1,8 +1,5 @@
-@foreach ($widgets as $widget)
-    @if ($widget['instance'])
-        @include($widget['instance']->view(), [
-            'config' => $widget['config'],
-            'data'   => $widget['data'],
-        ])
-    @endif
+@foreach ($blocks as $block)
+    <div class="widget widget--{{ $block['handle'] }}" id="widget-{{ $block['instance_id'] }}">
+        {!! $block['html'] !!}
+    </div>
 @endforeach
