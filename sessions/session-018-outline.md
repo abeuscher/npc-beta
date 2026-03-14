@@ -1,61 +1,72 @@
-# Session 017 Outline — Import/Export: Extended
+# Session 016 Outline — Import/Export: Core
 
 > **Session Preparation**: This is a planning outline, not a complete implementation prompt.
-> At the start of this session, review the import/export infrastructure built in session 016.
-> The goal is to extend it to more data types and more source system presets without
-> rebuilding the core. Session 016's architecture should be designed with this extension in mind.
+> At the start of this session, review the finalised Contact model (session 010), the CRM
+> taxonomy, and what fields a canonical Contact record now has. The importer must map to the
+> real schema, not a theoretical one. Also confirm what source systems clients are actually
+> migrating from — this determines which presets to build.
 
 ---
 
 ## Goal
 
-Extend the import/export system to cover additional data types (Donations, Memberships, Events registrants) and add presets for more specific source systems. Also address any usability problems discovered after clients used the session 016 importer.
+Give admins the ability to import Contact records from external systems via CSV upload with field mapping, and export core data types to CSV. This is the migration path for new clients and the audit path for existing data.
 
 ---
 
 ## Key Decisions to Make at Session Start
 
-- **Which data types to add**: Based on what clients actually need. Likely: Donations (with fund/campaign mapping), Memberships (with tier/status), EventRegistrations. Prioritise by client demand.
-- **Donation import complexity**: Donations link to Contacts, Funds, and Campaigns. The importer must handle lookups (find or create the linked record). Decide how much auto-creation of linked records is acceptable.
-- **More presets**: Which source systems remain from session 016? Add the next most-requested ones. Common candidates: Bloomerang full export, QuickBooks contacts, DonorSnap, NeonCRM.
-- **Export improvements**: Are there export formats beyond CSV needed? (e.g. JSON for API consumers, XLSX for finance staff)
-- **Import history**: Should there be an audit log of past imports (who imported what, when, how many records)?
+- **Import scope for this session**: Contacts only, or also Organizations and Donations? Contacts are the highest priority — decide whether to expand scope here or in session 017.
+- **Field mapping UI**: How does the admin map source columns to destination fields? Options: a multi-step wizard (upload → preview → map → import), or a simpler fixed-template approach. The wizard is better UX but more work. Decide MVP approach.
+- **Custom field creation**: If a source file has columns that don't map to any standard field, can the admin create a new contact field on the fly? This intersects with a potential custom fields system. Decide scope.
+- **Duplicate handling**: What happens when an imported contact matches an existing record (by email)? Options: skip, update, create duplicate, ask. This is a critical decision — getting it wrong loses data.
+- **Error handling**: Does the import stop on first error, or collect all errors and report at the end?
+- **Queue**: Large imports should run in the background. Is the queue worker available?
+- **Source system presets**: Which systems should have pre-built column maps? (e.g. Bloomerang, Salesforce, Mailchimp contacts export, generic CSV)
 
 ---
 
 ## Scope (draft — refine at session start)
 
 **In:**
-- Import for 2-3 additional data types (priority determined at session start)
-- Additional source system presets
-- Import history / audit log (if not built in session 016)
-- Export for additional data types
-- Any fixes/improvements from session 016 based on real usage
+- CSV import for Contacts (and Organizations if scope allows)
+- Multi-step import UI: upload → column preview → field mapping → dry run → confirm → import
+- Duplicate detection by email with configurable strategy (skip / update / flag)
+- Import result report: X imported, Y updated, Z skipped, errors listed
+- CSV export for Contacts with selected fields
+- At least one source system preset (generic CSV + one named system)
+- Background job for large imports (queue-dependent)
 
 **Out:**
-- Real-time sync with external systems (API-based, not file-based — future feature)
-- Custom field creation on import (unless deferred from session 016)
+- Import for financial data (Donations, Transactions) — assess for session 017
+- XLSX support (CSV only for now)
+- Real-time import progress (websockets/polling) — use simple job status page for now
+- API-based sync (e.g. live Mailchimp → CRM sync)
 
 ---
 
 ## Rough Build List
 
-- Extend ImportJob to handle additional models
-- New FieldMapper presets for additional source systems
-- Import history model and Filament view
-- Additional export actions on relevant resources
-- Tests for new data types and presets
+- ImportJob: processes CSV, maps fields, creates/updates records
+- FieldMapper: maps source column names to model attributes; supports presets
+- ImportResult: value object tracking counts and errors
+- Filament import wizard UI (multi-step form or custom Filament page)
+- Export action on ContactResource: download CSV with selected columns
+- Source preset: generic CSV, one named system
+- Tests: duplicate handling, field mapping, error collection
 
 ---
 
 ## Open Questions at Planning Time
 
-- What import problems did clients encounter after session 016? Fix those first.
-- Is XLSX support worth adding, or is CSV sufficient?
+- What source systems are clients actually migrating from? This determines preset priority.
+- Is there a need to import Tags as part of a Contact import?
+- Should exported CSVs be available to download later (stored), or generated on-demand?
 
 ---
 
 ## What This Unlocks
 
-- Full data portability for all core entities
-- Client onboarding is self-service for common source systems
+- New clients can get data in from day one
+- Data audits and backups are possible
+- Session 017 can extend to other data types and more presets

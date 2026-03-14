@@ -31,6 +31,11 @@ use Illuminate\Support\Str;
 
 class CollectionResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
     protected static ?string $model = Collection::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';

@@ -27,16 +27,14 @@ class DatabaseSeeder extends Seeder
         // ── Roles ────────────────────────────────────────────────────────────
         $roles = [
             'super_admin',
-            'crm_manager',
-            'staff',
-            'finance_manager',
-            'events_manager',
-            'read_only',
+            'cms_editor',
         ];
 
         foreach ($roles as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
+
+        $this->call(PermissionSeeder::class);
 
         // ── Admin user ───────────────────────────────────────────────────────
         $adminEmail    = env('ADMIN_EMAIL');
@@ -84,7 +82,6 @@ class DatabaseSeeder extends Seeder
             ['slug' => 'home'],
             [
                 'title'        => 'Welcome',
-                'content'      => '<p>Welcome to the site. Edit this page in the admin panel.</p>',
                 'is_published' => true,
                 'published_at' => now(),
             ]

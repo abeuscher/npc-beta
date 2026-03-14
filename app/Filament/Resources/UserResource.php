@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -76,8 +77,28 @@ class UserResource extends Resource
             ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalHeading(fn (User $record) => "Delete {$record->name} ({$record->email})?")
+                    ->modalDescription('This will permanently remove this user account. This cannot be undone.')
+                    ->hidden(fn (User $record) => $record->isProtected()),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Support\Collection $records) {
+                            $protected = $records->filter(fn (User $u) => $u->isProtected());
+                            $records->filter(fn (User $u) => ! $u->isProtected())->each->delete();
+
+                            if ($protected->isNotEmpty()) {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Primary administrator account skipped')
+                                    ->body('The original administrator account is protected and cannot be deleted.')
+                                    ->send();
+                            }
+                        }),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

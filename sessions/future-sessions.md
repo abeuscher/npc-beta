@@ -5,20 +5,21 @@ beyond 019, ordered roughly by dependency. Nothing here is scheduled or scoped y
 
 ---
 
-## Already Outlined (010–019)
+## Already Outlined (010–020)
 
 | Session | Topic |
 |---------|-------|
 | 010 | Widget Config Schema (singleton fields + removes text_block special case) |
 | 011 | CRM Taxonomy & Contact Model Clarity |
 | 012 | User Roles & Permissions |
-| 013 | Events: Foundation (model, registration, admin UI) |
-| 014 | Events: Extended (dates, locations, speakers, virtual) |
-| 015 | Events: Ticketing & Payment |
-| 016 | Events: Notifications & List Integrations |
-| 017 | Import/Export: Core (contacts, donations CSV) |
-| 018 | Import/Export: Extended (more types, source presets) |
-| 019 | Help System (context-sensitive admin help) |
+| 013 | Role Management UI (super_admin creates/edits roles, assigns permissions) |
+| 014 | Events: Foundation (model, registration, admin UI) |
+| 015 | Events: Extended (dates, locations, speakers, virtual) |
+| 016 | Events: Ticketing & Payment |
+| 017 | Events: Notifications & List Integrations |
+| 018 | Import/Export: Core (contacts, donations CSV) |
+| 019 | Import/Export: Extended (more types, source presets) |
+| 020 | Help System (context-sensitive admin help) |
 
 ---
 

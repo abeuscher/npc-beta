@@ -16,6 +16,11 @@ use ScssPhp\ScssPhp\Compiler;
 
 class CmsSettingsPage extends Page
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
     protected static ?string $navigationGroup = 'Settings';
 
     protected static ?string $navigationLabel = 'CMS';
