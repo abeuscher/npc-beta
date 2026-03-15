@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
+use App\Forms\Components\UsStateSelect;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Illuminate\Support\HtmlString;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -28,63 +30,70 @@ class EventResource extends Resource
     {
         return $form->schema([
             Forms\Components\Split::make([
+                // ── Left column ───────────────────────────────────────────
                 Forms\Components\Group::make([
                     Forms\Components\Section::make('Description')->schema([
                         Forms\Components\RichEditor::make('description')
-                            ->nullable()
-                            ->columnSpanFull(),
+                            ->hiddenLabel()
+                            ->nullable(),
                     ]),
 
-                    Forms\Components\Section::make('Location')->schema([
-                        Forms\Components\Toggle::make('is_in_person')
-                            ->label('In-person attendance')
-                            ->default(true)
-                            ->live(),
-
+                    Forms\Components\Section::make('Address')->schema([
                         Forms\Components\TextInput::make('address_line_1')
-                            ->maxLength(255)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                            ->label('Address line 1')
+                            ->maxLength(255),
 
                         Forms\Components\TextInput::make('address_line_2')
-                            ->maxLength(255)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                            ->label('Address line 2')
+                            ->maxLength(255),
 
-                        Forms\Components\TextInput::make('city')
-                            ->maxLength(100)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                        Forms\Components\Grid::make(3)->schema([
+                            Forms\Components\TextInput::make('city')
+                                ->maxLength(100),
 
-                        Forms\Components\TextInput::make('state')
-                            ->maxLength(100)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                            UsStateSelect::make('state'),
 
-                        Forms\Components\TextInput::make('zip')
-                            ->maxLength(20)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                            Forms\Components\TextInput::make('zip')
+                                ->maxLength(20),
+                        ]),
 
-                        Forms\Components\TextInput::make('map_url')
-                            ->label('Map URL')
-                            ->url()
-                            ->maxLength(2048)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                        Forms\Components\Placeholder::make('_map_sep')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('<hr class="border-gray-200 -mx-6 -mt-2">')),
 
-                        Forms\Components\TextInput::make('map_label')
-                            ->label('Map Link Label')
-                            ->maxLength(255)
-                            ->placeholder('e.g. View on Google Maps')
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_in_person')),
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\TextInput::make('map_label')
+                                ->label('Map button label')
+                                ->maxLength(255)
+                                ->placeholder('e.g. View on Google Maps'),
 
-                        Forms\Components\Toggle::make('is_virtual')
-                            ->label('Virtual / Online attendance')
-                            ->live(),
+                            Forms\Components\TextInput::make('map_url')
+                                ->label('Map link')
+                                ->url()
+                                ->maxLength(2048),
+                        ]),
+                    ]),
 
-                        Forms\Components\TextInput::make('meeting_url')
-                            ->label('Meeting URL')
-                            ->url()
-                            ->maxLength(2048)
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_virtual')),
-                    ])->columns(2),
-                ])->columnSpan(2),
+                    Forms\Components\Section::make('Online Meeting Info')->schema([
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\TextInput::make('meeting_label')
+                                ->label('Link label')
+                                ->maxLength(255)
+                                ->placeholder('e.g. Join on Zoom'),
 
+                            Forms\Components\TextInput::make('meeting_url')
+                                ->label('Meeting link')
+                                ->url()
+                                ->maxLength(2048),
+                        ]),
+
+                        Forms\Components\RichEditor::make('meeting_details')
+                            ->label('Joining Details')
+                            ->nullable(),
+                    ]),
+                ]),
+
+                // ── Right column ──────────────────────────────────────────
                 Forms\Components\Group::make([
                     Forms\Components\Section::make('Settings')->schema([
                         Forms\Components\TextInput::make('title')
@@ -113,10 +122,6 @@ class EventResource extends Resource
                             ->default('draft')
                             ->required(),
 
-                        Forms\Components\Toggle::make('is_free')
-                            ->label('Free event')
-                            ->default(true),
-
                         Forms\Components\TextInput::make('capacity')
                             ->numeric()
                             ->minValue(1)
@@ -126,23 +131,41 @@ class EventResource extends Resource
                         Forms\Components\Toggle::make('registration_open')
                             ->label('Registration open')
                             ->default(true),
+
+                        Forms\Components\TextInput::make('price')
+                            ->label('Ticket price')
+                            ->numeric()
+                            ->prefix('$')
+                            ->default(0)
+                            ->minValue(0)
+                            ->step(0.01)
+                            ->helperText('Set to 0 for a free event.'),
                     ]),
 
-                    Forms\Components\Section::make('Recurrence')->schema([
-                        Forms\Components\Toggle::make('is_recurring')
-                            ->label('Recurring event')
-                            ->live(),
+                    Forms\Components\Section::make('Dates')->schema([
+                        Forms\Components\Repeater::make('eventDates')
+                            ->relationship()
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\DateTimePicker::make('starts_at')
+                                    ->label('Start')
+                                    ->required()
+                                    ->seconds(false),
 
-                        Forms\Components\Select::make('recurrence_type')
-                            ->options([
-                                'manual' => 'Manual — pick dates individually',
-                                'rule'   => 'Rule-based — generate from pattern',
+                                Forms\Components\DateTimePicker::make('ends_at')
+                                    ->label('End')
+                                    ->seconds(false)
+                                    ->after('starts_at'),
+
+                                Forms\Components\Hidden::make('status')
+                                    ->default('inherited'),
                             ])
-                            ->nullable()
-                            ->hidden(fn (Forms\Get $get) => ! $get('is_recurring'))
-                            ->helperText('Dates are managed in the Dates relation manager below.'),
+                            ->columns(2)
+                            ->addActionLabel('Add date')
+                            ->defaultItems(0)
+                            ->reorderable(false),
                     ]),
-                ])->columnSpan(1),
+                ])->grow(false),
             ])->from('md')->columnSpanFull(),
         ]);
     }
@@ -190,7 +213,6 @@ class EventResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\EventDatesRelationManager::class,
             RelationManagers\EventRegistrationsRelationManager::class,
         ];
     }

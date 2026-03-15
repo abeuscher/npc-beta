@@ -1,0 +1,66 @@
+/*
+ * Admin panel overrides
+ * Loaded via render hook in AdminPanelProvider.
+ * Plain CSS — no build step required.
+ */
+
+/* ── Form field borders ──────────────────────────────────────────────────────
+ *
+ * Filament's default ring is ring-gray-950/10 (10% opacity near-black),
+ * which is nearly invisible on average monitors. Overriding the Tailwind
+ * ring CSS variable to a solid gray-400 makes borders visible everywhere.
+ *
+ * -------------------------------------------------------------------------*/
+
+.fi-input-wrp {
+    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+}
+
+/* ── Trix toolbar ────────────────────────────────────────────────────────────
+ *
+ * Filament replaces stock Trix toolbar with its own Blade components.
+ * Buttons use fi-fo-rich-editor-toolbar-btn. SVG icons are h-5 w-5 (20px).
+ * !important is required to beat Tailwind utility classes on the elements.
+ *
+ * -------------------------------------------------------------------------*/
+
+/* Separator between toolbar and content — Filament uses border-gray-100
+   which is near-white. Gray-300 is visible without being heavy. */
+.fi-fo-rich-editor-toolbar {
+    border-bottom-color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+/* Make the toolbar row fill full width so margin-left: auto works below */
+.fi-fo-rich-editor-toolbar > div:first-child {
+    width: 100%;
+}
+
+/* Push the undo/redo group to the far right */
+[data-trix-button-group="history-tools"] {
+    margin-left: auto;
+}
+
+/* Buttons — smaller, outlined */
+.fi-fo-rich-editor-toolbar-btn {
+    height: 1.6rem !important;
+    min-width: 1.6rem !important;
+    border: 1px solid rgb(209 213 219) !important; /* gray-300 */
+    border-radius: 4px !important;
+}
+
+/* Icons — 20% smaller */
+.fi-fo-rich-editor-toolbar-btn svg {
+    height: 1rem !important;
+    width: 1rem !important;
+}
+
+/* Hover — gentle gray fill */
+.fi-fo-rich-editor-toolbar-btn:hover {
+    background-color: rgb(229 231 235) !important; /* gray-200 */
+}
+
+/* Active/pressed state */
+.fi-fo-rich-editor-toolbar-btn.trix-active {
+    border-color: rgb(107 114 128) !important; /* gray-500 */
+    background-color: rgb(243 244 246) !important; /* gray-100 */
+}

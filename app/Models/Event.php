@@ -21,7 +21,6 @@ class Event extends Model
         'slug',
         'description',
         'status',
-        'is_in_person',
         'address_line_1',
         'address_line_2',
         'city',
@@ -29,26 +28,39 @@ class Event extends Model
         'zip',
         'map_url',
         'map_label',
-        'is_virtual',
         'meeting_url',
-        'is_free',
+        'meeting_label',
+        'meeting_details',
+        'price',
         'capacity',
         'registration_open',
-        'is_recurring',
-        'recurrence_type',
-        'recurrence_rule',
         'landing_page_id',
     ];
 
     protected $casts = [
-        'is_in_person'     => 'boolean',
-        'is_virtual'       => 'boolean',
-        'is_free'          => 'boolean',
-        'is_recurring'     => 'boolean',
         'registration_open' => 'boolean',
-        'capacity'         => 'integer',
-        'recurrence_rule'  => 'array',
+        'capacity'          => 'integer',
+        'price'             => 'decimal:2',
     ];
+
+    // ──────────────────────────────────────────────────────────
+    // Computed accessors (derived from field presence / price)
+    // ──────────────────────────────────────────────────────────
+
+    public function getIsInPersonAttribute(): bool
+    {
+        return ! empty($this->attributes['address_line_1']);
+    }
+
+    public function getIsVirtualAttribute(): bool
+    {
+        return ! empty($this->attributes['meeting_url']);
+    }
+
+    public function getIsFreeAttribute(): bool
+    {
+        return ($this->attributes['price'] ?? 0) == 0;
+    }
 
     // ──────────────────────────────────────────────────────────
     // Relationships

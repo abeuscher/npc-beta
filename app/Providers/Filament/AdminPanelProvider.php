@@ -63,12 +63,11 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            // Trix rich-text editor — used by richtext fields in the page builder.
+            // Admin panel style overrides (form borders, Trix toolbar).
             ->renderHook(
                 'panels::head.end',
                 fn (): HtmlString => new HtmlString(
-                    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trix@2.0.8/dist/trix.css">' .
-                    '<script src="https://cdn.jsdelivr.net/npm/trix@2.0.8/dist/trix.umd.min.js"></script>'
+                    '<link rel="stylesheet" href="/css/admin.css">'
                 )
             )
             // @alpinejs/sort enables drag-to-reorder in the page builder.

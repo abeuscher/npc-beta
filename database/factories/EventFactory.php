@@ -12,18 +12,16 @@ class EventFactory extends Factory
         $title = $this->faker->sentence(3);
 
         return [
-            'title'            => $title,
-            'slug'             => Str::slug($title) . '-' . $this->faker->unique()->randomNumber(4),
-            'description'      => $this->faker->paragraph(),
-            'status'           => 'published',
-            'is_in_person'     => true,
-            'city'             => $this->faker->city(),
-            'state'            => $this->faker->stateAbbr(),
-            'is_virtual'       => false,
-            'is_free'          => true,
-            'capacity'         => null,
+            'title'             => $title,
+            'slug'              => Str::slug($title) . '-' . $this->faker->unique()->randomNumber(4),
+            'description'       => $this->faker->paragraph(),
+            'status'            => 'published',
+            'address_line_1'    => $this->faker->streetAddress(),
+            'city'              => $this->faker->city(),
+            'state'             => $this->faker->stateAbbr(),
+            'price'             => 0,
+            'capacity'          => null,
             'registration_open' => true,
-            'is_recurring'     => false,
         ];
     }
 
@@ -40,9 +38,8 @@ class EventFactory extends Factory
     public function virtual(): static
     {
         return $this->state([
-            'is_in_person' => false,
-            'is_virtual'   => true,
-            'meeting_url'  => 'https://meet.example.com/test',
+            'address_line_1' => null,
+            'meeting_url'    => 'https://meet.example.com/test',
         ]);
     }
 
