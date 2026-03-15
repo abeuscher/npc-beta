@@ -182,8 +182,6 @@ class PageBuilder extends Component
 
     // -------------------------------------------------------------------------
     // Up / Down fallback
-    // Used when @alpinejs/sort is blocked by CSP (eval() issue from Session 007).
-    // TODO: Remove these once CSP is resolved and @alpinejs/sort is confirmed working.
     // -------------------------------------------------------------------------
 
     public function moveUp(int $index): void

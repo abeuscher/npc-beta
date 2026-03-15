@@ -14,4 +14,9 @@ class EditNavigationItem extends EditRecord
     {
         return [Actions\DeleteAction::make()];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return NavigationItemResource::resolveFormData($data);
+    }
 }

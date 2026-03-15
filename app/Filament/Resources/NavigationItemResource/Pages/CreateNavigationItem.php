@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateNavigationItem extends CreateRecord
 {
     protected static string $resource = NavigationItemResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return NavigationItemResource::resolveFormData($data);
+    }
 }

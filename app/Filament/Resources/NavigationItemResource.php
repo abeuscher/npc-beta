@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NavigationItemResource\Pages;
 use App\Models\NavigationItem;
+use App\Models\Page;
+use App\Models\Post;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -26,52 +28,69 @@ class NavigationItemResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make()->schema([
+
                 Forms\Components\TextInput::make('label')
                     ->required()
                     ->maxLength(255),
 
-                Forms\Components\Select::make('target')
-                    ->options([
-                        '_self'   => 'Same window',
-                        '_blank'  => 'New window',
-                    ])
-                    ->default('_self'),
-
                 Forms\Components\Select::make('link_type')
-                    ->label('Link Type')
+                    ->label('Link type')
                     ->options([
-                        'page'     => 'Internal Page',
-                        'post'     => 'Post',
-                        'external' => 'External URL',
+                        'page' => 'Internal page',
+                        'link' => 'Link',
                     ])
                     ->default('page')
                     ->live()
-                    ->dehydrated(false),
+                    ->afterStateHydrated(function (Forms\Components\Select $component, $record): void {
+                        if (! $record) {
+                            $component->state('page');
+                            return;
+                        }
 
-                Forms\Components\Select::make('page_id')
+                        if ($record->page_id || $record->post_id) {
+                            $component->state('page');
+                            return;
+                        }
+
+                        $knownPrefixes = [
+                            '/' . config('site.blog_prefix', 'news'),
+                            '/' . config('site.events_prefix', 'events'),
+                        ];
+
+                        if ($record->url && in_array($record->url, $knownPrefixes, true)) {
+                            $component->state('page');
+                            return;
+                        }
+
+                        $component->state('link');
+                    }),
+
+                Forms\Components\Select::make('internal_page')
                     ->label('Page')
-                    ->relationship('page', 'title')
+                    ->options(fn () => static::internalPageOptions())
+                    ->afterStateHydrated(function (Forms\Components\Select $component, $record): void {
+                        if (! $record) {
+                            return;
+                        }
+
+                        if ($record->page_id) {
+                            $component->state('page:' . $record->page_id);
+                        } elseif ($record->post_id) {
+                            $component->state('post:' . $record->post_id);
+                        } elseif ($record->url) {
+                            $component->state('url:' . $record->url);
+                        }
+                    })
                     ->searchable()
-                    ->preload()
-                    ->nullable()
                     ->visible(fn (Forms\Get $get) => $get('link_type') === 'page'),
 
-                Forms\Components\Select::make('post_id')
-                    ->label('Post')
-                    ->relationship('post', 'title')
-                    ->searchable()
-                    ->preload()
-                    ->nullable()
-                    ->visible(fn (Forms\Get $get) => $get('link_type') === 'post'),
-
                 Forms\Components\TextInput::make('url')
-                    ->label('URL')
-                    ->url()
+                    ->label('Link')
                     ->nullable()
-                    ->visible(fn (Forms\Get $get) => $get('link_type') === 'external'),
+                    ->visible(fn (Forms\Get $get) => $get('link_type') === 'link'),
 
                 Forms\Components\Select::make('parent_id')
-                    ->label('Parent Item')
+                    ->label('Parent item')
                     ->relationship('parent', 'label')
                     ->searchable()
                     ->preload()
@@ -81,11 +100,86 @@ class NavigationItemResource extends Resource
                     ->numeric()
                     ->default(0),
 
-                Forms\Components\Toggle::make('is_visible')
-                    ->label('Visible')
-                    ->default(true),
-            ])->columns(2),
+                Forms\Components\Group::make([
+                    Forms\Components\Toggle::make('is_visible')
+                        ->label('Visible')
+                        ->default(true),
+
+                    Forms\Components\Toggle::make('open_in_new_window')
+                        ->label('Open in new window?')
+                        ->default(false)
+                        ->afterStateHydrated(function (Forms\Components\Toggle $component, $record): void {
+                            $component->state($record?->target === '_blank');
+                        }),
+                ]),
+
+            ])->columns(3),
         ]);
+    }
+
+    /**
+     * Build the grouped options list for the internal page selector.
+     * Keys are prefixed so resolveFormData() can decode them to the right column.
+     */
+    public static function internalPageOptions(): array
+    {
+        $blogPrefix   = config('site.blog_prefix', 'news');
+        $eventsPrefix = config('site.events_prefix', 'events');
+
+        $options = [
+            'Site indexes' => [
+                'url:/' . $blogPrefix   => 'Blog index  (/' . $blogPrefix . ')',
+                'url:/' . $eventsPrefix => 'Events index  (/' . $eventsPrefix . ')',
+            ],
+        ];
+
+        $pages = Page::orderBy('title')->get(['id', 'title']);
+        if ($pages->isNotEmpty()) {
+            $options['Pages'] = $pages
+                ->mapWithKeys(fn ($p) => ['page:' . $p->id => $p->title])
+                ->all();
+        }
+
+        $posts = Post::orderBy('title')->get(['id', 'title']);
+        if ($posts->isNotEmpty()) {
+            $options['Posts'] = $posts
+                ->mapWithKeys(fn ($p) => ['post:' . $p->id => $p->title])
+                ->all();
+        }
+
+        return $options;
+    }
+
+    /**
+     * Translate virtual form fields into the real model columns.
+     * Called from both CreateNavigationItem and EditNavigationItem.
+     */
+    public static function resolveFormData(array $data): array
+    {
+        // open_in_new_window toggle → target column
+        $data['target'] = ($data['open_in_new_window'] ?? false) ? '_blank' : '_self';
+
+        // link_type + internal_page → page_id / post_id / url
+        $data['page_id'] = null;
+        $data['post_id'] = null;
+
+        if (($data['link_type'] ?? 'page') === 'page') {
+            $data['url'] = null;
+            $key = $data['internal_page'] ?? '';
+
+            if (str_starts_with($key, 'page:')) {
+                $data['page_id'] = substr($key, 5);
+            } elseif (str_starts_with($key, 'post:')) {
+                $data['post_id'] = substr($key, 5);
+            } elseif (str_starts_with($key, 'url:')) {
+                $data['url'] = substr($key, 4);
+            }
+        }
+        // link type: url comes from the TextInput as-is; page_id/post_id already nulled above
+
+        unset($data['link_type'], $data['internal_page'], $data['open_in_new_window']);
+
+        return $data;
     }
 
     public static function table(Table $table): Table
@@ -109,7 +203,7 @@ class NavigationItemResource extends Resource
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('url')
-                    ->label('URL')
+                    ->label('Link')
                     ->placeholder('—')
                     ->limit(40),
 

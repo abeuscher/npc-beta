@@ -15,8 +15,8 @@ Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('post
 // Event routes — prefix is config-driven
 $eventsPrefix = config('site.events_prefix', 'events');
 Route::get("/{$eventsPrefix}", [EventController::class, 'index'])->name('events.index');
-Route::get("/{$eventsPrefix}/{slug}/{dateId}", [EventController::class, 'show'])->name('events.show');
-Route::post("/{$eventsPrefix}/{slug}/{dateId}/register", [EventController::class, 'register'])
+Route::get("/{$eventsPrefix}/{slug}", [EventController::class, 'show'])->name('events.show');
+Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'register'])
     ->name('events.register')
     ->middleware('throttle:10,1');
 
