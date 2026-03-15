@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\Models\EventDate;
 use App\Models\Post;
 
 class WidgetDataResolver
@@ -29,7 +30,7 @@ class WidgetDataResolver
         return match ($collection->source_type) {
             'custom'     => static::resolveCustom($collection->id, $queryConfig),
             'blog_posts' => static::resolveBlogPosts($queryConfig),
-            'events'     => [], // Placeholder — resolves when Event model exists
+            'events'     => static::resolveEvents($queryConfig),
             default      => [],
         };
     }
@@ -91,6 +92,31 @@ class WidgetDataResolver
             'excerpt'      => $post->excerpt,
             'content'      => $post->content,
             'published_at' => $post->published_at?->toIso8601String(),
+        ])->all();
+    }
+
+    private static function resolveEvents(array $queryConfig): array
+    {
+        $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
+
+        $query = EventDate::with('event')
+            ->published()
+            ->upcoming()
+            ->orderBy('starts_at', 'asc');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get()->map(fn (EventDate $date) => [
+            'id'        => $date->id,
+            'title'     => $date->event->title,
+            'slug'      => $date->event->slug,
+            'starts_at' => $date->starts_at->toIso8601String(),
+            'ends_at'   => $date->ends_at?->toIso8601String(),
+            'is_virtual' => $date->event->is_virtual,
+            'is_free'    => $date->event->is_free,
+            'url'        => route('events.show', [$date->event->slug, $date->id]),
         ])->all();
     }
 
