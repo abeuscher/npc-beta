@@ -1,4 +1,4 @@
-# Session 017 Outline — Import/Export: Extended
+# Session 019 Outline — Import/Export: Extended
 
 > **Session Preparation**: This is a planning outline, not a complete implementation prompt.
 > At the start of this session, review the import/export infrastructure built in session 016.

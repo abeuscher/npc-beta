@@ -1,4 +1,4 @@
-# Session 016 Outline — Import/Export: Core
+# Session 018 Outline — Import/Export: Core
 
 > **Session Preparation**: This is a planning outline, not a complete implementation prompt.
 > At the start of this session, review the finalised Contact model (session 010), the CRM

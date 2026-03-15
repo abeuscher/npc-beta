@@ -1,4 +1,4 @@
-# Session 018 Outline — Help System
+# Session 020 Outline — Help System
 
 > **Session Preparation**: This is a planning outline, not a complete implementation prompt.
 > At the start of this session, review the full admin UI as it exists. The help system should
