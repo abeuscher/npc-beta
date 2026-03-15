@@ -1,0 +1,96 @@
+<x-filament-panels::page>
+    <div class="mx-auto max-w-2xl space-y-6">
+
+        @if ($done)
+
+            {{-- ── Completion card ── --}}
+            <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950">
+                <div class="flex items-center gap-3">
+                    <x-heroicon-o-check-circle class="h-7 w-7 text-green-600 dark:text-green-400" />
+                    <h2 class="text-lg font-semibold text-green-800 dark:text-green-300">Import complete</h2>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold text-green-600">{{ number_format($imported) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Imported</p>
+                </div>
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Updated</p>
+                </div>
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Skipped</p>
+                </div>
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold {{ $errorCount > 0 ? 'text-red-600' : 'text-gray-400' }}">
+                        {{ number_format($errorCount) }}
+                    </p>
+                    <p class="mt-1 text-sm text-gray-500">Errors</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
+                   class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                    <x-heroicon-o-clock class="h-4 w-4" />
+                    View import history
+                </a>
+                <a href="{{ \App\Filament\Resources\ContactResource::getUrl('index') }}"
+                   class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <x-heroicon-o-users class="h-4 w-4" />
+                    Go to contacts
+                </a>
+            </div>
+
+        @else
+
+            {{-- ── In-progress card, polls every 500ms ── --}}
+            <div wire:poll.500ms="tick" class="space-y-5">
+
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <span>Processing row {{ number_format($processed) }} of {{ number_format($total) }}</span>
+                    <span class="font-medium">{{ $this->percent() }}%</span>
+                </div>
+
+                {{-- Progress bar --}}
+                <div class="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                    <div class="h-3 rounded-full bg-primary-500 transition-all duration-500"
+                         style="width: {{ $this->percent() }}%">
+                    </div>
+                </div>
+
+                {{-- Running counters --}}
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                        <p class="text-2xl font-bold text-green-600">{{ number_format($imported) }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Imported</p>
+                    </div>
+                    <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                        <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Updated</p>
+                    </div>
+                    <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                        <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Skipped</p>
+                    </div>
+                    <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                        <p class="text-2xl font-bold {{ $errorCount > 0 ? 'text-red-600' : 'text-gray-400' }}">
+                            {{ number_format($errorCount) }}
+                        </p>
+                        <p class="mt-1 text-sm text-gray-500">Errors</p>
+                    </div>
+                </div>
+
+                <p class="text-center text-xs text-gray-400">
+                    Please stay on this page until the import finishes.
+                </p>
+
+            </div>
+
+        @endif
+
+    </div>
+</x-filament-panels::page>

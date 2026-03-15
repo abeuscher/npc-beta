@@ -2,13 +2,16 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Pages\ImportContactsPage;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContactResource extends Resource
 {
@@ -202,6 +205,50 @@ class ContactResource extends Resource
                 Tables\Filters\Filter::make('in_household')
                     ->label('In a household')
                     ->query(fn ($query) => $query->whereNotNull('household_id')),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('importContacts')
+                    ->label('Import Contacts')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('gray')
+                    ->url(ImportContactsPage::getUrl()),
+
+                Tables\Actions\Action::make('exportContacts')
+                    ->label('Export CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        $query    = $livewire->getFilteredSortedTableQuery();
+                        $filename = 'contacts-' . now()->format('Y-m-d') . '.csv';
+
+                        return response()->streamDownload(function () use ($query) {
+                            $handle = fopen('php://output', 'w');
+
+                            fputcsv($handle, [
+                                'first_name', 'last_name', 'email', 'phone',
+                                'address_line_1', 'address_line_2', 'city', 'state',
+                                'postal_code', 'notes', 'created_at',
+                            ]);
+
+                            $query->orderBy('created_at')->each(function (Contact $contact) use ($handle) {
+                                fputcsv($handle, [
+                                    $contact->first_name,
+                                    $contact->last_name,
+                                    $contact->email,
+                                    $contact->phone,
+                                    $contact->address_line_1,
+                                    $contact->address_line_2,
+                                    $contact->city,
+                                    $contact->state,
+                                    $contact->postal_code,
+                                    $contact->notes,
+                                    $contact->created_at?->toDateTimeString(),
+                                ]);
+                            });
+
+                            fclose($handle);
+                        }, $filename, ['Content-Type' => 'text/csv']);
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
             ->modifyQueryUsing(fn ($query) => $query->with([
