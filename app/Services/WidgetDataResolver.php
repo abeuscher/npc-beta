@@ -97,9 +97,10 @@ class WidgetDataResolver
 
     private static function resolveEvents(array $queryConfig): array
     {
-        $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
+        $limit        = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
+        $eventsPrefix = config('site.events_prefix', 'events');
 
-        $query = EventDate::with('event')
+        $query = EventDate::with('event.landingPage')
             ->published()
             ->upcoming()
             ->orderBy('starts_at', 'asc');
@@ -109,14 +110,16 @@ class WidgetDataResolver
         }
 
         return $query->get()->map(fn (EventDate $date) => [
-            'id'        => $date->id,
-            'title'     => $date->event->title,
-            'slug'      => $date->event->slug,
-            'starts_at' => $date->starts_at->toIso8601String(),
-            'ends_at'   => $date->ends_at?->toIso8601String(),
+            'id'         => $date->id,
+            'title'      => $date->event->title,
+            'slug'       => $date->event->slug,
+            'starts_at'  => $date->starts_at->toIso8601String(),
+            'ends_at'    => $date->ends_at?->toIso8601String(),
             'is_virtual' => $date->event->is_virtual,
             'is_free'    => $date->event->is_free,
-            'url'        => route('events.show', [$date->event->slug, $date->id]),
+            'url'        => $date->event->landingPage
+                ? url('/' . $date->event->landingPage->slug)
+                : url('/' . $eventsPrefix),
         ])->all();
     }
 

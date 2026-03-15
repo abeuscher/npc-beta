@@ -21,11 +21,12 @@ class EditEvent extends EditRecord
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('gray')
                 ->url(function () {
-                    $record = $this->getRecord();
+                    $record        = $this->getRecord();
+                    $eventsPrefix  = config('site.events_prefix', 'events');
                     if ($record->landing_page_id && $record->landingPage) {
                         return url('/' . $record->landingPage->slug);
                     }
-                    return route('events.show', $record->slug);
+                    return url('/' . $eventsPrefix . '/' . $record->slug);
                 })
                 ->openUrlInNewTab(),
 
@@ -42,9 +43,13 @@ class EditEvent extends EditRecord
 
                     $page = Page::create([
                         'title'        => $event->title,
-                        'slug'         => $event->slug,
                         'is_published' => false,
+                        'type'         => 'event',
                     ]);
+
+                    // Override the auto-generated slug to include the events/ prefix.
+                    // doNotGenerateSlugsOnUpdate() ensures this won't be regenerated.
+                    $page->update(['slug' => 'events/' . $event->slug]);
 
                     $widgetHandles = ['event_description', 'event_dates', 'event_registration'];
                     $sort = 1;

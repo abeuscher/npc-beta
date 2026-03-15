@@ -17,10 +17,15 @@ class Page extends Model
     protected $fillable = [
         'title',
         'slug',
+        'type',
         'meta_title',
         'meta_description',
         'is_published',
         'published_at',
+    ];
+
+    protected $attributes = [
+        'type' => 'default',
     ];
 
     protected $casts = [

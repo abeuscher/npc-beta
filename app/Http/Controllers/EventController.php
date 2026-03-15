@@ -3,59 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\EventDate;
 use App\Models\EventRegistration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class EventController extends Controller
 {
-    public function index(): View
-    {
-        $dates = EventDate::with('event')
-            ->published()
-            ->upcoming()
-            ->orderBy('starts_at')
-            ->paginate(15);
-
-        return view('events.index', [
-            'dates' => $dates,
-            'title' => 'Events',
-        ]);
-    }
-
-    public function show(string $slug): View
-    {
-        $event = Event::where('slug', $slug)->firstOrFail();
-
-        $dates = $event->eventDates()
-            ->upcoming()
-            ->orderBy('starts_at')
-            ->get();
-
-        $isCancelled      = $event->status === 'cancelled';
-        $isAtCapacity     = $event->isAtCapacity();
-        $registrationOpen = $event->registration_open
-            && ! $isCancelled
-            && ! $isAtCapacity
-            && $event->is_free;
-
-        return view('events.show', compact('event', 'dates', 'isCancelled', 'isAtCapacity', 'registrationOpen'));
-    }
-
     public function register(Request $request, string $slug): RedirectResponse
     {
+        $event        = Event::where('slug', $slug)->with('landingPage')->firstOrFail();
+        $eventsPrefix = config('site.events_prefix', 'events');
+        $eventPageUrl = $event->landingPage
+            ? url('/' . $event->landingPage->slug)
+            : url('/' . $eventsPrefix);
+
         // ── Honeypot checks — silently discard bot submissions ──────────
         if ($request->filled('_hp_name')) {
-            return redirect()->route('events.show', $slug)
-                ->with('registration_success', true);
+            return redirect($eventPageUrl)->with('registration_success', true);
         }
 
         $formStart = (int) $request->input('_form_start', 0);
         if ($formStart > 0 && (time() - $formStart) < 3) {
-            return redirect()->route('events.show', $slug)
-                ->with('registration_success', true);
+            return redirect($eventPageUrl)->with('registration_success', true);
         }
         // ────────────────────────────────────────────────────────────────
 
@@ -70,8 +39,6 @@ class EventController extends Controller
             'state'          => ['nullable', 'string', 'max:100'],
             'zip'            => ['nullable', 'string', 'max:20'],
         ]);
-
-        $event = Event::where('slug', $slug)->firstOrFail();
 
         if ($event->status === 'cancelled') {
             return back()->withErrors(['register' => 'This event has been cancelled.']);
@@ -97,7 +64,6 @@ class EventController extends Controller
             'status'        => 'registered',
         ]);
 
-        return redirect()->route('events.show', $slug)
-            ->with('registration_success', true);
+        return redirect($eventPageUrl)->with('registration_success', true);
     }
 }

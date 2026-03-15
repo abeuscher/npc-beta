@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call(PermissionSeeder::class);
+        $this->call(WidgetTypeSeeder::class);
 
         // ── Admin user ───────────────────────────────────────────────────────
         $adminEmail    = env('ADMIN_EMAIL');
@@ -77,15 +78,9 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // ── Home page ────────────────────────────────────────────────────────
-        $homePage = Page::firstOrCreate(
-            ['slug' => 'home'],
-            [
-                'title'        => 'Welcome',
-                'is_published' => true,
-                'published_at' => now(),
-            ]
-        );
+        // ── Base pages (home, about, contact, events, blog) ─────────────────
+        $this->call(BasePageSeeder::class);
+        $homePage = Page::where('slug', 'home')->first();
 
         // ── System collections (all environments) ────────────────────────────
         $this->seedSystemCollections();

@@ -60,5 +60,31 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.event-registration')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'events_listing'],
+            [
+                'label'         => 'Events Listing',
+                'render_mode'   => 'server',
+                'collections'   => ['events'],
+                'config_schema' => [
+                    ['key' => 'heading', 'type' => 'text', 'label' => 'Heading'],
+                ],
+                'template'      => "@include('widgets.events-listing')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'blog_listing'],
+            [
+                'label'         => 'Blog Listing',
+                'render_mode'   => 'server',
+                'collections'   => ['blog_posts'],
+                'config_schema' => [
+                    ['key' => 'heading', 'type' => 'text', 'label' => 'Heading'],
+                ],
+                'template'      => "@include('widgets.blog-listing')",
+            ]
+        );
     }
 }

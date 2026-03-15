@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\PageResource;
+use App\Models\Collection;
 use App\Models\Event;
 use App\Models\EventDate;
 use App\Models\EventRegistration;
@@ -43,61 +43,57 @@ it('upcoming scope returns only events with future dates', function () {
         ->not->toContain($past->id);
 });
 
-// ── Public event index ────────────────────────────────────────────────────────
+// ── Events listing page (widget-based) ───────────────────────────────────────
 
-it('published upcoming event dates appear on the events index page', function () {
+it('published upcoming event dates appear on the events listing page via widget', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    // Ensure the events system collection exists.
+    Collection::firstOrCreate(
+        ['handle' => 'events'],
+        ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
+    );
+
     $event = Event::factory()->create(['title' => 'Annual Gala', 'status' => 'published']);
     EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
+
+    $widgetType = WidgetType::where('handle', 'events_listing')->first();
+    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'label'          => 'Events Listing',
+        'config'         => [],
+        'sort_order'     => 1,
+        'is_active'      => true,
+    ]);
 
     $this->get('/events')->assertOk()->assertSee('Annual Gala');
 });
 
-it('draft events do not appear on the events index page', function () {
+it('draft events do not appear on the events listing page', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    Collection::firstOrCreate(
+        ['handle' => 'events'],
+        ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
+    );
+
     $event = Event::factory()->draft()->create(['title' => 'Hidden Draft']);
     EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
 
+    $widgetType = WidgetType::where('handle', 'events_listing')->first();
+    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'label'          => 'Events Listing',
+        'config'         => [],
+        'sort_order'     => 1,
+        'is_active'      => true,
+    ]);
+
     $this->get('/events')->assertOk()->assertDontSee('Hidden Draft');
-});
-
-it('past event dates do not appear on the events index page', function () {
-    $event = Event::factory()->create(['title' => 'Past Event', 'status' => 'published']);
-    EventDate::factory()->past()->create(['event_id' => $event->id, 'status' => 'inherited']);
-
-    $this->get('/events')->assertOk()->assertDontSee('Past Event');
-});
-
-// ── Public event show page ────────────────────────────────────────────────────
-
-it('show page renders for a published event', function () {
-    $event = Event::factory()->create(['title' => 'Board Meeting', 'status' => 'published']);
-
-    $this->get(route('events.show', $event->slug))
-        ->assertOk()
-        ->assertSee('Board Meeting');
-});
-
-it('show page lists upcoming dates', function () {
-    $event = Event::factory()->create(['title' => 'Board Meeting', 'status' => 'published']);
-    EventDate::factory()->upcoming()->create(['event_id' => $event->id]);
-
-    $response = $this->get(route('events.show', $event->slug))->assertOk();
-    $response->assertSee('Board Meeting');
-});
-
-it('cancelled event renders with a cancellation notice not a 404', function () {
-    $event = Event::factory()->cancelled()->create(['title' => 'Cancelled Conference']);
-
-    $this->get(route('events.show', $event->slug))
-        ->assertOk()
-        ->assertSee('cancelled');
-});
-
-it('event with cancelled status renders with cancellation notice', function () {
-    $event = Event::factory()->cancelled()->create(['title' => 'Cancelled Gala']);
-
-    $this->get(route('events.show', $event->slug))
-        ->assertOk()
-        ->assertSee('cancelled');
 });
 
 // ── Registration ──────────────────────────────────────────────────────────────
@@ -110,12 +106,28 @@ it('registration form creates an EventRegistration record', function () {
         'email'        => 'jane@example.com',
         '_form_start'  => time() - 10,
         '_hp_name'     => '',
-    ])->assertRedirect(route('events.show', $event->slug));
+    ])->assertRedirect();
 
     expect(EventRegistration::where('email', 'jane@example.com')->exists())->toBeTrue();
 
     $reg = EventRegistration::where('email', 'jane@example.com')->first();
     expect($reg->event_id)->toBe($event->id);
+});
+
+it('registration redirects to the landing page when one exists', function () {
+    $landingPage = Page::factory()->create(['slug' => 'events/my-event', 'is_published' => false]);
+    $event       = Event::factory()->create([
+        'status'          => 'published',
+        'is_free'         => true,
+        'landing_page_id' => $landingPage->id,
+    ]);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane Doe',
+        'email'       => 'jane@example.com',
+        '_form_start' => time() - 10,
+        '_hp_name'    => '',
+    ])->assertRedirect(url('/events/my-event'));
 });
 
 it('registration is blocked when capacity is reached', function () {
@@ -158,9 +170,9 @@ it('honeypot field triggers silent success without creating a registration', fun
     $this->post(route('events.register', $event->slug), [
         'name'        => 'Bot',
         'email'       => 'bot@spam.com',
-        '_hp_name'    => 'I am a bot',  // filled — should be discarded
+        '_hp_name'    => 'I am a bot',
         '_form_start' => time() - 10,
-    ])->assertRedirect(route('events.show', $event->slug));
+    ])->assertRedirect();
 
     expect(EventRegistration::count())->toBe(0);
 });
@@ -172,8 +184,8 @@ it('timing check blocks submissions under 3 seconds without creating a registrat
         'name'        => 'Fast Bot',
         'email'       => 'fast@spam.com',
         '_hp_name'    => '',
-        '_form_start' => time() - 1,  // only 1 second ago
-    ])->assertRedirect(route('events.show', $event->slug));
+        '_form_start' => time() - 1,
+    ])->assertRedirect();
 
     expect(EventRegistration::count())->toBe(0);
 });
@@ -203,18 +215,17 @@ it('nextDate returns the next upcoming date for the event', function () {
 
 // ── Landing page creation ─────────────────────────────────────────────────────
 
-it('creates a landing page with three widgets when action is triggered', function () {
-    // Seed the widget types
+it('creates a landing page with events/ slug prefix and type=event', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $event = Event::factory()->create(['title' => 'Test Event', 'slug' => 'test-event']);
 
-    // Simulate the action logic directly
     $page = Page::create([
         'title'        => $event->title,
-        'slug'         => $event->slug,
         'is_published' => false,
+        'type'         => 'event',
     ]);
+    $page->update(['slug' => 'events/' . $event->slug]);
 
     $widgetHandles = ['event_description', 'event_dates', 'event_registration'];
     $sort = 1;
@@ -233,16 +244,18 @@ it('creates a landing page with three widgets when action is triggered', functio
 
     $event->update(['landing_page_id' => $page->id]);
 
+    expect($page->slug)->toBe('events/test-event');
+    expect($page->type)->toBe('event');
     expect(PageWidget::where('page_id', $page->id)->count())->toBe(3);
     expect($event->fresh()->landing_page_id)->toBe($page->id);
 });
 
 it('view event page button uses landing page URL when landing_page_id is set', function () {
-    $page  = Page::factory()->create(['slug' => 'my-event-page', 'is_published' => false]);
+    $page  = Page::factory()->create(['slug' => 'events/my-event', 'is_published' => false]);
     $event = Event::factory()->create(['slug' => 'my-event', 'landing_page_id' => $page->id]);
 
     expect($event->landing_page_id)->toBe($page->id);
-    expect($event->landingPage->slug)->toBe('my-event-page');
+    expect($event->landingPage->slug)->toBe('events/my-event');
 });
 
 // ── Event widget rendering ────────────────────────────────────────────────────
@@ -318,4 +331,29 @@ it('event_registration widget renders the registration form on a page', function
     $this->get('/' . $page->slug)
         ->assertOk()
         ->assertSee('Register for this event');
+});
+
+it('events_listing widget renders upcoming events on a page', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    Collection::firstOrCreate(
+        ['handle' => 'events'],
+        ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
+    );
+
+    $event = Event::factory()->create(['title' => 'Fundraiser Dinner', 'status' => 'published']);
+    EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
+
+    $widgetType = WidgetType::where('handle', 'events_listing')->first();
+    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $widgetType->id,
+        'label'          => 'Events Listing',
+        'config'         => [],
+        'sort_order'     => 1,
+        'is_active'      => true,
+    ]);
+
+    $this->get('/events')->assertOk()->assertSee('Fundraiser Dinner');
 });

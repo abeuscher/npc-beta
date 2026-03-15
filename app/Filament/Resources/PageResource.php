@@ -42,9 +42,18 @@ class PageResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->unique(Page::class, 'slug', ignoreRecord: true)
-                    ->rules(['alpha_dash'])
+                    ->rules(['regex:/^[a-z0-9\-\/]+$/'])
                     ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                    ->helperText('URL-safe identifier. Auto-generated from title on create.'),
+                    ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).'),
+
+                Forms\Components\Select::make('type')
+                    ->options([
+                        'default' => 'Default',
+                        'event'   => 'Event',
+                        'post'    => 'Post',
+                    ])
+                    ->default('default')
+                    ->required(),
 
                 Forms\Components\Placeholder::make('public_url')
                     ->label('Public URL')
@@ -114,6 +123,14 @@ class PageResource extends Resource
 
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'event' => 'warning',
+                        'post'  => 'info',
+                        default => 'gray',
+                    }),
 
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')

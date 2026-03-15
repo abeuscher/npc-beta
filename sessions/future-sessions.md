@@ -23,6 +23,14 @@ beyond 019, ordered roughly by dependency. Nothing here is scheduled or scoped y
 
 ---
 
+## Already Outlined (021+)
+
+| Session | Topic |
+|---------|-------|
+| 021 | Installer: browser wizard + CLI `php artisan install`, toggleable content packs |
+
+---
+
 ## Topics Beyond Session 018
 
 ### Settings & Admin Infrastructure
