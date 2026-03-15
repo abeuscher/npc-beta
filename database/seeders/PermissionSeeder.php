@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
@@ -68,7 +68,11 @@ class PermissionSeeder extends Seeder
             "view_{$resource}",
         ];
 
-        $cmsEditor = Role::firstOrCreate(['name' => 'cms_editor', 'guard_name' => 'web']);
+        $cmsEditor = Role::firstOrCreate(
+            ['name' => 'cms_editor', 'guard_name' => 'web'],
+            ['label' => 'CMS Editor'],
+        );
+        $cmsEditor->update(['label' => 'CMS Editor']);
         $cmsEditor->syncPermissions(array_merge(
             $viewPermissions('collection'),
             $fullPermissions('collection_item'),
@@ -79,6 +83,11 @@ class PermissionSeeder extends Seeder
 
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.
+        Role::firstOrCreate(
+            ['name' => 'super_admin', 'guard_name' => 'web'],
+            ['label' => 'Super Admin'],
+        );
+        Role::where('name', 'super_admin')->update(['label' => 'Super Admin']);
 
         // Refresh cache after seeding
         app()[PermissionRegistrar::class]->forgetCachedPermissions();

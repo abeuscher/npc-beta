@@ -11,7 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class UserResource extends Resource
 {
@@ -53,7 +53,7 @@ class UserResource extends Resource
                 Forms\Components\Select::make('roles')
                     ->label('Roles')
                     ->multiple()
-                    ->options(Role::pluck('name', 'name'))
+                    ->options(fn () => Role::all()->mapWithKeys(fn ($r) => [$r->name => $r->display_label]))
                     ->preload(),
             ])->columns(2),
         ]);

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\SiteSetting;
+use Filament\Pages\BasePage;
+use Filament\Support\Enums\Alignment;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,6 +16,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        BasePage::formActionsAlignment(Alignment::End);
+
         try {
             $settings = SiteSetting::all()->keyBy('key');
             config([
