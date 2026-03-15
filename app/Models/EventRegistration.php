@@ -13,7 +13,7 @@ class EventRegistration extends Model
     use HasUuids;
 
     protected $fillable = [
-        'event_date_id',
+        'event_id',
         'contact_id',
         'name',
         'email',
@@ -38,9 +38,9 @@ class EventRegistration extends Model
     // Relationships
     // ──────────────────────────────────────────────────────────
 
-    public function eventDate(): BelongsTo
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(EventDate::class);
+        return $this->belongsTo(Event::class);
     }
 
     public function contact(): BelongsTo

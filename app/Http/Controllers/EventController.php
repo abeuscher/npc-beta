@@ -25,34 +25,36 @@ class EventController extends Controller
         ]);
     }
 
-    public function show(string $slug, string $dateId): View
+    public function show(string $slug): View
     {
         $event = Event::where('slug', $slug)->firstOrFail();
-        $date  = EventDate::where('id', $dateId)
-            ->where('event_id', $event->id)
-            ->firstOrFail();
 
-        $isCancelled      = $date->effectiveStatus() === 'cancelled';
-        $isAtCapacity     = $date->isAtCapacity();
+        $dates = $event->eventDates()
+            ->upcoming()
+            ->orderBy('starts_at')
+            ->get();
+
+        $isCancelled      = $event->status === 'cancelled';
+        $isAtCapacity     = $event->isAtCapacity();
         $registrationOpen = $event->registration_open
             && ! $isCancelled
             && ! $isAtCapacity
             && $event->is_free;
 
-        return view('events.show', compact('event', 'date', 'isCancelled', 'isAtCapacity', 'registrationOpen'));
+        return view('events.show', compact('event', 'dates', 'isCancelled', 'isAtCapacity', 'registrationOpen'));
     }
 
-    public function register(Request $request, string $slug, string $dateId): RedirectResponse
+    public function register(Request $request, string $slug): RedirectResponse
     {
         // ── Honeypot checks — silently discard bot submissions ──────────
         if ($request->filled('_hp_name')) {
-            return redirect()->route('events.show', [$slug, $dateId])
+            return redirect()->route('events.show', $slug)
                 ->with('registration_success', true);
         }
 
         $formStart = (int) $request->input('_form_start', 0);
         if ($formStart > 0 && (time() - $formStart) < 3) {
-            return redirect()->route('events.show', [$slug, $dateId])
+            return redirect()->route('events.show', $slug)
                 ->with('registration_success', true);
         }
         // ────────────────────────────────────────────────────────────────
@@ -70,11 +72,8 @@ class EventController extends Controller
         ]);
 
         $event = Event::where('slug', $slug)->firstOrFail();
-        $date  = EventDate::where('id', $dateId)
-            ->where('event_id', $event->id)
-            ->firstOrFail();
 
-        if ($date->effectiveStatus() === 'cancelled') {
+        if ($event->status === 'cancelled') {
             return back()->withErrors(['register' => 'This event has been cancelled.']);
         }
 
@@ -86,19 +85,19 @@ class EventController extends Controller
             return back()->withErrors(['register' => 'Paid registration is not yet available.']);
         }
 
-        if ($date->isAtCapacity()) {
+        if ($event->isAtCapacity()) {
             return back()->withErrors(['register' => 'This event is at capacity.']);
         }
 
         EventRegistration::create([
             ...$validated,
-            'event_date_id' => $date->id,
+            'event_id'      => $event->id,
             'contact_id'    => null,
             'registered_at' => now(),
             'status'        => 'registered',
         ]);
 
-        return redirect()->route('events.show', [$slug, $dateId])
+        return redirect()->route('events.show', $slug)
             ->with('registration_success', true);
     }
 }

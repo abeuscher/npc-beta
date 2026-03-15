@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
 
 class Event extends Model
@@ -37,6 +37,7 @@ class Event extends Model
         'is_recurring',
         'recurrence_type',
         'recurrence_rule',
+        'landing_page_id',
     ];
 
     protected $casts = [
@@ -58,9 +59,14 @@ class Event extends Model
         return $this->hasMany(EventDate::class);
     }
 
-    public function registrations(): HasManyThrough
+    public function registrations(): HasMany
     {
-        return $this->hasManyThrough(EventRegistration::class, EventDate::class);
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    public function landingPage(): BelongsTo
+    {
+        return $this->belongsTo(Page::class);
     }
 
     // ──────────────────────────────────────────────────────────
@@ -104,7 +110,7 @@ class Event extends Model
         }
 
         $registered = $this->registrations()
-            ->whereIn('event_registrations.status', ['registered', 'waitlisted', 'attended'])
+            ->whereIn('status', ['registered', 'waitlisted', 'attended'])
             ->count();
 
         return $registered >= $this->capacity;

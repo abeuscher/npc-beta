@@ -35,11 +35,6 @@ class EventRegistrationsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('eventDate.starts_at')
-                    ->label('Date')
-                    ->dateTime('M j, Y g:i A')
-                    ->sortable(),
-
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'success' => 'registered',

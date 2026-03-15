@@ -55,9 +55,24 @@ class PageController extends Controller
                 $collectionData[$handle] = WidgetDataResolver::resolve($handle, $perHandleConfig);
             }
 
+            // Inject event data for event-aware widget types
+            $eventData = [];
+            if (isset($config['event_id'])) {
+                $resolvedEvent = \App\Models\Event::find($config['event_id']);
+                if ($resolvedEvent) {
+                    $eventData = [
+                        'event' => $resolvedEvent,
+                        'dates' => $resolvedEvent->eventDates()->upcoming()->orderBy('starts_at')->get(),
+                    ];
+                }
+            }
+
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
-                    ? Blade::render($widgetType->template, array_merge($collectionData, ['config' => $config]))
+                    ? Blade::render(
+                        $widgetType->template,
+                        array_merge($collectionData, $eventData, ['config' => $config])
+                    )
                     : '';
 
                 $blocks[] = [

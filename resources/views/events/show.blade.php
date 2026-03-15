@@ -14,53 +14,59 @@
         <header>
             <h1>{{ $event->title }}</h1>
 
-            <p>
-                <time datetime="{{ $date->starts_at->toIso8601String() }}">
-                    {{ $date->starts_at->format('l, F j, Y \a\t g:i A') }}
-                </time>
-                @if ($date->ends_at)
-                    &ndash;
-                    <time datetime="{{ $date->ends_at->toIso8601String() }}">
-                        {{ $date->ends_at->format('g:i A') }}
-                    </time>
-                @endif
-            </p>
-
-            @php $loc = $date->effectiveLocation(); @endphp
+            @if ($dates->isNotEmpty())
+                <ul>
+                    @foreach ($dates as $d)
+                        <li>
+                            <time datetime="{{ $d->starts_at->toIso8601String() }}">
+                                {{ $d->starts_at->format('F j, Y') }}
+                            </time>
+                            @php $loc = $d->effectiveLocation(); @endphp
+                            @if ($loc['is_in_person'] && $loc['is_virtual'])
+                                &mdash; In-person + Online
+                                @if ($loc['city']) ({{ $loc['city'] }}@if($loc['state']), {{ $loc['state'] }}@endif) @endif
+                            @elseif ($loc['is_in_person'])
+                                @if ($loc['city']) &mdash; {{ $loc['city'] }}@if($loc['state']), {{ $loc['state'] }}@endif @endif
+                            @elseif ($loc['is_virtual'])
+                                &mdash; Online
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
 
             {{-- Physical location --}}
-            @if ($loc['is_in_person'])
+            @if ($event->is_in_person)
                 <address>
-                    @if ($loc['address_line_1'])
-                        {{ $loc['address_line_1'] }}<br>
+                    @if ($event->address_line_1)
+                        {{ $event->address_line_1 }}<br>
                     @endif
-                    @if ($loc['address_line_2'])
-                        {{ $loc['address_line_2'] }}<br>
+                    @if ($event->address_line_2)
+                        {{ $event->address_line_2 }}<br>
                     @endif
-                    @if ($loc['city'] || $loc['state'] || $loc['zip'])
-                        {{ implode(', ', array_filter([$loc['city'], $loc['state']])) }}
-                        @if ($loc['zip']) {{ $loc['zip'] }} @endif
+                    @if ($event->city || $event->state || $event->zip)
+                        {{ implode(', ', array_filter([$event->city, $event->state])) }}
+                        @if ($event->zip) {{ $event->zip }} @endif
                     @endif
-                    @if ($loc['map_url'])
+                    @if ($event->map_url)
                         <br>
-                        <a href="{{ $loc['map_url'] }}" target="_blank" rel="noopener noreferrer">
-                            {{ $loc['map_label'] ?? 'View map' }}
+                        <a href="{{ $event->map_url }}" target="_blank" rel="noopener noreferrer">
+                            {{ $event->map_label ?? 'View map' }}
                         </a>
                     @endif
                 </address>
             @endif
 
             {{-- Virtual location --}}
-            @if ($loc['is_virtual'])
+            @if ($event->is_virtual)
                 <p>
                     <strong>Online event</strong>
-                    @php $meetingUrl = $date->effectiveMeetingUrl(); @endphp
-                    @if ($meetingUrl && (session('registration_success') || ! $event->registration_open))
+                    @if ($event->meeting_url && (session('registration_success') || ! $event->registration_open))
                         &mdash;
-                        <a href="{{ $meetingUrl }}" target="_blank" rel="noopener noreferrer">
+                        <a href="{{ $event->meeting_url }}" target="_blank" rel="noopener noreferrer">
                             Join online
                         </a>
-                    @elseif ($meetingUrl && ! $isCancelled)
+                    @elseif ($event->meeting_url && ! $isCancelled)
                         &mdash; Meeting link provided after registration.
                     @endif
                 </p>
@@ -101,7 +107,7 @@
                     <div role="alert">{{ $errors->first('register') }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('events.register', [$event->slug, $date->id]) }}">
+                <form method="POST" action="{{ route('events.register', $event->slug) }}">
                     @csrf
 
                     {{-- Honeypot — hidden from real users, bots fill it --}}

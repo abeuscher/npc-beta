@@ -165,7 +165,6 @@ class DatabaseSeeder extends Seeder
             [
                 'first_name'      => 'Alice',
                 'last_name'       => 'Hartwell',
-                'type'            => 'individual',
                 'organization_id' => $foundation->id,
                 'city'            => 'Springfield',
                 'state'           => 'IL',
@@ -178,7 +177,6 @@ class DatabaseSeeder extends Seeder
             [
                 'first_name'      => 'Bob',
                 'last_name'       => 'Nguyen',
-                'type'            => 'individual',
                 'organization_id' => $corporate->id,
                 'city'            => 'Chicago',
                 'state'           => 'IL',
@@ -190,7 +188,6 @@ class DatabaseSeeder extends Seeder
             [
                 'first_name'      => 'Carol',
                 'last_name'       => 'Okafor',
-                'type'            => 'individual',
                 'organization_id' => $government->id,
                 'city'            => 'Springfield',
                 'state'           => 'IL',
@@ -203,7 +200,6 @@ class DatabaseSeeder extends Seeder
                 [
                     'first_name' => "Demo{$i}",
                     'last_name'  => 'User',
-                    'type'       => 'individual',
                     'city'       => 'Springfield',
                     'state'      => 'IL',
                 ]

@@ -10,7 +10,7 @@
         @foreach ($dates as $date)
             <article>
                 <h2>
-                    <a href="{{ route('events.show', [$date->event->slug, $date->id]) }}">
+                    <a href="{{ route('events.show', $date->event->slug) }}">
                         {{ $date->event->title }}
                     </a>
                 </h2>
@@ -57,9 +57,7 @@
                 </p>
 
                 <footer>
-                    <a href="{{ route('events.show', [$date->event->slug, $date->id]) }}">
-                        View event &rarr;
-                    </a>
+                    <a href="{{ route('events.show', $date->event->slug) }}">View event &rarr;</a>
                 </footer>
             </article>
         @endforeach
