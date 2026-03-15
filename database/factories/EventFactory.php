@@ -21,7 +21,7 @@ class EventFactory extends Factory
             'state'             => $this->faker->stateAbbr(),
             'price'             => 0,
             'capacity'          => null,
-            'registration_open' => true,
+            'registration_mode' => 'open',
         ];
     }
 
@@ -46,5 +46,15 @@ class EventFactory extends Factory
     public function withCapacity(int $capacity): static
     {
         return $this->state(['capacity' => $capacity]);
+    }
+
+    public function closedFull(): static
+    {
+        return $this->state(['registration_mode' => 'closed']);
+    }
+
+    public function walkIn(): static
+    {
+        return $this->state(['registration_mode' => 'none']);
     }
 }

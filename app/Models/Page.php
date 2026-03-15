@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\PageObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+#[ObservedBy(PageObserver::class)]
 class Page extends Model
 {
     use HasFactory, HasSlug, HasUuids, SoftDeletes;
@@ -43,7 +46,7 @@ class Page extends Model
 
     public function getRouteKeyName(): string
     {
-        return 'slug';
+        return 'id';
     }
 
     public function pageWidgets(): HasMany

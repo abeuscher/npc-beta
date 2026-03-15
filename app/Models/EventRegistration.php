@@ -31,10 +31,12 @@ class EventRegistration extends Model
         'registered_at',
         'stripe_payment_intent_id',
         'notes',
+        'mailing_list_opt_in',
     ];
 
     protected $casts = [
-        'registered_at' => 'datetime',
+        'registered_at'      => 'datetime',
+        'mailing_list_opt_in' => 'boolean',
     ];
 
     // ──────────────────────────────────────────────────────────

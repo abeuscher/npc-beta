@@ -37,15 +37,22 @@ class EventController extends Controller
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'city'           => ['nullable', 'string', 'max:100'],
             'state'          => ['nullable', 'string', 'max:100'],
-            'zip'            => ['nullable', 'string', 'max:20'],
+            'zip'                => ['nullable', 'string', 'max:20'],
+            'mailing_list_opt_in' => ['nullable', 'boolean'],
         ]);
 
         if ($event->status === 'cancelled') {
             return back()->withErrors(['register' => 'This event has been cancelled.']);
         }
 
-        if (! $event->registration_open) {
-            return back()->withErrors(['register' => 'Registration is not open for this event.']);
+        if ($event->registration_mode !== 'open') {
+            $message = match ($event->registration_mode) {
+                'none'     => 'This event does not require registration.',
+                'external' => 'Registration for this event is handled externally.',
+                default    => 'Registration for this event is currently closed.',
+            };
+
+            return back()->withErrors(['register' => $message]);
         }
 
         if (! $event->is_free) {
@@ -58,10 +65,11 @@ class EventController extends Controller
 
         EventRegistration::create([
             ...$validated,
-            'event_id'      => $event->id,
-            'contact_id'    => null,
-            'registered_at' => now(),
-            'status'        => 'registered',
+            'event_id'           => $event->id,
+            'contact_id'         => null,
+            'registered_at'      => now(),
+            'status'             => 'registered',
+            'mailing_list_opt_in' => (bool) ($validated['mailing_list_opt_in'] ?? false),
         ]);
 
         return redirect($eventPageUrl)->with('registration_success', true);

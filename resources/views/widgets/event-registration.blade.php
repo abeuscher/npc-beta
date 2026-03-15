@@ -2,7 +2,8 @@
     @php
         $isCancelled  = $event->status === 'cancelled';
         $isAtCapacity = $event->isAtCapacity();
-        $regOpen      = $event->registration_open && ! $isCancelled && ! $isAtCapacity && $event->is_free;
+        $mode         = $event->registration_mode ?? 'open';
+        $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity && $event->is_free;
     @endphp
 
     @if (session('registration_success'))
@@ -19,8 +20,16 @@
     @elseif ($isAtCapacity)
         <p>This event is at capacity. Registration is closed.</p>
 
-    @elseif (! $event->registration_open)
-        <p>Registration is not open for this event.</p>
+    @elseif ($mode === 'external')
+        @if (filled($event->external_registration_url))
+            <a href="{{ $event->external_registration_url }}" target="_blank" rel="noopener noreferrer">Register for this event &rarr;</a>
+        @endif
+
+    @elseif ($mode === 'closed')
+        <p>Registration for this event is currently closed.</p>
+
+    @elseif ($mode === 'none')
+        <p>No registration required &mdash; just show up!</p>
 
     @elseif ($regOpen)
         <h2>Register</h2>
@@ -94,6 +103,16 @@
                                value="{{ old('zip') }}" autocomplete="postal-code">
                     </div>
                 </fieldset>
+            @endif
+
+            @if ($event->mailing_list_opt_in_enabled)
+                <div>
+                    <label>
+                        <input type="checkbox" name="mailing_list_opt_in" value="1"
+                               {{ old('mailing_list_opt_in') ? 'checked' : '' }}>
+                        Keep me informed about future events and updates
+                    </label>
+                </div>
             @endif
 
             <button type="submit">Register for this event</button>

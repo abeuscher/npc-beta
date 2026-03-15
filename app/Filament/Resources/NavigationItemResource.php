@@ -46,23 +46,7 @@ class NavigationItemResource extends Resource
                             $component->state('page');
                             return;
                         }
-
-                        if ($record->page_id || $record->post_id) {
-                            $component->state('page');
-                            return;
-                        }
-
-                        $knownPrefixes = [
-                            '/' . config('site.blog_prefix', 'news'),
-                            '/' . config('site.events_prefix', 'events'),
-                        ];
-
-                        if ($record->url && in_array($record->url, $knownPrefixes, true)) {
-                            $component->state('page');
-                            return;
-                        }
-
-                        $component->state('link');
+                        $component->state(($record->page_id || $record->post_id) ? 'page' : 'link');
                     }),
 
                 Forms\Components\Select::make('internal_page')
@@ -72,13 +56,10 @@ class NavigationItemResource extends Resource
                         if (! $record) {
                             return;
                         }
-
                         if ($record->page_id) {
                             $component->state('page:' . $record->page_id);
                         } elseif ($record->post_id) {
                             $component->state('post:' . $record->post_id);
-                        } elseif ($record->url) {
-                            $component->state('url:' . $record->url);
                         }
                     })
                     ->searchable()
@@ -118,31 +99,38 @@ class NavigationItemResource extends Resource
     }
 
     /**
-     * Build the grouped options list for the internal page selector.
+     * Grouped options for the internal page selector.
      * Keys are prefixed so resolveFormData() can decode them to the right column.
+     * Order: Pages → Events → Blog
      */
     public static function internalPageOptions(): array
     {
-        $blogPrefix   = config('site.blog_prefix', 'news');
-        $eventsPrefix = config('site.events_prefix', 'events');
+        $options = [];
 
-        $options = [
-            'Site indexes' => [
-                'url:/' . $blogPrefix   => 'Blog index  (/' . $blogPrefix . ')',
-                'url:/' . $eventsPrefix => 'Events index  (/' . $eventsPrefix . ')',
-            ],
-        ];
+        $pages = Page::where('type', '!=', 'event')
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
-        $pages = Page::orderBy('title')->get(['id', 'title']);
         if ($pages->isNotEmpty()) {
             $options['Pages'] = $pages
                 ->mapWithKeys(fn ($p) => ['page:' . $p->id => $p->title])
                 ->all();
         }
 
+        $eventPages = Page::where('type', 'event')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        if ($eventPages->isNotEmpty()) {
+            $options['Events'] = $eventPages
+                ->mapWithKeys(fn ($p) => ['page:' . $p->id => $p->title])
+                ->all();
+        }
+
         $posts = Post::orderBy('title')->get(['id', 'title']);
+
         if ($posts->isNotEmpty()) {
-            $options['Posts'] = $posts
+            $options['Blog'] = $posts
                 ->mapWithKeys(fn ($p) => ['post:' . $p->id => $p->title])
                 ->all();
         }
@@ -156,10 +144,7 @@ class NavigationItemResource extends Resource
      */
     public static function resolveFormData(array $data): array
     {
-        // open_in_new_window toggle → target column
-        $data['target'] = ($data['open_in_new_window'] ?? false) ? '_blank' : '_self';
-
-        // link_type + internal_page → page_id / post_id / url
+        $data['target']  = ($data['open_in_new_window'] ?? false) ? '_blank' : '_self';
         $data['page_id'] = null;
         $data['post_id'] = null;
 
@@ -171,11 +156,8 @@ class NavigationItemResource extends Resource
                 $data['page_id'] = substr($key, 5);
             } elseif (str_starts_with($key, 'post:')) {
                 $data['post_id'] = substr($key, 5);
-            } elseif (str_starts_with($key, 'url:')) {
-                $data['url'] = substr($key, 4);
             }
         }
-        // link type: url comes from the TextInput as-is; page_id/post_id already nulled above
 
         unset($data['link_type'], $data['internal_page'], $data['open_in_new_window']);
 

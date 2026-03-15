@@ -36,14 +36,18 @@ class Event extends Model
         'meeting_details',
         'price',
         'capacity',
-        'registration_open',
+        'registration_mode',
+        'external_registration_url',
+        'auto_create_contacts',
+        'mailing_list_opt_in_enabled',
         'landing_page_id',
     ];
 
     protected $casts = [
-        'registration_open' => 'boolean',
-        'capacity'          => 'integer',
-        'price'             => 'decimal:2',
+        'capacity'                 => 'integer',
+        'price'                    => 'decimal:2',
+        'auto_create_contacts'     => 'boolean',
+        'mailing_list_opt_in_enabled' => 'boolean',
     ];
 
     // ──────────────────────────────────────────────────────────
@@ -100,7 +104,7 @@ class Event extends Model
 
     public function scopeOpenForRegistration(Builder $query): void
     {
-        $query->published()->upcoming()->where('registration_open', true);
+        $query->published()->upcoming()->where('registration_mode', 'open');
     }
 
     // ──────────────────────────────────────────────────────────

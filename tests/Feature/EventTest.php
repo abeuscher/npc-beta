@@ -312,8 +312,7 @@ it('event_registration widget renders the registration form on a page', function
 
     $event = Event::factory()->create([
         'status'            => 'published',
-        'is_free'           => true,
-        'registration_open' => true,
+        'registration_mode' => 'open',
     ]);
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
