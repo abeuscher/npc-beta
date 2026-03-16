@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Collection;
 use App\Models\CollectionItem;
 use App\Models\EventDate;
-use App\Models\Post;
+use App\Models\Page;
 
 class WidgetDataResolver
 {
@@ -78,20 +78,19 @@ class WidgetDataResolver
     {
         $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
 
-        $query = Post::where('is_published', true)
+        $query = Page::where('type', 'post')
+            ->where('is_published', true)
             ->orderBy('published_at', 'desc');
 
         if ($limit) {
             $query->limit($limit);
         }
 
-        return $query->get()->map(fn (Post $post) => [
-            'id'           => $post->id,
-            'title'        => $post->title,
-            'slug'         => $post->slug,
-            'excerpt'      => $post->excerpt,
-            'content'      => $post->content,
-            'published_at' => $post->published_at?->toIso8601String(),
+        return $query->get()->map(fn (Page $page) => [
+            'id'           => $page->id,
+            'title'        => $page->title,
+            'slug'         => $page->slug,
+            'published_at' => $page->published_at?->toIso8601String(),
         ])->all();
     }
 

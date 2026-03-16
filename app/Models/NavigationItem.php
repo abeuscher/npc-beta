@@ -16,7 +16,6 @@ class NavigationItem extends Model
         'label',
         'url',
         'page_id',
-        'post_id',
         'parent_id',
         'sort_order',
         'target',
@@ -31,11 +30,6 @@ class NavigationItem extends Model
     public function page(): BelongsTo
     {
         return $this->belongsTo(Page::class);
-    }
-
-    public function post(): BelongsTo
-    {
-        return $this->belongsTo(Post::class);
     }
 
     public function parent(): BelongsTo

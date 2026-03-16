@@ -11,7 +11,6 @@ use App\Models\Fund;
 use App\Models\NavigationItem;
 use App\Models\Organization;
 use App\Models\Page;
-use App\Models\Post;
 use App\Models\User;
 use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,11 +59,11 @@ class PermissionTest extends TestCase
     public function test_super_admin_can_access_cms(): void
     {
         $user = $this->makeUser('super_admin');
-        $post = Post::factory()->create();
+        $page = Page::factory()->create();
 
-        $this->assertTrue($user->can('viewAny', Post::class));
-        $this->assertTrue($user->can('create', Post::class));
-        $this->assertTrue($user->can('update', $post));
+        $this->assertTrue($user->can('viewAny', Page::class));
+        $this->assertTrue($user->can('create', Page::class));
+        $this->assertTrue($user->can('update', $page));
     }
 
     public function test_super_admin_can_access_admin_resources(): void
@@ -83,11 +82,11 @@ class PermissionTest extends TestCase
     public function test_cms_editor_can_manage_posts(): void
     {
         $user = $this->makeUser('cms_editor');
-        $post = Post::factory()->create();
+        $post = Page::factory()->create(['type' => 'post', 'slug' => 'news/test-post']);
 
-        $this->assertTrue($user->can('viewAny', Post::class));
+        $this->assertTrue($user->can('viewAny', Page::class));
         $this->assertTrue($user->can('view', $post));
-        $this->assertTrue($user->can('create', Post::class));
+        $this->assertTrue($user->can('create', Page::class));
         $this->assertTrue($user->can('update', $post));
         $this->assertTrue($user->can('delete', $post));
     }
@@ -182,7 +181,7 @@ class PermissionTest extends TestCase
         $user = User::factory()->create(['is_active' => true]);
 
         $this->assertFalse($user->can('viewAny', Contact::class));
-        $this->assertFalse($user->can('viewAny', Post::class));
+        $this->assertFalse($user->can('viewAny', Page::class));
         $this->assertFalse($user->can('viewAny', Donation::class));
         $this->assertFalse($user->can('viewAny', User::class));
     }

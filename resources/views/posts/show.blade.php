@@ -1,29 +1,18 @@
-@extends('layouts.public')
+@extends('layouts.public', [
+    'title'         => $page->meta_title ?? $page->title,
+    'description'   => $page->meta_description,
+    'inlineStyles'  => $inlineStyles ?? '',
+    'inlineScripts' => $inlineScripts ?? '',
+])
 
 @section('content')
-<main>
-    <article>
-        <header>
-            <h1>{{ $post->title }}</h1>
-            <p>
-                @if ($post->author)
-                    By {{ $post->author->name }} &mdash;
-                @endif
-                @if ($post->published_at)
-                    <time datetime="{{ $post->published_at->toIso8601String() }}">
-                        {{ $post->published_at->format('F j, Y') }}
-                    </time>
-                @endif
-            </p>
-        </header>
+    <main>
+        <h1>{{ $page->title }}</h1>
 
-        <div class="post-content">
-            {!! $post->content !!}
-        </div>
+        <x-page-widgets :blocks="$blocks ?? []" />
 
         <footer>
-            <a href="{{ route('posts.index') }}">&larr; Back to {{ config('site.name', 'News') }}</a>
+            <a href="{{ route('posts.index') }}">&larr; Back to News</a>
         </footer>
-    </article>
-</main>
+    </main>
 @endsection

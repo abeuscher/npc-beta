@@ -2,37 +2,112 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
+use App\Models\Page;
+use App\Services\WidgetDataResolver;
+use Illuminate\Support\Facades\Blade;
 
 class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::where('is_published', true)
-            ->orderBy('published_at', 'desc')
-            ->paginate(15);
+        $blogPrefix = config('site.blog_prefix', 'news');
 
-        return view('posts.index', [
-            'posts'       => $posts,
-            'title'       => 'News',
-            'description' => 'Latest news and updates.',
-        ]);
+        $page = Page::where('slug', $blogPrefix)
+            ->where('is_published', true)
+            ->firstOrFail();
+
+        return $this->renderPage($page);
     }
 
     public function show(string $slug)
     {
-        $post = Post::where('slug', $slug)
-            ->where('is_published', true)
-            ->first();
+        $blogPrefix = config('site.blog_prefix', 'news');
 
-        if (! $post) {
-            abort(404);
+        $page = Page::where('type', 'post')
+            ->where('slug', $blogPrefix . '/' . $slug)
+            ->where('is_published', true)
+            ->firstOrFail();
+
+        return $this->renderPage($page);
+    }
+
+    private function renderPage(Page $page)
+    {
+        $pageWidgets = $page->pageWidgets()
+            ->with('widgetType')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $blocks        = [];
+        $inlineStyles  = '';
+        $inlineScripts = '';
+
+        foreach ($pageWidgets as $pw) {
+            $widgetType = $pw->widgetType;
+
+            if (! $widgetType) {
+                continue;
+            }
+
+            $config      = $pw->config ?? [];
+            $queryConfig = $pw->query_config ?? [];
+
+            $collectionData = [];
+            foreach ($widgetType->collections ?? [] as $handle) {
+                $perHandleConfig         = $queryConfig[$handle] ?? [];
+                $collectionData[$handle] = WidgetDataResolver::resolve($handle, $perHandleConfig);
+            }
+
+            if ($widgetType->render_mode === 'server') {
+                $html = $widgetType->template
+                    ? Blade::render(
+                        $widgetType->template,
+                        array_merge($collectionData, ['config' => $config])
+                    )
+                    : '';
+
+                $blocks[] = [
+                    'handle'      => $widgetType->handle,
+                    'instance_id' => $pw->id,
+                    'html'        => $html,
+                    'css'         => $widgetType->css ?? '',
+                    'js'          => $widgetType->js ?? '',
+                ];
+
+                if ($widgetType->css) {
+                    $inlineStyles .= "\n" . $widgetType->css;
+                }
+
+                if ($widgetType->js) {
+                    $inlineScripts .= "\n" . $widgetType->js;
+                }
+            } else {
+                $clientHtml = '';
+
+                foreach ($collectionData as $handle => $data) {
+                    $varName = $widgetType->variable_name ?? $handle;
+                    $clientHtml .= '<script>window.' . e($varName) . ' = ' . json_encode($data) . ';</script>' . "\n";
+                }
+
+                if ($widgetType->code) {
+                    $clientHtml .= '<script>' . $widgetType->code . '</script>';
+                }
+
+                $blocks[] = [
+                    'handle'      => $widgetType->handle,
+                    'instance_id' => $pw->id,
+                    'html'        => $clientHtml,
+                    'css'         => $widgetType->css ?? '',
+                    'js'          => '',
+                ];
+
+                if ($widgetType->css) {
+                    $inlineStyles .= "\n" . $widgetType->css;
+                }
+            }
         }
 
-        return view('posts.show', [
-            'post'        => $post,
-            'title'       => $post->title,
-            'description' => $post->excerpt ?? '',
-        ]);
+        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
     }
 }

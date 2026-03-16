@@ -2,7 +2,7 @@
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
-use App\Models\Post;
+use App\Models\Page;
 use App\Services\WidgetDataResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -63,7 +63,7 @@ it('returns published collection items for a valid public custom collection', fu
         ->and($result[0]['question'])->toBe('What is this?');
 });
 
-it('returns published posts for the blog_posts handle', function () {
+it('returns published Page records of type post for the blog_posts handle', function () {
     $blogPostsCollection = Collection::where('handle', 'blog_posts')->first();
 
     // Ensure the blog_posts system collection exists and is public
@@ -80,18 +80,18 @@ it('returns published posts for the blog_posts handle', function () {
         $blogPostsCollection->update(['is_public' => true, 'is_active' => true]);
     }
 
-    Post::create([
+    Page::create([
         'title'        => 'Published Post',
-        'slug'         => 'published-post',
-        'content'      => 'Content here',
+        'slug'         => 'news/published-post',
+        'type'         => 'post',
         'is_published' => true,
         'published_at' => now()->subDay(),
     ]);
 
-    Post::create([
+    Page::create([
         'title'        => 'Draft Post',
-        'slug'         => 'draft-post',
-        'content'      => 'Draft content',
+        'slug'         => 'news/draft-post',
+        'type'         => 'post',
         'is_published' => false,
         'published_at' => null,
     ]);

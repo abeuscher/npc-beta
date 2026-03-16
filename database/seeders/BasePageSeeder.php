@@ -59,11 +59,12 @@ class BasePageSeeder extends Seeder
 
         $this->seedWidget($eventsPage, 'events_listing', 'Events Listing', [], 1);
 
-        // Blog — published, has blog_listing widget
-        $blogPage = Page::firstOrCreate(
-            ['slug' => 'blog'],
+        // Blog index — slug matches the blog_prefix config; contains a blog_listing widget.
+        $blogPrefix = config('site.blog_prefix', 'news');
+        $blogPage   = Page::firstOrCreate(
+            ['slug' => $blogPrefix],
             [
-                'title'        => 'Blog',
+                'title'        => 'News',
                 'type'         => 'default',
                 'is_published' => true,
                 'published_at' => now(),
@@ -74,11 +75,11 @@ class BasePageSeeder extends Seeder
 
         // ── Base navigation ───────────────────────────────────────────────────
         $navPages = [
-            ['label' => 'Home',    'slug' => 'home',    'sort' => 1],
-            ['label' => 'About',   'slug' => 'about',   'sort' => 2],
-            ['label' => 'Contact', 'slug' => 'contact', 'sort' => 3],
-            ['label' => 'Events',  'slug' => 'events',  'sort' => 4],
-            ['label' => 'Blog',    'slug' => 'blog',    'sort' => 5],
+            ['label' => 'Home',    'slug' => 'home',        'sort' => 1],
+            ['label' => 'About',   'slug' => 'about',       'sort' => 2],
+            ['label' => 'Contact', 'slug' => 'contact',     'sort' => 3],
+            ['label' => 'Events',  'slug' => 'events',      'sort' => 4],
+            ['label' => 'News',    'slug' => $blogPrefix,   'sort' => 5],
         ];
 
         foreach ($navPages as $item) {

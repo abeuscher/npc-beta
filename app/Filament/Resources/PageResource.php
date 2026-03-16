@@ -122,7 +122,9 @@ class PageResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()->where('type', '!=', 'event');
+        return parent::getEloquentQuery()
+            ->where('type', '!=', 'event')
+            ->where('type', '!=', 'post');
     }
 
     public static function table(Table $table): Table

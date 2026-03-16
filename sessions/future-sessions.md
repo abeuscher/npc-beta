@@ -14,7 +14,7 @@ an outline file exists.
 | 022 | Saved Import Field Maps (superseded → moved to 023) | session-022-outline.md |
 | 023 | Custom Contact Fields | session-023-outline.md |
 | 024 | Help System (context-sensitive admin help) | session-024-outline.md |
-| 025 | Migrate blog posts into pages table; page builder for posts | session-025-outline.md |
+| 025 | Migrate blog posts into pages table; page builder for posts | session-025-prompt.md |
 
 ---
 

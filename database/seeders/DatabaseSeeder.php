@@ -12,8 +12,9 @@ use App\Models\Membership;
 use App\Models\NavigationItem;
 use App\Models\Organization;
 use App\Models\Page;
-use App\Models\Post;
+use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\WidgetType;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -128,6 +129,32 @@ class DatabaseSeeder extends Seeder
                 'is_active'   => true,
             ]
         );
+    }
+
+    private function seedPostWidget(Page $page, string $content): void
+    {
+        $widgetType = WidgetType::where('handle', 'text_block')->first();
+
+        if (! $widgetType) {
+            return;
+        }
+
+        $exists = PageWidget::where('page_id', $page->id)
+            ->where('widget_type_id', $widgetType->id)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        PageWidget::create([
+            'page_id'        => $page->id,
+            'widget_type_id' => $widgetType->id,
+            'label'          => 'Post Content',
+            'config'         => ['content' => $content],
+            'sort_order'     => 1,
+            'is_active'      => true,
+        ]);
     }
 
     private function seedDemo(Page $homePage, ?User $admin): void
@@ -292,17 +319,37 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Published post
-        $newsPost = Post::firstOrCreate(
-            ['slug' => 'news'],
+        // Sample blog post (type = 'post', slug prefixed with blog_prefix)
+        $blogPrefix = config('site.blog_prefix', 'news');
+
+        $welcomePost = Page::firstOrCreate(
+            ['slug' => $blogPrefix . '/welcome-to-our-news'],
             [
-                'title'        => 'Welcome to Our News Section',
-                'excerpt'      => 'Stay up to date with the latest from our organization.',
-                'content'      => '<p>This is the first post. More news coming soon.</p>',
-                'author_id'    => $admin?->id,
+                'title'        => 'Welcome to Our News',
+                'type'         => 'post',
                 'is_published' => true,
-                'published_at' => now(),
+                'published_at' => now()->subDays(2),
             ]
+        );
+
+        $this->seedPostWidget(
+            $welcomePost,
+            '<p>Stay up to date with the latest from our organization. More news coming soon.</p>'
+        );
+
+        $annualFundPost = Page::firstOrCreate(
+            ['slug' => $blogPrefix . '/annual-fund-launch'],
+            [
+                'title'        => 'Annual Fund Launch',
+                'type'         => 'post',
+                'is_published' => true,
+                'published_at' => now()->subDay(),
+            ]
+        );
+
+        $this->seedPostWidget(
+            $annualFundPost,
+            '<p>We are excited to announce the launch of our Annual Fund 2026. Your support makes our work possible.</p>'
         );
 
         // Collections — Board Members
@@ -354,14 +401,18 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        NavigationItem::firstOrCreate(
-            ['label' => 'News'],
-            [
-                'post_id'    => $newsPost->id,
-                'sort_order' => 2,
-                'target'     => '_self',
-                'is_visible' => true,
-            ]
-        );
+        // The blog index page is seeded by BasePageSeeder; link to it via page_id.
+        $blogIndexPage = Page::where('slug', config('site.blog_prefix', 'news'))->first();
+        if ($blogIndexPage) {
+            NavigationItem::firstOrCreate(
+                ['label' => 'News'],
+                [
+                    'page_id'    => $blogIndexPage->id,
+                    'sort_order' => 2,
+                    'target'     => '_self',
+                    'is_visible' => true,
+                ]
+            );
+        }
     }
 }

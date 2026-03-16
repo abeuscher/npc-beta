@@ -143,12 +143,33 @@ class CmsSettingsPage extends Page
     {
         $data = $this->form->getState();
 
+        $oldPrefix = SiteSetting::get('blog_prefix', 'news');
+        $newPrefix = $data['blog_prefix'];
+
         SiteSetting::set('site_name', $data['site_name']);
-        SiteSetting::set('blog_prefix', $data['blog_prefix']);
+        SiteSetting::set('blog_prefix', $newPrefix);
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
         SiteSetting::set('use_pico', $data['use_pico'] ? 'true' : 'false');
+
+        // When the blog prefix changes, update slugs on all type='post' pages
+        // and rename the blog index page slug.
+        if ($newPrefix !== $oldPrefix) {
+            CmsPage::where('type', 'post')
+                ->where('slug', 'like', $oldPrefix . '/%')
+                ->each(function (CmsPage $page) use ($oldPrefix, $newPrefix) {
+                    $page->updateQuietly([
+                        'slug' => $newPrefix . '/' . substr($page->slug, strlen($oldPrefix) + 1),
+                    ]);
+                });
+
+            // Also update the blog index page slug (plain page, no type filter).
+            $blogIndexPage = CmsPage::where('slug', $oldPrefix)->first();
+            if ($blogIndexPage) {
+                $blogIndexPage->updateQuietly(['slug' => $newPrefix]);
+            }
+        }
 
         if (!empty($data['custom_css_upload'])) {
             $uploadedPath = $data['custom_css_upload'];

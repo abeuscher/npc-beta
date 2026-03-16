@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\NavigationItemResource\Pages;
 use App\Models\NavigationItem;
 use App\Models\Page;
-use App\Models\Post;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -46,7 +45,7 @@ class NavigationItemResource extends Resource
                             $component->state('page');
                             return;
                         }
-                        $component->state(($record->page_id || $record->post_id) ? 'page' : 'link');
+                        $component->state($record->page_id ? 'page' : 'link');
                     }),
 
                 Forms\Components\Select::make('internal_page')
@@ -58,8 +57,6 @@ class NavigationItemResource extends Resource
                         }
                         if ($record->page_id) {
                             $component->state('page:' . $record->page_id);
-                        } elseif ($record->post_id) {
-                            $component->state('post:' . $record->post_id);
                         }
                     })
                     ->searchable()
@@ -108,6 +105,7 @@ class NavigationItemResource extends Resource
         $options = [];
 
         $pages = Page::where('type', '!=', 'event')
+            ->where('type', '!=', 'post')
             ->orderBy('title')
             ->get(['id', 'title']);
 
@@ -127,11 +125,13 @@ class NavigationItemResource extends Resource
                 ->all();
         }
 
-        $posts = Post::orderBy('title')->get(['id', 'title']);
+        $postPages = Page::where('type', 'post')
+            ->orderBy('title')
+            ->get(['id', 'title']);
 
-        if ($posts->isNotEmpty()) {
-            $options['Blog'] = $posts
-                ->mapWithKeys(fn ($p) => ['post:' . $p->id => $p->title])
+        if ($postPages->isNotEmpty()) {
+            $options['Blog'] = $postPages
+                ->mapWithKeys(fn ($p) => ['page:' . $p->id => $p->title])
                 ->all();
         }
 
@@ -146,7 +146,6 @@ class NavigationItemResource extends Resource
     {
         $data['target']  = ($data['open_in_new_window'] ?? false) ? '_blank' : '_self';
         $data['page_id'] = null;
-        $data['post_id'] = null;
 
         if (($data['link_type'] ?? 'page') === 'page') {
             $data['url'] = null;
@@ -154,8 +153,6 @@ class NavigationItemResource extends Resource
 
             if (str_starts_with($key, 'page:')) {
                 $data['page_id'] = substr($key, 5);
-            } elseif (str_starts_with($key, 'post:')) {
-                $data['post_id'] = substr($key, 5);
             }
         }
 

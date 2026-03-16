@@ -38,7 +38,7 @@
         $navItems = \App\Models\NavigationItem::where('is_visible', true)
             ->whereNull('parent_id')
             ->orderBy('sort_order')
-            ->with(['children', 'page', 'post'])
+            ->with(['children', 'page'])
             ->get();
     @endphp
 
@@ -56,8 +56,6 @@
                     @php
                         if ($item->page_id && $item->page) {
                             $href = url('/' . $item->page->slug);
-                        } elseif ($item->post_id && $item->post) {
-                            $href = url(config('site.blog_prefix', 'news') . '/' . $item->post->slug);
                         } else {
                             $href = $item->url ?? '#';
                         }
@@ -71,8 +69,6 @@
                                     @php
                                         if ($child->page_id && $child->page) {
                                             $childHref = url('/' . $child->page->slug);
-                                        } elseif ($child->post_id && $child->post) {
-                                            $childHref = url(config('site.blog_prefix', 'news') . '/' . $child->post->slug);
                                         } else {
                                             $childHref = $child->url ?? '#';
                                         }

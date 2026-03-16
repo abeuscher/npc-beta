@@ -3,16 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PostResource\Pages;
-use App\Models\Post;
+use App\Livewire\PageBuilder;
+use App\Models\Page;
+use App\Models\SiteSetting;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class PostResource extends Resource
 {
-    protected static ?string $model = Post::class;
+    protected static ?string $model = Page::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
 
@@ -24,10 +27,25 @@ class PostResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->where('type', 'post');
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Section::make()->schema([
+                Forms\Components\Placeholder::make('_post_info')
+                    ->label('')
+                    ->content(new HtmlString(
+                        '<p class="text-sm text-gray-500">'
+                        . 'The slug is automatically prefixed with the current blog prefix (e.g. <code>news/my-post</code>). '
+                        . 'Changing the blog prefix in <strong>Settings → CMS</strong> will update all post slugs automatically.'
+                        . '</p>'
+                    ))
+                    ->columnSpanFull(),
+
                 Forms\Components\TextInput::make('title')
                     ->required()
                     ->maxLength(255),
@@ -40,25 +58,53 @@ class PostResource extends Resource
                 Forms\Components\TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
-                    ->unique(Post::class, 'slug', ignoreRecord: true)
-                    ->rules(['alpha_dash'])
-                    ->helperText('URL-safe identifier. Auto-generated from title on create.')
+                    ->unique(Page::class, 'slug', ignoreRecord: true)
+                    ->rules(['regex:/^[a-z0-9\-\/]+$/'])
+                    ->helperText('Stored with blog prefix, e.g. news/my-post. Auto-generated on create.')
                     ->hiddenOn('create'),
 
-                Forms\Components\Select::make('author_id')
-                    ->label('Author')
-                    ->relationship('author', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->nullable(),
+                Forms\Components\Hidden::make('type')
+                    ->default('post'),
 
-                Forms\Components\Textarea::make('excerpt')
-                    ->rows(3)
-                    ->columnSpanFull(),
+                Forms\Components\Placeholder::make('public_url')
+                    ->label('Public URL')
+                    ->content(function ($record): HtmlString|string {
+                        if (! $record) {
+                            return '—';
+                        }
+                        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                        $url  = $base . '/' . $record->slug;
 
-                Forms\Components\RichEditor::make('content')
-                    ->columnSpanFull(),
+                        return new HtmlString(
+                            '<a href="' . e($url) . '" target="_blank" rel="noopener" '
+                            . 'class="text-primary-600 hover:underline text-sm font-mono">'
+                            . e($url) . '</a>'
+                        );
+                    })
+                    ->columnSpanFull()
+                    ->hiddenOn('create'),
+
+                Forms\Components\Placeholder::make('_blog_index_warning')
+                    ->label('')
+                    ->content(new HtmlString(
+                        '<p class="text-sm text-amber-600 font-semibold">'
+                        . '⚠ This is the blog index page. Deleting it will break the blog listing.'
+                        . '</p>'
+                    ))
+                    ->columnSpanFull()
+                    ->visible(fn ($record) => $record && $record->slug === config('site.blog_prefix', 'news')),
             ])->columns(2),
+
+            Forms\Components\Section::make('Page Builder')
+                ->description('Add and arrange content blocks for this post.')
+                ->schema([
+                    Forms\Components\Livewire::make(
+                        PageBuilder::class,
+                        fn ($record) => $record ? ['pageId' => $record->id] : []
+                    )->columnSpanFull(),
+                ])
+                ->hidden(fn ($record) => $record === null)
+                ->columnSpanFull(),
 
             Forms\Components\Section::make('Publication')->schema([
                 Forms\Components\Toggle::make('is_published')
@@ -100,10 +146,6 @@ class PostResource extends Resource
 
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-
-                Tables\Columns\TextColumn::make('author.name')
-                    ->label('Author')
-                    ->sortable(),
 
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')

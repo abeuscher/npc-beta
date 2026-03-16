@@ -18,5 +18,15 @@ class PageObserver
                 $page->updateQuietly(['slug' => $eventsPrefix . '/' . $page->slug]);
             }
         }
+
+        // When a page's type is changed to 'post', ensure its slug carries
+        // the blog prefix so public routing works correctly.
+        if ($page->wasChanged('type') && $page->type === 'post') {
+            $blogPrefix = config('site.blog_prefix', 'news');
+
+            if (! str_starts_with($page->slug, $blogPrefix . '/')) {
+                $page->updateQuietly(['slug' => $blogPrefix . '/' . $page->slug]);
+            }
+        }
     }
 }

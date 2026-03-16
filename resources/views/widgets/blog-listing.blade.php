@@ -5,11 +5,10 @@
 @if (empty($blog_posts))
     <p>No posts to display.</p>
 @else
-    @php $blogPrefix = config('site.blog_prefix', 'news'); @endphp
     <ul>
         @foreach ($blog_posts as $post)
             <li>
-                <a href="/{{ $blogPrefix }}/{{ $post['slug'] }}">{{ $post['title'] }}</a>
+                <a href="/{{ $post['slug'] }}">{{ $post['title'] }}</a>
 
                 @if (!empty($post['excerpt']))
                     <p>{{ $post['excerpt'] }}</p>
