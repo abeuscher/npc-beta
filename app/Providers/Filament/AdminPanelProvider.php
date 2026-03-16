@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Services\HelpArticleService;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -17,6 +18,8 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -95,6 +98,15 @@ class AdminPanelProvider extends PanelProvider
                         });
                     </script>
                 ')
+            )
+            // Context-sensitive help: ? icon in the page header that opens a slide-over.
+            ->renderHook(
+                PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE,
+                function (): \Illuminate\Contracts\View\View {
+                    $routeName = \Illuminate\Support\Facades\Route::currentRouteName() ?? '';
+                    $article = app(HelpArticleService::class)->forRoute($routeName);
+                    return view('components.help-slide-over', ['article' => $article]);
+                }
             );
     }
 }
