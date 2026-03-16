@@ -23,6 +23,7 @@ class Page extends Model
         'type',
         'meta_title',
         'meta_description',
+        'custom_fields',
         'is_published',
         'published_at',
     ];
@@ -32,7 +33,8 @@ class Page extends Model
     ];
 
     protected $casts = [
-        'is_published' => 'boolean',
+        'custom_fields' => 'array',
+        'is_published'  => 'boolean',
         'published_at' => 'datetime',
     ];
 

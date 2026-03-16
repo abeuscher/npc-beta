@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
 use App\Livewire\PageBuilder;
+use App\Models\CustomFieldDef;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use Filament\Forms;
@@ -108,6 +109,14 @@ class PageResource extends Resource
                 ->columns(1)
                 ->collapsible()
                 ->collapsed(),
+
+            Forms\Components\Section::make('Custom Fields')
+                ->schema(fn () => CustomFieldDef::forModel('page')->get()
+                    ->map(fn ($def) => $def->toFilamentFormComponent())
+                    ->toArray()
+                )
+                ->columns(2)
+                ->hidden(fn () => CustomFieldDef::forModel('page')->doesntExist()),
         ]);
     }
 

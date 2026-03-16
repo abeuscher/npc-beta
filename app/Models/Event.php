@@ -41,9 +41,11 @@ class Event extends Model
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
         'landing_page_id',
+        'custom_fields',
     ];
 
     protected $casts = [
+        'custom_fields'            => 'array',
         'capacity'                 => 'integer',
         'price'                    => 'decimal:2',
         'auto_create_contacts'     => 'boolean',

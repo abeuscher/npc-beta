@@ -32,6 +32,25 @@
                 </div>
             </div>
 
+            @if (!empty($customFieldLog))
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-950">
+                <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-3">Custom Field Definitions</h3>
+                <ul class="space-y-1 text-sm">
+                    @foreach ($customFieldLog as $entry)
+                    <li class="flex items-center gap-2">
+                        @if ($entry['action'] === 'created')
+                            <x-heroicon-o-plus-circle class="h-4 w-4 text-green-600 shrink-0" />
+                            <span><strong>{{ $entry['label'] }}</strong> <span class="font-mono text-xs text-gray-500">({{ $entry['handle'] }})</span> — created new field</span>
+                        @else
+                            <x-heroicon-o-arrow-path class="h-4 w-4 text-blue-500 shrink-0" />
+                            <span><strong>{{ $entry['label'] }}</strong> <span class="font-mono text-xs text-gray-500">({{ $entry['handle'] }})</span> — reused existing field</span>
+                        @endif
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
+
             <div class="flex gap-3">
                 <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
                    class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">

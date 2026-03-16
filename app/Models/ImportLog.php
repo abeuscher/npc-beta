@@ -16,6 +16,8 @@ class ImportLog extends Model
         'filename',
         'storage_path',
         'column_map',
+        'custom_field_map',
+        'custom_field_log',
         'row_count',
         'imported_count',
         'updated_count',
@@ -29,8 +31,10 @@ class ImportLog extends Model
     ];
 
     protected $casts = [
-        'column_map'   => 'array',
-        'errors'       => 'array',
+        'column_map'        => 'array',
+        'custom_field_map'  => 'array',
+        'custom_field_log'  => 'array',
+        'errors'            => 'array',
         'started_at'   => 'datetime',
         'completed_at' => 'datetime',
     ];

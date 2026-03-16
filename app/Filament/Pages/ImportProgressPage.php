@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Contact;
+use App\Models\CustomFieldDef;
 use App\Models\ImportLog;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
@@ -13,13 +14,11 @@ class ImportProgressPage extends Page
 
     protected static ?string $title = 'Importing…';
 
-    // Hidden from sidebar — only reachable via redirect from ImportContactsPage.
     public static function shouldRegisterNavigation(): bool
     {
         return false;
     }
 
-    // Bind ?log=uuid from the URL query string.
     protected $queryString = [
         'importLogId' => ['as' => 'log'],
     ];
@@ -34,6 +33,9 @@ class ImportProgressPage extends Page
     public int  $skipped    = 0;
     public int  $errorCount = 0;
     public bool $done       = false;
+
+    // Custom field def log — populated in mount() before ticking begins
+    public array $customFieldLog = [];
 
     // Byte offset into the CSV so each tick resumes where the last left off.
     public int $fileOffset = 0;
@@ -59,7 +61,73 @@ class ImportProgressPage extends Page
         $this->fileOffset = (int) ftell($handle);
         fclose($handle);
 
-        $log->update(['status' => 'processing', 'started_at' => now()]);
+        // Resolve custom field definitions once before any rows are processed.
+        // Each column mapped as "__custom__" gets a CustomFieldDef record created
+        // or reused, and we record what happened for display after completion.
+        $customFieldLog = $this->resolveCustomFieldDefs($log);
+
+        $log->update([
+            'status'           => 'processing',
+            'started_at'       => now(),
+            'custom_field_log' => $customFieldLog ?: null,
+        ]);
+
+        $this->customFieldLog = $customFieldLog;
+    }
+
+    /**
+     * Create or reuse CustomFieldDef records for any columns mapped as custom
+     * fields in this import. Returns a log array for display.
+     */
+    private function resolveCustomFieldDefs(ImportLog $log): array
+    {
+        $customFieldMap = $log->custom_field_map ?? [];
+
+        if (empty($customFieldMap)) {
+            return [];
+        }
+
+        $log = [];
+
+        foreach ($customFieldMap as $sourceHeader => $config) {
+            $handle    = $config['handle'] ?? null;
+            $label     = $config['label'] ?? $sourceHeader;
+            $fieldType = $config['field_type'] ?? 'text';
+
+            if (! $handle) {
+                continue;
+            }
+
+            $existing = CustomFieldDef::where('model_type', 'contact')
+                ->where('handle', $handle)
+                ->first();
+
+            if ($existing) {
+                $log[] = [
+                    'handle' => $handle,
+                    'label'  => $existing->label,
+                    'action' => 'reused',
+                ];
+            } else {
+                $maxSort = CustomFieldDef::where('model_type', 'contact')->max('sort_order') ?? 0;
+
+                CustomFieldDef::create([
+                    'model_type' => 'contact',
+                    'handle'     => $handle,
+                    'label'      => $label,
+                    'field_type' => $fieldType,
+                    'sort_order' => $maxSort + 1,
+                ]);
+
+                $log[] = [
+                    'handle' => $handle,
+                    'label'  => $label,
+                    'action' => 'created',
+                ];
+            }
+        }
+
+        return $log;
     }
 
     public function tick(): void
@@ -82,15 +150,14 @@ class ImportProgressPage extends Page
         fseek($handle, $this->fileOffset);
 
         $columnMap         = $log->column_map ?? [];
+        $customFieldMap    = $log->custom_field_map ?? [];
         $duplicateStrategy = $log->duplicate_strategy;
-        // Use $this->csvHeaders (original file order) rather than array_keys($columnMap),
-        // which would be alphabetically sorted due to PostgreSQL's JSONB storage.
 
-        $imported   = 0;
-        $updated    = 0;
-        $skipped    = 0;
-        $errors     = [];
-        $rowNumber  = $this->processed + 2; // +1 for header row, +1 for 1-based display
+        $imported    = 0;
+        $updated     = 0;
+        $skipped     = 0;
+        $errors      = [];
+        $rowNumber   = $this->processed + 2;
         $rowsInChunk = 0;
 
         for ($i = 0; $i < self::CHUNK; $i++) {
@@ -104,14 +171,25 @@ class ImportProgressPage extends Page
             $rowsInChunk++;
 
             try {
-                $attributes = [];
+                $attributes    = [];
+                $customFields  = [];
 
                 foreach ($row as $index => $value) {
                     $header    = $this->csvHeaders[$index] ?? null;
                     $destField = $header ? ($columnMap[$header] ?? null) : null;
+                    $rawValue  = ($value === '') ? null : $value;
 
                     if ($destField) {
-                        $attributes[$destField] = ($value === '') ? null : $value;
+                        $attributes[$destField] = $rawValue;
+                    }
+
+                    // Collect custom field values if this header has a custom mapping
+                    if ($header && isset($customFieldMap[$header])) {
+                        $cfHandle = $customFieldMap[$header]['handle'] ?? null;
+
+                        if ($cfHandle && $rawValue !== null) {
+                            $customFields[$cfHandle] = $rawValue;
+                        }
                     }
                 }
 
@@ -126,18 +204,37 @@ class ImportProgressPage extends Page
                     if ($existing) {
                         if ($duplicateStrategy === 'update') {
                             $nonNull = array_filter($attributes, fn ($v) => $v !== null);
+
+                            if (! empty($customFields)) {
+                                $nonNull['custom_fields'] = array_merge(
+                                    $existing->custom_fields ?? [],
+                                    $customFields
+                                );
+                            }
+
                             $existing->fill($nonNull)->save();
                             $updated++;
                         } else {
                             $skipped++;
                         }
                     } else {
-                        Contact::create(array_merge(['source' => 'import'], $attributes));
+                        $createAttrs = array_merge(['source' => 'import'], $attributes);
+
+                        if (! empty($customFields)) {
+                            $createAttrs['custom_fields'] = $customFields;
+                        }
+
+                        Contact::create($createAttrs);
                         $imported++;
                     }
                 } else {
-                    // Name only — create without duplicate check
-                    Contact::create(array_merge(['source' => 'import'], $attributes));
+                    $createAttrs = array_merge(['source' => 'import'], $attributes);
+
+                    if (! empty($customFields)) {
+                        $createAttrs['custom_fields'] = $customFields;
+                    }
+
+                    Contact::create($createAttrs);
                     $imported++;
                 }
             } catch (\Throwable $e) {
@@ -150,14 +247,12 @@ class ImportProgressPage extends Page
         $this->fileOffset = (int) ftell($handle);
         fclose($handle);
 
-        // Update running totals on this component
         $this->imported   += $imported;
         $this->updated    += $updated;
         $this->skipped    += $skipped;
         $this->errorCount += count($errors);
         $this->processed  += $rowsInChunk;
 
-        // Persist progress to the ImportLog so Import History stays current
         $existingErrors = $log->errors ?? [];
 
         $log->update([

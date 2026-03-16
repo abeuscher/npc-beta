@@ -36,6 +36,7 @@ class Contact extends Model
         'country',
         'notes',
         'custom_data',
+        'custom_fields',
         'is_deceased',
         'do_not_contact',
         'source',
@@ -43,6 +44,7 @@ class Contact extends Model
 
     protected $casts = [
         'custom_data'    => SchemalessAttributes::class,
+        'custom_fields'  => 'array',
         'is_deceased'    => 'boolean',
         'do_not_contact' => 'boolean',
     ];

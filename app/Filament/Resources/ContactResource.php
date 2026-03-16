@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Pages\ImportContactsPage;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Models\Contact;
+use App\Models\CustomFieldDef;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -128,6 +129,14 @@ class ContactResource extends Resource
                 ])
                 ->columns(2),
 
+            Forms\Components\Section::make('Custom Fields')
+                ->schema(fn () => CustomFieldDef::forModel('contact')->get()
+                    ->map(fn ($def) => $def->toFilamentFormComponent())
+                    ->toArray()
+                )
+                ->columns(2)
+                ->hidden(fn () => CustomFieldDef::forModel('contact')->doesntExist()),
+
         ]);
     }
 
@@ -221,17 +230,24 @@ class ContactResource extends Resource
                         $query    = $livewire->getFilteredSortedTableQuery();
                         $filename = 'contacts-' . now()->format('Y-m-d') . '.csv';
 
-                        return response()->streamDownload(function () use ($query) {
+                        $customDefs = CustomFieldDef::forModel('contact')->get();
+
+                        return response()->streamDownload(function () use ($query, $customDefs) {
                             $handle = fopen('php://output', 'w');
 
-                            fputcsv($handle, [
+                            $standardHeaders = [
                                 'first_name', 'last_name', 'email', 'phone',
                                 'address_line_1', 'address_line_2', 'city', 'state',
                                 'postal_code', 'notes', 'created_at',
-                            ]);
+                            ];
 
-                            $query->orderBy('created_at')->each(function (Contact $contact) use ($handle) {
-                                fputcsv($handle, [
+                            fputcsv($handle, array_merge(
+                                $standardHeaders,
+                                $customDefs->pluck('label')->toArray()
+                            ));
+
+                            $query->orderBy('created_at')->each(function (Contact $contact) use ($handle, $customDefs) {
+                                $standardValues = [
                                     $contact->first_name,
                                     $contact->last_name,
                                     $contact->email,
@@ -243,7 +259,13 @@ class ContactResource extends Resource
                                     $contact->postal_code,
                                     $contact->notes,
                                     $contact->created_at?->toDateTimeString(),
-                                ]);
+                                ];
+
+                                $customValues = $customDefs
+                                    ->map(fn ($def) => $contact->custom_fields[$def->handle] ?? '')
+                                    ->toArray();
+
+                                fputcsv($handle, array_merge($standardValues, $customValues));
                             });
 
                             fclose($handle);

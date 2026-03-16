@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers;
+use App\Models\CustomFieldDef;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -286,6 +287,14 @@ class EventResource extends Resource
                     ]),
                 ])->grow(false),
             ])->from('md')->columnSpanFull(),
+
+            Forms\Components\Section::make('Custom Fields')
+                ->schema(fn () => CustomFieldDef::forModel('event')->get()
+                    ->map(fn ($def) => $def->toFilamentFormComponent())
+                    ->toArray()
+                )
+                ->columns(2)
+                ->hidden(fn () => CustomFieldDef::forModel('event')->doesntExist()),
         ]);
     }
 

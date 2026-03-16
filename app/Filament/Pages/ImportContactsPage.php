@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class ImportContactsPage extends Page
@@ -102,15 +103,9 @@ class ImportContactsPage extends Page
             return;
         }
 
-        // Filament keeps the file as a TemporaryUploadedFile until the form is submitted.
-        // At afterValidation time we must store it explicitly; calling Storage::path() on
-        // the object would prepend the disk root twice (because __toString returns the
-        // absolute temp path), so we detect and handle each case separately.
         if ($fileValue instanceof TemporaryUploadedFile) {
-            // Move from livewire-tmp to our imports directory and get the relative path.
             $this->uploadedFilePath = $fileValue->store('imports', 'local');
         } else {
-            // Already a stored path string (e.g. if the component re-renders).
             $this->uploadedFilePath = (string) $fileValue;
         }
 
@@ -130,10 +125,8 @@ class ImportContactsPage extends Page
 
         $this->parsedHeaders = array_map('trim', $headers);
 
-        // Auto-detect which preset best matches the column headers.
         $this->detectedPreset = $this->detectPreset($this->parsedHeaders);
 
-        // Pre-populate the column map from the detected preset.
         $mapper    = new FieldMapper();
         $columnMap = [];
 
@@ -236,12 +229,60 @@ class ImportContactsPage extends Page
         }
 
         foreach ($this->parsedHeaders as $header) {
-            $key      = "column_map.col_{$this->headerIndex($header)}";
+            $n   = $this->headerIndex($header);
+            $key = "column_map.col_{$n}";
+
+            // The Select now has a __custom__ sentinel option.
+            // When selected, push the column name and auto-handle into the inline fields.
             $schema[] = Forms\Components\Select::make($key)
                 ->label($header)
-                ->options($contactFields)
+                ->options(array_merge(
+                    ['__custom__' => '— Create as custom field —'],
+                    $contactFields
+                ))
                 ->placeholder('— ignore —')
-                ->nullable();
+                ->nullable()
+                ->live()
+                ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n) {
+                    if ($state === '__custom__') {
+                        $set("cf_label_{$n}", $header);
+                        $set("cf_handle_{$n}", Str::slug($header, '_'));
+                    }
+                });
+
+            // Inline sub-form shown only when __custom__ is selected
+            $schema[] = Forms\Components\Grid::make(3)
+                ->schema([
+                    Forms\Components\TextInput::make("cf_label_{$n}")
+                        ->label('Field label')
+                        ->default($header)
+                        ->required()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function ($state, Forms\Set $set) use ($n) {
+                            if (blank($this->data["cf_handle_{$n}"] ?? null)) {
+                                $set("cf_handle_{$n}", Str::slug($state ?? '', '_'));
+                            }
+                        }),
+
+                    Forms\Components\TextInput::make("cf_handle_{$n}")
+                        ->label('Handle')
+                        ->required()
+                        ->rules(['alpha_dash'])
+                        ->helperText('Lowercase, underscores only.'),
+
+                    Forms\Components\Select::make("cf_type_{$n}")
+                        ->label('Field type')
+                        ->options([
+                            'text'    => 'Text',
+                            'number'  => 'Number',
+                            'date'    => 'Date',
+                            'boolean' => 'Boolean',
+                            'select'  => 'Select',
+                        ])
+                        ->default('text')
+                        ->required(),
+                ])
+                ->visible(fn (Forms\Get $get) => $get($key) === '__custom__');
         }
 
         $schema[] = Forms\Components\Radio::make('duplicate_strategy')
@@ -285,13 +326,25 @@ class ImportContactsPage extends Page
         $content .= "</tr></thead><tbody>";
 
         foreach ($this->parsedHeaders as $header) {
-            $colKey    = "col_{$this->headerIndex($header)}";
+            $n         = $this->headerIndex($header);
+            $colKey    = "col_{$n}";
             $destField = $map[$colKey] ?? null;
             $colIndex  = array_search($header, $this->parsedHeaders);
 
+            if ($destField === '__custom__') {
+                $label  = $this->data["cf_label_{$n}"] ?? $header;
+                $handle = $this->data["cf_handle_{$n}"] ?? '';
+                $type   = $this->data["cf_type_{$n}"] ?? 'text';
+                $destDisplay = e("Custom: {$label} ({$handle}, {$type})");
+            } elseif ($destField) {
+                $destDisplay = '<span class="text-primary-600">' . e($destField) . '</span>';
+            } else {
+                $destDisplay = '<span class="text-gray-400">ignore</span>';
+            }
+
             $content .= "<tr class='border-b border-gray-100'>";
             $content .= "<td class='py-1 pr-4 text-gray-600'>" . e($header) . "</td>";
-            $content .= "<td class='py-1 pr-4 text-primary-600'>" . ($destField ? e($destField) : '<span class="text-gray-400">ignore</span>') . "</td>";
+            $content .= "<td class='py-1 pr-4'>" . $destDisplay . "</td>";
 
             foreach ($this->previewRows as $row) {
                 $value = $row[$colIndex] ?? '';
@@ -335,15 +388,27 @@ class ImportContactsPage extends Page
     {
         $data = $this->form->getState();
 
-        // Build the column map keyed by header name (not internal key)
         $rawMap   = $data['column_map'] ?? [];
         $namedMap = [];
+        $customFieldMap = [];
 
         foreach ($this->parsedHeaders as $header) {
-            $colKey    = "col_{$this->headerIndex($header)}";
+            $n         = $this->headerIndex($header);
+            $colKey    = "col_{$n}";
             $destField = $rawMap[$colKey] ?? null;
 
-            $namedMap[$header] = $destField ?: null;
+            if ($destField === '__custom__') {
+                // Column maps to a custom field — exclude from standard map,
+                // record the field definition for the import job to process.
+                $namedMap[$header] = null;
+                $customFieldMap[$header] = [
+                    'handle'     => $data["cf_handle_{$n}"] ?? Str::slug($header, '_'),
+                    'label'      => $data["cf_label_{$n}"] ?? $header,
+                    'field_type' => $data["cf_type_{$n}"] ?? 'text',
+                ];
+            } else {
+                $namedMap[$header] = $destField ?: null;
+            }
         }
 
         $filename = basename($this->uploadedFilePath);
@@ -355,6 +420,7 @@ class ImportContactsPage extends Page
             'filename'           => $filename,
             'storage_path'       => $this->uploadedFilePath,
             'column_map'         => $namedMap,
+            'custom_field_map'   => $customFieldMap ?: null,
             'row_count'          => $rowCount,
             'duplicate_strategy' => $data['duplicate_strategy'] ?? 'skip',
             'status'             => 'pending',
@@ -372,7 +438,7 @@ class ImportContactsPage extends Page
         }
 
         $handle = fopen($fullPath, 'r');
-        $count  = -1; // start at -1 to exclude the header row
+        $count  = -1;
 
         while (fgetcsv($handle) !== false) {
             $count++;
@@ -383,7 +449,6 @@ class ImportContactsPage extends Page
         return max(0, $count);
     }
 
-    // Stable integer index for a header string (by position in parsedHeaders)
     private function headerIndex(string $header): int
     {
         $index = array_search($header, $this->parsedHeaders);
