@@ -14,7 +14,7 @@ class ContentCollectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'CMS';
 
     protected static ?string $navigationLabel = 'Collections';
 

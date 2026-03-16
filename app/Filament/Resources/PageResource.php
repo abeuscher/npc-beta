@@ -12,7 +12,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
 
 class PageResource extends Resource
 {
@@ -20,7 +19,7 @@ class PageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'CMS';
 
     protected static ?int $navigationSort = 1;
 
@@ -30,13 +29,12 @@ class PageResource extends Resource
             Forms\Components\Section::make()->schema([
                 Forms\Components\TextInput::make('title')
                     ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                        if ($operation === 'create') {
-                            $set('slug', Str::slug($state));
-                        }
-                    }),
+                    ->maxLength(255),
+
+                Forms\Components\Placeholder::make('_slug_placeholder')
+                    ->label('')
+                    ->content('')
+                    ->hiddenOn('edit'),
 
                 Forms\Components\TextInput::make('slug')
                     ->required()
@@ -44,7 +42,8 @@ class PageResource extends Resource
                     ->unique(Page::class, 'slug', ignoreRecord: true)
                     ->rules(['regex:/^[a-z0-9\-\/]+$/'])
                     ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                    ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).'),
+                    ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
+                    ->hiddenOn('create'),
 
                 Forms\Components\Select::make('type')
                     ->options([
@@ -75,11 +74,27 @@ class PageResource extends Resource
                     ->columnSpanFull(),
             ])->columns(2),
 
+            Forms\Components\Section::make('Page Builder')
+                ->description('Add and arrange content blocks for this page.')
+                ->schema([
+                    Forms\Components\Livewire::make(
+                        PageBuilder::class,
+                        fn ($record) => $record ? ['pageId' => $record->id] : []
+                    )->columnSpanFull(),
+                ])
+                ->hidden(fn ($record) => $record === null)
+                ->columnSpanFull(),
+
             Forms\Components\Section::make('Publication')
                 ->schema([
                     Forms\Components\Toggle::make('is_published')
                         ->label('Published')
-                        ->live(),
+                        ->live()
+                        ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
+                            if ($state && ! $get('published_at')) {
+                                $set('published_at', now());
+                            }
+                        }),
 
                     Forms\Components\DateTimePicker::make('published_at')
                         ->label('Publish Date')
@@ -99,17 +114,6 @@ class PageResource extends Resource
                 ->columns(1)
                 ->collapsible()
                 ->collapsed(),
-
-            Forms\Components\Section::make('Page Builder')
-                ->description('Add and arrange content blocks for this page.')
-                ->schema([
-                    Forms\Components\Livewire::make(
-                        PageBuilder::class,
-                        fn ($record) => $record ? ['pageId' => $record->id] : []
-                    )->columnSpanFull(),
-                ])
-                ->hidden(fn ($record) => $record === null)
-                ->columnSpanFull(),
         ]);
     }
 

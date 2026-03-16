@@ -18,7 +18,7 @@ class NavigationItemResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'CMS';
 
     protected static ?string $navigationLabel = 'Navigation';
 

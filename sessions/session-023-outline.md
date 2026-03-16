@@ -1,65 +1,140 @@
-# Session 020 Outline — Help System
+# Session 023 Outline — Custom Contact Fields
 
-> **Session Preparation**: This is a planning outline, not a complete implementation prompt.
-> At the start of this session, review the full admin UI as it exists. The help system should
-> be designed around the actual screens and workflows users encounter, not a theoretical list.
-> Walk through the admin panel before writing the prompt.
+> **Depends on:** Session 018/019 (import wizard); can run parallel to Session 022
+> **Unlocks:** No data is silently dropped on import; contact records can carry
+>   source-system-specific fields without a schema change
 
 ---
 
 ## Goal
 
-Build the skeleton of a context-sensitive help system for the admin UI. The goal is not to fill in all the content — content comes later — but to establish the architecture: where help lives, how it's triggered, how it's stored, and how it can be maintained without a code deployment.
+Allow admins to define custom fields for the Contact model. During import, columns with no
+standard mapping get a "Create as custom field" option instead of being silently dropped.
+Custom fields appear on the contact detail and edit forms and are included in exports.
 
 ---
 
-## Key Decisions to Make at Session Start
+## Architecture Decision: JSONB vs Separate Table
 
-- **Help content storage**: In the database (admin-editable via Filament), in Markdown files (developer-maintained, version-controlled), or both? Database is more flexible for non-developers; files are simpler to maintain and version. A hybrid (files with DB override) is possible.
-- **Trigger mechanism**: Help icon (?) next to fields/sections that opens a panel or tooltip? Dedicated "Help" sidebar panel? Inline collapsed accordion? Decide the UX pattern.
-- **Scope**: Admin UI only, or also public-facing help (FAQ, knowledge base for members)? Likely admin only for this session.
-- **Standard or custom**: Is there a Filament help/documentation plugin worth evaluating, or do we build a simple custom implementation? Check available packages at session start.
-- **Context specificity**: Help can be global (one article per page), per-resource, or per-field. Decide the granularity level for v1.
+**Decision to confirm at session start.** Two options:
 
----
+| | JSONB on `contacts` | Separate `contact_field_values` table |
+|-|---------------------|---------------------------------------|
+| Simple reads | ✓ | Requires join |
+| Queryable/filterable | Partial (JSON operators) | ✓ |
+| Schema validation | None at DB level | Possible via constraints |
+| Migration cost | Zero | One migration |
 
-## Scope (draft — refine at session start)
-
-**In:**
-- Help content storage mechanism (DB, files, or hybrid — decided at session start)
-- Context-sensitive help trigger in the Filament admin UI (icon or panel)
-- At least the skeleton structure seeded with placeholder content for 5-10 key screens
-- An admin interface for editing help content (if DB-based)
-- A clear extension pattern so content can be filled in without a developer
-
-**Out:**
-- Public-facing knowledge base or FAQ (future)
-- Search across help content (future)
-- Video embeds or interactive walkthroughs
+**Recommendation for v1:** JSONB column (`custom_fields`) on `contacts`. Filtering/querying
+of custom fields is a future enhancement — decide scope at session start. If filtering is
+in scope, discuss the table approach.
 
 ---
 
-## Rough Build List
+## Custom Field Definitions
 
-- Help content storage: model/migration (if DB) or `resources/help/` directory (if files)
-- Help panel or tooltip Blade component
-- Filament layout modification to inject help trigger into resource pages
-- Seed/create placeholder content for key screens
-- If DB: Filament resource for managing help content (admin only)
-- Tests: help content resolves for a given context key; missing content degrades gracefully
+A separate model/table to define available custom fields:
+
+### `contact_custom_field_defs`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `handle` | string unique | Machine key, e.g. `wild_apricot_id` |
+| `label` | string | Display name, e.g. "Wild Apricot ID" |
+| `field_type` | string | `text`, `number`, `date`, `boolean`, `select` |
+| `options` | json nullable | For `select` type: array of option strings |
+| `sort_order` | int | Order in forms/exports |
+| timestamps | | |
+
+**V1 field types in scope:** `text` is required. `number`, `date`, `boolean`, `select`
+are desirable — decide at session start whether they're v1 or deferred.
 
 ---
 
-## Open Questions at Planning Time
+## Import Integration
 
-- Who will write the help content — developers, or a non-technical admin? This determines whether DB or files is the right storage.
-- Is there a preferred UX pattern from the user (tooltip, sidebar panel, modal)?
-- Should help be localisation-aware (multi-language)?
+### Map Columns step
+
+For each source column that has no standard field mapping:
+
+- Show a third option alongside "Ignore" and the field list: **"Create as custom field"**
+- When selected, reveal a small inline form: Label (required, pre-filled from column name),
+  Handle (auto-generated from label, editable), Field Type (default: text)
+- On import run: create the `ContactCustomFieldDef` record if it doesn't exist (match by
+  handle), then write the value into `contacts.custom_fields[handle]`
 
 ---
 
-## What This Unlocks
+## Contact Forms
 
-- Help content can be filled in alongside any future feature session
-- Non-developer staff can maintain help content without code changes (if DB-based)
-- Foundation for a public knowledge base if needed later
+### Detail / Edit view
+
+- After the standard fields section, add a "Custom Fields" section
+- Fields rendered dynamically from `ContactCustomFieldDef` definitions
+- Values read/written from `contacts.custom_fields` JSONB
+- `select` fields render as a dropdown; `boolean` as a toggle; others as text/date inputs
+
+### Contact field management UI
+
+A Filament resource: `ContactCustomFieldDefResource`
+
+- **List:** Label, handle, type, sort order
+- **Create / Edit / Delete:** Full CRUD
+- **Reorder:** Drag-to-reorder or sort_order field
+- **Navigation:** CRM group or Settings group — decide at session start
+  **Recommendation:** CRM group, since it's data configuration not system configuration
+
+---
+
+## Export
+
+- Custom field columns appended after standard columns
+- Column headers use the field `label`
+- Empty values export as blank (not null/false)
+
+---
+
+## Filtering (decide scope at session start)
+
+Querying custom fields via JSONB requires PostgreSQL JSON operators. If the Contacts list
+filter panel should support custom fields, this adds moderate complexity. **Recommendation:**
+defer filtering to a follow-up; v1 is storage + display + export only.
+
+---
+
+## Open Questions (answer at session start)
+
+1. **JSONB vs table** — confirm above recommendation or choose table approach.
+2. **V1 field types** — text only, or include number/date/boolean/select?
+3. **Custom field filtering** — in or out of scope for this session?
+4. **Custom field definitions scope** — global (one set for the whole install) or
+   per-organisation? Global is correct for a single-tenant install.
+5. **Handle collisions** — if import creates a field with handle `foo` and one already
+   exists, should it reuse the existing definition or error? **Recommendation:** reuse.
+
+---
+
+## Files Expected to Change
+
+| File | Action |
+|------|--------|
+| `database/migrations/xxxx_add_custom_fields_to_contacts.php` | Add `custom_fields` JSONB |
+| `database/migrations/xxxx_create_contact_custom_field_defs.php` | New table |
+| `app/Models/ContactCustomFieldDef.php` | New |
+| `app/Models/Contact.php` | Cast `custom_fields` as array |
+| `app/Filament/Resources/ContactResource.php` | Add custom fields section to form |
+| `app/Filament/Resources/ContactCustomFieldDefResource.php` | New CRUD resource |
+| `app/Livewire/Import/MapColumnsStep.php` | Add "Create as custom field" option |
+| `app/Jobs/ImportJob.php` | Write custom field values on import |
+| `app/Exports/ContactExporter.php` | Append custom field columns |
+
+---
+
+## Tests
+
+- Unit: `Contact` correctly reads/writes JSONB `custom_fields`
+- Feature: import with unmapped column → creates field def → stores value on contact
+- Feature: contact edit form displays and saves custom field values
+- Feature: contact export includes custom field columns
+- Feature: `ContactCustomFieldDefResource` CRUD

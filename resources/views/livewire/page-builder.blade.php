@@ -37,7 +37,7 @@
         @forelse ($blocks as $index => $block)
             <div
                 wire:key="block-{{ $block['id'] }}"
-                x-sort:item="{{ $block['id'] }}"
+                x-sort:item="'{{ $block['id'] }}'"
                 x-data="{ open: false, menuOpen: false, confirmDelete: false }"
                 class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
             >

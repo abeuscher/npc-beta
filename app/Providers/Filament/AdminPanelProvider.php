@@ -34,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make('CRM')->collapsed(),
-                NavigationGroup::make('Content')->collapsed(),
+                NavigationGroup::make('CMS')->collapsed(),
                 NavigationGroup::make('Finance')->collapsed(),
                 NavigationGroup::make('Tools')->collapsed(),
                 NavigationGroup::make('Settings')->collapsed(),

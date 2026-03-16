@@ -9,7 +9,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
 
 class PostResource extends Resource
 {
@@ -17,7 +16,7 @@ class PostResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'CMS';
 
     protected static ?string $navigationLabel = 'Blog Posts';
 
@@ -31,20 +30,20 @@ class PostResource extends Resource
             Forms\Components\Section::make()->schema([
                 Forms\Components\TextInput::make('title')
                     ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                        if ($operation === 'create') {
-                            $set('slug', Str::slug($state));
-                        }
-                    }),
+                    ->maxLength(255),
+
+                Forms\Components\Placeholder::make('_slug_placeholder')
+                    ->label('')
+                    ->content('')
+                    ->hiddenOn('edit'),
 
                 Forms\Components\TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
                     ->unique(Post::class, 'slug', ignoreRecord: true)
                     ->rules(['alpha_dash'])
-                    ->helperText('URL-safe identifier. Auto-generated from title on create.'),
+                    ->helperText('URL-safe identifier. Auto-generated from title on create.')
+                    ->hiddenOn('create'),
 
                 Forms\Components\Select::make('author_id')
                     ->label('Author')

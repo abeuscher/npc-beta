@@ -7,6 +7,7 @@ use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\SiteSetting;
 use App\Models\WidgetType;
 use App\Forms\Components\UsStateSelect;
 use Filament\Forms;
@@ -17,7 +18,6 @@ use Illuminate\Support\HtmlString;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
 
 class EventResource extends Resource
 {
@@ -25,7 +25,7 @@ class EventResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'CMS';
 
     protected static ?string $navigationLabel = 'Events';
 
@@ -41,9 +41,12 @@ class EventResource extends Resource
             return; // already has one
         }
 
+        $autoPublish = SiteSetting::get('event_auto_publish', 'false') === 'true';
+
         $page = Page::create([
             'title'        => $event->title,
-            'is_published' => false,
+            'is_published' => $autoPublish,
+            'published_at' => $autoPublish ? now() : null,
             'type'         => 'event',
         ]);
 
@@ -149,20 +152,15 @@ class EventResource extends Resource
                     Forms\Components\Section::make('Settings')->schema([
                         Forms\Components\TextInput::make('title')
                             ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                if ($operation === 'create') {
-                                    $set('slug', Str::slug($state));
-                                }
-                            }),
+                            ->maxLength(255),
 
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(Event::class, 'slug', ignoreRecord: true)
                             ->regex('/^[a-z0-9\-]+$/')
-                            ->helperText('URL-safe identifier. Auto-generated from title on create.'),
+                            ->helperText('URL-safe identifier. Auto-generated from title on create.')
+                            ->hiddenOn('create'),
 
                         Forms\Components\Select::make('status')
                             ->options([

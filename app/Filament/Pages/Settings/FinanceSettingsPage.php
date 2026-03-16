@@ -19,7 +19,7 @@ class FinanceSettingsPage extends Page
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 5;
 
     protected static string $view = 'filament.pages.settings.finance-settings-page';
 

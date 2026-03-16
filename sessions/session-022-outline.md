@@ -1,61 +1,107 @@
-# Session 019 Outline — Import/Export: Extended
+# Session 022 Outline — Saved Import Field Maps
 
-> **Session Preparation**: This is a planning outline, not a complete implementation prompt.
-> At the start of this session, review the import/export infrastructure built in session 016.
-> The goal is to extend it to more data types and more source system presets without
-> rebuilding the core. Session 016's architecture should be designed with this extension in mind.
+> **Depends on:** Session 019 (import wizard complete)
+> **Unlocks:** Self-service client onboarding — map once, reuse forever
 
 ---
 
 ## Goal
 
-Extend the import/export system to cover additional data types (Donations, Memberships, Events registrants) and add presets for more specific source systems. Also address any usability problems discovered after clients used the session 016 importer.
+Replace the hard-coded presets in `FieldMapper.php` with a user-driven `FieldMapProfile`
+system. An installer maps the source CSV columns once, saves the profile with a label, and
+every subsequent import auto-detects and pre-fills the mapping on an exact header-set match.
 
 ---
 
-## Key Decisions to Make at Session Start
+## Data Model
 
-- **Which data types to add**: Based on what clients actually need. Likely: Donations (with fund/campaign mapping), Memberships (with tier/status), EventRegistrations. Prioritise by client demand.
-- **Donation import complexity**: Donations link to Contacts, Funds, and Campaigns. The importer must handle lookups (find or create the linked record). Decide how much auto-creation of linked records is acceptable.
-- **More presets**: Which source systems remain from session 016? Add the next most-requested ones. Common candidates: Bloomerang full export, QuickBooks contacts, DonorSnap, NeonCRM.
-- **Export improvements**: Are there export formats beyond CSV needed? (e.g. JSON for API consumers, XLSX for finance staff)
-- **Import history**: Should there be an audit log of past imports (who imported what, when, how many records)?
+### `field_map_profiles`
 
----
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | bigint PK | |
+| `label` | string | Human-readable name, e.g. "Wild Apricot Contacts" |
+| `model_type` | string | `contacts` for now; extensible |
+| `headers` | json | Sorted, normalised header array for matching |
+| `mapping` | json | `{"First Name": "first_name", …}` |
+| `created_by` | FK → users nullable | Audit only |
+| timestamps | | |
 
-## Scope (draft — refine at session start)
-
-**In:**
-- Import for 2-3 additional data types (priority determined at session start)
-- Additional source system presets
-- Import history / audit log (if not built in session 016)
-- Export for additional data types
-- Any fixes/improvements from session 016 based on real usage
-
-**Out:**
-- Real-time sync with external systems (API-based, not file-based — future feature)
-- Custom field creation on import (unless deferred from session 016)
+**Normalisation:** trim + lowercase each header before storing. Apply the same transform on
+upload before comparing. Comparison is set-equality (order-independent).
 
 ---
 
-## Rough Build List
+## Wizard Changes
 
-- Extend ImportJob to handle additional models
-- New FieldMapper presets for additional source systems
-- Import history model and Filament view
-- Additional export actions on relevant resources
-- Tests for new data types and presets
+### Upload step — profile detection
+
+After reading the uploaded file's headers:
+
+1. Normalise the header set.
+2. Query all `FieldMapProfile` records where `model_type = 'contacts'`.
+3. **Exact match found:** show a success notice ("Mapping profile 'X' detected — applied
+   automatically."), pre-fill the mapping, and advance directly to the Review step. The user
+   can click Back to adjust the mapping if needed.
+4. **No match:** proceed normally to the Map Columns step.
+
+_Start with exact-match only. Do not implement partial/fuzzy matching in this session._
+
+### Map Columns step — save profile button
+
+- Add a **"Save as profile…"** secondary action at the bottom of the step.
+- Opens a small inline form: a single required `label` text field + Save.
+- Saves a new `FieldMapProfile` with the normalised headers and current mapping state.
+- Shows a success notice. Does not advance the wizard.
+- If the same label already exists: create a duplicate (simpler). User can delete the old
+  one from the management UI.
 
 ---
 
-## Open Questions at Planning Time
+## Profile Management UI
 
-- What import problems did clients encounter after session 016? Fix those first.
-- Is XLSX support worth adding, or is CSV sufficient?
+A minimal Filament resource: `FieldMapProfileResource`
+
+- **List columns:** Label, model type, header count, created by, created at
+- **Actions:** Rename (edit label in-line or via edit page), Delete (with confirmation)
+- **No create action** — profiles are created through the wizard only
+- **Navigation:** `Tools` group alongside Import History
 
 ---
 
-## What This Unlocks
+## Remove Hard-Coded Presets
 
-- Full data portability for all core entities
-- Client onboarding is self-service for common source systems
+Drop the Bloomerang / Wild Apricot / generic presets from `FieldMapper.php`. They were
+approximations. The profile system is strictly better. No backwards-compatibility concern —
+this is a fresh-install product with no external API consumers of `FieldMapper`.
+
+---
+
+## Open Questions (answer at session start)
+
+1. Should the profile name be editable from the wizard confirmation notice, or only from
+   the management UI? (Management UI only is simpler — start there.)
+2. Nav group for `FieldMapProfileResource`: `Tools` or `Settings`?
+   **Recommendation:** `Tools` — it's operational, not configuration.
+
+---
+
+## Files Expected to Change
+
+| File | Action |
+|------|--------|
+| `database/migrations/xxxx_create_field_map_profiles_table.php` | New |
+| `app/Models/FieldMapProfile.php` | New |
+| `app/Filament/Resources/FieldMapProfileResource.php` | New |
+| `app/Livewire/Import/UploadStep.php` | Add profile detection after header read |
+| `app/Livewire/Import/MapColumnsStep.php` | Add Save Profile action |
+| `app/Services/FieldMapper.php` | Remove hard-coded presets |
+
+---
+
+## Tests
+
+- Unit: header normalisation and set-equality comparison
+- Feature: exact-match profile detected on upload, mapping pre-filled, Review step shown
+- Feature: saving a profile from Map Columns creates DB record with correct headers + mapping
+- Feature: `FieldMapProfileResource` list and delete

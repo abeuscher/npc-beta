@@ -27,7 +27,7 @@ class CmsSettingsPage extends Page
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 3;
 
     protected static string $view = 'filament.pages.settings.cms-settings-page';
 
@@ -39,7 +39,6 @@ class CmsSettingsPage extends Page
     {
         $this->form->fill([
             'site_name'        => SiteSetting::get('site_name', 'My Organization'),
-            'base_url'         => SiteSetting::get('base_url', 'http://localhost'),
             'blog_prefix'      => SiteSetting::get('blog_prefix', 'news'),
             'site_description' => SiteSetting::get('site_description', ''),
             'timezone'         => SiteSetting::get('timezone', 'America/Chicago'),
@@ -57,10 +56,6 @@ class CmsSettingsPage extends Page
                         Forms\Components\TextInput::make('site_name')
                             ->label('Site Name')
                             ->required(),
-
-                        Forms\Components\TextInput::make('base_url')
-                            ->label('Base URL')
-                            ->helperText('Used for generating absolute links. Example: https://yourorg.org'),
 
                         Forms\Components\TextInput::make('blog_prefix')
                             ->label('Blog Prefix')
@@ -149,7 +144,6 @@ class CmsSettingsPage extends Page
         $data = $this->form->getState();
 
         SiteSetting::set('site_name', $data['site_name']);
-        SiteSetting::set('base_url', $data['base_url'] ?? '');
         SiteSetting::set('blog_prefix', $data['blog_prefix']);
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
