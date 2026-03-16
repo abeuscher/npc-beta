@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\CmsTag;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class PageBuilder extends Component
@@ -17,8 +18,6 @@ class PageBuilder extends Component
     /** @var array<int, array<string, mixed>> */
     public array $widgetTypes = [];
 
-    /** @var array<int, array<string, mixed>> */
-    public array $cmsTags = [];
 
     // Add block modal
     public bool $showAddModal = false;
@@ -31,10 +30,6 @@ class PageBuilder extends Component
 
         $this->widgetTypes = WidgetType::orderBy('label')
             ->get(['id', 'handle', 'label', 'collections', 'config_schema'])
-            ->toArray();
-
-        $this->cmsTags = CmsTag::orderBy('name')
-            ->get(['id', 'name', 'slug'])
             ->toArray();
 
         $this->loadBlocks();
@@ -76,15 +71,21 @@ class PageBuilder extends Component
     public function createBlock(string $widgetTypeId): void
     {
         $this->validate([
-            'addModalLabel' => 'required|string|max:255',
-        ], [
-            'addModalLabel.required' => 'Please enter a label for this block.',
+            'addModalLabel' => 'nullable|string|max:255',
         ]);
 
         $widgetType = WidgetType::find($widgetTypeId);
 
         if (! $widgetType) {
             return;
+        }
+
+        // Auto-generate label if not provided: "Widget Type Label N"
+        if (blank($this->addModalLabel)) {
+            $count = PageWidget::where('page_id', $this->pageId)
+                ->whereHas('widgetType', fn ($q) => $q->where('id', $widgetTypeId))
+                ->count();
+            $this->addModalLabel = $widgetType->label . ' ' . ($count + 1);
         }
 
         // Build default config from config_schema
@@ -217,71 +218,48 @@ class PageBuilder extends Component
     }
 
     // -------------------------------------------------------------------------
-    // Config auto-save
+    // Child component event listeners
     // -------------------------------------------------------------------------
 
-    /**
-     * Explicitly save a singleton config value — used by richtext (Trix) fields
-     * which cannot use wire:model due to wire:ignore.
-     */
-    public function updateConfig(string $blockId, string $key, mixed $value): void
+    #[On('block-delete-requested')]
+    public function onDeleteBlock(string $blockId): void
     {
-        foreach ($this->blocks as $i => $block) {
-            if ($block['id'] === $blockId) {
-                $this->blocks[$i]['config'][$key] = $value;
-                PageWidget::where('id', $blockId)->update(['config' => $this->blocks[$i]['config']]);
-                break;
-            }
+        $this->deleteBlock($blockId);
+    }
+
+    #[On('block-copy-requested')]
+    public function onCopyBlock(string $blockId): void
+    {
+        $index = collect($this->blocks)->search(fn ($b) => $b['id'] === $blockId);
+        if ($index !== false) {
+            $this->copyBlock($index);
         }
     }
 
-    /**
-     * Explicitly save a query config value — used for scalar fields that prefer
-     * a direct call over the wire:model + updated() hook approach.
-     */
-    public function updateQueryConfig(string $blockId, string $collHandle, string $key, mixed $value): void
+    #[On('block-move-up-requested')]
+    public function onMoveUp(string $blockId): void
     {
-        foreach ($this->blocks as $i => $block) {
-            if ($block['id'] === $blockId) {
-                $qc                   = $this->blocks[$i]['query_config'];
-                $qc[$collHandle][$key] = $value;
-                $this->blocks[$i]['query_config'] = $qc;
-                PageWidget::where('id', $blockId)->update(['query_config' => $qc]);
-                break;
-            }
+        $index = collect($this->blocks)->search(fn ($b) => $b['id'] === $blockId);
+        if ($index !== false) {
+            $this->moveUp($index);
         }
     }
 
-    /**
-     * Livewire lifecycle hook — auto-persists wire:model-bound field changes to DB.
-     * Handles: blocks.N.label, blocks.N.config.*, blocks.N.query_config.*
-     */
-    public function updated(string $name): void
+    #[On('block-move-down-requested')]
+    public function onMoveDown(string $blockId): void
     {
-        if (preg_match('/^blocks\.(\d+)\.label$/', $name, $m)) {
-            $index = (int) $m[1];
-            $block = $this->blocks[$index] ?? null;
-            if ($block) {
-                PageWidget::where('id', $block['id'])->update(['label' => $block['label']]);
-            }
-            return;
+        $index = collect($this->blocks)->search(fn ($b) => $b['id'] === $blockId);
+        if ($index !== false) {
+            $this->moveDown($index);
         }
+    }
 
-        if (preg_match('/^blocks\.(\d+)\.config/', $name, $m)) {
-            $index = (int) $m[1];
-            $block = $this->blocks[$index] ?? null;
-            if ($block) {
-                PageWidget::where('id', $block['id'])->update(['config' => $block['config']]);
-            }
-            return;
-        }
-
-        if (preg_match('/^blocks\.(\d+)\.query_config/', $name, $m)) {
-            $index = (int) $m[1];
-            $block = $this->blocks[$index] ?? null;
-            if ($block) {
-                PageWidget::where('id', $block['id'])->update(['query_config' => $block['query_config']]);
-            }
+    #[On('block-add-modal-requested')]
+    public function onAddModalRequested(string $blockId, bool $below = false): void
+    {
+        $index = collect($this->blocks)->search(fn ($b) => $b['id'] === $blockId);
+        if ($index !== false) {
+            $this->openAddModal($below ? $index + 1 : $index);
         }
     }
 

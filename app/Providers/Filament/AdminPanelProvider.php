@@ -78,6 +78,23 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(
                     '<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/sort@3.14.3/dist/cdn.min.js"></script>'
                 )
+            )
+            // Load Quill v2 on all admin pages — used by the page builder and any
+            // QuillEditor form fields (e.g. event description, meeting details).
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => new HtmlString('
+                    <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+                    <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            if (typeof Quill === "undefined") return;
+                            var FontAttributor = Quill.import("formats/font");
+                            FontAttributor.whitelist = ["serif", "monospace"];
+                            Quill.register(FontAttributor, true);
+                        });
+                    </script>
+                ')
             );
     }
 }

@@ -45,14 +45,8 @@ class PageResource extends Resource
                     ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
                     ->hiddenOn('create'),
 
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'default' => 'Default',
-                        'event'   => 'Event',
-                        'post'    => 'Post',
-                    ])
-                    ->default('default')
-                    ->required(),
+                Forms\Components\Hidden::make('type')
+                    ->default('default'),
 
                 Forms\Components\Placeholder::make('public_url')
                     ->label('Public URL')
@@ -117,6 +111,11 @@ class PageResource extends Resource
         ]);
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->where('type', '!=', 'event');
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -127,14 +126,6 @@ class PageResource extends Resource
 
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-
-                Tables\Columns\TextColumn::make('type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'event' => 'warning',
-                        'post'  => 'info',
-                        default => 'gray',
-                    }),
 
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')

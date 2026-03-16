@@ -6,14 +6,15 @@ an outline file exists.
 
 ---
 
-## Already Outlined (021–024)
+## Already Outlined (021–025)
 
 | Session | Topic | File |
 |---------|-------|------|
-| 021 | Trix toolbar bug in page builder blocks | session-021-prompt.md |
-| 022 | Saved Import Field Maps | session-022-outline.md |
+| 021 | Trix → Quill in page builder; parent/child component split | session-021-prompt.md |
+| 022 | Saved Import Field Maps (superseded → moved to 023) | session-022-outline.md |
 | 023 | Custom Contact Fields | session-023-outline.md |
 | 024 | Help System (context-sensitive admin help) | session-024-outline.md |
+| 025 | Migrate blog posts into pages table; page builder for posts | session-025-outline.md |
 
 ---
 
@@ -56,9 +57,6 @@ be outlined at the start of its build session.
 - **Gated Pages** — Restrict pages or page paths to logged-in members. Two approaches to
   evaluate at session start: (a) a toggle on individual pages, or (b) a reserved path prefix
   (e.g. `/members`) where everything beneath it is gated. Depends on Member Portal session.
-
-- **Post Block Editor** — Posts gain the same ordered block stack as Pages (Session 009).
-  Currently posts keep a single rich text body.
 
 - **Media Library UI** — Admin UI for Spatie Media Library. Upload, tag, browse, attach to
   pages/posts/collection items.

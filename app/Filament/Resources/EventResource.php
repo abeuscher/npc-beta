@@ -9,6 +9,7 @@ use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
+use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action as FormAction;
@@ -87,7 +88,7 @@ class EventResource extends Resource
                 // ── Left column ───────────────────────────────────────────
                 Forms\Components\Group::make([
                     Forms\Components\Section::make('Description')->schema([
-                        Forms\Components\RichEditor::make('description')
+                        QuillEditor::make('description')
                             ->hiddenLabel()
                             ->nullable(),
                     ]),
@@ -141,7 +142,7 @@ class EventResource extends Resource
                                 ->maxLength(2048),
                         ]),
 
-                        Forms\Components\RichEditor::make('meeting_details')
+                        QuillEditor::make('meeting_details')
                             ->label('Joining Details')
                             ->nullable(),
                     ]),
