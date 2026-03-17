@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
 class TestMail extends Mailable
@@ -13,9 +12,9 @@ class TestMail extends Mailable
         return new Envelope(subject: 'Test');
     }
 
-    public function content(): Content
+    public function build(): static
     {
-        return new Content(text: 'test');
+        return $this->text('mail.test');
     }
 
     public function attachments(): array
