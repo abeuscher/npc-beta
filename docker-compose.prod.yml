@@ -1,0 +1,94 @@
+services:
+
+  # ─────────────────────────────────────────
+  # PHP-FPM Application
+  # ─────────────────────────────────────────
+  app:
+    image: ghcr.io/${GHCR_OWNER}/nonprofitcrm-app:${IMAGE_TAG:-latest}
+    container_name: nonprofitcrm_app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - storage_data:/var/www/html/storage
+      - bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - nonprofitcrm
+    depends_on:
+      - postgres
+      - redis
+
+  # ─────────────────────────────────────────
+  # Nginx Web Server
+  # ─────────────────────────────────────────
+  nginx:
+    image: ghcr.io/${GHCR_OWNER}/nonprofitcrm-web:${IMAGE_TAG:-latest}
+    container_name: nonprofitcrm_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - nonprofitcrm
+    depends_on:
+      - app
+
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: nonprofitcrm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-nonprofitcrm}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nonprofitcrm
+
+  # ─────────────────────────────────────────
+  # Queue Worker
+  # ─────────────────────────────────────────
+  worker:
+    image: ghcr.io/${GHCR_OWNER}/nonprofitcrm-app:${IMAGE_TAG:-latest}
+    container_name: nonprofitcrm_worker
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    env_file: .env
+    volumes:
+      - storage_data:/var/www/html/storage
+      - bootstrap_cache:/var/www/html/bootstrap/cache
+    networks:
+      - nonprofitcrm
+    depends_on:
+      - postgres
+      - redis
+
+  # ─────────────────────────────────────────
+  # Redis Cache & Queue
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: nonprofitcrm_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - nonprofitcrm
+
+# ─────────────────────────────────────────
+# Named Volumes (persistent data)
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
+  bootstrap_cache:
+
+# ─────────────────────────────────────────
+# Internal Network
+# ─────────────────────────────────────────
+networks:
+  nonprofitcrm:
+    driver: bridge

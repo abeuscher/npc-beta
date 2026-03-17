@@ -1,6 +1,6 @@
-We are about to begin Session [NNN] — [Title].
+We are about to begin Session 026. Deployment — Get Live on a Public Server.
 
-The outline is in `sessions/[NNN]. [Title].md`. Please read it, summarize the work back to me in a couple of sentences to confirm we are aligned, then write the full session prompt. We will review it together before execution begins.
+The outline is in `sessions/026. Deployment — Get Live on a Public Server.md`. Please read it, summarize the work back to me in a couple of sentences to confirm we are aligned, then write the full session prompt. We will review it together before execution begins.
 
 ---
 
