@@ -152,3 +152,4 @@ This project is being developed with agentic AI assistance (Claude, Anthropic). 
 ## License
 
 MIT. See [LICENSE](LICENSE). The software is free and open source. Managed hosting and deployment is the business model, not the software itself.
+
