@@ -1,6 +1,5 @@
 # Dependencies — rebuilt inside container
 vendor/
-node_modules/
 
 # Local environment — never bake secrets into an image
 .env
@@ -26,4 +25,3 @@ Thumbs.db
 
 # Build artifacts
 public/hot
-public/build

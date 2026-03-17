@@ -1,20 +1,3 @@
-
-# ─────────────────────────────────────────
-# Stage 1: Node — compile frontend assets
-# ─────────────────────────────────────────
-FROM node:22-alpine AS node-builder
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-# ─────────────────────────────────────────
-# Stage 2: PHP-FPM application image
-# ─────────────────────────────────────────
 FROM php:8.4-fpm AS app
 
 # System dependencies
@@ -58,9 +41,6 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Copy compiled frontend assets from node-builder
-COPY --from=node-builder /app/public/build ./public/build
-
 # Install PHP dependencies (production: no dev packages)
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
@@ -72,13 +52,12 @@ EXPOSE 9000
 CMD ["php-fpm"]
 
 # ─────────────────────────────────────────
-# Stage 3: Nginx web server image
+# Stage 2: Nginx web server image
 # ─────────────────────────────────────────
 FROM nginx:alpine AS web
 
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Copy public directory from app stage (static assets + Vite manifest)
 COPY --from=app /var/www/html/public /var/www/html/public
 
 EXPOSE 80
