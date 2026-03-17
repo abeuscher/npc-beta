@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm app/Filament/Resources/PostResource.php)",
+      "Bash(rm -rf app/Filament/Resources/PostResource/)"
+    ]
+  }
+}
