@@ -29,8 +29,13 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $brandName = SiteSetting::get('admin_brand_name', '');
-        $logoPath  = SiteSetting::get('admin_logo_path', '');
+        try {
+            $brandName = SiteSetting::get('admin_brand_name', '');
+            $logoPath  = SiteSetting::get('admin_logo_path', '');
+        } catch (\Throwable $e) {
+            $brandName = '';
+            $logoPath  = '';
+        }
         $logoSrc   = $logoPath !== ''
             ? Storage::disk('public')->url($logoPath)
             : asset('images/admin-logo.png');
