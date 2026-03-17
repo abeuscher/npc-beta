@@ -169,7 +169,11 @@ class RoleResource extends Resource
                     })
                     ->disabled(fn (Role $record) => in_array($record->name, ['super_admin', 'cms_editor'])),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     // ── Pages ─────────────────────────────────────────────────────────────────

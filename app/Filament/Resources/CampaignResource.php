@@ -44,7 +44,16 @@ class CampaignResource extends Resource
                 Tables\Columns\TextColumn::make('starts_on')->date()->sortable(),
                 Tables\Columns\TextColumn::make('ends_on')->date()->sortable(),
             ])
-            ->defaultSort('name');
+            ->defaultSort('name')
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

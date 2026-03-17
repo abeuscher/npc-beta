@@ -273,6 +273,15 @@ class ContactResource extends Resource
                     }),
             ])
             ->defaultSort('created_at', 'desc')
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
             ->modifyQueryUsing(fn ($query) => $query->with([
                 'household',
                 'memberships' => fn ($q) => $q->where('status', 'active'),

@@ -2,8 +2,7 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\PageResource\Pages;
-use App\Livewire\PageBuilder;
+use App\Filament\Resources\PostResource\Pages;
 use App\Models\CustomFieldDef;
 use App\Models\Page;
 use App\Models\SiteSetting;
@@ -13,16 +12,24 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
+use App\Livewire\PageBuilder;
 
-class PageResource extends Resource
+class PostResource extends Resource
 {
     protected static ?string $model = Page::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon = 'heroicon-o-pencil-square';
 
     protected static ?string $navigationGroup = 'CMS';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Blog Posts';
+
+    protected static ?int $navigationSort = 2;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->where('type', 'post');
+    }
 
     public static function form(Form $form): Form
     {
@@ -42,12 +49,11 @@ class PageResource extends Resource
                     ->maxLength(255)
                     ->unique(Page::class, 'slug', ignoreRecord: true)
                     ->rules(['regex:/^[a-z0-9\-\/]+$/'])
-                    ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                    ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
+                    ->helperText('URL-safe identifier. Includes the blog prefix (e.g. news/my-post).')
                     ->hiddenOn('create'),
 
                 Forms\Components\Hidden::make('type')
-                    ->default('default'),
+                    ->default('post'),
 
                 Forms\Components\Placeholder::make('public_url')
                     ->label('Public URL')
@@ -56,8 +62,7 @@ class PageResource extends Resource
                             return '—';
                         }
                         $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                        $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
-                        $url  = $base . $path;
+                        $url  = $base . '/' . $record->slug;
 
                         return new HtmlString(
                             '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
@@ -70,7 +75,7 @@ class PageResource extends Resource
             ])->columns(2),
 
             Forms\Components\Section::make('Page Builder')
-                ->description('Add and arrange content blocks for this page.')
+                ->description('Add and arrange content blocks for this post.')
                 ->schema([
                     Forms\Components\Livewire::make(
                         PageBuilder::class,
@@ -100,7 +105,7 @@ class PageResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('meta_title')
                         ->maxLength(255)
-                        ->helperText('Defaults to page title if blank.'),
+                        ->helperText('Defaults to post title if blank.'),
 
                     Forms\Components\Textarea::make('meta_description')
                         ->rows(3)
@@ -118,13 +123,6 @@ class PageResource extends Resource
                 ->columns(2)
                 ->hidden(fn () => CustomFieldDef::forModel('page')->doesntExist()),
         ]);
-    }
-
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
-    {
-        return parent::getEloquentQuery()
-            ->where('type', '!=', 'event')
-            ->where('type', '!=', 'post');
     }
 
     public static function table(Table $table): Table
@@ -173,9 +171,9 @@ class PageResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListPages::route('/'),
-            'create' => Pages\CreatePage::route('/create'),
-            'edit'   => Pages\EditPage::route('/{record}/edit'),
+            'index'  => Pages\ListPosts::route('/'),
+            'create' => Pages\CreatePost::route('/create'),
+            'edit'   => Pages\EditPost::route('/{record}/edit'),
         ];
     }
 }

@@ -81,7 +81,16 @@ class TransactionResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
             ])
-            ->defaultSort('occurred_at', 'desc');
+            ->defaultSort('occurred_at', 'desc')
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

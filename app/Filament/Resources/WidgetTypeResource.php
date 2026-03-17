@@ -171,7 +171,16 @@ class WidgetTypeResource extends Resource
                     ->dateTime()
                     ->sortable(),
             ])
-            ->defaultSort('label');
+            ->defaultSort('label')
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     private static function defaultTemplate(): string
