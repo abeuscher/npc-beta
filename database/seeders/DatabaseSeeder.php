@@ -70,6 +70,9 @@ class DatabaseSeeder extends Seeder
             ['key' => 'use_pico',         'value' => 'false',              'group' => 'styles',  'type' => 'boolean'],
             ['key' => 'custom_css_path',  'value' => null,                 'group' => 'styles',  'type' => 'string'],
             ['key' => 'logo_path',        'value' => null,                 'group' => 'styles',  'type' => 'string'],
+            ['key' => 'admin_brand_name', 'value' => 'NonprofitCRM',       'group' => 'admin',   'type' => 'string'],
+            ['key' => 'admin_logo_path',  'value' => null,                 'group' => 'admin',   'type' => 'string'],
+['key' => 'dashboard_welcome','value' => '',                   'group' => 'admin',   'type' => 'string'],
         ];
 
         foreach ($siteSettingDefaults as $setting) {

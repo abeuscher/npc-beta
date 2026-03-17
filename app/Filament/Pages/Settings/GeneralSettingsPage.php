@@ -8,6 +8,8 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class GeneralSettingsPage extends Page
 {
@@ -33,7 +35,10 @@ class GeneralSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_url' => SiteSetting::get('base_url', 'http://localhost'),
+            'site_url'          => SiteSetting::get('base_url', 'http://localhost'),
+            'admin_brand_name'  => SiteSetting::get('admin_brand_name', ''),
+            'admin_logo_upload' => null,
+            'dashboard_welcome' => SiteSetting::get('dashboard_welcome', ''),
         ]);
     }
 
@@ -49,6 +54,44 @@ class GeneralSettingsPage extends Page
                             ->url()
                             ->required(),
                     ]),
+
+                Forms\Components\Section::make('Admin Panel')
+                    ->schema([
+                        Forms\Components\TextInput::make('admin_brand_name')
+                            ->label('Company Name')
+                            ->nullable()
+                            ->hint('Appears in the admin header beside your logo.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\RichEditor::make('dashboard_welcome')
+                            ->label('Dashboard welcome message')
+                            ->nullable()
+                            ->columnSpanFull()
+                            ->helperText('Displayed at the top of the admin dashboard. Leave blank to hide.'),
+
+                        Forms\Components\Placeholder::make('current_logo_preview')
+                            ->label('Current logo')
+                            ->content(function () {
+                                $path = SiteSetting::get('admin_logo_path', '');
+                                if (!$path) {
+                                    return 'No logo uploaded.';
+                                }
+                                return new HtmlString('<img src="' . e(Storage::disk('public')->url($path)) . '" style="max-height:4rem;">');
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\FileUpload::make('admin_logo_upload')
+                            ->label('Upload new logo')
+                            ->nullable()
+                            ->disk('public')
+                            ->directory('site')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])
+                            ->columnSpanFull()
+                            ->helperText('Replaces the current logo on save.'),
+
+                    ])
+                    ->columns(2),
             ])
             ->statePath('data');
     }
@@ -67,10 +110,18 @@ class GeneralSettingsPage extends Page
         $data = $this->form->getState();
 
         SiteSetting::set('base_url', rtrim($data['site_url'], '/'));
+        SiteSetting::set('admin_brand_name', trim($data['admin_brand_name'] ?? ''));
+        if (!empty($data['admin_logo_upload'])) {
+            SiteSetting::set('admin_logo_path', $data['admin_logo_upload']);
+        }
+
+        SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
 
         Notification::make()
             ->title('Settings saved')
             ->success()
             ->send();
+
+        $this->redirect(static::getUrl());
     }
 }

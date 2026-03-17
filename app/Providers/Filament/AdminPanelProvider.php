@@ -21,12 +21,21 @@ use Illuminate\Session\Middleware\StartSession;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\HtmlString;
+use App\Models\SiteSetting;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
+        $brandName = SiteSetting::get('admin_brand_name', '');
+        $logoPath  = SiteSetting::get('admin_logo_path', '');
+        $logoSrc   = $logoPath !== ''
+            ? Storage::disk('public')->url($logoPath)
+            : asset('images/admin-logo.png');
+
+
         return $panel
             ->default()
             ->id('admin')
@@ -66,6 +75,10 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->brandLogo(new HtmlString(
+                '<img src="' . e($logoSrc) . '">' .
+                '<h1>' . e($brandName) . '</h1>'
+            ))
             // Admin panel style overrides (form borders, Trix toolbar).
             ->renderHook(
                 'panels::head.end',

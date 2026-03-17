@@ -37,24 +37,21 @@ This is the single working reference for all sessions. Completed sessions are li
 | 030 | List & Table UI Overhaul — Bulk Actions Everywhere |
 | 031 | Site Chrome — Named Menus, Header & Footer |
 | 032 | Navigation Model and UI Restructure |
-
----
-
-## Admin UI & Daily Usability
-
-### 033 — Admin Branding & Dashboard
-
-- **Admin header logo** — file upload stored in `site_settings`, rendered via `->brandLogo()` in the panel provider.
-- **Admin header title** — text field in `site_settings`, rendered via `->brandName()`.
-- **Dashboard welcome message** — rich-text field in `site_settings`, displayed on the Filament dashboard page.
+| 033 | Admin Branding & Dashboard |
 
 ---
 
 ## Email
 
+### 034 — Transactional Email — Resend Integration
+
+Mail Settings page: driver select (`log` / Resend), from name, from address, Resend API key. Runtime config applied in `AppServiceProvider`. Default driver is `log` (no sending). Resend is the first live provider.
+
 ### System Email Templates & Language Editor
 
-### Transactional Email Service Hookup
+### Multi-Vendor Mail Support
+
+*Add additional sending providers to the Mail Settings page: SMTP, AWS SES, Postmark, Mailgun. Each provider adds its own credential fields (visible when that driver is selected) and a config branch in `AppServiceProvider`. No architectural changes required — the switchable driver pattern from session 034 is already in place.*
 
 ### Mailing List Manager
 
