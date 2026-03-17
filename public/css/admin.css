@@ -4,15 +4,45 @@
  * Plain CSS — no build step required.
  */
 
-/* ── Form field borders ──────────────────────────────────────────────────────
+/* ── Light-theme border visibility ──────────────────────────────────────────
  *
- * Filament's default ring is ring-gray-950/10 (10% opacity near-black),
- * which is nearly invisible on average monitors. Overriding the Tailwind
- * ring CSS variable to a solid gray-400 makes borders visible everywhere.
+ * Filament's default rings/borders use 5–10% opacity near-black, which is
+ * nearly invisible on average monitors. The overrides below apply only in
+ * light mode (html:not(.dark)) so the dark theme is completely unaffected.
+ *
+ * gray-300 = rgb(209 213 219) — used for structural dividers (table rows)
+ * gray-400 = rgb(156 163 175) — used for component outlines (sections, inputs)
  *
  * -------------------------------------------------------------------------*/
 
-.fi-input-wrp {
+/* Form field input wrappers */
+html:not(.dark) .fi-input-wrp {
+    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+}
+
+/* Section / card outlines */
+html:not(.dark) .fi-section {
+    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+}
+
+/* Table outer container outline */
+html:not(.dark) .fi-ta-ctn {
+    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+}
+
+/* Table row dividers (divide-y) */
+html:not(.dark) .fi-ta-row {
+    border-color: rgb(209 213 219); /* gray-300 */
+}
+
+/* Table header bottom border */
+html:not(.dark) .fi-ta-header-cell {
+    border-bottom-color: rgb(209 213 219); /* gray-300 */
+}
+
+/* Fieldset / repeater borders */
+html:not(.dark) .fi-fo-fieldset,
+html:not(.dark) .fi-fo-repeater-item {
     --tw-ring-color: rgb(156 163 175); /* gray-400 */
 }
 

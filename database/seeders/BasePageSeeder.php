@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
@@ -74,6 +75,11 @@ class BasePageSeeder extends Seeder
         $this->seedWidget($blogPage, 'blog_listing', 'Blog Listing', [], 1);
 
         // ── Base navigation ───────────────────────────────────────────────────
+        $primaryMenu = NavigationMenu::firstOrCreate(
+            ['handle' => 'primary'],
+            ['label'  => 'primary'],
+        );
+
         $navPages = [
             ['label' => 'Home',    'slug' => 'home',        'sort' => 1],
             ['label' => 'About',   'slug' => 'about',       'sort' => 2],
@@ -90,7 +96,7 @@ class BasePageSeeder extends Seeder
             }
 
             NavigationItem::firstOrCreate(
-                ['label' => $item['label']],
+                ['label' => $item['label'], 'navigation_menu_id' => $primaryMenu->id],
                 [
                     'page_id'    => $page->id,
                     'sort_order' => $item['sort'],

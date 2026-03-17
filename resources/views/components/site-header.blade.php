@@ -1,15 +1,18 @@
 @php
     $headerNavHandle = \App\Models\SiteSetting::get('header_nav_handle', 'primary');
     $headerContent   = \App\Models\SiteSetting::get('header_content', '');
-    $headerNavItems  = \App\Models\NavigationItem::where('is_visible', true)
-        ->where('menu_handle', $headerNavHandle)
-        ->whereNull('parent_id')
-        ->orderBy('sort_order')
-        ->with([
-            'page',
-            'children' => fn ($q) => $q->where('is_visible', true)->orderBy('sort_order')->with('page'),
-        ])
-        ->get();
+    $headerNavMenu   = \App\Models\NavigationMenu::where('handle', $headerNavHandle)->first();
+    $headerNavItems  = $headerNavMenu
+        ? $headerNavMenu->items()
+            ->where('is_visible', true)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->with([
+                'page',
+                'children' => fn ($q) => $q->where('is_visible', true)->orderBy('sort_order')->with('page'),
+            ])
+            ->get()
+        : collect();
 @endphp
 
 <header x-data="{ open: false }">

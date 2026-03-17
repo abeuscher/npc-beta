@@ -1,11 +1,14 @@
 @php
     $footerNavHandle = \App\Models\SiteSetting::get('footer_nav_handle', 'footer');
-    $footerNavItems  = \App\Models\NavigationItem::where('is_visible', true)
-        ->where('menu_handle', $footerNavHandle)
-        ->whereNull('parent_id')
-        ->orderBy('sort_order')
-        ->with('page')
-        ->get();
+    $footerNavMenu   = \App\Models\NavigationMenu::where('handle', $footerNavHandle)->first();
+    $footerNavItems  = $footerNavMenu
+        ? $footerNavMenu->items()
+            ->where('is_visible', true)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->with('page')
+            ->get()
+        : collect();
 @endphp
 
 <footer>

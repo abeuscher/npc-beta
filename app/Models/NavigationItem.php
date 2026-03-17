@@ -20,13 +20,18 @@ class NavigationItem extends Model
         'sort_order',
         'target',
         'is_visible',
-        'menu_handle',
+        'navigation_menu_id',
     ];
 
     protected $casts = [
         'is_visible'  => 'boolean',
         'sort_order'  => 'integer',
     ];
+
+    public function menu(): BelongsTo
+    {
+        return $this->belongsTo(NavigationMenu::class, 'navigation_menu_id');
+    }
 
     public function page(): BelongsTo
     {

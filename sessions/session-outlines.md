@@ -36,17 +36,17 @@ This is the single working reference for all sessions. Completed sessions are li
 | 026 | Deployment — Get Live on a Public Server |
 | 030 | List & Table UI Overhaul — Bulk Actions Everywhere |
 | 031 | Site Chrome — Named Menus, Header & Footer |
-| 032 | Navigation Model and UI Restructure *(prompt written, not yet executed)* |
+| 032 | Navigation Model and UI Restructure |
 
 ---
 
 ## Admin UI & Daily Usability
 
-### Admin Dashboard
+### 033 — Admin Branding & Dashboard
 
-### White-Label & Admin Branding
-
-### Inactive Field Visual Indicator
+- **Admin header logo** — file upload stored in `site_settings`, rendered via `->brandLogo()` in the panel provider.
+- **Admin header title** — text field in `site_settings`, rendered via `->brandName()`.
+- **Dashboard welcome message** — rich-text field in `site_settings`, displayed on the Filament dashboard page.
 
 ---
 
