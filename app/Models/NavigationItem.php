@@ -20,6 +20,7 @@ class NavigationItem extends Model
         'sort_order',
         'target',
         'is_visible',
+        'menu_handle',
     ];
 
     protected $casts = [

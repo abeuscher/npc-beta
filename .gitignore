@@ -18,3 +18,4 @@ auth.json
 npm-debug.log
 yarn-error.log
 *.log
+/resources/views/custom/

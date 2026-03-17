@@ -33,57 +33,11 @@
 </head>
 <body>
 
-    {{-- Public navigation --}}
-    @php
-        $navItems = \App\Models\NavigationItem::where('is_visible', true)
-            ->whereNull('parent_id')
-            ->orderBy('sort_order')
-            ->with(['children', 'page'])
-            ->get();
-    @endphp
-
-    <nav x-data="{ open: false }">
-        <button
-            x-on:click="open = !open"
-            aria-label="Toggle navigation"
-            aria-expanded="false"
-            x-bind:aria-expanded="open.toString()"
-        >&#9776;</button>
-
-        <ul x-show="open || true" x-cloak>
-            @foreach ($navItems as $item)
-                <li>
-                    @php
-                        if ($item->page_id && $item->page) {
-                            $href = url('/' . $item->page->slug);
-                        } else {
-                            $href = $item->url ?? '#';
-                        }
-                    @endphp
-                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a>
-
-                    @if ($item->children->isNotEmpty())
-                        <ul>
-                            @foreach ($item->children as $child)
-                                <li>
-                                    @php
-                                        if ($child->page_id && $child->page) {
-                                            $childHref = url('/' . $child->page->slug);
-                                        } else {
-                                            $childHref = $child->url ?? '#';
-                                        }
-                                    @endphp
-                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}">{{ $child->label }}</a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </li>
-            @endforeach
-        </ul>
-    </nav>
+    @include(view()->exists('custom.header') ? 'custom.header' : 'components.site-header')
 
     @yield('content')
+
+    @include(view()->exists('custom.footer') ? 'custom.footer' : 'components.site-footer')
 
     <script>
     window.__site = {

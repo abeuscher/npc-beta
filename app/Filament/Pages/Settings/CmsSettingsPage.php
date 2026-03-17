@@ -38,12 +38,15 @@ class CmsSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_name'        => SiteSetting::get('site_name', 'My Organization'),
-            'blog_prefix'      => SiteSetting::get('blog_prefix', 'news'),
-            'site_description' => SiteSetting::get('site_description', ''),
-            'timezone'         => SiteSetting::get('timezone', 'America/Chicago'),
-            'contact_email'    => SiteSetting::get('contact_email', ''),
-            'use_pico'         => SiteSetting::get('use_pico', false),
+            'site_name'          => SiteSetting::get('site_name', 'My Organization'),
+            'blog_prefix'        => SiteSetting::get('blog_prefix', 'news'),
+            'site_description'   => SiteSetting::get('site_description', ''),
+            'timezone'           => SiteSetting::get('timezone', 'America/Chicago'),
+            'contact_email'      => SiteSetting::get('contact_email', ''),
+            'use_pico'           => SiteSetting::get('use_pico', false),
+            'header_nav_handle'  => SiteSetting::get('header_nav_handle', 'primary'),
+            'footer_nav_handle'  => SiteSetting::get('footer_nav_handle', 'footer'),
+            'header_content'     => SiteSetting::get('header_content', ''),
         ]);
     }
 
@@ -68,7 +71,8 @@ class CmsSettingsPage extends Page
                                     if (in_array(strtolower($value), $reserved, true)) {
                                         $fail("'{$value}' is a reserved word and cannot be used as a blog prefix.");
                                     }
-                                    if (CmsPage::where('slug', $value)->exists()) {
+                                    $currentPrefix = SiteSetting::get('blog_prefix', 'news');
+                                    if (CmsPage::where('slug', $value)->where('slug', '!=', $currentPrefix)->exists()) {
                                         $fail("This prefix conflicts with an existing page slug '/{$value}'. Choose a different prefix or rename the page.");
                                     }
                                 },
@@ -99,6 +103,38 @@ class CmsSettingsPage extends Page
                             ->nullable(),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('Site Chrome')
+                    ->schema([
+                        Forms\Components\TextInput::make('header_nav_handle')
+                            ->label('Header nav handle')
+                            ->required()
+                            ->default('primary')
+                            ->helperText('Menu handle to render in the site header.'),
+
+                        Forms\Components\TextInput::make('footer_nav_handle')
+                            ->label('Footer nav handle')
+                            ->required()
+                            ->default('footer')
+                            ->helperText('Menu handle to render in the site footer.'),
+
+                        Forms\Components\RichEditor::make('header_content')
+                            ->label('Header content')
+                            ->nullable()
+                            ->columnSpanFull()
+                            ->helperText('Rendered on the left side of the site header.'),
+
+                        Forms\Components\Placeholder::make('custom_header_status')
+                            ->label('Custom header override')
+                            ->content(fn () => view()->exists('custom.header') ? 'custom/header.blade.php is present on this deployment.' : 'Not present — default site-header component is used.'),
+
+                        Forms\Components\Placeholder::make('custom_footer_status')
+                            ->label('Custom footer override')
+                            ->content(fn () => view()->exists('custom.footer') ? 'custom/footer.blade.php is present on this deployment.' : 'Not present — default site-footer component is used.'),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(),
 
                 Forms\Components\Section::make('Styles')
                     ->schema([
@@ -152,6 +188,9 @@ class CmsSettingsPage extends Page
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
         SiteSetting::set('use_pico', $data['use_pico'] ? 'true' : 'false');
+        SiteSetting::set('header_nav_handle', $data['header_nav_handle'] ?? 'primary');
+        SiteSetting::set('footer_nav_handle', $data['footer_nav_handle'] ?? 'footer');
+        SiteSetting::set('header_content', $data['header_content'] ?? '');
 
         // When the blog prefix changes, update slugs on all type='post' pages
         // and rename the blog index page slug.

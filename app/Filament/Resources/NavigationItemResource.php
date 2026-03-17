@@ -9,6 +9,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class NavigationItemResource extends Resource
@@ -77,6 +78,11 @@ class NavigationItemResource extends Resource
                 Forms\Components\TextInput::make('sort_order')
                     ->numeric()
                     ->default(0),
+
+                Forms\Components\TextInput::make('menu_handle')
+                    ->label('Menu handle')
+                    ->required()
+                    ->default('primary'),
 
                 Forms\Components\Group::make([
                     Forms\Components\Toggle::make('is_visible')
@@ -186,9 +192,18 @@ class NavigationItemResource extends Resource
                     ->placeholder('—')
                     ->limit(40),
 
+                Tables\Columns\TextColumn::make('menu_handle')
+                    ->label('Menu')
+                    ->sortable(),
+
                 Tables\Columns\IconColumn::make('is_visible')
                     ->label('Visible')
                     ->boolean(),
+            ])
+            ->filters([
+                SelectFilter::make('menu_handle')
+                    ->label('Menu')
+                    ->options(fn () => NavigationItem::distinct()->pluck('menu_handle', 'menu_handle')->toArray()),
             ])
             ->defaultSort('sort_order')
             ->actions([
