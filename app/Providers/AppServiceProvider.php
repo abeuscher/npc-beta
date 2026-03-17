@@ -30,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
                 'site.use_pico'      => (bool) ($settings->get('use_pico')?->value ?? false),
                 'site.custom_css'    => $settings->get('custom_css_path')?->value ?? null,
                 'site.logo'          => $settings->get('logo_path')?->value     ?? null,
+                'mail.default'      => $settings->get('mail_driver')?->value      ?? 'log',
+                'mail.from.address' => $settings->get('mail_from_address')?->value ?? 'hello@example.com',
+                'mail.from.name'    => $settings->get('mail_from_name')?->value    ?? config('app.name'),
+                'resend.api_key'    => $settings->get('resend_api_key')?->value    ?? '',
             ]);
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults

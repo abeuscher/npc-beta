@@ -1,0 +1,135 @@
+<?php
+
+namespace App\Filament\Pages\Settings;
+
+use App\Mail\TestMail;
+use App\Models\SiteSetting;
+use Filament\Actions\Action;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Illuminate\Support\Facades\Mail;
+
+class MailSettingsPage extends Page
+{
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
+    protected static ?string $navigationGroup = 'Settings';
+
+    protected static ?string $navigationLabel = 'Mail';
+
+    protected static ?string $navigationIcon = 'heroicon-o-envelope';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static string $view = 'filament.pages.settings.mail-settings-page';
+
+    protected static ?string $title = 'Mail Settings';
+
+    public ?array $data = [];
+
+    public function mount(): void
+    {
+        $this->form->fill([
+            'mail_driver'       => SiteSetting::get('mail_driver', 'log'),
+            'mail_from_name'    => SiteSetting::get('mail_from_name', ''),
+            'mail_from_address' => SiteSetting::get('mail_from_address', ''),
+            'resend_api_key'    => SiteSetting::get('resend_api_key', ''),
+        ]);
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Sending')
+                    ->schema([
+                        Forms\Components\Select::make('mail_driver')
+                            ->label('Mail driver')
+                            ->required()
+                            ->options([
+                                'log'    => 'Local — log only (no sending)',
+                                'resend' => 'Resend',
+                            ])
+                            ->helperText('Local writes emails to the Laravel log. No messages are delivered. Switch to Resend to send real email.')
+                            ->live(),
+
+                        Forms\Components\TextInput::make('mail_from_name')
+                            ->label('From name')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('mail_from_address')
+                            ->label('From address')
+                            ->email()
+                            ->required(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Resend')
+                    ->schema([
+                        Forms\Components\TextInput::make('resend_api_key')
+                            ->label('API Key')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->helperText('Your Resend API key. Starts with re_.'),
+                    ])
+                    ->visible(fn (Get $get) => $get('mail_driver') === 'resend'),
+            ])
+            ->statePath('data');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('sendTest')
+                ->label('Send test email')
+                ->icon('heroicon-o-paper-airplane')
+                ->form([
+                    Forms\Components\TextInput::make('email')
+                        ->label('Send to')
+                        ->email()
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    Mail::to($data['email'])->send(new TestMail());
+
+                    Notification::make()
+                        ->title('Test email sent')
+                        ->success()
+                        ->send();
+                }),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->action('save'),
+        ];
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        SiteSetting::set('mail_driver',       $data['mail_driver']);
+        SiteSetting::set('mail_from_name',    trim($data['mail_from_name']));
+        SiteSetting::set('mail_from_address', trim($data['mail_from_address']));
+        SiteSetting::set('resend_api_key',    trim($data['resend_api_key'] ?? ''));
+
+        Notification::make()
+            ->title('Settings saved')
+            ->success()
+            ->send();
+
+        $this->redirect(static::getUrl());
+    }
+}

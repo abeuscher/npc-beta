@@ -73,6 +73,10 @@ class DatabaseSeeder extends Seeder
             ['key' => 'admin_brand_name', 'value' => 'NonprofitCRM',       'group' => 'admin',   'type' => 'string'],
             ['key' => 'admin_logo_path',  'value' => null,                 'group' => 'admin',   'type' => 'string'],
 ['key' => 'dashboard_welcome','value' => '',                   'group' => 'admin',   'type' => 'string'],
+            ['key' => 'mail_driver',        'value' => 'log',            'group' => 'mail',    'type' => 'string'],
+            ['key' => 'mail_from_name',     'value' => '',               'group' => 'mail',    'type' => 'string'],
+            ['key' => 'mail_from_address',  'value' => '',               'group' => 'mail',    'type' => 'string'],
+            ['key' => 'resend_api_key',     'value' => '',               'group' => 'mail',    'type' => 'string'],
         ];
 
         foreach ($siteSettingDefaults as $setting) {

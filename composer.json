@@ -10,6 +10,7 @@
         "laravel/framework": "^11.0",
         "laravel/horizon": "^5.27",
         "predis/predis": "^2.2",
+        "resend/resend-php": "^1.1",
         "scssphp/scssphp": "^2.1",
         "spatie/laravel-activitylog": "^4.8",
         "spatie/laravel-medialibrary": "^11.7",

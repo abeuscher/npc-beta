@@ -38,14 +38,11 @@ This is the single working reference for all sessions. Completed sessions are li
 | 031 | Site Chrome — Named Menus, Header & Footer |
 | 032 | Navigation Model and UI Restructure |
 | 033 | Admin Branding & Dashboard |
+| 034 | Transactional Email — Resend Integration |
 
 ---
 
 ## Email
-
-### 034 — Transactional Email — Resend Integration
-
-Mail Settings page: driver select (`log` / Resend), from name, from address, Resend API key. Runtime config applied in `AppServiceProvider`. Default driver is `log` (no sending). Resend is the first live provider.
 
 ### System Email Templates & Language Editor
 
