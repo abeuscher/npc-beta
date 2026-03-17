@@ -7,7 +7,7 @@ FROM node:22-alpine AS node-builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npm run build
