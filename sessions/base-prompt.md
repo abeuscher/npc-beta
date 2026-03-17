@@ -1,13 +1,17 @@
-We are about to begin Session 026. Deployment — Get Live on a Public Server.
+We are about to begin a new session: **[TITLE]**.
 
-The outline is in `sessions/026. Deployment — Get Live on a Public Server.md`. Please read it, summarize the work back to me in a couple of sentences to confirm we are aligned, then write the full session prompt. We will review it together before execution begins.
+Please open `sessions/session-outlines.md` and find the section for this session. Read the stub there, then summarize what you understand the session to involve and ask any clarifying questions before we proceed.
+
+Once we have discussed and you have a clear picture of what needs to be built, write a complete session prompt in your response — covering goals, phases, data model changes if any, and anything else needed to execute. We will review it together.
+
+When I confirm the prompt is correct, proceed to execution.
 
 ---
 
 ## Process rules for every session
 
 - **Before writing any code**, read every file you intend to modify.
-- **Pause and ask** any time a decision point arises that is not covered by the outline.
+- **Pause and ask** any time a decision point arises that is not covered by the agreed prompt.
 - **If any external service is unavailable**, stop and ask — do not attempt to troubleshoot.
 - **Run migrations via Docker** after writing them: `docker compose exec app php artisan migrate` (or `migrate:fresh --seed` when appropriate). Do not pause to ask first.
 - **If the PostgreSQL container becomes unresponsive** (500/exec errors), ask the user to restart it rather than retrying.
@@ -15,8 +19,8 @@ The outline is in `sessions/026. Deployment — Get Live on a Public Server.md`.
 - **Pause for manual testing.** Do not proceed past this point without explicit instruction.
 - **Ask explicitly whether to close the session** before writing the log or committing.
 - **Session log**: write a log file at `sessions/[NNN]. [Title] — Log.md` summarising what was built, what changed, and any deferred decisions.
-- **Check the roadmap**: after writing the log, review `sessions/000. Table of Contents.md` and any relevant stub files to see if this session's work affects upcoming sessions. Update stubs if needed.
-- **Commit**: stage all changed files (including the log), commit to a feature branch named `session-[nnn]`, and notify the user. Do not push — the user will push and merge when ready.
+- **Update session-outlines.md**: after writing the log, move this session's title into the Completed Sessions table and review upcoming stubs — update them if this session's work affects them.
+- **Commit**: stage all changed files (including the log and updated outlines), commit to a feature branch named `session-[nnn]`, and notify the user. Do not push — the user will push and merge when ready.
 - **Do not begin the next session** until the user explicitly starts it.
 
 ---
