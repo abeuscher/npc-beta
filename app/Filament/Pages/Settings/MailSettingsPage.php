@@ -97,6 +97,26 @@ class MailSettingsPage extends Page
                         ->required(),
                 ])
                 ->action(function (array $data) {
+                    $driver = SiteSetting::get('mail_driver', 'log');
+
+                    if ($driver === 'log') {
+                        Notification::make()
+                            ->title('Mail driver is set to local')
+                            ->body('No email will be delivered. Switch to Resend to send real email.')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+
+                    if (empty(config('resend.api_key'))) {
+                        Notification::make()
+                            ->title('Resend API key is not configured')
+                            ->body('Save a valid API key before sending a test email.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
                     Mail::to($data['email'])->send(new TestMail());
 
                     Notification::make()
