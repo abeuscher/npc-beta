@@ -48,21 +48,41 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ### 037 — MailChimp Integration
 
-Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_contact = false AND mailing_list_opt_in = true`) universally in `MailingListQueryBuilder`. `MailChimpService` with batch sync (chunks of 500, FNAME/LNAME merge fields, list name as MailChimp tag). "Sync to MailChimp" action on mailing list edit page. Unsubscribe webhook endpoint that sets `mailing_list_opt_in = false` on matching contact. Help article updates.
+Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_contact = false AND mailing_list_opt_in = true`) universally in `MailingListQueryBuilder`. `MailChimpService` with batch sync (chunks of 500, FNAME/LNAME merge fields, list name as MailChimp tag). "Sync to MailChimp" action on mailing list edit page. Unsubscribe webhook endpoint that sets `mailing_list_opt_in = false` on matching contact. Help article updates: update `resources/docs/mailing-lists.md` with the contactability filter explanation and a MailChimp integration section. For DNS/DKIM setup, include a brief orientation paragraph explaining what MailChimp asks you to do and why, then link to MailChimp's own documentation rather than duplicating it.
 
 ### MailChimp Integration (future)
 
 ---
 
+## Admin & Dashboard
+
+### Admin UI Polish
+
+Change admin accent colour from orange to a deep blue or teal (exact value chosen by the designer before the session starts). Lighten form label colour ~20% relative to field input text to create clearer visual hierarchy between labels and values.
+
+### Dashboard Enhancements
+
+Restructure the admin dashboard. Left column: welcome message from site settings. Right column: help search box above a list of main help topics. Below the welcome message: quick-action buttons (New Blog Post, Create Event). Below that: vendor connection status links — MailChimp, Resend, QuickBooks, Stripe (display only configured integrations). Below that: popular help article links covering the most-asked setup topics (Google Analytics / GTM, site verification, custom CSS, custom collections, custom widgets, Google Fonts).
+
+---
+
 ## CRM & Importer
 
+### Tags in Contact Record
+
+Add an inline multi-select tag field to the contact edit form. Typing a value not already in the list triggers a confirmation popup asking whether to create it as a new tag; on confirm the tag is created and attached immediately. This field pattern and behaviour is used across all content types that support tags (contacts, pages, blog posts, events) — implement consistently.
+
 ### Importer — Phase 2
+
+Move the importer to the Tools section of admin navigation. Extend it to support all field types — standard and custom contact fields — with no separate import path needed. Import History: remove it from the navigation; surface it via a prominent link in the importer page header instead.
 
 ### Duplicate Contact Detection
 
 ### Communication Log
 
 ### Household & Family Grouping
+
+When a contact is created, a household record is created automatically (or optionally). Other contacts can be added to a household via an email-based invite handshake — the household owner approves additions. Design principle: simple and frictionless, not complicated.
 
 ### Contact ↔ User Link
 
@@ -130,9 +150,27 @@ Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_con
 
 ## CMS & Page Builder Polish
 
-### Page Builder — Column Layout System — Planning
+### CMS Tags on Records
 
-### Page Builder — Column Layout System — Build
+Wire the tag system into all CMS content types. Add a tag picker to the blog post, page, and event edit forms using the same multi-select + create-on-confirm behaviour as the contact tag field. The tag manager screen stays where it is.
+
+### Public Frontend Foundation
+
+Build a clean, attractive public-facing template: well-structured HTML, a starter CSS file with sensible defaults, and a unique body class on every public page (`page-{slug}`, `post-{slug}`, `event-{slug}`). The goal is a public face that looks professional out of the box before further theming.
+
+### SEO & Head Tag Management
+
+Add SEO fields to pages, blog posts, and events: Meta Title, Meta Description, OG / page thumbnail image, Twitter card type, and JSON-LD structured data blocks (Article, Event, Organization). Add a global head injection field in Settings and a per-page head injection field. Add a global footer injection field. Define a sanitization strategy. Gate advanced injection behind a role or setting so it can be hidden for orgs that don't need it. Write help copy covering both basic and power-user workflows.
+
+### CMS Style System, Column Widget & Front-End Build — Planning
+
+Design three interconnected systems before building any of them.
+
+**(1) Widget style surface schema.** Each widget type declares a `style_schema` using CSS property names as keys with a control type and constraints as values — e.g. `display: {type: select, options: [grid, flex, block]}`, `font-size: {type: range, min: 12, max: 72, unit: px}`. This is how a widget restricts what the user can change. All widgets additionally accept an arbitrary CSS field, scoped at render time by wrapping it in a `[data-widget="{uuid}"]` selector generated per instance — no build step needed for scoping. Agree on the schema format before building.
+
+**(2) Column widget.** A widget that holds named slots, each with a declared width. Child widgets are assigned to slots. Exposes `display` restricted to `grid`, `flex`, and `block` as a concrete example of the style schema above. No separate column layout system — columns are just widgets rendered by the same engine. Nesting a column widget inside a slot covers the colspan case without a special model.
+
+**(3) Front-end build system.** Vite with `laravel/vite-plugin`. SCSS via the `sass` package (standard Vite integration). PostCSS with autoprefixer and cssnano for vendor prefixes and minification. Public side targets a single bundled CSS file and a single bundled JS file — minimise HTTP requests. Inline `<style>` blocks (style-guide custom properties output, widget arbitrary CSS) are minified at render time by a lightweight PHP helper or Blade directive, not a build step, so they stay inline and don't add a file call. Decide in this session what is compiled vs. what is generated dynamically at request time.
 
 ### Page Builder — Live Preview
 
@@ -140,11 +178,17 @@ Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_con
 
 ### Page Templates & Layout Controls
 
+### SVG & Image Optimization
+
+Add SVG support: inline SVG in page builder / rich text areas, and SVG as `<img src>` in image widgets and media fields. Add image optimization on upload: automatic compression and resize with optional manual quality controls.
+
 ### Image & Media Handling — Carousels & Galleries
 
 ### Media Library UI
 
-### Public Theme Builder
+### Public Theme Builder / Custom CSS Tool
+
+Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the same sass pipeline), live page preview on the right. Gated by user role. Sits in Settings or as a dedicated nav item. Output is minified and written into the inline style block, not a separate file call.
 
 ### CDN Integration
 
@@ -157,6 +201,10 @@ Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_con
 ---
 
 ## Infrastructure Finishing
+
+### Help System Enhancements
+
+Add a link to the full help system in the left navigation. Build a help index page with a table of contents and a search bar. Audit every primary navigation item and ensure each has a linked help article. Write process articles: Google Analytics / GTM setup, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
 
 ### Installer
 
