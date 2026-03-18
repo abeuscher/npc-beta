@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
                 'mail.default'      => $settings->get('mail_driver')?->value      ?? 'log',
                 'mail.from.address' => $settings->get('mail_from_address')?->value ?? 'hello@example.com',
                 'mail.from.name'    => $settings->get('mail_from_name')?->value    ?? config('app.name'),
-                'resend.api_key'    => $settings->get('resend_api_key')?->value    ?? '',
+                'services.resend.key' => $settings->get('resend_api_key')?->value ?? '',
             ]);
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults

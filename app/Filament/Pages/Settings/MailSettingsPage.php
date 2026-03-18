@@ -108,7 +108,7 @@ class MailSettingsPage extends Page
                         return;
                     }
 
-                    if (empty(config('resend.api_key'))) {
+                    if (empty(config('services.resend.key'))) {
                         Notification::make()
                             ->title('Resend API key is not configured')
                             ->body('Save a valid API key before sending a test email.')
