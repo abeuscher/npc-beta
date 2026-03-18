@@ -60,4 +60,8 @@ COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=app /var/www/html/public /var/www/html/public
 
+# Symlink so Nginx can serve uploaded files from the storage volume.
+# The storage_data volume is mounted at /var/www/html/storage at runtime.
+RUN ln -s /var/www/html/storage/app/public /var/www/html/public/storage
+
 EXPOSE 80
