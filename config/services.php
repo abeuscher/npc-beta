@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'mailchimp' => [
+        'api_key'        => env('MAILCHIMP_API_KEY'),
+        'server_prefix'  => env('MAILCHIMP_SERVER_PREFIX'),
+        'audience_id'    => env('MAILCHIMP_AUDIENCE_ID'),
+        'webhook_secret' => env('MAILCHIMP_WEBHOOK_SECRET'),
+        'webhook_path'   => env('MAILCHIMP_WEBHOOK_PATH', 'mailchimp'),
+    ],
+
 ];

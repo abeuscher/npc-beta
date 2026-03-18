@@ -9,6 +9,7 @@
         "laravel/cashier": "^15.4",
         "laravel/framework": "^11.0",
         "laravel/horizon": "^5.27",
+        "mailchimp/marketing": "^3.0",
         "predis/predis": "^2.2",
         "resend/resend-php": "^1.1",
         "scssphp/scssphp": "^2.1",

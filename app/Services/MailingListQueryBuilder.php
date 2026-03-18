@@ -23,7 +23,9 @@ class MailingListQueryBuilder
 
     private static function buildSimple(MailingList $list): Builder
     {
-        $query = Contact::query();
+        $query = Contact::query()
+            ->where('do_not_contact', false)
+            ->where('mailing_list_opt_in', true);
 
         foreach ($list->filters as $filter) {
             if ($list->conjunction === 'or') {
@@ -78,7 +80,10 @@ class MailingListQueryBuilder
 
         $ids = collect($results)->pluck('id')->toArray();
 
-        return Contact::query()->whereIn('id', $ids);
+        return Contact::query()
+            ->where('do_not_contact', false)
+            ->where('mailing_list_opt_in', true)
+            ->whereIn('id', $ids);
     }
 
     private static function validateRawWhere(string $clause): void

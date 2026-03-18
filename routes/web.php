@@ -1,9 +1,17 @@
 <?php
 
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
+
+// MailChimp webhook — no auth, no CSRF. Path is configurable via MAILCHIMP_WEBHOOK_PATH.
+$mailchimpPath = config('services.mailchimp.webhook_path', 'mailchimp');
+Route::post("/webhooks/{$mailchimpPath}", [MailChimpWebhookController::class, 'handle'])
+    ->name('webhooks.mailchimp');
+Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
+    ->name('webhooks.mailchimp.verify');
 
 Route::get('/', [PageController::class, 'home']);
 

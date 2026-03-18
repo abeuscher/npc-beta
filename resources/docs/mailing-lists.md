@@ -1,9 +1,9 @@
 ---
 title: Mailing Lists
 description: How to create and manage dynamic audience lists using filter rules against the contacts database.
-version: "0.36"
+version: "0.37"
 updated: 2026-03-18
-tags: [mailing-lists, crm, export, advanced-filters]
+tags: [mailing-lists, crm, export, advanced-filters, mailchimp]
 routes:
   - filament.admin.resources.mailing-lists.index
   - filament.admin.resources.mailing-lists.create
@@ -149,6 +149,14 @@ To prevent accidental data modification, the following keywords are rejected and
 
 ---
 
+## Contactability filter
+
+Every list query — whether used for the contact count shown in the form, CSV export, or MailChimp sync — automatically excludes contacts who are not contactable. Specifically, any contact where **Do Not Contact** is checked or **Mailing List Opt-In** is unchecked will never appear in a list result, regardless of what the filter rules say.
+
+This is applied universally and cannot be overridden per list. It ensures that unsubscribed or suppressed contacts are never accidentally pushed to MailChimp or included in an export.
+
+---
+
 ## Exporting a List
 
 Open a mailing list and click **Export CSV** in the top-right. The export includes: first name, last name, email, phone, city, state, postal code, and tags (comma-joined). The filename includes the list name and today's date.
@@ -176,6 +184,57 @@ Then add to your `.env`:
 DB_READONLY_USERNAME=nonprofitcrm_readonly
 DB_READONLY_PASSWORD=choose-a-strong-password
 ```
+
+---
+
+## MailChimp Integration
+
+The app can push any mailing list to a MailChimp audience. Each contact is upserted as an audience member (FNAME and LNAME merge fields), and the list's name is applied as a tag. Sync is manual and one-directional — from the CRM to MailChimp — except for the unsubscribe webhook described below.
+
+### Setup
+
+Add the following to your `.env`:
+
+```
+MAILCHIMP_API_KEY=        # Your MailChimp API key
+MAILCHIMP_SERVER_PREFIX=  # Data centre prefix from the API key, e.g. us14
+MAILCHIMP_AUDIENCE_ID=    # The audience (list) ID from MailChimp dashboard
+MAILCHIMP_WEBHOOK_SECRET= # A random string you choose; used to verify incoming webhooks
+MAILCHIMP_WEBHOOK_PATH=   # The URL path segment after /webhooks/ (default: mailchimp)
+                          # Set this to a random hash for security, e.g. a8f3c1d9e2b7
+```
+
+- **API key**: Found in MailChimp under **Account → Extras → API Keys**.
+- **Server prefix**: The prefix shown at the end of your API key after the dash (e.g. `us14`), or visible in your MailChimp dashboard URL.
+- **Audience ID**: Found in MailChimp under **Audience → All contacts → Settings → Audience name and defaults**.
+
+### Syncing a list
+
+Open a mailing list and click **Sync to MailChimp** in the top-right. Confirm the modal. The sync is submitted as a MailChimp background batch job — contacts will appear in MailChimp within a minute or two for most list sizes. The button is only shown when MailChimp credentials are configured in `.env`.
+
+Only contactable members are pushed (see [Contactability filter](#contactability-filter) above). Contacts without an email address are silently skipped.
+
+### Tag strategy
+
+Rather than using separate MailChimp audiences per list, each list maps to a **tag** on members within a single shared audience. The tag name equals the list name. When you sync a list, all its members receive that tag. If a contact belongs to multiple lists, they will accumulate multiple tags. Tags can be used in MailChimp to target segments for campaigns.
+
+### Unsubscribe webhook
+
+When a contact unsubscribes via MailChimp, the webhook writes `mailing_list_opt_in = false` back to their contact record in the CRM. This ensures the contactability filter will exclude them from all future syncs and exports.
+
+**Registering the webhook URL:**
+
+1. In MailChimp, go to **Audience → Manage Audience → Settings → Webhooks**.
+2. Click **Create New Webhook**.
+3. Set the callback URL to:
+   ```
+   https://yourdomain.com/webhooks/{MAILCHIMP_WEBHOOK_PATH}?secret={MAILCHIMP_WEBHOOK_SECRET}
+   ```
+   Replace `{MAILCHIMP_WEBHOOK_PATH}` and `{MAILCHIMP_WEBHOOK_SECRET}` with the values from your `.env`.
+4. Under **Events to send**, enable **Unsubscribes** only.
+5. Save. MailChimp will send a verification GET request to confirm the URL is reachable.
+
+> The `?secret=` query parameter is how the CRM verifies that incoming webhook requests genuinely come from MailChimp. Keep this value private.
 
 ---
 
