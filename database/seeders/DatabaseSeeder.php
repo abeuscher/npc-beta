@@ -7,6 +7,7 @@ use App\Models\Collection;
 use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Donation;
+use App\Models\EmailTemplate;
 use App\Models\Fund;
 use App\Models\Membership;
 use App\Models\NavigationItem;
@@ -83,6 +84,35 @@ class DatabaseSeeder extends Seeder
             SiteSetting::firstOrCreate(
                 ['key' => $setting['key']],
                 ['value' => $setting['value'], 'group' => $setting['group'], 'type' => $setting['type']]
+            );
+        }
+
+        // ── Email templates ──────────────────────────────────────────────────
+        $emailTemplates = [
+            [
+                'handle'        => 'registration_confirmation',
+                'subject'       => 'You\'re registered: {{event_title}}',
+                'body'          => '<p>Hi {{first_name}},</p><p>You are registered for <strong>{{event_title}}</strong>.</p>',
+                'footer_reason' => 'You received this email because you registered for {{event_title}}.',
+            ],
+            [
+                'handle'        => 'event_cancellation',
+                'subject'       => 'Cancelled: {{event_title}}',
+                'body'          => '<p>Hi {{first_name}},</p><p>We\'re sorry to let you know that <strong>{{event_title}}</strong> has been cancelled.</p>',
+                'footer_reason' => 'You received this email because you were registered for {{event_title}}.',
+            ],
+            [
+                'handle'        => 'event_reminder',
+                'subject'       => 'Reminder: {{event_title}} is coming up',
+                'body'          => '<p>Hi {{first_name}},</p><p>This is a reminder that <strong>{{event_title}}</strong> is coming up on {{event_date}}.</p>',
+                'footer_reason' => 'You received this email because you registered for {{event_title}}.',
+            ],
+        ];
+
+        foreach ($emailTemplates as $template) {
+            EmailTemplate::firstOrCreate(
+                ['handle' => $template['handle']],
+                $template
             );
         }
 
