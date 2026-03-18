@@ -47,6 +47,15 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-web:${{ steps.tag.outputs.IMAGE_TAG }}
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-web:latest
 
+      - name: Copy compose file to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: /opt/nonprofitcrm/
+
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
         env:
