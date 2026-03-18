@@ -39,20 +39,15 @@ This is the single working reference for all sessions. Completed sessions are li
 | 032 | Navigation Model and UI Restructure |
 | 033 | Admin Branding & Dashboard |
 | 034 | Transactional Email — Resend Integration |
+| 035 | System Email Templates |
 
 ---
 
 ## Email
 
-### 035 — System Email Templates & Language Editor
+### 036 — Mailing List Manager
 
-Per-email control over subject, body (Quill), header branding (color, image, headline), and footer compliance fields (sender name, reply-to, mailing address, "why you received this"). Default Blade wrapper ships out of the box. Admins can upload a custom HTML template per email type using a `{{content}}` marker convention. Help article includes CAN-SPAM compliance guidance and FTC link. No preview — test by sending.
-
-### Multi-Vendor Mail Support
-
-*Add additional sending providers to the Mail Settings page: SMTP, AWS SES, Postmark, Mailgun. Each provider adds its own credential fields (visible when that driver is selected) and a config branch in `AppServiceProvider`. No architectural changes required — the switchable driver pattern from session 034 is already in place.*
-
-### Mailing List Manager
+Dynamic audience lists defined by filter rules against the contacts table. Simple mode: repeater UI with AND/OR conjunction, standard contact fields and tags, full operator set (equals/not equals, contains/not contains, includes/not includes, is empty/is not empty). Advanced mode: raw PostgreSQL WHERE clause textarea, gated behind a `use_advanced_list_filters` permission that is off by default for all roles. Read-only Postgres connection with statement timeout and keyword blocklist. Live contact count, CSV export. Help article includes contacts table schema and custom_fields JSON format for advanced use.
 
 ### MailChimp Integration
 
@@ -179,3 +174,11 @@ Per-email control over subject, body (Quill), header branding (color, image, hea
 ### Wow Features Brainstorm
 
 ### Easter Egg & Fun Features
+
+
+---
+# Future potential items
+
+### Multi-Vendor Mail Support
+
+*Add additional sending providers to the Mail Settings page: SMTP, AWS SES, Postmark, Mailgun. Each provider adds its own credential fields (visible when that driver is selected) and a config branch in `AppServiceProvider`. No architectural changes required — the switchable driver pattern from session 034 is already in place.*
