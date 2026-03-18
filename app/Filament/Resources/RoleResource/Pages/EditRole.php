@@ -24,6 +24,10 @@ class EditRole extends EditRecord
             $data["permissions_{$area}"] = array_values(array_intersect($assigned, $areaPerms));
         }
 
+        $data['permissions_advanced'] = array_values(
+            array_intersect($assigned, array_keys(RoleResource::standalonePermissions()))
+        );
+
         return $data;
     }
 
@@ -32,6 +36,7 @@ class EditRole extends EditRecord
         foreach (array_keys(RoleResource::permissionAreas()) as $area) {
             unset($data["permissions_{$area}"]);
         }
+        unset($data['permissions_advanced']);
         return $data;
     }
 
@@ -44,6 +49,10 @@ class EditRole extends EditRecord
                 $this->form->getRawState()["permissions_{$area}"] ?? []
             );
         }
+        $permissions = array_merge(
+            $permissions,
+            $this->form->getRawState()['permissions_advanced'] ?? []
+        );
 
         $this->record->syncPermissions($permissions);
         app(PermissionRegistrar::class)->forgetCachedPermissions();

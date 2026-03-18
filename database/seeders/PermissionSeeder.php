@@ -53,6 +53,12 @@ class PermissionSeeder extends Seeder
             }
         }
 
+        // ── Standalone permissions ────────────────────────────────────────────
+        Permission::firstOrCreate([
+            'name'       => 'use_advanced_list_filters',
+            'guard_name' => 'web',
+        ]);
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [

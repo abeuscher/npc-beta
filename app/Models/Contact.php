@@ -39,14 +39,16 @@ class Contact extends Model
         'custom_fields',
         'is_deceased',
         'do_not_contact',
+        'mailing_list_opt_in',
         'source',
     ];
 
     protected $casts = [
         'custom_data'    => SchemalessAttributes::class,
         'custom_fields'  => 'array',
-        'is_deceased'    => 'boolean',
-        'do_not_contact' => 'boolean',
+        'is_deceased'          => 'boolean',
+        'do_not_contact'       => 'boolean',
+        'mailing_list_opt_in'  => 'boolean',
     ];
 
     // -------------------------------------------------------------------------

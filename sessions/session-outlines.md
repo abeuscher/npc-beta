@@ -40,16 +40,17 @@ This is the single working reference for all sessions. Completed sessions are li
 | 033 | Admin Branding & Dashboard |
 | 034 | Transactional Email — Resend Integration |
 | 035 | System Email Templates |
+| 036 | Mailing List Manager |
 
 ---
 
 ## Email
 
-### 036 — Mailing List Manager
+### 037 — MailChimp Integration
 
-Dynamic audience lists defined by filter rules against the contacts table. Simple mode: repeater UI with AND/OR conjunction, standard contact fields and tags, full operator set (equals/not equals, contains/not contains, includes/not includes, is empty/is not empty). Advanced mode: raw PostgreSQL WHERE clause textarea, gated behind a `use_advanced_list_filters` permission that is off by default for all roles. Read-only Postgres connection with statement timeout and keyword blocklist. Live contact count, CSV export. Help article includes contacts table schema and custom_fields JSON format for advanced use.
+Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_contact = false AND mailing_list_opt_in = true`) universally in `MailingListQueryBuilder`. `MailChimpService` with batch sync (chunks of 500, FNAME/LNAME merge fields, list name as MailChimp tag). "Sync to MailChimp" action on mailing list edit page. Unsubscribe webhook endpoint that sets `mailing_list_opt_in = false` on matching contact. Help article updates.
 
-### MailChimp Integration
+### MailChimp Integration (future)
 
 ---
 

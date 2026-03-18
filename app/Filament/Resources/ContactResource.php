@@ -28,89 +28,76 @@ class ContactResource extends Resource
     {
         return $form->schema([
 
-            Forms\Components\Section::make('Affiliation')
-                ->schema([
-                    Forms\Components\Select::make('organization_id')
-                        ->label('Organization')
-                        ->relationship('organization', 'name')
-                        ->searchable()
-                        ->preload()
-                        ->nullable(),
-                ]),
+            Forms\Components\Group::make([
 
-            Forms\Components\Section::make('Name')
-                ->schema([
-                    Forms\Components\TextInput::make('prefix')
-                        ->label('Prefix')
-                        ->placeholder('Mr, Ms, Dr…'),
+                Forms\Components\Section::make('Contact Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('prefix')
+                            ->label('Prefix')
+                            ->placeholder('Mr, Ms, Dr…')
+                            ->columnSpan(2),
 
-                    Forms\Components\TextInput::make('preferred_name')
-                        ->label('Preferred Name'),
+                        Forms\Components\TextInput::make('first_name')
+                            ->label('First Name')
+                            ->columnSpan(5),
 
-                    Forms\Components\TextInput::make('first_name')
-                        ->label('First Name'),
+                        Forms\Components\TextInput::make('last_name')
+                            ->label('Last Name')
+                            ->columnSpan(5),
 
-                    Forms\Components\TextInput::make('last_name')
-                        ->label('Last Name'),
-                ])
-                ->columns(2),
+                        Forms\Components\TextInput::make('email')
+                            ->email()
+                            ->label('Email')
+                            ->columnSpan(6),
 
-            Forms\Components\Section::make('Contact Information')
-                ->schema([
-                    Forms\Components\TextInput::make('email')
-                        ->email()
-                        ->label('Primary Email'),
+                        Forms\Components\TextInput::make('phone')
+                            ->tel()
+                            ->label('Phone')
+                            ->columnSpan(6),
 
-                    Forms\Components\TextInput::make('email_secondary')
-                        ->email()
-                        ->label('Secondary Email'),
+                        Forms\Components\TextInput::make('address_line_1')
+                            ->label('Address Line 1')
+                            ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('phone')
-                        ->tel()
-                        ->label('Primary Phone'),
+                        Forms\Components\TextInput::make('address_line_2')
+                            ->label('Address Line 2')
+                            ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('phone_secondary')
-                        ->tel()
-                        ->label('Secondary Phone'),
-                ])
-                ->columns(2),
+                        Forms\Components\TextInput::make('city')
+                            ->label('City')
+                            ->columnSpan(5),
 
-            Forms\Components\Section::make('Address')
-                ->schema([
-                    Forms\Components\TextInput::make('address_line_1')
-                        ->label('Address Line 1')
-                        ->columnSpanFull(),
+                        Forms\Components\TextInput::make('state')
+                            ->label('State')
+                            ->columnSpan(4),
 
-                    Forms\Components\TextInput::make('address_line_2')
-                        ->label('Address Line 2')
-                        ->columnSpanFull(),
+                        Forms\Components\TextInput::make('postal_code')
+                            ->label('ZIP')
+                            ->columnSpan(3),
+                    ])
+                    ->columns(12),
 
-                    Forms\Components\TextInput::make('city')
-                        ->label('City'),
+                Forms\Components\Section::make('Custom Fields')
+                    ->schema(fn () => CustomFieldDef::forModel('contact')->get()
+                        ->map(fn ($def) => $def->toFilamentFormComponent())
+                        ->toArray()
+                    )
+                    ->columns(2)
+                    ->hidden(fn () => CustomFieldDef::forModel('contact')->doesntExist()),
 
-                    Forms\Components\TextInput::make('state')
-                        ->label('State'),
+                Forms\Components\Section::make('Affiliation')
+                    ->schema([
+                        Forms\Components\Select::make('organization_id')
+                            ->label('Organization')
+                            ->relationship('organization', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                    ]),
 
-                    Forms\Components\TextInput::make('postal_code')
-                        ->label('Postal Code'),
+            ])->columnSpan(2),
 
-                    Forms\Components\TextInput::make('country')
-                        ->label('Country')
-                        ->default('US'),
-                ])
-                ->columns(2),
-
-            Forms\Components\Section::make('Flags')
-                ->schema([
-                    Forms\Components\Toggle::make('is_deceased')
-                        ->label('Deceased'),
-
-                    Forms\Components\Toggle::make('do_not_contact')
-                        ->label('Do Not Contact'),
-                ])
-                ->columns(2),
-
-            Forms\Components\Section::make('Additional')
+            Forms\Components\Section::make('Settings')
                 ->schema([
                     Forms\Components\Select::make('source')
                         ->label('Source')
@@ -122,22 +109,15 @@ class ContactResource extends Resource
                         ])
                         ->nullable(),
 
-                    Forms\Components\Textarea::make('notes')
-                        ->label('Notes')
-                        ->rows(4)
-                        ->columnSpanFull(),
+                    Forms\Components\Toggle::make('do_not_contact')
+                        ->label('Do Not Contact'),
+
+                    Forms\Components\Toggle::make('mailing_list_opt_in')
+                        ->label('Mailing List Opt-In'),
                 ])
-                ->columns(2),
+                ->columnSpan(1),
 
-            Forms\Components\Section::make('Custom Fields')
-                ->schema(fn () => CustomFieldDef::forModel('contact')->get()
-                    ->map(fn ($def) => $def->toFilamentFormComponent())
-                    ->toArray()
-                )
-                ->columns(2)
-                ->hidden(fn () => CustomFieldDef::forModel('contact')->doesntExist()),
-
-        ]);
+        ])->columns(3);
     }
 
     public static function table(Table $table): Table

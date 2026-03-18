@@ -55,6 +55,16 @@ class RoleResource extends Resource
 
     // ── Permission grouping ───────────────────────────────────────────────────
 
+    public static function standalonePermissions(): array
+    {
+        return [
+            'use_advanced_list_filters' => [
+                'label'       => 'Use Advanced List Filters',
+                'description' => 'Grants access to the raw SQL WHERE clause editor on mailing lists. Only assign to users who understand database queries.',
+            ],
+        ];
+    }
+
     public static function permissionAreas(): array
     {
         return [
@@ -128,6 +138,23 @@ class RoleResource extends Resource
                 ])
                 ->collapsible();
         }
+
+        $sections[] = Forms\Components\Section::make('Advanced')
+            ->schema([
+                Forms\Components\CheckboxList::make('permissions_advanced')
+                    ->hiddenLabel()
+                    ->options(
+                        collect(static::standalonePermissions())
+                            ->mapWithKeys(fn ($v, $k) => [$k => $v['label']])
+                            ->toArray()
+                    )
+                    ->descriptions(
+                        collect(static::standalonePermissions())
+                            ->mapWithKeys(fn ($v, $k) => [$k => $v['description']])
+                            ->toArray()
+                    ),
+            ])
+            ->collapsible();
 
         return $form->schema($sections);
     }

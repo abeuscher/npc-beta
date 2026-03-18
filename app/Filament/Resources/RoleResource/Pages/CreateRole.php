@@ -15,6 +15,7 @@ class CreateRole extends CreateRecord
         foreach (array_keys(RoleResource::permissionAreas()) as $area) {
             unset($data["permissions_{$area}"]);
         }
+        unset($data['permissions_advanced']);
         return $data;
     }
 
@@ -27,6 +28,10 @@ class CreateRole extends CreateRecord
                 $this->form->getRawState()["permissions_{$area}"] ?? []
             );
         }
+        $permissions = array_merge(
+            $permissions,
+            $this->form->getRawState()['permissions_advanced'] ?? []
+        );
 
         if (! empty($permissions)) {
             $this->record->syncPermissions($permissions);
