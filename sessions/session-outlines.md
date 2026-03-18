@@ -44,7 +44,9 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ## Email
 
-### System Email Templates & Language Editor
+### 035 — System Email Templates & Language Editor
+
+Per-email control over subject, body (Quill), header branding (color, image, headline), and footer compliance fields (sender name, reply-to, mailing address, "why you received this"). Default Blade wrapper ships out of the box. Admins can upload a custom HTML template per email type using a `{{content}}` marker convention. Help article includes CAN-SPAM compliance guidance and FTC link. No preview — test by sending.
 
 ### Multi-Vendor Mail Support
 

@@ -32,3 +32,4 @@ When I confirm the prompt is correct, proceed to execution.
 - Prefer editing existing files to creating new ones.
 - No docstrings, comments, or type annotations on code you did not write.
 - Simple, correct, well-considered solutions over fast or clever ones.
+- When adding a new admin page or resource, create a help doc stub at `resources/docs/[handle].md` following the frontmatter convention of existing docs, and register the route(s) in the `routes:` array.
