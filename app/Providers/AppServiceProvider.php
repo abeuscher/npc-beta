@@ -33,7 +33,12 @@ class AppServiceProvider extends ServiceProvider
                 'mail.default'      => $settings->get('mail_driver')?->value      ?? 'log',
                 'mail.from.address' => $settings->get('mail_from_address')?->value ?? 'hello@example.com',
                 'mail.from.name'    => $settings->get('mail_from_name')?->value    ?? config('app.name'),
-                'services.resend.key' => $settings->get('resend_api_key')?->value ?? '',
+                'services.resend.key'               => $settings->get('resend_api_key')?->value           ?? '',
+                'services.mailchimp.api_key'        => $settings->get('mailchimp_api_key')?->value        ?? '',
+                'services.mailchimp.server_prefix'  => $settings->get('mailchimp_server_prefix')?->value  ?? '',
+                'services.mailchimp.audience_id'    => $settings->get('mailchimp_audience_id')?->value    ?? '',
+                'services.mailchimp.webhook_path'   => $settings->get('mailchimp_webhook_path')?->value   ?? 'mailchimp',
+                'services.mailchimp.webhook_secret' => $settings->get('mailchimp_webhook_secret')?->value ?? '',
             ]);
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults

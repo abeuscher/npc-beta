@@ -36,10 +36,15 @@ class MailSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'mail_driver'       => SiteSetting::get('mail_driver', 'log'),
-            'mail_from_name'    => SiteSetting::get('mail_from_name', ''),
-            'mail_from_address' => SiteSetting::get('mail_from_address', ''),
-            'resend_api_key'    => SiteSetting::get('resend_api_key', ''),
+            'mail_driver'               => SiteSetting::get('mail_driver', 'log'),
+            'mail_from_name'            => SiteSetting::get('mail_from_name', ''),
+            'mail_from_address'         => SiteSetting::get('mail_from_address', ''),
+            'resend_api_key'            => SiteSetting::get('resend_api_key', ''),
+            'mailchimp_api_key'         => SiteSetting::get('mailchimp_api_key', ''),
+            'mailchimp_server_prefix'   => SiteSetting::get('mailchimp_server_prefix', ''),
+            'mailchimp_audience_id'     => SiteSetting::get('mailchimp_audience_id', ''),
+            'mailchimp_webhook_path'    => SiteSetting::get('mailchimp_webhook_path', 'mailchimp'),
+            'mailchimp_webhook_secret'  => SiteSetting::get('mailchimp_webhook_secret', ''),
         ]);
     }
 
@@ -80,6 +85,38 @@ class MailSettingsPage extends Page
                             ->helperText('Your Resend API key. Starts with re_.'),
                     ])
                     ->visible(fn (Get $get) => $get('mail_driver') === 'resend'),
+
+                Forms\Components\Section::make('MailChimp')
+                    ->schema([
+                        Forms\Components\TextInput::make('mailchimp_api_key')
+                            ->label('API Key')
+                            ->password()
+                            ->revealable()
+                            ->nullable(),
+
+                        Forms\Components\TextInput::make('mailchimp_server_prefix')
+                            ->label('Server prefix')
+                            ->nullable()
+                            ->helperText('The data centre suffix from your API key, e.g. us14.'),
+
+                        Forms\Components\TextInput::make('mailchimp_audience_id')
+                            ->label('Audience ID')
+                            ->nullable()
+                            ->helperText('Found under Audience → Settings → Audience name and defaults.'),
+
+                        Forms\Components\TextInput::make('mailchimp_webhook_path')
+                            ->label('Webhook path')
+                            ->nullable()
+                            ->helperText('The path segment after /webhooks/ — use a random string in production for security.'),
+
+                        Forms\Components\TextInput::make('mailchimp_webhook_secret')
+                            ->label('Webhook secret')
+                            ->password()
+                            ->revealable()
+                            ->nullable()
+                            ->helperText('Append ?secret=this-value to the webhook URL you register in MailChimp.'),
+                    ])
+                    ->columns(2),
             ])
             ->statePath('data');
     }
@@ -140,10 +177,15 @@ class MailSettingsPage extends Page
     {
         $data = $this->form->getState();
 
-        SiteSetting::set('mail_driver',       $data['mail_driver']);
-        SiteSetting::set('mail_from_name',    trim($data['mail_from_name']));
-        SiteSetting::set('mail_from_address', trim($data['mail_from_address']));
-        SiteSetting::set('resend_api_key',    trim($data['resend_api_key'] ?? ''));
+        SiteSetting::set('mail_driver',              $data['mail_driver']);
+        SiteSetting::set('mail_from_name',           trim($data['mail_from_name']));
+        SiteSetting::set('mail_from_address',        trim($data['mail_from_address']));
+        SiteSetting::set('resend_api_key',           trim($data['resend_api_key'] ?? ''));
+        SiteSetting::set('mailchimp_api_key',        trim($data['mailchimp_api_key'] ?? ''));
+        SiteSetting::set('mailchimp_server_prefix',  trim($data['mailchimp_server_prefix'] ?? ''));
+        SiteSetting::set('mailchimp_audience_id',    trim($data['mailchimp_audience_id'] ?? ''));
+        SiteSetting::set('mailchimp_webhook_path',   trim($data['mailchimp_webhook_path'] ?? 'mailchimp'));
+        SiteSetting::set('mailchimp_webhook_secret', trim($data['mailchimp_webhook_secret'] ?? ''));
 
         Notification::make()
             ->title('Settings saved')
