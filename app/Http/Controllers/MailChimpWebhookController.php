@@ -15,7 +15,8 @@ class MailChimpWebhookController extends Controller
         }
 
         $type  = $request->input('type');
-        $email = $request->input('data.email');
+        $data  = json_decode($request->input('data', '{}'), true);
+        $email = $data['email'] ?? null;
 
         if ($type === 'unsubscribe' && $email) {
             Contact::where('email', $email)->update(['mailing_list_opt_in' => false]);

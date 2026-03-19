@@ -26,8 +26,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - storage_data:/var/www/html/storage
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - nonprofitcrm
     depends_on:
