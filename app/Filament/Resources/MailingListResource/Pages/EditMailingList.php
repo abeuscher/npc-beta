@@ -21,7 +21,7 @@ class EditMailingList extends EditRecord
         ];
     }
 
-    protected function getFooterWidgetsColumns(): int | array
+    public function getFooterWidgetsColumns(): int | array
     {
         return 1;
     }
