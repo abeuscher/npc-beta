@@ -42,14 +42,11 @@ This is the single working reference for all sessions. Completed sessions are li
 | 035 | System Email Templates |
 | 036 | Mailing List Manager |
 | 037 | MailChimp Integration |
+| 038 | MailChimp Webhook Debugging |
 
 ---
 
 ## Email
-
-### 038 — MailChimp Webhook Debugging
-
-Webhook POST from MailChimp's servers returns HTTP 500. Sync and curl simulation work correctly. Full brief in `sessions/038. MailChimp Webhook Debugging.md`. A `Log::error()` diagnostic was deployed at end of session 037 — start by triggering a fresh unsubscribe and checking whether the log entry appears.
 
 ### MailChimp Integration (future)
 
@@ -137,6 +134,8 @@ When a contact is created, a household record is created automatically (or optio
 
 ### Stripe Webhooks
 
+*Before beginning: obtain the exact payload structure Stripe will POST to our endpoint from the Stripe documentation. Do not begin implementation until this has been provided.*
+
 ### Recurring Donations
 
 ### Pledge Tracking
@@ -146,6 +145,8 @@ When a contact is created, a household record is created automatically (or optio
 ### Tax Receipts
 
 ### QuickBooks Integration
+
+*Before beginning: obtain the exact payload structure QuickBooks will POST to our endpoint from the QuickBooks documentation. Do not begin implementation until this has been provided.*
 
 ---
 
