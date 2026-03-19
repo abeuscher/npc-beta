@@ -41,14 +41,15 @@ This is the single working reference for all sessions. Completed sessions are li
 | 034 | Transactional Email — Resend Integration |
 | 035 | System Email Templates |
 | 036 | Mailing List Manager |
+| 037 | MailChimp Integration |
 
 ---
 
 ## Email
 
-### 037 — MailChimp Integration
+### 038 — MailChimp Webhook Debugging
 
-Install `mailchimp/marketing` SDK. Apply contactability base filter (`do_not_contact = false AND mailing_list_opt_in = true`) universally in `MailingListQueryBuilder`. `MailChimpService` with batch sync (chunks of 500, FNAME/LNAME merge fields, list name as MailChimp tag). "Sync to MailChimp" action on mailing list edit page. Unsubscribe webhook endpoint that sets `mailing_list_opt_in = false` on matching contact. Help article updates: update `resources/docs/mailing-lists.md` with the contactability filter explanation and a MailChimp integration section. For DNS/DKIM setup, include a brief orientation paragraph explaining what MailChimp asks you to do and why, then link to MailChimp's own documentation rather than duplicating it.
+Webhook POST from MailChimp's servers returns HTTP 500. Sync and curl simulation work correctly. Full brief in `sessions/038. MailChimp Webhook Debugging.md`. A `Log::error()` diagnostic was deployed at end of session 037 — start by triggering a fresh unsubscribe and checking whether the log entry appears.
 
 ### MailChimp Integration (future)
 
