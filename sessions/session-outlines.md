@@ -54,13 +54,9 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ## Admin & Dashboard
 
-### Admin UI Polish
+### 039 — Admin Dashboard & Branding Polish
 
-Change admin accent colour from orange to a deep blue or teal (exact value chosen by the designer before the session starts). Lighten form label colour ~20% relative to field input text to create clearer visual hierarchy between labels and values.
-
-### Dashboard Enhancements
-
-Restructure the admin dashboard. Left column: welcome message from site settings. Right column: help search box above a list of main help topics. Below the welcome message: quick-action buttons (New Blog Post, Create Event). Below that: vendor connection status links — MailChimp, Resend, QuickBooks, Stripe (display only configured integrations). Below that: popular help article links covering the most-asked setup topics (Google Analytics / GTM, site verification, custom CSS, custom collections, custom widgets, Google Fonts).
+Restructure the dashboard into a clean 2×2 widget grid (welcome, quick actions, integration status, help placeholder). Add primary colour picker to General Settings. Add Stripe and QuickBooks API key fields to General Settings (empty, not yet wired). Full brief in `sessions/039. Admin Dashboard & Branding Polish.md`.
 
 ---
 
