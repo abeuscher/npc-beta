@@ -139,7 +139,15 @@ This project uses [Pest PHP](https://pestphp.com).
 
 Production targets any Docker-compatible host (Fly.io, Render, VPS with Docker Compose). Stateful services (PostgreSQL, Redis) should use managed providers in production rather than containerized instances.
 
-A full deployment guide is forthcoming.
+Deployment is handled by a GitHub Actions workflow triggered on push to `main`. Three secrets must be configured in the GitHub repository:
+
+| Secret | Purpose |
+|---|---|
+| `DEPLOY_HOST` | IP address or hostname of the production server |
+| `DEPLOY_USER` | SSH user on the production server |
+| `DEPLOY_SSH_KEY` | Private SSH key for authentication |
+
+All other configuration (app key, database credentials, API keys, mail settings) lives in a `.env` file on the server and is not managed through GitHub secrets.
 
 ---
 

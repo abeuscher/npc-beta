@@ -21,6 +21,11 @@ class EditMailingList extends EditRecord
         ];
     }
 
+    protected function getFooterWidgetsColumns(): int | array
+    {
+        return 1;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
