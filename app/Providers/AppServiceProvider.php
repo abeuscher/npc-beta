@@ -39,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
                 'services.mailchimp.audience_id'    => $settings->get('mailchimp_audience_id')?->value    ?? '',
                 'services.mailchimp.webhook_path'   => $settings->get('mailchimp_webhook_path')?->value   ?? 'mailchimp',
                 'services.mailchimp.webhook_secret' => $settings->get('mailchimp_webhook_secret')?->value ?? '',
+                'services.stripe.key'               => $settings->get('stripe_api_key')?->value             ?? '',
+                'services.quickbooks.key'            => $settings->get('quickbooks_api_key')?->value         ?? '',
+                'site.admin_primary_color'           => $settings->get('admin_primary_color')?->value        ?? '#f59e0b',
             ]);
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults

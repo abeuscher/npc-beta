@@ -35,10 +35,13 @@ class GeneralSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_url'          => SiteSetting::get('base_url', 'http://localhost'),
-            'admin_brand_name'  => SiteSetting::get('admin_brand_name', ''),
-            'admin_logo_upload' => null,
-            'dashboard_welcome' => SiteSetting::get('dashboard_welcome', ''),
+            'site_url'            => SiteSetting::get('base_url', 'http://localhost'),
+            'admin_brand_name'    => SiteSetting::get('admin_brand_name', ''),
+            'admin_primary_color' => SiteSetting::get('admin_primary_color', '#f59e0b'),
+            'admin_logo_upload'   => null,
+            'dashboard_welcome'   => SiteSetting::get('dashboard_welcome', ''),
+            'stripe_api_key'      => SiteSetting::get('stripe_api_key', ''),
+            'quickbooks_api_key'  => SiteSetting::get('quickbooks_api_key', ''),
         ]);
     }
 
@@ -61,6 +64,11 @@ class GeneralSettingsPage extends Page
                             ->label('Company Name')
                             ->nullable()
                             ->hint('Appears in the admin header beside your logo.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\ColorPicker::make('admin_primary_color')
+                            ->label('Primary colour')
+                            ->helperText('The accent colour used throughout the admin panel. Default: #f59e0b')
                             ->columnSpanFull(),
 
                         Forms\Components\RichEditor::make('dashboard_welcome')
@@ -92,6 +100,20 @@ class GeneralSettingsPage extends Page
 
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('Integrations')
+                    ->schema([
+                        Forms\Components\TextInput::make('stripe_api_key')
+                            ->label('Stripe API Key')
+                            ->nullable()
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('quickbooks_api_key')
+                            ->label('QuickBooks API Key')
+                            ->nullable()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
             ])
             ->statePath('data');
     }
@@ -116,6 +138,9 @@ class GeneralSettingsPage extends Page
         }
 
         SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
+        SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
+        SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
+        SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');
 
         Notification::make()
             ->title('Settings saved')

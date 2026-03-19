@@ -43,6 +43,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 036 | Mailing List Manager |
 | 037 | MailChimp Integration |
 | 038 | MailChimp Webhook Debugging |
+| 039 | Admin Dashboard & Branding Polish |
 
 ---
 
@@ -54,23 +55,29 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ## Admin & Dashboard
 
-### 039 — Admin Dashboard & Branding Polish
+### ~~039 — Admin Dashboard & Branding Polish~~ ✓ Complete
 
-Restructure the dashboard into a clean 2×2 widget grid (welcome, quick actions, integration status, help placeholder). Add primary colour picker to General Settings. Add Stripe and QuickBooks API key fields to General Settings (empty, not yet wired). Full brief in `sessions/039. Admin Dashboard & Branding Polish.md`.
+Restructure the dashboard into a clean 2×2 widget grid (welcome, quick actions, integration status, help placeholder). Added primary colour picker and Stripe/QuickBooks API key fields to General Settings.
 
 ---
 
 ## CRM & Importer
 
-### Tags in Contact Record
+### 040 — Tags — Unified Tag System
 
-Add an inline multi-select tag field to the contact edit form. Typing a value not already in the list triggers a confirmation popup asking whether to create it as a new tag; on confirm the tag is created and attached immediately. This field pattern and behaviour is used across all content types that support tags (contacts, pages, blog posts, events) — implement consistently.
+Consolidate the two existing tag models (`Tag` for CRM, `CmsTag` for CMS) into a single `Tag` model with a `type` discriminator (`contact`, `page`, `post`, `event`, `collection`). Add a `slug` column (Spatie Sluggable). Drop `cms_tags` and `cms_taggables` after migrating data across. Wire multi-select tag pickers with create-on-confirm into the Contact, Page, Post, and Event Filament resource forms, each scoped to the correct type. Replace both existing tag resources with a unified Tag Manager under the Tools nav group (list, edit label, delete with cascade). Full brief in `sessions/040. Tags — Unified Tag System.md`.
 
 ### Importer — Phase 2
 
-Move the importer to the Tools section of admin navigation. Extend it to support all field types — standard and custom contact fields — with no separate import path needed. Import History: remove it from the navigation; surface it via a prominent link in the importer page header instead.
+Move the importer to the Tools section of admin navigation. Extend it to support all standard and custom contact fields with no separate import path. Tags can be assigned during import. Import History: remove from nav, surface as a prominent link in the importer page header.
+
+**PII / sensitive data rejection** (built into this session): a pre-import validation step scans every cell of every row using regex pattern matching and rejects the import hard (not a warning) if any cell matches: credit card PANs (regex + Luhn check), SSNs, ABA routing numbers. Additionally, a field-name blocklist rejects columns named `ssn`, `social_security`, `credit_card`, `card_number`, `routing_number`, `account_number`, `driver_license`, etc. regardless of their values. This check is enforced at the job level and can only be bypassed by a developer via an `.env` flag. It must be documented in the README and in the importer help doc. The help doc for the importer is the **last step** of this session — written after implementation is stable.
+
+**Custom fields**: the importer should detect incoming columns that have no matching standard or custom field definition and offer the user the option to create a new custom field on the fly (the "Create field?" behaviour already spec'd). Custom fields are stored as JSONB on the contact record. Fields marked as filterable in `CustomFieldDef` will have a PostgreSQL expression index created automatically at field-creation time to support querying (`WHERE custom_fields->>'field_handle' = 'value'`).
 
 ### Duplicate Contact Detection
+
+Detect probable duplicate contacts at import time and on the contact list. Matching strategy: exact email match (hard duplicate), fuzzy name + postal code match (probable duplicate). At import, flag duplicates in the preview step before any records are saved. On the contact list, a "Review Duplicates" action surfaces probable pairs for admin review with merge or dismiss options.
 
 ### Communication Log
 
@@ -206,7 +213,9 @@ Add a link to the full help system in the left navigation. Build a help index pa
 
 ### Installer
 
-### Audit Log
+### Admin User Activity Log
+
+Each admin user needs a record of their significant actions against data — which contact records they edited, which events they created or cancelled, which donations they entered or deleted. The log is not a diff system but an event journal: who did what, to which record, and when. Surface it on the user record in the Users list (a tab or linked sub-page showing that user's recent activity) and optionally as a filterable global log under Settings or Tools. Scope in the planning session: which action types to capture, where to store the log (a dedicated table vs. an existing auditing package like `owen-it/laravel-auditing`), and what the retention/purge policy should be.
 
 ### Privacy & Legal Footer Example
 

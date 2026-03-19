@@ -30,11 +30,13 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         try {
-            $brandName = SiteSetting::get('admin_brand_name', '');
-            $logoPath  = SiteSetting::get('admin_logo_path', '');
+            $brandName    = SiteSetting::get('admin_brand_name', '');
+            $logoPath     = SiteSetting::get('admin_logo_path', '');
+            $primaryColor = SiteSetting::get('admin_primary_color', '#f59e0b');
         } catch (\Throwable $e) {
-            $brandName = '';
-            $logoPath  = '';
+            $brandName    = '';
+            $logoPath     = '';
+            $primaryColor = '#f59e0b';
         }
         $logoSrc   = $logoPath !== ''
             ? Storage::disk('public')->url($logoPath)
@@ -47,7 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex($primaryColor),
             ])
             ->navigationGroups([
                 NavigationGroup::make('CRM')->collapsed(),
@@ -59,13 +61,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
