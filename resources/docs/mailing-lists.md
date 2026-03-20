@@ -86,16 +86,13 @@ The WHERE clause is applied directly to the `contacts` table. Available columns:
 | `preferred_name` | varchar | |
 | `prefix` | varchar | |
 | `email` | varchar | |
-| `email_secondary` | varchar | |
 | `phone` | varchar | |
-| `phone_secondary` | varchar | |
 | `address_line_1` | varchar | |
 | `address_line_2` | varchar | |
 | `city` | varchar | |
 | `state` | varchar | |
 | `postal_code` | varchar | |
 | `country` | varchar | |
-| `notes` | text | |
 | `mailing_list_opt_in` | boolean | |
 | `is_deceased` | boolean | |
 | `do_not_contact` | boolean | |

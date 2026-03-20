@@ -22,6 +22,11 @@ class NoteResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_note') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

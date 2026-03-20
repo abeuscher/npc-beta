@@ -26,6 +26,8 @@ class PermissionSeeder extends Seeder
             'note',
             'tag',
             'campaign',
+            'event',
+            'mailing_list',
             // Finance
             'donation',
             'transaction',

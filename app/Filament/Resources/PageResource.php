@@ -25,6 +25,11 @@ class PageResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_page') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

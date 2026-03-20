@@ -39,37 +39,31 @@ class Contact extends Model
 
     protected $fillable = [
         'organization_id',
-        'household_id',
+        'household_id',      // managed from HouseholdResource MembersRelationManager
         'prefix',
         'first_name',
         'last_name',
-        'preferred_name',
         'email',
-        'email_secondary',
         'phone',
-        'phone_secondary',
         'address_line_1',
         'address_line_2',
         'city',
         'state',
         'postal_code',
         'country',
-        'notes',
-        'custom_data',
+        'custom_data',       // system-managed: SchemalessAttributes, written by importer
         'custom_fields',
-        'is_deceased',
         'do_not_contact',
         'mailing_list_opt_in',
-        'source',
-        'import_session_id',
+        'source',            // system-managed: set at creation (manual/import/web_form/api)
+        'import_session_id', // system-managed: set by importer
     ];
 
     protected $casts = [
-        'custom_data'    => SchemalessAttributes::class,
-        'custom_fields'  => 'array',
-        'is_deceased'          => 'boolean',
-        'do_not_contact'       => 'boolean',
-        'mailing_list_opt_in'  => 'boolean',
+        'custom_data'         => SchemalessAttributes::class,
+        'custom_fields'       => 'array',
+        'do_not_contact'      => 'boolean',
+        'mailing_list_opt_in' => 'boolean',
     ];
 
     // -------------------------------------------------------------------------

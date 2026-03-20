@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 class EmailTemplate extends Model
 {
     protected $fillable = [
-        'handle',
+        'handle',     // system-managed: template identifier, set by seeder (e.g. registration_confirmation)
         'subject',
         'body',
         'header_color',

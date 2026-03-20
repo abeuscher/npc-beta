@@ -41,7 +41,7 @@ class Event extends Model
         'external_registration_url',
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
-        'landing_page_id',
+        'landing_page_id', // system-managed: set by EventObserver when event is created
         'custom_fields',
     ];
 

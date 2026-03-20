@@ -10,7 +10,10 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->actingAs(User::factory()->create());
+    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DatabaseSeeder']);
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+    $this->actingAs($user);
 });
 
 it('exports registrants as csv with correct headers and row count', function () {

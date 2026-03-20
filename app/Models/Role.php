@@ -6,7 +6,11 @@ use Spatie\Permission\Models\Role as SpatieRole;
 
 class Role extends SpatieRole
 {
-    protected $fillable = ['name', 'guard_name', 'label'];
+    protected $fillable = [
+        'name',
+        'guard_name', // system-managed: always 'web'; set by Spatie Role base class
+        'label',
+    ];
 
     /**
      * Display label — falls back to the machine name if no label is set.

@@ -32,6 +32,11 @@ class PostResource extends Resource
         return parent::getEloquentQuery()->where('type', 'post');
     }
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_post') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

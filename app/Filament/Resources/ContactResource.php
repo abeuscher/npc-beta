@@ -25,6 +25,11 @@ class ContactResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_contact') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -182,9 +187,6 @@ class ContactResource extends Resource
                 Tables\Filters\TernaryFilter::make('do_not_contact')
                     ->label('Do Not Contact'),
 
-                Tables\Filters\TernaryFilter::make('is_deceased')
-                    ->label('Deceased'),
-
                 Tables\Filters\Filter::make('is_member')
                     ->label('Members only')
                     ->query(fn ($query) => $query->isMember()),
@@ -220,7 +222,7 @@ class ContactResource extends Resource
                             $standardHeaders = [
                                 'first_name', 'last_name', 'email', 'phone',
                                 'address_line_1', 'address_line_2', 'city', 'state',
-                                'postal_code', 'notes', 'created_at',
+                                'postal_code', 'created_at',
                             ];
 
                             fputcsv($handle, array_merge(
@@ -239,7 +241,6 @@ class ContactResource extends Resource
                                     $contact->city,
                                     $contact->state,
                                     $contact->postal_code,
-                                    $contact->notes,
                                     $contact->created_at?->toDateTimeString(),
                                 ];
 

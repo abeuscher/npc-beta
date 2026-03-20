@@ -23,6 +23,11 @@ class TagResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_tag') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -49,6 +54,7 @@ class TagResource extends Resource
                 ->required()
                 ->default('contact')
                 ->hiddenOn('edit'),
+
         ]);
     }
 

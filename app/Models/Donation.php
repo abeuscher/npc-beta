@@ -15,7 +15,6 @@ class Donation extends Model
 
     protected $fillable = [
         'contact_id',
-        'organization_id',
         'campaign_id',
         'fund_id',
         'amount',
@@ -35,11 +34,6 @@ class Donation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
-    }
-
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class);
     }
 
     public function campaign(): BelongsTo

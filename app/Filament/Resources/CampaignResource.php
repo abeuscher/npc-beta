@@ -20,6 +20,11 @@ class CampaignResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_campaign') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

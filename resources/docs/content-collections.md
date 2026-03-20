@@ -5,9 +5,8 @@ version: "0.24"
 updated: 2026-03-16
 tags: [cms, collections, content, widgets]
 routes:
-  - filament.admin.resources.content-collections.index
-  - filament.admin.resources.content-collections.create
-  - filament.admin.resources.content-collections.edit
+  - filament.admin.resources.browse-collections.index
+  - filament.admin.resources.browse-collections.items
 ---
 
 # Content Collections

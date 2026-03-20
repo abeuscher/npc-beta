@@ -14,6 +14,7 @@ When I confirm the prompt is correct, proceed to execution.
 - **Pause and ask** any time a decision point arises that is not covered by the agreed prompt.
 - **If any external service is unavailable**, stop and ask — do not attempt to troubleshoot.
 - **Run migrations via Docker** after writing them: `docker compose exec app php artisan migrate` (or `migrate:fresh --seed` when appropriate). Do not pause to ask first.
+- **Update `docs/schema.md`** after writing any migration — add, modify, or remove the relevant table section(s) to reflect the final column state.
 - **If the PostgreSQL container becomes unresponsive** (500/exec errors), ask the user to restart it rather than retrying.
 - **When implementation is complete**, run `php artisan test` and fix any failures before proceeding.
 - **Pause for manual testing.** Do not proceed past this point without explicit instruction.

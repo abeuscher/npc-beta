@@ -5,9 +5,9 @@ version: "0.24"
 updated: 2026-03-16
 tags: [cms, navigation, menus]
 routes:
-  - filament.admin.resources.navigation-items.index
-  - filament.admin.resources.navigation-items.create
-  - filament.admin.resources.navigation-items.edit
+  - filament.admin.resources.navigation-menus.index
+  - filament.admin.resources.navigation-menus.create
+  - filament.admin.resources.navigation-menus.edit
 ---
 
 # Navigation

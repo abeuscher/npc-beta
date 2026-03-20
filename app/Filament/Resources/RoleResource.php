@@ -68,9 +68,9 @@ class RoleResource extends Resource
     public static function permissionAreas(): array
     {
         return [
-            'crm'     => ['contact', 'household', 'organization', 'membership', 'note', 'tag'],
+            'crm'     => ['contact', 'household', 'organization', 'membership', 'note', 'tag', 'event', 'mailing_list'],
             'finance' => ['donation', 'transaction', 'fund', 'campaign'],
-            'cms'     => ['post', 'page', 'collection', 'collection_item', 'cms_tag', 'navigation_item'],
+            'cms'     => ['post', 'page', 'collection', 'collection_item', 'navigation_item'],
             'admin'   => ['user', 'widget_type'],
         ];
     }

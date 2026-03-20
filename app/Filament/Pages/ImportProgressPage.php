@@ -17,6 +17,11 @@ class ImportProgressPage extends Page
 
     protected static ?string $title = 'Importing…';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('import_data') ?? false;
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return false;

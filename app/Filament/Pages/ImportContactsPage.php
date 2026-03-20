@@ -30,6 +30,11 @@ class ImportContactsPage extends Page
 
     protected static ?string $title = 'Import Contacts';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('import_data') ?? false;
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return false;

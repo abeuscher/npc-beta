@@ -83,6 +83,11 @@ class EventResource extends Resource
     // Form
     // ──────────────────────────────────────────────────────────────────────────
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_event') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

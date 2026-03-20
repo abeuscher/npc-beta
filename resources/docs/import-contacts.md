@@ -5,11 +5,11 @@ version: "0.41"
 updated: 2026-03-20
 tags: [import, contacts, csv, crm, review]
 routes:
-  - filament.admin.pages.importer
-  - filament.admin.pages.import-contacts
-  - filament.admin.pages.import-history
-  - filament.admin.pages.import-progress
-  - filament.admin.pages.import-review
+  - filament.admin.pages.importer-page
+  - filament.admin.pages.import-contacts-page
+  - filament.admin.pages.import-history-page
+  - filament.admin.pages.import-progress-page
+  - filament.admin.pages.import-review-page
 ---
 
 # Import Contacts

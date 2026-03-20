@@ -1,0 +1,846 @@
+# Database Schema Reference
+
+Developer-facing reference. Updated as part of every session that includes a migration.
+
+Last updated: 2026-03-20 (session 042)
+
+---
+
+## cache
+
+Laravel cache storage.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| key | string | no | PK |
+| value | mediumText | no | |
+| expiration | integer | no | |
+
+---
+
+## cache_locks
+
+Laravel cache lock records.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| key | string | no | PK |
+| owner | string | no | |
+| expiration | integer | no | |
+
+---
+
+## campaigns
+
+Fundraising campaigns that donations can be attributed to.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| description | text | yes | |
+| goal_amount | decimal(10,2) | yes | |
+| starts_on | date | yes | |
+| ends_on | date | yes | |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## collection_items
+
+Individual items within a collection.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| collection_id | uuid | no | FK→collections, cascade |
+| data | jsonb | no | default: {} |
+| sort_order | integer | no | default: 0 |
+| is_published | boolean | no | default: false |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## collections
+
+Named collections used as data sources for page widgets (custom items, events, posts).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| handle | string | no | unique; renamed from `slug` in session 013 |
+| description | text | yes | |
+| fields | jsonb | no | default: [] |
+| source_type | string | no | default: 'custom' |
+| is_public | boolean | no | default: false |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## contacts
+
+Individual people in the CRM — donors, volunteers, members, etc.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| organization_id | uuid | yes | FK→organizations, nullOnDelete |
+| household_id | uuid | yes | FK→households, nullOnDelete |
+| prefix | string | yes | |
+| first_name | string | yes | |
+| last_name | string | yes | |
+| email | string | yes | indexed |
+| phone | string | yes | |
+| address_line_1 | string | yes | |
+| address_line_2 | string | yes | |
+| city | string | yes | |
+| state | string | yes | |
+| postal_code | string | yes | |
+| country | string | yes | default: 'US' |
+| do_not_contact | boolean | no | default: false |
+| mailing_list_opt_in | boolean | no | default: false |
+| source | string | no | default: 'manual'; values: manual, import, web_form, api |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete |
+| custom_data | jsonb | yes | SchemalessAttributes; written by importer |
+| custom_fields | jsonb | yes | User-defined custom field values |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## custom_field_defs
+
+Definitions for user-created custom fields on contacts and events.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| model_type | string | no | e.g. 'contact', 'event' |
+| handle | string | no | unique per model_type |
+| label | string | no | |
+| field_type | string | no | default: 'text' |
+| options | jsonb | yes | For select/checkbox field types |
+| sort_order | unsignedInteger | no | default: 0 |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(model_type, handle)`.
+
+---
+
+## donations
+
+Individual donation records from contacts.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| contact_id | uuid | yes | FK→contacts, cascade |
+| campaign_id | uuid | yes | FK→campaigns, nullOnDelete |
+| fund_id | uuid | yes | FK→funds, nullOnDelete |
+| amount | decimal(10,2) | no | |
+| donated_on | date | no | |
+| method | string | no | default: 'other'; values: cash, check, card, ach, other |
+| reference | string | yes | e.g. check number |
+| is_anonymous | boolean | no | default: false |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## email_templates
+
+System email template records, seeded by handle. Edited by admins via the Email Templates resource.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| handle | string | no | unique; system-managed identifier (e.g. registration_confirmation) |
+| subject | string | no | |
+| body | text | no | |
+| header_color | string | yes | |
+| header_image_path | string | yes | |
+| header_text | string | yes | |
+| footer_sender_name | string | yes | |
+| footer_reply_to | string | yes | |
+| footer_address | text | yes | |
+| footer_reason | string | yes | |
+| custom_template_path | string | yes | Path to a custom HTML wrapper stored in public disk |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## event_dates
+
+Individual date occurrences for an event.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| event_id | uuid | no | FK→events, cascade |
+| starts_at | dateTime | no | |
+| ends_at | dateTime | yes | |
+| status | enum | no | default: 'inherited'; values: inherited, draft, published, cancelled |
+| location_override | json | yes | |
+| meeting_url_override | string | yes | |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## event_registrations
+
+Registrations submitted for an event.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| event_id | uuid | no | FK→events, cascade |
+| contact_id | uuid | yes | FK→contacts, nullOnDelete |
+| name | string | no | |
+| email | string | no | |
+| phone | string(50) | yes | |
+| company | string | yes | |
+| address_line_1 | string | yes | |
+| address_line_2 | string | yes | |
+| city | string(100) | yes | |
+| state | string(100) | yes | |
+| zip | string(20) | yes | |
+| status | enum | no | default: 'registered'; values: registered, waitlisted, cancelled, attended |
+| registered_at | timestamp | no | default: current |
+| stripe_payment_intent_id | string | yes | |
+| mailing_list_opt_in | boolean | no | default: false |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## events
+
+Events with dates, registration, and venue information.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| title | string | no | |
+| slug | string | no | unique |
+| description | text | yes | |
+| status | enum | no | default: 'draft'; values: draft, published, cancelled |
+| address_line_1 | string | yes | |
+| address_line_2 | string | yes | |
+| city | string(100) | yes | |
+| state | string(100) | yes | |
+| zip | string(20) | yes | |
+| map_url | string(2048) | yes | |
+| map_label | string | yes | |
+| meeting_url | string(2048) | yes | |
+| meeting_label | string | yes | |
+| meeting_details | text | yes | |
+| price | decimal(8,2) | no | default: 0 |
+| capacity | unsignedInteger | yes | |
+| registration_mode | string | no | default: 'open' |
+| external_registration_url | string | yes | |
+| auto_create_contacts | boolean | no | default: true |
+| mailing_list_opt_in_enabled | boolean | no | default: false |
+| landing_page_id | uuid | yes | FK→pages, nullOnDelete; system-managed by EventObserver |
+| custom_fields | jsonb | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## failed_jobs
+
+Laravel failed job records.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| uuid | string | no | unique |
+| connection | text | no | |
+| queue | text | no | |
+| payload | longText | no | |
+| exception | longText | no | |
+| failed_at | timestamp | no | default: current |
+
+---
+
+## funds
+
+Named funds that donations can be allocated to.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| code | string | no | unique |
+| description | text | yes | |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## help_article_routes
+
+Maps Filament route names to help articles for contextual help lookup.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| help_article_id | bigInteger | no | FK→help_articles, cascade |
+| route_name | string | no | indexed |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(help_article_id, route_name)`.
+
+---
+
+## help_articles
+
+Seeded help documentation articles shown in the admin sidebar.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| slug | string | no | unique |
+| title | string | no | |
+| description | text | no | |
+| content | longText | no | |
+| tags | json | yes | |
+| app_version | string | yes | |
+| last_updated | date | yes | |
+| embedding | jsonb | yes | Reserved for future semantic search |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## households
+
+Household groupings that link multiple contacts at a shared address.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| address_line_1 | string | yes | |
+| address_line_2 | string | yes | |
+| city | string | yes | |
+| state | string | yes | |
+| postal_code | string | yes | |
+| country | string | no | default: 'US' |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## import_id_maps
+
+Maps external source IDs to internal model UUIDs for re-import deduplication.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| import_source_id | uuid | no | FK→import_sources, cascade |
+| model_type | string | no | |
+| source_id | string | no | The external system's ID for this record |
+| model_uuid | uuid | no | The internal UUID of the matched/created model |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(import_source_id, model_type, source_id)`.
+
+---
+
+## import_logs
+
+Legacy import log records (pre-session-038 importer). Superseded by import_sessions but retained for audit history.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| user_id | bigInteger | yes | FK→users, nullOnDelete |
+| model_type | string | no | |
+| filename | string | no | |
+| storage_path | string | yes | |
+| column_map | jsonb | yes | |
+| row_count | integer | no | default: 0 |
+| imported_count | integer | no | default: 0 |
+| updated_count | integer | no | default: 0 |
+| skipped_count | integer | no | default: 0 |
+| error_count | integer | no | default: 0 |
+| errors | jsonb | yes | |
+| duplicate_strategy | string | no | default: 'skip' |
+| custom_field_map | jsonb | yes | |
+| custom_field_log | jsonb | yes | |
+| status | string | no | default: 'pending' |
+| started_at | timestamp | yes | |
+| completed_at | timestamp | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## import_sessions
+
+Import sessions for the current batch-import workflow with review and approval.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| import_source_id | uuid | yes | FK→import_sources, nullOnDelete |
+| model_type | string | no | |
+| status | string | no | default: 'pending'; values: pending, reviewing, approved, rolled_back |
+| filename | string | yes | |
+| row_count | integer | yes | |
+| tag_ids | jsonb | yes | UUIDs of tags to apply to imported contacts |
+| imported_by | bigInteger | no | FK→users, cascade |
+| approved_by | bigInteger | yes | FK→users, nullOnDelete |
+| approved_at | timestamp | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## import_sources
+
+Named external systems that imports originate from (e.g. "Old CRM", "Wild Apricot").
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## job_batches
+
+Laravel job batch tracking.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | string | no | PK |
+| name | string | no | |
+| total_jobs | integer | no | |
+| pending_jobs | integer | no | |
+| failed_jobs | integer | no | |
+| failed_job_ids | longText | no | |
+| options | mediumText | yes | |
+| cancelled_at | integer | yes | |
+| created_at | integer | no | |
+| finished_at | integer | yes | |
+
+---
+
+## jobs
+
+Laravel job queue.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| queue | string | no | indexed |
+| payload | longText | no | |
+| attempts | unsignedTinyInteger | no | |
+| reserved_at | unsignedInteger | yes | |
+| available_at | unsignedInteger | no | |
+| created_at | unsignedInteger | no | |
+
+---
+
+## mailing_list_filters
+
+Individual filter rules that define which contacts belong to a mailing list.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| mailing_list_id | uuid | no | FK→mailing_lists, cascade |
+| field | string | no | Contact column name |
+| operator | string | no | e.g. equals, contains, is_true |
+| value | string | yes | |
+| sort_order | integer | no | default: 0 |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## mailing_lists
+
+Dynamic mailing lists with filter criteria that resolve to a set of contacts.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| description | text | yes | |
+| conjunction | string | no | default: 'and'; values: and, or |
+| raw_where | text | yes | Optional raw SQL WHERE clause override |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## memberships
+
+Membership records for contacts, including tier, status, and dates.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| contact_id | uuid | no | FK→contacts, cascade |
+| tier | string | no | |
+| status | string | no | default: 'pending'; values: pending, active, expired, cancelled |
+| starts_on | date | yes | |
+| expires_on | date | yes | |
+| amount_paid | decimal(10,2) | yes | |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## model_has_permissions
+
+Spatie Laravel Permission — direct model-to-permission assignments.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| permission_id | bigInteger | no | FK→permissions, cascade |
+| model_type | string | no | |
+| model_id | bigInteger | no | |
+
+Composite PK on `(permission_id, model_id, model_type)`. Index on `(model_id, model_type)`.
+
+---
+
+## model_has_roles
+
+Spatie Laravel Permission — model-to-role assignments.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| role_id | bigInteger | no | FK→roles, cascade |
+| model_type | string | no | |
+| model_id | bigInteger | no | |
+
+Composite PK on `(role_id, model_id, model_type)`. Index on `(model_id, model_type)`.
+
+---
+
+## navigation_items
+
+Menu items within a navigation menu, supporting nested hierarchy.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| navigation_menu_id | uuid | no | FK→navigation_menus, cascade |
+| label | string | no | |
+| url | string | yes | |
+| page_id | uuid | yes | FK→pages, nullOnDelete |
+| parent_id | uuid | yes | FK→navigation_items (self), nullOnDelete |
+| sort_order | integer | no | default: 0 |
+| target | string | no | default: '_self' |
+| is_visible | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## navigation_menus
+
+Named navigation menu definitions (e.g. "Primary", "Footer").
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| label | string | no | |
+| handle | string | no | unique |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## notes
+
+Notes attached to any model via polymorphic relationship (contacts, organizations, etc.).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| notable_id | uuid | no | Polymorphic FK |
+| notable_type | string | no | |
+| author_id | bigInteger | yes | FK→users, nullOnDelete |
+| body | text | no | |
+| occurred_at | timestamp | no | default: current |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## organizations
+
+Organizations that contacts can be affiliated with (companies, foundations, etc.).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| type | string | yes | |
+| website | string | yes | |
+| phone | string | yes | |
+| address_line_1 | string | yes | |
+| address_line_2 | string | yes | |
+| city | string | yes | |
+| state | string | yes | |
+| postal_code | string | yes | |
+| country | string | yes | default: 'US' |
+| notes | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## page_widgets
+
+Widgets embedded on a page, ordered by sort_order.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| page_id | uuid | no | FK→pages, cascade |
+| widget_type_id | uuid | no | FK→widget_types, cascade |
+| label | string | yes | |
+| config | jsonb | no | default: {} |
+| query_config | jsonb | no | default: {} |
+| sort_order | integer | no | default: 0 |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## pages
+
+Static pages and landing pages. Posts are stored here with `type = 'post'`.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| title | string | no | |
+| slug | string | no | unique |
+| type | string | no | default: 'default'; values: default, post, event_landing |
+| meta_title | string | yes | |
+| meta_description | text | yes | |
+| custom_fields | jsonb | yes | |
+| is_published | boolean | no | default: false |
+| published_at | timestamp | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
+
+---
+
+## password_reset_tokens
+
+Laravel password reset tokens.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| email | string | no | PK |
+| token | string | no | |
+| created_at | timestamp | yes | |
+
+---
+
+## permissions
+
+Spatie Laravel Permission — permission definitions.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| name | string | no | |
+| guard_name | string | no | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(name, guard_name)`.
+
+---
+
+## role_has_permissions
+
+Spatie Laravel Permission — role-to-permission assignments.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| permission_id | bigInteger | no | FK→permissions, cascade |
+| role_id | bigInteger | no | FK→roles, cascade |
+
+Composite PK on `(permission_id, role_id)`.
+
+---
+
+## roles
+
+Spatie Laravel Permission — role definitions with optional display label.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| name | string | no | Machine name |
+| label | string | yes | Display label; falls back to name if null |
+| guard_name | string | no | Always 'web' |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(name, guard_name)`.
+
+---
+
+## sessions
+
+Laravel session storage.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | string | no | PK |
+| user_id | bigInteger | yes | FK→users, indexed |
+| ip_address | string(45) | yes | |
+| user_agent | text | yes | |
+| payload | longText | no | |
+| last_activity | integer | no | indexed |
+
+---
+
+## site_settings
+
+Key-value store for site-wide configuration managed via Settings pages.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| key | string | no | unique |
+| value | text | yes | |
+| group | string | no | default: 'general' |
+| type | string | no | default: 'string' |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## taggables
+
+Polymorphic pivot table linking tags to any taggable model.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| tag_id | uuid | no | FK→tags, cascade |
+| taggable_id | uuid | no | Polymorphic FK |
+| taggable_type | string | no | |
+
+Composite PK on `(tag_id, taggable_id, taggable_type)`.
+
+---
+
+## tags
+
+Tags for categorising contacts, pages, posts, events, and collection items.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| name | string | no | |
+| slug | string | no | unique |
+| type | string | no | default: 'contact'; values: contact, page, post, event, collection |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+Unique constraint on `(name, type)`.
+
+---
+
+## transactions
+
+Financial transaction ledger entries, linked to donations.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| donation_id | uuid | yes | FK→donations, nullOnDelete |
+| type | string | no | default: 'donation' |
+| amount | decimal(10,2) | no | |
+| direction | string | no | default: 'in'; values: in, out |
+| status | string | no | default: 'pending' |
+| stripe_id | string | yes | |
+| quickbooks_id | string | yes | |
+| occurred_at | timestamp | no | default: current |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## users
+
+Admin user accounts.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| name | string | no | |
+| email | string | no | unique |
+| email_verified_at | timestamp | yes | |
+| password | string | no | |
+| remember_token | string | yes | |
+| is_active | boolean | no | default: true |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## widget_types
+
+Definitions of available widget types for pages (server-rendered or client-rendered).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | uuid | no | PK |
+| handle | string | no | unique |
+| label | string | no | |
+| render_mode | enum | no | default: 'server'; values: server, client |
+| collections | jsonb | no | default: [] |
+| config_schema | jsonb | no | default: [] |
+| template | text | yes | |
+| css | text | yes | |
+| js | text | yes | |
+| variable_name | string | yes | |
+| code | text | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |

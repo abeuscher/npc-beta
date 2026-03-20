@@ -13,7 +13,7 @@ class Tag extends Model
 {
     use HasFactory, HasSlug, HasUuids;
 
-    protected $fillable = ['name', 'slug', 'type', 'color'];
+    protected $fillable = ['name', 'slug', 'type'];
 
     public function getSlugOptions(): SlugOptions
     {

@@ -5,7 +5,7 @@ version: "0.41"
 updated: 2026-03-20
 tags: [import, contacts, crm]
 routes:
-  - filament.admin.pages.importer
+  - filament.admin.pages.importer-page
 ---
 
 # Importer

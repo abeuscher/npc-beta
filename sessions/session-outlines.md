@@ -46,11 +46,11 @@ This is the single working reference for all sessions. Completed sessions are li
 | 039 | Admin Dashboard & Branding Polish |
 | 040 | Tags — Unified Tag System |
 | 041 | Importer Phase 2 — Accountability, Source Mapping & Filter UI |
+| 042 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
 
 ---
 
-
-### Codebase Audit — Fields, Schema, Permissions & Help Coverage
+### Importer — Phase 3
 
 A pre-importer-completion housekeeping session. No new features. Goal: find and fix everything that has quietly drifted out of alignment.
 
@@ -106,32 +106,6 @@ When a contact is created, a household record is created automatically (or optio
 
 ---
 
-## Volunteer Management
-
-*A volunteer is a contact — same record, contact type tag. No separate model needed. Document handling (waivers, agreements) is explicitly out of scope; use an external tool for that.*
-
-### Contact Record — Birthday & Age Fields
-
-*Applies to all contacts, not just volunteers. Required for age verification for working volunteers. Small focused session or foldable into another CRM session.*
-
-### Volunteer Profile & Hours Tracking
-
-*Skills, availability, background check status and expiry, training/certifications held. Hours log tied to an event or a standalone activity. Total hours summary on the contact record.*
-
-### Volunteer Scheduling
-
-*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to the Events module for event-day volunteer roles.*
-
-### Volunteer Communication & Recognition
-
-*Shift reminder emails, milestone triggers (100 hours, anniversary, etc.). Integrates with the email system.*
-
-### Volunteer Portal
-
-*Public-facing self-service: signup, view upcoming shifts, log hours pending admin approval. Extends or reuses the Member Portal patterns.*
-
----
-
 ## Finance
 
 ### Finance Settings
@@ -155,6 +129,32 @@ When a contact is created, a household record is created automatically (or optio
 ### QuickBooks Integration
 
 *Before beginning: obtain the exact payload structure QuickBooks will POST to our endpoint from the QuickBooks documentation. Do not begin implementation until this has been provided.*
+
+---
+
+## Volunteer Management
+
+*A volunteer is a contact — same record, contact type tag. No separate model needed. Document handling (waivers, agreements) is explicitly out of scope; use an external tool for that.*
+
+### Contact Record — Birthday & Age Fields
+
+*Applies to all contacts, not just volunteers. Required for age verification for working volunteers. Small focused session or foldable into another CRM session.*
+
+### Volunteer Profile & Hours Tracking
+
+*Skills, availability, background check status and expiry, training/certifications held. Hours log tied to an event or a standalone activity. Total hours summary on the contact record.*
+
+### Volunteer Scheduling
+
+*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to the Events module for event-day volunteer roles.*
+
+### Volunteer Communication & Recognition
+
+*Shift reminder emails, milestone triggers (100 hours, anniversary, etc.). Integrates with the email system.*
+
+### Volunteer Portal
+
+*Public-facing self-service: signup, view upcoming shifts, log hours pending admin approval. Extends or reuses the Member Portal patterns.*
 
 ---
 

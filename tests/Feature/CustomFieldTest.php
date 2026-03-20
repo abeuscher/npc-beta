@@ -15,6 +15,10 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+beforeEach(function () {
+    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\PermissionSeeder']);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Model: JSONB read/write
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +117,7 @@ it('import creates a new CustomFieldDef when handle does not exist', function ()
     );
 
     $user = User::factory()->create();
+    $user->givePermissionTo('import_data');
 
     Livewire::actingAs($user)
         ->test(ImportProgressPage::class, ['importLogId' => $log->id])
@@ -146,6 +151,7 @@ it('import reuses existing CustomFieldDef and logs action as reused', function (
     $log->update(['storage_path' => 'imports/test-reuse.csv', 'filename' => 'test-reuse.csv']);
 
     $user = User::factory()->create();
+    $user->givePermissionTo('import_data');
 
     Livewire::actingAs($user)
         ->test(ImportProgressPage::class, ['importLogId' => $log->id])
