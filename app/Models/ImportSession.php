@@ -12,6 +12,7 @@ class ImportSession extends Model
     use HasUuids;
 
     protected $fillable = [
+        'session_label',
         'import_source_id',
         'model_type',
         'status',

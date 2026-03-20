@@ -34,6 +34,7 @@ class ImportContactsPage extends Page
     {
         return [
             ImporterPage::getUrl() => 'Importer',
+            'Import Contacts',
         ];
     }
 
@@ -71,26 +72,50 @@ class ImportContactsPage extends Page
                     Wizard\Step::make('Source')
                         ->icon('heroicon-o-tag')
                         ->schema([
-                            Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\Grid::make(3)->schema([
 
                                 Forms\Components\Section::make('Source')
+                                    ->columnSpan(2)
                                     ->schema([
-                                        Forms\Components\TextInput::make('import_source_name')
-                                            ->label('New source name')
-                                            ->placeholder('e.g. Old CRM, Salesforce 2024')
-                                            ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
-                                            ->visible(fn (Forms\Get $get) => ! $get('import_source_id')),
+                                        Forms\Components\TextInput::make('session_label')
+                                            ->label('Session label')
+                                            ->default(fn () => 'Data Import on ' . now()->format('F j, Y \a\t g:i A'))
+                                            ->required()
+                                            ->maxLength(255),
 
-                                        Forms\Components\Select::make('import_source_id')
-                                            ->label('Use an existing source')
-                                            ->helperText('Select a previously used import source to enable update-on-reimport matching via External ID.')
-                                            ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
-                                            ->placeholder('— Select a source —')
-                                            ->nullable()
-                                            ->live(),
+                                        Forms\Components\Grid::make(5)->schema([
+                                            Forms\Components\TextInput::make('import_source_name')
+                                                ->label('New source name')
+                                                ->placeholder('e.g. Old CRM, Salesforce 2024')
+                                                ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
+                                                ->disabled(fn (Forms\Get $get) => filled($get('import_source_id')))
+                                                ->columnSpan(2),
+
+                                            Forms\Components\Placeholder::make('or_separator')
+                                                ->hiddenLabel()
+                                                ->content(new \Illuminate\Support\HtmlString(
+                                                    '<p class="text-center font-bold text-gray-500 text-base pt-7">OR</p>'
+                                                ))
+                                                ->columnSpan(1),
+
+                                            Forms\Components\Select::make('import_source_id')
+                                                ->label('Use an existing source')
+                                                ->helperText('Select to enable re-import matching via External ID.')
+                                                ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
+                                                ->placeholder('— Select a source —')
+                                                ->nullable()
+                                                ->live()
+                                                ->afterStateUpdated(function ($state, Forms\Set $set): void {
+                                                    if ($state) {
+                                                        $set('import_source_name', '');
+                                                    }
+                                                })
+                                                ->columnSpan(2),
+                                        ]),
                                     ]),
 
                                 Forms\Components\Section::make('Tags')
+                                    ->columnSpan(1)
                                     ->schema([
                                         Forms\Components\Select::make('import_tags')
                                             ->label('Tag all imported contacts')
@@ -463,6 +488,22 @@ class ImportContactsPage extends Page
 
     public function runImport(): void
     {
+        $blocking = ImportSession::where('model_type', 'contact')
+            ->whereIn('status', ['pending', 'reviewing'])
+            ->exists();
+
+        if ($blocking) {
+            Notification::make()
+                ->title('Import blocked')
+                ->body('A previous contact import is awaiting review. Approve or roll it back before starting a new one.')
+                ->danger()
+                ->send();
+
+            $this->halt();
+
+            return;
+        }
+
         $data = $this->form->getState();
 
         $rawMap         = $data['column_map'] ?? [];
@@ -497,6 +538,7 @@ class ImportContactsPage extends Page
 
         // Create the ImportSession — second DB write happens here
         $session = ImportSession::create([
+            'session_label'    => $data['session_label'] ?? null,
             'import_source_id' => $this->resolvedSourceId ?: null,
             'model_type'       => 'contact',
             'status'           => 'pending',

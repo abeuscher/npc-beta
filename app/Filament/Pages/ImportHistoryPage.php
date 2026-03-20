@@ -40,6 +40,7 @@ class ImportHistoryPage extends Page implements HasTable
     {
         return [
             ImporterPage::getUrl() => 'Importer',
+            'History',
         ];
     }
 

@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-20 (session 042)
+Last updated: 2026-03-20 (session 044)
 
 ---
 
@@ -406,6 +406,7 @@ Import sessions for the current batch-import workflow with review and approval.
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
+| session_label | string | yes | User-provided display name for the session |
 | import_source_id | uuid | yes | FK→import_sources, nullOnDelete |
 | model_type | string | no | |
 | status | string | no | default: 'pending'; values: pending, reviewing, approved, rolled_back |
@@ -415,6 +416,22 @@ Import sessions for the current batch-import workflow with review and approval.
 | imported_by | bigInteger | no | FK→users, cascade |
 | approved_by | bigInteger | yes | FK→users, nullOnDelete |
 | approved_at | timestamp | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## import_staged_updates
+
+Staged field changes for existing contacts matched during an import. Applied (or discarded) when the import session is approved or rolled back.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigint | no | PK |
+| import_session_id | uuid | no | FK→import_sessions, cascadeOnDelete |
+| contact_id | uuid | no | FK→contacts, cascadeOnDelete |
+| attributes | jsonb | yes | Proposed field changes to apply on approval |
+| tag_ids | jsonb | yes | Tag UUIDs to syncWithoutDetaching on approval |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

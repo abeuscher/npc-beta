@@ -58,7 +58,7 @@
                     </div>
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
-                        <p class="mt-1 text-sm text-gray-500">Updated</p>
+                        <p class="mt-1 text-sm text-gray-500">Staged</p>
                     </div>
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>
@@ -93,7 +93,7 @@
 
                 <div class="flex gap-3">
                     @if ($importSessionId && auth()->user()?->can('review_imports'))
-                        <a href="{{ \App\Filament\Pages\ImportReviewPage::getUrl() }}"
+                        <a href="{{ \App\Filament\Pages\ImporterPage::getUrl() }}"
                            class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
                             <x-heroicon-o-clipboard-document-check class="h-4 w-4" />
                             Go to review queue
@@ -141,7 +141,7 @@
                     </div>
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
-                        <p class="mt-1 text-sm text-gray-500">Updated</p>
+                        <p class="mt-1 text-sm text-gray-500">Staged</p>
                     </div>
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>

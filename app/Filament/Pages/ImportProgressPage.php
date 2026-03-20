@@ -7,6 +7,7 @@ use App\Models\CustomFieldDef;
 use App\Models\ImportIdMap;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
+use App\Models\ImportStagedUpdate;
 use App\Models\Note;
 use App\Services\PiiScanner;
 use Filament\Pages\Page;
@@ -26,6 +27,14 @@ class ImportProgressPage extends Page
     public static function shouldRegisterNavigation(): bool
     {
         return false;
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            ImporterPage::getUrl() => 'Importer',
+            'Import Contacts',
+        ];
     }
 
     protected $queryString = [
@@ -338,7 +347,20 @@ class ImportProgressPage extends Page
                         $nonNull['custom_fields'] = array_merge($contact->custom_fields ?? [], $customFields);
                     }
 
-                    $contact->fill($nonNull)->save();
+                    ImportStagedUpdate::create([
+                        'import_session_id' => $this->importSessionId,
+                        'contact_id'        => $contact->id,
+                        'attributes'        => $nonNull ?: null,
+                        'tag_ids'           => $this->tagIds ?: null,
+                    ]);
+
+                    Note::create([
+                        'notable_type' => Contact::class,
+                        'notable_id'   => $contact->id,
+                        'author_id'    => $this->importerUserId ?: null,
+                        'body'         => "Match found from import in session {$this->sessionLabel} — field changes are staged and awaiting reviewer approval",
+                        'occurred_at'  => now(),
+                    ]);
 
                     return 'updated';
                 }
@@ -357,7 +379,20 @@ class ImportProgressPage extends Page
                         $nonNull['custom_fields'] = array_merge($existing->custom_fields ?? [], $customFields);
                     }
 
-                    $existing->fill($nonNull)->save();
+                    ImportStagedUpdate::create([
+                        'import_session_id' => $this->importSessionId,
+                        'contact_id'        => $existing->id,
+                        'attributes'        => $nonNull ?: null,
+                        'tag_ids'           => $this->tagIds ?: null,
+                    ]);
+
+                    Note::create([
+                        'notable_type' => Contact::class,
+                        'notable_id'   => $existing->id,
+                        'author_id'    => $this->importerUserId ?: null,
+                        'body'         => "Match found from import in session {$this->sessionLabel} — field changes are staged and awaiting reviewer approval",
+                        'occurred_at'  => now(),
+                    ]);
 
                     return 'updated';
                 }

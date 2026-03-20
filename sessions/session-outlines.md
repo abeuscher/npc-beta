@@ -48,12 +48,9 @@ This is the single working reference for all sessions. Completed sessions are li
 | 041 | Importer Phase 2 — Accountability, Source Mapping & Filter UI |
 | 042 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
 | 043 | Importer — Phase 3 |
+| 044 | Importer — Phase 4: Staged Updates & Queue Control |
 
 ---
-
-### Importer — Phase 4: Staged Updates & Queue Control
-
-Architectural completion of the import review workflow. Proposed changes to existing contacts are staged in a new `import_staged_updates` table and held until a reviewer approves the session — the same gate that already applies to new contacts. One-at-a-time queue lock per content type prevents data collisions from concurrent imports. Importer and Review Queue merged into a single unified page. Permission unified so reviewers can access the importer hub.
 
 ### Duplicate Contact Detection
 
@@ -63,9 +60,24 @@ Detect probable duplicate contacts at import time and on the contact list. Match
 
 ### Household & Family Grouping
 
-When a contact is created, a household record is created automatically (or optionally). Other contacts can be added to a household via an email-based invite handshake — the household owner approves additions. Design principle: simple and frictionless, not complicated.
+**Depends on: Member Portal existing first.**
+
+A lightweight household record — name, canonical mailing address, members (linked contacts). No nav slot; accessed only through the contact record (a Household panel on the contact edit/view page). No admin-managed assignments.
+
+Self-service flow: a logged-in member can request to join an existing household by searching on a unique identifier (household name + address, or a short code). The request goes into a staff approval queue — no one self-assigns, they only request. On approval the contact is linked. On the contact record, staff can also manually link/unlink. Aggregate giving is computed from linked members, not stored. Used for physical mailing deduplication, compound salutations, and household-level event/ticket limits.
 
 ### Contact ↔ User Link
+
+---
+
+
+### 045. Public Frontend Foundation
+
+Vite + SCSS build pipeline from scratch. Pico CSS as the base styling framework. The existing public layout and any ad-hoc public CSS are discarded and rewritten. Output: a compiled `public.css` and `public.js` served to all public pages. Site settings fields (`primary_color`, `heading_font`, `body_font`) bridged to Pico CSS custom properties via a server-rendered inline `<style>` block in the layout head — no build step required for brand color changes. Unique body class on every public page (`page-{slug}`, `post-{slug}`, `event-{slug}`).
+
+### 046. Site Theme Admin
+
+CMS › Site Theme page with two tabs. **Appearance tab**: brand color picker and font selects (heading/body from a curated list including Google Fonts), saved to site settings, takes effect on next page request without a build. **SCSS Editor tab** (gated by `edit_theme_scss` permission): open code editor pre-loaded with `resources/scss/_theme.scss`, validates SCSS on submit using scssphp, triggers `npm run build`, shows build output inline. Developer-facing — no polish required, just access. Help doc written as the last step.
 
 ---
 
@@ -76,6 +88,8 @@ When a contact is created, a household record is created automatically (or optio
 ### Secure Public Signup Flows
 
 ### Member Portal
+
+*Prerequisite for Household & Family Grouping — the household join request flow lives on the member's account editor page.*
 
 ### Gated Pages
 
@@ -139,9 +153,6 @@ When a contact is created, a household record is created automatically (or optio
 
 Wire the tag system into all CMS content types. Add a tag picker to the blog post, page, and event edit forms using the same multi-select + create-on-confirm behaviour as the contact tag field. The tag manager screen stays where it is.
 
-### Public Frontend Foundation
-
-Build a clean, attractive public-facing template: well-structured HTML, a starter CSS file with sensible defaults, and a unique body class on every public page (`page-{slug}`, `post-{slug}`, `event-{slug}`). The goal is a public face that looks professional out of the box before further theming.
 
 ### SEO & Head Tag Management
 
