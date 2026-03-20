@@ -79,6 +79,12 @@ class CustomFieldDefResource extends Resource
                     ])
                     ->default('text')
                     ->live(),
+
+                Forms\Components\Toggle::make('is_filterable')
+                    ->label('Filterable')
+                    ->helperText('Creates a database index to speed up mailing list filters on this field. Contact fields only.')
+                    ->visible(fn (Forms\Get $get) => $get('model_type') === 'contact')
+                    ->default(false),
             ])->columns(2),
 
             Forms\Components\Section::make('Select Options')

@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="mx-auto max-w-2xl space-y-6">
+    <div class="max-w-2xl space-y-6">
         <p class="text-sm text-gray-500">Choose the type of data you want to import.</p>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -27,6 +27,14 @@
                 <span class="text-xs text-gray-400">Coming soon</span>
             </div>
 
+        </div>
+
+        <div class="pt-2">
+            <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
+               class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                <x-heroicon-o-clock class="h-4 w-4" />
+                View Import History
+            </a>
         </div>
     </div>
 </x-filament-panels::page>

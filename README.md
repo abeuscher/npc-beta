@@ -14,6 +14,7 @@ Built on Laravel + Filament, with PostgreSQL and Docker. One installation per cl
 - Notes attached to any record
 - Tags for flexible grouping and filtering
 - CSV import and export with field mapping and import history
+- Importer enforces automatic rejection of files containing sensitive financial and personal identifiers (credit card numbers, SSNs, bank routing numbers, driver's licence numbers); a developer bypass flag (`IMPORTER_SKIP_PII_CHECK`) is available for local testing only
 
 **Finance**
 - Donations, transactions, funds, and campaigns

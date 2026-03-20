@@ -8,6 +8,7 @@ use App\Models\ImportIdMap;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\Note;
+use App\Services\PiiScanner;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 
@@ -58,6 +59,10 @@ class ImportProgressPage extends Page
     // User ID of the person who triggered the import (for note authorship).
     public int $importerUserId = 0;
 
+    // Set to true when the import is rejected due to PII detection.
+    public bool   $rejected         = false;
+    public string $rejectionReason  = '';
+
     // Byte offset into the CSV so each tick resumes where the last left off.
     public int $fileOffset = 0;
 
@@ -81,6 +86,28 @@ class ImportProgressPage extends Page
         $this->csvHeaders = array_map('trim', fgetcsv($handle) ?: []);
         $this->fileOffset = (int) ftell($handle);
         fclose($handle);
+
+        // PII scan — runs on the full file before any rows are written.
+        if (! env('IMPORTER_SKIP_PII_CHECK', false)) {
+            $violation = (new PiiScanner())->scan($fullPath, $this->csvHeaders);
+
+            if ($violation !== null) {
+                $this->done            = true;
+                $this->rejected        = true;
+                $this->rejectionReason = $violation['detail'];
+
+                $log->update([
+                    'status'       => 'failed',
+                    'started_at'   => now(),
+                    'completed_at' => now(),
+                    'errors'       => [['type' => 'pii_rejection', 'detail' => $violation['detail']]],
+                ]);
+
+                $this->failSession();
+
+                return;
+            }
+        }
 
         // Resolve custom field definitions once before any rows are processed.
         $customFieldLog = $this->resolveCustomFieldDefs($log);

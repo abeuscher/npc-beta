@@ -1,7 +1,7 @@
 ---
 title: Import Contacts
 description: How to import contacts from a CSV file, select an import source, map columns to CRM fields, handle custom fields, and understand the review and approval workflow.
-version: "0.41"
+version: "0.43"
 updated: 2026-03-20
 tags: [import, contacts, csv, crm, review]
 routes:
@@ -60,6 +60,23 @@ Users with the **Review Imports** permission can access **Tools → Review Queue
 - **Roll back** an import — this permanently deletes all contacts from that import. The source ID mappings are preserved for future reference. This action cannot be undone.
 
 Once approved, contacts cannot be rolled back. The Rollback button is only available on pending and reviewing imports.
+
+## Sensitive data rejection
+
+Before processing any rows, the importer scans your CSV for data that must not enter the system. If a violation is found, the entire import is **rejected immediately** — no contacts are created.
+
+The importer checks two things:
+
+**Column headers** — if any column is named after a sensitive field type, the file is rejected before any row is read. Blocked names include: `ssn`, `social_security`, `social_security_number`, `credit_card`, `credit_card_number`, `card_number`, `pan`, `routing_number`, `account_number`, `bank_account`, `aba_routing`, `driver_license`, `drivers_license`, `dl_number`.
+
+**Cell contents** — every cell in every row is scanned for:
+- Credit card numbers (13–19 digit sequences that pass the Luhn check, with or without spaces/dashes)
+- Social Security Numbers (`###-##-####` format, or any 9-digit sequence)
+- ABA bank routing numbers (9-digit numbers whose first two digits indicate a Federal Reserve routing range)
+
+When a file is rejected you will see the message: **"This import was rejected because it contains data that may include sensitive financial or personal identifiers. Remove the flagged data and try again."** A detail line identifies the specific row and column that triggered the rejection.
+
+To fix a rejected import: open the original file, remove or blank out the flagged column(s) or cell(s), save it, and start a new import.
 
 ## Duplicate Handling
 

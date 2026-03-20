@@ -30,6 +30,13 @@ class ImportContactsPage extends Page
 
     protected static ?string $title = 'Import Contacts';
 
+    public function getBreadcrumbs(): array
+    {
+        return [
+            ImporterPage::getUrl() => 'Importer',
+        ];
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('import_data') ?? false;
@@ -64,53 +71,63 @@ class ImportContactsPage extends Page
                     Wizard\Step::make('Source')
                         ->icon('heroicon-o-tag')
                         ->schema([
-                            Forms\Components\Select::make('import_source_id')
-                                ->label('Import source')
-                                ->helperText('Select the system this data is coming from, or create a new one.')
-                                ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
-                                ->placeholder('— Create a new source —')
-                                ->nullable()
-                                ->live(),
+                            Forms\Components\Grid::make(2)->schema([
 
-                            Forms\Components\TextInput::make('import_source_name')
-                                ->label('New source name')
-                                ->placeholder('e.g. Old CRM, Salesforce 2024')
-                                ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
-                                ->visible(fn (Forms\Get $get) => ! $get('import_source_id')),
+                                Forms\Components\Section::make('Source')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('import_source_name')
+                                            ->label('New source name')
+                                            ->placeholder('e.g. Old CRM, Salesforce 2024')
+                                            ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
+                                            ->visible(fn (Forms\Get $get) => ! $get('import_source_id')),
 
-                            Forms\Components\Select::make('import_tags')
-                                ->label('Tag all imported contacts')
-                                ->helperText('Every contact created in this import will receive these tags.')
-                                ->multiple()
-                                ->options(fn () => Tag::where('type', 'contact')->orderBy('name')->pluck('name', 'id')->toArray())
-                                ->searchable()
-                                ->preload()
-                                ->nullable(),
+                                        Forms\Components\Select::make('import_source_id')
+                                            ->label('Use an existing source')
+                                            ->helperText('Select a previously used import source to enable update-on-reimport matching via External ID.')
+                                            ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
+                                            ->placeholder('— Select a source —')
+                                            ->nullable()
+                                            ->live(),
+                                    ]),
 
-                            Forms\Components\TextInput::make('_new_tag')
-                                ->label('Create new tag')
-                                ->placeholder('New tag label…')
-                                ->dehydrated(false)
-                                ->suffixAction(
-                                    Action::make('add_tag')
-                                        ->icon('heroicon-o-plus')
-                                        ->action(function (Forms\Get $get, Forms\Set $set): void {
-                                            $name = trim($get('_new_tag') ?? '');
+                                Forms\Components\Section::make('Tags')
+                                    ->schema([
+                                        Forms\Components\Select::make('import_tags')
+                                            ->label('Tag all imported contacts')
+                                            ->helperText('Every contact created in this import will receive these tags.')
+                                            ->multiple()
+                                            ->options(fn () => Tag::where('type', 'contact')->orderBy('name')->pluck('name', 'id')->toArray())
+                                            ->searchable()
+                                            ->preload()
+                                            ->nullable(),
 
-                                            if (! filled($name)) {
-                                                return;
-                                            }
+                                        Forms\Components\TextInput::make('_new_tag')
+                                            ->label('Create new tag')
+                                            ->placeholder('New tag label…')
+                                            ->dehydrated(false)
+                                            ->suffixAction(
+                                                Action::make('add_tag')
+                                                    ->icon('heroicon-o-plus')
+                                                    ->action(function (Forms\Get $get, Forms\Set $set): void {
+                                                        $name = trim($get('_new_tag') ?? '');
 
-                                            $tag     = Tag::firstOrCreate(['name' => $name, 'type' => 'contact']);
-                                            $current = array_map('strval', $get('import_tags') ?? []);
+                                                        if (! filled($name)) {
+                                                            return;
+                                                        }
 
-                                            if (! in_array((string) $tag->id, $current, true)) {
-                                                $set('import_tags', [...$current, (string) $tag->id]);
-                                            }
+                                                        $tag     = Tag::firstOrCreate(['name' => $name, 'type' => 'contact']);
+                                                        $current = array_map('strval', $get('import_tags') ?? []);
 
-                                            $set('_new_tag', null);
-                                        })
-                                ),
+                                                        if (! in_array((string) $tag->id, $current, true)) {
+                                                            $set('import_tags', [...$current, (string) $tag->id]);
+                                                        }
+
+                                                        $set('_new_tag', null);
+                                                    })
+                                            ),
+                                    ]),
+
+                            ]),
                         ])
                         ->afterValidation(function () {
                             $existingId = $this->data['import_source_id'] ?? null;

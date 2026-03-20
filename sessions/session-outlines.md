@@ -47,38 +47,13 @@ This is the single working reference for all sessions. Completed sessions are li
 | 040 | Tags — Unified Tag System |
 | 041 | Importer Phase 2 — Accountability, Source Mapping & Filter UI |
 | 042 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
+| 043 | Importer — Phase 3 |
 
 ---
 
-### Importer — Phase 3
+### Importer — Phase 4: Staged Updates & Queue Control
 
-A pre-importer-completion housekeeping session. No new features. Goal: find and fix everything that has quietly drifted out of alignment.
-
-**Edit page field audit.** For every resource and admin page with an edit form, compare the form fields against the database columns and model `$fillable`. Any column that is fillable but not surfaced in the edit form is either a deliberate omission (document why) or a gap to fix. Flag and resolve both. Known example: the plain-text `notes` column on contacts coexists with the morphMany `Note` system — the column should be dropped or the field removed from `$fillable`.
-
-**DB schema doc.** Create `docs/schema.md` at the repo root — a developer-facing reference (not user-facing). One section per model: table name, column name, type, nullable flag, and a one-line description. Updating this doc is a required step whenever a migration is written. Produce the initial version in this session.
-
-**Permission gate audit.** Every admin page and Filament resource must have an intentional access check (`canAccess()`, `canView()`, Spatie permission guard, or explicit `authorize()` call). Pages built before the permission system matured may have none. List every page and its gate; fix any that are unguarded.
-
-**Soft deletes consistency audit.** Every model should use `SoftDeletes` or not — by deliberate choice, not accident. Produce a table of which models use it and which don't, with a one-line justification for each. Correct any that are wrong.
-
-**Fillable vs. casts consistency.** Every date, boolean, and JSON column in `$fillable` must also appear in `$casts`. Scan all models and fix gaps.
-
-**Foreign key index audit.** Every `foreignId`/`foreignUuid` column should have a database index. Check all migrations and add any that are missing.
-
-**Orphaned documents.** Scan `resources/docs/` for help articles with no corresponding route in the app, and find any admin views with no linked help article. Stub any missing help articles with a title and a single placeholder paragraph — body to be written later.
-
-**Factory coverage.** Every model that participates in tests must have a factory. List any that don't.
-
----
-
-### Importer — Phase 3
-
-**PII / sensitive data rejection**: a pre-import validation step scans every cell of every row using regex pattern matching and rejects the import hard (not a warning) if any cell matches: credit card PANs (regex + Luhn check), SSNs, ABA routing numbers. Additionally, a field-name blocklist rejects columns named `ssn`, `social_security`, `credit_card`, `card_number`, `routing_number`, `account_number`, `driver_license`, etc. regardless of their values. This check is enforced at the job level and can only be bypassed by a developer via an `.env` flag. It must be documented in the README and in the importer help doc. The help doc for the importer is the **last step** of this session — written after implementation is stable.
-
-**Import History placement**: remove Import History from the sidebar nav, surface it as a prominent link in the Importer landing page header instead.
-
-**Custom field expression indexes**: fields marked as filterable in `CustomFieldDef` should have a PostgreSQL expression index created automatically at field-creation time to support querying (`WHERE custom_fields->>'field_handle' = 'value'`).
+Architectural completion of the import review workflow. Proposed changes to existing contacts are staged in a new `import_staged_updates` table and held until a reviewer approves the session — the same gate that already applies to new contacts. One-at-a-time queue lock per content type prevents data collisions from concurrent imports. Importer and Review Queue merged into a single unified page. Permission unified so reviewers can access the importer hub.
 
 ### Duplicate Contact Detection
 

@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\CustomFieldDefObserver;
 use Filament\Forms;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
+#[ObservedBy(CustomFieldDefObserver::class)]
 class CustomFieldDef extends Model
 {
     protected $fillable = [
@@ -14,11 +17,13 @@ class CustomFieldDef extends Model
         'field_type',
         'options',
         'sort_order',
+        'is_filterable',
     ];
 
     protected $casts = [
-        'options'    => 'array',
-        'sort_order' => 'integer',
+        'options'       => 'array',
+        'sort_order'    => 'integer',
+        'is_filterable' => 'boolean',
     ];
 
     // -------------------------------------------------------------------------

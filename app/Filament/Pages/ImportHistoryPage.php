@@ -22,6 +22,11 @@ class ImportHistoryPage extends Page implements HasTable
 
     protected static ?int $navigationSort = 11;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('import_data') ?? false;
@@ -30,6 +35,13 @@ class ImportHistoryPage extends Page implements HasTable
     protected static string $view = 'filament.pages.import-history';
 
     protected static ?string $title = 'Import History';
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            ImporterPage::getUrl() => 'Importer',
+        ];
+    }
 
     public function table(Table $table): Table
     {
