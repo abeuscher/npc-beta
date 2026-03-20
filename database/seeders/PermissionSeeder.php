@@ -58,6 +58,16 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Permission::firstOrCreate([
+            'name'       => 'import_data',
+            'guard_name' => 'web',
+        ]);
+
+        Permission::firstOrCreate([
+            'name'       => 'review_imports',
+            'guard_name' => 'web',
+        ]);
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [

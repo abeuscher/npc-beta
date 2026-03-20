@@ -30,7 +30,7 @@ class ContactFactory extends Factory
             'custom_data'     => null,
             'is_deceased'     => false,
             'do_not_contact'  => false,
-            'source'          => fake()->optional(0.8)->randomElement(['manual', 'import', 'form', 'api']),
+            'source'          => fake()->randomElement(['manual', 'manual', 'manual', 'import', 'form', 'api']),
         ];
     }
 

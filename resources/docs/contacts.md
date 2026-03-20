@@ -46,6 +46,17 @@ Tags let you categorize and segment contacts for filtering, mailing lists, and r
 
 From the contact list you can select multiple contacts to apply bulk actions such as adding tags or exporting selected records to CSV.
 
+## Source Field
+
+Every contact has a **Source** field that records how the record entered the system:
+
+- **Manual Entry** — created directly through the admin interface
+- **Import** — brought in via the Importer tool
+- **Web Form** — submitted through a public registration or sign-up form
+- **API** — created programmatically via the API
+
+The Source field is set automatically and **cannot be changed by any user through the UI**. It is displayed as read-only information on the contact edit form.
+
 ## Importing Contacts
 
-To bring in contacts from a spreadsheet, use **Tools → Import Contacts**. See the Import Contacts help article for details.
+To bring in contacts from a spreadsheet, use **Tools → Importer**. See the Import Contacts help article for details.

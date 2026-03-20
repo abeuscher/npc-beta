@@ -45,40 +45,40 @@ This is the single working reference for all sessions. Completed sessions are li
 | 038 | MailChimp Webhook Debugging |
 | 039 | Admin Dashboard & Branding Polish |
 | 040 | Tags — Unified Tag System |
+| 041 | Importer Phase 2 — Accountability, Source Mapping & Filter UI |
 
 ---
 
-## Email
 
-### MailChimp Integration (future)
+### Codebase Audit — Fields, Schema, Permissions & Help Coverage
+
+A pre-importer-completion housekeeping session. No new features. Goal: find and fix everything that has quietly drifted out of alignment.
+
+**Edit page field audit.** For every resource and admin page with an edit form, compare the form fields against the database columns and model `$fillable`. Any column that is fillable but not surfaced in the edit form is either a deliberate omission (document why) or a gap to fix. Flag and resolve both. Known example: the plain-text `notes` column on contacts coexists with the morphMany `Note` system — the column should be dropped or the field removed from `$fillable`.
+
+**DB schema doc.** Create `docs/schema.md` at the repo root — a developer-facing reference (not user-facing). One section per model: table name, column name, type, nullable flag, and a one-line description. Updating this doc is a required step whenever a migration is written. Produce the initial version in this session.
+
+**Permission gate audit.** Every admin page and Filament resource must have an intentional access check (`canAccess()`, `canView()`, Spatie permission guard, or explicit `authorize()` call). Pages built before the permission system matured may have none. List every page and its gate; fix any that are unguarded.
+
+**Soft deletes consistency audit.** Every model should use `SoftDeletes` or not — by deliberate choice, not accident. Produce a table of which models use it and which don't, with a one-line justification for each. Correct any that are wrong.
+
+**Fillable vs. casts consistency.** Every date, boolean, and JSON column in `$fillable` must also appear in `$casts`. Scan all models and fix gaps.
+
+**Foreign key index audit.** Every `foreignId`/`foreignUuid` column should have a database index. Check all migrations and add any that are missing.
+
+**Orphaned documents.** Scan `resources/docs/` for help articles with no corresponding route in the app, and find any admin views with no linked help article. Stub any missing help articles with a title and a single placeholder paragraph — body to be written later.
+
+**Factory coverage.** Every model that participates in tests must have a factory. List any that don't.
 
 ---
-
-## Admin & Dashboard
-
-### ~~039 — Admin Dashboard & Branding Polish~~ ✓ Complete
-
-Restructure the dashboard into a clean 2×2 widget grid (welcome, quick actions, integration status, help placeholder). Added primary colour picker and Stripe/QuickBooks API key fields to General Settings.
-
----
-
-## CRM & Importer
-
-### ~~040 — Tags — Unified Tag System~~ ✓ Complete
-
-Consolidated `Tag` and `CmsTag` into a single `tags` table with a `type` discriminator. Added `slug` via Spatie Sluggable. Migrated `cms_taggables` into `taggables`. Wired tag pickers (searchable Select + companion Create field) into Contact, Page, Post, Event, and Collection Item forms. Replaced both tag resources with a unified Tag Manager under Tools.
-
-### 041 — Importer Phase 2 — Accountability, Source Mapping & Filter UI
-
-Rebuilds the contact importer with full accountability (import sessions with `pending → reviewing → approved` states, global scope hiding pending records, rollback). Adds named import sources and a persistent `source_id → uuid` mapping table for re-import matching. Adds a field-type-aware filter builder to the mailing list manager. Locks the contact `source` field as permanently read-only. Full brief in `sessions/041. Importer Phase 2 — Accountability, Source Mapping & Filter UI.md`.
 
 ### Importer — Phase 3
 
-Move the importer to the Tools section of admin navigation. Extend it to support all standard and custom contact fields with no separate import path. Tags can be assigned during import. Import History: remove from nav, surface as a prominent link in the importer page header.
+**PII / sensitive data rejection**: a pre-import validation step scans every cell of every row using regex pattern matching and rejects the import hard (not a warning) if any cell matches: credit card PANs (regex + Luhn check), SSNs, ABA routing numbers. Additionally, a field-name blocklist rejects columns named `ssn`, `social_security`, `credit_card`, `card_number`, `routing_number`, `account_number`, `driver_license`, etc. regardless of their values. This check is enforced at the job level and can only be bypassed by a developer via an `.env` flag. It must be documented in the README and in the importer help doc. The help doc for the importer is the **last step** of this session — written after implementation is stable.
 
-**PII / sensitive data rejection** (built into this session): a pre-import validation step scans every cell of every row using regex pattern matching and rejects the import hard (not a warning) if any cell matches: credit card PANs (regex + Luhn check), SSNs, ABA routing numbers. Additionally, a field-name blocklist rejects columns named `ssn`, `social_security`, `credit_card`, `card_number`, `routing_number`, `account_number`, `driver_license`, etc. regardless of their values. This check is enforced at the job level and can only be bypassed by a developer via an `.env` flag. It must be documented in the README and in the importer help doc. The help doc for the importer is the **last step** of this session — written after implementation is stable.
+**Import History placement**: remove Import History from the sidebar nav, surface it as a prominent link in the Importer landing page header instead.
 
-**Custom fields**: the importer should detect incoming columns that have no matching standard or custom field definition and offer the user the option to create a new custom field on the fly (the "Create field?" behaviour already spec'd). Custom fields are stored as JSONB on the contact record. Fields marked as filterable in `CustomFieldDef` will have a PostgreSQL expression index created automatically at field-creation time to support querying (`WHERE custom_fields->>'field_handle' = 'value'`).
+**Custom field expression indexes**: fields marked as filterable in `CustomFieldDef` should have a PostgreSQL expression index created automatically at field-creation time to support querying (`WHERE custom_fields->>'field_handle' = 'value'`).
 
 ### Duplicate Contact Detection
 
@@ -221,6 +221,12 @@ Add a link to the full help system in the left navigation. Build a help index pa
 ### Admin User Activity Log
 
 Each admin user needs a record of their significant actions against data — which contact records they edited, which events they created or cancelled, which donations they entered or deleted. The log is not a diff system but an event journal: who did what, to which record, and when. Surface it on the user record in the Users list (a tab or linked sub-page showing that user's recent activity) and optionally as a filterable global log under Settings or Tools. Scope in the planning session: which action types to capture, where to store the log (a dedicated table vs. an existing auditing package like `owen-it/laravel-auditing`), and what the retention/purge policy should be.
+
+### Data Retention & Cascading Delete Audit
+
+*Schedule this after Importer Phase 3 is complete, as the importer adds more cascading relationships.*
+
+Audit every deletion path in the system and define what should happen when a record is removed. Key questions to answer and implement: What happens to notes, tags, and import records when the user who created them is deleted? What happens to contacts linked to a deleted import session — do they persist or cascade? What happens to event registrations when a contact is deleted? What happens to mailing list memberships? What is the intended lifetime of soft-deleted records — is there a purge policy? The output of this session is both code (correct `onDelete` behaviours, cascade or null-out rules in migrations) and a written policy document checked into the repo.
 
 ### Privacy & Legal Footer Example
 

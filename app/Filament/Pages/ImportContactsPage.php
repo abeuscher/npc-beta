@@ -2,9 +2,14 @@
 
 namespace App\Filament\Pages;
 
+use App\Importers\ContactFieldRegistry;
 use App\Models\ImportLog;
+use App\Models\ImportSession;
+use App\Models\ImportSource;
+use App\Models\Tag;
 use App\Services\Import\FieldMapper;
 use Filament\Forms;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -15,23 +20,29 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class ImportContactsPage extends Page
 {
-    protected static ?string $navigationGroup = 'CRM';
+    protected static ?string $navigationGroup = 'Tools';
 
     protected static ?string $navigationLabel = 'Import Contacts';
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?int $navigationSort = 10;
-
     protected static string $view = 'filament.pages.import-contacts';
 
     protected static ?string $title = 'Import Contacts';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     // Intermediate state between wizard steps
-    public array  $parsedHeaders    = [];
-    public string $uploadedFilePath = '';
-    public array  $previewRows      = [];
-    public string $detectedPreset   = '';
+    public array  $parsedHeaders      = [];
+    public string $uploadedFilePath   = '';
+    public array  $previewRows        = [];
+    public string $detectedPreset     = '';
+    public string $importSessionId    = '';
+    public string $resolvedSourceId   = '';   // UUID of an existing ImportSource
+    public string $pendingSourceName  = '';   // Name for a new ImportSource (not yet created)
 
     public ?array $data = [];
 
@@ -45,6 +56,69 @@ class ImportContactsPage extends Page
         return $form
             ->schema([
                 Wizard::make([
+                    Wizard\Step::make('Source')
+                        ->icon('heroicon-o-tag')
+                        ->schema([
+                            Forms\Components\Select::make('import_source_id')
+                                ->label('Import source')
+                                ->helperText('Select the system this data is coming from, or create a new one.')
+                                ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
+                                ->placeholder('— Create a new source —')
+                                ->nullable()
+                                ->live(),
+
+                            Forms\Components\TextInput::make('import_source_name')
+                                ->label('New source name')
+                                ->placeholder('e.g. Old CRM, Salesforce 2024')
+                                ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
+                                ->visible(fn (Forms\Get $get) => ! $get('import_source_id')),
+
+                            Forms\Components\Select::make('import_tags')
+                                ->label('Tag all imported contacts')
+                                ->helperText('Every contact created in this import will receive these tags.')
+                                ->multiple()
+                                ->options(fn () => Tag::where('type', 'contact')->orderBy('name')->pluck('name', 'id')->toArray())
+                                ->searchable()
+                                ->preload()
+                                ->nullable(),
+
+                            Forms\Components\TextInput::make('_new_tag')
+                                ->label('Create new tag')
+                                ->placeholder('New tag label…')
+                                ->dehydrated(false)
+                                ->suffixAction(
+                                    Action::make('add_tag')
+                                        ->icon('heroicon-o-plus')
+                                        ->action(function (Forms\Get $get, Forms\Set $set): void {
+                                            $name = trim($get('_new_tag') ?? '');
+
+                                            if (! filled($name)) {
+                                                return;
+                                            }
+
+                                            $tag     = Tag::firstOrCreate(['name' => $name, 'type' => 'contact']);
+                                            $current = array_map('strval', $get('import_tags') ?? []);
+
+                                            if (! in_array((string) $tag->id, $current, true)) {
+                                                $set('import_tags', [...$current, (string) $tag->id]);
+                                            }
+
+                                            $set('_new_tag', null);
+                                        })
+                                ),
+                        ])
+                        ->afterValidation(function () {
+                            $existingId = $this->data['import_source_id'] ?? null;
+
+                            if ($existingId) {
+                                $this->resolvedSourceId  = $existingId;
+                                $this->pendingSourceName = '';
+                            } else {
+                                $this->resolvedSourceId  = '';
+                                $this->pendingSourceName = trim($this->data['import_source_name'] ?? '');
+                            }
+                        }),
+
                     Wizard\Step::make('Upload')
                         ->icon('heroicon-o-arrow-up-tray')
                         ->schema([
@@ -216,8 +290,12 @@ class ImportContactsPage extends Page
             ];
         }
 
-        $contactFields = $this->contactFieldOptions();
-        $schema        = [];
+        $contactFields = array_merge(
+            ['__custom__' => '— Create as custom field —'],
+            ContactFieldRegistry::options()
+        );
+
+        $schema = [];
 
         if ($this->detectedPreset) {
             $label = str_replace('_', ' ', ucwords($this->detectedPreset, '_'));
@@ -232,14 +310,9 @@ class ImportContactsPage extends Page
             $n   = $this->headerIndex($header);
             $key = "column_map.col_{$n}";
 
-            // The Select now has a __custom__ sentinel option.
-            // When selected, push the column name and auto-handle into the inline fields.
             $schema[] = Forms\Components\Select::make($key)
                 ->label($header)
-                ->options(array_merge(
-                    ['__custom__' => '— Create as custom field —'],
-                    $contactFields
-                ))
+                ->options($contactFields)
                 ->placeholder('— ignore —')
                 ->nullable()
                 ->live()
@@ -336,8 +409,11 @@ class ImportContactsPage extends Page
                 $handle = $this->data["cf_handle_{$n}"] ?? '';
                 $type   = $this->data["cf_type_{$n}"] ?? 'text';
                 $destDisplay = e("Custom: {$label} ({$handle}, {$type})");
+            } elseif ($destField === 'external_id') {
+                $destDisplay = '<span class="text-primary-600">External ID</span>';
             } elseif ($destField) {
-                $destDisplay = '<span class="text-primary-600">' . e($destField) . '</span>';
+                $label = ContactFieldRegistry::fields()[$destField]['label'] ?? $destField;
+                $destDisplay = '<span class="text-primary-600">' . e($label) . '</span>';
             } else {
                 $destDisplay = '<span class="text-gray-400">ignore</span>';
             }
@@ -363,33 +439,12 @@ class ImportContactsPage extends Page
         ];
     }
 
-    private function contactFieldOptions(): array
-    {
-        return [
-            'first_name'      => 'First Name',
-            'last_name'       => 'Last Name',
-            'email'           => 'Email',
-            'email_secondary' => 'Secondary Email',
-            'phone'           => 'Phone',
-            'phone_secondary' => 'Secondary Phone',
-            'address_line_1'  => 'Address Line 1',
-            'address_line_2'  => 'Address Line 2',
-            'city'            => 'City',
-            'state'           => 'State',
-            'postal_code'     => 'Postal Code',
-            'country'         => 'Country',
-            'notes'           => 'Notes',
-            'prefix'          => 'Prefix',
-            'preferred_name'  => 'Preferred Name',
-        ];
-    }
-
     public function runImport(): void
     {
         $data = $this->form->getState();
 
-        $rawMap   = $data['column_map'] ?? [];
-        $namedMap = [];
+        $rawMap         = $data['column_map'] ?? [];
+        $namedMap       = [];
         $customFieldMap = [];
 
         foreach ($this->parsedHeaders as $header) {
@@ -398,8 +453,6 @@ class ImportContactsPage extends Page
             $destField = $rawMap[$colKey] ?? null;
 
             if ($destField === '__custom__') {
-                // Column maps to a custom field — exclude from standard map,
-                // record the field definition for the import job to process.
                 $namedMap[$header] = null;
                 $customFieldMap[$header] = [
                     'handle'     => $data["cf_handle_{$n}"] ?? Str::slug($header, '_'),
@@ -414,6 +467,24 @@ class ImportContactsPage extends Page
         $filename = basename($this->uploadedFilePath);
         $rowCount = $this->countCsvRows($this->uploadedFilePath);
 
+        // Resolve (or create) the ImportSource — first DB write happens here
+        if (! $this->resolvedSourceId && $this->pendingSourceName) {
+            $source = ImportSource::create(['name' => $this->pendingSourceName]);
+            $this->resolvedSourceId = $source->id;
+        }
+
+        // Create the ImportSession — second DB write happens here
+        $session = ImportSession::create([
+            'import_source_id' => $this->resolvedSourceId ?: null,
+            'model_type'       => 'contact',
+            'status'           => 'pending',
+            'filename'         => $filename,
+            'row_count'        => $rowCount,
+            'tag_ids'          => array_values(array_filter($data['import_tags'] ?? [])) ?: null,
+            'imported_by'      => auth()->id(),
+        ]);
+
+        // Create the ImportLog that drives the progress page
         $importLog = ImportLog::create([
             'user_id'            => auth()->id(),
             'model_type'         => 'contact',
@@ -426,7 +497,11 @@ class ImportContactsPage extends Page
             'status'             => 'pending',
         ]);
 
-        $this->redirect(ImportProgressPage::getUrl(['log' => $importLog->id]));
+        $this->redirect(ImportProgressPage::getUrl([
+            'log'     => $importLog->id,
+            'session' => $session->id,
+            'source'  => $this->resolvedSourceId,
+        ]));
     }
 
     private function countCsvRows(string $storagePath): int

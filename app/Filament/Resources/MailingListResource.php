@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MailingListResource\Pages;
 use App\Models\MailingList;
+use App\Services\MailingListFieldRegistry;
 use App\Services\MailingListQueryBuilder;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -65,36 +66,45 @@ class MailingListResource extends Resource
                         ->schema([
                             Forms\Components\Select::make('field')
                                 ->label('Field')
-                                ->options([
-                                    'first_name'           => 'First Name',
-                                    'last_name'            => 'Last Name',
-                                    'email'                => 'Email',
-                                    'phone'                => 'Phone',
-                                    'city'                 => 'City',
-                                    'state'                => 'State',
-                                    'postal_code'          => 'Postal Code',
-                                    'mailing_list_opt_in'  => 'Mailing List Opt-In',
-                                    'tags'                 => 'Tags',
-                                ])
-                                ->required(),
+                                ->options(MailingListFieldRegistry::fields())
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(fn (Forms\Set $set) => $set('operator', null)),
 
                             Forms\Components\Select::make('operator')
                                 ->label('Operator')
-                                ->options([
-                                    'equals'       => 'equals',
-                                    'not_equals'   => 'not equals',
-                                    'contains'     => 'contains',
-                                    'not_contains' => 'does not contain',
-                                    'includes'     => 'includes tag',
-                                    'not_includes' => 'excludes tag',
-                                    'is_empty'     => 'is empty',
-                                    'is_not_empty' => 'is not empty',
-                                ])
-                                ->required(),
+                                ->options(fn (Forms\Get $get) => MailingListFieldRegistry::operatorsFor($get('field')))
+                                ->required()
+                                ->live(),
 
+                            // Text value — visible for text fields when operator requires a value
                             Forms\Components\TextInput::make('value')
                                 ->label('Value')
-                                ->nullable(),
+                                ->nullable()
+                                ->visible(fn (Forms\Get $get): bool =>
+                                    MailingListFieldRegistry::valueTypeFor($get('field')) === 'text'
+                                    && ! in_array($get('operator'), ['is_empty', 'is_not_empty'], true)
+                                ),
+
+                            // Boolean select — visible for mailing_list_opt_in
+                            Forms\Components\Select::make('value')
+                                ->label('Value')
+                                ->options(['1' => 'Yes', '0' => 'No'])
+                                ->nullable()
+                                ->visible(fn (Forms\Get $get): bool =>
+                                    MailingListFieldRegistry::valueTypeFor($get('field')) === 'select'
+                                    && ! in_array($get('operator'), ['is_empty', 'is_not_empty'], true)
+                                ),
+
+                            // Tag picker — visible for tags field
+                            Forms\Components\Select::make('value')
+                                ->label('Tag')
+                                ->options(fn () => MailingListFieldRegistry::tagOptions())
+                                ->searchable()
+                                ->nullable()
+                                ->visible(fn (Forms\Get $get): bool =>
+                                    MailingListFieldRegistry::valueTypeFor($get('field')) === 'tag_picker'
+                                ),
                         ])
                         ->columns(3)
                         ->defaultItems(0),

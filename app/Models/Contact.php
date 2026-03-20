@@ -11,11 +11,31 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 
 class Contact extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('hide_pending_imports', function (Builder $builder) {
+            if (auth()->check() && auth()->user()->can('review_imports')) {
+                return;
+            }
+
+            $builder->where(function (Builder $q) {
+                $q->whereNull('contacts.import_session_id')
+                    ->orWhereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('import_sessions')
+                            ->whereColumn('import_sessions.id', 'contacts.import_session_id')
+                            ->where('import_sessions.status', 'approved');
+                    });
+            });
+        });
+    }
 
     protected $fillable = [
         'organization_id',
@@ -41,6 +61,7 @@ class Contact extends Model
         'do_not_contact',
         'mailing_list_opt_in',
         'source',
+        'import_session_id',
     ];
 
     protected $casts = [
@@ -83,6 +104,11 @@ class Contact extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
     }
 
     // EventRegistration relationship — model and migration added in session 012

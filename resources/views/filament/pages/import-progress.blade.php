@@ -3,13 +3,26 @@
 
         @if ($done)
 
-            {{-- ── Completion card ── --}}
-            <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950">
-                <div class="flex items-center gap-3">
-                    <x-heroicon-o-check-circle class="h-7 w-7 text-green-600 dark:text-green-400" />
-                    <h2 class="text-lg font-semibold text-green-800 dark:text-green-300">Import complete</h2>
+            @if ($importSessionId)
+                {{-- ── Pending review card ── --}}
+                <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950">
+                    <div class="flex items-center gap-3">
+                        <x-heroicon-o-clock class="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                        <h2 class="text-lg font-semibold text-amber-800 dark:text-amber-300">Import pending review</h2>
+                    </div>
+                    <p class="mt-2 text-sm text-amber-700 dark:text-amber-400">
+                        The import has been processed and is waiting for a reviewer to approve it before contacts become visible.
+                    </p>
                 </div>
-            </div>
+            @else
+                {{-- ── Legacy completion card (no session) ── --}}
+                <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950">
+                    <div class="flex items-center gap-3">
+                        <x-heroicon-o-check-circle class="h-7 w-7 text-green-600 dark:text-green-400" />
+                        <h2 class="text-lg font-semibold text-green-800 dark:text-green-300">Import complete</h2>
+                    </div>
+                </div>
+            @endif
 
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
@@ -52,16 +65,26 @@
             @endif
 
             <div class="flex gap-3">
-                <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
-                   class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
-                    <x-heroicon-o-clock class="h-4 w-4" />
-                    View import history
-                </a>
-                <a href="{{ \App\Filament\Resources\ContactResource::getUrl('index') }}"
-                   class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <x-heroicon-o-users class="h-4 w-4" />
-                    Go to contacts
-                </a>
+                @if ($importSessionId && auth()->user()?->can('review_imports'))
+                    <a href="{{ \App\Filament\Pages\ImportReviewPage::getUrl() }}"
+                       class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                        <x-heroicon-o-clipboard-document-check class="h-4 w-4" />
+                        Go to review queue
+                    </a>
+                @elseif ($importSessionId)
+                    <p class="text-sm text-gray-500 self-center">A reviewer will approve this import before contacts appear in the system.</p>
+                @else
+                    <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
+                       class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                        <x-heroicon-o-clock class="h-4 w-4" />
+                        View import history
+                    </a>
+                    <a href="{{ \App\Filament\Resources\ContactResource::getUrl('index') }}"
+                       class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <x-heroicon-o-users class="h-4 w-4" />
+                        Go to contacts
+                    </a>
+                @endif
             </div>
 
         @else

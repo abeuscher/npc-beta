@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Pages\ImportContactsPage;
+use App\Filament\Pages\ImporterPage;
 use App\Filament\Resources\ContactResource\Pages;
 use App\Forms\Components\TagSelect;
 use App\Models\Contact;
@@ -102,15 +102,14 @@ class ContactResource extends Resource
                 ->schema([
                     TagSelect::make('contact'),
 
-                    Forms\Components\Select::make('source')
+                    Forms\Components\Placeholder::make('source_display')
                         ->label('Source')
-                        ->options([
-                            'manual' => 'Manual Entry',
-                            'import' => 'Import',
-                            'form'   => 'Web Form',
-                            'api'    => 'API',
-                        ])
-                        ->nullable(),
+                        ->content(fn (?Contact $record): string => match ($record?->source ?? 'manual') {
+                            'import'    => 'Import',
+                            'api'       => 'API',
+                            'web_form'  => 'Web Form',
+                            default     => 'Manual Entry',
+                        }),
 
                     Forms\Components\Toggle::make('do_not_contact')
                         ->label('Do Not Contact'),
@@ -203,7 +202,7 @@ class ContactResource extends Resource
                     ->label('Import Contacts')
                     ->icon('heroicon-o-arrow-up-tray')
                     ->color('gray')
-                    ->url(ImportContactsPage::getUrl()),
+                    ->url(ImporterPage::getUrl()),
 
                 Tables\Actions\Action::make('exportContacts')
                     ->label('Export CSV')

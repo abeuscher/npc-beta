@@ -4,7 +4,10 @@ namespace App\Filament\Pages;
 
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
+use App\Models\ImportIdMap;
 use App\Models\ImportLog;
+use App\Models\ImportSession;
+use App\Models\Note;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,10 +23,14 @@ class ImportProgressPage extends Page
     }
 
     protected $queryString = [
-        'importLogId' => ['as' => 'log'],
+        'importLogId'     => ['as' => 'log'],
+        'importSessionId' => ['as' => 'session'],
+        'importSourceId'  => ['as' => 'source'],
     ];
 
-    public string $importLogId = '';
+    public string $importLogId     = '';
+    public string $importSessionId = '';
+    public string $importSourceId  = '';
 
     // Live progress state
     public int  $total      = 0;
@@ -36,6 +43,15 @@ class ImportProgressPage extends Page
 
     // Custom field def log — populated in mount() before ticking begins
     public array $customFieldLog = [];
+
+    // Tag UUIDs to apply to every contact created in this import.
+    public array $tagIds = [];
+
+    // Label used in import notes ("imported in session X").
+    public string $sessionLabel = '';
+
+    // User ID of the person who triggered the import (for note authorship).
+    public int $importerUserId = 0;
 
     // Byte offset into the CSV so each tick resumes where the last left off.
     public int $fileOffset = 0;
@@ -62,8 +78,6 @@ class ImportProgressPage extends Page
         fclose($handle);
 
         // Resolve custom field definitions once before any rows are processed.
-        // Each column mapped as "__custom__" gets a CustomFieldDef record created
-        // or reused, and we record what happened for display after completion.
         $customFieldLog = $this->resolveCustomFieldDefs($log);
 
         $log->update([
@@ -73,6 +87,19 @@ class ImportProgressPage extends Page
         ]);
 
         $this->customFieldLog = $customFieldLog;
+
+        // Load session metadata for tagging and note authorship.
+        if ($this->importSessionId) {
+            $session = ImportSession::find($this->importSessionId);
+
+            if ($session) {
+                $this->tagIds         = $session->tag_ids ?? [];
+                $this->importerUserId = (int) $session->imported_by;
+                $this->sessionLabel   = $session->importSource?->name
+                    ?? $session->filename
+                    ?? 'Unknown';
+            }
+        }
     }
 
     /**
@@ -142,6 +169,7 @@ class ImportProgressPage extends Page
         if (! file_exists($fullPath)) {
             $this->done = true;
             $log->update(['status' => 'failed', 'completed_at' => now()]);
+            $this->failSession();
 
             return;
         }
@@ -173,17 +201,22 @@ class ImportProgressPage extends Page
             try {
                 $attributes    = [];
                 $customFields  = [];
+                $externalId    = null;
 
                 foreach ($row as $index => $value) {
                     $header    = $this->csvHeaders[$index] ?? null;
                     $destField = $header ? ($columnMap[$header] ?? null) : null;
                     $rawValue  = ($value === '') ? null : $value;
 
+                    if ($destField === 'external_id') {
+                        $externalId = $rawValue;
+                        continue;
+                    }
+
                     if ($destField) {
                         $attributes[$destField] = $rawValue;
                     }
 
-                    // Collect custom field values if this header has a custom mapping
                     if ($header && isset($customFieldMap[$header])) {
                         $cfHandle = $customFieldMap[$header]['handle'] ?? null;
 
@@ -198,44 +231,20 @@ class ImportProgressPage extends Page
 
                 if (! $email && ! $firstName) {
                     $skipped++;
-                } elseif ($email) {
-                    $existing = Contact::where('email', $email)->first();
-
-                    if ($existing) {
-                        if ($duplicateStrategy === 'update') {
-                            $nonNull = array_filter($attributes, fn ($v) => $v !== null);
-
-                            if (! empty($customFields)) {
-                                $nonNull['custom_fields'] = array_merge(
-                                    $existing->custom_fields ?? [],
-                                    $customFields
-                                );
-                            }
-
-                            $existing->fill($nonNull)->save();
-                            $updated++;
-                        } else {
-                            $skipped++;
-                        }
-                    } else {
-                        $createAttrs = array_merge(['source' => 'import'], $attributes);
-
-                        if (! empty($customFields)) {
-                            $createAttrs['custom_fields'] = $customFields;
-                        }
-
-                        Contact::create($createAttrs);
-                        $imported++;
-                    }
                 } else {
-                    $createAttrs = array_merge(['source' => 'import'], $attributes);
+                    $result = $this->processRow(
+                        $attributes,
+                        $customFields,
+                        $externalId,
+                        $email,
+                        $duplicateStrategy
+                    );
 
-                    if (! empty($customFields)) {
-                        $createAttrs['custom_fields'] = $customFields;
-                    }
-
-                    Contact::create($createAttrs);
-                    $imported++;
+                    match ($result) {
+                        'imported' => $imported++,
+                        'updated'  => $updated++,
+                        default    => $skipped++,
+                    };
                 }
             } catch (\Throwable $e) {
                 $errors[] = ['row' => $rowNumber, 'message' => $e->getMessage()];
@@ -266,7 +275,124 @@ class ImportProgressPage extends Page
         if ($this->done || $this->processed >= $this->total) {
             $this->done = true;
             $log->update(['status' => 'complete', 'completed_at' => now()]);
+            $this->finaliseSession();
         }
+    }
+
+    /**
+     * Create or update a single contact row. Returns 'imported', 'updated', or 'skipped'.
+     */
+    private function processRow(
+        array $attributes,
+        array $customFields,
+        ?string $externalId,
+        ?string $email,
+        string $duplicateStrategy
+    ): string {
+        // External ID matching: check import_id_maps first
+        if ($externalId && $this->importSourceId) {
+            $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
+                ->where('model_type', 'contact')
+                ->where('source_id', $externalId)
+                ->first();
+
+            if ($idMap) {
+                $contact = Contact::withoutGlobalScopes()->find($idMap->model_uuid);
+
+                if ($contact) {
+                    $nonNull = array_filter($attributes, fn ($v) => $v !== null);
+
+                    if (! empty($customFields)) {
+                        $nonNull['custom_fields'] = array_merge($contact->custom_fields ?? [], $customFields);
+                    }
+
+                    $contact->fill($nonNull)->save();
+
+                    return 'updated';
+                }
+            }
+        }
+
+        // Email-based duplicate matching
+        if ($email) {
+            $existing = Contact::withoutGlobalScopes()->where('email', $email)->first();
+
+            if ($existing) {
+                if ($duplicateStrategy === 'update') {
+                    $nonNull = array_filter($attributes, fn ($v) => $v !== null);
+
+                    if (! empty($customFields)) {
+                        $nonNull['custom_fields'] = array_merge($existing->custom_fields ?? [], $customFields);
+                    }
+
+                    $existing->fill($nonNull)->save();
+
+                    return 'updated';
+                }
+
+                return 'skipped';
+            }
+        }
+
+        // Create new contact
+        $createAttrs = array_merge(['source' => 'import'], $attributes);
+
+        if ($this->importSessionId) {
+            $createAttrs['import_session_id'] = $this->importSessionId;
+        }
+
+        if (! empty($customFields)) {
+            $createAttrs['custom_fields'] = $customFields;
+        }
+
+        $contact = Contact::create($createAttrs);
+
+        // Apply import tags to the new contact
+        if (! empty($this->tagIds)) {
+            $contact->tags()->sync($this->tagIds);
+        }
+
+        // Create an import note on the contact record
+        Note::create([
+            'notable_type' => Contact::class,
+            'notable_id'   => $contact->id,
+            'author_id'    => $this->importerUserId ?: null,
+            'body'         => "Record successfully imported in session {$this->sessionLabel}",
+            'occurred_at'  => now(),
+        ]);
+
+        // Store the external ID mapping for future re-imports
+        if ($externalId && $this->importSourceId) {
+            ImportIdMap::updateOrCreate(
+                [
+                    'import_source_id' => $this->importSourceId,
+                    'model_type'       => 'contact',
+                    'source_id'        => $externalId,
+                ],
+                ['model_uuid' => $contact->id]
+            );
+        }
+
+        return 'imported';
+    }
+
+    private function finaliseSession(): void
+    {
+        if (! $this->importSessionId) {
+            return;
+        }
+
+        ImportSession::where('id', $this->importSessionId)
+            ->update(['status' => 'reviewing']);
+    }
+
+    private function failSession(): void
+    {
+        if (! $this->importSessionId) {
+            return;
+        }
+
+        // Leave session in pending — reviewer can rollback or re-try
     }
 
     public function percent(): int
