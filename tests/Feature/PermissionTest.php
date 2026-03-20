@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\CmsTag;
 use App\Models\Collection;
 use App\Models\CollectionItem;
 use App\Models\Contact;
@@ -11,6 +10,7 @@ use App\Models\Fund;
 use App\Models\NavigationItem;
 use App\Models\Organization;
 use App\Models\Page;
+use App\Models\Tag;
 use App\Models\User;
 use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -132,14 +132,14 @@ class PermissionTest extends TestCase
         $this->assertTrue($user->can('delete', $item));
     }
 
-    public function test_cms_editor_can_manage_cms_tags(): void
+    public function test_cms_editor_can_manage_tags(): void
     {
-        $user   = $this->makeUser('cms_editor');
-        $cmsTag = CmsTag::factory()->create();
+        $user = $this->makeUser('cms_editor');
+        $tag  = Tag::create(['name' => 'Test Tag', 'type' => 'collection']);
 
-        $this->assertTrue($user->can('viewAny', CmsTag::class));
-        $this->assertTrue($user->can('create', CmsTag::class));
-        $this->assertTrue($user->can('update', $cmsTag));
+        $this->assertTrue($user->can('viewAny', Tag::class));
+        $this->assertTrue($user->can('create', Tag::class));
+        $this->assertTrue($user->can('update', $tag));
     }
 
     public function test_cms_editor_cannot_access_crm(): void

@@ -28,9 +28,13 @@ The Posts index shows all posts with their title, publication date, and status. 
 - **Published** — toggle to publish. Draft posts are not visible to the public.
 - **Published at** — optionally set a future date to schedule the post.
 
-## Categories and Tags
+## Tags
 
-Posts can be tagged with CMS tags to help readers find related content. Tags appear on the public post page and can be used to build filtered listing pages.
+Posts can be tagged to help readers find related content. Tags appear on the public post page and can be used to build filtered listing pages.
+
+- **Selecting existing tags** — click the Tags field and type to search. Click a tag to apply it. Applied tags appear as pills.
+- **Removing a tag** — click the × on any tag pill.
+- **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
 
 ## Editing Published Posts
 

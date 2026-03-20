@@ -10,6 +10,11 @@ class EditTag extends EditRecord
 {
     protected static string $resource = TagResource::class;
 
+    public function getTitle(): string
+    {
+        return 'Edit ' . ucfirst($this->record->type) . ' Tag';
+    }
+
     protected function getHeaderActions(): array
     {
         return [Actions\DeleteAction::make()];

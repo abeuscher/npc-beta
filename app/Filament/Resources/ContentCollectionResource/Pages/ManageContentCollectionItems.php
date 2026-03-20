@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ContentCollectionResource\Pages;
 
 use App\Filament\Resources\ContentCollectionResource;
-use App\Models\CmsTag;
+use App\Forms\Components\TagSelect;
 use App\Models\Collection;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -48,16 +48,7 @@ class ManageContentCollectionItems extends ManageRelatedRecords
                 ->schema($collection->getFormSchema())
                 ->columnSpanFull(),
 
-            Forms\Components\Select::make('cmsTags')
-                ->label('Tags')
-                ->multiple()
-                ->relationship('cmsTags', 'name')
-                ->createOptionForm([
-                    Forms\Components\TextInput::make('name')
-                        ->required()
-                        ->maxLength(255)
-                        ->unique(CmsTag::class, 'name'),
-                ])
+            TagSelect::make('collection')
                 ->columnSpanFull(),
         ]);
     }

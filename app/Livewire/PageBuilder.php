@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\CmsTag;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
 use Livewire\Attributes\On;

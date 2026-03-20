@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\CmsTag;
+use App\Models\Tag;
 use App\Models\PageWidget;
 use Livewire\Attributes\Reactive;
 use Livewire\Component;
@@ -31,7 +31,8 @@ class PageBuilderBlock extends Component
 
         $this->loadBlock();
 
-        $this->cmsTags = CmsTag::orderBy('name')
+        $this->cmsTags = Tag::where('type', 'collection')
+            ->orderBy('name')
             ->get(['id', 'name', 'slug'])
             ->toArray();
     }

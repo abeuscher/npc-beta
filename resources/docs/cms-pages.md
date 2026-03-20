@@ -33,6 +33,14 @@ The page builder uses a block-based editor. Each block type has its own fields. 
 
 Slugs are generated from the page title when you first create a page. You can edit the slug at any time. Changing a slug will break any existing links to the old URL — update links accordingly.
 
+## Tags
+
+You can apply page tags to categorize content and build filtered listings. The Tags field appears in the page edit form.
+
+- **Selecting existing tags** — click the Tags field and type to search. Click a tag to apply it. Applied tags appear as pills.
+- **Removing a tag** — click the × on any tag pill.
+- **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
+
 ## Saving and Publishing
 
 Use the **Save** button to save a draft. Toggle the **Published** switch to make the page live on the public site. Pages that are not published are only visible to logged-in admins.

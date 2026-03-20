@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\CollectionResource\RelationManagers;
 
-use App\Models\CmsTag;
+use App\Forms\Components\TagSelect;
 use App\Models\Collection;
 use App\Models\CollectionItem;
 use Filament\Forms;
@@ -42,16 +42,7 @@ class CollectionItemsRelationManager extends RelationManager
                 ->schema($collection->getFormSchema())
                 ->columnSpanFull(),
 
-            Forms\Components\Select::make('cmsTags')
-                ->label('Tags')
-                ->multiple()
-                ->relationship('cmsTags', 'name')
-                ->createOptionForm([
-                    Forms\Components\TextInput::make('name')
-                        ->required()
-                        ->maxLength(255)
-                        ->unique(CmsTag::class, 'name'),
-                ])
+            TagSelect::make('collection')
                 ->columnSpanFull(),
         ]);
     }

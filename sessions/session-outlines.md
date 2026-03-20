@@ -44,6 +44,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 037 | MailChimp Integration |
 | 038 | MailChimp Webhook Debugging |
 | 039 | Admin Dashboard & Branding Polish |
+| 040 | Tags — Unified Tag System |
 
 ---
 
@@ -63,11 +64,15 @@ Restructure the dashboard into a clean 2×2 widget grid (welcome, quick actions,
 
 ## CRM & Importer
 
-### 040 — Tags — Unified Tag System
+### ~~040 — Tags — Unified Tag System~~ ✓ Complete
 
-Consolidate the two existing tag models (`Tag` for CRM, `CmsTag` for CMS) into a single `Tag` model with a `type` discriminator (`contact`, `page`, `post`, `event`, `collection`). Add a `slug` column (Spatie Sluggable). Drop `cms_tags` and `cms_taggables` after migrating data across. Wire multi-select tag pickers with create-on-confirm into the Contact, Page, Post, and Event Filament resource forms, each scoped to the correct type. Replace both existing tag resources with a unified Tag Manager under the Tools nav group (list, edit label, delete with cascade). Full brief in `sessions/040. Tags — Unified Tag System.md`.
+Consolidated `Tag` and `CmsTag` into a single `tags` table with a `type` discriminator. Added `slug` via Spatie Sluggable. Migrated `cms_taggables` into `taggables`. Wired tag pickers (searchable Select + companion Create field) into Contact, Page, Post, Event, and Collection Item forms. Replaced both tag resources with a unified Tag Manager under Tools.
 
-### Importer — Phase 2
+### 041 — Importer Phase 2 — Accountability, Source Mapping & Filter UI
+
+Rebuilds the contact importer with full accountability (import sessions with `pending → reviewing → approved` states, global scope hiding pending records, rollback). Adds named import sources and a persistent `source_id → uuid` mapping table for re-import matching. Adds a field-type-aware filter builder to the mailing list manager. Locks the contact `source` field as permanently read-only. Full brief in `sessions/041. Importer Phase 2 — Accountability, Source Mapping & Filter UI.md`.
+
+### Importer — Phase 3
 
 Move the importer to the Tools section of admin navigation. Extend it to support all standard and custom contact fields with no separate import path. Tags can be assigned during import. Import History: remove from nav, surface as a prominent link in the importer page header.
 

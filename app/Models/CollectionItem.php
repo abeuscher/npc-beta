@@ -30,8 +30,8 @@ class CollectionItem extends Model
         return $this->belongsTo(Collection::class);
     }
 
-    public function cmsTags(): MorphToMany
+    public function tags(): MorphToMany
     {
-        return $this->morphToMany(CmsTag::class, 'taggable', 'cms_taggables');
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 }

@@ -36,6 +36,14 @@ Every event automatically gets a public page at its slug. This page shows the ev
 
 Like standard pages, events support content blocks below the main description. Use these to add speaker bios, schedules, maps, or sponsor logos.
 
+## Tags
+
+You can apply event tags to categorize events for filtering and public listings. The Tags field appears in the event edit form.
+
+- **Selecting existing tags** — click the Tags field and type to search. Click a tag to apply it. Applied tags appear as pills.
+- **Removing a tag** — click the × on any tag pill.
+- **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
+
 ## Past Events
 
 Events with a past end date remain in the system and on the public site unless you unpublish them. You may want to keep past events published for archival purposes or remove them to keep the site tidy.

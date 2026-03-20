@@ -21,7 +21,6 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Page::class           => \App\Policies\PagePolicy::class,
         \App\Models\Collection::class     => \App\Policies\CollectionPolicy::class,
         \App\Models\CollectionItem::class => \App\Policies\CollectionItemPolicy::class,
-        \App\Models\CmsTag::class         => \App\Policies\CmsTagPolicy::class,
         \App\Models\NavigationItem::class => \App\Policies\NavigationItemPolicy::class,
         \App\Models\User::class           => \App\Policies\UserPolicy::class,
         \App\Models\WidgetType::class     => \App\Policies\WidgetTypePolicy::class,

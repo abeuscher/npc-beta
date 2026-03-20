@@ -35,7 +35,6 @@ class PermissionSeeder extends Seeder
             'page',
             'collection',
             'collection_item',
-            'cms_tag',
             'navigation_item',
             // Admin
             'user',
@@ -84,7 +83,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('collection_item'),
             $fullPermissions('post'),
             $fullPermissions('page'),
-            $fullPermissions('cms_tag'),
+            $fullPermissions('tag'),
         ));
 
         // ── super_admin ──────────────────────────────────────────────────────

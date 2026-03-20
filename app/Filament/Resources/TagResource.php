@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class TagResource extends Resource
 {
@@ -16,22 +17,38 @@ class TagResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'CRM';
+    protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?string $navigationLabel = 'CRM Tags';
+    protected static ?string $navigationLabel = 'Tags';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
+                ->label('Label')
+                ->required()
+                ->maxLength(255),
+
+            Forms\Components\TextInput::make('slug')
+                ->label('Handle')
                 ->required()
                 ->maxLength(255)
-                ->unique(Tag::class, 'name', ignoreRecord: true),
+                ->unique(Tag::class, 'slug', ignoreRecord: true)
+                ->hiddenOn('create'),
 
-            Forms\Components\ColorPicker::make('color')
-                ->nullable(),
+            Forms\Components\Select::make('type')
+                ->options([
+                    'contact'    => 'Contact',
+                    'page'       => 'Page',
+                    'post'       => 'Post',
+                    'event'      => 'Event',
+                    'collection' => 'Collection',
+                ])
+                ->required()
+                ->default('contact')
+                ->hiddenOn('edit'),
         ]);
     }
 
@@ -39,23 +56,39 @@ class TagResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ColorColumn::make('color'),
-
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('contacts_count')
-                    ->label('Contacts')
-                    ->counts('contacts')
+                Tables\Columns\TextColumn::make('slug')
+                    ->searchable(),
+
+                Tables\Columns\BadgeColumn::make('type')
+                    ->colors([
+                        'gray'    => 'contact',
+                        'info'    => 'page',
+                        'warning' => 'post',
+                        'success' => 'event',
+                        'primary' => 'collection',
+                    ])
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('organizations_count')
-                    ->label('Organizations')
-                    ->counts('organizations')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('attached')
+                    ->label('Attached')
+                    ->getStateUsing(fn (Tag $record): int => (int) DB::table('taggables')->where('tag_id', $record->id)->count())
+                    ->sortable(false),
             ])
             ->defaultSort('name')
+            ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'contact'    => 'Contact',
+                        'page'       => 'Page',
+                        'post'       => 'Post',
+                        'event'      => 'Event',
+                        'collection' => 'Collection',
+                    ]),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers;
+use App\Forms\Components\TagSelect;
 use App\Models\CustomFieldDef;
 use App\Models\Event;
 use App\Models\Page;
@@ -287,6 +288,9 @@ class EventResource extends Resource
                     ]),
                 ])->grow(false),
             ])->from('md')->columnSpanFull(),
+
+            Forms\Components\Section::make('Tags')
+                ->schema([TagSelect::make('event')]),
 
             Forms\Components\Section::make('Custom Fields')
                 ->schema(fn () => CustomFieldDef::forModel('event')->get()

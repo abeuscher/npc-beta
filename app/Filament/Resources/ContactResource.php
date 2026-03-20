@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Pages\ImportContactsPage;
 use App\Filament\Resources\ContactResource\Pages;
+use App\Forms\Components\TagSelect;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
 use Filament\Forms;
@@ -99,6 +100,8 @@ class ContactResource extends Resource
 
             Forms\Components\Section::make('Settings')
                 ->schema([
+                    TagSelect::make('contact'),
+
                     Forms\Components\Select::make('source')
                         ->label('Source')
                         ->options([

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
+use App\Forms\Components\TagSelect;
 use App\Livewire\PageBuilder;
 use App\Models\CustomFieldDef;
 use App\Models\Page;
@@ -79,6 +80,9 @@ class PageResource extends Resource
                 ])
                 ->hidden(fn ($record) => $record === null)
                 ->columnSpanFull(),
+
+            Forms\Components\Section::make('Tags')
+                ->schema([TagSelect::make('page')]),
 
             Forms\Components\Section::make('Publication')
                 ->schema([

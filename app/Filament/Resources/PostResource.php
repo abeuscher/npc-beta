@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PostResource\Pages;
+use App\Forms\Components\TagSelect;
 use App\Models\CustomFieldDef;
 use App\Models\Page;
 use App\Models\SiteSetting;
@@ -84,6 +85,9 @@ class PostResource extends Resource
                 ])
                 ->hidden(fn ($record) => $record === null)
                 ->columnSpanFull(),
+
+            Forms\Components\Section::make('Tags')
+                ->schema([TagSelect::make('post')]),
 
             Forms\Components\Section::make('Publication')
                 ->schema([
