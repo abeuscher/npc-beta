@@ -74,4 +74,20 @@ class Form extends Model
 
         return $rules;
     }
+
+    public function fieldValidationMessages(): array
+    {
+        $messages = [];
+
+        foreach ($this->fields ?? [] as $field) {
+            $handle  = $field['handle'] ?? null;
+            $message = $field['validation_message'] ?? '';
+
+            if ($handle && $message !== '') {
+                $messages["{$handle}.regex"] = $message;
+            }
+        }
+
+        return $messages;
+    }
 }

@@ -209,6 +209,12 @@ class FormResource extends Resource
                     ->label('Required')
                     ->default(false)
                     ->hidden(fn (Forms\Get $get) => $get('type') === 'hidden'),
+
+                Forms\Components\TextInput::make('hint')
+                    ->label('Hint text')
+                    ->helperText('Shown below the input on the public form to guide the user.')
+                    ->hidden(fn (Forms\Get $get) => $get('type') === 'hidden')
+                    ->columnSpanFull(),
             ]),
 
             Forms\Components\Grid::make(2)->schema([
@@ -228,11 +234,33 @@ class FormResource extends Resource
             Forms\Components\Grid::make(2)->schema([
                 Forms\Components\TextInput::make('validation_regex')
                     ->label('Regex pattern')
-                    ->visible(fn (Forms\Get $get) => $get('validation') === 'custom_regex'),
+                    ->hidden(fn (Forms\Get $get) => $get('validation') !== 'custom_regex')
+                    ->rules(fn () => [
+                        function (string $attribute, mixed $value, \Closure $fail) {
+                            if (empty($value)) {
+                                return;
+                            }
+
+                            if (@preg_match($value, '') === false) {
+                                $fail('This regex pattern is invalid.');
+                                return;
+                            }
+
+                            $prev = ini_get('pcre.backtrack_limit');
+                            ini_set('pcre.backtrack_limit', '1000');
+                            @preg_match($value, str_repeat('a', 50) . '!');
+                            $error = preg_last_error();
+                            ini_set('pcre.backtrack_limit', $prev);
+
+                            if ($error === PREG_BACKTRACK_LIMIT_ERROR) {
+                                $fail('This regex pattern is too complex and may cause performance issues. Simplify the pattern.');
+                            }
+                        },
+                    ]),
 
                 Forms\Components\TextInput::make('validation_message')
                     ->label('Custom error message')
-                    ->visible(fn (Forms\Get $get) => $get('validation') === 'custom_regex'),
+                    ->hidden(fn (Forms\Get $get) => $get('validation') !== 'custom_regex'),
             ]),
 
             Forms\Components\Repeater::make('options')

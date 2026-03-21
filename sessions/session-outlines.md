@@ -52,6 +52,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 045 | Public Frontend Foundation |
 | 046 | Site Theme Admin |
 | 047 | Web Forms — Foundation |
+| 048 | Web Forms — Security Review |
 
 ---
 
@@ -78,17 +79,9 @@ Self-service flow: a logged-in member can request to join an existing household 
 
 ## Forms & Membership
 
-### 048. Web Forms — Security Review
+### 049. Codebase Audit — Fields, Schema, Permissions & Help Coverage
 
-Systematic security review of the form submission surface. Identify weaknesses, assign severity ratings, fix anything a non-admin public user could exploit on their own, document everything else. Outputs: mitigations in code + a `docs/security-forms.md` disclosure document.
-
-### 050. Codebase Audit — Fields, Schema, Permissions & Help Coverage
-
-A repeat of session 042. Enough has been added since that audit (web forms, contact field mapping, form submissions, new permissions, widget type) to warrant a clean sweep. Check for: orphaned permissions, missing help doc routes, schema.md accuracy, fillable/cast consistency on new models, any breadcrumbs missing from new Filament pages.
-
-### 049. Form Builder — JSON Import Round-Trip
-
-Complete the JSON round-trip started in session 047. Admins can already download a form definition as JSON. This session adds an import action: paste or upload a JSON definition and have it populate the field builder. Useful for developers modifying field order, widths, and contact field mappings externally.
+A repeat of session 042. Covers everything added since that audit: web forms, form submissions, JSON import, public frontend build system, site theming, importer staged updates. Eight original workstreams plus a new frontend build audit (Workstream 9). Check for: orphaned permissions, missing help doc routes, schema.md accuracy, fillable/cast consistency on new models, compiled frontend artifacts in git.
 
 ### Form Builder — Actions Pipeline
 

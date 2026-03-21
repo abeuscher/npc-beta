@@ -35,8 +35,9 @@ class FormSubmissionController extends Controller
         }
 
         // ── Validation ────────────────────────────────────────────────────
-        $rules = $form->fieldValidationRules();
-        $validated = $request->validate($rules);
+        $rules    = $form->fieldValidationRules();
+        $messages = $form->fieldValidationMessages();
+        $validated = $request->validate($rules, $messages);
 
         // ── Store only keys that match field handles ───────────────────────
         $data = array_intersect_key($validated, array_flip($fieldHandles));

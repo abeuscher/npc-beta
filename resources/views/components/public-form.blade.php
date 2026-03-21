@@ -85,6 +85,8 @@
                     $required    = ! empty($field['required']);
                     $width       = $field['width'] ?? 12;
                     $pattern     = (! empty($field['validation_regex'])) ? $field['validation_regex'] : null;
+                    $errMsg      = $field['validation_message'] ?? '';
+                    $hint        = $field['hint'] ?? '';
                     $old         = old($handle);
                 @endphp
 
@@ -108,6 +110,7 @@
                                     </label>
                                 @endforeach
                             </fieldset>
+                            @if($hint)<small>{{ $hint }}</small>@endif
 
                         @elseif ($type === 'checkbox')
                             <label>
@@ -119,6 +122,7 @@
                                 >
                                 {{ $label }}
                             </label>
+                            @if($hint)<small>{{ $hint }}</small>@endif
 
                         @elseif ($type === 'textarea')
                             <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
@@ -128,6 +132,7 @@
                                 placeholder="{{ $placeholder }}"
                                 {{ $required ? 'required' : '' }}
                             >{{ $old }}</textarea>
+                            @if($hint)<small>{{ $hint }}</small>@endif
                             @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'select')
@@ -144,6 +149,7 @@
                                     </option>
                                 @endforeach
                             </select>
+                            @if($hint)<small>{{ $hint }}</small>@endif
                             @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'state')
@@ -158,6 +164,7 @@
                                     <option value="{{ $abbr }}" {{ $old === $abbr ? 'selected' : '' }}>{{ $name }}</option>
                                 @endforeach
                             </select>
+                            @if($hint)<small>{{ $hint }}</small>@endif
                             @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'country')
@@ -176,6 +183,7 @@
                                     @endif
                                 @endforeach
                             </select>
+                            @if($hint)<small>{{ $hint }}</small>@endif
                             @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
 
                         @else
@@ -188,8 +196,9 @@
                                 value="{{ $old }}"
                                 placeholder="{{ $placeholder }}"
                                 {{ $required ? 'required' : '' }}
-                                @if ($pattern) pattern="{{ $pattern }}" @endif
+                                @if ($pattern) pattern="{{ $pattern }}" title="{{ $errMsg }}" @endif
                             >
+                            @if($hint)<small>{{ $hint }}</small>@endif
                             @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
                         @endif
                     </div>
