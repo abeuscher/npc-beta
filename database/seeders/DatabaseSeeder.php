@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PermissionSeeder::class);
         $this->call(WidgetTypeSeeder::class);
+        $this->call(FormSeeder::class);
 
         // ── Admin user ───────────────────────────────────────────────────────
         $adminEmail    = env('ADMIN_EMAIL');

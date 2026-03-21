@@ -86,5 +86,18 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.blog-listing')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'web_form'],
+            [
+                'label'         => 'Web Form',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'form_handle', 'type' => 'text', 'label' => 'Form handle'],
+                ],
+                'template'      => "@include('widgets.web-form')",
+            ]
+        );
     }
 }

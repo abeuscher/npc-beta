@@ -117,3 +117,21 @@ footer > .container {
 // Page-type body classes — reserved for per-page-type overrides
 // body.page-type-event { ... }
 // body.page-type-post  { ... }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Web form grid
+// ─────────────────────────────────────────────────────────────────────────────
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+
+@for $i from 1 through 12 {
+    .col-#{$i} { grid-column: span #{$i}; }
+}
+
+@media (max-width: 768px) {
+    [class^="col-"] { grid-column: span 12; }
+}

@@ -35,6 +35,7 @@ class PermissionSeeder extends Seeder
             // CMS
             'post',
             'page',
+            'form',
             'collection',
             'collection_item',
             'navigation_item',
@@ -74,6 +75,13 @@ class PermissionSeeder extends Seeder
             'name'       => 'edit_theme_scss',
             'guard_name' => 'web',
         ]);
+
+        foreach (['view_any_form_submission', 'view_form_submission', 'delete_form_submission'] as $perm) {
+            Permission::firstOrCreate([
+                'name'       => $perm,
+                'guard_name' => 'web',
+            ]);
+        }
 
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.

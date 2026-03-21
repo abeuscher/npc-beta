@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-20 (session 044)
+Last updated: 2026-03-21 (session 047)
 
 ---
 
@@ -259,6 +259,39 @@ Events with dates, registration, and venue information.
 | mailing_list_opt_in_enabled | boolean | no | default: false |
 | landing_page_id | uuid | yes | FK→pages, nullOnDelete; system-managed by EventObserver |
 | custom_fields | jsonb | yes | |
+| created_at | timestamp | no | |
+| updated_at | timestamp | no | |
+
+---
+
+## form_submissions
+
+Immutable records of individual web form submissions.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigint | no | PK |
+| form_id | bigint | no | FK→forms, cascadeOnDelete |
+| contact_id | uuid | yes | FK→contacts, nullOnDelete; set when form_type=contact and contact is created/updated |
+| data | json | no | key/value map of field handle → submitted value |
+| ip_address | string | yes | |
+| created_at | timestamp | no | no updated_at — submissions are immutable |
+
+---
+
+## forms
+
+Web form definitions. Fields and settings stored as JSON.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigint | no | PK |
+| title | string | no | Admin-facing label |
+| handle | string | no | unique; used in `<x-public-form handle="…">` |
+| description | text | yes | Admin notes, not shown publicly |
+| fields | json | no | Array of field definition objects (handle, type, label, required, width, validation, contact_field, …) |
+| settings | json | no | submit_label, success_message, honeypot, form_type (general\|contact) |
+| is_active | boolean | no | default: true; inactive forms return 404 on submission |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

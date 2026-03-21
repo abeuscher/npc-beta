@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
@@ -24,6 +25,11 @@ Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('post
 $eventsPrefix = config('site.events_prefix', 'events');
 Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'register'])
     ->name('events.register')
+    ->middleware('throttle:10,1');
+
+// Web form submissions
+Route::post('/forms/{handle}', [FormSubmissionController::class, 'store'])
+    ->name('forms.submit')
     ->middleware('throttle:10,1');
 
 // Slug route is registered last so Filament and other named routes take priority.
