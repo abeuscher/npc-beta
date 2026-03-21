@@ -18,7 +18,7 @@ RUN npm run build
 # ─────────────────────────────────────────
 FROM php:8.4-fpm AS app
 
-# System dependencies
+# System dependencies + Node.js 22 (required for npm run build in SCSS editor)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     zip \
     unzip \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -83,6 +85,6 @@ COPY --from=app /var/www/html/public /var/www/html/public
 
 # Symlink so Nginx can serve uploaded files from the storage volume.
 # The storage_data volume is mounted at /var/www/html/storage at runtime.
-RUN ln -s /var/www/html/storage/app/public /var/www/html/public/storage
+RUN ln -sf /var/www/html/storage/app/public /var/www/html/public/storage
 
 EXPOSE 80

@@ -28,10 +28,57 @@
         if ($bodyFont) {
             $cssVars[] = "--pico-font-family-sans-serif: {$bodyFont}";
         }
+
+        // Extract Google Font names from font-stack values and build the URL
+        $googleFonts = ['Inter', 'Lato', 'Merriweather', 'Montserrat', 'Open Sans', 'Playfair Display', 'Raleway', 'Source Sans 3'];
+        $fontsToLoad = [];
+        foreach ([$headingFont, $bodyFont] as $fontStack) {
+            if (!$fontStack) continue;
+            foreach ($googleFonts as $gFont) {
+                if (str_contains($fontStack, $gFont) && !in_array($gFont, $fontsToLoad)) {
+                    $fontsToLoad[] = $gFont;
+                }
+            }
+        }
+        $googleFontsUrl = '';
+        if ($fontsToLoad) {
+            $families = collect($fontsToLoad)
+                ->map(fn ($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;600;700')
+                ->implode('&');
+            $googleFontsUrl = 'https://fonts.googleapis.com/css2?' . $families . '&display=swap';
+        }
+
+        // Scoped header/nav colour rules — also applied to footer nav/icons for consistency
+        $headerBgColor  = \App\Models\SiteSetting::get('header_bg_color');
+        $footerBgColor  = \App\Models\SiteSetting::get('footer_bg_color');
+        $navLinkColor   = \App\Models\SiteSetting::get('nav_link_color');
+        $navHoverColor  = \App\Models\SiteSetting::get('nav_hover_color');
+        $navActiveColor = \App\Models\SiteSetting::get('nav_active_color');
+
+        $scopedRules = [];
+        if ($headerBgColor) $scopedRules[] = "header { background: {$headerBgColor}; }";
+        if ($footerBgColor) $scopedRules[] = "footer { background: {$footerBgColor}; }";
+        if ($navLinkColor) {
+            $scopedRules[] = "header nav a, footer nav a, footer .theme-toggle { color: {$navLinkColor}; }";
+        }
+        if ($navHoverColor) {
+            $scopedRules[] = "header nav a:hover, footer nav a:hover { color: {$navHoverColor}; }";
+        }
+        if ($navActiveColor) $scopedRules[] = 'header nav a[aria-current="page"] { color: ' . $navActiveColor . '; }';
     @endphp
 
+    @if ($googleFontsUrl)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="{!! $googleFontsUrl !!}">
+    @endif
+
     @if ($cssVars)
-        <style>:root { {{ implode('; ', $cssVars) }}; }</style>
+        <style>:root { {!! implode('; ', $cssVars) !!}; }</style>
+    @endif
+
+    @if ($scopedRules)
+        <style>{!! implode(' ', $scopedRules) !!}</style>
     @endif
 
     {{-- Inline CSS collected from active page widgets --}}

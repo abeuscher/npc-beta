@@ -50,6 +50,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 043 | Importer — Phase 3 |
 | 044 | Importer — Phase 4: Staged Updates & Queue Control |
 | 045 | Public Frontend Foundation |
+| 046 | Site Theme Admin |
 
 ---
 
@@ -72,15 +73,15 @@ Self-service flow: a logged-in member can request to join an existing household 
 ---
 
 
-### 046. Site Theme Admin
-
-CMS › Site Theme page with two tabs. **Appearance tab**: brand colour picker, font selects (heading/body, curated list including Google Fonts), logo upload, nav & header colour controls (header bg, nav link/hover/active colours injected as scoped CSS), and site chrome controls (header/footer nav handle, header content). All saved to `SiteSetting` — no build required. Active nav link detection via `aria-current="page"`. **SCSS Editor tab** (gated by `edit_theme_scss` permission): textarea pre-loaded with `_theme.scss`, validates SCSS via scssphp, triggers `npm run build`, shows build output inline. Help doc written as the last step.
-
 ---
 
 ## Forms & Membership
 
-### Form Builder
+### 047. Web Forms — Foundation
+
+Forms defined as JSON field definitions stored in the database. Field types: text, email, tel, number, textarea, select, radio, checkbox, state, country, hidden. 12-column grid layout (stacks on mobile). Validation presets (email, phone, zip, url, numbers_only, letters_only) plus custom regex with message field. Admin Filament Resource with Repeater-based field builder and read-only submissions viewer. Public Blade component `<x-public-form handle="...">`. Submission endpoint with honeypot and `throttle:10,1` rate limiting. Submissions stored as JSON blobs in `form_submissions` — no direct model writes. Post-submission actions (email, contact creation) deferred to session 048.
+
+### Form Builder — Actions Pipeline
 
 ### Secure Public Signup Flows
 

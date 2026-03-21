@@ -23,5 +23,17 @@
                 @endforeach
             </nav>
         @endif
+
+        <div x-data class="theme-toggle">
+            <x-svg-icon name="moon" />
+            <input
+                type="checkbox"
+                role="switch"
+                :checked="$store.theme.current === 'light'"
+                @change="$store.theme.toggle()"
+                aria-label="Toggle light/dark mode"
+            >
+            <x-svg-icon name="sun" />
+        </div>
     </div>
 </footer>

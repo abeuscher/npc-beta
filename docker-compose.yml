@@ -7,11 +7,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: app
     container_name: nonprofitcrm_app
     restart: unless-stopped
     volumes:
       - .:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - app_node_modules:/var/www/html/node_modules
     networks:
       - nonprofitcrm
     depends_on:
@@ -60,6 +62,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: app
     container_name: nonprofitcrm_worker
     restart: unless-stopped
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
@@ -92,6 +95,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  app_node_modules:
 
 # ─────────────────────────────────────────
 # Internal Network

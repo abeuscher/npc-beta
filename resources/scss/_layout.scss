@@ -27,23 +27,37 @@ header > .container > nav {
             background: var(--pico-muted-background);
         }
     }
+
+    .nav-dropdown > a.has-dropdown {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+
+        &::after {
+            content: "";
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 0.2em solid transparent;
+            border-right: 0.2em solid transparent;
+            border-top: 0.25em solid currentColor;
+            transition: transform 0.15s ease;
+        }
+    }
+
+    .nav-dropdown:hover > a.has-dropdown::after {
+        transform: rotate(180deg);
+    }
 }
 
-// Nav dropdown — linked parent item + Alpine-powered submenu
+// Nav dropdown — CSS hover, triangle via ::after on the anchor
 .nav-dropdown {
     position: relative;
     display: inline-flex;
     align-items: center;
 
-    button {
-        background: none;
-        border: none;
-        padding: 0 0.25rem;
-        cursor: pointer;
-        line-height: 1;
-    }
-
     ul {
+        display: none;
         position: absolute;
         top: 100%;
         right: 0;
@@ -67,6 +81,36 @@ header > .container > nav {
                 color: var(--pico-primary);
             }
         }
+    }
+
+    &:hover > ul {
+        display: block;
+    }
+}
+
+// Footer — nav left, theme toggle right
+footer > .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+// Theme toggle — moon icon / switch / sun icon in footer
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    input[type="checkbox"] {
+        margin: 0;
     }
 }
 
