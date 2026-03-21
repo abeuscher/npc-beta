@@ -30,6 +30,16 @@ class PageResource extends Resource
         return auth()->user()?->can('view_any_page') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_page') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_page') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -166,15 +176,21 @@ class PageResource extends Resource
                     ->label('Published')
                     ->trueLabel('Published only')
                     ->falseLabel('Unpublished only'),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultSort('updated_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

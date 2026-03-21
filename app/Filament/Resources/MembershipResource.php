@@ -25,6 +25,16 @@ class MembershipResource extends Resource
         return auth()->user()?->can('view_any_membership') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_membership') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_membership') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -119,15 +129,21 @@ class MembershipResource extends Resource
                         'expired'   => 'Expired',
                         'cancelled' => 'Cancelled',
                     ]),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

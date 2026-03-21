@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-21 (session 047)
+Last updated: 2026-03-21 (session 049)
 
 ---
 
@@ -271,11 +271,12 @@ Immutable records of individual web form submissions.
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | bigint | no | PK |
-| form_id | bigint | no | FK→forms, cascadeOnDelete |
-| contact_id | uuid | yes | FK→contacts, nullOnDelete; set when form_type=contact and contact is created/updated |
+| form_id | bigint | no | FK→forms, cascadeOnDelete; indexed |
+| contact_id | uuid | yes | FK→contacts, nullOnDelete; indexed; set when form_type=contact and contact is created/updated |
 | data | json | no | key/value map of field handle → submitted value |
 | ip_address | string | yes | |
 | created_at | timestamp | no | no updated_at — submissions are immutable |
+| deleted_at | timestamp | yes | Soft delete |
 
 ---
 
@@ -294,6 +295,7 @@ Web form definitions. Fields and settings stored as JSON.
 | is_active | boolean | no | default: true; inactive forms return 404 on submission |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+| deleted_at | timestamp | yes | Soft delete |
 
 ---
 

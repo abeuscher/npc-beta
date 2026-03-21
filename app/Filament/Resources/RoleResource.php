@@ -62,6 +62,30 @@ class RoleResource extends Resource
                 'label'       => 'Use Advanced List Filters',
                 'description' => 'Grants access to the raw SQL WHERE clause editor on mailing lists. Only assign to users who understand database queries.',
             ],
+            'import_data' => [
+                'label'       => 'Import Data',
+                'description' => 'Grants access to the Import Contacts wizard and import progress page.',
+            ],
+            'review_imports' => [
+                'label'       => 'Review Imports',
+                'description' => 'Grants access to the Importer review queue to preview, approve, or roll back pending import sessions.',
+            ],
+            'edit_theme_scss' => [
+                'label'       => 'Edit Theme SCSS',
+                'description' => 'Grants access to the SCSS editor tab on the Site Theme page. Developer-level access only.',
+            ],
+            'view_any_form_submission' => [
+                'label'       => 'View Form Submissions',
+                'description' => 'Grants access to view submissions on the Forms resource.',
+            ],
+            'view_form_submission' => [
+                'label'       => 'View Form Submission Detail',
+                'description' => 'Grants access to open individual submission records.',
+            ],
+            'delete_form_submission' => [
+                'label'       => 'Delete Form Submissions',
+                'description' => 'Grants the ability to delete individual form submission records (e.g. for GDPR removal).',
+            ],
         ];
     }
 
@@ -70,7 +94,7 @@ class RoleResource extends Resource
         return [
             'crm'     => ['contact', 'household', 'organization', 'membership', 'note', 'tag', 'event', 'mailing_list'],
             'finance' => ['donation', 'transaction', 'fund', 'campaign'],
-            'cms'     => ['post', 'page', 'collection', 'collection_item', 'navigation_item'],
+            'cms'     => ['post', 'page', 'form', 'collection', 'collection_item', 'navigation_item'],
             'admin'   => ['user', 'widget_type'],
         ];
     }

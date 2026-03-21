@@ -53,6 +53,8 @@ This is the single working reference for all sessions. Completed sessions are li
 | 046 | Site Theme Admin |
 | 047 | Web Forms — Foundation |
 | 048 | Web Forms — Security Review |
+| 049 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
+| 050 | Roadmap Planning & Prioritisation |
 
 ---
 
@@ -78,10 +80,6 @@ Self-service flow: a logged-in member can request to join an existing household 
 ---
 
 ## Forms & Membership
-
-### 049. Codebase Audit — Fields, Schema, Permissions & Help Coverage
-
-A repeat of session 042. Covers everything added since that audit: web forms, form submissions, JSON import, public frontend build system, site theming, importer staged updates. Eight original workstreams plus a new frontend build audit (Workstream 9). Check for: orphaned permissions, missing help doc routes, schema.md accuracy, fillable/cast consistency on new models, compiled frontend artifacts in git.
 
 ### Form Builder — Actions Pipeline
 

@@ -74,12 +74,12 @@ class FormSubmissionsRelationManager extends RelationManager
                     ->label('View data')
                     ->visible(fn ($record) => ! $record->contact_id),
 
-                Tables\Actions\DeleteAction::make()
+                Tables\Actions\ForceDeleteAction::make()
                     ->visible(fn () => auth()->user()?->can('delete_form_submission')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                    Tables\Actions\ForceDeleteBulkAction::make()
                         ->visible(fn () => auth()->user()?->can('delete_form_submission')),
                 ]),
             ]);

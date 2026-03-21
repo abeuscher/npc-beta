@@ -32,6 +32,16 @@ class PostResource extends Resource
         return parent::getEloquentQuery()->where('type', 'post');
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_post') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_post') ?? false;
+    }
+
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('view_any_post') ?? false;
@@ -164,15 +174,21 @@ class PostResource extends Resource
                     ->label('Published')
                     ->trueLabel('Published only')
                     ->falseLabel('Unpublished only'),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultSort('updated_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

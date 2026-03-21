@@ -30,6 +30,16 @@ class ContactResource extends Resource
         return auth()->user()?->can('view_any_contact') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_contact') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_contact') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -198,6 +208,8 @@ class ContactResource extends Resource
                 Tables\Filters\Filter::make('in_household')
                     ->label('In a household')
                     ->query(fn ($query) => $query->whereNotNull('household_id')),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('importContacts')
@@ -259,10 +271,14 @@ class ContactResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->modifyQueryUsing(fn ($query) => $query->with([

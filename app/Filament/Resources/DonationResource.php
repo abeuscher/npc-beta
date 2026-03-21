@@ -25,6 +25,16 @@ class DonationResource extends Resource
         return auth()->user()?->can('view_any_donation') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_donation') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_donation') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -105,13 +115,20 @@ class DonationResource extends Resource
                 Tables\Columns\TextColumn::make('donated_on')->date()->sortable(),
             ])
             ->defaultSort('donated_on', 'desc')
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -36,6 +36,16 @@ class CollectionResource extends Resource
         return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canAccess();
+    }
+
     protected static ?string $model = Collection::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
@@ -224,16 +234,27 @@ class CollectionResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
 
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
+
+                Tables\Actions\RestoreAction::make()
+                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
+
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('name')

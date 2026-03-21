@@ -30,6 +30,16 @@ class FormResource extends Resource
         return auth()->user()?->can('view_any_form') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_form') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_form') ?? false;
+    }
+
     public static function form(FilamentForm $form): FilamentForm
     {
         return $form->schema([
@@ -301,6 +311,9 @@ class FormResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('updated_at', 'desc')
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+            ])
             ->actions([
                 Tables\Actions\Action::make('download_json')
                     ->label('Download JSON')
@@ -322,10 +335,14 @@ class FormResource extends Resource
 
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

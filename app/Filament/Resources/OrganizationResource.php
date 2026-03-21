@@ -26,6 +26,16 @@ class OrganizationResource extends Resource
         return auth()->user()?->can('view_any_organization') ?? false;
     }
 
+    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_organization') ?? false;
+    }
+
+    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_organization') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -116,15 +126,21 @@ class OrganizationResource extends Resource
                         'government' => 'Government',
                         'other'      => 'Other',
                     ]),
+
+                Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }
