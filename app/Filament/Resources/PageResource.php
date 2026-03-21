@@ -96,9 +96,6 @@ class PageResource extends Resource
                 ->hidden(fn ($record) => $record === null)
                 ->columnSpanFull(),
 
-            Forms\Components\Section::make('Tags')
-                ->schema([TagSelect::make('page')]),
-
             Forms\Components\Section::make('Publication')
                 ->schema([
                     Forms\Components\Toggle::make('is_published')
@@ -113,6 +110,8 @@ class PageResource extends Resource
                     Forms\Components\DateTimePicker::make('published_at')
                         ->label('Publish Date')
                         ->visible(fn (Forms\Get $get) => $get('is_published')),
+
+                    TagSelect::make('page'),
                 ])->columns(2),
 
             Forms\Components\Section::make('SEO')

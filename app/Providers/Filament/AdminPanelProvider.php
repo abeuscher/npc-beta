@@ -116,6 +116,14 @@ class AdminPanelProvider extends PanelProvider
                     </script>
                 ')
             )
+            // Site-wide Livewire loading bar — fixed top bar that appears on any
+            // server round-trip after a 200 ms delay (so instant clicks don't flash).
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): HtmlString => new HtmlString(
+                    '<div wire:loading.delay class="fixed inset-x-0 top-0 z-[200] h-0.5 bg-primary-500 animate-pulse pointer-events-none"></div>'
+                )
+            )
             // Context-sensitive help: ? icon in the page header that opens a slide-over.
             ->renderHook(
                 PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE,

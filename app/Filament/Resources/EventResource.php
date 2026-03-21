@@ -94,13 +94,17 @@ class EventResource extends Resource
             Forms\Components\Split::make([
                 // ── Left column ───────────────────────────────────────────
                 Forms\Components\Group::make([
+                    Forms\Components\TextInput::make('title')
+                        ->required()
+                        ->maxLength(255),
+
                     Forms\Components\Section::make('Description')->schema([
                         QuillEditor::make('description')
                             ->hiddenLabel()
                             ->nullable(),
-                    ]),
+                    ])->extraAttributes(['class' => 'overflow-hidden']),
 
-                    Forms\Components\Section::make('Address')->schema([
+                    Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')
                             ->label('Address line 1')
                             ->maxLength(255),
@@ -157,11 +161,34 @@ class EventResource extends Resource
 
                 // ── Right column ──────────────────────────────────────────
                 Forms\Components\Group::make([
-                    Forms\Components\Section::make('Settings')->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255),
+                    Forms\Components\Section::make(fn ($record) => $record?->eventDates()->count() === 1 ? 'Date' : 'Dates')->schema([
+                        Forms\Components\Repeater::make('eventDates')
+                            ->relationship()
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\DateTimePicker::make('starts_at')
+                                    ->label('Start')
+                                    ->required()
+                                    ->seconds(false),
 
+                                Forms\Components\DateTimePicker::make('ends_at')
+                                    ->label('End')
+                                    ->seconds(false)
+                                    ->after('starts_at'),
+
+                                Forms\Components\Hidden::make('status')
+                                    ->default('inherited'),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Add date')
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->deleteAction(
+                                fn ($action) => $action->iconButton()->icon('heroicon-m-trash')
+                            ),
+                    ]),
+
+                    Forms\Components\Section::make('Settings')->schema([
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
@@ -214,33 +241,8 @@ class EventResource extends Resource
                                     ->openUrlInNewTab()
                                     ->visible(fn ($record) => $record?->landing_page_id !== null),
                             ]),
-                    ]),
 
-                    Forms\Components\Section::make('Dates')->schema([
-                        Forms\Components\Repeater::make('eventDates')
-                            ->relationship()
-                            ->hiddenLabel()
-                            ->schema([
-                                Forms\Components\DateTimePicker::make('starts_at')
-                                    ->label('Start')
-                                    ->required()
-                                    ->seconds(false),
-
-                                Forms\Components\DateTimePicker::make('ends_at')
-                                    ->label('End')
-                                    ->seconds(false)
-                                    ->after('starts_at'),
-
-                                Forms\Components\Hidden::make('status')
-                                    ->default('inherited'),
-                            ])
-                            ->columns(2)
-                            ->addActionLabel('Add date')
-                            ->defaultItems(0)
-                            ->reorderable(false)
-                            ->deleteAction(
-                                fn ($action) => $action->iconButton()->icon('heroicon-m-trash')
-                            ),
+                        TagSelect::make('event'),
                     ]),
 
                     Forms\Components\Section::make('Registration Details')->schema([
@@ -293,9 +295,6 @@ class EventResource extends Resource
                     ]),
                 ])->grow(false),
             ])->from('md')->columnSpanFull(),
-
-            Forms\Components\Section::make('Tags')
-                ->schema([TagSelect::make('event')]),
 
             Forms\Components\Section::make('Custom Fields')
                 ->schema(fn () => CustomFieldDef::forModel('event')->get()

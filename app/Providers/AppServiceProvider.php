@@ -3,9 +3,15 @@
 namespace App\Providers;
 
 use App\Models\SiteSetting;
+use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Pages\BasePage;
 use Filament\Support\Enums\Alignment;
+use Filament\Tables\Actions\DeleteAction as TableDeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\ForceDeleteAction as TableForceDeleteAction;
+use Filament\Tables\Actions\ForceDeleteBulkAction;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,6 +23,25 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         BasePage::formActionsAlignment(Alignment::End);
+
+        $singleDescription = fn (object $record): string =>
+            'You are about to permanently delete this ' .
+            strtolower(class_basename($record)) .
+            '. This cannot be undone.';
+
+        $bulkDescription = function (\Illuminate\Support\Collection $records): string {
+            $count = $records->count();
+            $label = $records->isNotEmpty()
+                ? Str::plural(strtolower(class_basename($records->first())), $count)
+                : 'records';
+            return "You are about to permanently delete {$count} {$label}. This cannot be undone.";
+        };
+
+        TableDeleteAction::configureUsing(fn ($action) => $action->modalDescription($singleDescription));
+        TableForceDeleteAction::configureUsing(fn ($action) => $action->modalDescription($singleDescription));
+        PageDeleteAction::configureUsing(fn ($action) => $action->modalDescription($singleDescription));
+        DeleteBulkAction::configureUsing(fn ($action) => $action->modalDescription($bulkDescription));
+        ForceDeleteBulkAction::configureUsing(fn ($action) => $action->modalDescription($bulkDescription));
 
         try {
             $settings = SiteSetting::all()->keyBy('key');

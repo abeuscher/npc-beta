@@ -176,7 +176,7 @@ class ImportContactsPage extends Page
                                 ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'])
                                 ->maxSize(10240)
                                 ->live()
-                                ->helperText('Wait for the progress bar to disappear before clicking Next.')
+                                ->helperText('Max 10 MB. CSV or plain text only. Wait for the field above to turn green before advancing to the next stage.')
                                 ->required(),
                         ])
                         ->afterValidation(function () {

@@ -111,6 +111,80 @@ class PermissionSeeder extends Seeder
             $fullPermissions('tag'),
         ));
 
+        // ── crm_editor ───────────────────────────────────────────────────────
+        // Full CRM + donations access. No finance settings, user mgmt, or import approval.
+        $crmEditor = Role::firstOrCreate(
+            ['name' => 'crm_editor', 'guard_name' => 'web'],
+            ['label' => 'CRM Editor'],
+        );
+        $crmEditor->update(['label' => 'CRM Editor']);
+        $crmEditor->syncPermissions(array_merge(
+            $fullPermissions('contact'),
+            $fullPermissions('organization'),
+            $fullPermissions('household'),
+            $fullPermissions('note'),
+            $fullPermissions('tag'),
+            $fullPermissions('membership'),
+            $fullPermissions('donation'),
+            ['import_data'],
+        ));
+
+        // ── event_manager ────────────────────────────────────────────────────
+        // Full event access. Read-only contacts.
+        $eventManager = Role::firstOrCreate(
+            ['name' => 'event_manager', 'guard_name' => 'web'],
+            ['label' => 'Event Manager'],
+        );
+        $eventManager->update(['label' => 'Event Manager']);
+        $eventManager->syncPermissions(array_merge(
+            $fullPermissions('event'),
+            $viewPermissions('contact'),
+        ));
+
+        // ── volunteer_coordinator ────────────────────────────────────────────
+        // Full contact/tag/note access. Read-only events. No finance.
+        $volunteerCoordinator = Role::firstOrCreate(
+            ['name' => 'volunteer_coordinator', 'guard_name' => 'web'],
+            ['label' => 'Volunteer Coordinator'],
+        );
+        $volunteerCoordinator->update(['label' => 'Volunteer Coordinator']);
+        $volunteerCoordinator->syncPermissions(array_merge(
+            $fullPermissions('contact'),
+            $fullPermissions('tag'),
+            $fullPermissions('note'),
+            $viewPermissions('event'),
+        ));
+
+        // ── treasurer ────────────────────────────────────────────────────────
+        // Full finance access. Read-only contacts. No CRM editing.
+        $treasurer = Role::firstOrCreate(
+            ['name' => 'treasurer', 'guard_name' => 'web'],
+            ['label' => 'Treasurer'],
+        );
+        $treasurer->update(['label' => 'Treasurer']);
+        $treasurer->syncPermissions(array_merge(
+            $fullPermissions('donation'),
+            $fullPermissions('fund'),
+            $fullPermissions('campaign'),
+            $fullPermissions('transaction'),
+            $viewPermissions('contact'),
+        ));
+
+        // ── blogger ──────────────────────────────────────────────────────────
+        // Full CMS access. No CRM or finance.
+        $blogger = Role::firstOrCreate(
+            ['name' => 'blogger', 'guard_name' => 'web'],
+            ['label' => 'Blogger'],
+        );
+        $blogger->update(['label' => 'Blogger']);
+        $blogger->syncPermissions(array_merge(
+            $fullPermissions('page'),
+            $fullPermissions('post'),
+            $fullPermissions('collection'),
+            $fullPermissions('collection_item'),
+            $fullPermissions('navigation_item'),
+        ));
+
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.
         Role::firstOrCreate(

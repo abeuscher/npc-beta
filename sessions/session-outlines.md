@@ -55,14 +55,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 048 | Web Forms — Security Review |
 | 049 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
 | 050 | Roadmap Planning & Prioritisation |
-
----
-
-## Immediate
-
-### Minor Tweaks & Polish
-
-UI/UX polish pass informed by testing notes from sessions 049–050. Event edit form layout (description overflow, title/tag ordering, settings section structure, location info label, Date(s) plural handling), upload field verbiage, import tool action placement on the contacts list, delete confirmation copy with affected record count, CMS tags wired into page/post/event edit forms, test files for custom header/footer, debug data generator dashboard widget (ENV-gated, to be removed before launch), and expanded default role set.
+| 051 | Minor Tweaks & Polish |
 
 ---
 

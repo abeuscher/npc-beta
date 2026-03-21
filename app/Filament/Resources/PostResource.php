@@ -25,6 +25,8 @@ class PostResource extends Resource
 
     protected static ?string $navigationLabel = 'Blog Posts';
 
+    protected static ?string $modelLabel = 'Post';
+
     protected static ?int $navigationSort = 2;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
@@ -101,9 +103,6 @@ class PostResource extends Resource
                 ->hidden(fn ($record) => $record === null)
                 ->columnSpanFull(),
 
-            Forms\Components\Section::make('Tags')
-                ->schema([TagSelect::make('post')]),
-
             Forms\Components\Section::make('Publication')
                 ->schema([
                     Forms\Components\Toggle::make('is_published')
@@ -118,6 +117,8 @@ class PostResource extends Resource
                     Forms\Components\DateTimePicker::make('published_at')
                         ->label('Publish Date')
                         ->visible(fn (Forms\Get $get) => $get('is_published')),
+
+                    TagSelect::make('post'),
                 ])->columns(2),
 
             Forms\Components\Section::make('SEO')
