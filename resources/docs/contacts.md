@@ -57,6 +57,19 @@ Every contact has a **Source** field that records how the record entered the sys
 
 The Source field is set automatically and **cannot be changed by any user through the UI**. It is displayed as read-only information on the contact edit form.
 
+## Reviewing Duplicate Contacts
+
+Click **Review Duplicates** in the top-right of the contacts list to open the duplicate review tool. The system identifies probable duplicates using two criteria:
+
+- **Exact match** — two contacts share the same email address (case-insensitive). These are definite duplicates.
+- **Probable match** — two contacts share the same last name and postal code. These require human review.
+
+For each pair you can choose one of three actions:
+
+- **Merge** — select which contact to keep (the older record is pre-selected). The surviving contact inherits any blank fields from the discarded record. All related data (notes, tags, donations, memberships, event registrations) is transferred to the surviving contact. The discarded contact is then removed.
+- **Not a Duplicate** — permanently dismiss the pair. It will not appear in future reviews.
+- **Skip** — pass over this pair for now. It will reappear the next time Review Duplicates is opened.
+
 ## Importing Contacts
 
 To bring in contacts from a spreadsheet, use **Tools → Importer**. See the Import Contacts help article for details.

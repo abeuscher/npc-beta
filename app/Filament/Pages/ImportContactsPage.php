@@ -7,6 +7,7 @@ use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\ImportSource;
 use App\Models\Tag;
+use App\Services\DuplicateContactService;
 use App\Services\Import\FieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
@@ -472,6 +473,53 @@ class ImportContactsPage extends Page
             foreach ($this->previewRows as $row) {
                 $value = $row[$colIndex] ?? '';
                 $content .= "<td class='py-1 pr-4'>" . e($value) . "</td>";
+            }
+
+            $content .= "</tr>";
+        }
+
+        // Build a field → column index lookup for duplicate detection
+        $fieldToColIndex = [];
+
+        foreach ($this->parsedHeaders as $header) {
+            $n        = $this->headerIndex($header);
+            $colKey   = "col_{$n}";
+            $dest     = $map[$colKey] ?? null;
+            $colIndex = array_search($header, $this->parsedHeaders);
+
+            if (in_array($dest, ['email', 'last_name', 'postal_code'], true)) {
+                $fieldToColIndex[$dest] = $colIndex;
+            }
+        }
+
+        if (! empty($fieldToColIndex)) {
+            $service = new DuplicateContactService();
+
+            $content .= "<tr class='border-b border-gray-100 bg-gray-50 dark:bg-gray-800'>";
+            $content .= "<td class='py-1 pr-4 text-gray-600 font-medium'>Duplicate check</td>";
+            $content .= "<td class='py-1 pr-4'></td>";
+
+            foreach ($this->previewRows as $row) {
+                $rowData = [];
+
+                foreach ($fieldToColIndex as $field => $colIndex) {
+                    $rowData[$field] = $row[$colIndex] ?? null;
+                }
+
+                $result = $service->check($rowData);
+
+                if ($result['hard']) {
+                    $content .= "<td class='py-1 pr-4'>"
+                        . "<span class='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'>Exact match</span>"
+                        . "</td>";
+                } elseif ($result['probable']->isNotEmpty()) {
+                    $name = e($result['probable']->first()->display_name);
+                    $content .= "<td class='py-1 pr-4'>"
+                        . "<span class='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'>Probable: {$name}</span>"
+                        . "</td>";
+                } else {
+                    $content .= "<td class='py-1 pr-4'><span class='text-gray-400 text-xs'>—</span></td>";
+                }
             }
 
             $content .= "</tr>";

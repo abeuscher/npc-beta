@@ -57,6 +57,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 050 | Roadmap Planning & Prioritisation |
 | 051 | Minor Tweaks & Polish |
 | 052 | CRM Polish — Roles, Contacts & Users |
+| 053 | Duplicate Contact Detection |
 
 ---
 
@@ -70,13 +71,9 @@ Reusable detection service (exact email = hard duplicate, last_name + postal_cod
 
 ## Data Hygiene & Privacy
 
-### Data Retention & Cascading Delete Audit
+### 054. Event Registrant Cleanup
 
-Audit every deletion path in the system and define what should happen when a record is removed. Key questions to answer and implement: What happens to notes, tags, and import records when the user who created them is deleted? What happens to contacts linked to a deleted import session — do they persist or cascade? What happens to event registrations when a contact is deleted? What happens to mailing list memberships? What is the intended lifetime of soft-deleted records — is there a purge policy? The output of this session is both code (correct `onDelete` behaviours, cascade or null-out rules in migrations) and a written policy document checked into the repo.
-
-### MINIMUM DATA Mode & Event Registrant Cleanup
-
-Two related data-minimisation features. First: an option on each event to automatically delete registrant records when the event closes — surfaced as a setting on the event edit form, not a global switch. Second: a MINIMUM DATA environment flag (and admin toggle for super_admins) that aggressively purges contact data not required for the system to function — contacts not linked to an active membership, volunteer record, or open donation are candidates for scheduled removal. The design principle: make pruning easy, surface it prominently, and treat data hygiene as a normal operational habit rather than an exceptional action.
+A manual staff action on the Event edit page that removes contacts who were auto-created solely by registering for a specific event. A contact is eligible only if: their record originated via `source = 'web_form'`, they are linked to this event's registrations, and they have no other connections in the system (no other event registrations, no memberships, no donations). A confirmation modal shows the affected count before proceeding. Matching contacts are soft-deleted; all registration records for the event are removed regardless. Contacts who registered but also exist for other reasons are never touched. Manual trigger only — no scheduled automation in this session.
 
 ---
 
@@ -167,6 +164,14 @@ Each admin user needs a record of their significant actions against data — whi
 ### Volunteer Portal
 
 *Public-facing self-service: signup, view upcoming shifts, log hours pending admin approval. Extends or reuses the Member Portal patterns.*
+
+---
+
+## Data Retention & Deletion Policy
+
+### Data Retention & Cascading Delete Audit
+
+Audit every deletion path in the system and define what should happen when a record is removed. Key questions to answer and implement: What happens to notes, tags, and import records when the user who created them is deleted? What happens to contacts linked to a deleted import session — do they persist or cascade? What happens to event registrations when a contact is deleted? What happens to mailing list memberships? What is the intended lifetime of soft-deleted records — is there a purge policy? The output of this session is both code (correct `onDelete` behaviours, cascade or null-out rules in migrations) and a written policy document checked into the repo.
 
 ---
 
