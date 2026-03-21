@@ -50,6 +50,7 @@ class Contact extends Model
         'city',
         'state',
         'postal_code',
+        'date_of_birth',
         'country',
         'custom_data',       // system-managed: SchemalessAttributes, written by importer
         'custom_fields',
@@ -60,6 +61,7 @@ class Contact extends Model
     ];
 
     protected $casts = [
+        'date_of_birth'       => 'date',
         'custom_data'         => SchemalessAttributes::class,
         'custom_fields'       => 'array',
         'do_not_contact'      => 'boolean',

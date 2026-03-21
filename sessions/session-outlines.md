@@ -56,24 +56,15 @@ This is the single working reference for all sessions. Completed sessions are li
 | 049 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
 | 050 | Roadmap Planning & Prioritisation |
 | 051 | Minor Tweaks & Polish |
+| 052 | CRM Polish — Roles, Contacts & Users |
 
 ---
 
 ## CRM Core Polish
 
-### Role Deletion Safety
+### 053. Duplicate Contact Detection
 
-Deleting a role that is currently assigned to one or more users silently removes their access. Before a role can be deleted, the system must identify affected users and require staff to either reassign them to another role or explicitly acknowledge that access removal is intentional. Show a count of affected users, offer a bulk-reassign dropdown, and require confirmation before proceeding.
-
-### Duplicate Contact Detection
-
-Detect probable duplicate contacts at import time and on the contact list. Matching strategy: exact email match (hard duplicate), fuzzy name + postal code match (probable duplicate). At import, flag duplicates in the preview step before any records are saved. On the contact list, a "Review Duplicates" action surfaces probable pairs for admin review with merge or dismiss options.
-
-### Contact Record — Birthday & Age Fields
-
-*Applies to all contacts, not just volunteers. Required for age verification for working volunteers. Small focused session or foldable into another CRM session.*
-
-### Contact ↔ User Link
+Reusable detection service (exact email = hard duplicate, last_name + postal_code = probable duplicate). Two surfaces: import preview step flags each row before records are saved; contact list "Review Duplicates" action presents probable pairs for merge or dismiss. Merge reassigns all related records to the surviving contact and soft-deletes the discarded one. Dismissed pairs are persisted in a `contact_duplicate_dismissals` table so they don't resurface. Full prompt: `sessions/053. Duplicate Contact Detection.md`
 
 ---
 
@@ -158,6 +149,8 @@ Each admin user needs a record of their significant actions against data — whi
 ## Volunteer Management
 
 *Contact Record — Birthday & Age Fields (CRM Core) is a prerequisite. Volunteer Portal depends on Member Portal being complete.*
+
+**Age gating — legal note (agreed session 052):** The volunteer system will collect date of birth because it is operationally required (work, liability, safety). Rather than building parental consent flows, the public-facing volunteer registration form must gate sign-up to applicants who meet the minimum age threshold (≥ 13 at minimum under COPPA; consider ≥ 18 depending on jurisdiction and the nature of the work). Anyone below the threshold is rejected at the form level, keeping the system outside COPPA's scope for this pathway. Under-13 handling via verifiable parental consent is explicitly out of scope for v1 and is left to a future session or a fork of the project.
 
 ### Volunteer Profile & Hours Tracking
 

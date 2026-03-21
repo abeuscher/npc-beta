@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-21 (session 049)
+Last updated: 2026-03-21 (session 052)
 
 ---
 
@@ -105,6 +105,7 @@ Individual people in the CRM — donors, volunteers, members, etc.
 | city | string | yes | |
 | state | string | yes | |
 | postal_code | string | yes | |
+| date_of_birth | date | yes | |
 | country | string | yes | default: 'US' |
 | do_not_contact | boolean | no | default: false |
 | mailing_list_opt_in | boolean | no | default: false |

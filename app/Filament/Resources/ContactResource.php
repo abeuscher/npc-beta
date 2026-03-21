@@ -87,6 +87,20 @@ class ContactResource extends Resource
                         Forms\Components\TextInput::make('postal_code')
                             ->label('ZIP')
                             ->columnSpan(3),
+
+                        Forms\Components\DatePicker::make('date_of_birth')
+                            ->label('Date of Birth')
+                            ->maxDate(now()->subYears(13)->toDateString())
+                            ->helperText('Must be 13 or older — see the help article for details.')
+                            ->columnSpan(5),
+
+                        Forms\Components\Placeholder::make('age')
+                            ->label('Age')
+                            ->content(fn (?Contact $record): string => $record?->date_of_birth
+                                ? $record->date_of_birth->age . ' years'
+                                : '—'
+                            )
+                            ->columnSpan(7),
                     ])
                     ->columns(12),
 

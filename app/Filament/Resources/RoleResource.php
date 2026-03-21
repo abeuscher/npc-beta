@@ -5,8 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\RoleResource\Pages;
 use App\Forms\Components\PermissionTable;
 use App\Models\Role;
+use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -211,18 +214,102 @@ class RoleResource extends Resource
                 Tables\Actions\EditAction::make()
                     ->disabled(fn (Role $record) => $record->name === 'super_admin'),
 
-                Tables\Actions\DeleteAction::make()
-                    ->modalDescription(function (Role $record) {
+                Tables\Actions\Action::make('delete')
+                    ->label('Delete')
+                    ->icon('heroicon-m-trash')
+                    ->color('danger')
+                    ->hidden(fn (Role $record) => in_array($record->name, ['super_admin', 'cms_editor']))
+                    ->modalHeading('Delete Role')
+                    ->modalSubmitActionLabel('Confirm')
+                    ->form(function (Role $record): array {
                         $count = $record->users()->count();
-                        return $count > 0
-                            ? "This role is assigned to {$count} user(s). They will immediately lose all permissions granted by this role."
-                            : 'This role has no assigned users and can be safely deleted.';
+
+                        if ($count === 0) {
+                            return [
+                                Forms\Components\Placeholder::make('message')
+                                    ->hiddenLabel()
+                                    ->content('This role has no assigned users and can be safely deleted.'),
+                            ];
+                        }
+
+                        $otherRoles = Role::where('id', '!=', $record->id)
+                            ->whereNotIn('name', ['super_admin'])
+                            ->orderBy('label')
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn (Role $r) => [$r->id => $r->display_label])
+                            ->toArray();
+
+                        return [
+                            Forms\Components\Placeholder::make('warning')
+                                ->hiddenLabel()
+                                ->content("This role is assigned to {$count} user(s). Choose how to proceed:"),
+
+                            Forms\Components\Radio::make('action_type')
+                                ->label('Action')
+                                ->options([
+                                    'reassign' => 'Reassign affected users to another role, then delete this role',
+                                    'delete'   => 'Delete this role — affected users will lose all access',
+                                ])
+                                ->required()
+                                ->live(),
+
+                            Forms\Components\Select::make('reassign_to')
+                                ->label('Reassign users to')
+                                ->options($otherRoles)
+                                ->required(fn (Get $get) => $get('action_type') === 'reassign')
+                                ->visible(fn (Get $get) => $get('action_type') === 'reassign'),
+
+                            Forms\Components\TextInput::make('confirm_text')
+                                ->label('Type DELETE to confirm removing access from all affected users')
+                                ->visible(fn (Get $get) => $get('action_type') === 'delete')
+                                ->rules([
+                                    fn (Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get) {
+                                        if ($get('action_type') === 'delete' && $value !== 'DELETE') {
+                                            $fail('You must type DELETE to confirm.');
+                                        }
+                                    },
+                                ]),
+                        ];
                     })
-                    ->disabled(fn (Role $record) => in_array($record->name, ['super_admin', 'cms_editor'])),
+                    ->action(function (Role $record, array $data): void {
+                        $count = $record->users()->count();
+
+                        if ($count === 0) {
+                            $record->delete();
+                            return;
+                        }
+
+                        if (($data['action_type'] ?? null) === 'reassign') {
+                            $newRole = Role::find($data['reassign_to']);
+                            $record->users()->get()->each(function ($user) use ($record, $newRole) {
+                                $user->removeRole($record);
+                                $user->assignRole($newRole);
+                            });
+                        }
+
+                        $record->delete();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Support\Collection $records): void {
+                            $blocked = $records->filter(fn (Role $r) => $r->users()->count() > 0);
+
+                            if ($blocked->isNotEmpty()) {
+                                $names = $blocked->map(fn (Role $r) => $r->display_label)->join(', ');
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Cannot delete roles with assigned users')
+                                    ->body("The following roles have active user assignments: {$names}. Reassign users before deleting.")
+                                    ->persistent()
+                                    ->send();
+                                return;
+                            }
+
+                            $records->each->delete();
+                        }),
                 ]),
             ]);
     }

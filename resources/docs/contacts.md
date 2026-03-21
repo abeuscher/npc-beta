@@ -1,8 +1,8 @@
 ---
 title: Contacts
 description: How to add, view, edit, and manage individual contacts in the CRM, including custom fields and contact tagging.
-version: "0.24"
-updated: 2026-03-16
+version: "0.25"
+updated: 2026-03-21
 tags: [contacts, crm, custom-fields, tags]
 routes:
   - filament.admin.resources.contacts.index
@@ -60,3 +60,17 @@ The Source field is set automatically and **cannot be changed by any user throug
 ## Importing Contacts
 
 To bring in contacts from a spreadsheet, use **Tools → Importer**. See the Import Contacts help article for details.
+
+---
+
+## Date of Birth and Minor Privacy Laws
+
+The **Date of Birth** field is admin-entered and optional. If a contact's date of birth would make them younger than 13 years old, the field will not accept the date. This is a safeguard related to two laws that impose heightened privacy obligations on personal data collected from children under 13:
+
+**COPPA — Children's Online Privacy Protection Act (US federal)**
+Applies when an operator has actual knowledge it holds personal information from a child under 13. Key obligations include: obtaining verifiable parental consent before collecting data, providing parents the right to review and delete their child's record, and not conditioning participation on collecting more information than is reasonably necessary. See the FTC's official COPPA page: https://www.ftc.gov/legal-library/browse/rules/childrens-online-privacy-protection-rule-coppa
+
+**CCPA / CPRA — California Consumer Privacy Act (California)**
+Requires opt-in parental consent before selling or sharing personal information of consumers under 13, and opt-in consent from the consumer themselves for ages 13–16. See the California Attorney General's CCPA page: https://oag.ca.gov/privacy/ccpa
+
+If you believe a contact in your system is under 13 and you have collected their personal information, consult legal counsel before taking further action. At minimum, the record should be treated with heightened care: avoid adding it to mailing lists, exporting it to third parties, or sharing it in any form without verifying you have appropriate consent or legal basis to do so.

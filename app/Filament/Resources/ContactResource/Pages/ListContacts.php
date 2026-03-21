@@ -42,7 +42,7 @@ class ListContacts extends ListRecords
                         $standardHeaders = [
                             'first_name', 'last_name', 'email', 'phone',
                             'address_line_1', 'address_line_2', 'city', 'state',
-                            'postal_code', 'created_at',
+                            'postal_code', 'date_of_birth', 'created_at',
                         ];
 
                         fputcsv($handle, array_merge(
@@ -61,6 +61,7 @@ class ListContacts extends ListRecords
                                 $contact->city,
                                 $contact->state,
                                 $contact->postal_code,
+                                $contact->date_of_birth?->toDateString(),
                                 $contact->created_at?->toDateTimeString(),
                             ];
 

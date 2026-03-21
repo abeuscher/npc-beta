@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\SiteSetting;
 use Filament\Actions\DeleteAction as PageDeleteAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Pages\BasePage;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\DeleteAction as TableDeleteAction;
@@ -23,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         BasePage::formActionsAlignment(Alignment::End);
+
+        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native());
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native());
 
         $singleDescription = fn (object $record): string =>
             'You are about to permanently delete this ' .
