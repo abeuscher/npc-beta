@@ -1,9 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm app/Filament/Resources/PostResource.php)",
-      "Bash(rm -rf app/Filament/Resources/PostResource/)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(docker run:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
