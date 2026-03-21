@@ -10,17 +10,28 @@
         <meta name="description" content="{{ $description }}">
     @endif
 
-    {{-- Alpine.js --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @vite(['resources/scss/public.scss', 'resources/js/public.js'])
 
-    {{-- Optional Pico CSS — enable via CMS Settings --}}
-    @if (config('site.use_pico', false))
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-    @endif
+    @php
+        $cssVars = [];
 
-    {{-- Custom stylesheet stored via CMS Settings upload --}}
-    @if (config('site.custom_css'))
-        <link rel="stylesheet" href="{{ asset(config('site.custom_css')) }}">
+        $primaryColor = \App\Models\SiteSetting::get('public_primary_color');
+        $headingFont  = \App\Models\SiteSetting::get('public_heading_font');
+        $bodyFont     = \App\Models\SiteSetting::get('public_body_font');
+
+        if ($primaryColor) {
+            $cssVars[] = "--pico-primary: {$primaryColor}";
+        }
+        if ($headingFont) {
+            $cssVars[] = "--pico-font-family-heading: {$headingFont}";
+        }
+        if ($bodyFont) {
+            $cssVars[] = "--pico-font-family-sans-serif: {$bodyFont}";
+        }
+    @endphp
+
+    @if ($cssVars)
+        <style>:root { {{ implode('; ', $cssVars) }}; }</style>
     @endif
 
     {{-- Inline CSS collected from active page widgets --}}
@@ -28,14 +39,17 @@
         <style>{!! $inlineStyles !!}</style>
     @endif
 
-    {{-- Custom stylesheet hook — push styles onto this stack from any view --}}
     @stack('styles')
 </head>
-<body>
+<body class="{{ $bodyClass ?? 'page-unknown' }}">
 
     @include(view()->exists('custom.header') ? 'custom.header' : 'components.site-header')
 
-    @yield('content')
+    <main>
+        <div class="container">
+            @yield('content')
+        </div>
+    </main>
 
     @include(view()->exists('custom.footer') ? 'custom.footer' : 'components.site-footer')
 

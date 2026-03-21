@@ -15,31 +15,25 @@
         : collect();
 @endphp
 
-<header x-data="{ open: false }">
-    <div class="site-header-left">
-        @if ($headerContent)
-            {!! $headerContent !!}
-        @endif
-    </div>
+<header>
+    <div class="container">
+        <div>
+            @if ($headerContent)
+                {!! $headerContent !!}
+            @endif
+        </div>
 
-    <div class="site-header-right">
-        <button
-            x-on:click="open = !open"
-            x-bind:aria-expanded="open.toString()"
-            aria-label="Toggle navigation"
-            class="nav-toggle"
-        >&#9776;</button>
-
-        <ul x-show="open || true" x-cloak>
+        <nav role="group">
             @foreach ($headerNavItems as $item)
                 @php
                     $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
                 @endphp
-                <li>
-                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a>
-
-                    @if ($item->children->isNotEmpty())
-                        <ul>
+                @if ($item->children->isNotEmpty())
+                    <span x-data="{ open: false }" class="nav-dropdown"
+                          @mouseenter="open = true"
+                          @mouseleave="open = false">
+                        <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a><button type="button" @click.stop="open = !open" :aria-expanded="open.toString()" aria-label="Toggle submenu">&#8964;</button>
+                        <ul x-show="open" x-cloak>
                             @foreach ($item->children as $child)
                                 @php
                                     $childHref = ($child->page_id && $child->page) ? url('/' . $child->page->slug) : ($child->url ?? '#');
@@ -49,9 +43,11 @@
                                 </li>
                             @endforeach
                         </ul>
-                    @endif
-                </li>
+                    </span>
+                @else
+                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a>
+                @endif
             @endforeach
-        </ul>
+        </nav>
     </div>
 </header>

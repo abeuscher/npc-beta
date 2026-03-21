@@ -49,6 +49,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 042 | Codebase Audit — Fields, Schema, Permissions & Help Coverage |
 | 043 | Importer — Phase 3 |
 | 044 | Importer — Phase 4: Staged Updates & Queue Control |
+| 045 | Public Frontend Foundation |
 
 ---
 
@@ -71,13 +72,9 @@ Self-service flow: a logged-in member can request to join an existing household 
 ---
 
 
-### 045. Public Frontend Foundation
-
-Vite + SCSS build pipeline from scratch. Pico CSS as the base styling framework. The existing public layout and any ad-hoc public CSS are discarded and rewritten. Output: a compiled `public.css` and `public.js` served to all public pages. Site settings fields (`primary_color`, `heading_font`, `body_font`) bridged to Pico CSS custom properties via a server-rendered inline `<style>` block in the layout head — no build step required for brand color changes. Unique body class on every public page (`page-{slug}`, `post-{slug}`, `event-{slug}`).
-
 ### 046. Site Theme Admin
 
-CMS › Site Theme page with two tabs. **Appearance tab**: brand color picker and font selects (heading/body from a curated list including Google Fonts), saved to site settings, takes effect on next page request without a build. **SCSS Editor tab** (gated by `edit_theme_scss` permission): open code editor pre-loaded with `resources/scss/_theme.scss`, validates SCSS on submit using scssphp, triggers `npm run build`, shows build output inline. Developer-facing — no polish required, just access. Help doc written as the last step.
+CMS › Site Theme page with two tabs. **Appearance tab**: brand colour picker, font selects (heading/body, curated list including Google Fonts), logo upload, nav & header colour controls (header bg, nav link/hover/active colours injected as scoped CSS), and site chrome controls (header/footer nav handle, header content). All saved to `SiteSetting` — no build required. Active nav link detection via `aria-current="page"`. **SCSS Editor tab** (gated by `edit_theme_scss` permission): textarea pre-loaded with `_theme.scss`, validates SCSS via scssphp, triggers `npm run build`, shows build output inline. Help doc written as the last step.
 
 ---
 
@@ -197,6 +194,10 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 ---
 
 ## Infrastructure Finishing
+
+### Accessibility — ARIA, ADA & Colour Contrast
+
+Audit and harden the public-facing frontend for accessibility. Add ARIA landmark roles and labels to the public layout (`<header>`, `<main>`, `<footer>`, `<nav aria-label>`). Ensure all interactive elements (nav dropdowns, form controls, buttons) have correct ARIA states (`aria-expanded`, `aria-current`, `aria-label`). Keyboard navigation audit: tab order, focus styles, skip-to-main link. Colour contrast: integrate an automated contrast checker (e.g. axe-core or similar) into the build or as a standalone audit step; flag any Pico defaults or theme colour combinations that fall below WCAG AA (4.5:1 for text, 3:1 for UI components). Colorblind simulation audit: identify palette choices that fail common colorblindness simulations (deuteranopia, protanopia). Output: a short written report of issues found plus fixes applied, and a WCAG AA compliance statement that can be shared with nonprofit clients for ADA documentation purposes.
 
 ### Help System Enhancements
 

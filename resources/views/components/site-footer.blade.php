@@ -12,16 +12,16 @@
 @endphp
 
 <footer>
-    @if ($footerNavItems->isNotEmpty())
-        <ul>
-            @foreach ($footerNavItems as $item)
-                @php
-                    $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
-                @endphp
-                <li>
+    <div class="container">
+        @if ($footerNavItems->isNotEmpty())
+            <nav>
+                @foreach ($footerNavItems as $item)
+                    @php
+                        $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
+                    @endphp
                     <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a>
-                </li>
-            @endforeach
-        </ul>
-    @endif
+                @endforeach
+            </nav>
+        @endif
+    </div>
 </footer>

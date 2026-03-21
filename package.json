@@ -1,0 +1,19 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "laravel-vite-plugin": "^1.0",
+        "vite": "^5.0",
+        "sass": "^1.70",
+        "autoprefixer": "^10.4",
+        "cssnano": "^7.0"
+    },
+    "dependencies": {
+        "@picocss/pico": "^2.0",
+        "alpinejs": "^3.0"
+    }
+}

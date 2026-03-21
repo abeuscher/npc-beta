@@ -1,0 +1,8 @@
+// Import theme overrides before Pico so variables take effect
+@use "theme";
+
+// Pico CSS — classless semantic theme
+@use "../../node_modules/@picocss/pico/scss/pico";
+
+// Public layout utilities
+@use "layout";

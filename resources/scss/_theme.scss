@@ -1,0 +1,16 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Theme — Pico CSS variable overrides
+//
+// This file is exposed in the admin SCSS editor (CMS › Site Theme).
+// Define Pico variable overrides here. You may also add custom SCSS.
+// Changes here require a build (npm run build) to take effect on the public site.
+// Brand color and font choices set in CMS › Site Theme › Appearance are applied
+// at runtime via inline CSS custom properties and do not require a build.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Uncomment and adjust to override Pico defaults:
+// $semantic-root-element: ":root";
+// $breakpoints: (...);
+// $spacing-block: 1rem;
+
+// Custom SCSS (acts on Pico markup or any public-facing HTML):

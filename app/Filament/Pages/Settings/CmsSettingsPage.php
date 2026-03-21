@@ -10,9 +10,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use ScssPhp\ScssPhp\Compiler;
 
 class CmsSettingsPage extends Page
 {
@@ -38,15 +36,11 @@ class CmsSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_name'          => SiteSetting::get('site_name', 'My Organization'),
-            'blog_prefix'        => SiteSetting::get('blog_prefix', 'news'),
-            'site_description'   => SiteSetting::get('site_description', ''),
-            'timezone'           => SiteSetting::get('timezone', 'America/Chicago'),
-            'contact_email'      => SiteSetting::get('contact_email', ''),
-            'use_pico'           => SiteSetting::get('use_pico', false),
-            'header_nav_handle'  => SiteSetting::get('header_nav_handle', 'primary'),
-            'footer_nav_handle'  => SiteSetting::get('footer_nav_handle', 'footer'),
-            'header_content'     => SiteSetting::get('header_content', ''),
+            'site_name'        => SiteSetting::get('site_name', 'My Organization'),
+            'blog_prefix'      => SiteSetting::get('blog_prefix', 'news'),
+            'site_description' => SiteSetting::get('site_description', ''),
+            'timezone'         => SiteSetting::get('timezone', 'America/Chicago'),
+            'contact_email'    => SiteSetting::get('contact_email', ''),
         ]);
     }
 
@@ -103,65 +97,6 @@ class CmsSettingsPage extends Page
                             ->nullable(),
                     ])
                     ->columns(2),
-
-                Forms\Components\Section::make('Site Chrome')
-                    ->schema([
-                        Forms\Components\TextInput::make('header_nav_handle')
-                            ->label('Header nav handle')
-                            ->required()
-                            ->default('primary')
-                            ->helperText('Menu handle to render in the site header.'),
-
-                        Forms\Components\TextInput::make('footer_nav_handle')
-                            ->label('Footer nav handle')
-                            ->required()
-                            ->default('footer')
-                            ->helperText('Menu handle to render in the site footer.'),
-
-                        Forms\Components\RichEditor::make('header_content')
-                            ->label('Header content')
-                            ->nullable()
-                            ->columnSpanFull()
-                            ->helperText('Rendered on the left side of the site header.'),
-
-                        Forms\Components\Placeholder::make('custom_header_status')
-                            ->label('Custom header override')
-                            ->content(fn () => view()->exists('custom.header') ? 'custom/header.blade.php is present on this deployment.' : 'Not present — default site-header component is used.'),
-
-                        Forms\Components\Placeholder::make('custom_footer_status')
-                            ->label('Custom footer override')
-                            ->content(fn () => view()->exists('custom.footer') ? 'custom/footer.blade.php is present on this deployment.' : 'Not present — default site-footer component is used.'),
-                    ])
-                    ->columns(2)
-                    ->collapsible()
-                    ->collapsed(),
-
-                Forms\Components\Section::make('Styles')
-                    ->schema([
-                        Forms\Components\Toggle::make('use_pico')
-                            ->label('Use Pico CSS')
-                            ->helperText('Enables Pico CSS, a lightweight classless stylesheet. Good baseline for unstyled installations.'),
-
-                        Forms\Components\FileUpload::make('custom_css_upload')
-                            ->label('Custom Stylesheet')
-                            ->helperText('Upload a .css or .scss file. SCSS is compiled on upload.')
-                            ->acceptedFileTypes(['text/css', 'text/x-scss', 'text/plain'])
-                            ->disk('public')
-                            ->directory('site')
-                            ->visibility('public')
-                            ->nullable(),
-
-                        Forms\Components\FileUpload::make('logo_upload')
-                            ->label('Logo')
-                            ->helperText('Upload a .png, .jpg, or .svg file.')
-                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])
-                            ->disk('public')
-                            ->directory('site')
-                            ->visibility('public')
-                            ->nullable(),
-                    ])
-                    ->collapsible()
-                    ->collapsed(),
             ])
             ->statePath('data');
     }
@@ -187,10 +122,6 @@ class CmsSettingsPage extends Page
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
-        SiteSetting::set('use_pico', $data['use_pico'] ? 'true' : 'false');
-        SiteSetting::set('header_nav_handle', $data['header_nav_handle'] ?? 'primary');
-        SiteSetting::set('footer_nav_handle', $data['footer_nav_handle'] ?? 'footer');
-        SiteSetting::set('header_content', $data['header_content'] ?? '');
 
         // When the blog prefix changes, update slugs on all type='post' pages
         // and rename the blog index page slug.
@@ -208,36 +139,6 @@ class CmsSettingsPage extends Page
             if ($blogIndexPage) {
                 $blogIndexPage->updateQuietly(['slug' => $newPrefix]);
             }
-        }
-
-        if (!empty($data['custom_css_upload'])) {
-            $uploadedPath = $data['custom_css_upload'];
-            $fullPath     = Storage::disk('public')->path($uploadedPath);
-            $extension    = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-
-            if ($extension === 'scss') {
-                try {
-                    $compiler = new Compiler();
-                    $compiled = $compiler->compileString(file_get_contents($fullPath))->getCss();
-                    $cssPath  = 'site/custom.css';
-                    Storage::disk('public')->put($cssPath, $compiled);
-                    Storage::disk('public')->delete($uploadedPath);
-                    SiteSetting::set('custom_css_path', 'storage/' . $cssPath);
-                } catch (\Exception $e) {
-                    Notification::make()
-                        ->title('SCSS compilation failed')
-                        ->body($e->getMessage())
-                        ->danger()
-                        ->send();
-                    return;
-                }
-            } else {
-                SiteSetting::set('custom_css_path', 'storage/' . $uploadedPath);
-            }
-        }
-
-        if (!empty($data['logo_upload'])) {
-            SiteSetting::set('logo_path', 'storage/' . $data['logo_upload']);
         }
 
         Artisan::call('config:clear');
