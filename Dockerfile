@@ -1,3 +1,21 @@
+# ─────────────────────────────────────────
+# Stage 1: Node — compile frontend assets
+# ─────────────────────────────────────────
+FROM node:22-alpine AS node-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json vite.config.js postcss.config.js ./
+RUN npm ci
+
+COPY resources/scss ./resources/scss
+COPY resources/js  ./resources/js
+
+RUN npm run build
+
+# ─────────────────────────────────────────
+# Stage 2: PHP-FPM Application
+# ─────────────────────────────────────────
 FROM php:8.4-fpm AS app
 
 # System dependencies
@@ -41,6 +59,9 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
+# Copy compiled frontend assets from node-builder stage
+COPY --from=node-builder /app/public/build ./public/build
+
 # Install PHP dependencies (production: no dev packages)
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
@@ -52,7 +73,7 @@ EXPOSE 9000
 CMD ["php-fpm"]
 
 # ─────────────────────────────────────────
-# Stage 2: Nginx web server image
+# Stage 3: Nginx web server image
 # ─────────────────────────────────────────
 FROM nginx:alpine AS web
 
