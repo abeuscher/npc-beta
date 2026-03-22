@@ -10,6 +10,18 @@ class EditPage extends EditRecord
 {
     protected static string $resource = PageResource::class;
 
+    public function getTitle(): string
+    {
+        $typeLabel = match ($this->record->type) {
+            'member' => 'Member Page',
+            'post'   => 'Blog Post',
+            'event'  => 'Event',
+            default  => 'Web Page',
+        };
+
+        return 'Edit ' . $typeLabel;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

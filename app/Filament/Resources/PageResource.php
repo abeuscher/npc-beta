@@ -67,8 +67,12 @@ class PageResource extends Resource
                             ->rules(['regex:/^[a-z0-9\-\/]+$/'])
                             ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
                             ->prefix(fn (Forms\Get $get): ?string => $get('type') === 'member'
-                                ? '/' . (SiteSetting::get('portal_prefix', 'members')) . '/'
+                                ? '/' . SiteSetting::get('portal_prefix', 'members') . '/'
                                 : null
+                            )
+                            ->formatStateUsing(fn ($state, Forms\Get $get): string => $get('type') === 'member'
+                                ? ltrim(str_replace(SiteSetting::get('portal_prefix', 'members') . '/', '', $state), '/')
+                                : $state
                             )
                             ->disabled(fn (Forms\Get $get): bool => $get('type') === 'member')
                             ->dehydrated()
@@ -145,6 +149,16 @@ class PageResource extends Resource
 
                 Forms\Components\Section::make('Settings')
                     ->schema([
+                        Forms\Components\Placeholder::make('type_label')
+                            ->label('Page Type')
+                            ->content(fn ($record): string => match ($record?->type) {
+                                'member' => 'Member Page',
+                                'post'   => 'Blog Post',
+                                'event'  => 'Event',
+                                default  => 'Web Page',
+                            })
+                            ->hiddenOn('create'),
+
                         Forms\Components\Toggle::make('is_published')
                             ->label('Published')
                             ->live()
