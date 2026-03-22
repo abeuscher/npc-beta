@@ -65,3 +65,22 @@
     <p><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>
 </article>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var password     = document.getElementById('password');
+    var confirmation = document.getElementById('password_confirmation');
+    var hint = document.createElement('span');
+    hint.setAttribute('role', 'alert');
+    hint.style.display = 'none';
+    hint.textContent = 'Passwords do not match.';
+    confirmation.parentNode.appendChild(hint);
+    function check() {
+        hint.style.display = (confirmation.value.length > 0 && password.value !== confirmation.value) ? '' : 'none';
+    }
+    password.addEventListener('input', check);
+    confirmation.addEventListener('input', check);
+}());
+</script>
+@endpush

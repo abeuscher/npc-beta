@@ -4,10 +4,6 @@
 <article style="max-width:480px;margin:3rem auto;">
     <h1>Reset your password</h1>
 
-    @if (session('status'))
-        <p role="status">{{ session('status') }}</p>
-    @endif
-
     @if ($errors->any())
         <div role="alert">
             <ul>

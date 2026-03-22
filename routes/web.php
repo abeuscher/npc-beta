@@ -46,6 +46,7 @@ Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.po
 Route::post('/logout', [LoginController::class, 'destroy'])->name('portal.logout');
 
 Route::get('/forgot-password',        [ForgotPasswordController::class, 'show'])->name('portal.password.request');
+Route::get('/forgot-password/sent',   [ForgotPasswordController::class, 'sent'])->name('portal.password.sent');
 Route::post('/forgot-password',       [ForgotPasswordController::class, 'store'])->name('portal.password.email')->middleware('throttle:5,1');
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->name('portal.password.reset');
 Route::post('/reset-password',        [ResetPasswordController::class, 'update'])->name('portal.password.update');

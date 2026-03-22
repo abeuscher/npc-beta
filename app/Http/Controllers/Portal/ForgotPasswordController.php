@@ -21,6 +21,11 @@ class ForgotPasswordController extends Controller
         return view('portal.forgot-password');
     }
 
+    public function sent(): View
+    {
+        return view('portal.forgot-password-sent');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -35,6 +40,6 @@ class ForgotPasswordController extends Controller
             );
         }
 
-        return back()->with('status', "If an account with that email exists, we've sent a reset link.");
+        return redirect()->route('portal.password.sent');
     }
 }
