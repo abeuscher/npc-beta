@@ -1,9 +1,0 @@
-first_name,last_name,email,phone,city,state,postal_code
-Jane,Smith,jane.smith@example.com,555-0101,New York,NY,10001
-Janet,Smith,janet.smith@example.com,555-0102,New York,NY,10001
-Bob,Johnson,bob.j@example.com,555-0201,Ottawa,ON,K1A 0A6
-Robert,Johnson,robert.j@example.com,555-0202,Ottawa,ON,K1A0A6
-Alice,Williams,alice.w@example.com,555-0301,Chicago,IL,60601
-Tom,Brown,tom.brown@example.com,555-0401,Chicago,IL,60601
-Lucy,Smith,lucy.smith@example.com,555-0501,Boston,MA,02101
-Carlos,Martinez,carlos.m@example.com,555-0601,Miami,FL,33101

@@ -114,9 +114,31 @@ Self-service password reset for portal accounts. Separate `portal_password_reset
 
 *Prerequisite for Household & Family Grouping — the household join request flow lives on the member's account editor page.*
 
-Build on the portal foundation from sessions 056–059. Add the `member_profiles` table (member-specific fields — membership tier, join date, renewal date, etc.) linked to contacts via `contact_id` FK. Build the member-facing portal dashboard: view and edit own contact record, view membership status, view event registrations. Admin surface: view/revoke portal access from the Contact edit page.
+Extends the portal foundation from sessions 056–059. No new tables — member data is read from existing `contacts`, `memberships`, and `event_registrations`. `portal_accounts` gains an `is_active` flag (immediate suspend/restore toggle for admins). Member dashboard: read-only view of their full contact record (notes hidden), editable address, password, and email (email change triggers re-verification). Admin surface: Portal Access panel on the Contact edit page with suspend/restore toggle. Form collision path: unauthenticated submissions matching a portal account email are silently blocked; a rate-limited notification email is sent to the account holder asking them to log in.
 
-> **Form email collision for authenticated members:** A web form submission from an email tied to a portal account must offer the user a login prompt rather than silently updating the contact record. Design and implement this collision path in this session.
+Full prompt: `sessions/060. Member Portal.md`
+
+### 061. System Page Type — Infrastructure
+
+Establishes the `system` page type and all governing rules. No existing pages are migrated in this session — that is session 062.
+
+System pages: type field locked read-only in the editor; slug completely locked (no editing of any segment); not deletable through any UI or bulk action; not offered in the New Page type selector. Required widgets declared via a static definition on the widget type (keyed by page slug); widget cards for required widgets render without a remove button; widget types required by any system page are pinned and cannot be deleted.
+
+`system_prefix` SiteSetting added to the Routing fieldset (proposed default: empty string — system pages live at their root slug, e.g. `/login`). Prefix changes migrate all system page slugs with the same safeguards as other prefix fields. Editor heading: "Edit System Page".
+
+Full prompt: `sessions/061. System Page Type — Infrastructure.md`
+
+### 062. System Page Type — Migration
+
+Migrates existing portal routes to CMS-backed system pages using the infrastructure from session 061.
+
+**Full CMS system pages** (GET route renders through the page builder): login, signup, forgot-password, account. Each seeded with its required widget. Existing Blade views retired for these routes.
+
+**Settings-based rich text exceptions** (Blade views continue to render, content editable via a new "System Page Content" section in General Settings): `/reset-password/{token}` (token in URL path makes CMS lookup impractical) and `/email/verify` (verification notice).
+
+**Carved out entirely** (action endpoints, not pages): `/email/verify/{id}/{hash}` — signed redirect URL, no rendered view.
+
+Full prompt: `sessions/062. System Page Type — Migration.md`
 
 ### Form Builder — Actions Pipeline
 
@@ -224,6 +246,10 @@ Design three interconnected systems before building any of them.
 
 **(3) Front-end build system.** Vite with `laravel/vite-plugin`. SCSS via the `sass` package (standard Vite integration). PostCSS with autoprefixer and cssnano for vendor prefixes and minification. Public side targets a single bundled CSS file and a single bundled JS file — minimise HTTP requests. Inline `<style>` blocks (style-guide custom properties output, page widget arbitrary CSS) are minified at render time by a lightweight PHP helper or Blade directive, not a build step, so they stay inline and don't add a file call. Decide in this session what is compiled vs. what is generated dynamically at request time.
 
+### Widget Portability & Distribution
+
+Formalise each widget as a self-describing class: a single authoritative definition carrying its handle, config schema, render logic (view pointer or inline), a manifest of JS and CSS assets, and optional collection type definitions. JS and CSS manifests roll up into the Vite npm build at compile time — no per-widget HTTP requests. Collection type definitions declare the shape a collection must conform to and automatically register that collection when the widget is loaded into a new system instance, ensuring widgets that depend on structured data are always self-sufficient. The long-term goal is a widget sharing space where widgets can be packaged, versioned, and installed across independent instances of the same application. No widget marketplace UI is in scope for this session — this session is the architectural foundation that makes distribution possible.
+
 ### Page Builder — Widget Styling & Basic Interactivity
 
 ### Page Builder — Live Preview
@@ -245,6 +271,10 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 ---
 
 ## Infrastructure & Ops
+
+### 063. Codebase Audit & Migration Squash
+
+Follows the pattern established in session 049. Full audit of fields, schema, permissions, and help coverage against the current state of the codebase. Additional scope beyond session 049: squash the migration history using `php artisan schema:dump`, delete the superseded migration files, and verify a clean `migrate:fresh --seed` on both the local Docker environment and the production dev server.
 
 ### Help System Enhancements
 
