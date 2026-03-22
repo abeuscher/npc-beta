@@ -6,6 +6,13 @@ use App\Models\Page;
 
 class PageObserver
 {
+    public function created(Page $page): void
+    {
+        if ($page->type === 'member') {
+            $this->applyMemberPrefix($page);
+        }
+    }
+
     public function updated(Page $page): void
     {
         // When a page's type is changed to 'event', ensure its slug carries
@@ -14,7 +21,6 @@ class PageObserver
             $eventsPrefix = config('site.events_prefix', 'events');
 
             if (! str_starts_with($page->slug, $eventsPrefix . '/')) {
-                // Update without triggering slug auto-generation (doNotGenerateSlugsOnUpdate)
                 $page->updateQuietly(['slug' => $eventsPrefix . '/' . $page->slug]);
             }
         }
@@ -27,6 +33,20 @@ class PageObserver
             if (! str_starts_with($page->slug, $blogPrefix . '/')) {
                 $page->updateQuietly(['slug' => $blogPrefix . '/' . $page->slug]);
             }
+        }
+
+        // When a page's type is changed to 'member', apply the portal prefix.
+        if ($page->wasChanged('type') && $page->type === 'member') {
+            $this->applyMemberPrefix($page);
+        }
+    }
+
+    private function applyMemberPrefix(Page $page): void
+    {
+        $portalPrefix = \App\Models\SiteSetting::get('portal_prefix', 'members');
+
+        if (! str_starts_with($page->slug, $portalPrefix . '/')) {
+            $page->updateQuietly(['slug' => $portalPrefix . '/' . $page->slug]);
         }
     }
 }

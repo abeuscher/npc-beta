@@ -78,24 +78,14 @@ class PageResource extends Resource
                             )
                             ->hiddenOn('create'),
 
-                        Forms\Components\Select::make('type')
+                        Forms\Components\Placeholder::make('type_display')
                             ->label('Page Type')
-                            ->options([
-                                'default' => 'Web Page',
-                                'member'  => 'Member Page',
-                                'post'    => 'Blog Post',
-                                'event'   => 'Event',
-                            ])
-                            ->default('default')
-                            ->live()
-                            ->hint(fn (Forms\Get $get) => match ($get('type')) {
-                                'member' => 'Member pages are only accessible to verified portal users.',
-                                'post'   => 'Warning: changing this will remove the page from the blog index.',
-                                'event'  => 'Warning: changing this will break the event registration flow.',
-                                default  => null,
+                            ->content(fn ($record): string => match ($record?->type) {
+                                'member' => 'Member Page',
+                                'post'   => 'Blog Post',
+                                'event'  => 'Event',
+                                default  => 'Web Page',
                             })
-                            ->hintColor(fn (Forms\Get $get) => $get('type') !== 'default' ? 'danger' : null)
-                            ->helperText('Warning: changing the page type after publishing may break URLs and member access. Only change this with care.')
                             ->hiddenOn('create'),
 
                         Forms\Components\Placeholder::make('public_url')
