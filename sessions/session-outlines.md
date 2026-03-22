@@ -58,6 +58,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 051 | Minor Tweaks & Polish |
 | 052 | CRM Polish — Roles, Contacts & Users |
 | 053 | Duplicate Contact Detection |
+| 054 | Event Registrant Cleanup |
 
 ---
 
@@ -73,7 +74,15 @@ Reusable detection service (exact email = hard duplicate, last_name + postal_cod
 
 ### 054. Event Registrant Cleanup
 
-A manual staff action on the Event edit page that removes contacts who were auto-created solely by registering for a specific event. A contact is eligible only if: their record originated via `source = 'web_form'`, they are linked to this event's registrations, and they have no other connections in the system (no other event registrations, no memberships, no donations). A confirmation modal shows the affected count before proceeding. Matching contacts are soft-deleted; all registration records for the event are removed regardless. Contacts who registered but also exist for other reasons are never touched. Manual trigger only — no scheduled automation in this session.
+A manual staff action on the Event edit page that removes contacts who were auto-created solely by registering for a specific event. A contact is eligible only if: their record originated via `source = 'web_form'`, they are linked to this event's registrations, and they have no other connections in the system (no other event registrations, no memberships, no donations). A confirmation modal shows the affected count before proceeding. Matching contacts are soft-deleted; all registration records for the event are removed regardless. Contacts who registered but also exist for other reasons are never touched. Manual trigger only — no scheduled automation in this session. Also fixed an unrelated bug: `PageResource::getEloquentQuery()` excluded event-type pages, causing the "Edit landing page" redirect to 404; fixed via `resolveRecordRouteBinding()` override.
+
+---
+
+## CMS & Admin Polish
+
+### 055. Quill Fix, Page Layout & Event Date Simplification
+
+Three workstreams: (1) Fix Quill rich-text editor fields overflowing their containers — CSS/layout investigation and fix. (2) Restructure the Page edit form to match the 2:1 column layout used on Contact (left `columnSpan(2)` for content, right `columnSpan(1)` for a Settings section holding Published toggle, Publish Date, and Tags). Apply the same layout fix to the Event edit form (currently uses a wide Split that doesn't match). (3) Remove multi-date support from Events entirely — drop the `event_dates` table, add `starts_at` and `ends_at` directly to `events`, update the form, all visibility logic in EditEvent, the EventReminder mailable, and the event widgets. Full prompt: `sessions/055. Quill Fix, Page Layout & Event Date Simplification.md`
 
 ---
 

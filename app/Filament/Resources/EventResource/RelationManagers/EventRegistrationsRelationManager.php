@@ -25,6 +25,18 @@ class EventRegistrationsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        $event = $this->getOwnerRecord();
+
+        if ($event->registrants_deleted_at) {
+            return $table
+                ->recordTitleAttribute('name')
+                ->columns([])
+                ->actions([])
+                ->emptyStateIcon('heroicon-o-trash')
+                ->emptyStateHeading('Event registrants deleted')
+                ->emptyStateDescription('All registrant contacts and registration records for this event have been removed.');
+        }
+
         return $table
             ->recordTitleAttribute('name')
             ->columns([

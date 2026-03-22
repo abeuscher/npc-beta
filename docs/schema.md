@@ -275,6 +275,7 @@ Events with dates, registration, and venue information.
 | auto_create_contacts | boolean | no | default: true |
 | mailing_list_opt_in_enabled | boolean | no | default: false |
 | landing_page_id | uuid | yes | FK→pages, nullOnDelete; system-managed by EventObserver |
+| registrants_deleted_at | timestamp | yes | Set when staff runs Delete Registrant Contacts action |
 | custom_fields | jsonb | yes | |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

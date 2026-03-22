@@ -42,15 +42,17 @@ class Event extends Model
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
         'landing_page_id', // system-managed: set by EventObserver when event is created
+        'registrants_deleted_at',
         'custom_fields',
     ];
 
     protected $casts = [
-        'custom_fields'            => 'array',
-        'capacity'                 => 'integer',
-        'price'                    => 'decimal:2',
-        'auto_create_contacts'     => 'boolean',
+        'custom_fields'               => 'array',
+        'capacity'                    => 'integer',
+        'price'                       => 'decimal:2',
+        'auto_create_contacts'        => 'boolean',
         'mailing_list_opt_in_enabled' => 'boolean',
+        'registrants_deleted_at'      => 'datetime',
     ];
 
     // ──────────────────────────────────────────────────────────

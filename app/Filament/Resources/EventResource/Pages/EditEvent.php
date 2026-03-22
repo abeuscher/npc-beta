@@ -4,9 +4,12 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\EventResource;
 use App\Mail\EventReminder;
+use App\Models\Contact;
 use App\Models\EventDate;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -120,6 +123,121 @@ class EditEvent extends EditRecord
                         ->body("Sent {$sent} reminder " . ($sent === 1 ? 'email' : 'emails') . '.')
                         ->success()
                         ->send();
+                }),
+
+            Actions\Action::make('deleteRegistrantContacts')
+                ->label('Delete registrant contacts')
+                ->icon('heroicon-o-user-minus')
+                ->color('danger')
+                ->visible(function () {
+                    $event = $this->getRecord();
+
+                    if ($event->status === 'cancelled') {
+                        return true;
+                    }
+
+                    return $event->eventDates()->exists()
+                        && $event->eventDates()->where('starts_at', '>=', now())->doesntExist();
+                })
+                ->requiresConfirmation()
+                ->modalHeading('Delete registrant contacts')
+                ->modalDescription(function () {
+                    $event   = $this->getRecord();
+                    $eventId = $event->id;
+
+                    $linkedIds = DB::table('event_registrations')
+                        ->where('event_id', $eventId)
+                        ->whereNotNull('contact_id')
+                        ->pluck('contact_id');
+
+                    $contactCount = $linkedIds->isNotEmpty()
+                        ? Contact::whereIn('id', $linkedIds)
+                            ->where('source', 'web_form')
+                            ->whereNotExists(function ($q) use ($eventId) {
+                                $q->select(DB::raw(1))
+                                    ->from('event_registrations')
+                                    ->whereColumn('event_registrations.contact_id', 'contacts.id')
+                                    ->where('event_id', '!=', $eventId);
+                            })
+                            ->whereNotExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                    ->from('memberships')
+                                    ->whereColumn('memberships.contact_id', 'contacts.id');
+                            })
+                            ->whereNotExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                    ->from('donations')
+                                    ->whereColumn('donations.contact_id', 'contacts.id');
+                            })
+                            ->count()
+                        : 0;
+
+                    $registrationCount = DB::table('event_registrations')
+                        ->where('event_id', $eventId)
+                        ->count();
+
+                    $contactWord = $contactCount === 1 ? 'contact' : 'contacts';
+                    $regWord     = $registrationCount === 1 ? 'record' : 'records';
+
+                    return "{$contactCount} {$contactWord} will be deleted and {$registrationCount} registration {$regWord} will be removed. "
+                        . 'This will permanently remove these contacts and all registration records for this event. '
+                        . 'Contacts with memberships, donations, or registrations at other events are not affected. '
+                        . 'This operation may take a moment to complete.';
+                })
+                ->modalSubmitActionLabel('Delete')
+                ->action(function () {
+                    $event   = $this->getRecord();
+                    $eventId = $event->id;
+
+                    $linkedIds = DB::table('event_registrations')
+                        ->where('event_id', $eventId)
+                        ->whereNotNull('contact_id')
+                        ->pluck('contact_id');
+
+                    $contactCount = 0;
+
+                    if ($linkedIds->isNotEmpty()) {
+                        $eligible = Contact::whereIn('id', $linkedIds)
+                            ->where('source', 'web_form')
+                            ->whereNotExists(function ($q) use ($eventId) {
+                                $q->select(DB::raw(1))
+                                    ->from('event_registrations')
+                                    ->whereColumn('event_registrations.contact_id', 'contacts.id')
+                                    ->where('event_id', '!=', $eventId);
+                            })
+                            ->whereNotExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                    ->from('memberships')
+                                    ->whereColumn('memberships.contact_id', 'contacts.id');
+                            })
+                            ->whereNotExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                    ->from('donations')
+                                    ->whereColumn('donations.contact_id', 'contacts.id');
+                            })
+                            ->get();
+
+                        foreach ($eligible as $contact) {
+                            $contact->delete();
+                            $contactCount++;
+                        }
+                    }
+
+                    $registrationCount = DB::table('event_registrations')
+                        ->where('event_id', $eventId)
+                        ->delete();
+
+                    $event->update(['registrants_deleted_at' => now()]);
+
+                    $contactWord = $contactCount === 1 ? 'contact' : 'contacts';
+                    $regWord     = $registrationCount === 1 ? 'record' : 'records';
+
+                    Notification::make()
+                        ->title("{$contactCount} {$contactWord} removed, {$registrationCount} registration {$regWord} deleted.")
+                        ->success()
+                        ->send();
+
+                    $this->redirect(static::getResource()::getUrl('edit', ['record' => $event]));
                 }),
 
             Actions\DeleteAction::make(),

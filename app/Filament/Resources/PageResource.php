@@ -145,6 +145,14 @@ class PageResource extends Resource
             ->where('type', '!=', 'post');
     }
 
+    public static function resolveRecordRouteBinding(int | string $key): ?\Illuminate\Database\Eloquent\Model
+    {
+        // getEloquentQuery() excludes event/post pages to keep the CMS list clean,
+        // but that scope also blocks direct edits of event landing pages.
+        // Resolve records without the type filter so any page type can be edited directly.
+        return \App\Models\Page::where('id', $key)->first();
+    }
+
     public static function table(Table $table): Table
     {
         return $table
