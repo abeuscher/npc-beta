@@ -82,16 +82,6 @@ class PageResource extends Resource
                             )
                             ->hiddenOn('create'),
 
-                        Forms\Components\Placeholder::make('type_display')
-                            ->label('Page Type')
-                            ->content(fn ($record): string => match ($record?->type) {
-                                'member' => 'Member Page',
-                                'post'   => 'Blog Post',
-                                'event'  => 'Event',
-                                default  => 'Web Page',
-                            })
-                            ->hiddenOn('create'),
-
                         Forms\Components\Placeholder::make('public_url')
                             ->label('Public URL')
                             ->content(function ($record): HtmlString|string {
@@ -149,16 +139,6 @@ class PageResource extends Resource
 
                 Forms\Components\Section::make('Settings')
                     ->schema([
-                        Forms\Components\Placeholder::make('type_label')
-                            ->label('Page Type')
-                            ->content(fn ($record): string => match ($record?->type) {
-                                'member' => 'Member Page',
-                                'post'   => 'Blog Post',
-                                'event'  => 'Event',
-                                default  => 'Web Page',
-                            })
-                            ->hiddenOn('create'),
-
                         Forms\Components\Toggle::make('is_published')
                             ->label('Published')
                             ->live()
