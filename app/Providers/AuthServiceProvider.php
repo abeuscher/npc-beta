@@ -29,8 +29,8 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // super_admin bypasses all policy checks
-        Gate::before(function (\App\Models\User $user, string $ability) {
-            if ($user->hasRole('super_admin')) {
+        Gate::before(function ($user, string $ability) {
+            if ($user instanceof \App\Models\User && $user->hasRole('super_admin')) {
                 return true;
             }
         });
