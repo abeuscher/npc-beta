@@ -58,14 +58,21 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Working directory
 WORKDIR /var/www/html
 
+# Copy only the dependency manifests first so composer install is cached
+# independently of application code changes.
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies (production: no dev packages)
+RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev
+
 # Copy application files
 COPY . .
 
 # Copy compiled frontend assets from node-builder stage
 COPY --from=node-builder /app/public/build ./public/build
 
-# Install PHP dependencies (production: no dev packages)
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+# Generate the optimised autoloader now that all files are present
+RUN composer dump-autoload --optimize --no-dev
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
