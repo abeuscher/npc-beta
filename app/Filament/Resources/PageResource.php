@@ -51,9 +51,13 @@ class PageResource extends Resource
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\Placeholder::make('_slug_placeholder')
-                            ->label('')
-                            ->content('')
+                        Forms\Components\Select::make('type')
+                            ->label('Page Type')
+                            ->options([
+                                'default' => 'Web Page',
+                                'member'  => 'Member Page',
+                            ])
+                            ->default('default')
                             ->hiddenOn('edit'),
 
                         Forms\Components\TextInput::make('slug')
@@ -74,13 +78,10 @@ class PageResource extends Resource
                             )
                             ->hiddenOn('create'),
 
-                        Forms\Components\Hidden::make('type')
-                            ->default('default')
-                            ->hiddenOn('edit'),
-
                         Forms\Components\Select::make('type')
+                            ->label('Page Type')
                             ->options([
-                                'default' => 'Default',
+                                'default' => 'Web Page',
                                 'member'  => 'Member Page',
                                 'post'    => 'Blog Post',
                                 'event'   => 'Event',

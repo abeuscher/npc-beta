@@ -119,9 +119,11 @@ footer > .container {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Portal header — distinct background to signal the member context
+// Light: #f1f1f1 (near-white); Dark: #1e1e1e. Both use their natural text colours.
 .portal-header {
-    background: var(--pico-secondary-background, var(--pico-muted-background));
-    border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color);
+    background: #f1f1f1;
+    color: #111111;
+    border-bottom: 1px solid #d0d0d0;
 
     > .container {
         display: flex;
@@ -150,6 +152,21 @@ footer > .container {
                 margin: 0;
             }
         }
+    }
+}
+
+// Portal header dark mode — Pico uses [data-theme="dark"] and/or prefers-color-scheme
+[data-theme="dark"] .portal-header {
+    background: #1e1e1e;
+    color: #eeeeee;
+    border-bottom-color: #333333;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .portal-header {
+        background: #1e1e1e;
+        color: #eeeeee;
+        border-bottom-color: #333333;
     }
 }
 
