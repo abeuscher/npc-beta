@@ -60,6 +60,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 053 | Duplicate Contact Detection |
 | 054 | Event Registrant Cleanup |
 | 055 | Quill Fix, Page Layout & Event Date Simplification |
+| 056 | Secure Public Signup Flows |
 
 ---
 
@@ -93,17 +94,27 @@ Three workstreams: (1) Quill overflow fix — `overflow-hidden` + compensating `
 
 ### 056. Secure Public Signup Flows
 
-Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Members and volunteers are contacts with portal access — no separate member model. Signup creates or merges a `Contact` and creates a `portal_account` with `contact_id` FK. Email verification required before portal access is granted. Login/logout. Views in `resources/views/portal/`. **Portal security rule:** every portal route and query must be scoped strictly to the authenticated user's own `contact_id` — the portal must never expose PII belonging to anyone other than the logged-in member. Full prompt: `sessions/056. Secure Public Signup Flows.md`
+Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Members and volunteers are contacts with portal access — no separate member model. Signup creates or merges a `Contact` and creates a `portal_account` with `contact_id` FK. Email verification required before portal access is granted. Login/logout. Duplicate signup attempts are silently discarded — no signal to the submitter. Views in `resources/views/portal/`. **Portal security rule:** every portal route and query must be scoped strictly to the authenticated user's own `contact_id` — the portal must never expose PII belonging to anyone other than the logged-in member. Full prompt: `sessions/056. Secure Public Signup Flows.md`
 
-### 057. Member Portal
+### 057. Portal Chrome & Member Page Type
+
+`layouts/portal.blade.php` with an authenticated header (member name, logout, visual differentiation from public site). `portal_prefix` SiteSetting (default `members`). Member page type added to page builder — slug prefix locked and driven by `portal_prefix`. Member pages require portal auth + verified. Page editor updated to show type prominently in heading. Full prompt: `sessions/057. Portal Chrome & Member Page Type.md`
+
+### 058. Routing Consolidation, Page Type Locking & Portal Widgets
+
+Move `blog_prefix` out of CMS Settings into a Routing section in General Settings alongside `events_prefix` and `portal_prefix`. Page type locked on edit for `event`, `post`, `member`. Slug prefix locked and driven by SiteSetting for all system-typed pages. Portal signup and login widgets added to the page builder. Full prompt: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets.md`
+
+### 059. Password Reset
+
+Self-service password reset for portal accounts. Separate `portal_password_reset_tokens` table and `portal_accounts` password broker. Forgot-password and reset-password routes, controllers, and views. Response to forgot-password is identical whether or not the email exists. Reset email editable in the system email editor. Full prompt: `sessions/059. Password Reset.md`
+
+### 060. Member Portal
 
 *Prerequisite for Household & Family Grouping — the household join request flow lives on the member's account editor page.*
 
-Build on the `portal_accounts` foundation from session 056. Add the `member_profiles` table (member-specific fields — membership tier, join date, renewal date, etc.) linked to contacts via `contact_id` FK. Build the member-facing portal dashboard: view and edit own contact record, view membership status, view event registrations. Admin surface: view/revoke portal access from the Contact edit page.
+Build on the portal foundation from sessions 056–059. Add the `member_profiles` table (member-specific fields — membership tier, join date, renewal date, etc.) linked to contacts via `contact_id` FK. Build the member-facing portal dashboard: view and edit own contact record, view membership status, view event registrations. Admin surface: view/revoke portal access from the Contact edit page.
 
 > **Form email collision for authenticated members:** A web form submission from an email tied to a portal account must offer the user a login prompt rather than silently updating the contact record. Design and implement this collision path in this session.
-
-> **Password reset:** Add password reset by email (was deferred from session 056).
 
 ### Form Builder — Actions Pipeline
 

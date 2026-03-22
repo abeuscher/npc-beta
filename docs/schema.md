@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-21 (session 055)
+Last updated: 2026-03-21 (session 056)
 
 ---
 
@@ -729,6 +729,23 @@ Laravel password reset tokens.
 | email | string | no | PK |
 | token | string | no | |
 | created_at | timestamp | yes | |
+
+---
+
+## portal_accounts
+
+Portal login credentials for contacts. One record per contact with member/volunteer portal access.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| contact_id | uuid | yes | FK → contacts.id, nullOnDelete |
+| email | string(255) | no | unique; login identifier |
+| password | string | no | bcrypt hash |
+| email_verified_at | timestamp | yes | null = unverified |
+| remember_token | string(100) | yes | |
+| created_at | timestamp | yes | |
+| updated_at | timestamp | yes | |
 
 ---
 

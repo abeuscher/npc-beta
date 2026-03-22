@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             '/webhooks/*',
         ]);
+
+        $middleware->alias([
+            'portal.auth' => \App\Http\Middleware\PortalAuthenticate::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

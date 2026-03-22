@@ -4,6 +4,9 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Portal\EmailVerificationController;
+use App\Http\Controllers\Portal\LoginController;
+use App\Http\Controllers\Portal\SignupController;
 use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +34,22 @@ Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'regist
 Route::post('/forms/{handle}', [FormSubmissionController::class, 'store'])
     ->name('forms.submit')
     ->middleware('throttle:10,1');
+
+// ── Portal auth routes ────────────────────────────────────────────────────────
+Route::get('/signup',  [SignupController::class, 'show'])->name('portal.signup');
+Route::post('/signup', [SignupController::class, 'store'])->name('portal.signup.post')->middleware('throttle:10,1');
+
+Route::get('/login',   [LoginController::class, 'show'])->name('portal.login');
+Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.post')->middleware('throttle:10,1');
+Route::post('/logout', [LoginController::class, 'destroy'])->name('portal.logout');
+
+Route::get('/email/verify',            [EmailVerificationController::class, 'notice'])->name('portal.verification.notice')->middleware('portal.auth');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('portal.verification.verify')->middleware(['portal.auth', 'signed']);
+
+Route::get('/account', function () {
+    return view('portal.account');
+})->name('portal.account')->middleware(['portal.auth', 'verified:portal.verification.notice']);
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Slug route is registered last so Filament and other named routes take priority.
 // The .* pattern allows forward-slash segments (e.g. events/board-meeting).
