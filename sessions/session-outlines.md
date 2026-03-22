@@ -70,6 +70,24 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ---
 
+## Member Portal — Next Steps
+
+### Member Event Registration
+
+A "Register as member" button on event pages for logged-in portal users, completing the other half of the form collision pattern. When a portal user tries to register via the public event form their submission is silently blocked — this button is the correct path. Clicking it while authenticated submits a direct registration using the stored contact record, bypassing the public form fields entirely. Non-authenticated visitors clicking the button are redirected to `/login?intended=…` and land back on the event page after signing in.
+
+Implementation: a new portal-authenticated route (`POST /account/events/{slug}/register`) with a controller method that runs the same capacity, registration-mode, and duplicate-registration checks as the public `EventController`, then creates an `EventRegistration` linked to the user's `contact_id` and fires the confirmation email. The `event_registration` widget template gains a conditional block — "Register as member" button when `auth('portal')->check()`, "Log in to register" link otherwise — sitting alongside the existing public form, which remains unchanged for non-members. No new tables required.
+
+---
+
+## CRM Navigation & Views
+
+### CRM Navigation & Views Reorganisation
+
+Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`. Full prompt: `sessions/064. CRM Navigation and Views Reorganisation.md`
+
+---
+
 ## CRM Core Polish
 
 ### Duplicate Contact Detection
@@ -118,9 +136,17 @@ All three URL prefixes (blog, events, portal) consolidated into a Routing fields
 
 **Depends on: Member Portal existing first.**
 
-A lightweight household record — name, canonical mailing address, members (linked contacts). No nav slot; accessed only through the contact record (a Household panel on the contact edit/view page). No admin-managed assignments.
+A lightweight household record — name, canonical mailing address, members (linked contacts). Implemented as a separate `households` table (not a self-referential FK on contacts): this is more stable under contact deletion and avoids anchor-contact ambiguity. Accessed through the contact record (a Household panel on the contact edit/view page). HouseholdResource nav placement deferred to this session.
 
-Self-service flow: a logged-in member can request to join an existing household by searching on a unique identifier (household name + address, or a short code). The request goes into a staff approval queue — no one self-assigns, they only request. On approval the contact is linked. On the contact record, staff can also manually link/unlink. Aggregate giving is computed from linked members, not stored. Used for physical mailing deduplication, compound salutations, and household-level event/ticket limits.
+**Architectural decisions (agreed session 060):**
+- Lateral relationship: contacts link to a household, not to each other. No self-referential FK.
+- Household record auto-created when an invite is accepted (not pre-created by staff).
+- Inviter address is always the canonical household address — never overwritten by the invitee. This is a security requirement: the invite flow must not reveal one member's address to another.
+- Sync model: if a member's contact address diverges from the household canonical address, show a warning UI — do not silently overwrite either.
+- No admin-managed household assignments. Staff can manually link/unlink on the contact record; members self-serve via an invite flow with staff approval.
+- Invite to unknown email: neutral success response (no signal to the sender), plus a note logged to the inviting member's contact record recording the attempt.
+
+Aggregate giving computed from linked members, not stored. Used for physical mailing deduplication, compound salutations, and household-level event/ticket limits.
 
 ---
 

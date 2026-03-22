@@ -31,6 +31,18 @@ class LoginController extends Controller
         if (Auth::guard('portal')->attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
+            $user = Auth::guard('portal')->user();
+
+            if (! $user->is_active) {
+                Auth::guard('portal')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withInput(['email' => $request->input('email')])->withErrors([
+                    'email' => 'Invalid email or password.',
+                ]);
+            }
+
             return redirect()->intended(route('portal.account'));
         }
 

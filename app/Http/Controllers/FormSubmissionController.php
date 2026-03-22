@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PortalFormCollision;
 use App\Models\Contact;
 use App\Models\Form;
 use App\Models\FormSubmission;
 use App\Models\Note;
+use App\Models\PortalAccount;
 use App\Services\PiiScanner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 class FormSubmissionController extends Controller
 {
@@ -31,6 +35,27 @@ class FormSubmissionController extends Controller
         foreach ($request->only($fieldHandles) as $value) {
             if (is_string($value) && $value !== '' && $scanner->scanCell($value) !== null) {
                 return $this->errorResponse($request, 'One or more fields contain information that cannot be accepted.');
+            }
+        }
+
+        // ── Portal collision check ────────────────────────────────────────
+        $submittedEmail = $request->input('email') ?? '';
+        if ($submittedEmail) {
+            $portalAccount = PortalAccount::where('email', $submittedEmail)
+                ->where('is_active', true)
+                ->first();
+
+            $authenticatedPortalId = auth()->guard('portal')->id();
+
+            if ($portalAccount && (string) $portalAccount->id !== (string) $authenticatedPortalId) {
+                $cacheKey = 'portal_collision_notified:' . md5(strtolower($submittedEmail));
+
+                if (! Cache::has($cacheKey)) {
+                    Mail::to($submittedEmail)->send(new PortalFormCollision($portalAccount));
+                    Cache::put($cacheKey, true, now()->addHour());
+                }
+
+                return $this->successResponse($request, $form);
             }
         }
 

@@ -16,11 +16,31 @@
 </head>
 <body class="portal {{ $bodyClass ?? '' }}">
 
+    @php
+        $portalMenu  = \App\Models\NavigationMenu::where('handle', 'portal')->first();
+        $portalNav   = $portalMenu
+            ? $portalMenu->items()
+                ->where('is_visible', true)
+                ->orderBy('sort_order')
+                ->with('page')
+                ->get()
+            : collect();
+        $currentUrl  = url()->current();
+    @endphp
+
     <header class="portal-header">
         <div class="container">
             <nav>
                 <strong>{{ config('site.name', config('app.name')) }} — Member Area</strong>
                 <ul>
+                    @foreach ($portalNav as $item)
+                        @php
+                            $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
+                        @endphp
+                        <li>
+                            <a href="{{ $href }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }}>{{ $item->label }}</a>
+                        </li>
+                    @endforeach
                     <li>{{ auth('portal')->user()->contact->first_name }}</li>
                     <li>
                         <form method="POST" action="{{ route('portal.logout') }}">

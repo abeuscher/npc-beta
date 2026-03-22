@@ -121,5 +121,38 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.portal-login')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_contact_edit'],
+            [
+                'label'         => 'Member: Edit Contact Info',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-contact-edit')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_change_password'],
+            [
+                'label'         => 'Member: Change Password',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-change-password')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_event_registrations'],
+            [
+                'label'         => 'Member: Event Registrations',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-event-registrations')",
+            ]
+        );
     }
 }

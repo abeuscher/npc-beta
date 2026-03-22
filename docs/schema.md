@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-22 (session 059)
+Last updated: 2026-03-22 (session 060)
 
 ---
 
@@ -743,6 +743,7 @@ Portal login credentials for contacts. One record per contact with member/volunt
 | email | string(255) | no | unique; login identifier |
 | password | string | no | bcrypt hash |
 | email_verified_at | timestamp | yes | null = unverified |
+| is_active | boolean | no | default: true; false = access suspended |
 | remember_token | string(100) | yes | |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |

@@ -6,6 +6,7 @@ use App\Filament\Resources\ContactResource\Pages;
 use App\Forms\Components\TagSelect;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
+use App\Models\PortalAccount;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -143,6 +144,84 @@ class ContactResource extends Resource
                     Forms\Components\Toggle::make('mailing_list_opt_in')
                         ->label('Mailing List Opt-In'),
                 ])
+                ->columnSpan(1),
+
+            Forms\Components\Section::make('Portal Access')
+                ->schema(function (?Contact $record): array {
+                    if (! $record) {
+                        return [];
+                    }
+
+                    $portal = PortalAccount::where('email', $record->email)->first();
+
+                    if (! $portal) {
+                        return [
+                            Forms\Components\Placeholder::make('portal_none')
+                                ->label('')
+                                ->content('No portal account for this contact.'),
+                        ];
+                    }
+
+                    $status = match (true) {
+                        ! $portal->is_active             => 'Suspended',
+                        $portal->email_verified_at === null => 'Unverified',
+                        default                          => 'Active',
+                    };
+
+                    return [
+                        Forms\Components\Placeholder::make('portal_status')
+                            ->label('Status')
+                            ->content($status),
+
+                        Forms\Components\Placeholder::make('portal_email')
+                            ->label('Portal Email')
+                            ->content($portal->email),
+
+                        Forms\Components\Placeholder::make('portal_created_at')
+                            ->label('Account Created')
+                            ->content($portal->created_at->format('F j, Y')),
+
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('suspend_portal')
+                                ->label('Suspend access')
+                                ->color('danger')
+                                ->requiresConfirmation()
+                                ->visible(fn () => $portal->is_active && auth()->user()?->can('manage_contacts'))
+                                ->action(function () use ($portal) {
+                                    $portal->update(['is_active' => false]);
+                                }),
+
+                            Forms\Components\Actions\Action::make('restore_portal')
+                                ->label('Restore access')
+                                ->color('success')
+                                ->requiresConfirmation()
+                                ->visible(fn () => ! $portal->is_active && auth()->user()?->can('manage_contacts'))
+                                ->action(function () use ($portal) {
+                                    $portal->update(['is_active' => true]);
+                                }),
+
+                            Forms\Components\Actions\Action::make('verify_portal_email')
+                                ->label('Mark email verified')
+                                ->color('success')
+                                ->requiresConfirmation()
+                                ->visible(fn () => $portal->email_verified_at === null && auth()->user()?->can('manage_contacts'))
+                                ->action(function () use ($portal) {
+                                    $portal->update(['email_verified_at' => now()]);
+                                }),
+
+                            Forms\Components\Actions\Action::make('unverify_portal_email')
+                                ->label('Mark email unverified')
+                                ->color('warning')
+                                ->requiresConfirmation()
+                                ->visible(fn () => $portal->email_verified_at !== null && auth()->user()?->can('manage_contacts'))
+                                ->action(function () use ($portal) {
+                                    $portal->update(['email_verified_at' => null]);
+                                }),
+                        ]),
+                    ];
+                })
+                ->collapsible()
+                ->collapsed()
                 ->columnSpan(1),
 
         ])->columns(3);

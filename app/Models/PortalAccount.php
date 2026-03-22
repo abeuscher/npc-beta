@@ -17,6 +17,7 @@ class PortalAccount extends Authenticatable implements MustVerifyEmailContract
         'email',
         'password',
         'email_verified_at',
+        'is_active',
     ];
 
     protected $hidden = [
@@ -29,6 +30,7 @@ class PortalAccount extends Authenticatable implements MustVerifyEmailContract
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
     }
 

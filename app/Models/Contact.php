@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -107,11 +108,15 @@ class Contact extends Model
         return $this->belongsTo(ImportSession::class);
     }
 
-    // EventRegistration relationship — model and migration added in session 012
-    // public function registrations(): HasMany
-    // {
-    //     return $this->hasMany(\App\Models\EventRegistration::class);
-    // }
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    public function portalAccount(): HasOne
+    {
+        return $this->hasOne(PortalAccount::class);
+    }
 
     // -------------------------------------------------------------------------
     // Helpers

@@ -4,6 +4,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
 use App\Http\Controllers\Portal\ForgotPasswordController;
 use App\Http\Controllers\Portal\LoginController;
@@ -54,9 +55,16 @@ Route::post('/reset-password',        [ResetPasswordController::class, 'update']
 Route::get('/email/verify',            [EmailVerificationController::class, 'notice'])->name('portal.verification.notice')->middleware('portal.auth');
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('portal.verification.verify')->middleware(['portal.auth', 'signed']);
 
+$portalAuth = ['portal.auth', 'verified:portal.verification.notice'];
+
 Route::get('/account', function () {
-    return view('portal.account');
-})->name('portal.account')->middleware(['portal.auth', 'verified:portal.verification.notice']);
+    return redirect(url('/' . \App\Models\SiteSetting::get('portal_prefix', 'members')));
+})->name('portal.account')->middleware($portalAuth);
+
+Route::patch('/account/address', [AccountController::class, 'updateAddress'])->name('portal.account.update-address')->middleware($portalAuth);
+Route::patch('/account/password', [AccountController::class, 'updatePassword'])->name('portal.account.update-password')->middleware($portalAuth);
+Route::post('/account/email',        [AccountController::class, 'requestEmailChange'])->name('portal.account.request-email-change')->middleware(array_merge($portalAuth, ['throttle:5,1']));
+Route::get('/account/email/confirm', [AccountController::class, 'confirmEmailChange'])->name('portal.account.confirm-email')->middleware($portalAuth);
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Slug route is registered last so Filament and other named routes take priority.

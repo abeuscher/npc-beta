@@ -113,6 +113,11 @@ class DatabaseSeeder extends Seeder
                 'subject' => 'Reset your password',
                 'body'    => '<p>Hi {{first_name}},</p><p>Click the link below to reset your password. This link expires in 60 minutes.</p><p><a href="{{reset_url}}">Reset password</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>',
             ],
+            [
+                'handle'  => 'portal_form_collision',
+                'subject' => 'Someone submitted a form using your email address',
+                'body'    => '<p>Hi {{first_name}},</p><p>A form on our website was submitted using your email address. If this was you, please <a href="{{login_url}}">log in to your account</a> and complete the action while signed in.</p><p>If this was not you, no action is needed — the submission was not processed.</p>',
+            ],
         ];
 
         foreach ($emailTemplates as $template) {
@@ -124,6 +129,7 @@ class DatabaseSeeder extends Seeder
 
         // ── Base pages (home, about, contact, events, blog) ─────────────────
         $this->call(BasePageSeeder::class);
+        $this->call(PortalPageSeeder::class);
         $homePage = Page::where('slug', 'home')->first();
 
         // ── System collections (all environments) ────────────────────────────
