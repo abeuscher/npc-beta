@@ -2,7 +2,6 @@
 
 use App\Models\Collection;
 use App\Models\Event;
-use App\Models\EventDate;
 use App\Models\EventRegistration;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -31,11 +30,8 @@ it('published scope returns only published events', function () {
 });
 
 it('upcoming scope returns only events with future dates', function () {
-    $future = Event::factory()->create();
-    EventDate::factory()->create(['event_id' => $future->id, 'starts_at' => now()->addDays(5)]);
-
-    $past = Event::factory()->create();
-    EventDate::factory()->create(['event_id' => $past->id, 'starts_at' => now()->subDays(5)]);
+    $future = Event::factory()->create(['starts_at' => now()->addDays(5)]);
+    $past   = Event::factory()->create(['starts_at' => now()->subDays(5)]);
 
     $upcoming = Event::upcoming()->pluck('id');
 
@@ -54,8 +50,7 @@ it('published upcoming event dates appear on the events listing page via widget'
         ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
     );
 
-    $event = Event::factory()->create(['title' => 'Annual Gala', 'status' => 'published']);
-    EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
+    $event = Event::factory()->create(['title' => 'Annual Gala', 'status' => 'published', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
     $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
@@ -79,8 +74,7 @@ it('draft events do not appear on the events listing page', function () {
         ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
     );
 
-    $event = Event::factory()->draft()->create(['title' => 'Hidden Draft']);
-    EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
+    $event = Event::factory()->draft()->create(['title' => 'Hidden Draft', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
     $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
@@ -205,14 +199,6 @@ it('isAtCapacity returns true when registrations fill capacity', function () {
     expect($event->fresh()->isAtCapacity())->toBeTrue();
 });
 
-it('nextDate returns the next upcoming date for the event', function () {
-    $event  = Event::factory()->create(['status' => 'published']);
-    $past   = EventDate::factory()->past()->create(['event_id' => $event->id, 'status' => 'inherited']);
-    $future = EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
-
-    expect($event->nextDate()?->id)->toBe($future->id);
-});
-
 // ── Landing page creation ─────────────────────────────────────────────────────
 
 it('creates a landing page with events/ slug prefix and type=event', function () {
@@ -227,7 +213,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
     ]);
     $page->update(['slug' => 'events/' . $event->slug]);
 
-    $widgetHandles = ['event_description', 'event_dates', 'event_registration'];
+    $widgetHandles = ['event_description', 'event_registration'];
     $sort = 1;
 
     foreach ($widgetHandles as $handle) {
@@ -246,7 +232,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 
     expect($page->slug)->toBe('events/test-event');
     expect($page->type)->toBe('event');
-    expect(PageWidget::where('page_id', $page->id)->count())->toBe(3);
+    expect(PageWidget::where('page_id', $page->id)->count())->toBe(2);
     expect($event->fresh()->landing_page_id)->toBe($page->id);
 });
 
@@ -287,8 +273,7 @@ it('event_description widget renders event description on a page', function () {
 it('event_dates widget renders upcoming dates on a page', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
-    $event = Event::factory()->create();
-    EventDate::factory()->upcoming()->create(['event_id' => $event->id]);
+    $event = Event::factory()->create(['starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'event_dates')->first();
 
@@ -340,8 +325,7 @@ it('events_listing widget renders upcoming events on a page', function () {
         ['name' => 'Events', 'source_type' => 'events', 'is_public' => true, 'is_active' => true, 'fields' => []]
     );
 
-    $event = Event::factory()->create(['title' => 'Fundraiser Dinner', 'status' => 'published']);
-    EventDate::factory()->upcoming()->create(['event_id' => $event->id, 'status' => 'inherited']);
+    $event = Event::factory()->create(['title' => 'Fundraiser Dinner', 'status' => 'published', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
     $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);

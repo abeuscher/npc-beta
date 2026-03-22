@@ -2,7 +2,6 @@
 
 use App\Mail\EventReminder;
 use App\Models\Event;
-use App\Models\EventDate;
 use App\Models\EventRegistration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -10,15 +9,10 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('sends reminders for event dates within the days window', function () {
+it('sends reminders for events within the days window', function () {
     Mail::fake();
 
-    $event = Event::factory()->create(['status' => 'published']);
-    EventDate::factory()->create([
-        'event_id'  => $event->id,
-        'starts_at' => now()->addHours(12),
-        'status'    => 'inherited',
-    ]);
+    $event = Event::factory()->create(['status' => 'published', 'starts_at' => now()->addHours(12)]);
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'attendee@example.com',
@@ -31,15 +25,10 @@ it('sends reminders for event dates within the days window', function () {
     Mail::assertSent(EventReminder::class, 1);
 });
 
-it('skips past event dates', function () {
+it('skips past events', function () {
     Mail::fake();
 
-    $event = Event::factory()->create(['status' => 'published']);
-    EventDate::factory()->create([
-        'event_id'  => $event->id,
-        'starts_at' => now()->subDay(),
-        'status'    => 'inherited',
-    ]);
+    $event = Event::factory()->create(['status' => 'published', 'starts_at' => now()->subDay()]);
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'attendee@example.com',
@@ -52,15 +41,10 @@ it('skips past event dates', function () {
     Mail::assertNotSent(EventReminder::class);
 });
 
-it('skips event dates outside the days window', function () {
+it('skips events outside the days window', function () {
     Mail::fake();
 
-    $event = Event::factory()->create(['status' => 'published']);
-    EventDate::factory()->create([
-        'event_id'  => $event->id,
-        'starts_at' => now()->addDays(10),
-        'status'    => 'inherited',
-    ]);
+    $event = Event::factory()->create(['status' => 'published', 'starts_at' => now()->addDays(10)]);
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'attendee@example.com',
@@ -76,12 +60,7 @@ it('skips event dates outside the days window', function () {
 it('does not send reminders to registrants without email', function () {
     Mail::fake();
 
-    $event = Event::factory()->create(['status' => 'published']);
-    EventDate::factory()->create([
-        'event_id'  => $event->id,
-        'starts_at' => now()->addHours(12),
-        'status'    => 'inherited',
-    ]);
+    $event = Event::factory()->create(['status' => 'published', 'starts_at' => now()->addHours(12)]);
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => '',
@@ -97,12 +76,7 @@ it('does not send reminders to registrants without email', function () {
 it('does not send reminders to waitlisted or cancelled registrants', function () {
     Mail::fake();
 
-    $event = Event::factory()->create(['status' => 'published']);
-    EventDate::factory()->create([
-        'event_id'  => $event->id,
-        'starts_at' => now()->addHours(12),
-        'status'    => 'inherited',
-    ]);
+    $event = Event::factory()->create(['status' => 'published', 'starts_at' => now()->addHours(12)]);
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'waitlisted@example.com',

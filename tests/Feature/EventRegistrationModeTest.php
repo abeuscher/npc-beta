@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Event;
-use App\Models\EventDate;
 use App\Models\EventRegistration;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -64,14 +63,9 @@ it('registration is blocked with no-registration message when registration_mode 
 });
 
 it('scopeOpenForRegistration returns only events with registration_mode open', function () {
-    $open = Event::factory()->create(['status' => 'published', 'registration_mode' => 'open']);
-    EventDate::factory()->upcoming()->create(['event_id' => $open->id]);
-
-    $closed = Event::factory()->closedFull()->create(['status' => 'published']);
-    EventDate::factory()->upcoming()->create(['event_id' => $closed->id]);
-
-    $walkIn = Event::factory()->walkIn()->create(['status' => 'published']);
-    EventDate::factory()->upcoming()->create(['event_id' => $walkIn->id]);
+    $open   = Event::factory()->create(['status' => 'published', 'registration_mode' => 'open', 'starts_at' => now()->addDays(5)]);
+    $closed = Event::factory()->closedFull()->create(['status' => 'published', 'starts_at' => now()->addDays(5)]);
+    $walkIn = Event::factory()->walkIn()->create(['status' => 'published', 'starts_at' => now()->addDays(5)]);
 
     $results = Event::openForRegistration()->pluck('id');
 

@@ -33,11 +33,33 @@ class DashboardDebugGeneratorWidget extends Widget
 
         match ($this->type) {
             'contacts'  => Contact::factory()->count($count)->create(),
-            'events'    => Event::factory()->count($count)->create(),
+            'events'    => $this->generateEvents($count),
             'donations' => Donation::factory()->count($count)->create(),
         };
 
         $this->feedback = "Created {$count} {$this->type}.";
+    }
+
+    protected function generateEvents(int $count): void
+    {
+        // Spread events forward from 2 days out, each 3–7 days apart.
+        // Start times land on the quarter-hour between 9am and 8pm.
+        // Duration is 30 min – 3 hrs in 15-min steps.
+        $cursor = now()->addDays(2)->startOfDay();
+
+        for ($i = 0; $i < $count; $i++) {
+            $cursor->addDays(rand(3, 7));
+
+            $hourOffset    = rand(9 * 4, 20 * 4);   // quarters from midnight: 9am–8pm
+            $startsAt      = $cursor->copy()->addMinutes($hourOffset * 15);
+            $durationSteps = rand(2, 12);             // 2–12 × 15 min = 30 min – 3 hrs
+            $endsAt        = $startsAt->copy()->addMinutes($durationSteps * 15);
+
+            Event::factory()->create([
+                'starts_at' => $startsAt,
+                'ends_at'   => $endsAt,
+            ]);
+        }
     }
 
     public function wipe(): void

@@ -22,6 +22,7 @@ class EventFactory extends Factory
             'price'             => 0,
             'capacity'          => null,
             'registration_mode' => 'open',
+            'starts_at'         => now()->addDays(7),
         ];
     }
 

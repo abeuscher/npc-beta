@@ -5,7 +5,6 @@ namespace App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource;
 use App\Mail\EventReminder;
 use App\Models\Contact;
-use App\Models\EventDate;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -89,19 +88,13 @@ class EditEvent extends EditRecord
                 ->modalHeading('Send reminder emails')
                 ->modalDescription('This will immediately email all current registrants who have an email address. Continue?')
                 ->visible(function () {
-                    $event = $this->getRecord();
-                    $hasUpcoming = $event->eventDates()->where('starts_at', '>=', now())->exists();
+                    $event       = $this->getRecord();
+                    $hasUpcoming = $event->starts_at && $event->starts_at >= now();
                     $hasEmails   = $event->registrations()->where('status', 'registered')->whereNotNull('email')->where('email', '!=', '')->exists();
                     return $hasUpcoming && $hasEmails;
                 })
                 ->action(function () {
                     $event = $this->getRecord();
-
-                    $upcomingDates = $event->eventDates()
-                        ->published()
-                        ->where('starts_at', '>=', now())
-                        ->orderBy('starts_at')
-                        ->get();
 
                     $registrations = $event->registrations()
                         ->where('status', 'registered')
@@ -111,11 +104,9 @@ class EditEvent extends EditRecord
 
                     $sent = 0;
 
-                    foreach ($upcomingDates as $eventDate) {
-                        foreach ($registrations as $registration) {
-                            Mail::to($registration->email)->send(new EventReminder($registration, $eventDate));
-                            $sent++;
-                        }
+                    foreach ($registrations as $registration) {
+                        Mail::to($registration->email)->send(new EventReminder($registration, $event));
+                        $sent++;
                     }
 
                     \Filament\Notifications\Notification::make()
@@ -136,8 +127,7 @@ class EditEvent extends EditRecord
                         return true;
                     }
 
-                    return $event->eventDates()->exists()
-                        && $event->eventDates()->where('starts_at', '>=', now())->doesntExist();
+                    return $event->starts_at && $event->starts_at < now();
                 })
                 ->requiresConfirmation()
                 ->modalHeading('Delete registrant contacts')

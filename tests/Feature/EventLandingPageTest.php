@@ -39,8 +39,8 @@ it('createLandingPageForEvent creates the three standard widgets', function () {
         ->all();
 
     expect($handles)->toContain('event_description')
-        ->toContain('event_dates')
-        ->toContain('event_registration');
+        ->toContain('event_registration')
+        ->not->toContain('event_dates');
 });
 
 it('createLandingPageForEvent sets landing_page_id on the event', function () {

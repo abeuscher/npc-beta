@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
-use App\Models\EventDate;
+use App\Models\Event;
 use App\Models\Page;
 
 class WidgetDataResolver
@@ -99,7 +99,7 @@ class WidgetDataResolver
         $limit        = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
         $eventsPrefix = config('site.events_prefix', 'events');
 
-        $query = EventDate::with('event.landingPage')
+        $query = Event::with('landingPage')
             ->published()
             ->upcoming()
             ->orderBy('starts_at', 'asc');
@@ -108,16 +108,16 @@ class WidgetDataResolver
             $query->limit($limit);
         }
 
-        return $query->get()->map(fn (EventDate $date) => [
-            'id'         => $date->id,
-            'title'      => $date->event->title,
-            'slug'       => $date->event->slug,
-            'starts_at'  => $date->starts_at->toIso8601String(),
-            'ends_at'    => $date->ends_at?->toIso8601String(),
-            'is_virtual' => $date->event->is_virtual,
-            'is_free'    => $date->event->is_free,
-            'url'        => $date->event->landingPage
-                ? url('/' . $date->event->landingPage->slug)
+        return $query->get()->map(fn (Event $event) => [
+            'id'         => $event->id,
+            'title'      => $event->title,
+            'slug'       => $event->slug,
+            'starts_at'  => $event->starts_at->toIso8601String(),
+            'ends_at'    => $event->ends_at?->toIso8601String(),
+            'is_virtual' => $event->is_virtual,
+            'is_free'    => $event->is_free,
+            'url'        => $event->landingPage
+                ? url('/' . $event->landingPage->slug)
                 : url('/' . $eventsPrefix),
         ])->all();
     }

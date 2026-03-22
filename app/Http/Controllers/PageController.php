@@ -62,7 +62,6 @@ class PageController extends Controller
                 if ($resolvedEvent) {
                     $eventData = [
                         'event' => $resolvedEvent,
-                        'dates' => $resolvedEvent->eventDates()->upcoming()->orderBy('starts_at')->get(),
                     ];
                 }
             }

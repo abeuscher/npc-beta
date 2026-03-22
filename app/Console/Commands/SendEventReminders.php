@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Mail\EventReminder;
-use App\Models\EventDate;
+use App\Models\Event;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -18,31 +18,25 @@ class SendEventReminders extends Command
     {
         $days = (int) $this->option('days');
 
-        $dates = EventDate::with('event.registrations')
+        $events = Event::with('registrations')
             ->published()
             ->whereBetween('starts_at', [now(), now()->addDays($days)->endOfDay()])
             ->get();
 
         $sent = 0;
 
-        foreach ($dates as $eventDate) {
-            $event = $eventDate->event;
-
-            if (! $event) {
-                continue;
-            }
-
+        foreach ($events as $event) {
             $registrations = $event->registrations
                 ->where('status', 'registered')
                 ->filter(fn ($reg) => ! empty($reg->email));
 
             foreach ($registrations as $registration) {
-                Mail::to($registration->email)->send(new EventReminder($registration, $eventDate));
+                Mail::to($registration->email)->send(new EventReminder($registration, $event));
                 $sent++;
             }
         }
 
-        $this->info("Sent {$sent} reminders for {$dates->count()} event dates.");
+        $this->info("Sent {$sent} reminders for {$events->count()} events.");
 
         return self::SUCCESS;
     }

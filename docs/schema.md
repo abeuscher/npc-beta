@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-21 (session 053)
+Last updated: 2026-03-21 (session 055)
 
 ---
 
@@ -200,25 +200,6 @@ System email template records, seeded by handle. Edited by admins via the Email 
 
 ---
 
-## event_dates
-
-Individual date occurrences for an event.
-
-| Column | Type | Nullable | Notes |
-|---|---|---|---|
-| id | uuid | no | PK |
-| event_id | uuid | no | FK→events, cascade |
-| starts_at | dateTime | no | |
-| ends_at | dateTime | yes | |
-| status | enum | no | default: 'inherited'; values: inherited, draft, published, cancelled |
-| location_override | json | yes | |
-| meeting_url_override | string | yes | |
-| notes | text | yes | |
-| created_at | timestamp | no | |
-| updated_at | timestamp | no | |
-
----
-
 ## event_registrations
 
 Registrations submitted for an event.
@@ -268,6 +249,8 @@ Events with dates, registration, and venue information.
 | meeting_url | string(2048) | yes | |
 | meeting_label | string | yes | |
 | meeting_details | text | yes | |
+| starts_at | timestamp | yes | |
+| ends_at | timestamp | yes | |
 | price | decimal(8,2) | no | default: 0 |
 | capacity | unsignedInteger | yes | |
 | registration_mode | string | no | default: 'open' |

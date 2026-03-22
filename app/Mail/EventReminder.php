@@ -3,7 +3,7 @@
 namespace App\Mail;
 
 use App\Models\EmailTemplate;
-use App\Models\EventDate;
+use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\SiteSetting;
 use Illuminate\Bus\Queueable;
@@ -18,10 +18,9 @@ class EventReminder extends Mailable
 
     public function __construct(
         public EventRegistration $registration,
-        public EventDate $eventDate,
+        public Event $event,
     ) {
-        $this->registration->loadMissing('event', 'contact');
-        $this->eventDate->loadMissing('event');
+        $this->registration->loadMissing('contact');
     }
 
     public function envelope(): Envelope
@@ -54,15 +53,14 @@ class EventReminder extends Mailable
 
     private function tokens(): array
     {
-        $reg   = $this->registration;
-        $event = $reg->event;
+        $reg = $this->registration;
 
         return [
             'first_name'     => $reg->contact?->first_name ?? $reg->name ?? '',
             'last_name'      => $reg->contact?->last_name ?? '',
-            'event_title'    => $event->title ?? '',
-            'event_date'     => $this->eventDate->starts_at?->format('F j, Y') ?? '',
-            'event_location' => $event->location ?? '',
+            'event_title'    => $this->event->title ?? '',
+            'event_date'     => $this->event->starts_at?->format('F j, Y') ?? '',
+            'event_location' => $this->event->location ?? '',
             'site_name'      => SiteSetting::get('site_name', ''),
         ];
     }

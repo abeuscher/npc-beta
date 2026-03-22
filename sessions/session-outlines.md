@@ -59,6 +59,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 052 | CRM Polish — Roles, Contacts & Users |
 | 053 | Duplicate Contact Detection |
 | 054 | Event Registrant Cleanup |
+| 055 | Quill Fix, Page Layout & Event Date Simplification |
 
 ---
 
@@ -82,7 +83,7 @@ A manual staff action on the Event edit page that removes contacts who were auto
 
 ### 055. Quill Fix, Page Layout & Event Date Simplification
 
-Three workstreams: (1) Fix Quill rich-text editor fields overflowing their containers — CSS/layout investigation and fix. (2) Restructure the Page edit form to match the 2:1 column layout used on Contact (left `columnSpan(2)` for content, right `columnSpan(1)` for a Settings section holding Published toggle, Publish Date, and Tags). Apply the same layout fix to the Event edit form (currently uses a wide Split that doesn't match). (3) Remove multi-date support from Events entirely — drop the `event_dates` table, add `starts_at` and `ends_at` directly to `events`, update the form, all visibility logic in EditEvent, the EventReminder mailable, and the event widgets. Full prompt: `sessions/055. Quill Fix, Page Layout & Event Date Simplification.md`
+Three workstreams: (1) Quill overflow fix — `overflow-hidden` + compensating `border-b` on the wrapper. (2) Page and Event edit forms restructured to `columns(3)` / `columnSpan(2)` left / `columnSpan(1)` right, matching ContactResource. (3) `event_dates` table dropped; `starts_at` (NOT NULL) and `ends_at` (nullable) added directly to `events`; date display merged into the `event_description` widget; all references to `EventDate` removed. `starts_at` is required at both form and DB levels. Events list updated: `starts_at` column, default sort ascending, past events hidden by default with an ellipsis-menu toggle. Full log: `sessions/055. Quill Fix, Page Layout & Event Date Simplification — Log.md`
 
 ---
 
@@ -90,13 +91,19 @@ Three workstreams: (1) Fix Quill rich-text editor fields overflowing their conta
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
 
-### Secure Public Signup Flows
+### 056. Secure Public Signup Flows
 
-### Member Portal
+Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Members and volunteers are contacts with portal access — no separate member model. Signup creates or merges a `Contact` and creates a `portal_account` with `contact_id` FK. Email verification required before portal access is granted. Login/logout. Views in `resources/views/portal/`. **Portal security rule:** every portal route and query must be scoped strictly to the authenticated user's own `contact_id` — the portal must never expose PII belonging to anyone other than the logged-in member. Full prompt: `sessions/056. Secure Public Signup Flows.md`
+
+### 057. Member Portal
 
 *Prerequisite for Household & Family Grouping — the household join request flow lives on the member's account editor page.*
 
-> **Reminder — form email collision for members:** Currently, a web form submission matching an existing contact's email silently updates that contact record (non-destructively) and records a note. This is safe for non-members. Once members have a logged-in state, a form submission from an email tied to a member account must instead offer the user a login prompt to complete the transaction under their authenticated identity — not silently update the record. This needs to be designed and built when the Member Portal lands.
+Build on the `portal_accounts` foundation from session 056. Add the `member_profiles` table (member-specific fields — membership tier, join date, renewal date, etc.) linked to contacts via `contact_id` FK. Build the member-facing portal dashboard: view and edit own contact record, view membership status, view event registrations. Admin surface: view/revoke portal access from the Contact edit page.
+
+> **Form email collision for authenticated members:** A web form submission from an email tied to a portal account must offer the user a login prompt rather than silently updating the contact record. Design and implement this collision path in this session.
+
+> **Password reset:** Add password reset by email (was deferred from session 056).
 
 ### Form Builder — Actions Pipeline
 

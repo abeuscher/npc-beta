@@ -43,98 +43,106 @@ class PageResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make()->schema([
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->maxLength(255),
+            Forms\Components\Group::make([
 
-                Forms\Components\Placeholder::make('_slug_placeholder')
-                    ->label('')
-                    ->content('')
-                    ->hiddenOn('edit'),
+                Forms\Components\Group::make([
+                    Forms\Components\Section::make()->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->maxLength(255),
 
-                Forms\Components\TextInput::make('slug')
-                    ->required()
-                    ->maxLength(255)
-                    ->unique(Page::class, 'slug', ignoreRecord: true)
-                    ->rules(['regex:/^[a-z0-9\-\/]+$/'])
-                    ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                    ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
-                    ->hiddenOn('create'),
+                        Forms\Components\Placeholder::make('_slug_placeholder')
+                            ->label('')
+                            ->content('')
+                            ->hiddenOn('edit'),
 
-                Forms\Components\Hidden::make('type')
-                    ->default('default'),
+                        Forms\Components\TextInput::make('slug')
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(Page::class, 'slug', ignoreRecord: true)
+                            ->rules(['regex:/^[a-z0-9\-\/]+$/'])
+                            ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
+                            ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
+                            ->hiddenOn('create'),
 
-                Forms\Components\Placeholder::make('public_url')
-                    ->label('Public URL')
-                    ->content(function ($record): HtmlString|string {
-                        if (! $record) {
-                            return '—';
-                        }
-                        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                        $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
-                        $url  = $base . $path;
+                        Forms\Components\Hidden::make('type')
+                            ->default('default'),
 
-                        return new HtmlString(
-                            '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                            'class="text-primary-600 hover:underline text-sm font-mono">' .
-                            e($url) . '</a> ' .
-                            '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
-                        );
-                    })
-                    ->columnSpanFull(),
-            ])->columns(2),
+                        Forms\Components\Placeholder::make('public_url')
+                            ->label('Public URL')
+                            ->content(function ($record): HtmlString|string {
+                                if (! $record) {
+                                    return '—';
+                                }
+                                $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                                $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
+                                $url  = $base . $path;
 
-            Forms\Components\Section::make('Page Builder')
-                ->description('Add and arrange content blocks for this page.')
-                ->schema([
-                    Forms\Components\Livewire::make(
-                        PageBuilder::class,
-                        fn ($record) => $record ? ['pageId' => $record->id] : []
-                    )->columnSpanFull(),
-                ])
-                ->hidden(fn ($record) => $record === null)
-                ->columnSpanFull(),
+                                return new HtmlString(
+                                    '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
+                                    'class="text-primary-600 hover:underline text-sm font-mono">' .
+                                    e($url) . '</a> ' .
+                                    '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
+                                );
+                            })
+                            ->columnSpanFull(),
+                    ])->columns(2),
 
-            Forms\Components\Section::make('Publication')
-                ->schema([
-                    Forms\Components\Toggle::make('is_published')
-                        ->label('Published')
-                        ->live()
-                        ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
-                            if ($state && ! $get('published_at')) {
-                                $set('published_at', now());
-                            }
-                        }),
+                    Forms\Components\Section::make('Page Builder')
+                        ->description('Add and arrange content blocks for this page.')
+                        ->schema([
+                            Forms\Components\Livewire::make(
+                                PageBuilder::class,
+                                fn ($record) => $record ? ['pageId' => $record->id] : []
+                            )->columnSpanFull(),
+                        ])
+                        ->hidden(fn ($record) => $record === null)
+                        ->columnSpanFull(),
 
-                    Forms\Components\DateTimePicker::make('published_at')
-                        ->label('Publish Date')
-                        ->visible(fn (Forms\Get $get) => $get('is_published')),
+                    Forms\Components\Section::make('SEO')
+                        ->schema([
+                            Forms\Components\TextInput::make('meta_title')
+                                ->maxLength(255)
+                                ->helperText('Defaults to page title if blank.'),
 
-                    TagSelect::make('page'),
-                ])->columns(2),
+                            Forms\Components\Textarea::make('meta_description')
+                                ->rows(3)
+                                ->maxLength(160),
+                        ])
+                        ->columns(1)
+                        ->collapsible()
+                        ->collapsed(),
 
-            Forms\Components\Section::make('SEO')
-                ->schema([
-                    Forms\Components\TextInput::make('meta_title')
-                        ->maxLength(255)
-                        ->helperText('Defaults to page title if blank.'),
+                    Forms\Components\Section::make('Custom Fields')
+                        ->schema(fn () => CustomFieldDef::forModel('page')->get()
+                            ->map(fn ($def) => $def->toFilamentFormComponent())
+                            ->toArray()
+                        )
+                        ->columns(2)
+                        ->hidden(fn () => CustomFieldDef::forModel('page')->doesntExist()),
 
-                    Forms\Components\Textarea::make('meta_description')
-                        ->rows(3)
-                        ->maxLength(160),
-                ])
-                ->columns(1)
-                ->collapsible()
-                ->collapsed(),
+                ])->columnSpan(2),
 
-            Forms\Components\Section::make('Custom Fields')
-                ->schema(fn () => CustomFieldDef::forModel('page')->get()
-                    ->map(fn ($def) => $def->toFilamentFormComponent())
-                    ->toArray()
-                )
-                ->columns(2)
-                ->hidden(fn () => CustomFieldDef::forModel('page')->doesntExist()),
+                Forms\Components\Section::make('Settings')
+                    ->schema([
+                        Forms\Components\Toggle::make('is_published')
+                            ->label('Published')
+                            ->live()
+                            ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
+                                if ($state && ! $get('published_at')) {
+                                    $set('published_at', now());
+                                }
+                            }),
+
+                        Forms\Components\DateTimePicker::make('published_at')
+                            ->label('Publish Date')
+                            ->visible(fn (Forms\Get $get) => $get('is_published')),
+
+                        TagSelect::make('page'),
+                    ])
+                    ->columnSpan(1),
+
+            ])->columns(3)->columnSpanFull(),
         ]);
     }
 

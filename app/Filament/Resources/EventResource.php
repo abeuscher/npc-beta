@@ -56,7 +56,7 @@ class EventResource extends Resource
         // Override the auto-generated slug to include the events/ prefix.
         $page->update(['slug' => 'events/' . $event->slug]);
 
-        $widgetHandles = ['event_description', 'event_dates', 'event_registration'];
+        $widgetHandles = ['event_description', 'event_registration'];
         $sort = 1;
 
         foreach ($widgetHandles as $handle) {
@@ -91,18 +91,30 @@ class EventResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Split::make([
+            Forms\Components\Group::make([
+
                 // ── Left column ───────────────────────────────────────────
                 Forms\Components\Group::make([
-                    Forms\Components\TextInput::make('title')
-                        ->required()
-                        ->maxLength(255),
+                    Forms\Components\Section::make('Main Info')->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->maxLength(255),
 
-                    Forms\Components\Section::make('Description')->schema([
                         QuillEditor::make('description')
-                            ->hiddenLabel()
+                            ->label('Description')
                             ->nullable(),
-                    ])->extraAttributes(['class' => 'overflow-hidden']),
+
+                        Forms\Components\DateTimePicker::make('starts_at')
+                            ->label('Start')
+                            ->required()
+                            ->seconds(false),
+
+                        Forms\Components\DateTimePicker::make('ends_at')
+                            ->label('End')
+                            ->nullable()
+                            ->seconds(false)
+                            ->after('starts_at'),
+                    ]),
 
                     Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')
@@ -157,37 +169,19 @@ class EventResource extends Resource
                             ->label('Joining Details')
                             ->nullable(),
                     ]),
-                ]),
+
+                    Forms\Components\Section::make('Custom Fields')
+                        ->schema(fn () => CustomFieldDef::forModel('event')->get()
+                            ->map(fn ($def) => $def->toFilamentFormComponent())
+                            ->toArray()
+                        )
+                        ->columns(2)
+                        ->hidden(fn () => CustomFieldDef::forModel('event')->doesntExist()),
+
+                ])->columnSpan(2),
 
                 // ── Right column ──────────────────────────────────────────
                 Forms\Components\Group::make([
-                    Forms\Components\Section::make(fn ($record) => $record?->eventDates()->count() === 1 ? 'Date' : 'Dates')->schema([
-                        Forms\Components\Repeater::make('eventDates')
-                            ->relationship()
-                            ->hiddenLabel()
-                            ->schema([
-                                Forms\Components\DateTimePicker::make('starts_at')
-                                    ->label('Start')
-                                    ->required()
-                                    ->seconds(false),
-
-                                Forms\Components\DateTimePicker::make('ends_at')
-                                    ->label('End')
-                                    ->seconds(false)
-                                    ->after('starts_at'),
-
-                                Forms\Components\Hidden::make('status')
-                                    ->default('inherited'),
-                            ])
-                            ->columns(2)
-                            ->addActionLabel('Add date')
-                            ->defaultItems(0)
-                            ->reorderable(false)
-                            ->deleteAction(
-                                fn ($action) => $action->iconButton()->icon('heroicon-m-trash')
-                            ),
-                    ]),
-
                     Forms\Components\Section::make('Settings')->schema([
                         Forms\Components\TextInput::make('slug')
                             ->required()
@@ -293,16 +287,10 @@ class EventResource extends Resource
                             ->helperText('Adds an opt-in checkbox to the public registration form.')
                             ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
                     ]),
-                ])->grow(false),
-            ])->from('md')->columnSpanFull(),
 
-            Forms\Components\Section::make('Custom Fields')
-                ->schema(fn () => CustomFieldDef::forModel('event')->get()
-                    ->map(fn ($def) => $def->toFilamentFormComponent())
-                    ->toArray()
-                )
-                ->columns(2)
-                ->hidden(fn () => CustomFieldDef::forModel('event')->doesntExist()),
+                ])->columnSpan(1),
+
+            ])->columns(3)->columnSpanFull(),
         ]);
     }
 
@@ -318,6 +306,11 @@ class EventResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('starts_at')
+                    ->label('Date')
+                    ->dateTime('M j, Y g:ia')
+                    ->sortable(),
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'gray'    => 'draft',
@@ -328,11 +321,6 @@ class EventResource extends Resource
                 Tables\Columns\IconColumn::make('is_free')
                     ->label('Free')
                     ->boolean(),
-
-                Tables\Columns\TextColumn::make('event_dates_count')
-                    ->label('Dates')
-                    ->counts('eventDates')
-                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
@@ -347,7 +335,7 @@ class EventResource extends Resource
                         'cancelled' => 'Cancelled',
                     ]),
             ])
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('starts_at', 'asc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
