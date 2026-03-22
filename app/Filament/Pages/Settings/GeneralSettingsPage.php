@@ -42,6 +42,7 @@ class GeneralSettingsPage extends Page
             'dashboard_welcome'   => SiteSetting::get('dashboard_welcome', ''),
             'stripe_api_key'      => SiteSetting::get('stripe_api_key', ''),
             'quickbooks_api_key'  => SiteSetting::get('quickbooks_api_key', ''),
+            'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
         ]);
     }
 
@@ -101,6 +102,17 @@ class GeneralSettingsPage extends Page
                     ])
                     ->columns(2),
 
+                Forms\Components\Section::make('Routing')
+                    ->schema([
+                        Forms\Components\TextInput::make('portal_prefix')
+                            ->label('Member portal prefix')
+                            ->required()
+                            ->rules(['alpha_dash'])
+                            ->helperText("The URL prefix for the member portal. Example: 'members' → /members/login. Changing this will break existing bookmarked links.")
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
                 Forms\Components\Section::make('Integrations')
                     ->schema([
                         Forms\Components\TextInput::make('stripe_api_key')
@@ -141,6 +153,7 @@ class GeneralSettingsPage extends Page
         SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
         SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
         SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');
+        SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
 
         Notification::make()
             ->title('Settings saved')

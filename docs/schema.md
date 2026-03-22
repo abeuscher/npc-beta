@@ -701,14 +701,14 @@ Widgets embedded on a page, ordered by sort_order.
 
 ## pages
 
-Static pages and landing pages. Posts are stored here with `type = 'post'`.
+Static pages and landing pages. Posts are stored here with `type = 'post'`; member portal pages with `type = 'member'`.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
 | title | string | no | |
 | slug | string | no | unique |
-| type | string | no | default: 'default'; values: default, post, event_landing |
+| type | string | no | default: 'default'; values: default, post, event, member — enforced by DB check constraint |
 | meta_title | string | yes | |
 | meta_description | text | yes | |
 | custom_fields | jsonb | yes | |

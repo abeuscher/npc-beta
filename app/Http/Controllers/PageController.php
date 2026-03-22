@@ -23,6 +23,18 @@ class PageController extends Controller
             ->where('is_published', true)
             ->firstOrFail();
 
+        if ($page->type === 'member') {
+            $portalUser = auth('portal')->user();
+
+            if (! $portalUser) {
+                return redirect()->route('portal.login');
+            }
+
+            if (! $portalUser->hasVerifiedEmail()) {
+                return redirect()->route('portal.verification.notice');
+            }
+        }
+
         return $this->renderPage($page);
     }
 

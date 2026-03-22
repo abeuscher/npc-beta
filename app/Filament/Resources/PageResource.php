@@ -62,11 +62,40 @@ class PageResource extends Resource
                             ->unique(Page::class, 'slug', ignoreRecord: true)
                             ->rules(['regex:/^[a-z0-9\-\/]+$/'])
                             ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                            ->helperText('URL-safe identifier. May include forward slashes (e.g. events/my-event).')
+                            ->prefix(fn (Forms\Get $get): ?string => $get('type') === 'member'
+                                ? '/' . (SiteSetting::get('portal_prefix', 'members')) . '/'
+                                : null
+                            )
+                            ->disabled(fn (Forms\Get $get): bool => $get('type') === 'member')
+                            ->dehydrated()
+                            ->helperText(fn (Forms\Get $get) => $get('type') === 'member'
+                                ? 'Slug is locked — member page slugs are managed by the portal prefix setting.'
+                                : 'URL-safe identifier. May include forward slashes (e.g. events/my-event).'
+                            )
                             ->hiddenOn('create'),
 
                         Forms\Components\Hidden::make('type')
-                            ->default('default'),
+                            ->default('default')
+                            ->hiddenOn('edit'),
+
+                        Forms\Components\Select::make('type')
+                            ->options([
+                                'default' => 'Default',
+                                'member'  => 'Member Page',
+                                'post'    => 'Blog Post',
+                                'event'   => 'Event',
+                            ])
+                            ->default('default')
+                            ->live()
+                            ->hint(fn (Forms\Get $get) => match ($get('type')) {
+                                'member' => 'Member pages are only accessible to verified portal users.',
+                                'post'   => 'Warning: changing this will remove the page from the blog index.',
+                                'event'  => 'Warning: changing this will break the event registration flow.',
+                                default  => null,
+                            })
+                            ->hintColor(fn (Forms\Get $get) => $get('type') !== 'default' ? 'danger' : null)
+                            ->helperText('Warning: changing the page type after publishing may break URLs and member access. Only change this with care.')
+                            ->hiddenOn('create'),
 
                         Forms\Components\Placeholder::make('public_url')
                             ->label('Public URL')

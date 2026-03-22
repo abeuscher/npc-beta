@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends('layouts.portal')
 
 @section('content')
 <article style="max-width:720px;margin:3rem auto;">
@@ -9,10 +9,5 @@
     @endif
 
     <h1>Welcome, {{ auth('portal')->user()->contact->first_name }}</h1>
-
-    <form method="POST" action="{{ route('portal.logout') }}" style="margin-top:2rem;">
-        @csrf
-        <button type="submit" class="secondary outline">Log out</button>
-    </form>
 </article>
 @endsection
