@@ -2,7 +2,7 @@
 
 An open source CRM and CMS platform built specifically for small and mid-sized nonprofit organizations. Self-hosted, single-tenant, no recurring software fees.
 
-Built on Laravel + Filament, with PostgreSQL and Docker. One installation per client. You own your data.
+Built on Laravel + Filament, with PostgreSQL and Docker.
 
 ---
 
@@ -155,6 +155,10 @@ All other configuration (app key, database credentials, API keys, mail settings)
 ## AI Transparency
 
 This project is being developed with agentic AI assistance (Claude, Anthropic). AI is used for code generation, documentation, and architectural scaffolding. All AI-generated output is reviewed, tested, and accepted by a human developer before being committed. This is declared openly.
+
+Because this is being written agentically, its dev mode has a LOT of inspection tools and stuff. They are there to provide as much feedbacjk to the agent as possible to make working with it easier. 
+
+As a result, expect the installer for local or in public dev mode to take a solid 5-10 minutes. Possibly a bit longr on intial install. Production will go significantly faster as all of these tools are shed in prod.
 
 ---
 

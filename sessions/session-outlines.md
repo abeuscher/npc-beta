@@ -61,6 +61,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 054 | Event Registrant Cleanup |
 | 055 | Quill Fix, Page Layout & Event Date Simplification |
 | 056 | Secure Public Signup Flows |
+| 057 | Portal Chrome & Member Page Type |
 
 ---
 
@@ -98,11 +99,11 @@ Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Member
 
 ### 057. Portal Chrome & Member Page Type
 
-`layouts/portal.blade.php` with an authenticated header (member name, logout, visual differentiation from public site). `portal_prefix` SiteSetting (default `members`). Member page type added to page builder — slug prefix locked and driven by `portal_prefix`. Member pages require portal auth + verified. Page editor updated to show type prominently in heading. Full prompt: `sessions/057. Portal Chrome & Member Page Type.md`
+`layouts/portal.blade.php` with an authenticated header (member name, logout, `#f1f1f1` background with dark-mode support). `portal_prefix` SiteSetting added to a new Routing section in General Settings. Member page type added to page builder — slug auto-prefixed on creation via PageObserver, display strips prefix, type locked to read-only Placeholder on edit. Member pages gate on `auth:portal` + `verified`. Edit page title reflects type ("Edit Member Page" etc.). Full log: `sessions/057. Portal Chrome & Member Page Type — Log.md`
 
-### 058. Routing Consolidation, Page Type Locking & Portal Widgets
+### 058. Routing Consolidation & Portal Widgets
 
-Move `blog_prefix` out of CMS Settings into a Routing section in General Settings alongside `events_prefix` and `portal_prefix`. Page type locked on edit for `event`, `post`, `member`. Slug prefix locked and driven by SiteSetting for all system-typed pages. Portal signup and login widgets added to the page builder. Full prompt: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets.md`
+Move `blog_prefix` out of CMS Settings and `events_prefix` into the Routing section in General Settings alongside `portal_prefix` (already added in session 057). Slug prefix locked and driven by SiteSetting for `event` and `post` page types on edit (member is already handled). Portal signup and login widgets added to the page builder. **Note:** page type locked to read-only on edit for all types was completed in session 057. Full prompt: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets.md`
 
 ### 059. Password Reset
 
