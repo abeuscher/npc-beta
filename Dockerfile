@@ -18,6 +18,10 @@ RUN npm run build
 # ─────────────────────────────────────────
 FROM php:8.4-fpm AS app
 
+# public-dev includes dev dependencies (Faker etc.) so the debug generator
+# widget and factories work. production strips them.
+ARG BUILD_ENV=production
+
 # System dependencies + Node.js 22 (required for npm run build in SCSS editor)
 RUN apt-get update && apt-get install -y \
     git \
@@ -62,8 +66,12 @@ WORKDIR /var/www/html
 # independently of application code changes.
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies (production: no dev packages)
-RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev
+# Install PHP dependencies — dev packages included for public-dev builds
+RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
+        composer install --no-interaction --prefer-dist --no-scripts --no-autoloader; \
+    else \
+        composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev; \
+    fi
 
 # Copy application files
 COPY . .
@@ -72,7 +80,11 @@ COPY . .
 COPY --from=node-builder /app/public/build ./public/build
 
 # Generate the optimised autoloader now that all files are present
-RUN composer dump-autoload --optimize --no-dev
+RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
+        composer dump-autoload --optimize; \
+    else \
+        composer dump-autoload --optimize --no-dev; \
+    fi
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

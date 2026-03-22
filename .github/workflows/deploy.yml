@@ -33,6 +33,8 @@ jobs:
           context: .
           target: app
           push: true
+          build-args: |
+            BUILD_ENV=${{ vars.BUILD_ENV || 'production' }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:${{ steps.tag.outputs.IMAGE_TAG }}
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:latest
