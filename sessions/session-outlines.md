@@ -63,12 +63,16 @@ This is the single working reference for all sessions. Completed sessions are li
 | 056 | Secure Public Signup Flows |
 | 057 | Portal Chrome & Member Page Type |
 | 058 | Routing Consolidation, Page Type Locking & Portal Widgets |
+| 059 | Password Reset |
+| 060 | Member Portal |
+| 061 | System Page Type — Infrastructure |
+| 062 | System Page Type — Migration |
 
 ---
 
 ## CRM Core Polish
 
-### 053. Duplicate Contact Detection
+### Duplicate Contact Detection
 
 Reusable detection service (exact email = hard duplicate, last_name + postal_code = probable duplicate). Two surfaces: import preview step flags each row before records are saved; contact list "Review Duplicates" action presents probable pairs for merge or dismiss. Merge reassigns all related records to the surviving contact and soft-deletes the discarded one. Dismissed pairs are persisted in a `contact_duplicate_dismissals` table so they don't resurface. Full prompt: `sessions/053. Duplicate Contact Detection.md`
 
@@ -76,7 +80,7 @@ Reusable detection service (exact email = hard duplicate, last_name + postal_cod
 
 ## Data Hygiene & Privacy
 
-### 054. Event Registrant Cleanup
+### Event Registrant Cleanup
 
 A manual staff action on the Event edit page that removes contacts who were auto-created solely by registering for a specific event. A contact is eligible only if: their record originated via `source = 'web_form'`, they are linked to this event's registrations, and they have no other connections in the system (no other event registrations, no memberships, no donations). A confirmation modal shows the affected count before proceeding. Matching contacts are soft-deleted; all registration records for the event are removed regardless. Contacts who registered but also exist for other reasons are never touched. Manual trigger only — no scheduled automation in this session. Also fixed an unrelated bug: `PageResource::getEloquentQuery()` excluded event-type pages, causing the "Edit landing page" redirect to 404; fixed via `resolveRecordRouteBinding()` override.
 
@@ -84,7 +88,7 @@ A manual staff action on the Event edit page that removes contacts who were auto
 
 ## CMS & Admin Polish
 
-### 055. Quill Fix, Page Layout & Event Date Simplification
+### Quill Fix, Page Layout & Event Date Simplification
 
 Three workstreams: (1) Quill overflow fix — `overflow-hidden` + compensating `border-b` on the wrapper. (2) Page and Event edit forms restructured to `columns(3)` / `columnSpan(2)` left / `columnSpan(1)` right, matching ContactResource. (3) `event_dates` table dropped; `starts_at` (NOT NULL) and `ends_at` (nullable) added directly to `events`; date display merged into the `event_description` widget; all references to `EventDate` removed. `starts_at` is required at both form and DB levels. Events list updated: `starts_at` column, default sort ascending, past events hidden by default with an ellipsis-menu toggle. Full log: `sessions/055. Quill Fix, Page Layout & Event Date Simplification — Log.md`
 
@@ -94,51 +98,17 @@ Three workstreams: (1) Quill overflow fix — `overflow-hidden` + compensating `
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
 
-### 056. Secure Public Signup Flows
+### Secure Public Signup Flows
 
 Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Members and volunteers are contacts with portal access — no separate member model. Signup creates or merges a `Contact` and creates a `portal_account` with `contact_id` FK. Email verification required before portal access is granted. Login/logout. Duplicate signup attempts are silently discarded — no signal to the submitter. Views in `resources/views/portal/`. **Portal security rule:** every portal route and query must be scoped strictly to the authenticated user's own `contact_id` — the portal must never expose PII belonging to anyone other than the logged-in member. Full prompt: `sessions/056. Secure Public Signup Flows.md`
 
-### 057. Portal Chrome & Member Page Type
+### Portal Chrome & Member Page Type
 
 `layouts/portal.blade.php` with an authenticated header (member name, logout, `#f1f1f1` background with dark-mode support). `portal_prefix` SiteSetting added to a new Routing section in General Settings. Member page type added to page builder — slug auto-prefixed on creation via PageObserver, display strips prefix, type locked to read-only Placeholder on edit. Member pages gate on `auth:portal` + `verified`. Edit page title reflects type ("Edit Member Page" etc.). Full log: `sessions/057. Portal Chrome & Member Page Type — Log.md`
 
-### 058. Routing Consolidation, Page Type Locking & Portal Widgets
+### Routing Consolidation, Page Type Locking & Portal Widgets
 
 All three URL prefixes (blog, events, portal) consolidated into a Routing fieldset in General Settings. A new `manage_routing_prefixes` standalone permission allows non-super-admins to manage only that fieldset. Slug prefixes for `post` and `event` page types now display as locked read-only prefixes in the editor (read from SiteSetting at render time); only the segment after the prefix is editable. Editor headings updated per type. Portal signup and login widgets added to the page builder. PostResource restructured to a 2+1 column layout with a sidebar; its slug field now shows the blog prefix like other resources. EventResource: slug moved into the Main Info section beside the title; landing page Placeholder replaced with two plain action buttons. Drag-to-reorder in the page builder fixed (stale `x-sort:item` DOM query swapped for `data-block-id`). Full log: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets — Log.md`
-
-### 059. Password Reset
-
-Self-service password reset for portal accounts. Separate `portal_password_reset_tokens` table and `portal_accounts` password broker. Forgot-password and reset-password routes, controllers, and views. Response to forgot-password is identical whether or not the email exists. Reset email editable in the system email editor. Full prompt: `sessions/059. Password Reset.md`
-
-### 060. Member Portal
-
-*Prerequisite for Household & Family Grouping — the household join request flow lives on the member's account editor page.*
-
-Extends the portal foundation from sessions 056–059. No new tables — member data is read from existing `contacts`, `memberships`, and `event_registrations`. `portal_accounts` gains an `is_active` flag (immediate suspend/restore toggle for admins). Member dashboard: read-only view of their full contact record (notes hidden), editable address, password, and email (email change triggers re-verification). Admin surface: Portal Access panel on the Contact edit page with suspend/restore toggle. Form collision path: unauthenticated submissions matching a portal account email are silently blocked; a rate-limited notification email is sent to the account holder asking them to log in.
-
-Full prompt: `sessions/060. Member Portal.md`
-
-### 061. System Page Type — Infrastructure
-
-Establishes the `system` page type and all governing rules. No existing pages are migrated in this session — that is session 062.
-
-System pages: type field locked read-only in the editor; slug completely locked (no editing of any segment); not deletable through any UI or bulk action; not offered in the New Page type selector. Required widgets declared via a static definition on the widget type (keyed by page slug); widget cards for required widgets render without a remove button; widget types required by any system page are pinned and cannot be deleted.
-
-`system_prefix` SiteSetting added to the Routing fieldset (proposed default: empty string — system pages live at their root slug, e.g. `/login`). Prefix changes migrate all system page slugs with the same safeguards as other prefix fields. Editor heading: "Edit System Page".
-
-Full prompt: `sessions/061. System Page Type — Infrastructure.md`
-
-### 062. System Page Type — Migration
-
-Migrates existing portal routes to CMS-backed system pages using the infrastructure from session 061.
-
-**Full CMS system pages** (GET route renders through the page builder): login, signup, forgot-password, account. Each seeded with its required widget. Existing Blade views retired for these routes.
-
-**Settings-based rich text exceptions** (Blade views continue to render, content editable via a new "System Page Content" section in General Settings): `/reset-password/{token}` (token in URL path makes CMS lookup impractical) and `/email/verify` (verification notice).
-
-**Carved out entirely** (action endpoints, not pages): `/email/verify/{id}/{hash}` — signed redirect URL, no rendered view.
-
-Full prompt: `sessions/062. System Page Type — Migration.md`
 
 ### Form Builder — Actions Pipeline
 
@@ -272,7 +242,7 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 
 ## Infrastructure & Ops
 
-### 063. Codebase Audit & Migration Squash
+### Codebase Audit & Migration Squash
 
 Follows the pattern established in session 049. Full audit of fields, schema, permissions, and help coverage against the current state of the codebase. Additional scope beyond session 049: squash the migration history using `php artisan schema:dump`, delete the superseded migration files, and verify a clean `migrate:fresh --seed` on both the local Docker environment and the production dev server.
 

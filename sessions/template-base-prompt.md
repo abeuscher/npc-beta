@@ -1,10 +1,12 @@
-We are about to begin a new session: **[TITLE]**.
+# Template: Base Prompt
 
-Please open `sessions/session-outlines.md` and find the section for this session. Read the stub there, then summarize what you understand the session to involve and ask any clarifying questions before we proceed.
+Copy this file to `NNN. base-prompt.md` at the start of each session. Replace `NNN` with the session number and update the session title and log filename.
 
-Once we have discussed and you have a clear picture of what needs to be built, write a complete session prompt in your response — covering goals, phases, data model changes if any, and anything else needed to execute. We will review it together.
+---
 
-When I confirm the prompt is correct, proceed to execution.
+We are about to begin a new session: **NNN. Session Title**.
+
+Please open `sessions/NNN. Session Title.md` and read the session prompt carefully. Summarise your understanding and confirm you are ready to proceed before touching anything.
 
 ---
 
@@ -19,9 +21,9 @@ When I confirm the prompt is correct, proceed to execution.
 - **When implementation is complete**, run `php artisan test` and fix any failures before proceeding.
 - **Pause for manual testing.** Do not proceed past this point without explicit instruction.
 - **Ask explicitly whether to close the session** before writing the log or committing.
-- **Session log**: write a log file at `sessions/[NNN]. [Title] — Log.md` summarising what was built, what changed, and any deferred decisions.
+- **Session log**: write a log file at `sessions/NNN. Session Title — Log.md` summarising what was built, what changed, and any deferred decisions.
 - **Update session-outlines.md**: after writing the log, move this session's title into the Completed Sessions table and review upcoming stubs — update them if this session's work affects them.
-- **Commit**: stage all changed files (including the log and updated outlines), commit to a feature branch named `session-[nnn]`, and notify the user. Do not push — the user will push and merge when ready.
+- **Commit**: stage all changed files (including the log and updated outlines), commit to a feature branch named `session-NNN`, and notify the user. Do not push — the user will push and merge when ready.
 - **Do not begin the next session** until the user explicitly starts it.
 
 ---
@@ -34,3 +36,5 @@ When I confirm the prompt is correct, proceed to execution.
 - No docstrings, comments, or type annotations on code you did not write.
 - Simple, correct, well-considered solutions over fast or clever ones.
 - When adding a new admin page or resource, create a help doc stub at `resources/docs/[handle].md` following the frontmatter convention of existing docs, and register the route(s) in the `routes:` array.
+- Every new Filament page must include `getBreadcrumbs()` following the established pattern: `[ParentPage::getUrl() => 'Parent', 'Current Page']`.
+- **Portal security rule:** every portal route and query that reads contact data must be scoped strictly to the authenticated portal user's own `contact_id`. No exceptions without explicit design review.
