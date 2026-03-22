@@ -14,9 +14,9 @@ class EditPage extends EditRecord
     {
         $typeLabel = match ($this->record->type) {
             'member' => 'Member Page',
-            'post'   => 'Blog Post',
-            'event'  => 'Event',
-            default  => 'Web Page',
+            'post'   => 'Post',
+            'event'  => 'Event Landing Page',
+            default  => 'Page',
         };
 
         return 'Edit ' . $typeLabel;

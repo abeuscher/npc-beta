@@ -62,6 +62,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 055 | Quill Fix, Page Layout & Event Date Simplification |
 | 056 | Secure Public Signup Flows |
 | 057 | Portal Chrome & Member Page Type |
+| 058 | Routing Consolidation, Page Type Locking & Portal Widgets |
 
 ---
 
@@ -101,9 +102,9 @@ Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Member
 
 `layouts/portal.blade.php` with an authenticated header (member name, logout, `#f1f1f1` background with dark-mode support). `portal_prefix` SiteSetting added to a new Routing section in General Settings. Member page type added to page builder — slug auto-prefixed on creation via PageObserver, display strips prefix, type locked to read-only Placeholder on edit. Member pages gate on `auth:portal` + `verified`. Edit page title reflects type ("Edit Member Page" etc.). Full log: `sessions/057. Portal Chrome & Member Page Type — Log.md`
 
-### 058. Routing Consolidation & Portal Widgets
+### 058. Routing Consolidation, Page Type Locking & Portal Widgets
 
-Move `blog_prefix` out of CMS Settings and `events_prefix` into the Routing section in General Settings alongside `portal_prefix` (already added in session 057). Slug prefix locked and driven by SiteSetting for `event` and `post` page types on edit (member is already handled). Portal signup and login widgets added to the page builder. **Note:** page type locked to read-only on edit for all types was completed in session 057. Full prompt: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets.md`
+All three URL prefixes (blog, events, portal) consolidated into a Routing fieldset in General Settings. A new `manage_routing_prefixes` standalone permission allows non-super-admins to manage only that fieldset. Slug prefixes for `post` and `event` page types now display as locked read-only prefixes in the editor (read from SiteSetting at render time); only the segment after the prefix is editable. Editor headings updated per type. Portal signup and login widgets added to the page builder. PostResource restructured to a 2+1 column layout with a sidebar; its slug field now shows the blog prefix like other resources. EventResource: slug moved into the Main Info section beside the title; landing page Placeholder replaced with two plain action buttons. Drag-to-reorder in the page builder fixed (stale `x-sort:item` DOM query swapped for `data-block-id`). Full log: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets — Log.md`
 
 ### 059. Password Reset
 

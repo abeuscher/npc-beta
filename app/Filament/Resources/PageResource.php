@@ -13,6 +13,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 
 class PageResource extends Resource
@@ -51,6 +52,7 @@ class PageResource extends Resource
                             ->required()
                             ->maxLength(255),
 
+                        // Shown on create only — editable type selection.
                         Forms\Components\Select::make('type')
                             ->label('Page Type')
                             ->options([
@@ -63,23 +65,51 @@ class PageResource extends Resource
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
-                            ->unique(Page::class, 'slug', ignoreRecord: true)
-                            ->rules(['regex:/^[a-z0-9\-\/]+$/'])
+                            ->rules([
+                                'regex:/^[a-z0-9\-\/]+$/',
+                                fn (Forms\Get $get, ?Model $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                    $type   = $get('type');
+                                    $prefix = match ($type) {
+                                        'post'  => SiteSetting::get('blog_prefix', 'news') . '/',
+                                        'event' => SiteSetting::get('events_prefix', 'events') . '/',
+                                        default => '',
+                                    };
+                                    $fullSlug = $prefix . ltrim($value, '/');
+                                    $query    = Page::where('slug', $fullSlug);
+                                    if ($record?->id) {
+                                        $query->where('id', '!=', $record->id);
+                                    }
+                                    if ($query->exists()) {
+                                        $fail('This slug is already in use.');
+                                    }
+                                },
+                            ])
                             ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                            ->prefix(fn (Forms\Get $get): ?string => $get('type') === 'member'
-                                ? '/' . SiteSetting::get('portal_prefix', 'members') . '/'
-                                : null
-                            )
-                            ->formatStateUsing(fn ($state, Forms\Get $get): string => $get('type') === 'member'
-                                ? ltrim(str_replace(SiteSetting::get('portal_prefix', 'members') . '/', '', $state), '/')
-                                : $state
-                            )
+                            ->prefix(fn (Forms\Get $get): ?string => match ($get('type')) {
+                                'member' => '/' . SiteSetting::get('portal_prefix', 'members') . '/',
+                                'post'   => '/' . SiteSetting::get('blog_prefix', 'news') . '/',
+                                'event'  => '/' . SiteSetting::get('events_prefix', 'events') . '/',
+                                default  => null,
+                            })
+                            ->formatStateUsing(fn ($state, Forms\Get $get): string => match ($get('type')) {
+                                'member' => ltrim(str_replace(SiteSetting::get('portal_prefix', 'members') . '/', '', $state ?? ''), '/'),
+                                'post'   => ltrim(str_replace(SiteSetting::get('blog_prefix', 'news') . '/', '', $state ?? ''), '/'),
+                                'event'  => ltrim(str_replace(SiteSetting::get('events_prefix', 'events') . '/', '', $state ?? ''), '/'),
+                                default  => $state ?? '',
+                            })
+                            ->dehydrateStateUsing(fn ($state, Forms\Get $get): string => match ($get('type')) {
+                                'post'  => SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/'),
+                                'event' => SiteSetting::get('events_prefix', 'events') . '/' . ltrim($state ?? '', '/'),
+                                default => $state ?? '',
+                            })
                             ->disabled(fn (Forms\Get $get): bool => $get('type') === 'member')
                             ->dehydrated()
-                            ->helperText(fn (Forms\Get $get) => $get('type') === 'member'
-                                ? 'Slug is locked — member page slugs are managed by the portal prefix setting.'
-                                : 'URL-safe identifier. May include forward slashes (e.g. events/my-event).'
-                            )
+                            ->helperText(fn (Forms\Get $get) => match ($get('type')) {
+                                'member' => 'Slug is locked — member page slugs are managed by the portal prefix setting.',
+                                'post'   => 'Edit the slug segment after the blog prefix.',
+                                'event'  => 'Edit the slug segment after the events prefix.',
+                                default  => 'URL-safe identifier. May include forward slashes (e.g. events/my-event).',
+                            })
                             ->hiddenOn('create'),
 
                         Forms\Components\Placeholder::make('public_url')

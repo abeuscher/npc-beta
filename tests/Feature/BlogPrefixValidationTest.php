@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Pages\Settings\CmsSettingsPage;
+use App\Filament\Pages\Settings\GeneralSettingsPage;
 use App\Models\Page as CmsPage;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -21,9 +21,10 @@ beforeEach(function () {
 
     // Seed required settings so the page can mount
     $defaults = [
-        ['key' => 'site_name',        'value' => 'My Org',           'group' => 'general', 'type' => 'string'],
         ['key' => 'base_url',         'value' => 'http://localhost',  'group' => 'general', 'type' => 'string'],
         ['key' => 'blog_prefix',      'value' => 'news',             'group' => 'general', 'type' => 'string'],
+        ['key' => 'events_prefix',    'value' => 'events',           'group' => 'general', 'type' => 'string'],
+        ['key' => 'portal_prefix',    'value' => 'members',          'group' => 'general', 'type' => 'string'],
         ['key' => 'site_description', 'value' => '',                 'group' => 'general', 'type' => 'string'],
         ['key' => 'timezone',         'value' => 'America/Chicago',  'group' => 'general', 'type' => 'string'],
         ['key' => 'contact_email',    'value' => '',                 'group' => 'general', 'type' => 'string'],
@@ -44,26 +45,38 @@ it('rejects a blog prefix that matches an existing page slug', function () {
         'published_at' => now(),
     ]);
 
-    Livewire::test(CmsSettingsPage::class)
-        ->fillForm(['blog_prefix' => 'about'])
+    Livewire::test(GeneralSettingsPage::class)
+        ->fillForm([
+            'site_url'      => 'http://localhost',
+            'blog_prefix'   => 'about',
+            'events_prefix' => 'events',
+            'portal_prefix' => 'members',
+        ])
         ->call('save')
         ->assertHasFormErrors(['blog_prefix']);
 });
 
 it('rejects a blog prefix that is a reserved word', function () {
     foreach (['admin', 'horizon', 'up', 'login', 'logout', 'register'] as $reserved) {
-        Livewire::test(CmsSettingsPage::class)
-            ->fillForm(['blog_prefix' => $reserved])
+        Livewire::test(GeneralSettingsPage::class)
+            ->fillForm([
+                'site_url'      => 'http://localhost',
+                'blog_prefix'   => $reserved,
+                'events_prefix' => 'events',
+                'portal_prefix' => 'members',
+            ])
             ->call('save')
             ->assertHasFormErrors(['blog_prefix']);
     }
 });
 
 it('accepts a valid blog prefix', function () {
-    Livewire::test(CmsSettingsPage::class)
+    Livewire::test(GeneralSettingsPage::class)
         ->fillForm([
-            'site_name'   => 'My Org',
-            'blog_prefix' => 'stories',
+            'site_url'      => 'http://localhost',
+            'blog_prefix'   => 'stories',
+            'events_prefix' => 'events',
+            'portal_prefix' => 'members',
         ])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -96,10 +109,12 @@ it('changing the prefix renames all post slugs', function () {
         'published_at' => now(),
     ]);
 
-    Livewire::test(CmsSettingsPage::class)
+    Livewire::test(GeneralSettingsPage::class)
         ->fillForm([
-            'site_name'   => 'My Org',
-            'blog_prefix' => 'stories',
+            'site_url'      => 'http://localhost',
+            'blog_prefix'   => 'stories',
+            'events_prefix' => 'events',
+            'portal_prefix' => 'members',
         ])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -136,10 +151,12 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
         'published_at' => now(),
     ]);
 
-    Livewire::test(CmsSettingsPage::class)
+    Livewire::test(GeneralSettingsPage::class)
         ->fillForm([
-            'site_name'   => 'My Org',
-            'blog_prefix' => 'stories',
+            'site_url'      => 'http://localhost',
+            'blog_prefix'   => 'stories',
+            'events_prefix' => 'events',
+            'portal_prefix' => 'members',
         ])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -160,10 +177,12 @@ it('changing the prefix also renames the blog index page slug', function () {
         'published_at' => now(),
     ]);
 
-    Livewire::test(CmsSettingsPage::class)
+    Livewire::test(GeneralSettingsPage::class)
         ->fillForm([
-            'site_name'   => 'My Org',
-            'blog_prefix' => 'stories',
+            'site_url'      => 'http://localhost',
+            'blog_prefix'   => 'stories',
+            'events_prefix' => 'events',
+            'portal_prefix' => 'members',
         ])
         ->call('save')
         ->assertHasNoFormErrors();

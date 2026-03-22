@@ -2,12 +2,14 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Models\Page as CmsPage;
 use App\Models\SiteSetting;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
@@ -15,7 +17,11 @@ class GeneralSettingsPage extends Page
 {
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+        return $user->hasRole('super_admin') || $user->can('manage_routing_prefixes');
     }
 
     protected static ?string $navigationGroup = 'Settings';
@@ -43,11 +49,15 @@ class GeneralSettingsPage extends Page
             'stripe_api_key'      => SiteSetting::get('stripe_api_key', ''),
             'quickbooks_api_key'  => SiteSetting::get('quickbooks_api_key', ''),
             'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
+            'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
+            'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
         ]);
     }
 
     public function form(Form $form): Form
     {
+        $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
+
         return $form
             ->schema([
                 Forms\Components\Section::make('Site')
@@ -57,7 +67,8 @@ class GeneralSettingsPage extends Page
                             ->helperText('The public URL of this installation. Used for generating absolute links. Example: https://yourorg.org')
                             ->url()
                             ->required(),
-                    ]),
+                    ])
+                    ->visible($isSuperAdmin),
 
                 Forms\Components\Section::make('Admin Panel')
                     ->schema([
@@ -100,15 +111,49 @@ class GeneralSettingsPage extends Page
                             ->helperText('Replaces the current logo on save.'),
 
                     ])
-                    ->columns(2),
+                    ->columns(2)
+                    ->visible($isSuperAdmin),
 
                 Forms\Components\Section::make('Routing')
+                    ->description('Changing these prefixes will break existing bookmarked links and any external links published elsewhere. Old URLs will return 404 unless redirects are configured.')
                     ->schema([
+                        Forms\Components\TextInput::make('blog_prefix')
+                            ->label('Blog prefix')
+                            ->required()
+                            ->alphaDash()
+                            ->helperText("The URL segment for blog posts. Example: 'news' → /news/post-slug.")
+                            ->rules([
+                                fn () => function (string $attribute, string $value, \Closure $fail) {
+                                    $reserved = ['admin', 'horizon', 'up', 'login', 'logout', 'register'];
+                                    if (in_array(strtolower($value), $reserved, true)) {
+                                        $fail("'{$value}' is a reserved word and cannot be used as a blog prefix.");
+                                    }
+                                    $currentPrefix = SiteSetting::get('blog_prefix', 'news');
+                                    if ($value !== $currentPrefix && CmsPage::where('slug', $value)->exists()) {
+                                        $fail("This prefix conflicts with an existing page slug '/{$value}'. Choose a different prefix or rename the page.");
+                                    }
+                                },
+                            ]),
+
+                        Forms\Components\TextInput::make('events_prefix')
+                            ->label('Events prefix')
+                            ->required()
+                            ->alphaDash()
+                            ->helperText("The URL segment for events. Example: 'events' → /events/event-slug.")
+                            ->rules([
+                                fn () => function (string $attribute, string $value, \Closure $fail) {
+                                    $reserved = ['admin', 'horizon', 'up', 'login', 'logout', 'register'];
+                                    if (in_array(strtolower($value), $reserved, true)) {
+                                        $fail("'{$value}' is a reserved word and cannot be used as an events prefix.");
+                                    }
+                                },
+                            ]),
+
                         Forms\Components\TextInput::make('portal_prefix')
                             ->label('Member portal prefix')
                             ->required()
                             ->rules(['alpha_dash'])
-                            ->helperText("The URL prefix for the member portal. Example: 'members' → /members/login. Changing this will break existing bookmarked links.")
+                            ->helperText("The URL prefix for the member portal. Example: 'members' → /members/login.")
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -125,7 +170,8 @@ class GeneralSettingsPage extends Page
                             ->nullable()
                             ->columnSpanFull(),
                     ])
-                    ->columns(2),
+                    ->columns(2)
+                    ->visible($isSuperAdmin),
             ])
             ->statePath('data');
     }
@@ -143,17 +189,57 @@ class GeneralSettingsPage extends Page
     {
         $data = $this->form->getState();
 
-        SiteSetting::set('base_url', rtrim($data['site_url'], '/'));
-        SiteSetting::set('admin_brand_name', trim($data['admin_brand_name'] ?? ''));
-        if (!empty($data['admin_logo_upload'])) {
-            SiteSetting::set('admin_logo_path', $data['admin_logo_upload']);
+        $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
+
+        // Routing prefixes — available to all who can access this page.
+        $oldBlogPrefix   = SiteSetting::get('blog_prefix', 'news');
+        $newBlogPrefix   = $data['blog_prefix'] ?? 'news';
+        $oldEventsPrefix = SiteSetting::get('events_prefix', 'events');
+        $newEventsPrefix = $data['events_prefix'] ?? 'events';
+
+        SiteSetting::set('blog_prefix', $newBlogPrefix);
+        SiteSetting::set('events_prefix', $newEventsPrefix);
+        SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
+
+        if ($newBlogPrefix !== $oldBlogPrefix) {
+            CmsPage::where('type', 'post')
+                ->where('slug', 'like', $oldBlogPrefix . '/%')
+                ->each(function (CmsPage $page) use ($oldBlogPrefix, $newBlogPrefix) {
+                    $page->updateQuietly([
+                        'slug' => $newBlogPrefix . '/' . substr($page->slug, strlen($oldBlogPrefix) + 1),
+                    ]);
+                });
+
+            $blogIndexPage = CmsPage::where('slug', $oldBlogPrefix)->first();
+            if ($blogIndexPage) {
+                $blogIndexPage->updateQuietly(['slug' => $newBlogPrefix]);
+            }
         }
 
-        SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
-        SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
-        SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
-        SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');
-        SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
+        if ($newEventsPrefix !== $oldEventsPrefix) {
+            CmsPage::where('type', 'event')
+                ->where('slug', 'like', $oldEventsPrefix . '/%')
+                ->each(function (CmsPage $page) use ($oldEventsPrefix, $newEventsPrefix) {
+                    $page->updateQuietly([
+                        'slug' => $newEventsPrefix . '/' . substr($page->slug, strlen($oldEventsPrefix) + 1),
+                    ]);
+                });
+        }
+
+        // Super-admin-only settings.
+        if ($isSuperAdmin) {
+            SiteSetting::set('base_url', rtrim($data['site_url'], '/'));
+            SiteSetting::set('admin_brand_name', trim($data['admin_brand_name'] ?? ''));
+            if (!empty($data['admin_logo_upload'])) {
+                SiteSetting::set('admin_logo_path', $data['admin_logo_upload']);
+            }
+            SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
+            SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
+            SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
+            SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');
+        }
+
+        Artisan::call('config:clear');
 
         Notification::make()
             ->title('Settings saved')

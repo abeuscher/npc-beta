@@ -89,6 +89,10 @@ class RoleResource extends Resource
                 'label'       => 'Delete Form Submissions',
                 'description' => 'Grants the ability to delete individual form submission records (e.g. for GDPR removal).',
             ],
+            'manage_routing_prefixes' => [
+                'label'       => 'Manage Routing Prefixes',
+                'description' => 'Grants access to the Routing Prefixes section in General Settings — blog, events, and member portal URL prefixes.',
+            ],
         ];
     }
 

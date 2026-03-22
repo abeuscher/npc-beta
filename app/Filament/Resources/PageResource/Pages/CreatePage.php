@@ -11,6 +11,18 @@ class CreatePage extends CreateRecord
 {
     protected static string $resource = PageResource::class;
 
+    public function getTitle(): string
+    {
+        $type = data_get($this->data, 'type', 'default');
+
+        return match ($type) {
+            'member' => 'New Member Page',
+            'post'   => 'New Post',
+            'event'  => 'New Event Landing Page',
+            default  => 'New Page',
+        };
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $base = Str::slug($data['title']);

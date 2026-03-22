@@ -29,7 +29,7 @@
     <div
         x-data
         x-sort="() => {
-            const ids = [...$el.querySelectorAll('[x-sort\\:item]')].map(e => e.getAttribute('x-sort:item'));
+            const ids = [...$el.querySelectorAll('[data-block-id]')].map(e => e.getAttribute('data-block-id'));
             $wire.updateOrder(ids);
         }"
         class="space-y-2"

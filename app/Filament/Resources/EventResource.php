@@ -100,9 +100,18 @@ class EventResource extends Resource
                             ->required()
                             ->maxLength(255),
 
+                        Forms\Components\TextInput::make('slug')
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(Event::class, 'slug', ignoreRecord: true)
+                            ->regex('/^[a-z0-9\-]+$/')
+                            ->helperText('URL-safe identifier. Auto-generated from title on create.')
+                            ->hiddenOn('create'),
+
                         QuillEditor::make('description')
                             ->label('Description')
-                            ->nullable(),
+                            ->nullable()
+                            ->columnSpanFull(),
 
                         Forms\Components\DateTimePicker::make('starts_at')
                             ->label('Start')
@@ -114,7 +123,7 @@ class EventResource extends Resource
                             ->nullable()
                             ->seconds(false)
                             ->after('starts_at'),
-                    ]),
+                    ])->columns(2),
 
                     Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')
@@ -183,14 +192,6 @@ class EventResource extends Resource
                 // ── Right column ──────────────────────────────────────────
                 Forms\Components\Group::make([
                     Forms\Components\Section::make('Settings')->schema([
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(Event::class, 'slug', ignoreRecord: true)
-                            ->regex('/^[a-z0-9\-]+$/')
-                            ->helperText('URL-safe identifier. Auto-generated from title on create.')
-                            ->hiddenOn('create'),
-
                         Forms\Components\Select::make('status')
                             ->options([
                                 'draft'     => 'Draft',
@@ -200,41 +201,30 @@ class EventResource extends Resource
                             ->default('draft')
                             ->required(),
 
-                        // Read-only landing page status with edit/view shortcuts.
-                        // Hidden on create — the landing page is auto-created on save.
-                        Forms\Components\Placeholder::make('landing_page_status')
-                            ->label('Landing page')
-                            ->hiddenOn('create')
-                            ->content(function ($record): string {
-                                if (! $record || ! $record->landing_page_id) {
-                                    return 'None — use the "Create basic landing page" button in the toolbar.';
-                                }
-                                return $record->landingPage?->title ?? '(page not found)';
-                            })
-                            ->hintActions([
-                                FormAction::make('editLandingPage')
-                                    ->icon('heroicon-m-pencil-square')
-                                    ->tooltip('Edit page in CMS')
-                                    ->url(function ($record): string {
-                                        if (! $record?->landingPage) {
-                                            return '';
-                                        }
-                                        return PageResource::getUrl('edit', ['record' => $record->landingPage]);
-                                    })
-                                    ->visible(fn ($record) => $record?->landing_page_id !== null),
+                        Forms\Components\Actions::make([
+                            FormAction::make('editLandingPage')
+                                ->icon('heroicon-m-pencil-square')
+                                ->label('Edit landing page')
+                                ->url(function ($record): string {
+                                    if (! $record?->landingPage) {
+                                        return '';
+                                    }
+                                    return PageResource::getUrl('edit', ['record' => $record->landingPage]);
+                                })
+                                ->visible(fn ($record) => $record?->landing_page_id !== null),
 
-                                FormAction::make('viewLandingPage')
-                                    ->icon('heroicon-m-arrow-top-right-on-square')
-                                    ->tooltip('View public page')
-                                    ->url(function ($record): string {
-                                        if (! $record?->landingPage) {
-                                            return '';
-                                        }
-                                        return url('/' . $record->landingPage->slug);
-                                    })
-                                    ->openUrlInNewTab()
-                                    ->visible(fn ($record) => $record?->landing_page_id !== null),
-                            ]),
+                            FormAction::make('viewLandingPage')
+                                ->icon('heroicon-m-arrow-top-right-on-square')
+                                ->label('View public page')
+                                ->url(function ($record): string {
+                                    if (! $record?->landingPage) {
+                                        return '';
+                                    }
+                                    return url('/' . $record->landingPage->slug);
+                                })
+                                ->openUrlInNewTab()
+                                ->visible(fn ($record) => $record?->landing_page_id !== null),
+                        ])->hiddenOn('create'),
 
                         TagSelect::make('event'),
                     ]),

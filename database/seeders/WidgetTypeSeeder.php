@@ -99,5 +99,27 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.web-form')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_signup'],
+            [
+                'label'         => 'Member Signup Form',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-signup')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_login'],
+            [
+                'label'         => 'Member Login Form',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-login')",
+            ]
+        );
     }
 }

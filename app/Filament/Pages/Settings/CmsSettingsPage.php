@@ -2,15 +2,12 @@
 
 namespace App\Filament\Pages\Settings;
 
-use App\Models\Page as CmsPage;
 use App\Models\SiteSetting;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Validation\ValidationException;
 
 class CmsSettingsPage extends Page
 {
@@ -37,7 +34,6 @@ class CmsSettingsPage extends Page
     {
         $this->form->fill([
             'site_name'        => SiteSetting::get('site_name', 'My Organization'),
-            'blog_prefix'      => SiteSetting::get('blog_prefix', 'news'),
             'site_description' => SiteSetting::get('site_description', ''),
             'timezone'         => SiteSetting::get('timezone', 'America/Chicago'),
             'contact_email'    => SiteSetting::get('contact_email', ''),
@@ -53,24 +49,6 @@ class CmsSettingsPage extends Page
                         Forms\Components\TextInput::make('site_name')
                             ->label('Site Name')
                             ->required(),
-
-                        Forms\Components\TextInput::make('blog_prefix')
-                            ->label('Blog Prefix')
-                            ->alphaDash()
-                            ->required()
-                            ->helperText("The URL segment for your blog. Example: 'news' → /news/post-slug. Changes require a cache clear to take effect.")
-                            ->rules([
-                                fn () => function (string $attribute, string $value, \Closure $fail) {
-                                    $reserved = ['admin', 'horizon', 'up', 'login', 'logout', 'register'];
-                                    if (in_array(strtolower($value), $reserved, true)) {
-                                        $fail("'{$value}' is a reserved word and cannot be used as a blog prefix.");
-                                    }
-                                    $currentPrefix = SiteSetting::get('blog_prefix', 'news');
-                                    if (CmsPage::where('slug', $value)->where('slug', '!=', $currentPrefix)->exists()) {
-                                        $fail("This prefix conflicts with an existing page slug '/{$value}'. Choose a different prefix or rename the page.");
-                                    }
-                                },
-                            ]),
 
                         Forms\Components\Textarea::make('site_description')
                             ->label('Site Description')
@@ -114,34 +92,10 @@ class CmsSettingsPage extends Page
     {
         $data = $this->form->getState();
 
-        $oldPrefix = SiteSetting::get('blog_prefix', 'news');
-        $newPrefix = $data['blog_prefix'];
-
         SiteSetting::set('site_name', $data['site_name']);
-        SiteSetting::set('blog_prefix', $newPrefix);
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
-
-        // When the blog prefix changes, update slugs on all type='post' pages
-        // and rename the blog index page slug.
-        if ($newPrefix !== $oldPrefix) {
-            CmsPage::where('type', 'post')
-                ->where('slug', 'like', $oldPrefix . '/%')
-                ->each(function (CmsPage $page) use ($oldPrefix, $newPrefix) {
-                    $page->updateQuietly([
-                        'slug' => $newPrefix . '/' . substr($page->slug, strlen($oldPrefix) + 1),
-                    ]);
-                });
-
-            // Also update the blog index page slug (plain page, no type filter).
-            $blogIndexPage = CmsPage::where('slug', $oldPrefix)->first();
-            if ($blogIndexPage) {
-                $blogIndexPage->updateQuietly(['slug' => $newPrefix]);
-            }
-        }
-
-        Artisan::call('config:clear');
 
         Notification::make()
             ->title('Settings saved')
