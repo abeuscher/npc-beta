@@ -108,6 +108,11 @@ class DatabaseSeeder extends Seeder
                 'body'          => '<p>Hi {{first_name}},</p><p>This is a reminder that <strong>{{event_title}}</strong> is coming up on {{event_date}}.</p>',
                 'footer_reason' => 'You received this email because you registered for {{event_title}}.',
             ],
+            [
+                'handle'  => 'portal_password_reset',
+                'subject' => 'Reset your password',
+                'body'    => '<p>Hi {{first_name}},</p><p>Click the link below to reset your password. This link expires in 60 minutes.</p><p><a href="{{reset_url}}">Reset password</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>',
+            ],
         ];
 
         foreach ($emailTemplates as $template) {

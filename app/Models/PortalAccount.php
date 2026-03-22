@@ -42,4 +42,10 @@ class PortalAccount extends Authenticatable implements MustVerifyEmailContract
         \Illuminate\Support\Facades\Mail::to($this->email)
             ->send(new \App\Mail\PortalEmailVerification($this));
     }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        \Illuminate\Support\Facades\Mail::to($this->email)
+            ->send(new \App\Mail\PortalPasswordReset($this, $token));
+    }
 }

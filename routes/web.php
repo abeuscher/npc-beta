@@ -5,7 +5,9 @@ use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\EmailVerificationController;
+use App\Http\Controllers\Portal\ForgotPasswordController;
 use App\Http\Controllers\Portal\LoginController;
+use App\Http\Controllers\Portal\ResetPasswordController;
 use App\Http\Controllers\Portal\SignupController;
 use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +44,11 @@ Route::post('/signup', [SignupController::class, 'store'])->name('portal.signup.
 Route::get('/login',   [LoginController::class, 'show'])->name('portal.login');
 Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.post')->middleware('throttle:10,1');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('portal.logout');
+
+Route::get('/forgot-password',        [ForgotPasswordController::class, 'show'])->name('portal.password.request');
+Route::post('/forgot-password',       [ForgotPasswordController::class, 'store'])->name('portal.password.email')->middleware('throttle:5,1');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->name('portal.password.reset');
+Route::post('/reset-password',        [ResetPasswordController::class, 'update'])->name('portal.password.update');
 
 Route::get('/email/verify',            [EmailVerificationController::class, 'notice'])->name('portal.verification.notice')->middleware('portal.auth');
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('portal.verification.verify')->middleware(['portal.auth', 'signed']);

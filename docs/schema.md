@@ -2,7 +2,7 @@
 
 Developer-facing reference. Updated as part of every session that includes a migration.
 
-Last updated: 2026-03-21 (session 056)
+Last updated: 2026-03-22 (session 059)
 
 ---
 
@@ -746,6 +746,18 @@ Portal login credentials for contacts. One record per contact with member/volunt
 | remember_token | string(100) | yes | |
 | created_at | timestamp | yes | |
 | updated_at | timestamp | yes | |
+
+---
+
+## portal_password_reset_tokens
+
+Password reset tokens for the member portal. Entirely separate from `password_reset_tokens` (admin users).
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| email | string | no | PK |
+| token | string | no | bcrypt hash of the reset token |
+| created_at | timestamp | yes | |
 
 ---
 

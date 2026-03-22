@@ -4,6 +4,10 @@
 <article style="max-width:480px;margin:3rem auto;">
     <h1>Log in</h1>
 
+    @if (session('status'))
+        <p role="status">{{ session('status') }}</p>
+    @endif
+
     @if ($errors->any())
         <div role="alert">
             <ul>
@@ -39,6 +43,7 @@
         <button type="submit">Log in</button>
     </form>
 
+    <p><a href="{{ route('portal.password.request') }}">Forgot your password?</a></p>
     <p><a href="{{ route('portal.signup') }}">Don't have an account? Sign up</a></p>
 </article>
 @endsection
