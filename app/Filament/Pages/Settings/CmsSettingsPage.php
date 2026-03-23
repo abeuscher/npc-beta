@@ -33,10 +33,11 @@ class CmsSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_name'        => SiteSetting::get('site_name', 'My Organization'),
-            'site_description' => SiteSetting::get('site_description', ''),
-            'timezone'         => SiteSetting::get('timezone', 'America/Chicago'),
-            'contact_email'    => SiteSetting::get('contact_email', ''),
+            'site_name'          => SiteSetting::get('site_name', 'My Organization'),
+            'site_description'   => SiteSetting::get('site_description', ''),
+            'timezone'           => SiteSetting::get('timezone', 'America/Chicago'),
+            'contact_email'      => SiteSetting::get('contact_email', ''),
+            'event_auto_publish' => SiteSetting::get('event_auto_publish', 'false') === 'true',
         ]);
     }
 
@@ -48,7 +49,8 @@ class CmsSettingsPage extends Page
                     ->schema([
                         Forms\Components\TextInput::make('site_name')
                             ->label('Site Name')
-                            ->required(),
+                            ->required()
+                            ->columnSpan(6),
 
                         Forms\Components\Textarea::make('site_description')
                             ->label('Site Description')
@@ -67,14 +69,21 @@ class CmsSettingsPage extends Page
                                 'Pacific/Honolulu'    => 'Hawaii (Pacific/Honolulu)',
                                 'UTC'                 => 'UTC',
                             ])
-                            ->searchable(),
+                            ->searchable()
+                            ->columnSpan(4),
 
                         Forms\Components\TextInput::make('contact_email')
                             ->label('Contact Email')
                             ->email()
-                            ->nullable(),
+                            ->nullable()
+                            ->columnSpan(4),
+
+                        Forms\Components\Toggle::make('event_auto_publish')
+                            ->label('Auto-publish new events')
+                            ->helperText('When enabled, the landing page for a newly created event is set to Published. When disabled, it defaults to Draft.')
+                            ->columnSpan(4),
                     ])
-                    ->columns(2),
+                    ->columns(12),
             ])
             ->statePath('data');
     }
@@ -96,6 +105,7 @@ class CmsSettingsPage extends Page
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
+        SiteSetting::set('event_auto_publish', $data['event_auto_publish'] ? 'true' : 'false');
 
         Notification::make()
             ->title('Settings saved')

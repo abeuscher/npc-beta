@@ -67,6 +67,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 060 | Member Portal |
 | 061 | System Page Type — Infrastructure and Migration |
 | 062 | Codebase Audit & Migration Squash |
+| 063 | Admin UI Polish, CMS Navigation Sort & Settings Consolidation |
 
 ---
 
@@ -76,7 +77,7 @@ This is the single working reference for all sessions. Completed sessions are li
 
 Enhance the dashboard dev widget's data generation with a library of curated fake values — roughly 100+ entries per field drawn from a themed source (cartoon characters, movies, fictional places, etc.) rather than Faker's generic output. Each field category (first names, last names, email domains, cities, event names, organisation names, etc.) lives in a dedicated library file. The generator draws from these libraries so generated records have a little personality and are visually distinctive during demos. Library files are plain PHP arrays checked into the repo — easy to extend over time. No schema changes required; this is a pure PHP/view layer change scoped to the dev widget.
 
-Full prompt: `sessions/064. Sample Data Generator Library.md`
+Full prompt: `sessions/064. Sample Data Generator Library.md` — ready.
 
 ### Member Event Registration
 
@@ -84,13 +85,21 @@ A "Register as member" button on event pages for logged-in portal users, complet
 
 Implementation: a new portal-authenticated route (`POST /account/events/{slug}/register`) with a controller method that runs the same capacity, registration-mode, and duplicate-registration checks as the public `EventController`, then creates an `EventRegistration` linked to the user's `contact_id` and fires the confirmation email. The `event_registration` widget template gains a conditional block — "Register as member" button when `auth('portal')->check()`, "Log in to register" link otherwise — sitting alongside the existing public form, which remains unchanged for non-members. No new tables required.
 
+### Promote Contact to Member
+
+An inline action on the contact edit record that lets admins enrol a contact as a member without navigating away. Implemented as a Filament `Action` component at the bottom of the Settings panel. The action is hidden when the contact already has an active membership. On click it opens a modal with the minimum required fields — tier (select), starts on (date), expires on (date, optional) — and creates a `Membership` record linked to the contact on confirm. A confirmation flash confirms the enrolment. No new tables required; this is purely a convenience shortcut to `MembershipResource` creation scoped to the current contact.
+
+When the Volunteer module is built, a parallel "Enrol as volunteer" action should be added to the same panel at that time.
+
 ---
 
 ## CRM Navigation & Views
 
 ### CRM Navigation & Views Reorganisation
 
-Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`. Full prompt: `sessions/063. CRM Navigation and Views Reorganisation.md`
+Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`.
+
+**Status:** Deferred — session 063 was used for UI polish and settings consolidation instead. Full prompt is written and ready at `sessions/063. CRM Navigation and Views Reorganisation.md`.
 
 ---
 

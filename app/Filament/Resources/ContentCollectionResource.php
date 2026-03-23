@@ -18,7 +18,7 @@ class ContentCollectionResource extends Resource
 
     protected static ?string $navigationLabel = 'Collections';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'browse-collections';
 

@@ -46,18 +46,13 @@ class ContactResource extends Resource
 
                 Forms\Components\Section::make('Contact Information')
                     ->schema([
-                        Forms\Components\TextInput::make('prefix')
-                            ->label('Prefix')
-                            ->placeholder('Mr, Ms, Dr…')
-                            ->columnSpan(2),
-
                         Forms\Components\TextInput::make('first_name')
                             ->label('First Name')
-                            ->columnSpan(5),
+                            ->columnSpan(6),
 
                         Forms\Components\TextInput::make('last_name')
                             ->label('Last Name')
-                            ->columnSpan(5),
+                            ->columnSpan(6),
 
                         Forms\Components\TextInput::make('email')
                             ->email()
@@ -89,11 +84,16 @@ class ContactResource extends Resource
                             ->label('ZIP')
                             ->columnSpan(3),
 
+                        Forms\Components\TextInput::make('prefix')
+                            ->label('Prefix')
+                            ->placeholder('Mr, Ms, Dr…')
+                            ->columnSpan(4),
+
                         Forms\Components\DatePicker::make('date_of_birth')
                             ->label('Date of Birth')
                             ->maxDate(now()->subYears(13)->toDateString())
                             ->helperText('Must be 13 or older — see the help article for details.')
-                            ->columnSpan(5),
+                            ->columnSpan(4),
 
                         Forms\Components\Placeholder::make('age')
                             ->label('Age')
@@ -101,7 +101,7 @@ class ContactResource extends Resource
                                 ? $record->date_of_birth->age . ' years'
                                 : '—'
                             )
-                            ->columnSpan(7),
+                            ->columnSpan(4),
                     ])
                     ->columns(12),
 
@@ -125,29 +125,30 @@ class ContactResource extends Resource
 
             ])->columnSpan(2),
 
-            Forms\Components\Section::make('Settings')
-                ->schema([
-                    TagSelect::make('contact'),
+            Forms\Components\Group::make([
 
-                    Forms\Components\Placeholder::make('source_display')
-                        ->label('Source')
-                        ->content(fn (?Contact $record): string => match ($record?->source ?? 'manual') {
-                            'import'    => 'Import',
-                            'api'       => 'API',
-                            'web_form'  => 'Web Form',
-                            default     => 'Manual Entry',
-                        }),
+                Forms\Components\Section::make('Settings')
+                    ->schema([
+                        TagSelect::make('contact'),
 
-                    Forms\Components\Toggle::make('do_not_contact')
-                        ->label('Do Not Contact'),
+                        Forms\Components\Placeholder::make('source_display')
+                            ->label('Source')
+                            ->content(fn (?Contact $record): string => match ($record?->source ?? 'manual') {
+                                'import'    => 'Import',
+                                'api'       => 'API',
+                                'web_form'  => 'Web Form',
+                                default     => 'Manual Entry',
+                            }),
 
-                    Forms\Components\Toggle::make('mailing_list_opt_in')
-                        ->label('Mailing List Opt-In'),
-                ])
-                ->columnSpan(1),
+                        Forms\Components\Toggle::make('do_not_contact')
+                            ->label('Do Not Contact'),
 
-            Forms\Components\Section::make('Portal Access')
-                ->schema(function (?Contact $record): array {
+                        Forms\Components\Toggle::make('mailing_list_opt_in')
+                            ->label('Mailing List Opt-In'),
+                    ]),
+
+                Forms\Components\Section::make('Portal Access')
+                    ->schema(function (?Contact $record): array {
                     if (! $record) {
                         return [];
                     }
@@ -220,9 +221,10 @@ class ContactResource extends Resource
                         ]),
                     ];
                 })
-                ->collapsible()
-                ->collapsed()
-                ->columnSpan(1),
+                    ->collapsible()
+                    ->collapsed(),
+
+            ])->columnSpan(1),
 
         ])->columns(3);
     }

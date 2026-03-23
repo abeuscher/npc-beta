@@ -8,6 +8,7 @@ use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -126,6 +127,9 @@ class DatabaseSeeder extends Seeder
 
         // ── System collections (all environments) ────────────────────────────
         $this->seedSystemCollections();
+
+        // ── Help articles ────────────────────────────────────────────────────
+        Artisan::call('help:sync');
     }
 
     private function seedSystemCollections(): void

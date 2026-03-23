@@ -16,6 +16,8 @@ class EventsSettingsPage extends Page
         return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationGroup = 'Settings';
 
     protected static ?string $navigationLabel = 'Events';

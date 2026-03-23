@@ -32,7 +32,7 @@ class EventResource extends Resource
 
     protected static ?string $navigationLabel = 'Events';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 3;
 
     // ──────────────────────────────────────────────────────────────────────────
     // Shared: create the standard landing page for an event
