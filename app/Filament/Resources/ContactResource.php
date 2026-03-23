@@ -181,44 +181,6 @@ class ContactResource extends Resource
                         Forms\Components\Placeholder::make('portal_created_at')
                             ->label('Account Created')
                             ->content($portal->created_at->format('F j, Y')),
-
-                        Forms\Components\Actions::make([
-                            Forms\Components\Actions\Action::make('suspend_portal')
-                                ->label('Suspend access')
-                                ->color('danger')
-                                ->requiresConfirmation()
-                                ->visible(fn () => $portal->is_active && auth()->user()?->can('manage_contacts'))
-                                ->action(function () use ($portal) {
-                                    $portal->update(['is_active' => false]);
-                                }),
-
-                            Forms\Components\Actions\Action::make('restore_portal')
-                                ->label('Restore access')
-                                ->color('success')
-                                ->requiresConfirmation()
-                                ->visible(fn () => ! $portal->is_active && auth()->user()?->can('manage_contacts'))
-                                ->action(function () use ($portal) {
-                                    $portal->update(['is_active' => true]);
-                                }),
-
-                            Forms\Components\Actions\Action::make('verify_portal_email')
-                                ->label('Mark email verified')
-                                ->color('success')
-                                ->requiresConfirmation()
-                                ->visible(fn () => $portal->email_verified_at === null && auth()->user()?->can('manage_contacts'))
-                                ->action(function () use ($portal) {
-                                    $portal->update(['email_verified_at' => now()]);
-                                }),
-
-                            Forms\Components\Actions\Action::make('unverify_portal_email')
-                                ->label('Mark email unverified')
-                                ->color('warning')
-                                ->requiresConfirmation()
-                                ->visible(fn () => $portal->email_verified_at !== null && auth()->user()?->can('manage_contacts'))
-                                ->action(function () use ($portal) {
-                                    $portal->update(['email_verified_at' => null]);
-                                }),
-                        ]),
                     ];
                 })
                     ->collapsible()
@@ -334,7 +296,6 @@ class ContactResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Filament\Resources\ContactResource\RelationManagers\NotesRelationManager::class,
             \App\Filament\Resources\ContactResource\RelationManagers\MembershipsRelationManager::class,
         ];
     }
@@ -345,6 +306,7 @@ class ContactResource extends Resource
             'index'  => Pages\ListContacts::route('/'),
             'create' => Pages\CreateContact::route('/create'),
             'edit'   => Pages\EditContact::route('/{record}/edit'),
+            'notes'  => Pages\ContactNotes::route('/{record}/notes'),
         ];
     }
 }

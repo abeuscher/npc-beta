@@ -3,12 +3,17 @@
 namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Mail\PortalEmailVerification;
 use App\Models\Membership;
 use App\Models\MembershipTier;
+use App\Models\PortalAccount;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class EditContact extends EditRecord
 {
@@ -17,6 +22,12 @@ class EditContact extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('notes')
+                ->label('Notes')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record])),
+
             Actions\DeleteAction::make(),
 
             Actions\ActionGroup::make([
@@ -89,6 +100,88 @@ class EditContact extends EditRecord
                         Notification::make()
                             ->success()
                             ->title('Membership created.')
+                            ->send();
+                    }),
+
+                Actions\Action::make('grant_portal_access')
+                    ->label('Grant Portal Access')
+                    ->icon('heroicon-o-key')
+                    ->hidden(fn () => $this->record->portalAccount !== null)
+                    ->modalHeading('Grant Portal Access')
+                    ->modalWidth('md')
+                    ->form([
+                        Forms\Components\TextInput::make('portal_email')
+                            ->label('Portal email')
+                            ->email()
+                            ->required()
+                            ->default(fn () => $this->record->email),
+
+                        Forms\Components\Toggle::make('send_invite')
+                            ->label('Send invite email')
+                            ->default(true),
+                    ])
+                    ->action(function (array $data) {
+                        $sendInvite = $data['send_invite'];
+
+                        $portal = PortalAccount::create([
+                            'contact_id'        => $this->record->id,
+                            'email'             => $data['portal_email'],
+                            'password'          => Hash::make(Str::random(32)),
+                            'is_active'         => true,
+                            'email_verified_at' => $sendInvite ? null : now(),
+                        ]);
+
+                        if ($sendInvite) {
+                            Mail::to($portal->email)->send(new PortalEmailVerification($portal));
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title($sendInvite ? 'Portal access granted — invite sent.' : 'Portal access granted.')
+                            ->send();
+                    }),
+
+                Actions\Action::make('suspend_portal_access')
+                    ->label('Suspend portal access')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->hidden(fn () => $this->record->portalAccount === null || ! $this->record->portalAccount->is_active)
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        $this->record->portalAccount->update(['is_active' => false]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Portal access suspended.')
+                            ->send();
+                    }),
+
+                Actions\Action::make('restore_portal_access')
+                    ->label('Restore portal access')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->hidden(fn () => $this->record->portalAccount === null || $this->record->portalAccount->is_active)
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        $this->record->portalAccount->update(['is_active' => true]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Portal access restored.')
+                            ->send();
+                    }),
+
+                Actions\Action::make('mark_email_verified')
+                    ->label('Mark email verified')
+                    ->icon('heroicon-o-check-badge')
+                    ->hidden(fn () => $this->record->portalAccount === null || $this->record->portalAccount->email_verified_at !== null)
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        $this->record->portalAccount->update(['email_verified_at' => now()]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Email marked as verified.')
                             ->send();
                     }),
             ]),

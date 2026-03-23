@@ -71,18 +71,17 @@ This is the single working reference for all sessions. Completed sessions are li
 | 064 | Sample Data Generator Library |
 | 065 | Member Event Registration |
 | 066 | Promote Contact to Member |
+| 067 | Contact Actions & Notes Sub-Page |
 
 ---
 
 ## Member Portal — Next Steps
 
-### Contact Actions & Notes Sub-Page
+### CRM Navigation & Views Reorganisation
 
-Two focused improvements to the contact edit page. The ⋯ ellipsis header menu gets consolidated: Grant Portal Access (two paths — send invite email, or admin bypass with immediate verification), Suspend portal access, Restore portal access, and Mark email verified all move there. The three portal action buttons are removed from the form body (status placeholders remain). The `NotesRelationManager` is removed from the contact edit page — it caused layout jank on load. Notes move to a dedicated sub-page at `/contacts/{id}/notes` accessible via a "Notes" header action button, with breadcrumbs and a back button.
+Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`.
 
-Full prompt: `sessions/067. Contact Actions & Notes Sub-Page.md` — ready.
-
-When the Volunteer module is built, a parallel "Enrol as volunteer" action should be added to the same ellipsis menu at that time.
+**Status:** Deferred — session 063 was used for UI polish and settings consolidation instead. Full prompt is written and ready at `sessions/063. CRM Navigation and Views Reorganisation.md`.
 
 ---
 
