@@ -83,6 +83,11 @@ class PermissionSeeder extends Seeder
             ]);
         }
 
+        Permission::firstOrCreate([
+            'name'       => 'manage_routing_prefixes',
+            'guard_name' => 'web',
+        ]);
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [

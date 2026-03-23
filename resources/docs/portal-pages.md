@@ -5,7 +5,9 @@ version: "0.57"
 updated: 2026-03-22
 tags: [cms, pages, portal, members]
 routes:
-  - portal.account
+  - filament.admin.resources.pages.index
+  - filament.admin.resources.pages.create
+  - filament.admin.resources.pages.edit
 ---
 
 # Portal Pages

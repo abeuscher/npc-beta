@@ -66,10 +66,17 @@ This is the single working reference for all sessions. Completed sessions are li
 | 059 | Password Reset |
 | 060 | Member Portal |
 | 061 | System Page Type — Infrastructure and Migration |
+| 062 | Codebase Audit & Migration Squash |
 
 ---
 
 ## Member Portal — Next Steps
+
+### Sample Data Generator Library
+
+Enhance the dashboard dev widget's data generation with a library of curated fake values — roughly 100+ entries per field drawn from a themed source (cartoon characters, movies, fictional places, etc.) rather than Faker's generic output. Each field category (first names, last names, email domains, cities, event names, organisation names, etc.) lives in a dedicated library file. The generator draws from these libraries so generated records have a little personality and are visually distinctive during demos. Library files are plain PHP arrays checked into the repo — easy to extend over time. No schema changes required; this is a pure PHP/view layer change scoped to the dev widget.
+
+Full prompt: `sessions/064. Sample Data Generator Library.md`
 
 ### Member Event Registration
 
@@ -266,10 +273,6 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 ---
 
 ## Infrastructure & Ops
-
-### Codebase Audit & Migration Squash
-
-Follows the pattern established in session 049. Full audit of fields, schema, permissions, and help coverage against the current state of the codebase. Additional scope beyond session 049: squash the migration history using `php artisan schema:dump`, delete the superseded migration files, and verify a clean `migrate:fresh --seed` on both the local Docker environment and the production dev server. Full prompt: `sessions/062. Codebase Audit & Migration Squash.md`
 
 ### Help System Enhancements
 

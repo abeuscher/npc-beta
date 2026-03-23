@@ -31,6 +31,11 @@ class PageResource extends Resource
         return auth()->user()?->can('view_any_page') ?? false;
     }
 
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return $record->type !== 'system' && (auth()->user()?->can('delete_page') ?? false);
+    }
+
     public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
     {
         return auth()->user()?->can('delete_page') ?? false;

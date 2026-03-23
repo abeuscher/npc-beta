@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class PortalAccount extends Authenticatable implements MustVerifyEmailContract
 {
-    use MustVerifyEmail, Notifiable;
+    use HasFactory, MustVerifyEmail, Notifiable;
 
     protected $fillable = [
         'contact_id',
