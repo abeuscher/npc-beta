@@ -55,3 +55,5 @@
 
     <button type="submit">Create account</button>
 </form>
+
+<p><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>

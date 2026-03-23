@@ -32,3 +32,6 @@
 
     <button type="submit">Log in</button>
 </form>
+
+<p><a href="{{ route('portal.password.request') }}">Forgot your password?</a></p>
+<p><a href="{{ route('portal.signup') }}">Don't have an account? Sign up</a></p>

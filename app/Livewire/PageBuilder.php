@@ -2,7 +2,9 @@
 
 namespace App\Livewire;
 
+use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\SiteSetting;
 use App\Models\WidgetType;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -17,6 +19,8 @@ class PageBuilder extends Component
     /** @var array<int, array<string, mixed>> */
     public array $widgetTypes = [];
 
+    /** @var array<int, string> Widget handles that are required on this page. */
+    protected array $requiredHandles = [];
 
     // Add block modal
     public bool $showAddModal = false;
@@ -27,11 +31,35 @@ class PageBuilder extends Component
     {
         $this->pageId = $pageId;
 
+        if ($pageId) {
+            $page = Page::find($pageId);
+            if ($page) {
+                $this->requiredHandles = WidgetType::requiredForPage(
+                    $this->computeBareSlug($page)
+                );
+            }
+        }
+
         $this->widgetTypes = WidgetType::orderBy('label')
             ->get(['id', 'handle', 'label', 'collections', 'config_schema'])
             ->toArray();
 
         $this->loadBlocks();
+    }
+
+    private function computeBareSlug(Page $page): string
+    {
+        $prefix = match ($page->type) {
+            'system' => SiteSetting::get('system_prefix', 'system'),
+            'member' => SiteSetting::get('portal_prefix', 'members'),
+            default  => '',
+        };
+
+        if ($prefix !== '' && str_starts_with($page->slug, $prefix . '/')) {
+            return substr($page->slug, strlen($prefix) + 1);
+        }
+
+        return $page->slug;
     }
 
     public function loadBlocks(): void
@@ -51,6 +79,7 @@ class PageBuilder extends Component
                 'config'                    => $pw->config ?? [],
                 'query_config'              => $pw->query_config ?? [],
                 'sort_order'                => $pw->sort_order ?? 0,
+                'is_required'               => in_array($pw->widgetType?->handle ?? '', $this->requiredHandles, true),
             ])
             ->values()
             ->toArray();
@@ -126,6 +155,12 @@ class PageBuilder extends Component
 
     public function deleteBlock(string $blockId): void
     {
+        $pw = PageWidget::with('widgetType')->find($blockId);
+
+        if ($pw && in_array($pw->widgetType?->handle ?? '', $this->requiredHandles, true)) {
+            return;
+        }
+
         PageWidget::where('id', $blockId)->delete();
         $this->loadBlocks();
     }

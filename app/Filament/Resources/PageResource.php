@@ -62,6 +62,13 @@ class PageResource extends Resource
                             ->default('default')
                             ->hiddenOn('edit'),
 
+                        // Shown on edit only for system pages — read-only type label.
+                        Forms\Components\Placeholder::make('type_display')
+                            ->label('Page Type')
+                            ->content('System Page')
+                            ->visibleOn('edit')
+                            ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system'),
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
@@ -110,7 +117,15 @@ class PageResource extends Resource
                                 'event'  => 'Edit the slug segment after the events prefix.',
                                 default  => 'URL-safe identifier. May include forward slashes (e.g. events/my-event).',
                             })
-                            ->hiddenOn('create'),
+                            ->hidden(fn (string $operation, Forms\Get $get): bool => $operation === 'create' || $get('type') === 'system'),
+
+                        // System pages: show the full stored slug as read-only text.
+                        Forms\Components\Placeholder::make('system_slug_display')
+                            ->label('Slug')
+                            ->content(fn ($record): string => $record?->slug ?? '—')
+                            ->helperText('Slug is locked — system page slugs can only be changed via the System Pages Prefix setting.')
+                            ->visibleOn('edit')
+                            ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system'),
 
                         Forms\Components\Placeholder::make('public_url')
                             ->label('Public URL')
@@ -216,6 +231,23 @@ class PageResource extends Resource
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
 
+                Tables\Columns\BadgeColumn::make('type')
+                    ->label('Type')
+                    ->colors([
+                        'gray'    => 'default',
+                        'info'    => 'post',
+                        'warning' => 'event',
+                        'success' => 'member',
+                        'danger'  => 'system',
+                    ])
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'post'    => 'Post',
+                        'event'   => 'Event',
+                        'member'  => 'Member',
+                        'system'  => 'System',
+                        default   => 'Page',
+                    }),
+
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')
                     ->boolean(),
@@ -236,20 +268,49 @@ class PageResource extends Resource
                     ->trueLabel('Published only')
                     ->falseLabel('Unpublished only'),
 
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Type')
+                    ->multiple()
+                    ->options([
+                        'default' => 'Page',
+                        'post'    => 'Post',
+                        'event'   => 'Event',
+                        'member'  => 'Member',
+                        'system'  => 'System',
+                    ])
+                    ->default(['default']),
+
                 Tables\Filters\TrashedFilter::make(),
             ])
+            ->filtersFormColumns(3)
             ->defaultSort('updated_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Page $record): bool => $record->type === 'system'),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->hidden(fn (Page $record): bool => $record->type === 'system'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Page $record) {
+                                if ($record->type !== 'system') {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Page $record) {
+                                if ($record->type !== 'system') {
+                                    $record->forceDelete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

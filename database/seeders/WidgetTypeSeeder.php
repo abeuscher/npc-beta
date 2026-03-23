@@ -108,6 +108,21 @@ class WidgetTypeSeeder extends Seeder
                 'collections'   => [],
                 'config_schema' => [],
                 'template'      => "@include('widgets.portal-signup')",
+                'js'            => "(function () {
+    var password     = document.getElementById('sw_password');
+    var confirmation = document.getElementById('sw_password_confirmation');
+    if (!password || !confirmation) return;
+    var hint = document.createElement('span');
+    hint.setAttribute('role', 'alert');
+    hint.style.display = 'none';
+    hint.textContent = 'Passwords do not match.';
+    confirmation.parentNode.appendChild(hint);
+    function check() {
+        hint.style.display = (confirmation.value.length > 0 && password.value !== confirmation.value) ? '' : 'none';
+    }
+    password.addEventListener('input', check);
+    confirmation.addEventListener('input', check);
+}());",
             ]
         );
 
@@ -152,6 +167,28 @@ class WidgetTypeSeeder extends Seeder
                 'collections'   => [],
                 'config_schema' => [],
                 'template'      => "@include('widgets.portal-event-registrations')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_forgot_password'],
+            [
+                'label'         => 'Member: Forgot Password Form',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-forgot-password')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'portal_account_dashboard'],
+            [
+                'label'         => 'Member: Account Dashboard',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.portal-account-dashboard')",
             ]
         );
     }

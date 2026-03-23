@@ -17,17 +17,21 @@ class PageBuilderBlock extends Component
     #[Reactive]
     public bool $isLast = false;
 
+    #[Reactive]
+    public bool $isRequired = false;
+
     /** @var array<string, mixed> */
     public array $block = [];
 
     /** @var array<int, array<string, mixed>> */
     public array $cmsTags = [];
 
-    public function mount(string $blockId, bool $isFirst = false, bool $isLast = false): void
+    public function mount(string $blockId, bool $isFirst = false, bool $isLast = false, bool $isRequired = false): void
     {
-        $this->blockId = $blockId;
-        $this->isFirst = $isFirst;
-        $this->isLast  = $isLast;
+        $this->blockId    = $blockId;
+        $this->isFirst    = $isFirst;
+        $this->isLast     = $isLast;
+        $this->isRequired = $isRequired;
 
         $this->loadBlock();
 

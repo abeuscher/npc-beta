@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\PageController;
+use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,13 +12,16 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function show(): View|RedirectResponse
+    public function show(): mixed
     {
         if (Auth::guard('portal')->check()) {
             return redirect()->route('portal.account');
         }
 
-        return view('portal.login');
+        $prefix = SiteSetting::get('system_prefix', 'system');
+        $slug   = $prefix ? $prefix . '/login' : 'login';
+
+        return app(PageController::class)->show($slug);
     }
 
     public function store(Request $request): RedirectResponse

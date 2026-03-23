@@ -51,6 +51,9 @@ class GeneralSettingsPage extends Page
             'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
             'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
             'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
+            'system_prefix'       => SiteSetting::get('system_prefix', 'system'),
+            'system_page_content_reset_password' => SiteSetting::get('system_page_content_reset_password', '<h1>Set a new password</h1>'),
+            'system_page_content_email_verify'   => SiteSetting::get('system_page_content_email_verify', '<h1>Verify your email</h1>'),
         ]);
     }
 
@@ -155,8 +158,41 @@ class GeneralSettingsPage extends Page
                             ->rules(['alpha_dash'])
                             ->helperText("The URL prefix for the member portal. Example: 'members' → /members/login.")
                             ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('system_prefix')
+                            ->label('System pages prefix')
+                            ->nullable()
+                            ->rules([
+                                fn () => function (string $attribute, $value, \Closure $fail) {
+                                    if ($value !== '' && $value !== null && !preg_match('/^[a-zA-Z0-9_-]+$/', $value)) {
+                                        $fail("The system prefix may only contain letters, numbers, dashes, and underscores.");
+                                    }
+                                    if (in_array(strtolower((string) $value), ['admin', 'horizon', 'up', 'login', 'logout', 'register'], true)) {
+                                        $fail("'{$value}' is a reserved word and cannot be used as a system prefix.");
+                                    }
+                                },
+                            ])
+                            ->helperText("Optional URL prefix for system pages (login, signup, etc.). Leave blank for root-level paths: /login, /signup. Set to e.g. 'system' for /system/login.")
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
+
+                Forms\Components\Section::make('System Page Content')
+                    ->description('Editable content rendered on system pages that cannot use the CMS page builder.')
+                    ->schema([
+                        Forms\Components\RichEditor::make('system_page_content_reset_password')
+                            ->label('Reset password page')
+                            ->nullable()
+                            ->columnSpanFull()
+                            ->helperText('Rendered above the reset-password form.'),
+
+                        Forms\Components\RichEditor::make('system_page_content_email_verify')
+                            ->label('Email verification page')
+                            ->nullable()
+                            ->columnSpanFull()
+                            ->helperText('Rendered above the email address and logout button on the verification notice.'),
+                    ])
+                    ->visible($isSuperAdmin),
 
                 Forms\Components\Section::make('Integrations')
                     ->schema([
@@ -192,14 +228,17 @@ class GeneralSettingsPage extends Page
         $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
 
         // Routing prefixes — available to all who can access this page.
-        $oldBlogPrefix   = SiteSetting::get('blog_prefix', 'news');
-        $newBlogPrefix   = $data['blog_prefix'] ?? 'news';
-        $oldEventsPrefix = SiteSetting::get('events_prefix', 'events');
-        $newEventsPrefix = $data['events_prefix'] ?? 'events';
+        $oldBlogPrefix    = SiteSetting::get('blog_prefix', 'news');
+        $newBlogPrefix    = $data['blog_prefix'] ?? 'news';
+        $oldEventsPrefix  = SiteSetting::get('events_prefix', 'events');
+        $newEventsPrefix  = $data['events_prefix'] ?? 'events';
+        $oldSystemPrefix  = SiteSetting::get('system_prefix', '');
+        $newSystemPrefix  = $data['system_prefix'] ?? '';
 
         SiteSetting::set('blog_prefix', $newBlogPrefix);
         SiteSetting::set('events_prefix', $newEventsPrefix);
         SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
+        SiteSetting::set('system_prefix', $newSystemPrefix);
 
         if ($newBlogPrefix !== $oldBlogPrefix) {
             CmsPage::where('type', 'post')
@@ -226,6 +265,19 @@ class GeneralSettingsPage extends Page
                 });
         }
 
+        if ($newSystemPrefix !== $oldSystemPrefix) {
+            CmsPage::where('type', 'system')
+                ->each(function (CmsPage $page) use ($oldSystemPrefix, $newSystemPrefix) {
+                    if ($oldSystemPrefix !== '' && str_starts_with($page->slug, $oldSystemPrefix . '/')) {
+                        $bareSlug = substr($page->slug, strlen($oldSystemPrefix) + 1);
+                    } else {
+                        $bareSlug = $page->slug;
+                    }
+                    $newSlug = $newSystemPrefix !== '' ? $newSystemPrefix . '/' . $bareSlug : $bareSlug;
+                    $page->updateQuietly(['slug' => $newSlug]);
+                });
+        }
+
         // Super-admin-only settings.
         if ($isSuperAdmin) {
             SiteSetting::set('base_url', rtrim($data['site_url'], '/'));
@@ -234,6 +286,8 @@ class GeneralSettingsPage extends Page
                 SiteSetting::set('admin_logo_path', $data['admin_logo_upload']);
             }
             SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
+            SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
+            SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
             SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
             SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
             SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');

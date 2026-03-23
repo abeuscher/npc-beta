@@ -2,7 +2,7 @@
 
 @section('content')
 <article style="max-width:480px;margin:3rem auto;">
-    <h1>Verify your email</h1>
+    {!! \App\Models\SiteSetting::get('system_page_content_email_verify', '<h1>Verify your email</h1>') !!}
 
     <p>We sent a verification link to <strong>{{ auth('portal')->user()->email }}</strong>. Please check your inbox and click the link to activate your account.</p>
 

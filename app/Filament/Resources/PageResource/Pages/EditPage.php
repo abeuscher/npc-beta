@@ -13,6 +13,7 @@ class EditPage extends EditRecord
     public function getTitle(): string
     {
         $typeLabel = match ($this->record->type) {
+            'system' => 'System Page',
             'member' => 'Member Page',
             'post'   => 'Post',
             'event'  => 'Event Landing Page',
@@ -25,7 +26,8 @@ class EditPage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->hidden(fn () => $this->record->type === 'system'),
         ];
     }
 }

@@ -111,21 +111,21 @@
                             type="button"
                             wire:click="requestAddAbove"
                             x-on:click="menuOpen = false"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                         >Add Block Above</button>
 
                         <button
                             type="button"
                             wire:click="requestAddBelow"
                             x-on:click="menuOpen = false"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                         >Add Block Below</button>
 
                         <button
                             type="button"
                             wire:click="requestCopy"
                             x-on:click="menuOpen = false"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                         >Copy Block</button>
 
                         <hr class="my-1 border-gray-100 dark:border-gray-700">
@@ -134,7 +134,7 @@
                             type="button"
                             wire:click="requestMoveUp"
                             x-on:click="menuOpen = false"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                             @if($isFirst) disabled @endif
                         >Move Up</button>
 
@@ -142,17 +142,19 @@
                             type="button"
                             wire:click="requestMoveDown"
                             x-on:click="menuOpen = false"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
                             @if($isLast) disabled @endif
                         >Move Down</button>
 
+                        @if (! $isRequired)
                         <hr class="my-1 border-gray-100 dark:border-gray-700">
 
                         <button
                             type="button"
                             x-on:click="confirmDelete = true"
-                            class="flex w-full items-center gap-2 px-4 py-2 text-sm font-medium text-danger-600 hover:bg-danger-50 dark:hover:bg-gray-700"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap font-medium text-danger-600 hover:bg-danger-50 dark:hover:bg-gray-700"
                         >Delete</button>
+                        @endif
                     </div>
                 </template>
 

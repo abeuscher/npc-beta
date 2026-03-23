@@ -39,26 +39,34 @@ Route::post('/forms/{handle}', [FormSubmissionController::class, 'store'])
     ->middleware('throttle:10,1');
 
 // ── Portal auth routes ────────────────────────────────────────────────────────
-Route::get('/signup',  [SignupController::class, 'show'])->name('portal.signup');
+// GET routes use the system_prefix so all system pages live under /system/*.
+// POST routes stay at root paths so form actions don't depend on the prefix value.
+$systemPrefix = config('site.system_prefix', 'system');
+$systemBase   = $systemPrefix ? '/' . $systemPrefix : '';
+
+Route::get("{$systemBase}/signup",  [SignupController::class, 'show'])->name('portal.signup');
 Route::post('/signup', [SignupController::class, 'store'])->name('portal.signup.post')->middleware('throttle:10,1');
 
-Route::get('/login',   [LoginController::class, 'show'])->name('portal.login');
+Route::get("{$systemBase}/login",   [LoginController::class, 'show'])->name('portal.login');
 Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.post')->middleware('throttle:10,1');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('portal.logout');
 
-Route::get('/forgot-password',        [ForgotPasswordController::class, 'show'])->name('portal.password.request');
-Route::get('/forgot-password/sent',   [ForgotPasswordController::class, 'sent'])->name('portal.password.sent');
+Route::get("{$systemBase}/forgot-password",        [ForgotPasswordController::class, 'show'])->name('portal.password.request');
+Route::get("{$systemBase}/forgot-password/sent",   [ForgotPasswordController::class, 'sent'])->name('portal.password.sent');
 Route::post('/forgot-password',       [ForgotPasswordController::class, 'store'])->name('portal.password.email')->middleware('throttle:5,1');
-Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->name('portal.password.reset');
+Route::get("{$systemBase}/reset-password/{token}", [ResetPasswordController::class, 'show'])->name('portal.password.reset');
 Route::post('/reset-password',        [ResetPasswordController::class, 'update'])->name('portal.password.update');
 
-Route::get('/email/verify',            [EmailVerificationController::class, 'notice'])->name('portal.verification.notice')->middleware('portal.auth');
-Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('portal.verification.verify')->middleware(['portal.auth', 'signed']);
+Route::get("{$systemBase}/email/verify",             [EmailVerificationController::class, 'notice'])->name('portal.verification.notice')->middleware('portal.auth');
+Route::get("{$systemBase}/email/verify/{id}/{hash}", [EmailVerificationController::class, 'verify'])->name('portal.verification.verify')->middleware(['portal.auth', 'signed']);
 
 $portalAuth = ['portal.auth', 'verified:portal.verification.notice'];
 
-Route::get('/account', function () {
-    return redirect(url('/' . \App\Models\SiteSetting::get('portal_prefix', 'members')));
+Route::get("{$systemBase}/account", function () {
+    $prefix = \App\Models\SiteSetting::get('system_prefix', 'system');
+    $slug   = $prefix ? $prefix . '/account' : 'account';
+
+    return app(\App\Http\Controllers\PageController::class)->show($slug);
 })->name('portal.account')->middleware($portalAuth);
 
 Route::patch('/account/address', [AccountController::class, 'updateAddress'])->name('portal.account.update-address')->middleware($portalAuth);

@@ -2,7 +2,7 @@
 
 @section('content')
 <article style="max-width:480px;margin:3rem auto;">
-    <h1>Set a new password</h1>
+    {!! \App\Models\SiteSetting::get('system_page_content_reset_password', '<h1>Set a new password</h1>') !!}
 
     @if ($errors->any())
         <div role="alert">

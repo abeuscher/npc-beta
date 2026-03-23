@@ -6,9 +6,14 @@
         'post'   => 'post-' . $pageSlug,
         'event'  => 'event-' . $pageSlug,
         'member' => 'member-page-' . $pageSlug,
+        'system' => 'system-page-' . $pageSlug,
         default  => 'page-' . $pageSlug . ' page-type-' . $pageType,
     };
-    $layout = $pageType === 'member' ? 'layouts.portal' : 'layouts.public';
+    $layout = match ($pageType) {
+        'member' => 'layouts.portal',
+        'system' => (auth('portal')->check() ? 'layouts.portal' : 'layouts.public'),
+        default  => 'layouts.public',
+    };
 @endphp
 
 @extends($layout, [

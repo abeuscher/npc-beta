@@ -65,8 +65,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 058 | Routing Consolidation, Page Type Locking & Portal Widgets |
 | 059 | Password Reset |
 | 060 | Member Portal |
-| 061 | System Page Type — Infrastructure |
-| 062 | System Page Type — Migration |
+| 061 | System Page Type — Infrastructure and Migration |
 
 ---
 
@@ -84,7 +83,7 @@ Implementation: a new portal-authenticated route (`POST /account/events/{slug}/r
 
 ### CRM Navigation & Views Reorganisation
 
-Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`. Full prompt: `sessions/064. CRM Navigation and Views Reorganisation.md`
+Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`. Full prompt: `sessions/063. CRM Navigation and Views Reorganisation.md`
 
 ---
 
@@ -270,7 +269,7 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 
 ### Codebase Audit & Migration Squash
 
-Follows the pattern established in session 049. Full audit of fields, schema, permissions, and help coverage against the current state of the codebase. Additional scope beyond session 049: squash the migration history using `php artisan schema:dump`, delete the superseded migration files, and verify a clean `migrate:fresh --seed` on both the local Docker environment and the production dev server.
+Follows the pattern established in session 049. Full audit of fields, schema, permissions, and help coverage against the current state of the codebase. Additional scope beyond session 049: squash the migration history using `php artisan schema:dump`, delete the superseded migration files, and verify a clean `migrate:fresh --seed` on both the local Docker environment and the production dev server. Full prompt: `sessions/062. Codebase Audit & Migration Squash.md`
 
 ### Help System Enhancements
 

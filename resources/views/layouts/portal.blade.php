@@ -30,8 +30,17 @@
 
     <header class="portal-header">
         <div class="container">
-            <nav>
+            <div class="portal-header__top">
                 <strong>{{ config('site.name', config('app.name')) }} — Member Area</strong>
+                <div class="portal-header__user">
+                    <span>{{ auth('portal')->user()->contact->first_name }}</span>
+                    <form method="POST" action="{{ route('portal.logout') }}">
+                        @csrf
+                        <button type="submit" class="portal-logout-link">Log out</button>
+                    </form>
+                </div>
+            </div>
+            <nav class="portal-header__nav">
                 <ul>
                     @foreach ($portalNav as $item)
                         @php
@@ -41,13 +50,6 @@
                             <a href="{{ $href }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }}>{{ $item->label }}</a>
                         </li>
                     @endforeach
-                    <li>{{ auth('portal')->user()->contact->first_name }}</li>
-                    <li>
-                        <form method="POST" action="{{ route('portal.logout') }}">
-                            @csrf
-                            <button type="submit" class="secondary outline">Log out</button>
-                        </form>
-                    </li>
                 </ul>
             </nav>
         </div>

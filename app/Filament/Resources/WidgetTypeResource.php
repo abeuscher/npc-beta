@@ -179,11 +179,19 @@ class WidgetTypeResource extends Resource
             ->defaultSort('label')
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (WidgetType $record): bool => WidgetType::isPinned($record->handle)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (WidgetType $record) {
+                                if (! WidgetType::isPinned($record->handle)) {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

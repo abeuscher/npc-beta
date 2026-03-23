@@ -79,6 +79,9 @@ class DatabaseSeeder extends Seeder
             ['key' => 'mail_from_name',     'value' => '',               'group' => 'mail',    'type' => 'string'],
             ['key' => 'mail_from_address',  'value' => '',               'group' => 'mail',    'type' => 'string'],
             ['key' => 'resend_api_key',     'value' => '',               'group' => 'mail',    'type' => 'string'],
+            ['key' => 'system_prefix',      'value' => 'system',         'group' => 'routing',       'type' => 'string'],
+            ['key' => 'system_page_content_reset_password', 'value' => '<h1>Set a new password</h1>',  'group' => 'system_pages', 'type' => 'string'],
+            ['key' => 'system_page_content_email_verify',   'value' => '<h1>Verify your email</h1>',   'group' => 'system_pages', 'type' => 'string'],
         ];
 
         foreach ($siteSettingDefaults as $setting) {
@@ -130,6 +133,7 @@ class DatabaseSeeder extends Seeder
         // ── Base pages (home, about, contact, events, blog) ─────────────────
         $this->call(BasePageSeeder::class);
         $this->call(PortalPageSeeder::class);
+        $this->call(SystemPageSeeder::class);
         $homePage = Page::where('slug', 'home')->first();
 
         // ── System collections (all environments) ────────────────────────────
@@ -225,8 +229,8 @@ class DatabaseSeeder extends Seeder
         );
 
         // Tags
-        $tagDonor      = Tag::firstOrCreate(['name' => 'major-donor'], ['color' => '#e11d48']);
-        $tagNewsletter = Tag::firstOrCreate(['name' => 'newsletter'], ['color' => '#2563eb']);
+        $tagDonor      = Tag::firstOrCreate(['name' => 'major-donor']);
+        $tagNewsletter = Tag::firstOrCreate(['name' => 'newsletter']);
 
         // Contacts
         $contacts = [];

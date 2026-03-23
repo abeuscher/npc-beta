@@ -126,32 +126,51 @@ footer > .container {
     border-bottom: 1px solid #d0d0d0;
 
     > .container {
+        padding-top: calc(var(--pico-spacing) * 0.5);
+        padding-bottom: calc(var(--pico-spacing) * 0.5);
+    }
+
+    &__top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-top: calc(var(--pico-spacing) * 0.75);
-        padding-bottom: calc(var(--pico-spacing) * 0.75);
+        padding-bottom: calc(var(--pico-spacing) * 0.25);
+    }
 
-        nav {
+    &__user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    &__nav {
+        display: flex;
+        justify-content: flex-end;
+
+        ul {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            width: 100%;
-            justify-content: space-between;
-
-            ul {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                list-style: none;
-                margin: 0;
-                padding: 0;
-            }
-
-            button {
-                margin: 0;
-            }
+            gap: 0.75rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
         }
+    }
+}
+
+.portal-logout-link {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover {
+        opacity: 0.75;
     }
 }
 

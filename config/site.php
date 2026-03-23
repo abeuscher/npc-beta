@@ -16,4 +16,11 @@ return [
             return env('EVENTS_PREFIX', 'events');
         }
     })(),
+    'system_prefix' => (static function () {
+        try {
+            return \App\Models\SiteSetting::get('system_prefix', env('SYSTEM_PREFIX', 'system'));
+        } catch (\Throwable) {
+            return env('SYSTEM_PREFIX', 'system');
+        }
+    })(),
 ];
