@@ -308,6 +308,10 @@ Audit and harden the public-facing frontend for accessibility. Add ARIA landmark
 
 ## End of Roadmap
 
+### Onboarding / Install Dashboard Widget
+
+*A first-run dashboard widget that detects an unconfigured install and walks the admin through the minimum viable setup: base URL, site name, and logo upload. Presents as a step-by-step card on the Filament dashboard; disappears once all fields are confirmed. Likely backed by SiteSettings keys already in place (`site_name`, `base_url`, `admin_logo_path`). Could double as a health-check widget showing which optional settings are still unset.*
+
 ### Installer
 
 ### Demo
