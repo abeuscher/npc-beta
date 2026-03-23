@@ -4,6 +4,8 @@
         $isAtCapacity = $event->isAtCapacity();
         $mode         = $event->registration_mode ?? 'open';
         $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity && $event->is_free;
+        $portalUser   = auth('portal')->user();
+        $portalContact = $portalUser?->contact;
     @endphp
 
     @if (session('registration_success'))
@@ -38,84 +40,100 @@
             <div role="alert">{{ $errors->first('register') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('events.register', $event->slug) }}">
-            @csrf
+        @if ($portalUser)
+            <form method="POST" action="{{ route('portal.events.register', $event->slug) }}">
+                @csrf
+                <button type="submit">Register as member</button>
+            </form>
+            <form method="POST" action="{{ route('portal.logout') }}">
+                @csrf
+                <input type="hidden" name="redirect_after_logout" value="{{ url()->current() }}">
+                <button type="submit">Log out</button>
+            </form>
+        @else
+            <a href="{{ route('portal.login', ['intended' => url()->current()]) }}">Register as member</a>
 
-            {{-- Honeypot --}}
-            <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;">
-                <label for="_hp_name">Leave this empty</label>
-                <input type="text" id="_hp_name" name="_hp_name" tabindex="-1" autocomplete="off">
-            </div>
-            <input type="hidden" name="_form_start" value="{{ time() }}">
+            <h3>Or register as a guest</h3>
 
-            <div>
-                <label for="reg_name">Full Name <span aria-hidden="true">*</span></label>
-                <input type="text" id="reg_name" name="name" required
-                       value="{{ old('name') }}" autocomplete="name">
-                @error('name')<span role="alert">{{ $message }}</span>@enderror
-            </div>
+            <form method="POST" action="{{ route('events.register', $event->slug) }}">
+                @csrf
 
-            <div>
-                <label for="reg_email">Email Address <span aria-hidden="true">*</span></label>
-                <input type="email" id="reg_email" name="email" required
-                       value="{{ old('email') }}" autocomplete="email">
-                @error('email')<span role="alert">{{ $message }}</span>@enderror
-            </div>
-
-            <div>
-                <label for="reg_phone">Phone <span>(optional)</span></label>
-                <input type="tel" id="reg_phone" name="phone"
-                       value="{{ old('phone') }}" autocomplete="tel">
-            </div>
-
-            <div>
-                <label for="reg_company">Organization <span>(optional)</span></label>
-                <input type="text" id="reg_company" name="company"
-                       value="{{ old('company') }}" autocomplete="organization">
-            </div>
-
-            @if ($event->is_in_person)
-                <fieldset>
-                    <legend>Mailing Address <span>(optional)</span></legend>
-                    <div>
-                        <label for="reg_addr1">Address</label>
-                        <input type="text" id="reg_addr1" name="address_line_1"
-                               value="{{ old('address_line_1') }}" autocomplete="address-line1">
-                    </div>
-                    <div>
-                        <label for="reg_addr2">Address Line 2</label>
-                        <input type="text" id="reg_addr2" name="address_line_2"
-                               value="{{ old('address_line_2') }}" autocomplete="address-line2">
-                    </div>
-                    <div>
-                        <label for="reg_city">City</label>
-                        <input type="text" id="reg_city" name="city"
-                               value="{{ old('city') }}" autocomplete="address-level2">
-                    </div>
-                    <div>
-                        <label for="reg_state">State</label>
-                        <input type="text" id="reg_state" name="state"
-                               value="{{ old('state') }}" autocomplete="address-level1">
-                    </div>
-                    <div>
-                        <label for="reg_zip">Zip Code</label>
-                        <input type="text" id="reg_zip" name="zip"
-                               value="{{ old('zip') }}" autocomplete="postal-code">
-                    </div>
-                </fieldset>
-            @endif
-
-            @if ($event->mailing_list_opt_in_enabled)
-                <div>
-                    <label>
-                        <input type="checkbox" name="mailing_list_opt_in" value="1"
-                               {{ old('mailing_list_opt_in') ? 'checked' : '' }}>
-                        Keep me informed about future events and updates
-                    </label>
+                {{-- Honeypot --}}
+                <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;">
+                    <label for="_hp_name">Leave this empty</label>
+                    <input type="text" id="_hp_name" name="_hp_name" tabindex="-1" autocomplete="off">
                 </div>
-            @endif
+                <input type="hidden" name="_form_start" value="{{ time() }}">
 
-            <button type="submit">Register for this event</button>
-        </form>
+                <div>
+                    <label for="reg_name">Full Name <span aria-hidden="true">*</span></label>
+                    <input type="text" id="reg_name" name="name" required
+                           value="{{ old('name') }}" autocomplete="name">
+                    @error('name')<span role="alert">{{ $message }}</span>@enderror
+                </div>
+
+                <div>
+                    <label for="reg_email">Email Address <span aria-hidden="true">*</span></label>
+                    <input type="email" id="reg_email" name="email" required
+                           value="{{ old('email') }}" autocomplete="email">
+                    @error('email')<span role="alert">{{ $message }}</span>@enderror
+                </div>
+
+                <div>
+                    <label for="reg_phone">Phone <span>(optional)</span></label>
+                    <input type="tel" id="reg_phone" name="phone"
+                           value="{{ old('phone') }}" autocomplete="tel">
+                </div>
+
+                <div>
+                    <label for="reg_company">Organization <span>(optional)</span></label>
+                    <input type="text" id="reg_company" name="company"
+                           value="{{ old('company') }}" autocomplete="organization">
+                </div>
+
+                @if ($event->is_in_person)
+                    <fieldset>
+                        <legend>Mailing Address <span>(optional)</span></legend>
+                        <div>
+                            <label for="reg_addr1">Address</label>
+                            <input type="text" id="reg_addr1" name="address_line_1"
+                                   value="{{ old('address_line_1') }}" autocomplete="address-line1">
+                        </div>
+                        <div>
+                            <label for="reg_addr2">Address Line 2</label>
+                            <input type="text" id="reg_addr2" name="address_line_2"
+                                   value="{{ old('address_line_2') }}" autocomplete="address-line2">
+                        </div>
+                        <div>
+                            <label for="reg_city">City</label>
+                            <input type="text" id="reg_city" name="city"
+                                   value="{{ old('city') }}" autocomplete="address-level2">
+                        </div>
+                        <div>
+                            <label for="reg_state">State</label>
+                            <input type="text" id="reg_state" name="state"
+                                   value="{{ old('state') }}" autocomplete="address-level1">
+                        </div>
+                        <div>
+                            <label for="reg_zip">Zip Code</label>
+                            <input type="text" id="reg_zip" name="zip"
+                                   value="{{ old('zip') }}" autocomplete="postal-code">
+                        </div>
+                    </fieldset>
+                @endif
+
+                @if ($event->mailing_list_opt_in_enabled)
+                    <div>
+                        <label>
+                            <input type="checkbox" name="mailing_list_opt_in" value="1"
+                                   {{ old('mailing_list_opt_in') ? 'checked' : '' }}>
+                            Keep me informed about future events and updates
+                        </label>
+                    </div>
+                @endif
+
+                <button type="submit">Register for this event</button>
+            </form>
+        @endif
     @endif
 @endisset

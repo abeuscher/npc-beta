@@ -69,26 +69,29 @@ This is the single working reference for all sessions. Completed sessions are li
 | 062 | Codebase Audit & Migration Squash |
 | 063 | Admin UI Polish, CMS Navigation Sort & Settings Consolidation |
 | 064 | Sample Data Generator Library |
+| 065 | Member Event Registration |
 
 ---
 
 ## Member Portal — Next Steps
 
-### Member Event Registration
-
-Adds a "Register as member" path to event pages for portal users. The public form is hidden entirely for logged-in members; they see only a one-click "Register as member" button that POSTs to a new portal-authenticated route. Non-logged-in visitors see the member button as the primary call to action (links to login with `?intended=` pointing back to the event page) and the public form as a secondary option below it.
-
-The new route (`POST /account/events/{slug}/register`) runs the same capacity, registration-mode, and duplicate-registration checks as the public `EventController`, then creates an `EventRegistration` linked to the portal user's `contact_id` and fires the confirmation email. Duplicate registrations silently return success (no error, no oracle). No new tables required.
-
-Note: the public form's silent-dedup guard (same email, same event) was added in session 064 as a related bug fix.
-
-Full prompt: `sessions/065. Member Event Registration.md` — ready.
-
 ### Promote Contact to Member
 
-An inline action on the contact edit record that lets admins enrol a contact as a member without navigating away. Implemented as a Filament `Action` component at the bottom of the Settings panel. The action is hidden when the contact already has an active membership. On click it opens a modal with the minimum required fields — tier (select), starts on (date), expires on (date, optional) — and creates a `Membership` record linked to the contact on confirm. A confirmation flash confirms the enrolment. No new tables required; this is purely a convenience shortcut to `MembershipResource` creation scoped to the current contact.
+Adds a configurable membership tier system and a "Promote to Member" action tucked into the ellipsis menu on the contact edit page header (to the right of the Delete button). Infrequent admin action — not surfaced as a primary button.
 
-When the Volunteer module is built, a parallel "Enrol as volunteer" action should be added to the same panel at that time.
+**Tiers:** stored in a new `membership_tiers` table (name, slug, billing_interval, default_price, renewal_notice_days, description, is_active, sort_order). The existing `tier` string column on `memberships` is replaced by a `tier_id` FK. Billing intervals: `monthly`, `annual`, `one_time`, `lifetime`. A `MembershipTierResource` is added under a new "Membership" nav group, super_admin only.
+
+**Membership history:** multiple records per contact are expected and normal (lapsed 2022, rejoined 2024, etc.). The relation manager shows all memberships, not just active.
+
+**The action:** hidden when the contact already has an active membership. Modal fields: tier (select), member since (`starts_on`, default today), expires on (hidden for lifetime tiers), amount paid (default 0 for complimentary enrolments). Creates a `Membership` record with `status = 'active'`.
+
+**Simple path:** a seeded default "Standard / Annual" tier ships with a fresh install so an org with one simple tier never needs to touch tier management.
+
+**Deferred:** renewal emails, self-serve portal renewal, Stripe Billing integration for memberships, tier colours/badges/public descriptions, grace period logic, auto-calculation of `expires_on` from billing interval.
+
+Full prompt: `sessions/066. Promote Contact to Member.md` — ready.
+
+When the Volunteer module is built, a parallel "Enrol as volunteer" action should be added to the same ellipsis menu at that time.
 
 ---
 
@@ -102,45 +105,9 @@ Memberships moves to the Finance navigation group (sort 5, after Transactions). 
 
 ---
 
-## CRM Core Polish
-
-### Duplicate Contact Detection
-
-Reusable detection service (exact email = hard duplicate, last_name + postal_code = probable duplicate). Two surfaces: import preview step flags each row before records are saved; contact list "Review Duplicates" action presents probable pairs for merge or dismiss. Merge reassigns all related records to the surviving contact and soft-deletes the discarded one. Dismissed pairs are persisted in a `contact_duplicate_dismissals` table so they don't resurface. Full prompt: `sessions/053. Duplicate Contact Detection.md`
-
----
-
-## Data Hygiene & Privacy
-
-### Event Registrant Cleanup
-
-A manual staff action on the Event edit page that removes contacts who were auto-created solely by registering for a specific event. A contact is eligible only if: their record originated via `source = 'web_form'`, they are linked to this event's registrations, and they have no other connections in the system (no other event registrations, no memberships, no donations). A confirmation modal shows the affected count before proceeding. Matching contacts are soft-deleted; all registration records for the event are removed regardless. Contacts who registered but also exist for other reasons are never touched. Manual trigger only — no scheduled automation in this session. Also fixed an unrelated bug: `PageResource::getEloquentQuery()` excluded event-type pages, causing the "Edit landing page" redirect to 404; fixed via `resolveRecordRouteBinding()` override.
-
----
-
-## CMS & Admin Polish
-
-### Quill Fix, Page Layout & Event Date Simplification
-
-Three workstreams: (1) Quill overflow fix — `overflow-hidden` + compensating `border-b` on the wrapper. (2) Page and Event edit forms restructured to `columns(3)` / `columnSpan(2)` left / `columnSpan(1)` right, matching ContactResource. (3) `event_dates` table dropped; `starts_at` (NOT NULL) and `ends_at` (nullable) added directly to `events`; date display merged into the `event_description` widget; all references to `EventDate` removed. `starts_at` is required at both form and DB levels. Events list updated: `starts_at` column, default sort ascending, past events hidden by default with an ellipsis-menu toggle. Full log: `sessions/055. Quill Fix, Page Layout & Event Date Simplification — Log.md`
-
----
-
 ## Member Portal & Self-Service
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
-
-### Secure Public Signup Flows
-
-Custom auth guard against a `portal_accounts` table (not Fortify/Breeze). Members and volunteers are contacts with portal access — no separate member model. Signup creates or merges a `Contact` and creates a `portal_account` with `contact_id` FK. Email verification required before portal access is granted. Login/logout. Duplicate signup attempts are silently discarded — no signal to the submitter. Views in `resources/views/portal/`. **Portal security rule:** every portal route and query must be scoped strictly to the authenticated user's own `contact_id` — the portal must never expose PII belonging to anyone other than the logged-in member. Full prompt: `sessions/056. Secure Public Signup Flows.md`
-
-### Portal Chrome & Member Page Type
-
-`layouts/portal.blade.php` with an authenticated header (member name, logout, `#f1f1f1` background with dark-mode support). `portal_prefix` SiteSetting added to a new Routing section in General Settings. Member page type added to page builder — slug auto-prefixed on creation via PageObserver, display strips prefix, type locked to read-only Placeholder on edit. Member pages gate on `auth:portal` + `verified`. Edit page title reflects type ("Edit Member Page" etc.). Full log: `sessions/057. Portal Chrome & Member Page Type — Log.md`
-
-### Routing Consolidation, Page Type Locking & Portal Widgets
-
-All three URL prefixes (blog, events, portal) consolidated into a Routing fieldset in General Settings. A new `manage_routing_prefixes` standalone permission allows non-super-admins to manage only that fieldset. Slug prefixes for `post` and `event` page types now display as locked read-only prefixes in the editor (read from SiteSetting at render time); only the segment after the prefix is editable. Editor headings updated per type. Portal signup and login widgets added to the page builder. PostResource restructured to a 2+1 column layout with a sidebar; its slug field now shows the blog prefix like other resources. EventResource: slug moved into the Main Info section beside the title; landing page Placeholder replaced with two plain action buttons. Drag-to-reorder in the page builder fixed (stale `x-sort:item` DOM query swapped for `data-block-id`). Full log: `sessions/058. Routing Consolidation, Page Type Locking & Portal Widgets — Log.md`
 
 ### Form Builder — Actions Pipeline
 
@@ -180,27 +147,39 @@ Each admin user needs a record of their significant actions against data — whi
 
 ## Finance
 
+*Scope boundaries: no grants, no wages, no payroll, no disbursements. This system receives and records money — it does not track outflows. No card data or account credentials are stored or transmitted through the application; Stripe's vault handles all sensitive payment data.*
+
 ### Finance Settings
+
+Stripe API keys (publishable + secret), QuickBooks OAuth credentials, default currency, and fiscal year start date. A new Finance fieldset in General Settings. Prerequisite for all other finance sessions.
 
 ### Stripe Webhooks
 
-*Before beginning: obtain the exact payload structure Stripe will POST to our endpoint from the Stripe documentation. Do not begin implementation until this has been provided.*
+Receive and record all Stripe payment events. The transaction record engine: every payment that enters the system (donation, membership fee, ticket sale, product purchase) is captured as a transaction with type, amount, contact, date, Stripe payment intent ID, and QuickBooks sync status. This session is the foundation all other finance sessions depend on.
+
+*Before beginning: confirm the exact webhook event types and payload structure from the Stripe documentation. Do not begin implementation until this has been provided.*
+
+### Products & Checkout
+
+A lightweight product catalogue backed by Stripe Checkout. A `products` table: name, description, price, capacity (optional), type. When a purchase is initiated, a Stripe Checkout session is generated — the buyer is redirected to Stripe's hosted payment page, pays, and is redirected back. Stripe fires a webhook on success; the transaction is recorded and inventory decremented if applicable. Covers event tickets, community garden plot reservations, membership fees, and any arbitrary "pay for a thing" scenario from a single engine. No card data passes through the application.
 
 ### Recurring Donations
 
+Stripe Billing subscriptions for donors who want to give on a schedule. The subscription is created once; Stripe handles the charge cycle and fires webhooks on each success or failure. Responsibilities: listen to webhooks, update transaction records, handle failures gracefully (notify the donor, mark subscription as past-due). No charge triggering required from the application side.
+
 ### Pledge Tracking
 
-*Multi-year pledge commitments with expected payment schedules and outstanding balance tracking. Pledge payments link to donation/transaction records. Distinct from recurring donations — a pledge is a promise, not a subscription.*
+A pledge is a promise, not a subscription. Store the commitment (total amount, schedule, campaign) and track payments against the outstanding balance. Members may pay manually or via a Stripe subscription set up for their instalments. High accounting value for nonprofits — supports board reporting and cash flow forecasting.
 
 ### Tax Receipts
 
-### Grant Module — Planning
+Generate and email annual donation summaries from transaction records. Required for charitable giving deductions in most jurisdictions. Triggered manually by staff or automatically at fiscal year end. Receipt template configurable via the email template system.
 
-### Grant Module — Build
+### QuickBooks Sync
 
-### QuickBooks Integration
+One-way push of categorised transaction records to QuickBooks. No reconciliation, no pulling from QB, no chart-of-accounts management. Goal: keep the treasurer's QuickBooks instance current without manual data entry. Transactions are categorised by type on our side before being pushed.
 
-*Before beginning: obtain the exact payload structure QuickBooks will POST to our endpoint from the QuickBooks documentation. Do not begin implementation until this has been provided.*
+*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation. Do not begin implementation until this has been provided.*
 
 ---
 

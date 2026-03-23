@@ -6,6 +6,7 @@ use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
+use App\Http\Controllers\Portal\EventRegistrationController as PortalEventRegistrationController;
 use App\Http\Controllers\Portal\ForgotPasswordController;
 use App\Http\Controllers\Portal\LoginController;
 use App\Http\Controllers\Portal\ResetPasswordController;
@@ -68,6 +69,8 @@ Route::get("{$systemBase}/account", function () {
 
     return app(\App\Http\Controllers\PageController::class)->show($slug);
 })->name('portal.account')->middleware($portalAuth);
+
+Route::post('/account/events/{slug}/register', [PortalEventRegistrationController::class, 'store'])->name('portal.events.register')->middleware($portalAuth);
 
 Route::patch('/account/address', [AccountController::class, 'updateAddress'])->name('portal.account.update-address')->middleware($portalAuth);
 Route::patch('/account/password', [AccountController::class, 'updatePassword'])->name('portal.account.update-password')->middleware($portalAuth);

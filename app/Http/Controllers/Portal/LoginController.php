@@ -12,10 +12,15 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function show(): mixed
+    public function show(Request $request): mixed
     {
         if (Auth::guard('portal')->check()) {
             return redirect()->route('portal.account');
+        }
+
+        $intended = $request->query('intended');
+        if ($intended && str_starts_with($intended, url('/'))) {
+            $request->session()->put('url.intended', $intended);
         }
 
         $prefix = SiteSetting::get('system_prefix', 'system');
@@ -62,6 +67,12 @@ class LoginController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        $after = $request->input('redirect_after_logout');
+
+        if ($after && str_starts_with($after, url('/'))) {
+            return redirect($after);
+        }
 
         return redirect()->route('portal.login');
     }

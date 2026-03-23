@@ -6,8 +6,10 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
 use App\Models\Membership;
+use App\Models\PortalAccount;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Hash;
 
 class DashboardDebugGeneratorWidget extends Widget
 {
@@ -38,7 +40,7 @@ class DashboardDebugGeneratorWidget extends Widget
             'contacts'  => $this->generateContacts($count),
             'events'    => $this->generateEvents($count),
             'donations' => Donation::factory()->count($count)->create(),
-            'members'   => Membership::factory()->count($count)->create(),
+            'members'   => $this->generateMembers($count),
         };
 
         $this->feedback = "Created {$count} {$this->type}.";
@@ -73,6 +75,32 @@ class DashboardDebugGeneratorWidget extends Widget
             Event::factory()->create([
                 'starts_at' => $startsAt,
                 'ends_at'   => $endsAt,
+            ]);
+        }
+    }
+
+    protected function generateMembers(int $count): void
+    {
+        for ($i = 0; $i < $count; $i++) {
+            $contact = Contact::factory()->create([
+                'email'               => fake()->unique()->safeEmail(),
+                'address_line_1'      => fake()->streetAddress(),
+                'address_line_2'      => fake()->optional(0.2)->secondaryAddress(),
+                'city'                => fake()->city(),
+                'state'               => fake()->stateAbbr(),
+                'postal_code'         => fake()->postcode(),
+                'date_of_birth'       => fake()->dateTimeBetween('-70 years', '-18 years')->format('Y-m-d'),
+                'mailing_list_opt_in' => true,
+            ]);
+
+            Membership::factory()->create(['contact_id' => $contact->id]);
+
+            PortalAccount::create([
+                'contact_id'        => $contact->id,
+                'email'             => $contact->email,
+                'password'          => Hash::make('thisisthepassword'),
+                'email_verified_at' => now(),
+                'is_active'         => true,
             ]);
         }
     }
