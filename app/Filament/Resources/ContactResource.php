@@ -247,19 +247,26 @@ class ContactResource extends Resource
 
                 Tables\Columns\TextColumn::make('roles')
                     ->label('Roles')
-                    ->getStateUsing(function (Contact $record): string {
+                    ->getStateUsing(function (Contact $record): array {
                         $roles = [];
-                        if ($record->isMember()) {
+                        if ($record->memberships()->where('status', 'active')->exists()) {
                             $roles[] = 'Member';
                         }
-                        if ($record->isDonor()) {
+                        if ($record->donations()->exists()) {
                             $roles[] = 'Donor';
                         }
-
-                        return implode(', ', $roles);
+                        if (empty($roles)) {
+                            $roles[] = 'Contact';
+                        }
+                        return $roles;
                     })
-                    ->placeholder('—')
-                    ->color('gray'),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Member'  => 'success',
+                        'Donor'   => 'warning',
+                        'Contact' => 'gray',
+                        default   => 'gray',
+                    }),
 
                 Tables\Columns\TextColumn::make('household.name')
                     ->label('Household')
@@ -328,6 +335,7 @@ class ContactResource extends Resource
     {
         return [
             \App\Filament\Resources\ContactResource\RelationManagers\NotesRelationManager::class,
+            \App\Filament\Resources\ContactResource\RelationManagers\MembershipsRelationManager::class,
         ];
     }
 

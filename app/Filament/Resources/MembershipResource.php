@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MembershipResource\Pages;
 use App\Models\Membership;
+use App\Models\MembershipTier;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,7 +17,7 @@ class MembershipResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-identification';
 
-    protected static ?string $navigationGroup = 'CRM';
+    protected static ?string $navigationGroup = 'Finance';
 
     protected static ?int $navigationSort = 3;
 
@@ -47,13 +48,14 @@ class MembershipResource extends Resource
                     ->preload()
                     ->required(),
 
-                Forms\Components\Select::make('tier')
-                    ->options([
-                        'individual'  => 'Individual',
-                        'family'      => 'Family',
-                        'sustaining'  => 'Sustaining',
-                        'lifetime'    => 'Lifetime',
-                    ])
+                Forms\Components\Select::make('tier_id')
+                    ->label('Tier')
+                    ->options(
+                        MembershipTier::where('is_active', true)
+                            ->orderBy('sort_order')
+                            ->get()
+                            ->pluck('name', 'id')
+                    )
                     ->required(),
 
                 Forms\Components\Select::make('status')
@@ -99,7 +101,8 @@ class MembershipResource extends Resource
                         ? \App\Filament\Resources\ContactResource::getUrl('edit', ['record' => $record->contact_id])
                         : null),
 
-                Tables\Columns\TextColumn::make('tier')
+                Tables\Columns\TextColumn::make('tier.name')
+                    ->label('Tier')
                     ->badge(),
 
                 Tables\Columns\TextColumn::make('status')

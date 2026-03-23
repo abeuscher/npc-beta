@@ -70,26 +70,17 @@ This is the single working reference for all sessions. Completed sessions are li
 | 063 | Admin UI Polish, CMS Navigation Sort & Settings Consolidation |
 | 064 | Sample Data Generator Library |
 | 065 | Member Event Registration |
+| 066 | Promote Contact to Member |
 
 ---
 
 ## Member Portal — Next Steps
 
-### Promote Contact to Member
+### Contact Actions & Notes Sub-Page
 
-Adds a configurable membership tier system and a "Promote to Member" action tucked into the ellipsis menu on the contact edit page header (to the right of the Delete button). Infrequent admin action — not surfaced as a primary button.
+Two focused improvements to the contact edit page. The ⋯ ellipsis header menu gets consolidated: Grant Portal Access (two paths — send invite email, or admin bypass with immediate verification), Suspend portal access, Restore portal access, and Mark email verified all move there. The three portal action buttons are removed from the form body (status placeholders remain). The `NotesRelationManager` is removed from the contact edit page — it caused layout jank on load. Notes move to a dedicated sub-page at `/contacts/{id}/notes` accessible via a "Notes" header action button, with breadcrumbs and a back button.
 
-**Tiers:** stored in a new `membership_tiers` table (name, slug, billing_interval, default_price, renewal_notice_days, description, is_active, sort_order). The existing `tier` string column on `memberships` is replaced by a `tier_id` FK. Billing intervals: `monthly`, `annual`, `one_time`, `lifetime`. A `MembershipTierResource` is added under a new "Membership" nav group, super_admin only.
-
-**Membership history:** multiple records per contact are expected and normal (lapsed 2022, rejoined 2024, etc.). The relation manager shows all memberships, not just active.
-
-**The action:** hidden when the contact already has an active membership. Modal fields: tier (select), member since (`starts_on`, default today), expires on (hidden for lifetime tiers), amount paid (default 0 for complimentary enrolments). Creates a `Membership` record with `status = 'active'`.
-
-**Simple path:** a seeded default "Standard / Annual" tier ships with a fresh install so an org with one simple tier never needs to touch tier management.
-
-**Deferred:** renewal emails, self-serve portal renewal, Stripe Billing integration for memberships, tier colours/badges/public descriptions, grace period logic, auto-calculation of `expires_on` from billing interval.
-
-Full prompt: `sessions/066. Promote Contact to Member.md` — ready.
+Full prompt: `sessions/067. Contact Actions & Notes Sub-Page.md` — ready.
 
 When the Volunteer module is built, a parallel "Enrol as volunteer" action should be added to the same ellipsis menu at that time.
 

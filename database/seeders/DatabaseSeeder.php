@@ -120,6 +120,9 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // ── Membership tiers ─────────────────────────────────────────────────
+        $this->call(MembershipTierSeeder::class);
+
         // ── Base pages (home, about, contact, events, blog) ─────────────────
         $this->call(BasePageSeeder::class);
         $this->call(PortalPageSeeder::class);

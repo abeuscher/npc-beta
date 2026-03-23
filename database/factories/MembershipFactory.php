@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Contact;
+use App\Models\MembershipTier;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class MembershipFactory extends Factory
@@ -11,7 +12,7 @@ class MembershipFactory extends Factory
     {
         return [
             'contact_id'  => Contact::factory(),
-            'tier'        => $this->faker->randomElement(['standard', 'premium', 'lifetime']),
+            'tier_id'     => MembershipTier::factory(),
             'status'      => 'active',
             'starts_on'   => now()->subMonths(rand(1, 12))->toDateString(),
             'expires_on'  => now()->addMonths(rand(1, 12))->toDateString(),
