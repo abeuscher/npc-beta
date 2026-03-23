@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Data\SampleLibrary;
 use App\Models\Contact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -11,26 +12,45 @@ class ContactFactory extends Factory
 
     public function definition(): array
     {
+        $firstName = fake()->randomElement(SampleLibrary::firstNames());
+        $lastName  = fake()->randomElement(SampleLibrary::lastNames());
+
+        $email = fake()->boolean(80)
+            ? strtolower($firstName . '.' . $lastName) . fake()->unique()->numerify('.###') . '@' . fake()->randomElement(SampleLibrary::emailDomains())
+            : null;
+
         return [
-            'prefix'        => fake()->optional(0.3)->randomElement(['Mr', 'Ms', 'Mrs', 'Dr', 'Prof']),
-            'first_name'    => fake()->firstName(),
-            'last_name'     => fake()->lastName(),
-            'email'         => fake()->optional(0.8)->safeEmail(),
-            'phone'         => fake()->optional(0.7)->phoneNumber(),
-            'address_line_1' => fake()->optional(0.6)->streetAddress(),
+            'prefix'         => fake()->optional(0.3)->randomElement(['Mr', 'Ms', 'Mrs', 'Dr', 'Prof']),
+            'first_name'     => $firstName,
+            'last_name'      => $lastName,
+            'email'          => $email,
+            'phone'          => fake()->optional(0.7)->phoneNumber(),
+            'address_line_1' => fake()->boolean(60) ? fake()->randomElement(SampleLibrary::streetAddresses()) : null,
             'address_line_2' => fake()->optional(0.1)->secondaryAddress(),
-            'city'          => fake()->optional(0.6)->city(),
-            'state'         => fake()->optional(0.6)->stateAbbr(),
-            'postal_code'   => fake()->optional(0.6)->postcode(),
-            'country'       => 'US',
-            'custom_data'   => null,
+            'city'           => fake()->boolean(60) ? fake()->randomElement(SampleLibrary::cities()) : null,
+            'state'          => fake()->boolean(60) ? fake()->randomElement(SampleLibrary::states()) : null,
+            'postal_code'    => fake()->optional(0.6)->postcode(),
+            'country'        => 'US',
+            'custom_data'    => null,
             'do_not_contact' => false,
-            'source'        => fake()->randomElement(['manual', 'manual', 'manual', 'import', 'form', 'api']),
+            'source'         => fake()->randomElement(['manual', 'manual', 'manual', 'import', 'form', 'api']),
         ];
     }
 
     public function doNotContact(): static
     {
         return $this->state(fn () => ['do_not_contact' => true]);
+    }
+
+    public function withGmailBase(string $base): static
+    {
+        $localPart = str_contains($base, '@') ? explode('@', $base)[0] : $base;
+
+        return $this->state(function (array $attributes) use ($localPart) {
+            $first = strtolower($attributes['first_name']);
+            $last  = strtolower($attributes['last_name']);
+
+            return ['email' => "{$localPart}+{$first}_{$last}@gmail.com"];
+        });
     }
 }

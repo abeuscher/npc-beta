@@ -63,6 +63,10 @@ class EventController extends Controller
             return back()->withErrors(['register' => 'This event is at capacity.']);
         }
 
+        if (EventRegistration::where('event_id', $event->id)->where('email', $validated['email'])->exists()) {
+            return redirect($eventPageUrl)->with('registration_success', true);
+        }
+
         EventRegistration::create([
             ...$validated,
             'event_id'           => $event->id,

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Data\SampleLibrary;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -9,7 +10,7 @@ class EventFactory extends Factory
 {
     public function definition(): array
     {
-        $title = $this->faker->sentence(3);
+        $title = fake()->randomElement(SampleLibrary::eventTitles());
 
         return [
             'title'             => $title,

@@ -68,22 +68,21 @@ This is the single working reference for all sessions. Completed sessions are li
 | 061 | System Page Type — Infrastructure and Migration |
 | 062 | Codebase Audit & Migration Squash |
 | 063 | Admin UI Polish, CMS Navigation Sort & Settings Consolidation |
+| 064 | Sample Data Generator Library |
 
 ---
 
 ## Member Portal — Next Steps
 
-### Sample Data Generator Library
-
-Enhance the dashboard dev widget's data generation with a library of curated fake values — roughly 100+ entries per field drawn from a themed source (cartoon characters, movies, fictional places, etc.) rather than Faker's generic output. Each field category (first names, last names, email domains, cities, event names, organisation names, etc.) lives in a dedicated library file. The generator draws from these libraries so generated records have a little personality and are visually distinctive during demos. Library files are plain PHP arrays checked into the repo — easy to extend over time. No schema changes required; this is a pure PHP/view layer change scoped to the dev widget.
-
-Full prompt: `sessions/064. Sample Data Generator Library.md` — ready.
-
 ### Member Event Registration
 
-A "Register as member" button on event pages for logged-in portal users, completing the other half of the form collision pattern. When a portal user tries to register via the public event form their submission is silently blocked — this button is the correct path. Clicking it while authenticated submits a direct registration using the stored contact record, bypassing the public form fields entirely. Non-authenticated visitors clicking the button are redirected to `/login?intended=…` and land back on the event page after signing in.
+Adds a "Register as member" path to event pages for portal users. The public form is hidden entirely for logged-in members; they see only a one-click "Register as member" button that POSTs to a new portal-authenticated route. Non-logged-in visitors see the member button as the primary call to action (links to login with `?intended=` pointing back to the event page) and the public form as a secondary option below it.
 
-Implementation: a new portal-authenticated route (`POST /account/events/{slug}/register`) with a controller method that runs the same capacity, registration-mode, and duplicate-registration checks as the public `EventController`, then creates an `EventRegistration` linked to the user's `contact_id` and fires the confirmation email. The `event_registration` widget template gains a conditional block — "Register as member" button when `auth('portal')->check()`, "Log in to register" link otherwise — sitting alongside the existing public form, which remains unchanged for non-members. No new tables required.
+The new route (`POST /account/events/{slug}/register`) runs the same capacity, registration-mode, and duplicate-registration checks as the public `EventController`, then creates an `EventRegistration` linked to the portal user's `contact_id` and fires the confirmation email. Duplicate registrations silently return success (no error, no oracle). No new tables required.
+
+Note: the public form's silent-dedup guard (same email, same event) was added in session 064 as a related bug fix.
+
+Full prompt: `sessions/065. Member Event Registration.md` — ready.
 
 ### Promote Contact to Member
 

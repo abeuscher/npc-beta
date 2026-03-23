@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
+use App\Models\Membership;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -20,6 +21,8 @@ class DashboardDebugGeneratorWidget extends Widget
 
     public int $quantity = 10;
 
+    public string $gmailBase = '';
+
     public string $feedback = '';
 
     public static function canView(): bool
@@ -32,12 +35,24 @@ class DashboardDebugGeneratorWidget extends Widget
         $count = max(1, min(200, $this->quantity));
 
         match ($this->type) {
-            'contacts'  => Contact::factory()->count($count)->create(),
+            'contacts'  => $this->generateContacts($count),
             'events'    => $this->generateEvents($count),
             'donations' => Donation::factory()->count($count)->create(),
+            'members'   => Membership::factory()->count($count)->create(),
         };
 
         $this->feedback = "Created {$count} {$this->type}.";
+    }
+
+    protected function generateContacts(int $count): void
+    {
+        $factory = Contact::factory()->count($count);
+
+        if (trim($this->gmailBase) !== '') {
+            $factory = $factory->withGmailBase(trim($this->gmailBase));
+        }
+
+        $factory->create();
     }
 
     protected function generateEvents(int $count): void
@@ -68,6 +83,7 @@ class DashboardDebugGeneratorWidget extends Widget
             'contacts'  => Contact::class,
             'events'    => Event::class,
             'donations' => Donation::class,
+            'members'   => Membership::class,
         };
 
         if (in_array(SoftDeletes::class, class_uses_recursive($model))) {
