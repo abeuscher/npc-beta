@@ -77,7 +77,7 @@ class EditContact extends EditRecord
     {
         return [
             Actions\Action::make('notes')
-                ->label('Notes')
+                ->label('Timeline')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
                 ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),

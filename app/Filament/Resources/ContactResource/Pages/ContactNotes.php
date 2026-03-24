@@ -3,27 +3,30 @@
 namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Models\ActivityLog;
 use App\Models\Contact;
 use App\Models\Note;
+use App\Models\User;
 use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Filament\Tables;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
-class ContactNotes extends Page implements HasTable
+class ContactNotes extends Page implements HasActions
 {
-    use InteractsWithTable;
+    use InteractsWithActions;
 
     protected static string $resource = ContactResource::class;
 
     protected static string $view = 'filament.pages.contact-notes';
 
     public Contact $record;
+
+    public string $filter = 'all';
 
     public function mount(Contact|int|string $record): void
     {
@@ -32,15 +35,69 @@ class ContactNotes extends Page implements HasTable
 
     public function getTitle(): string
     {
-        return $this->record->display_name . ' — Notes';
+        return $this->record->display_name . ' — Timeline';
     }
 
     public function getBreadcrumbs(): array
     {
         return [
-            ContactResource::getUrl('edit', ['record' => $this->record]) => $this->record->display_name,
-            'Notes',
+            ContactResource::getUrl('index') => 'Contacts',
+            ContactResource::getUrl('edit', ['record' => $this->record]) => 'Edit',
+            'Timeline',
         ];
+    }
+
+    public function getTimeline(): \Illuminate\Support\Collection
+    {
+        $notes = $this->filter !== 'activity'
+            ? Note::query()
+                ->with('author')
+                ->where('notable_type', Contact::class)
+                ->where('notable_id', $this->record->id)
+                ->get()
+            : collect();
+
+        $logs = $this->filter !== 'notes'
+            ? ActivityLog::where('subject_type', Contact::class)
+                ->where('subject_id', $this->record->id)
+                ->latest()
+                ->get()
+            : collect();
+
+        $adminIds = $logs->where('actor_type', 'admin')->pluck('actor_id')->filter()->unique();
+        $adminUsers = $adminIds->isNotEmpty()
+            ? User::whereIn('id', $adminIds)->get()->keyBy('id')
+            : collect();
+
+        $noteItems = $notes->map(fn ($n) => (object) [
+            '_type'       => 'note',
+            'id'          => $n->id,
+            'body'        => $n->body,
+            'author_name' => $n->author?->name ?? 'Unknown',
+            'occurred_at' => $n->occurred_at,
+            'created_at'  => $n->created_at,
+        ]);
+
+        $logItems = $logs->map(fn ($l) => (object) [
+            '_type'        => 'activity',
+            'id'           => $l->id,
+            'event'        => $l->event,
+            'description'  => $l->description,
+            'actor_label'  => match ($l->actor_type) {
+                'admin'  => $adminUsers->has($l->actor_id) ? 'by ' . $adminUsers[$l->actor_id]->name : 'by admin',
+                'portal' => 'by portal member',
+                default  => 'by system',
+            },
+            'created_at'   => $l->created_at,
+        ]);
+
+        $merged = match ($this->filter) {
+            'notes'    => $noteItems,
+            'activity' => $logItems,
+            default    => $noteItems->concat($logItems),
+        };
+
+        return $merged->sortByDesc('created_at')->take(200)->values();
     }
 
     protected function getHeaderActions(): array
@@ -78,45 +135,86 @@ class ContactNotes extends Page implements HasTable
                         ->title('Note created.')
                         ->send();
                 }),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('filter_all')
+                    ->label('Show all')
+                    ->icon(fn () => $this->filter === 'all' ? 'heroicon-m-check' : null)
+                    ->action(fn () => $this->filter = 'all'),
+
+                Actions\Action::make('filter_notes')
+                    ->label('Contact notes')
+                    ->icon(fn () => $this->filter === 'notes' ? 'heroicon-m-check' : null)
+                    ->action(fn () => $this->filter = 'notes'),
+
+                Actions\Action::make('filter_activity')
+                    ->label('Activity log')
+                    ->icon(fn () => $this->filter === 'activity' ? 'heroicon-m-check' : null)
+                    ->action(fn () => $this->filter = 'activity'),
+            ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->color('gray'),
         ];
     }
 
-    public function table(Table $table): Table
+    public function editNoteAction(): Action
     {
-        return $table
-            ->query(
-                Note::query()
+        return Action::make('editNote')
+            ->modalHeading('Edit Note')
+            ->modalWidth('lg')
+            ->fillForm(function (array $arguments): array {
+                $note = Note::where('id', $arguments['note'])
                     ->where('notable_type', Contact::class)
                     ->where('notable_id', $this->record->id)
-            )
-            ->columns([
-                Tables\Columns\TextColumn::make('body')
+                    ->firstOrFail();
+
+                return [
+                    'body'        => $note->body,
+                    'occurred_at' => $note->occurred_at,
+                ];
+            })
+            ->form([
+                Forms\Components\Textarea::make('body')
                     ->label('Note')
-                    ->limit(100),
+                    ->required()
+                    ->rows(4)
+                    ->columnSpanFull(),
 
-                Tables\Columns\TextColumn::make('author.name')
-                    ->label('Author'),
-
-                Tables\Columns\TextColumn::make('occurred_at')
-                    ->label('Occurred At')
-                    ->dateTime()
-                    ->sortable(),
+                Forms\Components\DateTimePicker::make('occurred_at')
+                    ->label('Occurred At'),
             ])
-            ->defaultSort('occurred_at', 'desc')
-            ->actions([
-                Tables\Actions\EditAction::make()
-                    ->form([
-                        Forms\Components\Textarea::make('body')
-                            ->label('Note')
-                            ->required()
-                            ->rows(4)
-                            ->columnSpanFull(),
+            ->action(function (array $data, array $arguments): void {
+                Note::where('id', $arguments['note'])
+                    ->where('notable_type', Contact::class)
+                    ->where('notable_id', $this->record->id)
+                    ->firstOrFail()
+                    ->update($data);
 
-                        Forms\Components\DateTimePicker::make('occurred_at')
-                            ->label('Occurred At'),
-                    ]),
+                Notification::make()
+                    ->success()
+                    ->title('Note updated.')
+                    ->send();
+            });
+    }
 
-                Tables\Actions\DeleteAction::make(),
-            ]);
+    public function deleteNoteAction(): Action
+    {
+        return Action::make('deleteNote')
+            ->requiresConfirmation()
+            ->modalHeading('Delete Note')
+            ->modalDescription('Are you sure you want to delete this note? This cannot be undone.')
+            ->color('danger')
+            ->action(function (array $arguments): void {
+                Note::where('id', $arguments['note'])
+                    ->where('notable_type', Contact::class)
+                    ->where('notable_id', $this->record->id)
+                    ->firstOrFail()
+                    ->delete();
+
+                Notification::make()
+                    ->success()
+                    ->title('Note deleted.')
+                    ->send();
+            });
     }
 }

@@ -2,7 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Contact;
+use App\Models\Donation;
+use App\Models\Membership;
 use App\Models\SiteSetting;
+use App\Observers\ContactObserver;
+use App\Observers\DonationObserver;
+use App\Observers\MembershipObserver;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -24,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Contact::observe(ContactObserver::class);
+        Membership::observe(MembershipObserver::class);
+        Donation::observe(DonationObserver::class);
+
         BasePage::formActionsAlignment(Alignment::End);
 
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native());

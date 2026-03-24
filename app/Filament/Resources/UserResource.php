@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Mail\AdminInvitation;
+use App\Models\ActivityLog;
 use App\Models\InvitationToken;
 use App\Models\Role;
 use App\Models\User;
@@ -65,6 +66,28 @@ class UserResource extends Resource
                     ->options(fn () => Role::all()->mapWithKeys(fn ($r) => [$r->name => $r->display_label]))
                     ->preload(),
             ])->columns(2),
+
+            Forms\Components\Section::make('Activity')
+                ->schema([
+                    Forms\Components\Placeholder::make('activity_list')
+                        ->label('')
+                        ->content(function (?User $record): \Illuminate\Support\HtmlString {
+                            if (! $record) {
+                                return new \Illuminate\Support\HtmlString('');
+                            }
+                            $logs = ActivityLog::where('actor_type', 'admin')
+                                ->where('actor_id', $record->id)
+                                ->latest()
+                                ->limit(50)
+                                ->get();
+                            return new \Illuminate\Support\HtmlString(
+                                view('filament.partials.user-activity-log', compact('logs'))->render()
+                            );
+                        }),
+                ])
+                ->collapsible()
+                ->collapsed()
+                ->visibleOn('edit'),
         ]);
     }
 

@@ -4,10 +4,16 @@ namespace App\Observers;
 
 use App\Mail\EventCancellation;
 use App\Models\Event;
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Mail;
 
 class EventObserver
 {
+    public function created(Event $event): void
+    {
+        ActivityLogger::log($event, 'created');
+    }
+
     public function updated(Event $event): void
     {
         if ($event->wasChanged('status') && $event->status === 'cancelled') {
@@ -20,5 +26,17 @@ class EventObserver
                     }
                 });
         }
+
+        $description = null;
+        if ($event->wasChanged('status')) {
+            $description = 'Status changed to ' . $event->status;
+        }
+
+        ActivityLogger::log($event, 'updated', $description);
+    }
+
+    public function deleted(Event $event): void
+    {
+        ActivityLogger::log($event, 'deleted');
     }
 }

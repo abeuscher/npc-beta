@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Page;
+use App\Services\ActivityLogger;
 
 class PageObserver
 {
@@ -11,6 +12,8 @@ class PageObserver
         if ($page->type === 'member') {
             $this->applyMemberPrefix($page);
         }
+
+        ActivityLogger::log($page, 'created');
     }
 
     public function updated(Page $page): void
@@ -39,6 +42,23 @@ class PageObserver
         if ($page->wasChanged('type') && $page->type === 'member') {
             $this->applyMemberPrefix($page);
         }
+
+        $description = null;
+        if ($page->wasChanged('is_published')) {
+            $description = $page->is_published ? 'Published' : 'Unpublished';
+        }
+
+        ActivityLogger::log($page, 'updated', $description);
+    }
+
+    public function deleted(Page $page): void
+    {
+        ActivityLogger::log($page, 'deleted');
+    }
+
+    public function restored(Page $page): void
+    {
+        ActivityLogger::log($page, 'restored');
     }
 
     private function applyMemberPrefix(Page $page): void

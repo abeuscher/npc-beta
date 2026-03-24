@@ -76,6 +76,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 069 | Minor Tweaks, Fixes & Git Hygiene |
 | 070 | Admin User Invitations |
 | 071 | Household Linking |
+| 072 | Activity Log |
 
 ---
 
@@ -95,19 +96,17 @@ Core household model built in session 071 (self-referential `contacts.household_
 
 ## Communication & Accountability
 
-### Activity Log
-
-An auditable activity stream recording CUD operations on key records (Contact, Membership, Donation, Page, Event). Actor attributed as admin user, system, or portal member. On the contact record the existing Notes sub-page becomes a unified Timeline showing human-authored notes and system activity entries merged chronologically. Admin user activity also surfaced on the User edit page. Separate `activity_logs` table — not extended from Notes. No field-level diff for updates. No package dependency — implemented via model Observers.
+*Activity log built in session 072. Future additions: global filterable log, field-level diff, observers for Finance and other models.*
 
 ---
 
 ## Finance
 
-*Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data.*
+*Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data. The application is deposit-only — it never initiates a refund, payout, or balance transfer. All financial reversals are handled in the Stripe dashboard.*
 
-*Finance settings will be defined alongside the sessions that need them. API keys already in General Settings stay there until a clear grouping emerges from the actual integration work.*
+*A dedicated Financial Settings page (gated to developer/treasurer roles) holds Stripe and QuickBooks API keys. Keys are encrypted at rest.*
 
-### Stripe Webhooks
+### Stripe Foundation
 
 Receive and record all Stripe payment events. Every payment captured as a transaction: type, amount, contact, date, Stripe payment intent ID, QuickBooks sync status. Foundation for all other finance sessions.
 
