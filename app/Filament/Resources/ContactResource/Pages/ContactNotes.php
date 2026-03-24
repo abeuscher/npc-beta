@@ -25,9 +25,9 @@ class ContactNotes extends Page implements HasTable
 
     public Contact $record;
 
-    public function mount(int|string $record): void
+    public function mount(Contact|int|string $record): void
     {
-        $this->record = Contact::findOrFail($record);
+        $this->record = $record instanceof Contact ? $record : Contact::findOrFail($record);
     }
 
     public function getTitle(): string

@@ -113,30 +113,6 @@ class ContactResource extends Resource
                     ->columns(2)
                     ->hidden(fn () => CustomFieldDef::forModel('contact')->doesntExist()),
 
-                Forms\Components\Section::make('Affiliation')
-                    ->schema([
-                        Forms\Components\Select::make('organization_id')
-                            ->label('Organization')
-                            ->relationship('organization', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->nullable(),
-                    ]),
-
-                Forms\Components\Section::make('Household')
-                    ->schema([
-                        Forms\Components\Select::make('household_id')
-                            ->label('Household Head')
-                            ->helperText('Select another contact to assign this contact to their household. Leave blank to keep this contact as their own head (solo).')
-                            ->options(fn (?Contact $record) => Contact::when(
-                                $record,
-                                fn ($q) => $q->where('id', '!=', $record->id)
-                            )->orderByRaw("COALESCE(last_name, first_name)")->get()
-                                ->mapWithKeys(fn ($c) => [$c->id => $c->display_name . ($c->email ? ' — ' . $c->email : '')]))
-                            ->searchable()
-                            ->nullable(),
-                    ]),
-
             ])->columnSpan(2),
 
             Forms\Components\Group::make([
@@ -199,6 +175,35 @@ class ContactResource extends Resource
                 })
                     ->collapsible()
                     ->collapsed(),
+
+                Forms\Components\Section::make('Household')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Forms\Components\Select::make('household_id')
+                            ->label('Household Head')
+                            ->placeholder('Solo — no household')
+                            ->helperText('Select another contact to make them the head of this contact\'s household. Clear the field to make this contact solo.')
+                            ->options(fn (?Contact $record) => Contact::when(
+                                $record,
+                                fn ($q) => $q->where('id', '!=', $record->id)
+                            )->orderByRaw("COALESCE(last_name, first_name)")->get()
+                                ->mapWithKeys(fn ($c) => [$c->id => $c->display_name . ($c->email ? ' — ' . $c->email : '')]))
+                            ->searchable()
+                            ->nullable(),
+                    ]),
+
+                Forms\Components\Section::make('Affiliation')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Forms\Components\Select::make('organization_id')
+                            ->label('Organization')
+                            ->relationship('organization', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                    ]),
 
             ])->columnSpan(1),
 

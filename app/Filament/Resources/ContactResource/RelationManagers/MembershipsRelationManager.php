@@ -76,7 +76,7 @@ class MembershipsRelationManager extends RelationManager
                     ->money('USD'),
             ])
             ->defaultSort('starts_on', 'desc')
-            ->headerActions([Tables\Actions\CreateAction::make()])
+            ->headerActions([])
             ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }

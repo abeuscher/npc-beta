@@ -22,6 +22,11 @@ class EditContact extends EditRecord
 
     public ?string $initialHouseholdId = null;
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $this->initialHouseholdId = $data['household_id'] ?? null;
@@ -75,7 +80,7 @@ class EditContact extends EditRecord
                 ->label('Notes')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
-                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record])),
+                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
 
             Actions\DeleteAction::make(),
 
