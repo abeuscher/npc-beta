@@ -132,7 +132,7 @@ class ContactResource extends Resource
                                 $record,
                                 fn ($q) => $q->where('id', '!=', $record->id)
                             )->orderByRaw("COALESCE(last_name, first_name)")->get()
-                                ->mapWithKeys(fn ($c) => [$c->id => $c->display_name]))
+                                ->mapWithKeys(fn ($c) => [$c->id => $c->display_name . ($c->email ? ' — ' . $c->email : '')]))
                             ->searchable()
                             ->nullable(),
                     ]),
