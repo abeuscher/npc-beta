@@ -72,26 +72,34 @@ This is the single working reference for all sessions. Completed sessions are li
 | 065 | Member Event Registration |
 | 066 | Promote Contact to Member |
 | 067 | Contact Actions & Notes Sub-Page |
+| 068 | Roadmap Planning & Help Content |
 
 ---
 
-## Member Portal — Next Steps
+## Next Up — Session 069
 
-### CRM Navigation & Views Reorganisation
+### Minor Tweaks, Fixes & Git Hygiene
 
-Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`.
+A mixed bag of small and medium items. Items marked **[small]** should fit comfortably in a single session. Items marked **[discuss]** need a scoping conversation before implementation begins.
 
-**Status:** Deferred — session 063 was used for UI polish and settings consolidation instead. Full prompt is written and ready at `sessions/063. CRM Navigation and Views Reorganisation.md`.
+**CRM / admin views:**
+- **[small]** Remove `EventsSettingsPage` entirely — it is hidden from navigation and its only field (`event_auto_publish`) already lives in CMS Settings. Delete the class and the stub help doc.
+- **[small]** `MemberResource` — add a read-only resource providing a focused lens on contacts with active memberships, scoped via `isMember()`. Same pattern as PostResource scoping Page to `type = 'post'`. Edit action redirects to ContactResource. Add `view_any_member` permission, granted to super_admin and any role holding `view_any_contact`.
+- **[small]** `HouseholdResource` — review nav visibility. Remove from any top-level nav group it currently occupies if it is not yet useful there; revisit placement when the self-service invite flow is built.
+- Additional minor cosmetic and organisational fixes (user will supply a list).
 
----
+**Git workflow:**
+- **[small]** Add a git workflow section to `CLAUDE.md` (or project settings): every session, Claude opens a new branch before beginning any work. Single commit per branch. Patch branches follow the pattern `session-###-patch-###`. Claude never pushes or merges; the user pushes and merges.
+- **[small]** Add a pre-deploy test step — a CI or pre-push hook that runs the test suite before changes can reach main. Does not need to be exhaustive but should catch obvious breakage. Write and enable now as baseline hygiene.
 
-## CRM Navigation & Views
+**[discuss] Admin user invitation flow:**
+User sends an invitation by specifying email address, user type (role), and name. The system generates a temporary password, creates the user record, and sends an invitation email with credentials. The temporary password expires on first login and the user is forced to set a new one before proceeding. Standard first-login flow. *Scope: is this a full session on its own, or small enough to fold in?*
 
-### CRM Navigation & Views Reorganisation
+**[discuss] Frontend mobile menu:**
+The public frontend currently has no mobile menu. This is a priority gap. *Scope: depends on complexity of the existing nav structure. May pull in broader frontend toolset improvements.*
 
-Memberships moves to the Finance navigation group (sort 5, after Transactions). Notes is removed from the top-level nav (`$shouldRegisterNavigation = false`) — it remains fully functional as a relation manager. A new read-only MemberResource provides a focused lens on contacts who hold active memberships, scoped via `isMember()` — the same pattern as PostResource scoping Page to `type = 'post'`. The edit action in MemberResource redirects to ContactResource so no duplicate form exists. A new `view_any_member` permission is added and granted to super_admin and any role already holding `view_any_contact`.
-
-**Status:** Deferred — session 063 was used for UI polish and settings consolidation instead. Full prompt is written and ready at `sessions/063. CRM Navigation and Views Reorganisation.md`.
+**[discuss] Widget system for header and footer:**
+Header and footer areas rendered via purpose-built widget types using the same engine as page widgets. Each area becomes a configurable slot rather than a hard-coded Blade partial. Widgets would be self-contained and autonomous. *This is a meaningful architectural change — plan before building.*
 
 ---
 
@@ -99,101 +107,96 @@ Memberships moves to the Finance navigation group (sort 5, after Transactions). 
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
 
-### Form Builder — Actions Pipeline
-
-### Gated Pages
-
 ### Household & Family Grouping
 
-**Depends on: Member Portal existing first.**
+**Status: Partial** — The admin-facing HouseholdResource is built (list, create, edit, member relation manager, help doc). Nav placement and the self-service invite flow described below remain.
 
-A lightweight household record — name, canonical mailing address, members (linked contacts). Implemented as a separate `households` table (not a self-referential FK on contacts): this is more stable under contact deletion and avoids anchor-contact ambiguity. Accessed through the contact record (a Household panel on the contact edit/view page). HouseholdResource nav placement deferred to this session.
+A lightweight household record — name, canonical mailing address, members (linked contacts). Accessed through the contact record. The self-service component: members can invite others to join their household via an email invite flow. Staff approve the linkage. An invite to an unknown email produces a neutral success response (no signal to the sender) and logs a note to the inviting member's contact record.
 
 **Architectural decisions (agreed session 060):**
 - Lateral relationship: contacts link to a household, not to each other. No self-referential FK.
 - Household record auto-created when an invite is accepted (not pre-created by staff).
-- Inviter address is always the canonical household address — never overwritten by the invitee. This is a security requirement: the invite flow must not reveal one member's address to another.
-- Sync model: if a member's contact address diverges from the household canonical address, show a warning UI — do not silently overwrite either.
-- No admin-managed household assignments. Staff can manually link/unlink on the contact record; members self-serve via an invite flow with staff approval.
-- Invite to unknown email: neutral success response (no signal to the sender), plus a note logged to the inviting member's contact record recording the attempt.
+- Inviter address is always the canonical household address — never overwritten by the invitee. Security requirement: the invite flow must not reveal one member's address to another.
+- If a member's contact address diverges from the household canonical address, show a warning UI — do not silently overwrite either.
+- Staff can manually link/unlink on the contact record. Members self-serve via invite with staff approval.
 
 Aggregate giving computed from linked members, not stored. Used for physical mailing deduplication, compound salutations, and household-level event/ticket limits.
+
+### Gated Pages
 
 ---
 
 ## Communication & Accountability
 
-*Both sessions depend on Member Portal being complete, so that member self-service activity is captured from day one.*
+*Both sessions depend on Member Portal being complete.*
 
 ### Communication Log
 
-An auditable activity stream on contact records — and eventually other key models — tracking who did what and when. Staff edits, system actions (import, auto-created from event registration), and member self-service changes are logged as distinct event types. Designed for accountability in volunteer organisations with many infrequent users: if a record is changed incorrectly, the trail leads back to the actor. The notes panel is extended to serve as the unified activity stream; entries are typed (manual note, system event, import action, member action) and filterable. The notes panel is lazy-loaded to avoid unnecessary queries. All logging is transparent and accountability-facing — this is not behaviour tracking.
+An auditable activity stream on contact records — tracking who did what and when. Staff edits, system actions (import, auto-created from event registration), and member self-service changes are logged as distinct event types. The notes panel is extended to serve as the unified activity stream; entries are typed (manual note, system event, import action, member action) and filterable. All logging is transparent and accountability-facing — this is not behaviour tracking.
 
 ### Admin User Activity Log
 
-Each admin user needs a record of their significant actions against data — which contact records they edited, which events they created or cancelled, which donations they entered or deleted. The log is not a diff system but an event journal: who did what, to which record, and when. Surface it on the user record in the Users list (a tab or linked sub-page showing that user's recent activity) and optionally as a filterable global log under Settings or Tools. Scope in the planning session: which action types to capture, where to store the log (a dedicated table vs. an existing auditing package like `owen-it/laravel-auditing`), and what the retention/purge policy should be.
+An event journal per admin user: who did what, to which record, and when. Surfaced on the user record and optionally as a global filterable log under Settings or Tools. Scope in the planning session: action types to capture, storage (dedicated table vs. `owen-it/laravel-auditing`), and retention/purge policy.
 
 ---
 
 ## Finance
 
-*Scope boundaries: no grants, no wages, no payroll, no disbursements. This system receives and records money — it does not track outflows. No card data or account credentials are stored or transmitted through the application; Stripe's vault handles all sensitive payment data.*
+*Scope boundaries: no grants, no wages, no payroll, no disbursements. No card data stored — Stripe's vault handles all sensitive payment data.*
 
-### Finance Settings
-
-Stripe API keys (publishable + secret), QuickBooks OAuth credentials, default currency, and fiscal year start date. A new Finance fieldset in General Settings. Prerequisite for all other finance sessions.
+*Finance Settings will be defined alongside the sessions that need them, not comprehensively ahead of time. API keys already stored in General Settings stay there until a clear grouping emerges.*
 
 ### Stripe Webhooks
 
-Receive and record all Stripe payment events. The transaction record engine: every payment that enters the system (donation, membership fee, ticket sale, product purchase) is captured as a transaction with type, amount, contact, date, Stripe payment intent ID, and QuickBooks sync status. This session is the foundation all other finance sessions depend on.
+Receive and record all Stripe payment events. Every payment (donation, membership fee, ticket sale) is captured as a transaction with type, amount, contact, date, Stripe payment intent ID, and QuickBooks sync status. Foundation for all other finance sessions.
 
-*Before beginning: confirm the exact webhook event types and payload structure from the Stripe documentation. Do not begin implementation until this has been provided.*
+*Before beginning: confirm the exact webhook event types and payload structure from the Stripe documentation.*
 
 ### Products & Checkout
 
-A lightweight product catalogue backed by Stripe Checkout. A `products` table: name, description, price, capacity (optional), type. When a purchase is initiated, a Stripe Checkout session is generated — the buyer is redirected to Stripe's hosted payment page, pays, and is redirected back. Stripe fires a webhook on success; the transaction is recorded and inventory decremented if applicable. Covers event tickets, community garden plot reservations, membership fees, and any arbitrary "pay for a thing" scenario from a single engine. No card data passes through the application.
+Lightweight product catalogue backed by Stripe Checkout. A `products` table: name, description, price, capacity, type. Purchase initiates a Stripe Checkout session; buyer redirected to Stripe, pays, redirected back. Webhook records the transaction and decrements inventory. Covers event tickets, membership fees, and any "pay for a thing" scenario. No card data passes through the application.
 
 ### Recurring Donations
 
-Stripe Billing subscriptions for donors who want to give on a schedule. The subscription is created once; Stripe handles the charge cycle and fires webhooks on each success or failure. Responsibilities: listen to webhooks, update transaction records, handle failures gracefully (notify the donor, mark subscription as past-due). No charge triggering required from the application side.
+Stripe Billing subscriptions. Subscription created once; Stripe fires webhooks on each charge cycle. Responsibilities: record transactions, handle failures (notify donor, mark past-due).
 
 ### Pledge Tracking
 
-A pledge is a promise, not a subscription. Store the commitment (total amount, schedule, campaign) and track payments against the outstanding balance. Members may pay manually or via a Stripe subscription set up for their instalments. High accounting value for nonprofits — supports board reporting and cash flow forecasting.
+A pledge is a promise. Store the commitment (total amount, schedule, campaign) and track payments against the outstanding balance. Members pay manually or via a Stripe subscription for instalments. Supports board reporting and cash flow forecasting.
 
 ### Tax Receipts
 
-Generate and email annual donation summaries from transaction records. Required for charitable giving deductions in most jurisdictions. Triggered manually by staff or automatically at fiscal year end. Receipt template configurable via the email template system.
+Generate and email annual donation summaries. Triggered manually or automatically at fiscal year end. Receipt template configurable via the email template system.
 
 ### QuickBooks Sync
 
-One-way push of categorised transaction records to QuickBooks. No reconciliation, no pulling from QB, no chart-of-accounts management. Goal: keep the treasurer's QuickBooks instance current without manual data entry. Transactions are categorised by type on our side before being pushed.
+One-way push of categorised transaction records to QuickBooks. No reconciliation, no pulling from QB, no chart-of-accounts management.
 
-*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation. Do not begin implementation until this has been provided.*
+*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation.*
 
 ---
 
 ## Volunteer Management
 
-*Contact Record — Birthday & Age Fields (CRM Core) is a prerequisite. Volunteer Portal depends on Member Portal being complete.*
+*DOB / age fields on contacts are a prerequisite. Volunteer Portal depends on Member Portal being complete.*
 
-**Age gating — legal note (agreed session 052):** The volunteer system will collect date of birth because it is operationally required (work, liability, safety). Rather than building parental consent flows, the public-facing volunteer registration form must gate sign-up to applicants who meet the minimum age threshold (≥ 13 at minimum under COPPA; consider ≥ 18 depending on jurisdiction and the nature of the work). Anyone below the threshold is rejected at the form level, keeping the system outside COPPA's scope for this pathway. Under-13 handling via verifiable parental consent is explicitly out of scope for v1 and is left to a future session or a fork of the project.
+*Age gating (agreed session 052): the public volunteer registration form gates sign-up to applicants meeting the minimum age threshold. Under-13 parental consent is out of scope for v1.*
 
 ### Volunteer Profile & Hours Tracking
 
-*Skills, availability, background check status and expiry, training/certifications held. Hours log tied to an event or a standalone activity. Total hours summary on the contact record.*
+*Skills, availability, background check status and expiry, training/certifications, hours log, total hours on contact record.*
 
 ### Volunteer Scheduling
 
-*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to the Events module for event-day volunteer roles.*
+*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to Events for event-day volunteer roles.*
 
 ### Volunteer Communication & Recognition
 
-*Shift reminder emails, milestone triggers (100 hours, anniversary, etc.). Integrates with the email system.*
+*Shift reminders, milestone triggers (100 hours, anniversary). Integrates with the email system.*
 
 ### Volunteer Portal
 
-*Public-facing self-service: signup, view upcoming shifts, log hours pending admin approval. Extends or reuses the Member Portal patterns.*
+*Public self-service: signup, view shifts, log hours pending admin approval. Extends Member Portal patterns.*
 
 ---
 
@@ -201,7 +204,7 @@ One-way push of categorised transaction records to QuickBooks. No reconciliation
 
 ### Data Retention & Cascading Delete Audit
 
-Audit every deletion path in the system and define what should happen when a record is removed. Key questions to answer and implement: What happens to notes, tags, and import records when the user who created them is deleted? What happens to contacts linked to a deleted import session — do they persist or cascade? What happens to event registrations when a contact is deleted? What happens to mailing list memberships? What is the intended lifetime of soft-deleted records — is there a purge policy? The output of this session is both code (correct `onDelete` behaviours, cascade or null-out rules in migrations) and a written policy document checked into the repo.
+Audit every deletion path. Define and implement what happens when: a user is deleted (notes, tags, import records); a contact is deleted (registrations, memberships, mailing list memberships); an import session is deleted. Define a soft-delete purge policy. Output: code changes (migrations, `onDelete` rules) and a written policy document in the repo.
 
 ---
 
@@ -209,25 +212,25 @@ Audit every deletion path in the system and define what should happen when a rec
 
 ### SEO & Head Tag Management
 
-Add SEO fields to pages, blog posts, and events: Meta Title, Meta Description, OG / page thumbnail image, Twitter card type, and JSON-LD structured data blocks (Article, Event, Organization). Add a global head injection field in Settings and a per-page head injection field. Add a global footer injection field. Define a sanitization strategy. Gate advanced injection behind a role or setting so it can be hidden for orgs that don't need it. Write help copy covering both basic and power-user workflows.
+Meta Title, Meta Description, OG image, Twitter card type, JSON-LD structured data (Article, Event, Organization). Global and per-page head injection fields. Global footer injection. Sanitization strategy. Gate advanced injection by role.
 
-### Site Theme Enhancement
+### Site Theme & Public Theme Builder
 
-Extends the existing Site Theme admin page. Colours are reorganised into two rows — light palette and dark palette — each with independent pickers. A "Mirror light → dark" button on the light row and a "Mirror dark → light" button on the dark row apply an HSL-based inversion as a starting point, clearly labelled as a suggestion. A live WCAG AA contrast checker runs against all foreground/background colour pairs; failing combinations display a warning with the nearest passing colour as a suggestion. Preset palettes with preview swatches are available as a starting point for both rows.
+*Merges "Site Theme Enhancement" and "Public Theme Builder / Custom CSS Tool" — both extend the same page.*
+
+Extends the existing `SiteThemePage` which already has appearance settings and a live SCSS editor. Adds: colours reorganised into light/dark palette rows, "Mirror" buttons applying HSL-based inversion as a starting point, live WCAG AA contrast checker with nearest-passing-colour suggestions, preset palettes with swatches. Split-pane SCSS editor with live page preview on the right side.
 
 ### CMS Style System, Column Widget & Front-End Build — Planning
 
-Design three interconnected systems before building any of them.
+Plan three interconnected systems before building:
 
-**(1) Page widget style surface schema.** Each page widget type declares a `style_schema` using CSS property names as keys with a control type and constraints as values — e.g. `display: {type: select, options: [grid, flex, block]}`, `font-size: {type: range, min: 12, max: 72, unit: px}`. This is how a page widget restricts what the user can change. All page widgets additionally accept an arbitrary CSS field, scoped at render time by wrapping it in a `[data-widget="{uuid}"]` selector generated per instance — no build step needed for scoping. Agree on the schema format before building.
-
-**(2) Column widget.** A page widget that holds named slots, each with a declared width. Child page widgets are assigned to slots. Exposes `display` restricted to `grid`, `flex`, and `block` as a concrete example of the style schema above. No separate column layout system — columns are just page widgets rendered by the same engine. Nesting a column widget inside a slot covers the colspan case without a special model.
-
-**(3) Front-end build system.** Vite with `laravel/vite-plugin`. SCSS via the `sass` package (standard Vite integration). PostCSS with autoprefixer and cssnano for vendor prefixes and minification. Public side targets a single bundled CSS file and a single bundled JS file — minimise HTTP requests. Inline `<style>` blocks (style-guide custom properties output, page widget arbitrary CSS) are minified at render time by a lightweight PHP helper or Blade directive, not a build step, so they stay inline and don't add a file call. Decide in this session what is compiled vs. what is generated dynamically at request time.
+1. **Widget style surface schema** — each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets also accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time, no build step needed.
+2. **Column widget** — holds named slots with declared widths. Child widgets assigned to slots. `display` restricted to `grid`, `flex`, `block`. Nesting handles colspan.
+3. **Front-end build** — Vite with `laravel/vite-plugin`, SCSS via `sass`, PostCSS + autoprefixer + cssnano. Single bundled CSS and JS files. Inline `<style>` blocks minified at render time by a PHP helper.
 
 ### Widget Portability & Distribution
 
-Formalise each widget as a self-describing class: a single authoritative definition carrying its handle, config schema, render logic (view pointer or inline), a manifest of JS and CSS assets, and optional collection type definitions. JS and CSS manifests roll up into the Vite npm build at compile time — no per-widget HTTP requests. Collection type definitions declare the shape a collection must conform to and automatically register that collection when the widget is loaded into a new system instance, ensuring widgets that depend on structured data are always self-sufficient. The long-term goal is a widget sharing space where widgets can be packaged, versioned, and installed across independent instances of the same application. No widget marketplace UI is in scope for this session — this session is the architectural foundation that makes distribution possible.
+Each widget becomes a self-describing class: handle, config schema, render logic, JS/CSS asset manifest, optional collection type definitions. Manifests roll up into the Vite build. Foundation for future widget distribution — no marketplace UI in scope here.
 
 ### Page Builder — Widget Styling & Basic Interactivity
 
@@ -237,15 +240,11 @@ Formalise each widget as a self-describing class: a single authoritative definit
 
 ### SVG & Image Optimization
 
-Add SVG support: inline SVG in page builder / rich text areas, and SVG as `<img src>` in image page widgets and media fields. Add image optimization on upload: automatic compression and resize with optional manual quality controls.
+SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: automatic compression and resize with optional quality controls.
 
 ### Image & Media Handling — Carousels & Galleries
 
 ### Media Library UI
-
-### Public Theme Builder / Custom CSS Tool
-
-Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the same sass pipeline), live page preview on the right. Gated by user role. Sits in Settings or as a dedicated nav item. Output is minified and written into the inline style block, not a separate file call.
 
 ---
 
@@ -253,19 +252,19 @@ Split-pane live CSS editor: CSS/SCSS on the left (compiled server-side via the s
 
 ### Help System Enhancements
 
-Add a link to the full help system in the left navigation. Build a help index page with a table of contents and a search bar. Audit every primary navigation item and ensure each has a linked help article. Write process articles: Google Analytics / GTM setup, Google site verification, custom CSS, custom collections, custom page widgets, Google Fonts.
+Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM setup, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
 
 ### Accessibility — ARIA, ADA & Colour Contrast
 
-Audit and harden the public-facing frontend for accessibility. Add ARIA landmark roles and labels to the public layout (`<header>`, `<main>`, `<footer>`, `<nav aria-label>`). Ensure all interactive elements (nav dropdowns, form controls, buttons) have correct ARIA states (`aria-expanded`, `aria-current`, `aria-label`). Keyboard navigation audit: tab order, focus styles, skip-to-main link. Colour contrast: integrate an automated contrast checker (e.g. axe-core or similar) into the build or as a standalone audit step; flag any Pico defaults or theme colour combinations that fall below WCAG AA (4.5:1 for text, 3:1 for UI components). Colorblind simulation audit: identify palette choices that fail common colorblindness simulations (deuteranopia, protanopia). Output: a short written report of issues found plus fixes applied, and a WCAG AA compliance statement that can be shared with nonprofit clients for ADA documentation purposes.
+ARIA landmark roles, correct states on interactive elements, keyboard navigation audit, focus styles, skip-to-main. Automated contrast check (axe-core or similar). Colorblind simulation audit. Output: fixes applied + WCAG AA compliance statement for client ADA documentation.
 
 ### Privacy & Legal Footer Example
 
-*No analytics, no cookie consent system — those are out of scope by design. This session produces a well-structured example custom footer component with sensible placeholder slots for privacy policy, terms, and any legal copy the organization needs. Ships as a reference implementation customers can drop in and edit.*
+*Example custom footer component with placeholder slots for privacy policy and terms. Reference implementation for customers to drop in and edit. No analytics, no cookie consent — out of scope by design.*
 
 ### Multi-Vendor Mail Support
 
-*Add additional sending providers to the Mail Settings page: SMTP, AWS SES, Postmark, Mailgun. Each provider adds its own credential fields (visible when that driver is selected) and a config branch in `AppServiceProvider`. No architectural changes required — the switchable driver pattern from session 034 is already in place.*
+*Additional sending providers: SMTP, AWS SES, Postmark, Mailgun. Each adds credential fields and a config branch. Switchable driver pattern already in place.*
 
 ### Public API Endpoints
 
@@ -287,7 +286,7 @@ Audit and harden the public-facing frontend for accessibility. Add ARIA landmark
 
 ### Onboarding / Install Dashboard Widget
 
-*A first-run dashboard widget that detects an unconfigured install and walks the admin through the minimum viable setup: base URL, site name, and logo upload. Presents as a step-by-step card on the Filament dashboard; disappears once all fields are confirmed. Likely backed by SiteSettings keys already in place (`site_name`, `base_url`, `admin_logo_path`). Could double as a health-check widget showing which optional settings are still unset.*
+*First-run widget that detects an unconfigured install and walks the admin through minimum viable setup: base URL, site name, logo. Disappears once confirmed. Could double as a health-check widget.*
 
 ### Installer
 
