@@ -88,6 +88,11 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Permission::firstOrCreate([
+            'name'       => 'view_any_member',
+            'guard_name' => 'web',
+        ]);
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [
@@ -131,7 +136,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('tag'),
             $fullPermissions('membership'),
             $fullPermissions('donation'),
-            ['import_data'],
+            ['import_data', 'view_any_member'],
         ));
 
         // ── event_manager ────────────────────────────────────────────────────
@@ -144,6 +149,7 @@ class PermissionSeeder extends Seeder
         $eventManager->syncPermissions(array_merge(
             $fullPermissions('event'),
             $viewPermissions('contact'),
+            ['view_any_member'],
         ));
 
         // ── volunteer_coordinator ────────────────────────────────────────────
@@ -158,6 +164,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('tag'),
             $fullPermissions('note'),
             $viewPermissions('event'),
+            ['view_any_member'],
         ));
 
         // ── treasurer ────────────────────────────────────────────────────────
@@ -173,6 +180,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('campaign'),
             $fullPermissions('transaction'),
             $viewPermissions('contact'),
+            ['view_any_member'],
         ));
 
         // ── blogger ──────────────────────────────────────────────────────────

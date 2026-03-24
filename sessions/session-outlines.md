@@ -73,24 +73,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 066 | Promote Contact to Member |
 | 067 | Contact Actions & Notes Sub-Page |
 | 068 | Roadmap Planning & Help Content |
-
----
-
-## Session 069 — Minor Tweaks, Fixes & Git Hygiene
-
-*User will supply a list of additional minor cosmetic and organisational fixes at the start of the session.*
-
-**Admin views:**
-- Remove `EventsSettingsPage` entirely — it is hidden from navigation and its only field (`event_auto_publish`) already lives in CMS Settings. Delete the class, deregister the route, remove the help doc.
-- Add a read-only `MemberResource` providing a focused lens on contacts with active memberships, scoped via `isMember()` — same pattern as PostResource scoping Page to `type = 'post'`. Edit action redirects to ContactResource; no duplicate form. Add `view_any_member` permission; grant it to super_admin and any role already holding `view_any_contact`.
-- Review `HouseholdResource` nav placement. Confirm it is visible and sensibly grouped; adjust if needed. Full nav placement finalised when the self-service invite flow is built.
-
-**Public frontend:**
-- Add a mobile hamburger menu to the public site. Simple CSS-based collapse — no JS framework, no animation library. Hamburger icon toggles the nav open/closed. Target: functional on small screens, consistent with existing styles.
-
-**Git hygiene:**
-- Add a git workflow section to `CLAUDE.md` (create the file at the project root if it does not exist): every session Claude opens a new branch before touching any code; single commit per branch at close; patch branches follow the pattern `session-###-patch-###`; Claude never pushes or merges — the user handles both.
-- Add a CI test step — a GitHub Actions workflow (or pre-push hook if CI is not yet configured) that runs `php artisan test` before changes can reach main. Does not need to be exhaustive; the goal is baseline hygiene.
+| 069 | Minor Tweaks, Fixes & Git Hygiene |
 
 ---
 

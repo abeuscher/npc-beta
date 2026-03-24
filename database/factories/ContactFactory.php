@@ -24,7 +24,7 @@ class ContactFactory extends Factory
             'first_name'     => $firstName,
             'last_name'      => $lastName,
             'email'          => $email,
-            'phone'          => fake()->optional(0.7)->phoneNumber(),
+            'phone'          => fake()->boolean(70) ? fake()->numerify('(###) 555-####') : null,
             'address_line_1' => fake()->boolean(60) ? fake()->randomElement(SampleLibrary::streetAddresses()) : null,
             'address_line_2' => fake()->optional(0.1)->secondaryAddress(),
             'city'           => fake()->boolean(60) ? fake()->randomElement(SampleLibrary::cities()) : null,

@@ -48,15 +48,15 @@ class SiteThemePage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'public_primary_color' => SiteSetting::get('public_primary_color'),
+            'public_primary_color' => SiteSetting::get('public_primary_color', '#0172ad'),
             'public_heading_font'  => SiteSetting::get('public_heading_font', ''),
             'public_body_font'     => SiteSetting::get('public_body_font', ''),
             'logo_path'            => SiteSetting::get('logo_path'),
-            'header_bg_color'      => SiteSetting::get('header_bg_color'),
-            'nav_link_color'       => SiteSetting::get('nav_link_color'),
-            'nav_hover_color'      => SiteSetting::get('nav_hover_color'),
-            'nav_active_color'     => SiteSetting::get('nav_active_color'),
-            'footer_bg_color'      => SiteSetting::get('footer_bg_color'),
+            'header_bg_color'      => SiteSetting::get('header_bg_color', '#ffffff'),
+            'nav_link_color'       => SiteSetting::get('nav_link_color', '#373c44'),
+            'nav_hover_color'      => SiteSetting::get('nav_hover_color', '#0172ad'),
+            'nav_active_color'     => SiteSetting::get('nav_active_color', '#0172ad'),
+            'footer_bg_color'      => SiteSetting::get('footer_bg_color', '#ffffff'),
             'header_nav_handle'    => SiteSetting::get('header_nav_handle', 'primary'),
             'footer_nav_handle'    => SiteSetting::get('footer_nav_handle', 'footer'),
             'header_content'       => SiteSetting::get('header_content'),
@@ -133,7 +133,7 @@ class SiteThemePage extends Page
                 // ── Right column ─────────────────────────────────────────────
                 Forms\Components\Group::make([
 
-                    Forms\Components\Section::make('Colours')
+                    Forms\Components\Section::make('Colors')
                         ->schema([
                             Forms\Components\ColorPicker::make('public_primary_color')
                                 ->label('Brand'),

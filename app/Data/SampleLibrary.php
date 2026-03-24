@@ -60,21 +60,21 @@ class SampleLibrary
     public static function emailDomains(): array
     {
         return [
-            'acme.com',
-            'kc-company.net',
-            'bedrock.gov',
-            'spacely-sprockets.com',
-            'cogswell-cogs.net',
-            'jellystone.park',
-            'frostbitefalls.mn',
-            'wossamotta.edu',
-            'toon-town.net',
-            'megacorp.toon',
-            'globochem.toon',
-            'seussworks.com',
-            'thneedville.org',
-            'whoville.net',
-            'nool-hills.gov',
+            'acme.example.com',
+            'kc-company.example.com',
+            'bedrock.example.com',
+            'spacely-sprockets.example.com',
+            'cogswell-cogs.example.com',
+            'jellystone.example.com',
+            'frostbitefalls.example.com',
+            'wossamotta.example.com',
+            'toon-town.example.com',
+            'megacorp.example.com',
+            'globochem.example.com',
+            'seussworks.example.com',
+            'thneedville.example.com',
+            'whoville.example.com',
+            'nool-hills.example.com',
         ];
     }
 

@@ -19,7 +19,7 @@ class TagResource extends Resource
 
     protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?string $navigationLabel = 'Tags';
+    protected static ?string $navigationLabel = 'Tag Manager';
 
     protected static ?int $navigationSort = 10;
 

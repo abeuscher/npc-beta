@@ -45,7 +45,9 @@ class HelpSync extends Command
                 continue;
             }
 
-            $missing = array_filter(['title', 'description', 'routes'], fn ($k) => empty($frontmatter[$k]));
+            $standalone = !empty($frontmatter['standalone']);
+            $required   = $standalone ? ['title', 'description'] : ['title', 'description', 'routes'];
+            $missing    = array_filter($required, fn ($k) => empty($frontmatter[$k]));
 
             if ($missing) {
                 $this->warn("  ✗ {$slug} — missing required frontmatter: " . implode(', ', $missing));
@@ -53,7 +55,7 @@ class HelpSync extends Command
                 continue;
             }
 
-            $routes = (array) $frontmatter['routes'];
+            $routes = $standalone ? [] : (array) $frontmatter['routes'];
 
             DB::transaction(function () use ($slug, $frontmatter, $content, $routes) {
                 $article = HelpArticle::updateOrCreate(
