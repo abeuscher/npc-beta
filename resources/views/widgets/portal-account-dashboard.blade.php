@@ -9,5 +9,10 @@
     <dl>
         <dt>Email</dt>
         <dd>{{ $portalUser->email }}</dd>
+
+        @if ($contact->household_id && $contact->household_id !== $contact->id)
+        <dt>Household</dt>
+        <dd>{{ $contact->householdName() }}</dd>
+        @endif
     </dl>
 @endif

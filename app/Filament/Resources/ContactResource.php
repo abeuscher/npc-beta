@@ -123,6 +123,20 @@ class ContactResource extends Resource
                             ->nullable(),
                     ]),
 
+                Forms\Components\Section::make('Household')
+                    ->schema([
+                        Forms\Components\Select::make('household_id')
+                            ->label('Household Head')
+                            ->helperText('Select another contact to assign this contact to their household. Leave blank to keep this contact as their own head (solo).')
+                            ->options(fn (?Contact $record) => Contact::when(
+                                $record,
+                                fn ($q) => $q->where('id', '!=', $record->id)
+                            )->orderByRaw("COALESCE(last_name, first_name)")->get()
+                                ->mapWithKeys(fn ($c) => [$c->id => $c->display_name]))
+                            ->searchable()
+                            ->nullable(),
+                    ]),
+
             ])->columnSpan(2),
 
             Forms\Components\Group::make([
@@ -230,8 +244,15 @@ class ContactResource extends Resource
                         default   => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('household.name')
+                Tables\Columns\TextColumn::make('household_display')
                     ->label('Household')
+                    ->getStateUsing(function (Contact $record): ?string {
+                        if (! $record->household_id || $record->household_id === $record->id) {
+                            return null;
+                        }
+
+                        return $record->householdName();
+                    })
                     ->placeholder('—')
                     ->toggleable(),
 
@@ -268,7 +289,7 @@ class ContactResource extends Resource
 
                 Tables\Filters\Filter::make('in_household')
                     ->label('In a household')
-                    ->query(fn ($query) => $query->whereNotNull('household_id')),
+                    ->query(fn ($query) => $query->whereColumn('household_id', '!=', 'id')),
 
                 Tables\Filters\TrashedFilter::make(),
             ])
@@ -287,7 +308,7 @@ class ContactResource extends Resource
                 ]),
             ])
             ->modifyQueryUsing(fn ($query) => $query->with([
-                'household',
+                'head',
                 'memberships' => fn ($q) => $q->where('status', 'active'),
                 'donations',
             ]));

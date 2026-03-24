@@ -21,6 +21,12 @@ class Contact extends Model
 
     protected static function booted(): void
     {
+        static::created(function (Contact $contact) {
+            if (is_null($contact->household_id)) {
+                Contact::where('id', $contact->id)->update(['household_id' => $contact->id]);
+            }
+        });
+
         static::addGlobalScope('hide_pending_imports', function (Builder $builder) {
             if (auth()->check() && auth()->user()->can('review_imports')) {
                 return;
@@ -40,7 +46,7 @@ class Contact extends Model
 
     protected $fillable = [
         'organization_id',
-        'household_id',      // managed from HouseholdResource MembersRelationManager
+        'household_id',      // self-referential FK → contacts.id; equals id when solo/head
         'prefix',
         'first_name',
         'last_name',
@@ -78,9 +84,14 @@ class Contact extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function household(): BelongsTo
+    public function head(): BelongsTo
     {
-        return $this->belongsTo(Household::class);
+        return $this->belongsTo(Contact::class, 'household_id');
+    }
+
+    public function householdMembers(): HasMany
+    {
+        return $this->hasMany(Contact::class, 'household_id');
     }
 
     public function memberships(): HasMany
@@ -121,6 +132,15 @@ class Contact extends Model
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    public function householdName(): string
+    {
+        if ($this->household_id === $this->id) {
+            return "{$this->last_name} Household";
+        }
+
+        return "{$this->head->last_name} Household";
+    }
 
     public function activeMembership(): ?Membership
     {

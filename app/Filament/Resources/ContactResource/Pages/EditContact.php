@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
 use App\Mail\PortalEmailVerification;
+use App\Models\Contact;
 use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
@@ -18,6 +19,54 @@ use Illuminate\Support\Str;
 class EditContact extends EditRecord
 {
     protected static string $resource = ContactResource::class;
+
+    public ?string $initialHouseholdId = null;
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $this->initialHouseholdId = $data['household_id'] ?? null;
+
+        // Show null in the Select when the contact is their own head (solo)
+        if (isset($data['household_id']) && $data['household_id'] === $this->record->id) {
+            $data['household_id'] = null;
+        }
+
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Null selection means solo — assign the contact as their own head
+        if (empty($data['household_id'])) {
+            $data['household_id'] = $this->record->id;
+        }
+
+        return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        $contact = $this->record->fresh();
+
+        // Sync head's address when newly assigned to a different household
+        if ($contact->household_id &&
+            $contact->household_id !== $contact->id &&
+            $contact->household_id !== $this->initialHouseholdId) {
+
+            $head = Contact::find($contact->household_id);
+
+            if ($head) {
+                $contact->updateQuietly([
+                    'address_line_1' => $head->address_line_1,
+                    'address_line_2' => $head->address_line_2,
+                    'city'           => $head->city,
+                    'state'          => $head->state,
+                    'postal_code'    => $head->postal_code,
+                    'country'        => $head->country,
+                ]);
+            }
+        }
+    }
 
     protected function getHeaderActions(): array
     {

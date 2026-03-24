@@ -21,24 +21,51 @@
 
     <section>
         <h2>Mailing Address</h2>
-        <form method="POST" action="{{ route('portal.account.update-address') }}">
-            @csrf
-            @method('PATCH')
 
-            <label for="pce_city">City</label>
-            <input type="text" id="pce_city" name="city" value="{{ old('city', $contact->city) }}" maxlength="255">
+        @if (session('household_address_choice'))
+            <p>You are part of the <strong>{{ $contact->householdName() }}</strong>. How would you like to apply this change?</p>
 
-            <label for="pce_state">State / Province</label>
-            <input type="text" id="pce_state" name="state" value="{{ old('state', $contact->state) }}" maxlength="255">
+            <form method="POST" action="{{ route('portal.account.update-address') }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="city" value="{{ old('city') }}">
+                <input type="hidden" name="state" value="{{ old('state') }}">
+                <input type="hidden" name="postal_code" value="{{ old('postal_code') }}">
+                <input type="hidden" name="country" value="{{ old('country') }}">
+                <input type="hidden" name="scope" value="mine">
+                <button type="submit">Update just my address (I will leave the household)</button>
+            </form>
 
-            <label for="pce_postal_code">Postal Code</label>
-            <input type="text" id="pce_postal_code" name="postal_code" value="{{ old('postal_code', $contact->postal_code) }}" maxlength="20">
+            <form method="POST" action="{{ route('portal.account.update-address') }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="city" value="{{ old('city') }}">
+                <input type="hidden" name="state" value="{{ old('state') }}">
+                <input type="hidden" name="postal_code" value="{{ old('postal_code') }}">
+                <input type="hidden" name="country" value="{{ old('country') }}">
+                <input type="hidden" name="scope" value="household">
+                <button type="submit">Update the household address for everyone</button>
+            </form>
+        @else
+            <form method="POST" action="{{ route('portal.account.update-address') }}">
+                @csrf
+                @method('PATCH')
 
-            <label for="pce_country">Country</label>
-            <input type="text" id="pce_country" name="country" value="{{ old('country', $contact->country) }}" maxlength="255">
+                <label for="pce_city">City</label>
+                <input type="text" id="pce_city" name="city" value="{{ old('city', $contact->city) }}" maxlength="255">
 
-            <button type="submit">Save address</button>
-        </form>
+                <label for="pce_state">State / Province</label>
+                <input type="text" id="pce_state" name="state" value="{{ old('state', $contact->state) }}" maxlength="255">
+
+                <label for="pce_postal_code">Postal Code</label>
+                <input type="text" id="pce_postal_code" name="postal_code" value="{{ old('postal_code', $contact->postal_code) }}" maxlength="20">
+
+                <label for="pce_country">Country</label>
+                <input type="text" id="pce_country" name="country" value="{{ old('country', $contact->country) }}" maxlength="255">
+
+                <button type="submit">Save address</button>
+            </form>
+        @endif
     </section>
 
     <section>

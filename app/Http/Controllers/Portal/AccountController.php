@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +24,46 @@ class AccountController extends Controller
             'country'     => ['nullable', 'string', 'max:255'],
         ]);
 
-        Auth::guard('portal')->user()->contact->update($validated);
+        $contact = Auth::guard('portal')->user()->contact;
+
+        $isHead = ! $contact->household_id || $contact->household_id === $contact->id;
+
+        if ($isHead) {
+            // Update head's own address then cascade to all household members
+            $contact->update($validated);
+            Contact::where('household_id', $contact->id)
+                ->where('id', '!=', $contact->id)
+                ->update($validated);
+
+            return back()->with('success', 'Your address has been updated.');
+        }
+
+        $scope = $request->input('scope');
+
+        // Non-head without a scope choice: intercept and present the two options
+        if (! $scope) {
+            return back()->withInput()->with('household_address_choice', true);
+        }
+
+        if ($scope === 'mine') {
+            // Leave the household and save only this contact's address
+            $contact->update(array_merge($validated, ['household_id' => $contact->id]));
+
+            return back()->with('success', 'Your address has been updated. You have left the household.');
+        }
+
+        if ($scope === 'household') {
+            // Update head and cascade to all members
+            $head = $contact->head;
+            if ($head) {
+                $head->update($validated);
+                Contact::where('household_id', $head->id)
+                    ->where('id', '!=', $head->id)
+                    ->update($validated);
+            }
+
+            return back()->with('success', 'The household address has been updated for everyone.');
+        }
 
         return back()->with('success', 'Your address has been updated.');
     }
