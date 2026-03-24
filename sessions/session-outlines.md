@@ -77,6 +77,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 070 | Admin User Invitations |
 | 071 | Household Linking |
 | 072 | Activity Log |
+| 073 | Stripe Foundation |
 
 ---
 
@@ -110,15 +111,15 @@ Filterable admin view of the `activity_logs` table. Who did what, to which recor
 
 *A dedicated Financial Settings page (gated to developer/treasurer roles) holds Stripe and QuickBooks API keys. Keys are encrypted at rest.*
 
-### Stripe Foundation
+### ~~Stripe Foundation~~ *(completed session 073)*
 
-Receive and record all Stripe payment events. Every payment captured as a transaction: type, amount, contact, date, Stripe payment intent ID, QuickBooks sync status. Foundation for all other finance sessions.
-
-*Before beginning: confirm the exact webhook event types and payload structure from the Stripe documentation.*
+Webhook receiver, encrypted key storage, polymorphic transaction table, and restricted API key scoped to minimum permissions. The Stripe Checkout pattern established in session 074 is the template for event ticketing and membership payment in future sessions.
 
 ### Products & Checkout
 
-Lightweight product catalogue backed by Stripe Checkout. `products` table: name, description, price, capacity, type. Purchase initiates a Stripe Checkout session — buyer pays on Stripe's hosted page, redirected back, webhook records the transaction. Covers event tickets, membership fees, and any "pay for a thing" scenario. No card data passes through the application.
+Resource allocation system backed by Stripe Checkout. Products are named entitlements with fixed inventory (garden plots, parking spaces, packages — not physical goods). Each product has one or more price tiers; each tier is a separate Checkout path drawing from the same inventory pool. Zero-price tiers bypass Stripe entirely. Allocation is recorded on webhook confirmation only (no pre-allocation). Manual waitlist when inventory is exhausted. Allocations visible on the contact activity log timeline. Admin inventory view shows all allocations and waitlist per product.
+
+*The Stripe Checkout session creation pattern established here is the template for event ticketing and membership payment in future sessions.*
 
 ### Recurring Donations
 
