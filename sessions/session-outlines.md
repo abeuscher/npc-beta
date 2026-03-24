@@ -74,17 +74,8 @@ This is the single working reference for all sessions. Completed sessions are li
 | 067 | Contact Actions & Notes Sub-Page |
 | 068 | Roadmap Planning & Help Content |
 | 069 | Minor Tweaks, Fixes & Git Hygiene |
-
----
-
-## Session 070 — Admin User Invitations
-
-Staff invite new admin users by supplying name, email, and role. The system creates the user record, generates a secure temporary password, and sends an invitation email. The temporary password expires on first login: the user is forced to set a new password before accessing the admin panel. Standard first-login forced-reset flow.
-
-Key decisions to resolve at session start:
-- Does the invitation land the user directly in the admin panel after they set a password, or do they click a link in email → set password → then log in?
-- Should invitation tokens have a configurable TTL (e.g. 48 hours), or just expire on first use?
-- Is there a UI for resending or revoking a pending invitation?
+| 070 | Admin User Invitations |
+| 071 | Household Linking |
 
 ---
 
@@ -92,36 +83,21 @@ Key decisions to resolve at session start:
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
 
-### Household & Family Grouping
+### Household — Remaining Features
 
-**Status: Partial** — Admin-facing HouseholdResource is built (list, create, edit, member relation manager, help doc). Nav placement is reviewed in session 069. The self-service invite flow described below remains.
+Core household model built in session 071 (self-referential `contacts.household_id` FK, admin assignment, portal display, address sync). Remaining for future sessions if needed:
 
-A lightweight household record — name, canonical mailing address, members (linked contacts). Accessed through the contact record. Members can invite others via an email invite flow; staff approve the linkage. An invite to an unknown email produces a neutral success response (no signal to the sender) and logs a note to the inviting member's contact record.
-
-**Architectural decisions (agreed session 060):**
-- Lateral relationship: contacts link to a household, not to each other. No self-referential FK.
-- Household auto-created when an invite is accepted (not pre-created by staff).
-- Inviter address is always the canonical household address — never overwritten by the invitee. Security requirement.
-- If a member's contact address diverges from the household canonical address, show a warning UI — do not silently overwrite either.
-- Staff can manually link/unlink on the contact record. Members self-serve via invite with staff approval.
-
-Aggregate giving computed from linked members, not stored. Used for physical mailing deduplication, compound salutations, and household-level event/ticket limits.
-
-### Gated Pages
+- Member-to-member portal invite flow with staff approval.
+- Household dissolution / head transfer when the head contact leaves.
+- Household-level aggregate giving and mailing deduplication (Finance sessions).
 
 ---
 
 ## Communication & Accountability
 
-*Both sessions depend on Member Portal being complete.*
+### Activity Log
 
-### Communication Log
-
-An auditable activity stream on contact records — tracking who did what and when. Staff edits, system actions (import, auto-created from event registration), and member self-service changes are logged as distinct event types. The notes panel is extended to serve as the unified activity stream; entries are typed (manual note, system event, import action, member action) and filterable. All logging is transparent and accountability-facing — not behaviour tracking.
-
-### Admin User Activity Log
-
-Event journal per admin user: who did what, to which record, and when. Surfaced on the user record and optionally as a global filterable log. Scope in the planning session: action types, storage (dedicated table vs. `owen-it/laravel-auditing`), retention/purge policy.
+An auditable activity stream recording CUD operations on key records (Contact, Membership, Donation, Page, Event). Actor attributed as admin user, system, or portal member. On the contact record the existing Notes sub-page becomes a unified Timeline showing human-authored notes and system activity entries merged chronologically. Admin user activity also surfaced on the User edit page. Separate `activity_logs` table — not extended from Notes. No field-level diff for updates. No package dependency — implemented via model Observers.
 
 ---
 
