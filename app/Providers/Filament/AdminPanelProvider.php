@@ -48,6 +48,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(env('ADMIN_PATH', 'admin'))
             ->login()
+            ->routes(function () {
+                \Illuminate\Support\Facades\Route::get('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'show'])
+                    ->name('invitation.show');
+                \Illuminate\Support\Facades\Route::post('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'store'])
+                    ->name('invitation.store');
+            })
             ->colors([
                 'primary' => Color::hex($primaryColor),
             ])

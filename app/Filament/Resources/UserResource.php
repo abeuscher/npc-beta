@@ -3,15 +3,19 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Mail\AdminInvitation;
+use App\Models\InvitationToken;
+use App\Models\Role;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Role;
+use Illuminate\Support\Facades\Mail;
 
 class UserResource extends Resource
 {
@@ -81,6 +85,33 @@ class UserResource extends Resource
             ])
             ->defaultSort('name')
             ->actions([
+                Tables\Actions\Action::make('invite')
+                    ->label('Invite')
+                    ->icon('heroicon-o-envelope')
+                    ->color('warning')
+                    ->hidden(fn (User $record) => DB::table('sessions')->where('user_id', $record->id)->exists())
+                    ->form([
+                        Forms\Components\Select::make('roles')
+                            ->label('Role')
+                            ->multiple()
+                            ->options(fn () => Role::all()->mapWithKeys(fn ($r) => [$r->name => $r->display_label]))
+                            ->default(fn (User $record) => $record->getRoleNames()->toArray())
+                            ->preload(),
+                    ])
+                    ->action(function (User $record, array $data) {
+                        $record->update(['is_active' => false]);
+                        $record->syncRoles($data['roles'] ?? []);
+
+                        [$plain] = InvitationToken::createForUser($record);
+
+                        Mail::to($record->email)->send(new AdminInvitation($record, $plain));
+
+                        Notification::make()
+                            ->success()
+                            ->title('Invitation sent')
+                            ->body("An invitation email has been sent to {$record->email}.")
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->modalHeading(fn (User $record) => "Delete {$record->name} ({$record->email})?")

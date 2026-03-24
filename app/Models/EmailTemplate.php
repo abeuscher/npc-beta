@@ -82,6 +82,11 @@ class EmailTemplate extends Model
                 'subject' => 'Reset your password',
                 'body'    => '<p>Hi {{first_name}},</p><p>Click the link below to reset your password. This link expires in 60 minutes.</p><p><a href="{{reset_url}}">Reset password</a></p><p>If you did not request a password reset, you can safely ignore this email.</p>',
             ],
+            'admin_invitation' => [
+                'subject'       => 'You\'ve been invited to {{org_name}}',
+                'body'          => '<p>Hi {{name}},</p><p>You have been invited to access the {{org_name}} admin panel. Click the link below to set your password and activate your account.</p><p><a href="{{invitation_url}}">Set your password</a></p><p>This link expires in 48 hours. If you were not expecting this invitation, you can safely ignore this email.</p>',
+                'footer_reason' => 'You received this email because someone invited you to access the admin panel.',
+            ],
         ];
 
         return $defaults[$handle] ?? ['subject' => '', 'body' => ''];
