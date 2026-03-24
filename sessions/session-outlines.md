@@ -98,6 +98,10 @@ Core household model built in session 071 (self-referential `contacts.household_
 
 *Activity log built in session 072. Future additions: global filterable log, field-level diff, observers for Finance and other models.*
 
+### Activity Log Viewer
+
+Filterable admin view of the `activity_logs` table. Who did what, to which record, and when. Covers all logged events including financial key rotations (written in session 073). Simple read-only table — no editing or deletion.
+
 ---
 
 ## Finance
@@ -132,7 +136,7 @@ Generate and email annual donation summaries. Triggered manually or automaticall
 
 One-way push of categorised transactions to QuickBooks. No reconciliation, no pulling from QB.
 
-*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation.*
+*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation. Also decide the UX treatment for the QuickBooks API key on the Financial Settings page — it is currently stored encrypted but uses no gate UX. Decision deferred to this session: does the QuickBooks key warrant the same high-friction rotation flow as Stripe secrets, or a lighter treatment? Review QuickBooks API key permissions and revocation model before deciding.*
 
 ---
 

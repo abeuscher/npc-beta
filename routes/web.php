@@ -3,6 +3,7 @@
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\MailChimpWebhookController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
@@ -20,6 +21,11 @@ Route::post("/webhooks/{$mailchimpPath}", [MailChimpWebhookController::class, 'h
     ->name('webhooks.mailchimp');
 Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
     ->name('webhooks.mailchimp.verify');
+
+// Stripe webhook — no auth, no CSRF (covered by /webhooks/* exemption in bootstrap/app.php).
+// Signature is verified inside the controller using the webhook secret.
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
+    ->name('webhooks.stripe');
 
 Route::get('/', [PageController::class, 'home']);
 

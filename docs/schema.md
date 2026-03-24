@@ -863,7 +863,7 @@ Laravel session storage.
 
 ## site_settings
 
-Key-value store for site-wide configuration managed via Settings pages.
+Key-value store for site-wide configuration managed via Settings pages. Rows with `type = 'encrypted'` store their value encrypted via `Crypt::encryptString()` and are decrypted transparently by `SiteSetting::get()`.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
@@ -871,9 +871,11 @@ Key-value store for site-wide configuration managed via Settings pages.
 | key | string | no | unique |
 | value | text | yes | |
 | group | string | no | default: 'general' |
-| type | string | no | default: 'string' |
+| type | string | no | default: 'string'; values: string, boolean, integer, json, encrypted |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+
+**Finance keys:** `stripe_publishable_key` (type: string), `stripe_secret_key` (type: encrypted), `stripe_webhook_secret` (type: encrypted), `quickbooks_api_key` (type: encrypted).
 
 ---
 
@@ -910,16 +912,17 @@ Unique constraint on `(name, type)`.
 
 ## transactions
 
-Financial transaction ledger entries, linked to donations.
+Financial transaction ledger entries. Subject is polymorphic — one table covers donations, event registrations, memberships, and future payment types.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
-| donation_id | uuid | yes | FK→donations, nullOnDelete |
-| type | string | no | default: 'donation' |
+| subject_type | string | yes | Polymorphic model class, e.g. App\Models\EventRegistration |
+| subject_id | string | yes | Polymorphic FK (UUID string) |
+| type | string | no | default: 'payment' |
 | amount | decimal(10,2) | no | |
 | direction | string | no | default: 'in'; values: in, out |
-| status | string | no | default: 'pending' |
+| status | string | no | default: 'pending'; values: pending, completed, failed |
 | stripe_id | string | yes | |
 | quickbooks_id | string | yes | |
 | occurred_at | timestamp | no | default: current |

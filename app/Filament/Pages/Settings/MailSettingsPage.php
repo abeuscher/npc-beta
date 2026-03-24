@@ -81,6 +81,7 @@ class MailSettingsPage extends Page
                             ->label('API Key')
                             ->password()
                             ->revealable()
+                            ->extraInputAttributes(['autocomplete' => 'new-password'])
                             ->nullable()
                             ->helperText('Your Resend API key. Starts with re_.'),
                     ])
@@ -92,6 +93,7 @@ class MailSettingsPage extends Page
                             ->label('API Key')
                             ->password()
                             ->revealable()
+                            ->extraInputAttributes(['autocomplete' => 'new-password'])
                             ->nullable(),
 
                         Forms\Components\TextInput::make('mailchimp_server_prefix')
@@ -113,6 +115,7 @@ class MailSettingsPage extends Page
                             ->label('Webhook secret')
                             ->password()
                             ->revealable()
+                            ->extraInputAttributes(['autocomplete' => 'new-password'])
                             ->nullable()
                             ->helperText('Append ?secret=this-value to the webhook URL you register in MailChimp.'),
                     ])

@@ -28,44 +28,46 @@ class TransactionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make()->schema([
-                Forms\Components\Select::make('donation_id')
-                    ->label('Donation')
-                    ->relationship('donation', 'id')
-                    ->searchable()
-                    ->nullable(),
+            Forms\Components\Section::make('Off-system transaction')
+                ->description('Use this form to record transactions that occurred outside any connected system — for example, a grant received by cheque, a project expense paid in cash, or a manual fund adjustment. Payments, refunds, and any other transactions processed through Stripe are recorded automatically and cannot be entered here.')
+                ->schema([
+                    Forms\Components\Select::make('type')
+                        ->options([
+                            'grant'      => 'Grant',
+                            'expense'    => 'Expense',
+                            'adjustment' => 'Adjustment',
+                        ])
+                        ->default('grant')
+                        ->required(),
 
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'donation'   => 'Donation',
-                        'refund'     => 'Refund',
-                        'fee'        => 'Fee',
-                        'adjustment' => 'Adjustment',
-                    ])
-                    ->default('donation')
-                    ->required(),
+                    Forms\Components\Select::make('direction')
+                        ->options(['in' => 'In', 'out' => 'Out'])
+                        ->default('in')
+                        ->required(),
 
-                Forms\Components\TextInput::make('amount')->numeric()->prefix('$')->required(),
+                    Forms\Components\TextInput::make('amount')
+                        ->numeric()
+                        ->prefix('$')
+                        ->required(),
 
-                Forms\Components\Select::make('direction')
-                    ->options(['in' => 'In', 'out' => 'Out'])
-                    ->default('in')
-                    ->required(),
+                    Forms\Components\Select::make('status')
+                        ->options([
+                            'pending' => 'Pending',
+                            'cleared' => 'Cleared',
+                        ])
+                        ->default('pending')
+                        ->required(),
 
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'pending'  => 'Pending',
-                        'cleared'  => 'Cleared',
-                        'failed'   => 'Failed',
-                        'refunded' => 'Refunded',
-                    ])
-                    ->default('pending')
-                    ->required(),
+                    Forms\Components\DateTimePicker::make('occurred_at')
+                        ->default(now())
+                        ->required()
+                        ->columnSpan(2),
 
-                Forms\Components\TextInput::make('stripe_id')->nullable(),
-                Forms\Components\TextInput::make('quickbooks_id')->nullable(),
-                Forms\Components\DateTimePicker::make('occurred_at')->default(now()),
-            ])->columns(2),
+                    Forms\Components\TextInput::make('quickbooks_id')
+                        ->label('QuickBooks reference')
+                        ->nullable()
+                        ->columnSpan(2),
+                ])->columns(4),
         ]);
     }
 
@@ -73,23 +75,40 @@ class TransactionResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('source')
+                    ->label('Source')
+                    ->badge()
+                    ->state(fn (Transaction $record): string => $record->stripe_id ? 'Stripe' : 'Manual')
+                    ->color(fn (string $state): string => $state === 'Stripe' ? 'info' : 'gray'),
+
                 Tables\Columns\TextColumn::make('type')->badge(),
+
                 Tables\Columns\TextColumn::make('amount')->money('USD')->sortable(),
+
                 Tables\Columns\TextColumn::make('direction')->badge()
                     ->color(fn ($state) => $state === 'in' ? 'success' : 'danger'),
+
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => match ($state) {
-                        'cleared'  => 'success',
-                        'failed'   => 'danger',
-                        'refunded' => 'warning',
-                        default    => 'gray',
+                        'cleared', 'completed' => 'success',
+                        'failed'               => 'danger',
+                        'refunded'             => 'warning',
+                        default                => 'gray',
                     }),
+
+                Tables\Columns\TextColumn::make('stripe_id')
+                    ->label('Stripe ID')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
             ])
             ->defaultSort('occurred_at', 'desc')
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

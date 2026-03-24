@@ -5,14 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Transaction extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'donation_id',
+        'subject_type',
+        'subject_id',
         'type',
         'amount',
         'direction',
@@ -27,8 +28,8 @@ class Transaction extends Model
         'occurred_at' => 'datetime',
     ];
 
-    public function donation(): BelongsTo
+    public function subject(): MorphTo
     {
-        return $this->belongsTo(Donation::class);
+        return $this->morphTo();
     }
 }

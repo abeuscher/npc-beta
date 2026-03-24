@@ -46,8 +46,6 @@ class GeneralSettingsPage extends Page
             'admin_primary_color' => SiteSetting::get('admin_primary_color', '#f59e0b'),
             'admin_logo_upload'   => null,
             'dashboard_welcome'   => SiteSetting::get('dashboard_welcome', ''),
-            'stripe_api_key'      => SiteSetting::get('stripe_api_key', ''),
-            'quickbooks_api_key'  => SiteSetting::get('quickbooks_api_key', ''),
             'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
             'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
             'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
@@ -194,20 +192,6 @@ class GeneralSettingsPage extends Page
                     ])
                     ->visible($isSuperAdmin),
 
-                Forms\Components\Section::make('Integrations')
-                    ->schema([
-                        Forms\Components\TextInput::make('stripe_api_key')
-                            ->label('Stripe API Key')
-                            ->nullable()
-                            ->columnSpanFull(),
-
-                        Forms\Components\TextInput::make('quickbooks_api_key')
-                            ->label('QuickBooks API Key')
-                            ->nullable()
-                            ->columnSpanFull(),
-                    ])
-                    ->columns(2)
-                    ->visible($isSuperAdmin),
             ])
             ->statePath('data');
     }
@@ -289,8 +273,6 @@ class GeneralSettingsPage extends Page
             SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
             SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
             SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
-            SiteSetting::set('stripe_api_key', $data['stripe_api_key'] ?? '');
-            SiteSetting::set('quickbooks_api_key', $data['quickbooks_api_key'] ?? '');
         }
 
         Artisan::call('config:clear');

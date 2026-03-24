@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class SiteSetting extends Model
 {
@@ -28,15 +29,20 @@ class SiteSetting extends Model
 
     /**
      * Write a setting and flush its cache key.
+     * For encrypted types, the value is encrypted before storage.
      */
     public static function set(string $key, mixed $value): void
     {
         $setting = static::where('key', $key)->first();
 
+        $storedValue = ($setting?->type === 'encrypted' && filled($value))
+            ? Crypt::encryptString((string) $value)
+            : $value;
+
         if ($setting) {
-            $setting->update(['value' => $value]);
+            $setting->update(['value' => $storedValue]);
         } else {
-            static::create(['key' => $key, 'value' => $value]);
+            static::create(['key' => $key, 'value' => $storedValue]);
         }
 
         Cache::forget("site_setting:{$key}");
@@ -45,10 +51,17 @@ class SiteSetting extends Model
     private static function castValue(mixed $value, string $type): mixed
     {
         return match ($type) {
-            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
-            'integer' => (int) $value,
-            'json'    => json_decode($value, true),
-            default   => $value,
+            'boolean'   => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'integer'   => (int) $value,
+            'json'      => json_decode($value, true),
+            'encrypted' => filled($value) ? (function () use ($value) {
+                try {
+                    return Crypt::decryptString($value);
+                } catch (\Throwable) {
+                    return '';
+                }
+            })() : '',
+            default     => $value,
         };
     }
 }
