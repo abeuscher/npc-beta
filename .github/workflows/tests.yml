@@ -36,8 +36,16 @@ jobs:
           extensions: pdo, pdo_pgsql, redis
           coverage: none
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies and build assets
+        run: npm ci && npm run build
 
       - name: Copy .env
         run: cp .env.example .env
