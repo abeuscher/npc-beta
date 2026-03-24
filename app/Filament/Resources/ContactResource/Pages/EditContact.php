@@ -46,7 +46,7 @@ class EditContact extends EditRecord
 
     protected function afterSave(): void
     {
-        $contact = $this->record->fresh();
+        $contact = $this->record;
 
         // Sync head's address when newly assigned to a different household
         if ($contact->household_id &&
