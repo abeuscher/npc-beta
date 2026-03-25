@@ -19,7 +19,8 @@ class ProductPricesRelationManager extends RelationManager
         return $form->schema([
             Forms\Components\TextInput::make('label')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->columnSpan(5),
 
             Forms\Components\TextInput::make('amount')
                 ->numeric()
@@ -27,19 +28,14 @@ class ProductPricesRelationManager extends RelationManager
                 ->required()
                 ->minValue(0)
                 ->step(0.01)
-                ->helperText('Set to 0 for a free tier.'),
+                ->helperText('Set to 0 for a free tier.')
+                ->columnSpan(5),
 
             Forms\Components\TextInput::make('sort_order')
                 ->numeric()
-                ->default(0),
-
-            Forms\Components\TextInput::make('stripe_price_id')
-                ->label('Stripe Price ID')
-                ->maxLength(255)
-                ->nullable()
-                ->helperText('Auto-populated when a paid tier is saved. Do not edit manually.')
-                ->disabled(),
-        ]);
+                ->default(0)
+                ->columnSpan(2),
+        ])->columns(12);
     }
 
     public function table(Table $table): Table
@@ -56,14 +52,12 @@ class ProductPricesRelationManager extends RelationManager
                     ->money('USD')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('stripe_price_id')
-                    ->label('Stripe Price ID')
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Order')
                     ->sortable(),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
