@@ -39,6 +39,7 @@ class PermissionSeeder extends Seeder
             'collection',
             'collection_item',
             'navigation_item',
+            'product',
             // Admin
             'user',
             'widget_type',
@@ -124,6 +125,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('post'),
             $fullPermissions('page'),
             $fullPermissions('tag'),
+            $fullPermissions('product'),
         ));
 
         // ── crm_editor ───────────────────────────────────────────────────────

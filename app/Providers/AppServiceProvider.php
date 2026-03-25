@@ -63,7 +63,8 @@ class AppServiceProvider extends ServiceProvider
             config([
                 'site.name'          => $settings->get('site_name')?->value    ?? config('app.name'),
                 'site.base_url'      => $settings->get('base_url')?->value      ?? 'http://localhost',
-                'site.blog_prefix'   => $settings->get('blog_prefix')?->value   ?? 'news',
+                'site.blog_prefix'      => $settings->get('blog_prefix')?->value      ?? 'news',
+                'site.products_prefix'  => $settings->get('products_prefix')?->value  ?? 'products',
                 'site.description'   => $settings->get('site_description')?->value ?? '',
                 'site.timezone'      => $settings->get('timezone')?->value      ?? 'America/Chicago',
                 'site.contact_email' => $settings->get('contact_email')?->value ?? '',

@@ -51,7 +51,7 @@ class Collection extends Model
 
     // Reserved handles that map to system source types.
     // Users cannot create custom collections with these handles.
-    public const RESERVED_HANDLES = ['blog_posts', 'events'];
+    public const RESERVED_HANDLES = ['blog_posts', 'events', 'products'];
 
     public function getSlugOptions(): SlugOptions
     {

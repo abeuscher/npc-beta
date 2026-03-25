@@ -6,6 +6,7 @@ use App\Models\Collection;
 use App\Models\CollectionItem;
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\Product;
 
 class WidgetDataResolver
 {
@@ -31,6 +32,7 @@ class WidgetDataResolver
             'custom'     => static::resolveCustom($collection->id, $queryConfig),
             'blog_posts' => static::resolveBlogPosts($queryConfig),
             'events'     => static::resolveEvents($queryConfig),
+            'products'   => static::resolveProducts($queryConfig),
             default      => [],
         };
     }
@@ -119,6 +121,27 @@ class WidgetDataResolver
             'url'        => $event->landingPage
                 ? url('/' . $event->landingPage->slug)
                 : url('/' . $eventsPrefix),
+        ])->all();
+    }
+
+    private static function resolveProducts(array $queryConfig): array
+    {
+        $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
+
+        $query = Product::where('status', 'published')
+            ->orderBy('sort_order', 'asc');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get()->map(fn (Product $product) => [
+            'id'          => $product->id,
+            'name'        => $product->name,
+            'slug'        => $product->slug,
+            'description' => $product->description,
+            'capacity'    => $product->capacity,
+            'available'   => max(0, $product->capacity - $product->purchases()->where('status', 'active')->count()),
         ])->all();
     }
 
