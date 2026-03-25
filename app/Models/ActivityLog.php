@@ -17,9 +17,11 @@ class ActivityLog extends Model
         'actor_id',
         'event',
         'description',
+        'meta',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'meta'       => 'array',
     ];
 }

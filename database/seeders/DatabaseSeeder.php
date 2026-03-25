@@ -56,7 +56,6 @@ class DatabaseSeeder extends Seeder
             ['key' => 'base_url',         'value' => 'http://localhost',   'group' => 'general', 'type' => 'string'],
             ['key' => 'blog_prefix',      'value' => 'news',               'group' => 'general', 'type' => 'string'],
             ['key' => 'events_prefix',    'value' => 'events',             'group' => 'general', 'type' => 'string'],
-            ['key' => 'products_prefix',  'value' => 'products',           'group' => 'general', 'type' => 'string'],
             ['key' => 'site_description', 'value' => '',                   'group' => 'general', 'type' => 'string'],
             ['key' => 'timezone',         'value' => 'America/Chicago',    'group' => 'general', 'type' => 'string'],
             ['key' => 'contact_email',    'value' => '',                   'group' => 'general', 'type' => 'string'],

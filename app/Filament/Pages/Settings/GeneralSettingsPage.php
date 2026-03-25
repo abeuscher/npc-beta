@@ -49,7 +49,6 @@ class GeneralSettingsPage extends Page
             'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
             'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
             'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
-            'products_prefix'     => SiteSetting::get('products_prefix', 'products'),
             'system_prefix'       => SiteSetting::get('system_prefix', 'system'),
             'system_page_content_reset_password' => SiteSetting::get('system_page_content_reset_password', '<h1>Set a new password</h1>'),
             'system_page_content_email_verify'   => SiteSetting::get('system_page_content_email_verify', '<h1>Verify your email</h1>'),
@@ -151,20 +150,6 @@ class GeneralSettingsPage extends Page
                                 },
                             ]),
 
-                        Forms\Components\TextInput::make('products_prefix')
-                            ->label('Products prefix')
-                            ->required()
-                            ->alphaDash()
-                            ->helperText("The URL segment for product checkout and waitlist actions. Example: 'products' → /products/checkout.")
-                            ->rules([
-                                fn () => function (string $attribute, string $value, \Closure $fail) {
-                                    $reserved = ['admin', 'horizon', 'up', 'login', 'logout', 'register'];
-                                    if (in_array(strtolower($value), $reserved, true)) {
-                                        $fail("'{$value}' is a reserved word and cannot be used as a products prefix.");
-                                    }
-                                },
-                            ]),
-
                         Forms\Components\TextInput::make('portal_prefix')
                             ->label('Member portal prefix')
                             ->required()
@@ -236,7 +221,6 @@ class GeneralSettingsPage extends Page
 
         SiteSetting::set('blog_prefix', $newBlogPrefix);
         SiteSetting::set('events_prefix', $newEventsPrefix);
-        SiteSetting::set('products_prefix', $data['products_prefix'] ?? 'products');
         SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
         SiteSetting::set('system_prefix', $newSystemPrefix);
 

@@ -78,6 +78,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 071 | Household Linking |
 | 072 | Activity Log |
 | 073 | Stripe Foundation |
+| 074 | Products & Checkout |
 
 ---
 
@@ -115,11 +116,6 @@ Filterable admin view of the `activity_logs` table. Who did what, to which recor
 
 Webhook receiver, encrypted key storage, polymorphic transaction table, and restricted API key scoped to minimum permissions. The Stripe Checkout pattern established in session 074 is the template for event ticketing and membership payment in future sessions.
 
-### Products & Checkout
-
-Resource allocation system backed by Stripe Checkout. Products are named entitlements with fixed inventory (garden plots, parking spaces, packages — not physical goods). Each product has one or more price tiers; each tier is a separate Checkout path drawing from the same inventory pool. Zero-price tiers bypass Stripe entirely. Allocation is recorded on webhook confirmation only (no pre-allocation). Manual waitlist when inventory is exhausted. Allocations visible on the contact activity log timeline. Admin inventory view shows all allocations and waitlist per product.
-
-*The Stripe Checkout session creation pattern established here is the template for event ticketing and membership payment in future sessions.*
 
 ### Recurring Donations
 

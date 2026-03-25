@@ -43,11 +43,10 @@ Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'regist
     ->middleware('throttle:10,1');
 
 // Product checkout and waitlist
-$productsPrefix = config('site.products_prefix', 'products');
-Route::post("/{$productsPrefix}/checkout", [ProductCheckoutController::class, 'store'])
+Route::post('/products/checkout', [ProductCheckoutController::class, 'store'])
     ->name('products.checkout')
     ->middleware('throttle:20,1');
-Route::post("/{$productsPrefix}/waitlist", [ProductWaitlistController::class, 'store'])
+Route::post('/products/waitlist', [ProductWaitlistController::class, 'store'])
     ->name('products.waitlist')
     ->middleware('throttle:10,1');
 

@@ -83,6 +83,7 @@ class ContactNotes extends Page implements HasActions
             'id'           => $l->id,
             'event'        => $l->event,
             'description'  => $l->description,
+            'meta'         => $l->meta ?? [],
             'actor_label'  => match ($l->actor_type) {
                 'admin'  => $adminUsers->has($l->actor_id) ? 'by ' . $adminUsers[$l->actor_id]->name : 'by admin',
                 'portal' => 'by portal member',

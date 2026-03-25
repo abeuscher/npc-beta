@@ -52,6 +52,17 @@ class PurchasesRelationManager extends RelationManager
                         'danger'  => 'cancelled',
                     ]),
             ])
-            ->actions([]);
+            ->actions([
+                Tables\Actions\Action::make('stripe')
+                    ->label('View in Stripe')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn ($record) => $record->stripe_session_id
+                        ? 'https://dashboard.stripe.com/' . (str_starts_with($record->stripe_session_id, 'cs_test_') ? 'test/' : '') . 'checkout/sessions/' . $record->stripe_session_id
+                        : null
+                    )
+                    ->openUrlInNewTab()
+                    ->hidden(fn ($record) => ! $record->stripe_session_id),
+            ]);
     }
 }

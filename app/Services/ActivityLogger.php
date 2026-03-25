@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class ActivityLogger
 {
-    public static function log(Model $subject, string $event, ?string $description = null): void
+    public static function log(Model $subject, string $event, ?string $description = null, array $meta = []): void
     {
         try {
             $actorType = 'system';
@@ -29,6 +29,7 @@ class ActivityLogger
                 'actor_id'     => $actorId,
                 'event'        => $event,
                 'description'  => $description,
+                'meta'         => $meta ?: null,
             ]);
         } catch (\Throwable $e) {
             // Silent fail — logging must never break the primary operation

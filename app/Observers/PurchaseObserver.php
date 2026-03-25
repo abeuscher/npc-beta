@@ -19,6 +19,7 @@ class PurchaseObserver
             $purchase->contact,
             'purchased',
             $purchase->product?->name,
+            $purchase->stripe_session_id ? ['stripe_session_id' => $purchase->stripe_session_id] : [],
         );
     }
 

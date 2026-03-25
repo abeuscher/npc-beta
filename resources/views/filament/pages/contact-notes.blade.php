@@ -32,14 +32,32 @@
                         </div>
                     </div>
                 @else
+                    @php
+                        $stripeSessionId = $item->meta['stripe_session_id'] ?? null;
+                        $stripeUrl = $stripeSessionId
+                            ? 'https://dashboard.stripe.com/' . (str_starts_with($stripeSessionId, 'cs_test_') ? 'test/' : '') . 'checkout/sessions/' . $stripeSessionId
+                            : null;
+                    @endphp
                     <div class="rounded-xl bg-gray-50 ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10 p-4">
-                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                            <span class="font-medium capitalize">{{ $item->event }}</span>
-                            {{ $item->actor_label }}@if ($item->description) — {{ $item->description }}@endif
-                        </p>
-                        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                            {{ $item->created_at->format('M j, Y g:i a') }}
-                        </p>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-medium capitalize">{{ $item->event }}</span>
+                                    {{ $item->actor_label }}@if ($item->description) — {{ $item->description }}@endif
+                                </p>
+                                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                    {{ $item->created_at->format('M j, Y g:i a') }}
+                                </p>
+                            </div>
+                            @if ($stripeUrl)
+                                <a href="{{ $stripeUrl }}"
+                                   target="_blank"
+                                   rel="nofollow noopener noreferrer"
+                                   class="shrink-0 text-xs text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                                    View in Stripe
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 @endif
             @endforeach

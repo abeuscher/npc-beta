@@ -1,6 +1,5 @@
 @isset($product)
     @php
-        $productsPrefix = config('site.products_prefix', 'products');
         $isAtCapacity   = $product->isAtCapacity();
         $checkoutStatus = request()->query('checkout');
     @endphp
@@ -38,7 +37,7 @@
                 <div role="alert">{{ $errors->first('waitlist') }}</div>
             @endif
 
-            <form method="POST" action="/{{ $productsPrefix }}/waitlist">
+            <form method="POST" action="{{ route('products.waitlist') }}">
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
 
@@ -72,7 +71,7 @@
                         — Free
                     @endif
 
-                    <form method="POST" action="/{{ $productsPrefix }}/checkout">
+                    <form method="POST" action="{{ route('products.checkout') }}">
                         @csrf
                         <input type="hidden" name="product_price_id" value="{{ $price->id }}">
                         <button type="submit">
