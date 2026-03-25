@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Contact;
+use App\Models\ProductPrice;
+use App\Models\Purchase;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -48,13 +51,20 @@ class StripeWebhookController extends Controller
     private function handleCheckoutSessionCompleted(\Stripe\Event $event): Response
     {
         $session  = $event->data->object;
+        $metadata = $session->metadata ?? null;
+
+        // ── Product purchase ─────────────────────────────────────────────
+        if (! empty($metadata->product_price_id)) {
+            return $this->handleProductPurchase($session, $metadata);
+        }
+
+        // ── General transaction (existing behaviour) ─────────────────────
         $intentId = $session->payment_intent;
 
         if (Transaction::where('stripe_id', $intentId)->exists()) {
             return response('OK', 200);
         }
 
-        $metadata    = $session->metadata ?? null;
         $subjectType = $metadata->subject_type ?? null;
         $subjectId   = $metadata->subject_id ?? null;
         $amountTotal = $session->amount_total ?? 0;
@@ -68,6 +78,55 @@ class StripeWebhookController extends Controller
             'status'       => 'completed',
             'stripe_id'    => $intentId,
             'occurred_at'  => now(),
+        ]);
+
+        return response('OK', 200);
+    }
+
+    private function handleProductPurchase(object $session, object $metadata): Response
+    {
+        $sessionId = $session->id;
+
+        if (Purchase::where('stripe_session_id', $sessionId)->exists()) {
+            return response('OK', 200);
+        }
+
+        $priceId = $metadata->product_price_id ?? null;
+        $price   = $priceId ? ProductPrice::with('product')->find($priceId) : null;
+
+        if (! $price) {
+            Log::warning('Stripe product purchase: price not found', ['product_price_id' => $priceId]);
+            return response('OK', 200);
+        }
+
+        $customerDetails = $session->customer_details ?? null;
+        $email           = $customerDetails->email ?? null;
+        $name            = $customerDetails->name ?? null;
+        $amountTotal     = $session->amount_total ?? 0;
+
+        $contact = null;
+        if ($email) {
+            $contact = Contact::where('email', $email)->first();
+
+            if (! $contact) {
+                $nameParts = explode(' ', trim($name ?? ''), 2);
+                $contact   = Contact::create([
+                    'first_name' => $nameParts[0] ?? '',
+                    'last_name'  => $nameParts[1] ?? '',
+                    'email'      => $email,
+                    'source'     => 'web_form',
+                ]);
+            }
+        }
+
+        Purchase::create([
+            'product_id'       => $price->product_id,
+            'product_price_id' => $price->id,
+            'contact_id'       => $contact?->id,
+            'stripe_session_id'=> $sessionId,
+            'amount_paid'      => $amountTotal / 100,
+            'status'           => 'active',
+            'occurred_at'      => now(),
         ]);
 
         return response('OK', 200);

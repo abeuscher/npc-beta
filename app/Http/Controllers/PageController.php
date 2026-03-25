@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Models\Product;
 use App\Services\WidgetDataResolver;
 use Illuminate\Support\Facades\Blade;
 
@@ -78,11 +79,23 @@ class PageController extends Controller
                 }
             }
 
+            // Inject product data for product_display widget type
+            $productData = [];
+            if (isset($config['product_slug'])) {
+                $resolvedProduct = Product::with('prices')
+                    ->where('slug', $config['product_slug'])
+                    ->where('status', 'published')
+                    ->first();
+                if ($resolvedProduct) {
+                    $productData = ['product' => $resolvedProduct];
+                }
+            }
+
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
                     ? Blade::render(
                         $widgetType->template,
-                        array_merge($collectionData, $eventData, ['config' => $config])
+                        array_merge($collectionData, $eventData, $productData, ['config' => $config])
                     )
                     : '';
 

@@ -191,5 +191,18 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.portal-account-dashboard')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'product_display'],
+            [
+                'label'         => 'Product',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'product_slug', 'type' => 'text', 'label' => 'Product slug'],
+                ],
+                'template'      => "@include('widgets.product-display')",
+            ]
+        );
     }
 }
