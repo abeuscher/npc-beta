@@ -79,6 +79,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 072 | Activity Log |
 | 073 | Stripe Foundation |
 | 074 | Products & Checkout |
+| 075 | Donations — Foundation |
 
 ---
 
@@ -116,18 +117,19 @@ Filterable admin view of the `activity_logs` table. Who did what, to which recor
 
 Webhook receiver, encrypted key storage, polymorphic transaction table, and restricted API key scoped to minimum permissions. The Stripe Checkout pattern established in session 074 is the template for event ticketing and membership payment in future sessions.
 
+### ~~Products & Checkout~~ *(completed session 074)*
 
-### Recurring Donations
+Stripe Checkout for one-off and waitlist-gated products. Admin product/price management, purchase tracking, contact auto-creation on webhook.
 
-Stripe Billing subscriptions. Subscription created once; Stripe fires webhooks each charge cycle. Responsibilities: record transactions, handle failures (notify donor, mark past-due).
+### ~~Donations — Foundation~~ *(completed session 075)*
 
-### Pledge Tracking
-
-A pledge is a promise. Store the commitment (total, schedule, campaign) and track payments against the outstanding balance. Supports board reporting and cash flow forecasting.
+One-off and recurring Stripe donations. Donation widget with configurable preset amounts and frequency toggles. Webhook handling for checkout completion and recurring billing cycles. Contact auto-creation. Activity logging on status transitions. Admin view/audit resource with transaction history.
 
 ### Tax Receipts
 
-Generate and email annual donation summaries. Triggered manually or automatically at fiscal year end. Receipt template configurable via the email template system.
+Generate and email annual donation summaries per donor. Fund designation on donations (unrestricted vs named restricted funds). Admin action to select a tax year, review eligible donors, and send receipts. Idempotency — no double-sends. Receipt record stored for audit.
+
+*Pledge tracking was considered and deliberately excluded. Pledges that don't flow through Stripe belong in QuickBooks, not here.*
 
 ### QuickBooks Sync
 

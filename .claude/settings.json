@@ -5,7 +5,14 @@
       "Bash(docker run:*)",
       "Bash(git checkout:*)",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(find /e/Clients/nonprofitcrm/app/Models -name *.php -type f)",
+      "Bash(grep -l create_.*_table /e/Clients/nonprofitcrm/database/migrations/*.php)",
+      "Read(//opt/**)",
+      "Bash(grep -r APP_ENV /e/Clients/nonprofitcrm --include=*.yml --include=*.yaml --include=*.sh)",
+      "Bash(find /e/Clients/nonprofitcrm/app/Filament/Resources -name *Form* -type f)",
+      "Bash(find /e/Clients/nonprofitcrm/database/migrations -name *form* -type f)",
+      "Bash(find e:/Clients/nonprofitcrm/resources/views -name *page-builder* -o -name *widget*block* -o -name *block*)"
     ]
   }
 }
