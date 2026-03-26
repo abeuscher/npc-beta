@@ -3,14 +3,17 @@
 namespace App\Filament\Resources\DonationResource\Pages;
 
 use App\Filament\Resources\DonationResource;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ViewRecord;
 
-class ListDonations extends ListRecords
+class ViewDonation extends ViewRecord
 {
     protected static string $resource = DonationResource::class;
 
     public function getBreadcrumbs(): array
     {
-        return ['Donations'];
+        return [
+            DonationResource::getUrl() => 'Donations',
+            'View',
+        ];
     }
 }

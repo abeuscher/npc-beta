@@ -215,6 +215,12 @@ SVG support: inline in page builder / rich text, as `<img src>` in image widgets
 
 ## Infrastructure & Ops
 
+### Code Housekeeping Notes
+
+Items spotted during other sessions that need cleanup but don't warrant their own session:
+
+- **Orphaned `WidgetRegistry` import** — `PageWidgetsRelationManager.php` imports `App\Widgets\WidgetRegistry`, which does not exist. The relation manager itself appears unused (widget editing goes through the Livewire `PageBuilder` / `PageBuilderBlock` path). Confirm the relation manager is dead code, remove the import, and delete the file if it is no longer referenced anywhere. Spotted session 075.
+
 ### Help System Enhancements
 
 Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.

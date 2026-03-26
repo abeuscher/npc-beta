@@ -7,23 +7,18 @@ use App\Services\ActivityLogger;
 
 class DonationObserver
 {
-    public function created(Donation $donation): void
-    {
-        ActivityLogger::log($donation, 'created');
-    }
-
     public function updated(Donation $donation): void
     {
-        ActivityLogger::log($donation, 'updated');
-    }
+        if (! $donation->wasChanged('status') || ! $donation->contact_id) {
+            return;
+        }
 
-    public function deleted(Donation $donation): void
-    {
-        ActivityLogger::log($donation, 'deleted');
-    }
+        $donation->loadMissing('contact');
 
-    public function restored(Donation $donation): void
-    {
-        ActivityLogger::log($donation, 'restored');
+        if ($donation->status === 'active') {
+            ActivityLogger::log($donation->contact, 'donated');
+        } elseif ($donation->status === 'past_due') {
+            ActivityLogger::log($donation->contact, 'donation_failed');
+        }
     }
 }

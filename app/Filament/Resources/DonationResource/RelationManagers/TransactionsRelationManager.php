@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Filament\Resources\ProductResource\RelationManagers;
+namespace App\Filament\Resources\DonationResource\RelationManagers;
 
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class PurchasesRelationManager extends RelationManager
+class TransactionsRelationManager extends RelationManager
 {
-    protected static string $relationship = 'purchases';
+    protected static string $relationship = 'transactions';
 
-    protected static ?string $title = 'Purchases';
+    protected static ?string $title = 'Transactions';
 
     public function isReadOnly(): bool
     {
@@ -29,40 +29,37 @@ class PurchasesRelationManager extends RelationManager
             ->recordTitleAttribute('id')
             ->defaultSort('occurred_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('contact.display_name')
-                    ->label('Contact')
-                    ->searchable(['contacts.first_name', 'contacts.last_name', 'contacts.email'])
+                Tables\Columns\TextColumn::make('stripe_id')
+                    ->label('Stripe ID')
                     ->placeholder('—'),
 
-                Tables\Columns\TextColumn::make('price.label')
-                    ->label('Price Tier'),
-
-                Tables\Columns\TextColumn::make('amount_paid')
-                    ->label('Amount')
+                Tables\Columns\TextColumn::make('amount')
                     ->money('USD'),
+
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'success' => 'completed',
+                        'danger'  => 'failed',
+                    ]),
 
                 Tables\Columns\TextColumn::make('occurred_at')
                     ->label('Date')
                     ->dateTime('M j, Y g:ia')
                     ->sortable(),
-
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'success' => 'active',
-                        'danger'  => 'cancelled',
-                    ]),
             ])
             ->actions([
                 Tables\Actions\Action::make('stripe')
                     ->label('View in Stripe')
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
-                    ->url(fn ($record) => $record->stripe_session_id
-                        ? 'https://dashboard.stripe.com/checkout/sessions/' . $record->stripe_session_id
+                    ->url(fn ($record) => $record->stripe_id
+                        ? (str_starts_with($record->stripe_id, 'in_')
+                            ? 'https://dashboard.stripe.com/invoices/' . $record->stripe_id
+                            : 'https://dashboard.stripe.com/checkout/sessions/' . $record->stripe_id)
                         : null
                     )
                     ->openUrlInNewTab()
-                    ->hidden(fn ($record) => ! $record->stripe_session_id),
+                    ->hidden(fn ($record) => ! $record->stripe_id),
             ]);
     }
 }

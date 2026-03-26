@@ -11,8 +11,10 @@ class DonationFactory extends Factory
     {
         return [
             'contact_id' => Contact::factory(),
+            'type'       => 'one_off',
             'amount'     => $this->faker->randomFloat(2, 10, 5000),
-            'donated_on' => $this->faker->date(),
+            'currency'   => 'usd',
+            'status'     => 'active',
         ];
     }
 }

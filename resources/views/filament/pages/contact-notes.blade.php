@@ -35,7 +35,7 @@
                     @php
                         $stripeSessionId = $item->meta['stripe_session_id'] ?? null;
                         $stripeUrl = $stripeSessionId
-                            ? 'https://dashboard.stripe.com/' . (str_starts_with($stripeSessionId, 'cs_test_') ? 'test/' : '') . 'checkout/sessions/' . $stripeSessionId
+                            ? 'https://dashboard.stripe.com/checkout/sessions/' . $stripeSessionId
                             : null;
                     @endphp
                     <div class="rounded-xl bg-gray-50 ring-1 ring-gray-950/5 dark:bg-gray-800 dark:ring-white/10 p-4">

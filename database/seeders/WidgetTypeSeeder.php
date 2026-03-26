@@ -204,5 +204,21 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.product-display')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'donation_form'],
+            [
+                'label'         => 'Donation Form',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'heading',       'type' => 'text',   'label' => 'Heading'],
+                    ['key' => 'amounts',       'type' => 'text',   'label' => 'Preset amounts (comma-separated, e.g. 10,25,50,100)'],
+                    ['key' => 'show_monthly',  'type' => 'toggle', 'label' => 'Show Monthly option'],
+                    ['key' => 'show_annual',   'type' => 'toggle', 'label' => 'Show Annual option'],
+                ],
+                'template'      => "@include('widgets.donation-form')",
+            ]
+        );
     }
 }

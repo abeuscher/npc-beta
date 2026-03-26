@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FormSubmissionController;
+use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
 use App\Http\Controllers\MailChimpWebhookController;
@@ -41,6 +42,12 @@ $eventsPrefix = config('site.events_prefix', 'events');
 Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'register'])
     ->name('events.register')
     ->middleware('throttle:10,1');
+
+// Donation checkout
+$donationsPrefix = config('site.donations_prefix', 'donate');
+Route::post("/{$donationsPrefix}/checkout", [DonationCheckoutController::class, 'store'])
+    ->name('donations.checkout')
+    ->middleware('throttle:20,1');
 
 // Product checkout and waitlist
 Route::post('/products/checkout', [ProductCheckoutController::class, 'store'])

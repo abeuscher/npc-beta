@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DonationResource\Pages;
+use App\Filament\Resources\DonationResource\RelationManagers;
 use App\Models\Donation;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -20,19 +21,24 @@ class DonationResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false;
+    }
+
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('view_any_donation') ?? false;
-    }
-
-    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_donation') ?? false;
-    }
-
-    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_donation') ?? false;
     }
 
     public static function form(Form $form): Form
@@ -43,51 +49,32 @@ class DonationResource extends Resource
                     ->label('Contact')
                     ->relationship('contact', 'first_name')
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
-                    ->searchable()
-                    ->preload()
-                    ->required(),
+                    ->disabled(),
 
-                Forms\Components\Select::make('campaign_id')
-                    ->label('Campaign')
-                    ->relationship('campaign', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->nullable(),
-
-                Forms\Components\Select::make('fund_id')
-                    ->label('Fund')
-                    ->relationship('fund', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->nullable(),
+                Forms\Components\TextInput::make('type')->disabled(),
 
                 Forms\Components\TextInput::make('amount')
                     ->numeric()
                     ->prefix('$')
-                    ->required(),
+                    ->disabled(),
 
-                Forms\Components\DatePicker::make('donated_on')
-                    ->required()
-                    ->default(today()),
+                Forms\Components\TextInput::make('frequency')->disabled(),
 
-                Forms\Components\Select::make('method')
-                    ->options([
-                        'cash'  => 'Cash',
-                        'check' => 'Check',
-                        'card'  => 'Card',
-                        'ach'   => 'ACH',
-                        'other' => 'Other',
-                    ])
-                    ->default('other')
-                    ->required(),
+                Forms\Components\TextInput::make('status')->disabled(),
 
-                Forms\Components\TextInput::make('reference')
-                    ->label('Reference (check #, etc.)')
-                    ->nullable(),
+                Forms\Components\TextInput::make('currency')->disabled(),
 
-                Forms\Components\Toggle::make('is_anonymous')->default(false),
+                Forms\Components\TextInput::make('stripe_subscription_id')
+                    ->label('Stripe Subscription ID')
+                    ->disabled(),
 
-                Forms\Components\Textarea::make('notes')->rows(3)->columnSpanFull(),
+                Forms\Components\TextInput::make('stripe_customer_id')
+                    ->label('Stripe Customer ID')
+                    ->disabled(),
+
+                Forms\Components\DateTimePicker::make('started_at')->disabled(),
+
+                Forms\Components\DateTimePicker::make('ended_at')->disabled(),
             ])->columns(2),
         ]);
     }
@@ -102,43 +89,61 @@ class DonationResource extends Resource
                         ->where('first_name', 'ilike', "%{$search}%")
                         ->orWhere('last_name', 'ilike', "%{$search}%")
                     ))
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
+
+                Tables\Columns\BadgeColumn::make('type')
+                    ->colors([
+                        'primary' => 'one_off',
+                        'success' => 'recurring',
+                    ]),
 
                 Tables\Columns\TextColumn::make('amount')->money('USD')->sortable(),
 
-                Tables\Columns\TextColumn::make('method')->badge(),
+                Tables\Columns\TextColumn::make('frequency')->placeholder('—'),
 
-                Tables\Columns\TextColumn::make('campaign.name')->label('Campaign')->placeholder('—'),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'warning' => 'pending',
+                        'success' => 'active',
+                        'danger'  => 'past_due',
+                        'gray'    => 'cancelled',
+                    ]),
 
-                Tables\Columns\TextColumn::make('fund.name')->label('Fund')->placeholder('—'),
-
-                Tables\Columns\TextColumn::make('donated_on')->date()->sortable(),
+                Tables\Columns\TextColumn::make('started_at')
+                    ->label('Started')
+                    ->date()
+                    ->sortable()
+                    ->placeholder('—'),
             ])
-            ->defaultSort('donated_on', 'desc')
-            ->filters([
-                Tables\Filters\TrashedFilter::make(),
-            ])
+            ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
-                ]),
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('stripe')
+                    ->label('View in Stripe')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn ($record) => $record->stripe_subscription_id
+                        ? 'https://dashboard.stripe.com/subscriptions/' . $record->stripe_subscription_id
+                        : null
+                    )
+                    ->openUrlInNewTab()
+                    ->hidden(fn ($record) => ! $record->stripe_subscription_id),
             ]);
+    }
+
+    public static function getRelationManagers(): array
+    {
+        return [
+            RelationManagers\TransactionsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListDonations::route('/'),
-            'create' => Pages\CreateDonation::route('/create'),
-            'edit'   => Pages\EditDonation::route('/{record}/edit'),
+            'index' => Pages\ListDonations::route('/'),
+            'view'  => Pages\ViewDonation::route('/{record}'),
         ];
     }
 }

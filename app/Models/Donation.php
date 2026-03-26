@@ -7,43 +7,33 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Donation extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'contact_id',
-        'campaign_id',
-        'fund_id',
+        'type',
         'amount',
-        'donated_on',
-        'method',
-        'reference',
-        'is_anonymous',
-        'notes',
+        'currency',
+        'frequency',
+        'status',
+        'stripe_subscription_id',
+        'stripe_customer_id',
+        'started_at',
+        'ended_at',
     ];
 
     protected $casts = [
-        'amount'       => 'decimal:2',
-        'donated_on'   => 'date',
-        'is_anonymous' => 'boolean',
+        'amount'     => 'decimal:2',
+        'started_at' => 'datetime',
+        'ended_at'   => 'datetime',
     ];
 
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
-    }
-
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class);
-    }
-
-    public function fund(): BelongsTo
-    {
-        return $this->belongsTo(Fund::class);
     }
 
     public function transactions(): MorphMany

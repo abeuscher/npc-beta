@@ -50,6 +50,7 @@ class GeneralSettingsPage extends Page
             'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
             'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
             'system_prefix'       => SiteSetting::get('system_prefix', 'system'),
+            'donations_prefix'    => SiteSetting::get('donations_prefix', 'donate'),
             'system_page_content_reset_password' => SiteSetting::get('system_page_content_reset_password', '<h1>Set a new password</h1>'),
             'system_page_content_email_verify'   => SiteSetting::get('system_page_content_email_verify', '<h1>Verify your email</h1>'),
         ]);
@@ -157,6 +158,12 @@ class GeneralSettingsPage extends Page
                             ->helperText("The URL prefix for the member portal. Example: 'members' → /members/login.")
                             ->columnSpanFull(),
 
+                        Forms\Components\TextInput::make('donations_prefix')
+                            ->label('Donations prefix')
+                            ->required()
+                            ->alphaDash()
+                            ->helperText("The URL segment for the donation form checkout endpoint. Example: 'donate' → /donate/checkout."),
+
                         Forms\Components\TextInput::make('system_prefix')
                             ->label('System pages prefix')
                             ->nullable()
@@ -223,6 +230,7 @@ class GeneralSettingsPage extends Page
         SiteSetting::set('events_prefix', $newEventsPrefix);
         SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
         SiteSetting::set('system_prefix', $newSystemPrefix);
+        SiteSetting::set('donations_prefix', $data['donations_prefix'] ?? 'donate');
 
         if ($newBlogPrefix !== $oldBlogPrefix) {
             CmsPage::where('type', 'post')
