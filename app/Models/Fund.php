@@ -16,6 +16,7 @@ class Fund extends Model
         'code',
         'description',
         'is_active',
+        'restriction_type',
     ];
 
     protected $casts = [

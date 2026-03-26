@@ -80,6 +80,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 073 | Stripe Foundation |
 | 074 | Products & Checkout |
 | 075 | Donations — Foundation |
+| 076 | Tax Receipts |
 
 ---
 
@@ -125,11 +126,19 @@ Stripe Checkout for one-off and waitlist-gated products. Admin product/price man
 
 One-off and recurring Stripe donations. Donation widget with configurable preset amounts and frequency toggles. Webhook handling for checkout completion and recurring billing cycles. Contact auto-creation. Activity logging on status transitions. Admin view/audit resource with transaction history.
 
-### Tax Receipts
+### ~~Tax Receipts~~ *(completed session 076)*
 
-Generate and email annual donation summaries per donor. Fund designation on donations (unrestricted vs named restricted funds). Admin action to select a tax year, review eligible donors, and send receipts. Idempotency — no double-sends. Receipt record stored for audit.
+Fund designation on donations (`fund_id` FK, `restriction_type` on funds). Donors page with year/threshold filter table. `donation_receipts` table for audit trail. `DonationReceipt` mailable through existing email system. Admin send and force-resend actions.
 
 *Pledge tracking was considered and deliberately excluded. Pledges that don't flow through Stripe belong in QuickBooks, not here.*
+
+### Mailing List from Donors
+
+Wire up the "Create Mailing List" button on the Donors page. Augment `MailingListFieldRegistry` / `MailingListQueryBuilder` if needed to support donation aggregate filters (year + minimum total). Opens the created list in the Mailing Lists resource. Discuss and decide tax receipt re-send policy and activity logging at session start.
+
+### System Email Preview Wizard
+
+Multi-step confirmation modal for admin-initiated system email sends. Step 1: confirm recipient count and email type. Step 2: preview merged message (first recipient for bulk sends) in an iframe. Step 3: send now. Retrofit to donor receipts, user invitations, and event cancellation. Reusable Filament action so future send points can adopt it cheaply.
 
 ### QuickBooks Sync
 
@@ -234,6 +243,10 @@ ARIA landmark roles, correct states on interactive elements, keyboard navigation
 ### Privacy & Legal Footer Example
 
 *Example custom footer component with placeholder slots for privacy policy and terms. Reference implementation for customers.*
+
+### Scheduled System Email Sends
+
+Allow admin-initiated system emails (donor receipts, event notifications, etc.) to be scheduled for a future send-at time rather than sent immediately. Requires a `scheduled_emails` table, a queue/scheduler job, and cancellation UI. Resend does not support native scheduled send — scheduling is handled by the application. Review the System Email Preview Wizard (session 078) before designing this — the wizard's Step 3 is the natural place to surface the scheduler.
 
 ### Multi-Vendor Mail Support
 

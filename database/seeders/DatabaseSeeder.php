@@ -111,6 +111,12 @@ class DatabaseSeeder extends Seeder
                 'subject' => 'Someone submitted a form using your email address',
                 'body'    => '<p>Hi {{first_name}},</p><p>A form on our website was submitted using your email address. If this was you, please <a href="{{login_url}}">log in to your account</a> and complete the action while signed in.</p><p>If this was not you, no action is needed — the submission was not processed.</p>',
             ],
+            [
+                'handle'        => 'donation_receipt',
+                'subject'       => 'Your {{tax_year}} donation receipt — {{org_name}}',
+                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous support of {{org_name}} in {{tax_year}}. This letter serves as your official donation receipt for the {{tax_year}} tax year.</p>{{donations}}<p><strong>Total donations: ${{total}}</strong></p><p>No goods or services were provided in exchange for these contributions. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
+                'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
+            ],
         ];
 
         foreach ($emailTemplates as $template) {

@@ -6,6 +6,7 @@ use App\Filament\Resources\FundResource\Pages;
 use App\Models\Fund;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -37,6 +38,15 @@ class FundResource extends Resource
                     ->maxLength(50)
                     ->unique(Fund::class, 'code', ignoreRecord: true)
                     ->helperText('QuickBooks class code'),
+                Forms\Components\Select::make('restriction_type')
+                    ->required()
+                    ->options([
+                        'unrestricted'           => 'Unrestricted',
+                        'temporarily_restricted' => 'Temporarily Restricted',
+                        'permanently_restricted' => 'Permanently Restricted',
+                    ])
+                    ->default('unrestricted')
+                    ->disabled(fn ($livewire) => $livewire instanceof EditRecord),
                 Forms\Components\Toggle::make('is_active')->default(true),
                 Forms\Components\Textarea::make('description')->rows(3)->columnSpanFull(),
             ])->columns(2),
@@ -49,6 +59,13 @@ class FundResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('code')->searchable(),
+                Tables\Columns\TextColumn::make('restriction_type')
+                    ->label('Restriction')
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'temporarily_restricted' => 'Temporarily Restricted',
+                        'permanently_restricted'  => 'Permanently Restricted',
+                        default                   => 'Unrestricted',
+                    }),
                 Tables\Columns\IconColumn::make('is_active')->boolean()->label('Active'),
             ])
             ->defaultSort('name')

@@ -14,6 +14,7 @@ class Donation extends Model
 
     protected $fillable = [
         'contact_id',
+        'fund_id',
         'type',
         'amount',
         'currency',
@@ -34,6 +35,11 @@ class Donation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function fund(): BelongsTo
+    {
+        return $this->belongsTo(Fund::class);
     }
 
     public function transactions(): MorphMany

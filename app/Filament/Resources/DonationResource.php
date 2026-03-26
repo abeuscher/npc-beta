@@ -75,6 +75,11 @@ class DonationResource extends Resource
                 Forms\Components\DateTimePicker::make('started_at')->disabled(),
 
                 Forms\Components\DateTimePicker::make('ended_at')->disabled(),
+
+                Forms\Components\TextInput::make('fund.name')
+                    ->label('Fund')
+                    ->disabled()
+                    ->placeholder('—'),
             ])->columns(2),
         ]);
     }
@@ -109,6 +114,10 @@ class DonationResource extends Resource
                         'danger'  => 'past_due',
                         'gray'    => 'cancelled',
                     ]),
+
+                Tables\Columns\TextColumn::make('fund.name')
+                    ->label('Fund')
+                    ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('started_at')
                     ->label('Started')

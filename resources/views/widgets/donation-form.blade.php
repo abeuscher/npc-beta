@@ -15,6 +15,9 @@
     $showAnnual     = ($config['show_annual']  ?? false) == true;
     $showFrequency  = $showMonthly || $showAnnual;
     $successPage    = $config['success_page'] ?? null;
+
+    $activeFunds    = \App\Models\Fund::where('is_active', true)->orderBy('name')->get();
+    $showFunds      = $activeFunds->isNotEmpty();
 @endphp
 
 <div x-data="{
@@ -22,6 +25,7 @@
     customAmount: '',
     showCustom: false,
     frequency: 'one_off',
+    fundId: null,
     loading: false,
     error: null,
     selectAmount(val) {
@@ -61,6 +65,7 @@
                     type: this.frequency === 'one_off' ? 'one_off' : 'recurring',
                     frequency: this.frequency === 'one_off' ? null : this.frequency,
                     @if ($successPage) success_page: @js($successPage), @endif
+                    ...(this.fundId ? { fund_id: this.fundId } : {}),
                 }),
             });
             const data = await res.json();
@@ -128,6 +133,18 @@
                 <button type="button" class="outline" @click="frequency = 'annual'"  :aria-pressed="frequency === 'annual'">Annual</button>
                 @endif
             </div>
+        </div>
+        @endif
+
+        @if ($showFunds)
+        <div>
+            <label for="donation_fund">Designate to a fund (optional)</label>
+            <select id="donation_fund" x-model="fundId">
+                <option value="">General / Unrestricted</option>
+                @foreach ($activeFunds as $fund)
+                    <option value="{{ $fund->id }}">{{ $fund->name }}</option>
+                @endforeach
+            </select>
         </div>
         @endif
 

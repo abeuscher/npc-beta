@@ -1,0 +1,366 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Mail\DonationReceipt as DonationReceiptMail;
+use App\Models\Contact;
+use App\Models\Donation;
+use App\Models\DonationReceipt;
+use Filament\Actions;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+
+class DonorsPage extends Page implements HasTable
+{
+    use InteractsWithTable;
+
+    protected static ?string $navigationGroup = 'Finance';
+
+    protected static ?string $navigationLabel = 'Donors';
+
+    protected static ?string $navigationIcon = 'heroicon-o-heart';
+
+    protected static ?int $navigationSort = 4;
+
+    protected static string $view = 'filament.pages.donors';
+
+    protected static ?string $title = 'Donors';
+
+    public string $taxYear      = '';
+    public float $minimumTotal  = 250;
+    public bool $includeBelowThreshold = false;
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+        return $user->hasRole('super_admin') || $user->can('manage_donations');
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            'Finance',
+            'Donors',
+        ];
+    }
+
+    public function mount(): void
+    {
+        $this->taxYear = (string) now()->year;
+    }
+
+    public function updatedTaxYear(): void
+    {
+        $this->resetTable();
+    }
+
+    public function updatedMinimumTotal(): void
+    {
+        $this->resetTable();
+    }
+
+    public function updatedIncludeBelowThreshold(): void
+    {
+        $this->resetTable();
+    }
+
+    public function getYearOptions(): array
+    {
+        $years = Donation::query()
+            ->where('status', 'active')
+            ->whereNotNull('started_at')
+            ->selectRaw('EXTRACT(YEAR FROM started_at)::int AS year')
+            ->distinct()
+            ->orderByRaw('year DESC')
+            ->pluck('year')
+            ->map(fn ($y) => (string) $y)
+            ->all();
+
+        $current = (string) now()->year;
+        if (! in_array($current, $years)) {
+            array_unshift($years, $current);
+        }
+
+        $options = [];
+        foreach ($years as $year) {
+            $options[$year] = $year;
+        }
+        $options['all'] = 'All time';
+
+        return $options;
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query($this->donorQuery())
+            ->columns([
+                Tables\Columns\TextColumn::make('display_name')
+                    ->label('Name')
+                    ->searchable(query: fn ($query, string $search) => $query->where(function ($q) use ($search) {
+                        $q->where('contacts.first_name', 'ilike', "%{$search}%")
+                          ->orWhere('contacts.last_name', 'ilike', "%{$search}%");
+                    }))
+                    ->sortable(query: fn ($query, string $direction) => $query->orderByRaw(
+                        "COALESCE(contacts.last_name, contacts.first_name) {$direction}"
+                    )),
+
+                Tables\Columns\TextColumn::make('roles')
+                    ->label('Roles')
+                    ->getStateUsing(function (Contact $record): array {
+                        $roles = [];
+                        if ($record->memberships->isNotEmpty()) {
+                            $roles[] = 'Member';
+                        }
+                        if ($record->donations->isNotEmpty()) {
+                            $roles[] = 'Donor';
+                        }
+                        if (empty($roles)) {
+                            $roles[] = 'Contact';
+                        }
+                        return $roles;
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Member'  => 'success',
+                        'Donor'   => 'warning',
+                        'Contact' => 'gray',
+                        default   => 'gray',
+                    }),
+
+                Tables\Columns\TextColumn::make('donation_total')
+                    ->label('Total Donated')
+                    ->money('USD')
+                    ->sortable(query: fn ($query, string $direction) => $query->orderBy('donation_total', $direction))
+                    ->alignRight(),
+
+                Tables\Columns\TextColumn::make('last_donation_at')
+                    ->label('Last Donation')
+                    ->date()
+                    ->sortable(query: fn ($query, string $direction) => $query->orderBy('last_donation_at', $direction))
+                    ->placeholder('—'),
+
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('phone')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('address')
+                    ->label('Address')
+                    ->getStateUsing(fn (Contact $record): string => collect([
+                        $record->address_line_1,
+                        $record->city,
+                        $record->state,
+                        $record->postal_code,
+                    ])->filter()->implode(', '))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('—'),
+            ])
+            ->defaultSort('donation_total', 'desc')
+            ->emptyStateHeading('No donors found')
+            ->emptyStateDescription('Try adjusting the year or threshold filters.');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('createMailingList')
+                ->label('Create Mailing List')
+                ->icon('heroicon-o-envelope')
+                ->modalHeading('Create Mailing List from Donors')
+                ->modalDescription('Configure which donors to include, then create a mailing list. This feature is coming in a future update.')
+                ->form([
+                    \Filament\Forms\Components\Select::make('mailing_list_tax_year')
+                        ->label('Tax Year')
+                        ->options($this->getYearOptions())
+                        ->default($this->taxYear)
+                        ->required(),
+                    \Filament\Forms\Components\TextInput::make('mailing_list_threshold')
+                        ->label('Minimum Total ($)')
+                        ->numeric()
+                        ->default(250)
+                        ->minValue(0)
+                        ->prefix('$'),
+                ])
+                ->action(function (): void {
+                    Notification::make()
+                        ->title('Mailing list creation will be available in a future update')
+                        ->info()
+                        ->send();
+                }),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('sendPending')
+                    ->label('Send System Emails to Pending Recipients')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->requiresConfirmation()
+                    ->modalHeading('Send receipts to pending donors')
+                    ->modalDescription(fn () => 'This will send a tax receipt system email to all eligible donors in ' .
+                        ($this->taxYear === 'all' ? 'all years' : $this->taxYear) .
+                        ' who have not yet received one. Continue?')
+                    ->modalSubmitActionLabel('Send Receipts')
+                    ->action(fn () => $this->sendReceipts(forceAll: false)),
+
+                Actions\Action::make('forceResendAll')
+                    ->label('Force Re-send System Emails to All')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalIcon('heroicon-o-exclamation-triangle')
+                    ->modalIconColor('danger')
+                    ->modalHeading('Force re-send to all eligible donors')
+                    ->modalDescription(fn () => 'This will send a receipt system email to every eligible donor in ' .
+                        ($this->taxYear === 'all' ? 'all years' : $this->taxYear) .
+                        ', including those already receipted. Each send creates a new receipt record. Continue?')
+                    ->modalSubmitActionLabel('Re-send All')
+                    ->action(fn () => $this->sendReceipts(forceAll: true)),
+            ])
+            ->icon('heroicon-o-ellipsis-horizontal')
+            ->color('gray'),
+        ];
+    }
+
+    public function sendReceipts(bool $forceAll): void
+    {
+        $year = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+
+        $eligible = $this->eligibleContactIds($year);
+
+        if (! $forceAll) {
+            $alreadyReceipied = DonationReceipt::when($year, fn ($q) => $q->where('tax_year', $year))
+                ->whereIn('contact_id', $eligible)
+                ->distinct()
+                ->pluck('contact_id')
+                ->all();
+
+            $targets = array_diff($eligible, $alreadyReceipied);
+        } else {
+            $targets = $eligible;
+        }
+
+        if (empty($targets)) {
+            Notification::make()->title('No receipts to send')->warning()->send();
+            return;
+        }
+
+        $sent = 0;
+
+        foreach ($targets as $contactId) {
+            $contact = Contact::find($contactId);
+            if (! $contact || ! $contact->email) {
+                continue;
+            }
+
+            $receiptYear = $year ?? (int) now()->subYear()->year;
+            [$breakdown, $total] = $this->buildBreakdown($contactId, $receiptYear);
+
+            DonationReceipt::create([
+                'contact_id'   => $contactId,
+                'tax_year'     => $receiptYear,
+                'sent_at'      => now(),
+                'total_amount' => $total,
+                'breakdown'    => $breakdown,
+            ]);
+
+            Mail::to($contact->email)->send(
+                new DonationReceiptMail($contact, $receiptYear, $breakdown, number_format($total, 2))
+            );
+
+            $sent++;
+        }
+
+        Notification::make()
+            ->title("Sent {$sent} receipt" . ($sent !== 1 ? 's' : ''))
+            ->success()
+            ->send();
+    }
+
+    private function donorQuery(): Builder
+    {
+        $year          = $this->taxYear;
+        $threshold     = (float) $this->minimumTotal;
+        $includeBelow  = $this->includeBelowThreshold;
+
+        $donorStats = DB::table('donations')
+            ->select('contact_id')
+            ->selectRaw('SUM(amount) as donation_total')
+            ->selectRaw('MAX(started_at) as last_donation_at')
+            ->where('status', 'active')
+            ->whereNotNull('contact_id');
+
+        if ($year !== 'all') {
+            $donorStats->whereYear('started_at', (int) $year);
+        }
+
+        $donorStats->groupBy('contact_id');
+
+        return Contact::query()
+            ->joinSub($donorStats, 'donor_stats', 'contacts.id', '=', 'donor_stats.contact_id')
+            ->select('contacts.*', 'donor_stats.donation_total', 'donor_stats.last_donation_at')
+            ->when(! $includeBelow && $threshold > 0,
+                fn ($q) => $q->where('donor_stats.donation_total', '>=', $threshold)
+            )
+            ->with([
+                'memberships' => fn ($q) => $q->where('status', 'active'),
+                'donations',
+            ]);
+    }
+
+    private function eligibleContactIds(?int $year): array
+    {
+        return Donation::query()
+            ->where('status', 'active')
+            ->when($year, fn ($q) => $q->whereYear('started_at', $year))
+            ->whereNotNull('contact_id')
+            ->distinct()
+            ->pluck('contact_id')
+            ->all();
+    }
+
+    private function buildBreakdown(string $contactId, int $year): array
+    {
+        $donations = Donation::query()
+            ->where('contact_id', $contactId)
+            ->where('status', 'active')
+            ->whereYear('started_at', $year)
+            ->with('fund')
+            ->get();
+
+        $groups = [];
+
+        foreach ($donations as $donation) {
+            $fundLabel       = $donation->fund?->name ?? 'General Fund';
+            $restrictionType = $donation->fund?->restriction_type ?? 'unrestricted';
+            $key             = $fundLabel;
+
+            if (! isset($groups[$key])) {
+                $groups[$key] = [
+                    'fund_label'       => $fundLabel,
+                    'restriction_type' => $restrictionType,
+                    'amount'           => 0,
+                ];
+            }
+
+            $groups[$key]['amount'] += (float) $donation->amount;
+        }
+
+        $breakdown = array_values($groups);
+        $total     = array_sum(array_column($breakdown, 'amount'));
+
+        return [$breakdown, $total];
+    }
+}

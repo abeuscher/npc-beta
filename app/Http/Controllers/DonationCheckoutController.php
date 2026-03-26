@@ -15,6 +15,7 @@ class DonationCheckoutController extends Controller
             'type'         => ['required', 'in:one_off,recurring'],
             'frequency'    => ['required_if:type,recurring', 'nullable', 'in:monthly,annual'],
             'success_page' => ['nullable', 'string', 'exists:pages,slug'],
+            'fund_id'      => ['nullable', 'uuid', 'exists:funds,id'],
         ]);
 
         $secret = config('services.stripe.secret');
@@ -23,6 +24,7 @@ class DonationCheckoutController extends Controller
         }
 
         $donation = Donation::create([
+            'fund_id'   => $validated['fund_id'] ?? null,
             'type'      => $validated['type'],
             'amount'    => $validated['amount'],
             'currency'  => 'usd',

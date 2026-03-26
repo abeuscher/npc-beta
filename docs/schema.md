@@ -185,6 +185,7 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 |---|---|---|---|
 | id | uuid | no | PK |
 | contact_id | uuid | yes | FK→contacts, nullOnDelete; set by webhook after Stripe confirms payment |
+| fund_id | uuid | yes | FK→funds, nullOnDelete; null = unrestricted/general fund |
 | type | string | no | Values: one_off, recurring |
 | amount | decimal(10,2) | no | Amount in dollars; validated min $1 / max $10,000 |
 | currency | string(3) | no | default: usd |
@@ -197,7 +198,25 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 
-Index on `contact_id`.
+Index on `contact_id`, `fund_id`.
+
+---
+
+## donation_receipts
+
+One row per tax receipt send. Used to prevent duplicate sends and to maintain an audit trail. Re-sends create additional rows rather than overwriting.
+
+| Column | Type | Nullable | Notes |
+|---|---|---|---|
+| id | bigInteger | no | PK |
+| contact_id | uuid | no | FK→contacts, cascadeOnDelete |
+| tax_year | integer | no | Calendar year covered by the receipt |
+| sent_at | timestamp | no | When the receipt email was sent |
+| total_amount | decimal(10,2) | no | Sum of all active donations in the tax year |
+| breakdown | json | no | Array of `{fund_label, restriction_type, amount}` |
+| created_at | timestamp | no | |
+
+Index on `(contact_id, tax_year)`.
 
 ---
 
@@ -351,6 +370,7 @@ Named funds that donations can be allocated to.
 | code | string | no | unique |
 | description | text | yes | |
 | is_active | boolean | no | default: true |
+| restriction_type | string | no | default: unrestricted; values: unrestricted, temporarily_restricted, permanently_restricted |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 
