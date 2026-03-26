@@ -22,6 +22,8 @@ Lists do not send email. They produce filtered sets of contacts for use by downs
 
 Go to **CRM → Mailing Lists** and click **New Mailing List**. Give the list a name, choose a conjunction (see below), and add one or more filter rules in the Simple Filters section.
 
+You can also create a list directly from the **Finance → Donors** page using the **Create Mailing List** button. This creates a static snapshot list of whichever donors matched the current year and threshold filters — see the [Donors help doc](tax-receipts.md) for details.
+
 ---
 
 ## Simple Filters

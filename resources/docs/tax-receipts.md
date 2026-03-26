@@ -37,6 +37,12 @@ Receipts are sent using the configured system email (Resend). The email template
 
 Each receipt includes a fund-by-fund breakdown of all active donations in the tax year, the restriction type for each fund, the grand total, and a standard IRS acknowledgement line stating no goods or services were exchanged.
 
+## Activity log
+
+Every time a tax receipt email is sent — whether via **Send System Emails to Pending Recipients** or **Force Re-send System Emails to All** — a `receipt_sent` event is written to the activity log, recording the tax year, total amount, and whether it was a re-send. The activity log is visible on the individual contact's record.
+
 ## Create Mailing List
 
-The **Create Mailing List** button allows you to build a mailing list from this donor set. This feature is coming in a future update.
+The **Create Mailing List** button creates a new mailing list from the contacts currently visible in the Donors table.
+
+A modal lets you set the list name (defaulted to `Donors — {year} — ${threshold}+`), the tax year, and the minimum total. The list is a static snapshot of whichever donors matched at the moment of creation — it will not update automatically as donations change. After creation you are redirected to the new list's edit page in Mailing Lists, where you can rename it, review the contacts, or export to CSV.

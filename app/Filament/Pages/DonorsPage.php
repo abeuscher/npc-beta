@@ -6,6 +6,8 @@ use App\Mail\DonationReceipt as DonationReceiptMail;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
+use App\Models\MailingList;
+use App\Services\ActivityLogger;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -182,8 +184,15 @@ class DonorsPage extends Page implements HasTable
                 ->label('Create Mailing List')
                 ->icon('heroicon-o-envelope')
                 ->modalHeading('Create Mailing List from Donors')
-                ->modalDescription('Configure which donors to include, then create a mailing list. This feature is coming in a future update.')
                 ->form([
+                    \Filament\Forms\Components\TextInput::make('list_name')
+                        ->label('List Name')
+                        ->required()
+                        ->default(function (): string {
+                            $year      = $this->taxYear === 'all' ? 'All Time' : $this->taxYear;
+                            $threshold = number_format((float) $this->minimumTotal, 0);
+                            return "Donors — {$year} — \${$threshold}+";
+                        }),
                     \Filament\Forms\Components\Select::make('mailing_list_tax_year')
                         ->label('Tax Year')
                         ->options($this->getYearOptions())
@@ -192,15 +201,51 @@ class DonorsPage extends Page implements HasTable
                     \Filament\Forms\Components\TextInput::make('mailing_list_threshold')
                         ->label('Minimum Total ($)')
                         ->numeric()
-                        ->default(250)
+                        ->default($this->minimumTotal)
                         ->minValue(0)
                         ->prefix('$'),
                 ])
-                ->action(function (): void {
-                    Notification::make()
-                        ->title('Mailing list creation will be available in a future update')
-                        ->info()
-                        ->send();
+                ->action(function (array $data): void {
+                    $year      = $data['mailing_list_tax_year'];
+                    $threshold = (float) ($data['mailing_list_threshold'] ?? 0);
+                    $name      = trim($data['list_name']);
+
+                    $query = DB::table('donations')
+                        ->select('contact_id')
+                        ->where('status', 'active')
+                        ->whereNotNull('contact_id')
+                        ->groupBy('contact_id');
+
+                    if ($year !== 'all') {
+                        $query->whereYear('started_at', (int) $year);
+                    }
+
+                    if ($threshold > 0) {
+                        $query->havingRaw('SUM(amount) >= ?', [$threshold]);
+                    }
+
+                    $ids = $query->pluck('contact_id')->all();
+
+                    if (empty($ids)) {
+                        Notification::make()
+                            ->title('No matching donors found')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+
+                    $escaped  = implode(', ', array_map(fn ($id) => "'" . $id . "'", $ids));
+                    $rawWhere = "id IN ({$escaped})";
+
+                    $list = MailingList::create([
+                        'name'      => $name,
+                        'raw_where' => $rawWhere,
+                        'is_active' => true,
+                    ]);
+
+                    $this->redirect(
+                        \App\Filament\Resources\MailingListResource::getUrl('edit', ['record' => $list->id])
+                    );
                 }),
 
             Actions\ActionGroup::make([
@@ -268,7 +313,7 @@ class DonorsPage extends Page implements HasTable
             $receiptYear = $year ?? (int) now()->subYear()->year;
             [$breakdown, $total] = $this->buildBreakdown($contactId, $receiptYear);
 
-            DonationReceipt::create([
+            $receipt = DonationReceipt::create([
                 'contact_id'   => $contactId,
                 'tax_year'     => $receiptYear,
                 'sent_at'      => now(),
@@ -279,6 +324,12 @@ class DonorsPage extends Page implements HasTable
             Mail::to($contact->email)->send(
                 new DonationReceiptMail($contact, $receiptYear, $breakdown, number_format($total, 2))
             );
+
+            ActivityLogger::log($receipt, 'receipt_sent', null, [
+                'tax_year'     => $receiptYear,
+                'total_amount' => $total,
+                'resend'       => $forceAll,
+            ]);
 
             $sent++;
         }
