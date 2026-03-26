@@ -6,7 +6,6 @@ use App\Mail\DonationReceipt as DonationReceiptMail;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
-use App\Models\MailingList;
 use App\Services\ActivityLogger;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -183,74 +182,6 @@ class DonorsPage extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('createMailingList')
-                ->label('Create Mailing List')
-                ->icon('heroicon-o-envelope')
-                ->modalHeading('Create Mailing List from Donors')
-                ->form([
-                    \Filament\Forms\Components\TextInput::make('list_name')
-                        ->label('List Name')
-                        ->required()
-                        ->default(function (): string {
-                            $year      = $this->taxYear === 'all' ? 'All Time' : $this->taxYear;
-                            $threshold = number_format((float) $this->minimumTotal, 0);
-                            return "Donors — {$year} — \${$threshold}+";
-                        }),
-                    \Filament\Forms\Components\Select::make('mailing_list_tax_year')
-                        ->label('Tax Year')
-                        ->options($this->getYearOptions())
-                        ->default($this->taxYear)
-                        ->required(),
-                    \Filament\Forms\Components\TextInput::make('mailing_list_threshold')
-                        ->label('Minimum Total ($)')
-                        ->numeric()
-                        ->default($this->minimumTotal)
-                        ->minValue(0)
-                        ->prefix('$'),
-                ])
-                ->action(function (array $data): void {
-                    $year      = $data['mailing_list_tax_year'];
-                    $threshold = (float) ($data['mailing_list_threshold'] ?? 0);
-                    $name      = trim($data['list_name']);
-
-                    $query = DB::table('donations')
-                        ->select('contact_id')
-                        ->where('status', 'active')
-                        ->whereNotNull('contact_id')
-                        ->groupBy('contact_id');
-
-                    if ($year !== 'all') {
-                        $query->whereYear('started_at', (int) $year);
-                    }
-
-                    if ($threshold > 0) {
-                        $query->havingRaw('SUM(amount) >= ?', [$threshold]);
-                    }
-
-                    $ids = $query->pluck('contact_id')->all();
-
-                    if (empty($ids)) {
-                        Notification::make()
-                            ->title('No matching donors found')
-                            ->warning()
-                            ->send();
-                        return;
-                    }
-
-                    $escaped  = implode(', ', array_map(fn ($id) => "'" . $id . "'", $ids));
-                    $rawWhere = "id IN ({$escaped})";
-
-                    $list = MailingList::create([
-                        'name'      => $name,
-                        'raw_where' => $rawWhere,
-                        'is_active' => true,
-                    ]);
-
-                    $this->redirect(
-                        \App\Filament\Resources\MailingListResource::getUrl('edit', ['record' => $list->id])
-                    );
-                }),
-
             Actions\ActionGroup::make([
                 Actions\Action::make('sendPending')
                     ->label('Send System Emails to Pending Recipients')
