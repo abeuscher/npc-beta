@@ -35,8 +35,8 @@ class DonorsPage extends Page implements HasTable
 
     protected static ?string $title = 'Donors';
 
-    public string $taxYear      = '';
-    public float $minimumTotal  = 250;
+    public string $taxYear         = '';
+    public mixed $minimumTotal     = 250;
     public bool $includeBelowThreshold = false;
 
     public static function canAccess(): bool
@@ -68,6 +68,9 @@ class DonorsPage extends Page implements HasTable
 
     public function updatedMinimumTotal(): void
     {
+        if ($this->minimumTotal === '' || $this->minimumTotal === null) {
+            $this->minimumTotal = 0;
+        }
         $this->resetTable();
     }
 
