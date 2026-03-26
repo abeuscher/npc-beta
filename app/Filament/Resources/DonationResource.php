@@ -6,6 +6,7 @@ use App\Filament\Resources\DonationResource\Pages;
 use App\Filament\Resources\DonationResource\RelationManagers;
 use App\Models\Donation;
 use Filament\Forms;
+use Illuminate\Support\Facades\DB;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -94,7 +95,12 @@ class DonationResource extends Resource
                         ->where('first_name', 'ilike', "%{$search}%")
                         ->orWhere('last_name', 'ilike', "%{$search}%")
                     ))
-                    ->sortable()
+                    ->sortable(query: fn ($query, $direction) => $query->orderBy(
+                        \App\Models\Contact::select(DB::raw("COALESCE(last_name, first_name)"))
+                            ->whereColumn('contacts.id', 'donations.contact_id')
+                            ->limit(1),
+                        $direction
+                    ))
                     ->placeholder('—'),
 
                 Tables\Columns\BadgeColumn::make('type')
