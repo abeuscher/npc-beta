@@ -10,10 +10,6 @@ class PublicDevAuth
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! app()->environment('public-dev')) {
-            return $next($request);
-        }
-
         $user = env('PUBLIC_DEV_USER');
         $pass = env('PUBLIC_DEV_PASS');
 
