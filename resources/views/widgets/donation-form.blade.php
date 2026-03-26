@@ -14,6 +14,7 @@
     $showMonthly    = ($config['show_monthly'] ?? false) == true;
     $showAnnual     = ($config['show_annual']  ?? false) == true;
     $showFrequency  = $showMonthly || $showAnnual;
+    $successPage    = $config['success_page'] ?? null;
 @endphp
 
 <div x-data="{
@@ -59,6 +60,7 @@
                     amount: amt,
                     type: this.frequency === 'one_off' ? 'one_off' : 'recurring',
                     frequency: this.frequency === 'one_off' ? null : this.frequency,
+                    @if ($successPage) success_page: @js($successPage), @endif
                 }),
             });
             const data = await res.json();

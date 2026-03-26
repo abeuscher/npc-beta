@@ -216,6 +216,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'amounts',       'type' => 'text',   'label' => 'Preset amounts (comma-separated, e.g. 10,25,50,100)'],
                     ['key' => 'show_monthly',  'type' => 'toggle', 'label' => 'Show Monthly option'],
                     ['key' => 'show_annual',   'type' => 'toggle', 'label' => 'Show Annual option'],
+                    ['key' => 'success_page',  'type' => 'text',   'label' => 'Success page slug (optional — leave blank to stay on this page)'],
                 ],
                 'template'      => "@include('widgets.donation-form')",
             ]

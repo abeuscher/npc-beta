@@ -11,9 +11,10 @@ class DonationCheckoutController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'amount'    => ['required', 'numeric', 'min:1', 'max:10000'],
-            'type'      => ['required', 'in:one_off,recurring'],
-            'frequency' => ['required_if:type,recurring', 'nullable', 'in:monthly,annual'],
+            'amount'       => ['required', 'numeric', 'min:1', 'max:10000'],
+            'type'         => ['required', 'in:one_off,recurring'],
+            'frequency'    => ['required_if:type,recurring', 'nullable', 'in:monthly,annual'],
+            'success_page' => ['nullable', 'string', 'exists:pages,slug'],
         ]);
 
         $secret = config('services.stripe.secret');
@@ -30,7 +31,9 @@ class DonationCheckoutController extends Controller
         ]);
 
         $referer    = strtok($request->header('Referer', url('/')), '?');
-        $successUrl = $referer . '?donation=success';
+        $successUrl = isset($validated['success_page'])
+            ? url($validated['success_page']) . '?donation=success'
+            : $referer . '?donation=success';
         $cancelUrl  = $referer . '?donation=cancelled';
 
         $amountCents = (int) round($validated['amount'] * 100);
