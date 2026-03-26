@@ -81,6 +81,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 074 | Products & Checkout |
 | 075 | Donations — Foundation |
 | 076 | Tax Receipts |
+| 077 | Mailing List from Donors |
 
 ---
 
@@ -132,13 +133,25 @@ Fund designation on donations (`fund_id` FK, `restriction_type` on funds). Donor
 
 *Pledge tracking was considered and deliberately excluded. Pledges that don't flow through Stripe belong in QuickBooks, not here.*
 
-### Mailing List from Donors
+### Finance Data Boundary
 
-Wire up the "Create Mailing List" button on the Donors page. Augment `MailingListFieldRegistry` / `MailingListQueryBuilder` if needed to support donation aggregate filters (year + minimum total). Opens the created list in the Mailing Lists resource. Discuss and decide tax receipt re-send policy and activity logging at session start.
+Enforce a clean separation between Finance and the rest of the admin. Financial amounts and Stripe links are removed from CRM and CMS views. The Transactions table becomes the single place where dollar values and Stripe dashboard links live. Non-Finance views replace inline financial data with navigation affordances (count badges + "View in Finance →" buttons). No backwards compatibility needed — data can be wiped, and removing views and code is explicitly part of this work.
+
+### Debug Generator — Donations, Products & Purchases
+
+Extend `DashboardDebugGeneratorWidget` to support generating products (with prices), purchases, and realistic donations with tax year control and fund/contact linkage. New factories: `ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`. Improved `DonationFactory` with `started_at`. Widget gains a Tax Year input and two new type options (products, purchases). Existing contacts/products are reused if present; otherwise created fresh. Wipe extended for new types.
 
 ### System Email Preview Wizard
 
 Multi-step confirmation modal for admin-initiated system email sends. Step 1: confirm recipient count and email type. Step 2: preview merged message (first recipient for bulk sends) in an iframe. Step 3: send now. Retrofit to donor receipts, user invitations, and event cancellation. Reusable Filament action so future send points can adopt it cheaply.
+
+### Minor Tweaks & Polish
+
+Accumulated minor fixes and polish items assembled over recent sessions. Details to be shared and planned at end of session 080.
+
+### Codebase Audit & Migration Squash
+
+Periodic codebase audit and migration squash, following the patterns established in sessions 042 (Codebase Audit — Fields, Schema, Permissions & Help Coverage) and 062 (Codebase Audit & Migration Squash). Details to be filled in at end of session 081.
 
 ### QuickBooks Sync
 
@@ -246,7 +259,7 @@ ARIA landmark roles, correct states on interactive elements, keyboard navigation
 
 ### Scheduled System Email Sends
 
-Allow admin-initiated system emails (donor receipts, event notifications, etc.) to be scheduled for a future send-at time rather than sent immediately. Requires a `scheduled_emails` table, a queue/scheduler job, and cancellation UI. Resend does not support native scheduled send — scheduling is handled by the application. Review the System Email Preview Wizard (session 078) before designing this — the wizard's Step 3 is the natural place to surface the scheduler.
+Allow admin-initiated system emails (donor receipts, event notifications, etc.) to be scheduled for a future send-at time rather than sent immediately. Requires a `scheduled_emails` table, a queue/scheduler job, and cancellation UI. Resend does not support native scheduled send — scheduling is handled by the application. Review the System Email Preview Wizard (session 080) before designing this — the wizard's Step 3 is the natural place to surface the scheduler.
 
 ### Multi-Vendor Mail Support
 
