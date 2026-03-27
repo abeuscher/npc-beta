@@ -206,7 +206,8 @@ class DonorsPage extends Page implements HasTable
             )
                 ->label('Send System Emails to Pending Recipients')
                 ->icon('heroicon-o-paper-airplane')
-                ->color('gray'),
+                ->color('gray')
+                ->visible(fn () => $this->donorQuery()->exists()),
 
             EmailPreviewWizardAction::make(
                 name: 'forceResendAll',
@@ -223,7 +224,8 @@ class DonorsPage extends Page implements HasTable
             )
                 ->label('Force Re-send System Emails to All')
                 ->icon('heroicon-o-arrow-path')
-                ->color('danger'),
+                ->color('danger')
+                ->visible(fn () => $this->donorQuery()->exists()),
         ];
     }
 

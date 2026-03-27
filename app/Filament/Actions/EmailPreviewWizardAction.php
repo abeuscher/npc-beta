@@ -2,11 +2,14 @@
 
 namespace App\Filament\Actions;
 
+use App\Filament\Resources\EmailTemplateResource;
 use Closure;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard\Step;
+use Filament\Notifications\Notification;
 use Filament\Support\Enums\MaxWidth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\HtmlString;
 
 class EmailPreviewWizardAction
@@ -16,7 +19,7 @@ class EmailPreviewWizardAction
      *
      * Step 1 — Confirm: shows the email type name and recipient summary.
      * Step 2 — Preview: renders the first-recipient email in an isolated iframe.
-     * Step 3 — Send:   final prompt before the submit button executes the send.
+     * Step 3 — Send:   optional test-send button, then the submit button executes the real send.
      *
      * @param  string          $name                Filament action name / HTML id.
      * @param  string          $emailTypeName       Human-readable label, e.g. "Donation Receipt".
@@ -64,6 +67,17 @@ class EmailPreviewWizardAction
 
                 Step::make('Preview')
                     ->schema([
+                        Forms\Components\Placeholder::make('_preview_note')
+                            ->hiddenLabel()
+                            ->content(function (): HtmlString {
+                                $url = EmailTemplateResource::getUrl('index');
+                                return new HtmlString(
+                                    '<p class="text-sm text-gray-500">You can change the appearance of this email in Settings &rsaquo; '
+                                    . '<a href="' . e($url) . '" class="text-primary-600 hover:underline">System Emails</a>.'
+                                    . '</p>'
+                                );
+                            }),
+
                         Forms\Components\Placeholder::make('_preview')
                             ->hiddenLabel()
                             ->content(function () use ($previewHtmlResolver): HtmlString {
@@ -80,6 +94,30 @@ class EmailPreviewWizardAction
 
                 Step::make('Send')
                     ->schema([
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('_sendTest')
+                                ->label('Send Test Email to Me')
+                                ->outlined()
+                                ->color('gray')
+                                ->action(function () use ($previewHtmlResolver, $emailTypeName) {
+                                    $html       = ($previewHtmlResolver)();
+                                    $adminEmail = auth()->user()->email;
+
+                                    Mail::send(
+                                        'mail.system-email',
+                                        ['html' => $html],
+                                        fn ($message) => $message
+                                            ->to($adminEmail)
+                                            ->subject('[Test] ' . $emailTypeName)
+                                    );
+
+                                    Notification::make()
+                                        ->title('Test email sent to ' . $adminEmail)
+                                        ->success()
+                                        ->send();
+                                }),
+                        ]),
+
                         Forms\Components\Placeholder::make('_ready')
                             ->hiddenLabel()
                             ->content(new HtmlString(
