@@ -17,7 +17,8 @@ class EditProduct extends EditRecord
             Actions\Action::make('view_transactions')
                 ->label('View transactions →')
                 ->color('gray')
-                ->url(TransactionResource::getUrl('index')),
+                ->url(fn () => TransactionResource::getUrl('index')
+                    . '?tableFilters[product_id][value]=' . $this->record->getKey()),
 
             Actions\DeleteAction::make(),
         ];

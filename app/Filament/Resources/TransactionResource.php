@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Models\Contact;
+use App\Models\Product;
+use App\Models\Purchase;
 use App\Models\Transaction;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -116,10 +118,21 @@ class TransactionResource extends Resource
                         ->mapWithKeys(fn ($c) => [$c->id => $c->display_name]))
                     ->searchable(),
 
+                Tables\Filters\SelectFilter::make('product_id')
+                    ->label('Product')
+                    ->options(fn () => Product::orderBy('name')->pluck('name', 'id'))
+                    ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
+                        ? $query
+                            ->where('subject_type', Purchase::class)
+                            ->whereIn('subject_id', Purchase::where('product_id', $data['value'])->pluck('id'))
+                        : $query
+                    ),
+
                 Tables\Filters\SelectFilter::make('subject_type')
                     ->label('Subject type')
                     ->options([
                         'App\Models\Donation' => 'Donation',
+                        'App\Models\Purchase' => 'Purchase',
                     ])
                     ->placeholder('All types'),
             ])

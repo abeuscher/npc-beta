@@ -230,7 +230,7 @@ class StripeWebhookController extends Controller
         $contact     = $this->findOrCreateContact($session->customer_details ?? null);
         $amountTotal = $session->amount_total ?? 0;
 
-        Purchase::create([
+        $purchase = Purchase::create([
             'product_id'        => $price->product_id,
             'product_price_id'  => $price->id,
             'contact_id'        => $contact?->id,
@@ -238,6 +238,18 @@ class StripeWebhookController extends Controller
             'amount_paid'       => $amountTotal / 100,
             'status'            => 'active',
             'occurred_at'       => now(),
+        ]);
+
+        Transaction::create([
+            'subject_type' => Purchase::class,
+            'subject_id'   => $purchase->id,
+            'contact_id'   => $contact?->id,
+            'type'         => 'payment',
+            'amount'       => $amountTotal / 100,
+            'direction'    => 'in',
+            'status'       => 'completed',
+            'stripe_id'    => $sessionId,
+            'occurred_at'  => now(),
         ]);
 
         return response('OK', 200);
