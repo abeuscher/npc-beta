@@ -95,10 +95,10 @@ class StripeWebhookController extends Controller
 
     private function handleDonationCheckout(\Stripe\Event $event): Response
     {
-        $session   = $event->data->object;
-        $sessionId = $session->id;
+        $session  = $event->data->object;
+        $intentId = $session->payment_intent;
 
-        if (Transaction::where('stripe_id', $sessionId)->exists()) {
+        if ($intentId && Transaction::where('stripe_id', $intentId)->exists()) {
             return response('OK', 200);
         }
 
@@ -114,11 +114,11 @@ class StripeWebhookController extends Controller
         $amountTotal = $session->amount_total ?? 0;
 
         $donation->update([
-            'contact_id'            => $contact?->id,
-            'stripe_customer_id'    => $session->customer ?? null,
+            'contact_id'             => $contact?->id,
+            'stripe_customer_id'     => $session->customer ?? null,
             'stripe_subscription_id' => $session->subscription ?? null,
-            'status'                => 'active',
-            'started_at'            => now(),
+            'status'                 => 'active',
+            'started_at'             => now(),
         ]);
 
         Transaction::create([
@@ -129,7 +129,7 @@ class StripeWebhookController extends Controller
             'amount'       => $amountTotal / 100,
             'direction'    => 'in',
             'status'       => 'completed',
-            'stripe_id'    => $sessionId,
+            'stripe_id'    => $intentId,
             'occurred_at'  => now(),
         ]);
 
@@ -248,7 +248,7 @@ class StripeWebhookController extends Controller
             'amount'       => $amountTotal / 100,
             'direction'    => 'in',
             'status'       => 'completed',
-            'stripe_id'    => $sessionId,
+            'stripe_id'    => $session->payment_intent,
             'occurred_at'  => now(),
         ]);
 
