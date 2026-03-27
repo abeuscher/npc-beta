@@ -5,8 +5,14 @@ namespace App\Filament\Widgets;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
+use App\Models\Fund;
 use App\Models\Membership;
 use App\Models\PortalAccount;
+use App\Models\Product;
+use App\Models\ProductPrice;
+use App\Models\Purchase;
+use App\Models\Transaction;
+use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +31,14 @@ class DashboardDebugGeneratorWidget extends Widget
 
     public string $gmailBase = '';
 
+    public int $taxYear;
+
     public string $feedback = '';
+
+    public function mount(): void
+    {
+        $this->taxYear = (int) now()->year;
+    }
 
     public static function canView(): bool
     {
@@ -39,11 +52,15 @@ class DashboardDebugGeneratorWidget extends Widget
         match ($this->type) {
             'contacts'  => $this->generateContacts($count),
             'events'    => $this->generateEvents($count),
-            'donations' => Donation::factory()->count($count)->create(),
+            'donations' => $this->generateDonations($count),
+            'purchases' => $this->generatePurchases($count),
+            'products'  => $this->generateProducts($count),
             'members'   => $this->generateMembers($count),
         };
 
-        $this->feedback = "Created {$count} {$this->type}.";
+        if (! $this->feedback) {
+            $this->feedback = "Created {$count} {$this->type}.";
+        }
     }
 
     protected function generateContacts(int $count): void
@@ -79,6 +96,102 @@ class DashboardDebugGeneratorWidget extends Widget
         }
     }
 
+    protected function generateDonations(int $count): void
+    {
+        $contactIds = Contact::pluck('id')->all();
+
+        if (empty($contactIds)) {
+            $this->feedback = 'No contacts found — generate contacts first.';
+            return;
+        }
+
+        $fundIds = Fund::where('is_active', true)->pluck('id')->all();
+        $year    = (int) $this->taxYear;
+
+        $startOfYear = Carbon::create($year, 1, 1)->startOfDay();
+        $endOfYear   = Carbon::create($year, 12, 31)->endOfDay();
+
+        for ($i = 0; $i < $count; $i++) {
+            $startedAt = fake()->dateTimeBetween($startOfYear, $endOfYear);
+
+            $donation = Donation::factory()->create([
+                'contact_id' => fake()->randomElement($contactIds),
+                'fund_id'    => $fundIds ? fake()->randomElement($fundIds) : null,
+                'started_at' => $startedAt,
+                'status'     => 'active',
+            ]);
+
+            Transaction::create([
+                'subject_type' => Donation::class,
+                'subject_id'   => $donation->id,
+                'contact_id'   => $donation->contact_id,
+                'type'         => 'payment',
+                'amount'       => $donation->amount,
+                'direction'    => 'in',
+                'status'       => 'completed',
+                'stripe_id'    => null,
+                'occurred_at'  => $donation->started_at,
+            ]);
+        }
+    }
+
+    protected function generatePurchases(int $count): void
+    {
+        $contactIds = Contact::pluck('id')->all();
+
+        if (empty($contactIds)) {
+            $this->feedback = 'No contacts found — generate contacts first.';
+            return;
+        }
+
+        $products = Product::where('status', 'active')->has('prices')->with('prices')->get();
+
+        if ($products->isEmpty()) {
+            $this->feedback = 'No active products with prices found — generate products first.';
+            return;
+        }
+
+        for ($i = 0; $i < $count; $i++) {
+            $product   = $products->random();
+            $price     = $product->prices->random();
+            $contactId = fake()->randomElement($contactIds);
+
+            $purchase = Purchase::factory()->create([
+                'product_id'       => $product->id,
+                'product_price_id' => $price->id,
+                'contact_id'       => $contactId,
+                'amount_paid'      => $price->amount,
+            ]);
+
+            Transaction::create([
+                'subject_type' => Purchase::class,
+                'subject_id'   => $purchase->id,
+                'contact_id'   => $purchase->contact_id,
+                'type'         => 'payment',
+                'amount'       => $purchase->amount_paid,
+                'direction'    => 'in',
+                'status'       => 'completed',
+                'stripe_id'    => null,
+                'occurred_at'  => $purchase->occurred_at,
+            ]);
+        }
+    }
+
+    protected function generateProducts(int $count): void
+    {
+        for ($i = 0; $i < $count; $i++) {
+            $product    = Product::factory()->create(['sort_order' => $i + 1]);
+            $priceCount = rand(1, 3);
+
+            for ($j = 0; $j < $priceCount; $j++) {
+                ProductPrice::factory()->create([
+                    'product_id' => $product->id,
+                    'sort_order' => $j + 1,
+                ]);
+            }
+        }
+    }
+
     protected function generateMembers(int $count): void
     {
         for ($i = 0; $i < $count; $i++) {
@@ -107,11 +220,40 @@ class DashboardDebugGeneratorWidget extends Widget
 
     public function wipe(): void
     {
+        match ($this->type) {
+            'donations' => $this->wipeDonations(),
+            'purchases' => $this->wipePurchases(),
+            'products'  => $this->wipeProducts(),
+            default     => $this->wipeGeneric(),
+        };
+
+        $this->feedback = "All {$this->type} deleted.";
+    }
+
+    private function wipeDonations(): void
+    {
+        Transaction::where('subject_type', Donation::class)->delete();
+        Donation::query()->delete();
+    }
+
+    private function wipePurchases(): void
+    {
+        Transaction::where('subject_type', Purchase::class)->delete();
+        Purchase::query()->delete();
+    }
+
+    private function wipeProducts(): void
+    {
+        ProductPrice::query()->delete();
+        Product::query()->delete();
+    }
+
+    private function wipeGeneric(): void
+    {
         $model = match ($this->type) {
-            'contacts'  => Contact::class,
-            'events'    => Event::class,
-            'donations' => Donation::class,
-            'members'   => Membership::class,
+            'contacts' => Contact::class,
+            'events'   => Event::class,
+            'members'  => Membership::class,
         };
 
         if (in_array(SoftDeletes::class, class_uses_recursive($model))) {
@@ -119,7 +261,5 @@ class DashboardDebugGeneratorWidget extends Widget
         } else {
             $model::query()->delete();
         }
-
-        $this->feedback = "All {$this->type} deleted.";
     }
 }

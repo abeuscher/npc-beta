@@ -17,6 +17,8 @@
                         <option value="contacts">Contacts</option>
                         <option value="events">Events</option>
                         <option value="donations">Donations</option>
+                        <option value="products">Products</option>
+                        <option value="purchases">Purchases</option>
                         <option value="members">Members</option>
                     </select>
                 </div>
@@ -29,6 +31,17 @@
                         min="1"
                         max="200"
                         class="block w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tax Year <span class="text-gray-400">(donations only)</span></label>
+                    <input
+                        type="number"
+                        wire:model="taxYear"
+                        min="2000"
+                        max="2099"
+                        class="block w-28 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                 </div>
 

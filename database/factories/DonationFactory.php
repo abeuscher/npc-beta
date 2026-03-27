@@ -15,6 +15,10 @@ class DonationFactory extends Factory
             'amount'     => $this->faker->randomFloat(2, 10, 5000),
             'currency'   => 'usd',
             'status'     => 'active',
+            'started_at' => $this->faker->dateTimeBetween(
+                (string) now()->startOfYear(),
+                (string) now()->endOfYear()
+            ),
         ];
     }
 }

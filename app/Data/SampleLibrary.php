@@ -108,6 +108,71 @@ class SampleLibrary
         return ['MN', 'CA', 'WY', 'OH', 'IL', 'TX', 'OR', 'AK'];
     }
 
+    public static function productFranchises(): array
+    {
+        return [
+            // Action figures
+            'Transformers', 'G.I. Joe', 'He-Man', 'Masters of the Universe',
+            'Thundercats', 'SilverHawks', 'Voltron', 'M.A.S.K.',
+            // Space & sci-fi
+            'Star Wars', 'Ghostbusters', 'Sectaurs', 'Starriors',
+            // Girls lines
+            'My Little Pony', 'Care Bears', 'Strawberry Shortcake',
+            'Rainbow Brite', 'Jem and the Holograms', 'Pound Puppies',
+            'Cabbage Patch Kids', 'Barbie',
+            // Gross / novelty
+            'Madballs', 'Garbage Pail Kids', 'Boglins',
+            // Construction & vehicles
+            'Micro Machines', 'Hot Wheels', 'Matchbox', 'LEGO',
+            // Electronic games
+            'Simon', 'Speak & Spell', 'Lite-Brite', 'View-Master',
+            // Board games
+            'Trivial Pursuit', 'Operation', 'Hungry Hungry Hippos',
+            'Battleship', 'Connect Four', 'Boggle', 'Perfection',
+            // Drawing & craft
+            'Spirograph', 'Etch A Sketch',
+        ];
+    }
+
+    public static function productCharacters(): array
+    {
+        return [
+            // Transformers
+            'Optimus Prime', 'Megatron', 'Bumblebee', 'Starscream',
+            'Grimlock', 'Soundwave', 'Jazz', 'Ironhide', 'Sideswipe',
+            'Springer', 'Wheeljack', 'Powerglide',
+            // G.I. Joe
+            'Snake Eyes', 'Duke', 'Cobra Commander', 'Destro',
+            'Zartan', 'Roadblock', 'Storm Shadow', 'Lady Jaye',
+            'Flint', 'Jinx', 'Serpentor', 'Crimson Guard',
+            // He-Man
+            'Castle Grayskull', 'Skeletor', 'Battle Cat', 'Beast Man',
+            'Evil-Lyn', 'Hordak', 'Trapjaw', 'Mer-Man', 'Stinkor',
+            // Care Bears
+            'Tenderheart Bear', 'Grumpy Bear', 'Birthday Bear',
+            'Wish Bear', 'Funshine Bear', 'Love-a-Lot Bear',
+            // TMNT
+            'Raphael', 'Leonardo', 'Michelangelo', 'Donatello',
+            'Shredder', 'Krang', 'Bebop', 'Rocksteady',
+            // Thundercats
+            'Lion-O', 'Panthro', 'Tygra', 'Cheetara',
+            'Mumm-Ra', 'Wilykit', 'Wilykat',
+            // SilverHawks
+            'Quicksilver', 'Steelheart', 'MonStar', 'Windhammer',
+            // Star Wars
+            'Darth Vader', 'Luke Skywalker', 'Han Solo', 'R2-D2',
+            'Yoda', 'AT-AT Walker', 'Boba Fett', 'Jabba the Hutt',
+            // Ghostbusters
+            'Slimer', 'Stay Puft', 'Zuul', 'Gozer',
+            // Jem
+            'Jem', 'Pizzazz', 'Synergy', 'Roxy',
+            // My Little Pony
+            'Twilight', 'Butterscotch', 'Applejack', 'Minty',
+            // Madballs
+            'Skull Face', 'Oculus Orbus', 'Crack Head', 'Slobulus',
+        ];
+    }
+
     public static function eventTitles(): array
     {
         return [
