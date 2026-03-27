@@ -82,6 +82,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 075 | Donations — Foundation |
 | 076 | Tax Receipts |
 | 077 | Mailing List from Donors |
+| 078 | Finance Data Boundary |
 
 ---
 
@@ -133,13 +134,13 @@ Fund designation on donations (`fund_id` FK, `restriction_type` on funds). Donor
 
 *Pledge tracking was considered and deliberately excluded. Pledges that don't flow through Stripe belong in QuickBooks, not here.*
 
-### Finance Data Boundary
+### ~~Finance Data Boundary~~ *(completed session 078)*
 
-Enforce a clean separation between Finance and the rest of the admin. Financial amounts and Stripe links are removed from CRM and CMS views. The Transactions table becomes the single place where dollar values and Stripe dashboard links live. Non-Finance views replace inline financial data with navigation affordances (count badges + "View in Finance →" buttons). No backwards compatibility needed — data can be wiped, and removing views and code is explicitly part of this work.
+Financial amounts and Stripe links removed from CRM and CMS views. Transactions table is now the single place for dollar values and Stripe dashboard links, with contact and product filters. Purchases now create Transaction rows alongside Purchase records. `contact_id` denormalized onto transactions for efficient filtering. Navigation affordances replace inline financial data in non-Finance views.
 
 ### Debug Generator — Donations, Products & Purchases
 
-Extend `DashboardDebugGeneratorWidget` to support generating products (with prices), purchases, and realistic donations with tax year control and fund/contact linkage. New factories: `ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`. Improved `DonationFactory` with `started_at`. Widget gains a Tax Year input and two new type options (products, purchases). Existing contacts/products are reused if present; otherwise created fresh. Wipe extended for new types.
+Extend `DashboardDebugGeneratorWidget` to support generating products (with prices), purchases, and realistic donations with tax year control and fund/contact linkage. New factories: `ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`. Improved `DonationFactory` with `started_at`. Widget gains a Tax Year input and two new type options (products, purchases). Existing contacts/products are reused if present; otherwise created fresh. Wipe extended for new types. Note: `PurchaseFactory` must also seed a corresponding `Transaction` row (with `contact_id`) since that is now the expected data model established in session 078.
 
 ### System Email Preview Wizard
 
