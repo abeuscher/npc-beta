@@ -185,48 +185,45 @@ class DonorsPage extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            Actions\ActionGroup::make([
-                EmailPreviewWizardAction::make(
-                    name: 'sendPending',
-                    emailTypeName: 'Donation Receipt',
-                    recipientSummary: function () {
-                        $year     = $this->taxYear === 'all' ? null : (int) $this->taxYear;
-                        $eligible = $this->eligibleContactIds($year);
-                        $receipted = DonationReceipt::when($year, fn ($q) => $q->where('tax_year', $year))
-                            ->whereIn('contact_id', $eligible)
-                            ->distinct()
-                            ->pluck('contact_id')
-                            ->all();
-                        $count = count(array_diff($eligible, $receipted));
-                        $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
-                        return "<strong>{$count}</strong> donor(s) in <strong>{$label}</strong> have not yet received a receipt and will be emailed.";
-                    },
-                    previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: false),
-                    sendCallable: fn (array $data) => $this->sendReceipts(forceAll: false),
-                    submitLabel: 'Send Receipts',
-                )
-                    ->label('Send System Emails to Pending Recipients')
-                    ->icon('heroicon-o-paper-airplane'),
+            EmailPreviewWizardAction::make(
+                name: 'sendPending',
+                emailTypeName: 'Donation Receipt',
+                recipientSummary: function () {
+                    $year     = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+                    $eligible = $this->eligibleContactIds($year);
+                    $receipted = DonationReceipt::when($year, fn ($q) => $q->where('tax_year', $year))
+                        ->whereIn('contact_id', $eligible)
+                        ->distinct()
+                        ->pluck('contact_id')
+                        ->all();
+                    $count = count(array_diff($eligible, $receipted));
+                    $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
+                    return "<strong>{$count}</strong> donor(s) in <strong>{$label}</strong> have not yet received a receipt and will be emailed.";
+                },
+                previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: false),
+                sendCallable: fn (array $data) => $this->sendReceipts(forceAll: false),
+                submitLabel: 'Send Receipts',
+            )
+                ->label('Send System Emails to Pending Recipients')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray'),
 
-                EmailPreviewWizardAction::make(
-                    name: 'forceResendAll',
-                    emailTypeName: 'Donation Receipt (Re-send)',
-                    recipientSummary: function () {
-                        $year  = $this->taxYear === 'all' ? null : (int) $this->taxYear;
-                        $count = count($this->eligibleContactIds($year));
-                        $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
-                        return "<strong>{$count}</strong> eligible donor(s) in <strong>{$label}</strong> will be re-emailed, including those already receipted. Each send creates a new receipt record.";
-                    },
-                    previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: true),
-                    sendCallable: fn (array $data) => $this->sendReceipts(forceAll: true),
-                    submitLabel: 'Re-send All',
-                )
-                    ->label('Force Re-send System Emails to All')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('danger'),
-            ])
-            ->icon('heroicon-o-ellipsis-horizontal')
-            ->color('gray'),
+            EmailPreviewWizardAction::make(
+                name: 'forceResendAll',
+                emailTypeName: 'Donation Receipt (Re-send)',
+                recipientSummary: function () {
+                    $year  = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+                    $count = count($this->eligibleContactIds($year));
+                    $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
+                    return "<strong>{$count}</strong> eligible donor(s) in <strong>{$label}</strong> will be re-emailed, including those already receipted. Each send creates a new receipt record.";
+                },
+                previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: true),
+                sendCallable: fn (array $data) => $this->sendReceipts(forceAll: true),
+                submitLabel: 'Re-send All',
+            )
+                ->label('Force Re-send System Emails to All')
+                ->icon('heroicon-o-arrow-path')
+                ->color('danger'),
         ];
     }
 
