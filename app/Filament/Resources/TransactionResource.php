@@ -142,11 +142,12 @@ class TransactionResource extends Resource
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
                     ->url(fn (Transaction $record): ?string => $record->stripe_id
-                        ? (str_starts_with($record->stripe_id, 'in_')
-                            ? 'https://dashboard.stripe.com/invoices/' . $record->stripe_id
-                            : (str_starts_with($record->stripe_id, 're_')
-                                ? 'https://dashboard.stripe.com/refunds/' . $record->stripe_id
-                                : 'https://dashboard.stripe.com/payments/' . $record->stripe_id))
+                        ? match (true) {
+                            str_starts_with($record->stripe_id, 'in_') => 'https://dashboard.stripe.com/invoices/' . $record->stripe_id,
+                            str_starts_with($record->stripe_id, 'cs_') => 'https://dashboard.stripe.com/checkout/sessions/' . $record->stripe_id,
+                            str_starts_with($record->stripe_id, 're_') => 'https://dashboard.stripe.com/refunds/' . $record->stripe_id,
+                            default                                     => 'https://dashboard.stripe.com/payments/' . $record->stripe_id,
+                        }
                         : null
                     )
                     ->openUrlInNewTab()
