@@ -28,6 +28,16 @@ class TransactionResource extends Resource
         return auth()->user()?->can('view_any_transaction') ?? false;
     }
 
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return ! $record->stripe_id;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return ! $record->stripe_id;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

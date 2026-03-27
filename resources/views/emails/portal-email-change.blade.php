@@ -22,7 +22,7 @@
             <p>Hi {{ $account->contact->first_name ?? $account->email }},</p>
             <p>You requested to change your email address to <strong>{{ $newEmail }}</strong>. Click the button below to confirm this change.</p>
             <p>
-              <a href="{{ $confirmUrl }}" class="btn">Confirm new email address</a>
+              <a href="{{ $confirmUrl }}" style="display:inline-block;padding:12px 24px;background:#1a56db;color:#ffffff;text-decoration:none;border-radius:4px;font-size:15px;margin:16px 0;">Confirm new email address</a>
             </p>
             <p>This link expires in 60 minutes. Your current email address will remain active until you confirm the change.</p>
             <p>If you did not request this change, you can safely ignore this email.</p>

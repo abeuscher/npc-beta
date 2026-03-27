@@ -17,7 +17,7 @@ class MailingListResource extends Resource
 {
     protected static ?string $model = MailingList::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';
 
     protected static ?string $navigationGroup = 'CRM';
 

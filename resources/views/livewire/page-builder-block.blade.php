@@ -165,7 +165,7 @@
                             <button
                                 type="button"
                                 wire:click="requestDelete"
-                                class="rounded-lg bg-danger-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-danger-500"
+                                class="rounded-lg border border-danger-600 px-3 py-1.5 text-xs font-semibold text-danger-600 hover:bg-danger-50 dark:hover:bg-gray-700"
                             >Yes, delete</button>
                             <button
                                 type="button"

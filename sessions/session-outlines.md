@@ -85,6 +85,7 @@ This is the single working reference for all sessions. Completed sessions are li
 | 078 | Finance Data Boundary |
 | 079 | Debug Generator — Donations, Products & Purchases |
 | 080 | System Email Preview Wizard |
+| 081 | Minor Tweaks & Polish |
 
 ---
 
@@ -109,6 +110,18 @@ Core household model built in session 071 (self-referential `contacts.household_
 ### Activity Log Viewer
 
 Filterable admin view of the `activity_logs` table. Who did what, to which record, and when. Covers all logged events including financial key rotations (written in session 073). Simple read-only table — no editing or deletion.
+
+### Mailing List — Field Policy & Targeting Engine
+
+Build a targeting filter UI for mailing lists based on agreed field policy (decided session 081). Allowed filters and rules:
+
+- **Always allowed:** tags, membership status/tier, geographic fields (city, state, postal code), custom fields, event registration history, source + date range.
+- **Donor threshold:** "donated at least $X in year Y" — returns a boolean in/out result. No donation amounts or fund details are surfaced on the list record. Cross-Finance boundary only as a boolean gate.
+- **Age cutoffs:** preset options only — 13+, 18+, 21+. No free-entry age field. No under-age filters.
+- **Household deduplication:** "head of household or solo" filter — includes contacts where `household_id = id` OR `household_id IS NULL`. Excludes non-head household members.
+- **`mailing_list_opt_in`:** available as a filter; show a visible warning when a list is being sent without it applied.
+- **`do_not_contact`:** hard system exclusion — always enforced, cannot be filtered out by the admin. Help copy must state: set only on explicit opt-out; clear only on explicit re-consent (activity log covers audit trail).
+- **Prohibited:** actual donation amounts, fund designation detail, under-age or arbitrary age filters, portal account status (portal communications are a system email concern, not a list concern).
 
 ---
 
@@ -148,15 +161,21 @@ New factories (`ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`) and i
 
 Multi-step confirmation modal for admin-initiated system email sends. Step 1: confirm recipient count and email type. Step 2: preview merged message (first recipient for bulk sends) in an iframe. Step 3: editable test-send address + final submit. Reusable factory (`EmailPreviewWizardAction`). Retrofitted to donor receipts, user invitations, and event cancellation. Event cancellation moved from auto-firing observer to explicit wizard action. `testHtmlResolver` parameter keeps real PII/financial data out of test sends.
 
-### Minor Tweaks & Polish
-
-Accumulated minor fixes and polish items. Known items going in:
-
-- Rename "Donors" nav label and page title to "Giving Summary" (agreed session 080).
-
 ### Codebase Audit & Migration Squash
 
 Periodic codebase audit and migration squash, following the patterns established in sessions 042 (Codebase Audit — Fields, Schema, Permissions & Help Coverage) and 062 (Codebase Audit & Migration Squash). Details to be filled in at end of session 081.
+
+### Edit Transaction View — Review & Simplify
+
+The transaction edit view reportedly shows fields that may not exist and the appropriateness of an edit view is unclear (raised session 081). Walk through the current view, decide whether to keep, remove, or simplify it, and implement the agreed change. Decisions from the session 081 discussion should be recorded here before building.
+
+### Stripe Payment Method Manager
+
+Allow admin to configure which Stripe payment methods are accepted (e.g. credit cards, ACH). Default to disabling Link and Klarna. At least one card-based method must remain enabled at all times — enforce this in the UI and surface the constraint on the Financial Settings help page. Requires Stripe PaymentMethod Configuration API or Products/Prices settings depending on the checkout flow in use.
+
+### API Key Pattern Validation & Test-Mode Warning
+
+Two related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected. Scope and warning placement to be agreed following the session 081 discussion.
 
 ### QuickBooks Sync
 
@@ -191,6 +210,34 @@ One-way push of categorised transactions to QuickBooks. No reconciliation, no pu
 ---
 
 ## Data Retention & Deletion Policy
+
+### Content Type Deletability Audit & Archive Pattern
+
+Implement the agreed rules from the session 081 discussion. Two parallel concerns:
+
+**Deletion guards:**
+- *Contact* — soft-delete in place; hard-delete super_admin only.
+- *Event registration (paid)* — block deletion with a warning directing admin to issue the refund in Stripe first; allow after acknowledgement. Do not automate the refund — Stripe webhook will reconcile.
+- *Event* — block deletion if any registrations exist; allow for drafts/no registrations.
+- *Membership Tier* — block deletion if any active memberships reference it.
+- *Fund* — block deletion if any donations reference it.
+- *Product* — block deletion if any purchases reference it.
+- *Widget Type* — block deletion if any pages reference it.
+- *Donation* — not deletable; financial record, Stripe is source of truth.
+- *Email Template* — not deletable; already enforced.
+- *Page (system/portal)* — audit existing page-type protection system and plug any gaps. Add a second-tier loud warning for portal-system pages: "Deleting this page may render the member portal unusable."
+- *Navigation Menu* — general warning on delete ("this menu may be in use on your site"); no dependency check — too unpredictable given widget-level nav use.
+- *Form* — warn if submissions exist.
+- *Collection* — warn or cascade-confirm if items exist.
+
+**Archive / expiry pattern (new status, not deletion):**
+Introduce an explicit "archived" state for types where "retired but historically referenced" is a real operational state. Archived items are hidden from default admin list views and cannot be selected for new associations, but all history is preserved. Apply to:
+- *Product* — "no longer for sale"
+- *Membership Tier* — "closed to new members"
+- *Fund* — "no longer accepting donations"
+- *Form* — "retired"
+
+Evaluate *Mailing List* and *Collection* against the same criteria during this session. Implement archive toggle, default-view filter, and guard on new associations for each approved type.
 
 ### Data Retention & Cascading Delete Audit
 
@@ -243,6 +290,26 @@ SVG support: inline in page builder / rich text, as `<img src>` in image widgets
 ---
 
 ## Infrastructure & Ops
+
+### Batch Edit on Admin Tables
+
+Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
+
+### Integration Setup Wizards — Stripe & Mailchimp
+
+Multi-step guided wizards for connecting Stripe and Mailchimp. Each wizard walks through entering API keys (with the existing high-friction rotation pattern), verifying connectivity, and confirming the integration is live. QuickBooks wizard to follow once the QuickBooks Sync session is scoped. Consider a unified "Integrations" page as the entry point.
+
+### Sandbox / Demo Data Mode
+
+A mode or toggle that lets the admin act on a small set of controllable test records without touching real data. Concept and scope to be agreed following the session 081 discussion. Related: default sample record for the system email preview wizard (may be part of this session or a separate stub).
+
+### Admin User — Secure Password Generator
+
+Add a "Generate secure password" button to the admin user create/edit form, below the password field. Client-side Alpine.js only — generates a cryptographically random string, fills both password and confirm-password fields, and copies to clipboard. No server round-trip. Admin pastes into their password manager and hands it to the user.
+
+### System Email Preview — Default Sample Record
+
+A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Scope and persistence model to be agreed before building — may overlap with the Sandbox / Demo Data Mode stub above. Resolve both in the same session if possible.
 
 ### Code Housekeeping Notes
 

@@ -14,7 +14,7 @@ class MembershipTierResource extends Resource
 {
     protected static ?string $model = MembershipTier::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-tag';
+    protected static ?string $navigationIcon = 'heroicon-o-identification';
 
     protected static ?string $navigationGroup = 'Tools';
 

@@ -17,7 +17,7 @@ class ContactResource extends Resource
 {
     protected static ?string $model = Contact::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationIcon = 'heroicon-o-user-circle';
 
     protected static ?string $navigationGroup = 'CRM';
 
@@ -138,6 +138,7 @@ class ContactResource extends Resource
                     ]),
 
                 Forms\Components\Section::make('Portal Access')
+                    ->collapsible()
                     ->schema(function (?Contact $record): array {
                     if (! $record) {
                         return [];
@@ -172,9 +173,7 @@ class ContactResource extends Resource
                             ->label('Account Created')
                             ->content($portal->created_at->format('F j, Y')),
                     ];
-                })
-                    ->collapsible()
-                    ->collapsed(),
+                }),
 
                 Forms\Components\Section::make('Household')
                     ->collapsible()

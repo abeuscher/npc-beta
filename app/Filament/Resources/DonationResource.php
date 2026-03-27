@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\DonationResource\Pages;
 use App\Filament\Resources\DonationResource\RelationManagers;
 use App\Models\Donation;
@@ -134,6 +135,15 @@ class DonationResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('view_contact')
+                    ->label('View Contact')
+                    ->icon('heroicon-o-user')
+                    ->color('gray')
+                    ->url(fn ($record) => $record->contact_id
+                        ? ContactResource::getUrl('edit', ['record' => $record->contact_id])
+                        : null
+                    )
+                    ->hidden(fn ($record) => ! $record->contact_id),
                 Tables\Actions\Action::make('stripe')
                     ->label('View in Stripe')
                     ->icon('heroicon-o-arrow-top-right-on-square')

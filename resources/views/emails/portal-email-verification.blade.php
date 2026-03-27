@@ -22,7 +22,7 @@
             <p>Hi {{ $account->contact->first_name ?? $account->email }},</p>
             <p>Thanks for creating an account. Please verify your email address by clicking the button below.</p>
             <p>
-              <a href="{{ $verificationUrl }}" class="btn">Verify email address</a>
+              <a href="{{ $verificationUrl }}" style="display:inline-block;padding:12px 24px;background:#1a56db;color:#ffffff;text-decoration:none;border-radius:4px;font-size:15px;margin:16px 0;">Verify email address</a>
             </p>
             <p>This link expires in 60 minutes. If you did not create an account, you can safely ignore this email.</p>
             <p>If the button doesn't work, copy and paste this URL into your browser:</p>

@@ -27,7 +27,7 @@ class FinanceSettingsPage extends Page
 
     protected static ?string $navigationLabel = 'Finance';
 
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
 
     protected static ?int $navigationSort = 5;
 

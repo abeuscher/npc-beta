@@ -27,15 +27,15 @@ class DonorsPage extends Page implements HasTable
 
     protected static ?string $navigationGroup = 'Finance';
 
-    protected static ?string $navigationLabel = 'Donors';
+    protected static ?string $navigationLabel = 'Giving Summary';
 
-    protected static ?string $navigationIcon = 'heroicon-o-heart';
+    protected static ?string $navigationIcon = 'heroicon-o-trophy';
 
     protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.pages.donors';
 
-    protected static ?string $title = 'Donors';
+    protected static ?string $title = 'Giving Summary';
 
     public string $taxYear         = '';
     public mixed $minimumTotal     = 250;
@@ -54,7 +54,7 @@ class DonorsPage extends Page implements HasTable
     {
         return [
             'Finance',
-            'Donors',
+            'Giving Summary',
         ];
     }
 

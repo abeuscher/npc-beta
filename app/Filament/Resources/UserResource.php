@@ -51,10 +51,20 @@ class UserResource extends Resource
 
                 Forms\Components\TextInput::make('password')
                     ->password()
+                    ->revealable()
                     ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $operation) => $operation === 'create')
-                    ->label(fn (string $operation) => $operation === 'create' ? 'Password' : 'New Password (leave blank to keep current)'),
+                    ->label(fn (string $operation) => $operation === 'create' ? 'Password' : 'New Password (leave blank to keep current)')
+                    ->same('password_confirmation')
+                    ->validationMessages(['same' => 'The passwords do not match.']),
+
+                Forms\Components\TextInput::make('password_confirmation')
+                    ->password()
+                    ->revealable()
+                    ->dehydrated(false)
+                    ->required(fn (string $operation) => $operation === 'create')
+                    ->label(fn (string $operation) => $operation === 'create' ? 'Confirm Password' : 'Confirm New Password (leave blank to keep current)'),
 
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
