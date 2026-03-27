@@ -42,6 +42,7 @@ class EmailPreviewWizardAction
         Closure $sendCallable,
         array $step1ExtraSchema = [],
         string $submitLabel = 'Send Now',
+        ?Closure $testHtmlResolver = null,
     ): Actions\Action {
         return Actions\Action::make($name)
             ->modalWidth(MaxWidth::FiveExtraLarge)
@@ -94,25 +95,30 @@ class EmailPreviewWizardAction
 
                 Step::make('Send')
                     ->schema([
+                        Forms\Components\TextInput::make('_test_email_address')
+                            ->label('Send test to')
+                            ->email()
+                            ->default(fn () => auth()->user()?->email ?? ''),
+
                         Forms\Components\Actions::make([
                             Forms\Components\Actions\Action::make('_sendTest')
-                                ->label('Send Test Email to Me')
+                                ->label('Send Test Email')
                                 ->outlined()
                                 ->color('gray')
-                                ->action(function () use ($previewHtmlResolver, $emailTypeName) {
-                                    $html       = ($previewHtmlResolver)();
-                                    $adminEmail = auth()->user()->email;
+                                ->action(function (Forms\Get $get) use ($previewHtmlResolver, $testHtmlResolver, $emailTypeName) {
+                                    $html      = $testHtmlResolver ? ($testHtmlResolver)() : ($previewHtmlResolver)();
+                                    $recipient = $get('_test_email_address') ?: auth()->user()?->email;
 
                                     Mail::send(
                                         'mail.system-email',
                                         ['html' => $html],
                                         fn ($message) => $message
-                                            ->to($adminEmail)
+                                            ->to($recipient)
                                             ->subject('[Test] ' . $emailTypeName)
                                     );
 
                                     Notification::make()
-                                        ->title('Test email sent to ' . $adminEmail)
+                                        ->title('Test email sent to ' . $recipient)
                                         ->success()
                                         ->send();
                                 }),

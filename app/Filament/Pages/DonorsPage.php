@@ -203,6 +203,7 @@ class DonorsPage extends Page implements HasTable
                 previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: false),
                 sendCallable: fn (array $data) => $this->sendReceipts(forceAll: false),
                 submitLabel: 'Send Receipts',
+                testHtmlResolver: fn () => $this->receiptTestHtml(),
             )
                 ->label('Send System Emails to Pending Recipients')
                 ->icon('heroicon-o-paper-airplane')
@@ -221,6 +222,7 @@ class DonorsPage extends Page implements HasTable
                 previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: true),
                 sendCallable: fn (array $data) => $this->sendReceipts(forceAll: true),
                 submitLabel: 'Re-send All',
+                testHtmlResolver: fn () => $this->receiptTestHtml(),
             )
                 ->label('Force Re-send System Emails to All')
                 ->icon('heroicon-o-arrow-path')
@@ -284,6 +286,37 @@ class DonorsPage extends Page implements HasTable
             'tax_year'     => (string) $receiptYear,
             'donations'    => $donationsHtml,
             'total'        => number_format((float) $total, 2),
+        ];
+
+        $template = EmailTemplate::forHandle('donation_receipt');
+
+        return $template->resolveWrapper($template->render($tokens));
+    }
+
+    private function receiptTestHtml(): string
+    {
+        $year    = $this->taxYear === 'all' ? (int) now()->subYear()->year : (int) $this->taxYear;
+        $orgName = SiteSetting::get('site_name', '');
+
+        $donationsHtml = '<table style="width:100%;border-collapse:collapse;margin:1em 0;">'
+            . '<thead><tr>'
+            . '<th style="text-align:left;padding:6px 8px;border-bottom:2px solid #ccc;">Fund</th>'
+            . '<th style="text-align:left;padding:6px 8px;border-bottom:2px solid #ccc;">Restriction</th>'
+            . '<th style="text-align:right;padding:6px 8px;border-bottom:2px solid #ccc;">Amount</th>'
+            . '</tr></thead><tbody>'
+            . '<tr>'
+            . '<td style="padding:6px 8px;border-bottom:1px solid #eee;">[Fund Name]</td>'
+            . '<td style="padding:6px 8px;border-bottom:1px solid #eee;">[Restriction Type]</td>'
+            . '<td style="text-align:right;padding:6px 8px;border-bottom:1px solid #eee;">$[0.00]</td>'
+            . '</tr>'
+            . '</tbody></table>';
+
+        $tokens = [
+            'contact_name' => '[Recipient Name]',
+            'org_name'     => $orgName,
+            'tax_year'     => (string) $year,
+            'donations'    => $donationsHtml,
+            'total'        => '0.00',
         ];
 
         $template = EmailTemplate::forHandle('donation_receipt');
