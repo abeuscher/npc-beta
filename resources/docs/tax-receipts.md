@@ -28,8 +28,10 @@ The table shows donor name, org roles, total donated, and date of most recent do
 
 Use the **⋯** menu (top right) to send year-end acknowledgement emails:
 
-- **Send System Emails to Pending Recipients** — sends a receipt to every eligible donor in the selected year who has not yet received one. A confirmation modal is shown before sending.
-- **Force Re-send System Emails to All** — sends a receipt to every eligible donor in the selected year, including those already receipted. Each send creates a new receipt record for the audit trail. A confirmation modal with a warning is shown before sending.
+- **Send System Emails to Pending Recipients** — sends a receipt to every eligible donor in the selected year who has not yet received one.
+- **Force Re-send System Emails to All** — sends a receipt to every eligible donor in the selected year, including those already receipted. Each send creates a new receipt record for the audit trail.
+
+Both actions open a three-step preview wizard. Step 1 shows the recipient count. Step 2 renders a preview of the email as it will appear for the first recipient. Step 3 has the final **Send Receipts** or **Re-send All** button.
 
 Receipts are sent using the configured system email (Resend). The email template can be customised under System Emails.
 

@@ -9,31 +9,27 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-it('sends cancellation emails to registered attendees when event is cancelled', function () {
+it('does not auto-send cancellation emails when event status changes to cancelled', function () {
     Mail::fake();
 
     $event = Event::factory()->create(['status' => 'published']);
 
-    $reg1 = EventRegistration::factory()->create([
+    EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'one@example.com',
         'status'   => 'registered',
     ]);
-    $reg2 = EventRegistration::factory()->create([
+    EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'two@example.com',
         'status'   => 'registered',
     ]);
 
-    // Disable the observer for these factory creations so no confirmation mail fires
-    // (Mail::fake() already captures all mail, so this just verifies cancellation count)
-
+    // Cancellation emails are no longer sent automatically by the observer.
+    // They are sent via the Cancel Event wizard action in the admin UI.
     $event->update(['status' => 'cancelled']);
 
-    Mail::assertSent(EventCancellation::class, 2);
-
-    Mail::assertSent(EventCancellation::class, fn ($mail) => $mail->hasTo('one@example.com'));
-    Mail::assertSent(EventCancellation::class, fn ($mail) => $mail->hasTo('two@example.com'));
+    Mail::assertNotSent(EventCancellation::class);
 });
 
 it('does not send cancellation emails to waitlisted or cancelled registrants', function () {
@@ -87,19 +83,16 @@ it('does not send cancellation emails to registrants without email', function ()
     Mail::assertNotSent(EventCancellation::class);
 });
 
-it('cancellation email has the correct subject', function () {
-    Mail::fake();
-
+it('cancellation email subject contains the event title', function () {
     $event = Event::factory()->create(['status' => 'published', 'title' => 'Spring Conference']);
-    EventRegistration::factory()->create([
+    $registration = EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'attendee@example.com',
         'status'   => 'registered',
     ]);
 
-    $event->update(['status' => 'cancelled']);
+    $registration->loadMissing('event', 'contact');
+    $mail = new EventCancellation($registration);
 
-    Mail::assertSent(EventCancellation::class, function ($mail) {
-        return str_contains($mail->envelope()->subject, 'Spring Conference');
-    });
+    expect($mail->envelope()->subject)->toContain('Spring Conference');
 });

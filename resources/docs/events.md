@@ -44,6 +44,16 @@ You can apply event tags to categorize events for filtering and public listings.
 - **Removing a tag** — click the × on any tag pill.
 - **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
 
+## Cancelling an Event
+
+To cancel an event and notify registered attendees, open the event record and click **Cancel Event** in the page header. A three-step preview wizard opens:
+
+1. **Confirm** — shows how many registered attendees with email addresses will be notified.
+2. **Preview** — renders the cancellation email as it will appear for the first recipient.
+3. **Send** — click **Cancel Event** to set the event status to *Cancelled* and dispatch the emails.
+
+Only attendees with a *registered* status and a valid email address receive the email. The event status is updated at the same time the emails are sent.
+
 ## Past Events
 
 Events with a past end date remain in the system and on the public site unless you unpublish them. You may want to keep past events published for archival purposes or remove them to keep the site tidy.

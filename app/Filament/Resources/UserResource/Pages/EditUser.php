@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\UserResource\Pages;
 
+use App\Filament\Actions\EmailPreviewWizardAction;
 use App\Filament\Resources\UserResource;
 use App\Mail\AdminInvitation;
+use App\Models\EmailTemplate;
 use App\Models\InvitationToken;
 use App\Models\Role;
 use Filament\Actions;
@@ -20,20 +22,12 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('invite')
-                ->label('Send Invitation')
-                ->icon('heroicon-o-envelope')
-                ->color('warning')
-                ->hidden(fn () => DB::table('sessions')->where('user_id', $this->record->id)->exists())
-                ->form([
-                    Forms\Components\Select::make('roles')
-                        ->label('Role')
-                        ->multiple()
-                        ->options(fn () => Role::all()->mapWithKeys(fn ($r) => [$r->name => $r->display_label]))
-                        ->default(fn () => $this->record->getRoleNames()->toArray())
-                        ->preload(),
-                ])
-                ->action(function (array $data) {
+            EmailPreviewWizardAction::make(
+                name: 'invite',
+                emailTypeName: 'Admin Invitation',
+                recipientSummary: fn () => 'An invitation email will be sent to <strong>' . e($this->record->email) . '</strong>.',
+                previewHtmlResolver: fn () => $this->invitationPreviewHtml(),
+                sendCallable: function (array $data) {
                     $this->record->update(['is_active' => false]);
                     $this->record->syncRoles($data['roles'] ?? []);
 
@@ -46,17 +40,27 @@ class EditUser extends EditRecord
                         ->title('Invitation sent')
                         ->body("An invitation email has been sent to {$this->record->email}.")
                         ->send();
-                }),
+                },
+                step1ExtraSchema: [
+                    Forms\Components\Select::make('roles')
+                        ->label('Role')
+                        ->multiple()
+                        ->options(fn () => Role::all()->mapWithKeys(fn ($r) => [$r->name => $r->display_label]))
+                        ->default(fn () => $this->record->getRoleNames()->toArray())
+                        ->preload(),
+                ],
+            )
+                ->label('Send Invitation')
+                ->icon('heroicon-o-envelope')
+                ->color('warning')
+                ->hidden(fn () => DB::table('sessions')->where('user_id', $this->record->id)->exists()),
 
-            Actions\Action::make('resend')
-                ->label('Resend Invitation')
-                ->icon('heroicon-o-arrow-path')
-                ->color('gray')
-                ->visible(fn () => (bool) $this->record->pendingInvitationToken())
-                ->requiresConfirmation()
-                ->modalHeading('Resend invitation?')
-                ->modalDescription('This will generate a new invitation link and send it to ' . $this->record->email . '. The previous link will be invalidated.')
-                ->action(function () {
+            EmailPreviewWizardAction::make(
+                name: 'resend',
+                emailTypeName: 'Admin Invitation',
+                recipientSummary: fn () => 'A new invitation link will be sent to <strong>' . e($this->record->email) . '</strong>. The previous link will be invalidated.',
+                previewHtmlResolver: fn () => $this->invitationPreviewHtml(),
+                sendCallable: function (array $data) {
                     [$plain] = InvitationToken::createForUser($this->record);
 
                     Mail::to($this->record->email)->send(new AdminInvitation($this->record, $plain));
@@ -65,7 +69,12 @@ class EditUser extends EditRecord
                         ->success()
                         ->title('Invitation resent')
                         ->send();
-                }),
+                },
+            )
+                ->label('Resend Invitation')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->visible(fn () => (bool) $this->record->pendingInvitationToken()),
 
             Actions\Action::make('revoke')
                 ->label('Revoke Invitation')
@@ -104,5 +113,17 @@ class EditUser extends EditRecord
     {
         $roles = $this->form->getRawState()['roles'] ?? [];
         $this->record->syncRoles($roles);
+    }
+
+    private function invitationPreviewHtml(): string
+    {
+        $template = EmailTemplate::forHandle('admin_invitation');
+        $tokens   = [
+            'name'           => $this->record->name,
+            'org_name'       => config('app.name'),
+            'invitation_url' => '#',
+        ];
+
+        return $template->resolveWrapper($template->render($tokens));
     }
 }

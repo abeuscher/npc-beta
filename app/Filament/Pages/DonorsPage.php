@@ -2,10 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Actions\EmailPreviewWizardAction;
 use App\Mail\DonationReceipt as DonationReceiptMail;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
+use App\Models\EmailTemplate;
+use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -183,34 +186,110 @@ class DonorsPage extends Page implements HasTable
     {
         return [
             Actions\ActionGroup::make([
-                Actions\Action::make('sendPending')
+                EmailPreviewWizardAction::make(
+                    name: 'sendPending',
+                    emailTypeName: 'Donation Receipt',
+                    recipientSummary: function () {
+                        $year     = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+                        $eligible = $this->eligibleContactIds($year);
+                        $receipted = DonationReceipt::when($year, fn ($q) => $q->where('tax_year', $year))
+                            ->whereIn('contact_id', $eligible)
+                            ->distinct()
+                            ->pluck('contact_id')
+                            ->all();
+                        $count = count(array_diff($eligible, $receipted));
+                        $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
+                        return "<strong>{$count}</strong> donor(s) in <strong>{$label}</strong> have not yet received a receipt and will be emailed.";
+                    },
+                    previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: false),
+                    sendCallable: fn (array $data) => $this->sendReceipts(forceAll: false),
+                    submitLabel: 'Send Receipts',
+                )
                     ->label('Send System Emails to Pending Recipients')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->requiresConfirmation()
-                    ->modalHeading('Send receipts to pending donors')
-                    ->modalDescription(fn () => 'This will send a tax receipt system email to all eligible donors in ' .
-                        ($this->taxYear === 'all' ? 'all years' : $this->taxYear) .
-                        ' who have not yet received one. Continue?')
-                    ->modalSubmitActionLabel('Send Receipts')
-                    ->action(fn () => $this->sendReceipts(forceAll: false)),
+                    ->icon('heroicon-o-paper-airplane'),
 
-                Actions\Action::make('forceResendAll')
+                EmailPreviewWizardAction::make(
+                    name: 'forceResendAll',
+                    emailTypeName: 'Donation Receipt (Re-send)',
+                    recipientSummary: function () {
+                        $year  = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+                        $count = count($this->eligibleContactIds($year));
+                        $label = $this->taxYear === 'all' ? 'all years' : $this->taxYear;
+                        return "<strong>{$count}</strong> eligible donor(s) in <strong>{$label}</strong> will be re-emailed, including those already receipted. Each send creates a new receipt record.";
+                    },
+                    previewHtmlResolver: fn () => $this->receiptPreviewHtml(forceAll: true),
+                    sendCallable: fn (array $data) => $this->sendReceipts(forceAll: true),
+                    submitLabel: 'Re-send All',
+                )
                     ->label('Force Re-send System Emails to All')
                     ->icon('heroicon-o-arrow-path')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalIcon('heroicon-o-exclamation-triangle')
-                    ->modalIconColor('danger')
-                    ->modalHeading('Force re-send to all eligible donors')
-                    ->modalDescription(fn () => 'This will send a receipt system email to every eligible donor in ' .
-                        ($this->taxYear === 'all' ? 'all years' : $this->taxYear) .
-                        ', including those already receipted. Each send creates a new receipt record. Continue?')
-                    ->modalSubmitActionLabel('Re-send All')
-                    ->action(fn () => $this->sendReceipts(forceAll: true)),
+                    ->color('danger'),
             ])
             ->icon('heroicon-o-ellipsis-horizontal')
             ->color('gray'),
         ];
+    }
+
+    private function receiptPreviewHtml(bool $forceAll): string
+    {
+        $year     = $this->taxYear === 'all' ? null : (int) $this->taxYear;
+        $eligible = $this->eligibleContactIds($year);
+
+        if (! $forceAll) {
+            $receipted = DonationReceipt::when($year, fn ($q) => $q->where('tax_year', $year))
+                ->whereIn('contact_id', $eligible)
+                ->distinct()
+                ->pluck('contact_id')
+                ->all();
+            $targets = array_diff($eligible, $receipted);
+        } else {
+            $targets = $eligible;
+        }
+
+        $contactId = reset($targets);
+
+        if (! $contactId) {
+            return '<p style="font-family:sans-serif;padding:1em;">No eligible recipients found for the current filters.</p>';
+        }
+
+        $contact = Contact::find($contactId);
+
+        if (! $contact) {
+            return '<p style="font-family:sans-serif;padding:1em;">Unable to load first recipient.</p>';
+        }
+
+        $receiptYear             = $year ?? (int) now()->subYear()->year;
+        [$breakdown, $total]     = $this->buildBreakdown($contactId, $receiptYear);
+        $orgName                 = SiteSetting::get('site_name', '');
+
+        $donationsHtml = '<table style="width:100%;border-collapse:collapse;margin:1em 0;">'
+            . '<thead><tr>'
+            . '<th style="text-align:left;padding:6px 8px;border-bottom:2px solid #ccc;">Fund</th>'
+            . '<th style="text-align:left;padding:6px 8px;border-bottom:2px solid #ccc;">Restriction</th>'
+            . '<th style="text-align:right;padding:6px 8px;border-bottom:2px solid #ccc;">Amount</th>'
+            . '</tr></thead><tbody>';
+
+        foreach ($breakdown as $line) {
+            $donationsHtml .= '<tr>'
+                . '<td style="padding:6px 8px;border-bottom:1px solid #eee;">' . htmlspecialchars($line['fund_label']) . '</td>'
+                . '<td style="padding:6px 8px;border-bottom:1px solid #eee;">' . htmlspecialchars($line['restriction_type']) . '</td>'
+                . '<td style="text-align:right;padding:6px 8px;border-bottom:1px solid #eee;">$' . number_format((float) $line['amount'], 2) . '</td>'
+                . '</tr>';
+        }
+
+        $donationsHtml .= '</tbody></table>';
+
+        $tokens = [
+            'contact_name' => $contact->display_name,
+            'org_name'     => $orgName,
+            'tax_year'     => (string) $receiptYear,
+            'donations'    => $donationsHtml,
+            'total'        => number_format((float) $total, 2),
+        ];
+
+        $template = EmailTemplate::forHandle('donation_receipt');
+
+        return $template->resolveWrapper($template->render($tokens));
     }
 
     public function sendReceipts(bool $forceAll): void

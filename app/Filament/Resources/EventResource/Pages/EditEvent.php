@@ -2,9 +2,13 @@
 
 namespace App\Filament\Resources\EventResource\Pages;
 
+use App\Filament\Actions\EmailPreviewWizardAction;
 use App\Filament\Resources\EventResource;
+use App\Mail\EventCancellation;
 use App\Mail\EventReminder;
 use App\Models\Contact;
+use App\Models\EmailTemplate;
+use App\Models\SiteSetting;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -230,7 +234,78 @@ class EditEvent extends EditRecord
                     $this->redirect(static::getResource()::getUrl('edit', ['record' => $event]));
                 }),
 
+            EmailPreviewWizardAction::make(
+                name: 'cancelEvent',
+                emailTypeName: 'Event Cancellation',
+                recipientSummary: function () {
+                    $event = $this->getRecord();
+                    $count = $event->registrations()
+                        ->where('status', 'registered')
+                        ->whereNotNull('email')
+                        ->where('email', '!=', '')
+                        ->count();
+                    return "<strong>{$count}</strong> registered attendee(s) with an email address will receive a cancellation notice for <strong>" . e($event->title) . '</strong>.';
+                },
+                previewHtmlResolver: fn () => $this->cancellationPreviewHtml(),
+                sendCallable: function (array $data) {
+                    $event = $this->getRecord();
+
+                    $registrations = $event->registrations()
+                        ->where('status', 'registered')
+                        ->whereNotNull('email')
+                        ->where('email', '!=', '')
+                        ->get();
+
+                    $sent = 0;
+
+                    foreach ($registrations as $registration) {
+                        Mail::to($registration->email)->send(new EventCancellation($registration));
+                        $sent++;
+                    }
+
+                    $event->update(['status' => 'cancelled']);
+
+                    Notification::make()
+                        ->title('Event cancelled')
+                        ->body("Sent {$sent} cancellation " . ($sent === 1 ? 'email' : 'emails') . '.')
+                        ->success()
+                        ->send();
+
+                    $this->redirect(static::getResource()::getUrl('edit', ['record' => $event]));
+                },
+                submitLabel: 'Cancel Event',
+            )
+                ->label('Cancel Event')
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->visible(fn () => $this->getRecord()->status !== 'cancelled'),
+
             Actions\DeleteAction::make(),
         ];
+    }
+
+    private function cancellationPreviewHtml(): string
+    {
+        $event        = $this->getRecord();
+        $registration = $event->registrations()
+            ->where('status', 'registered')
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->with('contact')
+            ->first();
+
+        if (! $registration) {
+            return '<p style="font-family:sans-serif;padding:1em;">No registered attendees with email addresses found.</p>';
+        }
+
+        $template = EmailTemplate::forHandle('event_cancellation');
+        $tokens   = [
+            'first_name'  => $registration->contact?->first_name ?? $registration->name ?? '',
+            'last_name'   => $registration->contact?->last_name ?? '',
+            'event_title' => $event->title ?? '',
+            'site_name'   => SiteSetting::get('site_name', ''),
+        ];
+
+        return $template->resolveWrapper($template->render($tokens));
     }
 }

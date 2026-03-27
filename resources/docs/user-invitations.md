@@ -17,7 +17,7 @@ Instead of setting a password for a new admin user yourself, you can send them a
 
 1. Go to **Settings → Users**.
 2. Find the user you want to invite and click **Invite** in the row actions, or open the user record and click **Send Invitation** in the page header.
-3. Confirm or adjust the user's role in the modal and click **Send Invitation**.
+3. A three-step preview wizard opens. Step 1 lets you confirm or adjust the user's role. Step 2 shows a preview of the invitation email. Step 3 has the final **Send Now** button.
 
 The user will receive an email containing a secure link. The link expires after 48 hours.
 
@@ -29,7 +29,7 @@ The email contains a link to a set-password page. The user enters and confirms a
 
 ## Resending an Invitation
 
-If the original link has not yet been used, you can resend it from the user's edit page. Click **Resend Invitation** in the page header. This generates a fresh link and invalidates the previous one.
+If the original link has not yet been used, you can resend it from the user's edit page. Click **Resend Invitation** in the page header. A preview wizard opens showing the invitation email before you confirm. This generates a fresh link and invalidates the previous one.
 
 ## Revoking an Invitation
 
