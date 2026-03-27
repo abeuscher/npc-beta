@@ -15,7 +15,7 @@ class DashboardDebugGeneratorWidget extends Widget
 {
     protected static string $view = 'filament.widgets.dashboard-debug-generator-widget';
 
-    protected static ?int $sort = 99;
+    protected static ?int $sort = 9;
 
     protected int | string | array $columnSpan = 'full';
 

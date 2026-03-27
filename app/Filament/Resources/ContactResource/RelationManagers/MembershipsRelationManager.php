@@ -38,10 +38,6 @@ class MembershipsRelationManager extends RelationManager
 
             Forms\Components\DatePicker::make('starts_on')->label('Member since'),
             Forms\Components\DatePicker::make('expires_on')->label('Expires on'),
-
-            Forms\Components\TextInput::make('amount_paid')
-                ->numeric()
-                ->prefix('$'),
         ]);
     }
 
@@ -70,10 +66,6 @@ class MembershipsRelationManager extends RelationManager
                     ->label('Expires on')
                     ->date()
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('amount_paid')
-                    ->label('Amount paid')
-                    ->money('USD'),
             ])
             ->defaultSort('starts_on', 'desc')
             ->headerActions([])

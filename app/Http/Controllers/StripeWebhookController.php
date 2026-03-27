@@ -81,6 +81,7 @@ class StripeWebhookController extends Controller
         Transaction::create([
             'subject_type' => $subjectType,
             'subject_id'   => $subjectId,
+            'contact_id'   => null,
             'type'         => 'payment',
             'amount'       => $amountTotal / 100,
             'direction'    => 'in',
@@ -123,6 +124,7 @@ class StripeWebhookController extends Controller
         Transaction::create([
             'subject_type' => Donation::class,
             'subject_id'   => $donation->id,
+            'contact_id'   => $contact?->id,
             'type'         => 'payment',
             'amount'       => $amountTotal / 100,
             'direction'    => 'in',
@@ -157,6 +159,7 @@ class StripeWebhookController extends Controller
         Transaction::create([
             'subject_type' => Donation::class,
             'subject_id'   => $donation->id,
+            'contact_id'   => $donation->contact_id,
             'type'         => 'payment',
             'amount'       => ($invoice->amount_paid ?? 0) / 100,
             'direction'    => 'in',
@@ -195,6 +198,7 @@ class StripeWebhookController extends Controller
             Transaction::create([
                 'subject_type' => Donation::class,
                 'subject_id'   => $donation->id,
+                'contact_id'   => $donation->contact_id,
                 'type'         => 'payment',
                 'amount'       => ($invoice->amount_due ?? 0) / 100,
                 'direction'    => 'in',
@@ -280,6 +284,7 @@ class StripeWebhookController extends Controller
         Transaction::create([
             'subject_type' => $subjectType,
             'subject_id'   => $subjectId,
+            'contact_id'   => null,
             'type'         => 'payment',
             'amount'       => $amount / 100,
             'direction'    => 'in',
@@ -308,6 +313,7 @@ class StripeWebhookController extends Controller
         Transaction::create([
             'subject_type' => $subjectType,
             'subject_id'   => $subjectId,
+            'contact_id'   => $original?->contact_id,
             'type'         => 'refund',
             'amount'       => $refund->amount / 100,
             'direction'    => 'out',

@@ -143,7 +143,6 @@ class ProductResource extends Resource
     {
         return [
             RelationManagers\ProductPricesRelationManager::class,
-            RelationManagers\PurchasesRelationManager::class,
             RelationManagers\WaitlistEntriesRelationManager::class,
         ];
     }

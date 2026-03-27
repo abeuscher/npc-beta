@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
+use App\Filament\Resources\TransactionResource;
 use App\Mail\PortalEmailVerification;
 use App\Models\Contact;
 use App\Models\Membership;
@@ -76,6 +77,12 @@ class EditContact extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('view_transactions')
+                ->label('View transactions →')
+                ->color('gray')
+                ->url(fn () => TransactionResource::getUrl('index')
+                    . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
+
             Actions\Action::make('notes')
                 ->label('Timeline')
                 ->icon('heroicon-o-document-text')

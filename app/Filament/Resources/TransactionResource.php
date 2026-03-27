@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TransactionResource\Pages;
+use App\Models\Contact;
 use App\Models\Transaction;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -75,6 +76,14 @@ class TransactionResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('contact.display_name')
+                    ->label('Contact')
+                    ->placeholder('—')
+                    ->searchable(query: fn ($query, $search) => $query->whereHas('contact', fn ($q) => $q
+                        ->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                    )),
+
                 Tables\Columns\TextColumn::make('source')
                     ->label('Source')
                     ->badge()
@@ -96,15 +105,40 @@ class TransactionResource extends Resource
                         default                => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('stripe_id')
-                    ->label('Stripe ID')
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
             ])
             ->defaultSort('occurred_at', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('contact_id')
+                    ->label('Contact')
+                    ->options(fn () => Contact::orderByRaw("COALESCE(last_name, first_name)")
+                        ->get()
+                        ->mapWithKeys(fn ($c) => [$c->id => $c->display_name]))
+                    ->searchable(),
+
+                Tables\Filters\SelectFilter::make('subject_type')
+                    ->label('Subject type')
+                    ->options([
+                        'App\Models\Donation' => 'Donation',
+                    ])
+                    ->placeholder('All types'),
+            ])
             ->actions([
+                Tables\Actions\Action::make('stripe')
+                    ->label('Stripe')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn (Transaction $record): ?string => $record->stripe_id
+                        ? (str_starts_with($record->stripe_id, 'in_')
+                            ? 'https://dashboard.stripe.com/invoices/' . $record->stripe_id
+                            : (str_starts_with($record->stripe_id, 're_')
+                                ? 'https://dashboard.stripe.com/refunds/' . $record->stripe_id
+                                : 'https://dashboard.stripe.com/payments/' . $record->stripe_id))
+                        : null
+                    )
+                    ->openUrlInNewTab()
+                    ->hidden(fn (Transaction $record): bool => ! $record->stripe_id),
+
                 Tables\Actions\EditAction::make()
                     ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
                 Tables\Actions\DeleteAction::make()

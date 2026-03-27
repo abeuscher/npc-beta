@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Transaction extends Model
@@ -14,6 +15,7 @@ class Transaction extends Model
     protected $fillable = [
         'subject_type',
         'subject_id',
+        'contact_id',
         'type',
         'amount',
         'direction',
@@ -31,5 +33,10 @@ class Transaction extends Model
     public function subject(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
     }
 }
