@@ -128,6 +128,20 @@ Fixing a backlog of bugs and small improvements identified during testing. Items
 
 *The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
 
+### Session 084 — Widget Render Context
+
+`PageController::renderPage()` calls `Blade::render($template, $data)` to render each server-side widget. `Blade::render()` compiles the string as an anonymous component internally — `$data` is bound to the component property bag, never extracted as PHP local variables. Any `@include` inside a widget template calls `get_defined_vars()`, finds nothing, and receives no variables. The blog pager is the first casualty: `$currentPage` is passed by the controller but never arrives in the template.
+
+The fix is a `PageContext` service class built once per page render, shared via `View::share('pageContext', $context)`, and available as `$pageContext` in every widget template regardless of how the render was initiated. `PageContext` exposes typed, lazy, memoized streams: `currentPage`, `currentUser`, `posts()`, `upcomingEvents()`, `collection($handle)`, `event($slug)`, `product($slug)`. The controller render loop shrinks to building the context, sharing it, and passing only `$config` per widget. This session builds `PageContext`, refactors the controller, and updates three pilot widgets as a reference implementation: `text_block` (regression check), `blog_pager` (uses `currentPage`), and `blog_listing` (uses `posts()`). All remaining widgets are migrated in Session 085.
+
+This session precedes all other CMS/page builder work — the column widget, header/footer areas, additional widget types, and live preview all depend on widgets receiving page-level context reliably.
+
+### Session 085 — Widget Context Migration
+
+Migrate all remaining server-side widget templates to use `$pageContext` in place of any variables previously threaded through `Blade::render()`. Reference the three pilot widgets from Session 084 as the implementation pattern. Confirm all widgets render correctly after migration and remove any now-redundant variable resolution from the controller.
+
+---
+
 ### Column Widget & Widget Picker UX
 
 Two related improvements delivered together: (1) a column widget that allows side-by-side widget layouts using named slots with declared widths — child widgets assigned to slots, `display` restricted to grid/flex/block; (2) widget picker UX improvements to reduce friction when adding widgets — categories, collapsible groups, or overall size reduction. Vite/SCSS/PostCSS build pipeline is already in place — plug into it directly.
