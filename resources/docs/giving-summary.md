@@ -1,16 +1,16 @@
 ---
-title: Donors
+title: Giving Summary
 description: View and filter all donors, generate year-end tax receipts, and send acknowledgement emails.
 version: "0.25"
-updated: 2026-03-26
+updated: 2026-03-28
 tags: [finance, donations, receipts, tax, donors]
 routes:
-  - filament.admin.pages.donors
+  - filament.admin.pages.donors-page
 ---
 
-# Donors
+# Giving Summary
 
-The Donors page lists all contacts who have made active donations, with filtering by tax year and minimum total. From this page you can also send year-end tax receipt emails.
+The Giving Summary page lists all contacts who have made active donations, with filtering by tax year and minimum total. From this page you can also send year-end tax receipt emails.
 
 ## Filters
 
@@ -42,4 +42,3 @@ Each receipt includes a fund-by-fund breakdown of all active donations in the ta
 ## Activity log
 
 Every time a tax receipt email is sent — whether via **Send System Emails to Pending Recipients** or **Force Re-send System Emails to All** — a `receipt_sent` event is written to the activity log, recording the tax year, total amount, and whether it was a re-send. The activity log is visible on the individual contact's record.
-

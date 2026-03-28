@@ -2,14 +2,15 @@
 -- PostgreSQL database dump
 --
 
-\restrict vRbMFFQEbzwTtoCecGOTmYbPapSuOHY1gd2mbhJxmhrE8B5oFJq4x9SvcS23ful
+\restrict KGbdWq0P6uKyWaqai40nHb6AKAZMU7xugOOBCw1iHwd6kP7PuW5nys1kAFrBj3l
 
 -- Dumped from database version 16.13
--- Dumped by pg_dump version 16.13
+-- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -21,6 +22,58 @@ SET row_security = off;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: activity_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.activity_logs (
+    id bigint NOT NULL,
+    subject_type character varying(255) NOT NULL,
+    subject_id character varying(255) NOT NULL,
+    actor_type character varying(255) NOT NULL,
+    actor_id bigint,
+    event character varying(255) NOT NULL,
+    description character varying(255),
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    meta json
+);
+
+
+--
+-- Name: activity_logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.activity_logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: activity_logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.activity_logs_id_seq OWNED BY public.activity_logs.id;
+
+
+--
+-- Name: allocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.allocations (
+    id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    product_price_id uuid NOT NULL,
+    contact_id uuid,
+    status character varying(255) DEFAULT 'active'::character varying NOT NULL,
+    occurred_at timestamp(0) without time zone NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
 
 --
 -- Name: cache; Type: TABLE; Schema: public; Owner: -
@@ -180,23 +233,58 @@ ALTER SEQUENCE public.custom_field_defs_id_seq OWNED BY public.custom_field_defs
 
 
 --
+-- Name: donation_receipts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.donation_receipts (
+    id bigint NOT NULL,
+    contact_id uuid NOT NULL,
+    tax_year integer NOT NULL,
+    sent_at timestamp(0) without time zone NOT NULL,
+    total_amount numeric(10,2) NOT NULL,
+    breakdown json NOT NULL,
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: donation_receipts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.donation_receipts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: donation_receipts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.donation_receipts_id_seq OWNED BY public.donation_receipts.id;
+
+
+--
 -- Name: donations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.donations (
     id uuid NOT NULL,
     contact_id uuid,
-    campaign_id uuid,
-    fund_id uuid,
     amount numeric(10,2) NOT NULL,
-    donated_on date NOT NULL,
-    method character varying(255) DEFAULT 'other'::character varying NOT NULL,
-    reference character varying(255),
-    is_anonymous boolean DEFAULT false NOT NULL,
-    notes text,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    type character varying(255) NOT NULL,
+    currency character varying(3) DEFAULT 'usd'::character varying NOT NULL,
+    frequency character varying(255),
+    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
+    stripe_subscription_id character varying(255),
+    stripe_customer_id character varying(255),
+    started_at timestamp(0) without time zone,
+    ended_at timestamp(0) without time zone,
+    fund_id uuid
 );
 
 
@@ -265,7 +353,7 @@ CREATE TABLE public.event_registrations (
     updated_at timestamp(0) without time zone,
     event_id uuid NOT NULL,
     mailing_list_opt_in boolean DEFAULT false NOT NULL,
-    CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY ((ARRAY['registered'::character varying, 'waitlisted'::character varying, 'cancelled'::character varying, 'attended'::character varying])::text[])))
+    CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY[('registered'::character varying)::text, ('waitlisted'::character varying)::text, ('cancelled'::character varying)::text, ('attended'::character varying)::text])))
 );
 
 
@@ -308,8 +396,8 @@ CREATE TABLE public.events (
     starts_at timestamp(0) without time zone NOT NULL,
     ends_at timestamp(0) without time zone,
     registrants_deleted_at timestamp(0) without time zone,
-    CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY ((ARRAY['manual'::character varying, 'rule'::character varying])::text[]))),
-    CONSTRAINT events_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'published'::character varying, 'cancelled'::character varying])::text[])))
+    CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
+    CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
 );
 
 
@@ -429,7 +517,8 @@ CREATE TABLE public.funds (
     description text,
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    restriction_type character varying(255) DEFAULT 'unrestricted'::character varying NOT NULL
 );
 
 
@@ -499,25 +588,6 @@ CREATE SEQUENCE public.help_articles_id_seq
 --
 
 ALTER SEQUENCE public.help_articles_id_seq OWNED BY public.help_articles.id;
-
-
---
--- Name: households; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.households (
-    id uuid NOT NULL,
-    name character varying(255) NOT NULL,
-    address_line_1 character varying(255),
-    address_line_2 character varying(255),
-    city character varying(255),
-    state character varying(255),
-    postal_code character varying(255),
-    country character varying(255) DEFAULT 'US'::character varying NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
-);
 
 
 --
@@ -629,6 +699,21 @@ CREATE SEQUENCE public.import_staged_updates_id_seq
 --
 
 ALTER SEQUENCE public.import_staged_updates_id_seq OWNED BY public.import_staged_updates.id;
+
+
+--
+-- Name: invitation_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invitation_tokens (
+    id uuid NOT NULL,
+    user_id bigint NOT NULL,
+    token character varying(255) NOT NULL,
+    expires_at timestamp(0) without time zone NOT NULL,
+    accepted_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
 
 
 --
@@ -761,13 +846,32 @@ ALTER SEQUENCE public.media_id_seq OWNED BY public.media.id;
 
 
 --
+-- Name: membership_tiers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.membership_tiers (
+    id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    slug character varying(255) NOT NULL,
+    billing_interval character varying(255) NOT NULL,
+    default_price numeric(8,2),
+    renewal_notice_days integer DEFAULT 30 NOT NULL,
+    description text,
+    is_active boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT membership_tiers_billing_interval_check CHECK (((billing_interval)::text = ANY ((ARRAY['monthly'::character varying, 'annual'::character varying, 'one_time'::character varying, 'lifetime'::character varying])::text[])))
+);
+
+
+--
 -- Name: memberships; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.memberships (
     id uuid NOT NULL,
     contact_id uuid NOT NULL,
-    tier character varying(255) NOT NULL,
     status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
     starts_on date,
     expires_on date,
@@ -775,7 +879,8 @@ CREATE TABLE public.memberships (
     notes text,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    deleted_at timestamp(0) without time zone,
+    tier_id uuid
 );
 
 
@@ -939,7 +1044,7 @@ CREATE TABLE public.pages (
     deleted_at timestamp(0) without time zone,
     type character varying(255) DEFAULT 'default'::character varying NOT NULL,
     custom_fields jsonb,
-    CONSTRAINT pages_type_check CHECK (((type)::text = ANY ((ARRAY['default'::character varying, 'post'::character varying, 'event'::character varying, 'member'::character varying, 'system'::character varying])::text[])))
+    CONSTRAINT pages_type_check CHECK (((type)::text = ANY (ARRAY[('default'::character varying)::text, ('post'::character varying)::text, ('event'::character varying)::text, ('member'::character varying)::text, ('system'::character varying)::text])))
 );
 
 
@@ -1051,6 +1156,58 @@ CREATE TABLE public.posts (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     deleted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: product_prices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.product_prices (
+    id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    label character varying(255) NOT NULL,
+    amount numeric(10,2) NOT NULL,
+    stripe_price_id character varying(255),
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.products (
+    id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    slug character varying(255) NOT NULL,
+    description text,
+    capacity integer NOT NULL,
+    stripe_product_id character varying(255),
+    status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: purchases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.purchases (
+    id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    product_price_id uuid NOT NULL,
+    contact_id uuid,
+    stripe_session_id character varying(255),
+    amount_paid numeric(10,2) NOT NULL,
+    status character varying(255) DEFAULT 'active'::character varying NOT NULL,
+    occurred_at timestamp(0) without time zone NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
 );
 
 
@@ -1176,7 +1333,6 @@ CREATE TABLE public.tags (
 
 CREATE TABLE public.transactions (
     id uuid NOT NULL,
-    donation_id uuid,
     type character varying(255) DEFAULT 'donation'::character varying NOT NULL,
     amount numeric(10,2) NOT NULL,
     direction character varying(255) DEFAULT 'in'::character varying NOT NULL,
@@ -1185,7 +1341,10 @@ CREATE TABLE public.transactions (
     quickbooks_id character varying(255),
     occurred_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    subject_type character varying(255),
+    subject_id character varying(255),
+    contact_id uuid
 );
 
 
@@ -1226,6 +1385,20 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
+-- Name: waitlist_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.waitlist_entries (
+    id uuid NOT NULL,
+    product_id uuid NOT NULL,
+    contact_id uuid,
+    status character varying(255) DEFAULT 'waiting'::character varying NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
 -- Name: widget_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1243,8 +1416,15 @@ CREATE TABLE public.widget_types (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     config_schema jsonb DEFAULT '[]'::jsonb NOT NULL,
-    CONSTRAINT widget_types_render_mode_check CHECK (((render_mode)::text = ANY ((ARRAY['server'::character varying, 'client'::character varying])::text[])))
+    CONSTRAINT widget_types_render_mode_check CHECK (((render_mode)::text = ANY (ARRAY[('server'::character varying)::text, ('client'::character varying)::text])))
 );
+
+
+--
+-- Name: activity_logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.activity_logs ALTER COLUMN id SET DEFAULT nextval('public.activity_logs_id_seq'::regclass);
 
 
 --
@@ -1252,6 +1432,13 @@ CREATE TABLE public.widget_types (
 --
 
 ALTER TABLE ONLY public.custom_field_defs ALTER COLUMN id SET DEFAULT nextval('public.custom_field_defs_id_seq'::regclass);
+
+
+--
+-- Name: donation_receipts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donation_receipts ALTER COLUMN id SET DEFAULT nextval('public.donation_receipts_id_seq'::regclass);
 
 
 --
@@ -1360,6 +1547,22 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
+-- Name: activity_logs activity_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.activity_logs
+    ADD CONSTRAINT activity_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: allocations allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.allocations
+    ADD CONSTRAINT allocations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cache_locks cache_locks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1445,6 +1648,14 @@ ALTER TABLE ONLY public.custom_field_defs
 
 ALTER TABLE ONLY public.custom_field_defs
     ADD CONSTRAINT custom_field_defs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: donation_receipts donation_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donation_receipts
+    ADD CONSTRAINT donation_receipts_pkey PRIMARY KEY (id);
 
 
 --
@@ -1584,14 +1795,6 @@ ALTER TABLE ONLY public.help_articles
 
 
 --
--- Name: households households_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.households
-    ADD CONSTRAINT households_pkey PRIMARY KEY (id);
-
-
---
 -- Name: import_id_maps import_id_maps_import_source_id_model_type_source_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1640,6 +1843,22 @@ ALTER TABLE ONLY public.import_staged_updates
 
 
 --
+-- Name: invitation_tokens invitation_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitation_tokens
+    ADD CONSTRAINT invitation_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invitation_tokens invitation_tokens_token_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitation_tokens
+    ADD CONSTRAINT invitation_tokens_token_unique UNIQUE (token);
+
+
+--
 -- Name: job_batches job_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1685,6 +1904,22 @@ ALTER TABLE ONLY public.media
 
 ALTER TABLE ONLY public.media
     ADD CONSTRAINT media_uuid_unique UNIQUE (uuid);
+
+
+--
+-- Name: membership_tiers membership_tiers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_tiers
+    ADD CONSTRAINT membership_tiers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: membership_tiers membership_tiers_slug_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_tiers
+    ADD CONSTRAINT membership_tiers_slug_unique UNIQUE (slug);
 
 
 --
@@ -1848,6 +2083,38 @@ ALTER TABLE ONLY public.posts
 
 
 --
+-- Name: product_prices product_prices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_prices
+    ADD CONSTRAINT product_prices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: products products_slug_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_slug_unique UNIQUE (slug);
+
+
+--
+-- Name: purchases purchases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: role_has_permissions role_has_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1952,6 +2219,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: waitlist_entries waitlist_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.waitlist_entries
+    ADD CONSTRAINT waitlist_entries_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: widget_types widget_types_handle_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1965,6 +2240,20 @@ ALTER TABLE ONLY public.widget_types
 
 ALTER TABLE ONLY public.widget_types
     ADD CONSTRAINT widget_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: activity_logs_actor_type_actor_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX activity_logs_actor_type_actor_id_index ON public.activity_logs USING btree (actor_type, actor_id);
+
+
+--
+-- Name: activity_logs_subject_type_subject_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX activity_logs_subject_type_subject_id_index ON public.activity_logs USING btree (subject_type, subject_id);
 
 
 --
@@ -2010,10 +2299,10 @@ CREATE INDEX contacts_organization_id_index ON public.contacts USING btree (orga
 
 
 --
--- Name: donations_campaign_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: donation_receipts_contact_id_tax_year_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX donations_campaign_id_index ON public.donations USING btree (campaign_id);
+CREATE INDEX donation_receipts_contact_id_tax_year_index ON public.donation_receipts USING btree (contact_id, tax_year);
 
 
 --
@@ -2098,6 +2387,13 @@ CREATE INDEX import_staged_updates_contact_id_index ON public.import_staged_upda
 --
 
 CREATE INDEX import_staged_updates_import_session_id_index ON public.import_staged_updates USING btree (import_session_id);
+
+
+--
+-- Name: invitation_tokens_user_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX invitation_tokens_user_id_index ON public.invitation_tokens USING btree (user_id);
 
 
 --
@@ -2199,6 +2495,34 @@ CREATE INDEX posts_author_id_index ON public.posts USING btree (author_id);
 
 
 --
+-- Name: product_prices_product_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX product_prices_product_id_index ON public.product_prices USING btree (product_id);
+
+
+--
+-- Name: purchases_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_contact_id_index ON public.purchases USING btree (contact_id);
+
+
+--
+-- Name: purchases_product_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_product_id_index ON public.purchases USING btree (product_id);
+
+
+--
+-- Name: purchases_product_price_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX purchases_product_price_id_index ON public.purchases USING btree (product_price_id);
+
+
+--
 -- Name: sessions_last_activity_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2220,10 +2544,55 @@ CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING
 
 
 --
--- Name: transactions_donation_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: transactions_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX transactions_donation_id_index ON public.transactions USING btree (donation_id);
+CREATE INDEX transactions_contact_id_index ON public.transactions USING btree (contact_id);
+
+
+--
+-- Name: transactions_subject_type_subject_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX transactions_subject_type_subject_id_index ON public.transactions USING btree (subject_type, subject_id);
+
+
+--
+-- Name: waitlist_entries_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX waitlist_entries_contact_id_index ON public.waitlist_entries USING btree (contact_id);
+
+
+--
+-- Name: waitlist_entries_product_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX waitlist_entries_product_id_index ON public.waitlist_entries USING btree (product_id);
+
+
+--
+-- Name: allocations allocations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.allocations
+    ADD CONSTRAINT allocations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: allocations allocations_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.allocations
+    ADD CONSTRAINT allocations_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
+
+
+--
+-- Name: allocations allocations_product_price_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.allocations
+    ADD CONSTRAINT allocations_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id);
 
 
 --
@@ -2263,7 +2632,7 @@ ALTER TABLE ONLY public.contact_duplicate_dismissals
 --
 
 ALTER TABLE ONLY public.contacts
-    ADD CONSTRAINT contacts_household_id_foreign FOREIGN KEY (household_id) REFERENCES public.households(id) ON DELETE SET NULL;
+    ADD CONSTRAINT contacts_household_id_foreign FOREIGN KEY (household_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
 
 
 --
@@ -2283,11 +2652,11 @@ ALTER TABLE ONLY public.contacts
 
 
 --
--- Name: donations donations_campaign_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: donation_receipts donation_receipts_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_campaign_id_foreign FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id) ON DELETE SET NULL;
+ALTER TABLE ONLY public.donation_receipts
+    ADD CONSTRAINT donation_receipts_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
 
 
 --
@@ -2295,7 +2664,7 @@ ALTER TABLE ONLY public.donations
 --
 
 ALTER TABLE ONLY public.donations
-    ADD CONSTRAINT donations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+    ADD CONSTRAINT donations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
 
 
 --
@@ -2411,6 +2780,14 @@ ALTER TABLE ONLY public.import_staged_updates
 
 
 --
+-- Name: invitation_tokens invitation_tokens_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitation_tokens
+    ADD CONSTRAINT invitation_tokens_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: mailing_list_filters mailing_list_filters_mailing_list_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2424,6 +2801,14 @@ ALTER TABLE ONLY public.mailing_list_filters
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT memberships_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: memberships memberships_tier_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_tier_id_foreign FOREIGN KEY (tier_id) REFERENCES public.membership_tiers(id) ON DELETE SET NULL;
 
 
 --
@@ -2507,6 +2892,38 @@ ALTER TABLE ONLY public.posts
 
 
 --
+-- Name: product_prices product_prices_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_prices
+    ADD CONSTRAINT product_prices_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: purchases purchases_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: purchases purchases_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
+
+
+--
+-- Name: purchases purchases_product_price_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id);
+
+
+--
 -- Name: role_has_permissions role_has_permissions_permission_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2531,16 +2948,95 @@ ALTER TABLE ONLY public.taggables
 
 
 --
--- Name: transactions transactions_donation_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: transactions transactions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.transactions
-    ADD CONSTRAINT transactions_donation_id_foreign FOREIGN KEY (donation_id) REFERENCES public.donations(id) ON DELETE SET NULL;
+    ADD CONSTRAINT transactions_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: waitlist_entries waitlist_entries_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.waitlist_entries
+    ADD CONSTRAINT waitlist_entries_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
+
+
+--
+-- Name: waitlist_entries waitlist_entries_product_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.waitlist_entries
+    ADD CONSTRAINT waitlist_entries_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict vRbMFFQEbzwTtoCecGOTmYbPapSuOHY1gd2mbhJxmhrE8B5oFJq4x9SvcS23ful
+\unrestrict KGbdWq0P6uKyWaqai40nHb6AKAZMU7xugOOBCw1iHwd6kP7PuW5nys1kAFrBj3l
+
+--
+-- PostgreSQL database dump
+--
+
+\restrict aFkcezGQgfEiD7y94RXtGwmsQ6vKOSMADHFj02Ws0mPxyK9ipiNmQMPQCOMRE2u
+
+-- Dumped from database version 16.13
+-- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Data for Name: migrations; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.migrations (id, migration, batch) FROM stdin;
+1	2026_03_23_000001_create_membership_tiers_table	1
+2	2026_03_23_000002_update_memberships_add_tier_id	1
+3	2026_03_23_000003_create_invitation_tokens_table	1
+4	2026_03_24_000001_replace_households_with_self_referential	1
+5	2026_03_24_000002_create_activity_logs_table	1
+6	2026_03_24_100001_split_stripe_settings_keys	1
+7	2026_03_24_100002_replace_transaction_donation_id_with_polymorphic	1
+8	2026_03_24_200001_create_products_table	1
+9	2026_03_24_200002_create_product_prices_table	1
+10	2026_03_24_200003_create_allocations_table	1
+11	2026_03_24_200004_create_waitlist_entries_table	1
+12	2026_03_25_000001_create_products_table	2
+13	2026_03_25_000002_create_product_prices_table	2
+14	2026_03_25_000004_create_waitlist_entries_table	2
+15	2026_03_25_000003_create_purchases_table	3
+16	2026_03_25_000005_add_meta_to_activity_logs	4
+17	2026_03_25_000001_replace_donations_schema	5
+18	2026_03_26_200001_add_fund_id_to_donations_and_restriction_type_to_funds	6
+19	2026_03_26_200002_create_donation_receipts_table	7
+20	2026_03_26_300001_add_contact_id_to_transactions	8
+21	2026_03_28_082001_add_missing_fk_indexes	9
+\.
+
+
+--
+-- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.migrations_id_seq', 21, true);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict aFkcezGQgfEiD7y94RXtGwmsQ6vKOSMADHFj02Ws0mPxyK9ipiNmQMPQCOMRE2u
 

@@ -99,6 +99,11 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Permission::firstOrCreate([
+            'name'       => 'manage_donations',
+            'guard_name' => 'web',
+        ]);
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [
@@ -187,7 +192,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('campaign'),
             $fullPermissions('transaction'),
             $viewPermissions('contact'),
-            ['view_any_member', 'manage_financial_settings'],
+            ['view_any_member', 'manage_financial_settings', 'manage_donations'],
         ));
 
         // ── blogger ──────────────────────────────────────────────────────────

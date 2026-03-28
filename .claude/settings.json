@@ -12,7 +12,15 @@
       "Bash(grep -r APP_ENV /e/Clients/nonprofitcrm --include=*.yml --include=*.yaml --include=*.sh)",
       "Bash(find /e/Clients/nonprofitcrm/app/Filament/Resources -name *Form* -type f)",
       "Bash(find /e/Clients/nonprofitcrm/database/migrations -name *form* -type f)",
-      "Bash(find e:/Clients/nonprofitcrm/resources/views -name *page-builder* -o -name *widget*block* -o -name *block*)"
+      "Bash(find e:/Clients/nonprofitcrm/resources/views -name *page-builder* -o -name *widget*block* -o -name *block*)",
+      "Bash(find E:ClientsnonprofitcrmappFilament -name *Layout* -o -name *Navigation*)",
+      "Bash(find E:Clientsnonprofitcrmapp -type f -name *.php -path *config*)",
+      "Bash(grep -r \"APP_ENV\\\\|app_env\\\\|isProduction\\\\|non.production\" app/Filament --include=*.php -l)",
+      "Bash(find e:/Clients/nonprofitcrm/app -name *Summary* -o -name *summary*)",
+      "Bash(grep -r \"Giving Summary\\\\|GivingSummary\" e:/Clients/nonprofitcrm/app --include=*.php -n)"
+    ],
+    "additionalDirectories": [
+      "e:\\Clients\\nonprofitcrm\\database\\migrations"
     ]
   }
 }

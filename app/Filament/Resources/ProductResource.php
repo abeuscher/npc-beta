@@ -29,6 +29,11 @@ class ProductResource extends Resource
         return auth()->user()?->can('view_any_product') ?? false;
     }
 
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return $record->purchases()->doesntExist();
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

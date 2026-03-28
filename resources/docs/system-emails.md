@@ -1,8 +1,8 @@
 ---
 title: System Emails
-description: How to customise the subject, body, branding, and footer of transactional emails sent by the system.
-version: "0.35"
-updated: 2026-03-17
+description: How to customise the subject, body, branding, footer, and preview of transactional emails sent by the system.
+version: "0.80"
+updated: 2026-03-28
 tags: [email, settings, compliance]
 routes:
   - filament.admin.resources.email-templates.index
@@ -11,13 +11,16 @@ routes:
 
 # System Emails
 
-System Emails lets you customise every transactional email the application sends. Three emails are available:
+System Emails lets you customise every transactional email the application sends. Six emails are available:
 
 | Email | When it sends |
 |-------|--------------|
 | **Registration Confirmation** | A contact submits an event registration form |
 | **Event Cancellation** | An event is marked cancelled in the admin |
 | **Event Reminder** | Triggered manually or by a scheduled command |
+| **Portal Password Reset** | A portal member requests a password reset |
+| **Admin Invitation** | A new admin user is invited via the Users page |
+| **Donation Receipt** | Year-end tax receipts are sent from the Donors page |
 
 Each email ships with a default subject and body so it works immediately after installation. You can edit any of them at any time.
 
@@ -35,6 +38,18 @@ Click on an email in the list to open the editor. Changes take effect immediatel
 
 ---
 
+## Previewing and test-sending
+
+Each email edit page includes a **Preview & Test** button in the page header. Clicking it opens a three-step wizard:
+
+1. **Preview** — renders the email as it will appear in an inbox, using the current template settings.
+2. **Test send** — enter any email address and click **Send Test** to deliver a test copy immediately. The test uses placeholder values where live data would normally appear.
+3. **Confirm** — review and close the wizard.
+
+Use the preview wizard to verify layout and branding before making an email live.
+
+---
+
 ## Tokens
 
 Tokens are placeholders that are replaced with real values when the email is sent. Write them in your subject, body, or "Why you received this" line.
@@ -43,10 +58,17 @@ Tokens are placeholders that are replaced with real values when the email is sen
 |-------|-------------|-------------|
 | `{{first_name}}` | Recipient's first name | All emails |
 | `{{last_name}}` | Recipient's last name | All emails |
-| `{{event_title}}` | Name of the event | All emails |
+| `{{event_title}}` | Name of the event | Registration Confirmation, Event Cancellation, Event Reminder |
 | `{{site_name}}` | Your organisation's name (from General Settings) | All emails |
 | `{{event_date}}` | Date of the specific event occurrence | Event Reminder |
 | `{{event_location}}` | Event venue or location | Event Reminder, Registration Confirmation |
+| `{{reset_url}}` | Password reset link | Portal Password Reset |
+| `{{invitation_url}}` | Set-password link for new admin | Admin Invitation |
+| `{{org_name}}` | Organisation name | Admin Invitation, Donation Receipt |
+| `{{contact_name}}` | Donor's full name | Donation Receipt |
+| `{{tax_year}}` | Calendar year covered by the receipt | Donation Receipt |
+| `{{donations}}` | Fund-by-fund breakdown table | Donation Receipt |
+| `{{total}}` | Total donated amount | Donation Receipt |
 
 Available tokens for each email are listed directly below the body editor on the edit page.
 

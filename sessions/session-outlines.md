@@ -2,6 +2,8 @@
 
 This is the single working reference for all sessions. Completed sessions are listed by title below. Future sessions are organised by group — reorder and rewrite them freely as the project evolves.
 
+A **Beta One** milestone is planned as the first shippable, demonstrable version of the product: a live hosted site, anonymous read-only demo access, and a live install demo performable for prospects in real time. All sessions before the milestone marker are planned for Beta 1 delivery. Sessions after the marker are deferred until post-Beta 1.
+
 ---
 
 ## Completed Sessions
@@ -89,6 +91,14 @@ This is the single working reference for all sessions. Completed sessions are li
 
 ---
 
+## Codebase Maintenance
+
+### Codebase Audit & Migration Squash
+
+Periodic codebase audit and migration squash, following the patterns established in sessions 042 and 062. Session 082 — covers everything added or modified in sessions 063–081. Ten workstreams: field audit, schema doc accuracy, permission gates, soft delete consistency, fillable/casts consistency, FK index audit, orphaned docs and help coverage, factory coverage, migration squash, and route list audit.
+
+---
+
 ## Member Portal & Self-Service
 
 *Sessions in this group are strictly ordered — each depends on the previous.*
@@ -161,13 +171,9 @@ New factories (`ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`) and i
 
 Multi-step confirmation modal for admin-initiated system email sends. Step 1: confirm recipient count and email type. Step 2: preview merged message (first recipient for bulk sends) in an iframe. Step 3: editable test-send address + final submit. Reusable factory (`EmailPreviewWizardAction`). Retrofitted to donor receipts, user invitations, and event cancellation. Event cancellation moved from auto-firing observer to explicit wizard action. `testHtmlResolver` parameter keeps real PII/financial data out of test sends.
 
-### Codebase Audit & Migration Squash
+### ~~Edit Transaction View~~ *(resolved session 081)*
 
-Periodic codebase audit and migration squash, following the patterns established in sessions 042 (Codebase Audit — Fields, Schema, Permissions & Help Coverage) and 062 (Codebase Audit & Migration Squash). Details to be filled in at end of session 081.
-
-### Edit Transaction View — Review & Simplify
-
-The transaction edit view reportedly shows fields that may not exist and the appropriateness of an edit view is unclear (raised session 081). Walk through the current view, decide whether to keep, remove, or simplify it, and implement the agreed change. Decisions from the session 081 discussion should be recorded here before building.
+Resource-level `canEdit()` and `canDelete()` gates added, scoped to `!$record->stripe_id`. Stripe-originated transactions are fully immutable at every entry point. Manual-entry type dropdown was already correctly scoped. No further work required.
 
 ### Stripe Payment Method Manager
 
@@ -179,33 +185,9 @@ Two related features: (1) form-level validation that recognises API key format p
 
 ### QuickBooks Sync
 
-One-way push of categorised transactions to QuickBooks. No reconciliation, no pulling from QB.
+One-way push of categorised transactions to QuickBooks. Scope for Beta 1: must work correctly and reliably — doesn't need to be fancy. Core sync path and error surfacing only; advanced mapping and reconciliation views can follow post-Beta.
 
 *Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation. Also decide the UX treatment for the QuickBooks API key on the Financial Settings page — it is currently stored encrypted but uses no gate UX. Decision deferred to this session: does the QuickBooks key warrant the same high-friction rotation flow as Stripe secrets, or a lighter treatment? Review QuickBooks API key permissions and revocation model before deciding.*
-
----
-
-## Volunteer Management
-
-*DOB / age fields on contacts are a prerequisite. Volunteer Portal depends on Member Portal being complete.*
-
-*Age gating (agreed session 052): public volunteer registration form gates sign-up to the minimum age threshold. Under-13 parental consent is out of scope for v1.*
-
-### Volunteer Profile & Hours Tracking
-
-*Skills, availability, background check status/expiry, training/certifications, hours log, total hours on contact record.*
-
-### Volunteer Scheduling
-
-*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to Events for event-day volunteer roles.*
-
-### Volunteer Communication & Recognition
-
-*Shift reminders, milestone triggers (100 hours, anniversary). Integrates with the email system.*
-
-### Volunteer Portal
-
-*Public self-service: signup, view shifts, log hours pending admin approval. Extends Member Portal patterns.*
 
 ---
 
@@ -245,71 +227,57 @@ Audit every deletion path. Define and implement what happens when: a user is del
 
 ---
 
-## CMS & Page Builder
+## CMS & Page Builder — Beta 1 Scope
 
-### SEO & Head Tag Management
+*The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
 
-Meta Title, Meta Description, OG image, Twitter card type, JSON-LD structured data (Article, Event, Organization). Global and per-page head injection fields. Global footer injection. Sanitization strategy. Gate advanced injection by role.
+### Column Widget & Widget Picker UX
 
-### Site Theme & Public Theme Builder
+Two related improvements delivered together: (1) a column widget that allows side-by-side widget layouts using named slots with declared widths — child widgets assigned to slots, `display` restricted to grid/flex/block; (2) widget picker UX improvements to reduce friction when adding widgets — categories, collapsible groups, or overall size reduction. The column widget requires front-end build infrastructure (Vite, SCSS, PostCSS + autoprefixer + cssnano) — agree the build pipeline as part of planning this session.
 
-*Merges "Site Theme Enhancement" and "Public Theme Builder / Custom CSS Tool" — both extend SiteThemePage.*
+### Per-Page SEO & Header Snippets
 
-Extends the existing `SiteThemePage` which already has appearance settings and a live SCSS editor. Adds: colours reorganised into light/dark palette rows, "Mirror" buttons applying HSL-based inversion, live WCAG AA contrast checker with nearest-passing-colour suggestions, preset palettes with swatches. Split-pane SCSS editor with live page preview on the right.
-
-### CMS Style System, Column Widget & Front-End Build — Planning
-
-Plan three interconnected systems before building:
-
-1. **Widget style surface schema** — each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time.
-2. **Column widget** — named slots with declared widths, child widgets assigned to slots, `display` restricted to grid/flex/block.
-3. **Front-end build** — Vite, SCSS, PostCSS + autoprefixer + cssnano. Single bundled CSS and JS. Inline `<style>` blocks minified at render time by a PHP helper.
-
-### Widget Portability & Distribution
-
-Each widget becomes a self-describing class: handle, config schema, render logic, JS/CSS asset manifest, optional collection type definitions. Foundation for future widget distribution.
+Per-page Meta Title, Meta Description, and OG image fields. Automated extraction where practical (e.g. first heading as default title, first image as default OG image). Global defaults with per-page overrides. Scope for Beta 1: core meta fields only. JSON-LD structured data, Twitter cards, custom head injection, and footer injection are deferred to post-Beta 1 (see SEO — Advanced, below).
 
 ### Header & Footer Widget System
 
 Header and footer areas rendered via purpose-built widget types using the same engine as page widgets. Each area becomes a configurable slot rather than a hard-coded Blade partial. Widgets are self-contained — adding a new header or footer layout requires no changes to the application itself. Header widgets and footer widgets are separate registries (a header widget is not available in the footer slot and vice versa). Planning questions to resolve: how are active header/footer widgets selected (one per area, or stacked/sequential)? How does this interact with the existing NavigationMenu model? Does the page builder editor extend to these areas, or is there a separate admin surface?
 
-### Page Builder — Widget Styling & Basic Interactivity
+### Additional Widget Types
 
-### Page Builder — Live Preview
+New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image slider, static image, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types.
 
-### Page Templates & Layout Controls
+### Page Templates
 
-### SVG & Image Optimization
+Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
 
-SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: compression and resize with optional quality controls.
+### Image Optimization & SVG Support — v1
 
-### Image & Media Handling — Carousels & Galleries
-
-### Media Library UI
+SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
 
 ---
 
-## Infrastructure & Ops
-
-### Batch Edit on Admin Tables
-
-Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
-
-### Integration Setup Wizards — Stripe & Mailchimp
-
-Multi-step guided wizards for connecting Stripe and Mailchimp. Each wizard walks through entering API keys (with the existing high-friction rotation pattern), verifying connectivity, and confirming the integration is live. QuickBooks wizard to follow once the QuickBooks Sync session is scoped. Consider a unified "Integrations" page as the entry point.
-
-### Sandbox / Demo Data Mode
-
-A mode or toggle that lets the admin act on a small set of controllable test records without touching real data. Concept and scope to be agreed following the session 081 discussion. Related: default sample record for the system email preview wizard (may be part of this session or a separate stub).
+## Infrastructure & Ops — Beta 1 Scope
 
 ### Admin User — Secure Password Generator
 
 Add a "Generate secure password" button to the admin user create/edit form, below the password field. Client-side Alpine.js only — generates a cryptographically random string, fills both password and confirm-password fields, and copies to clipboard. No server round-trip. Admin pastes into their password manager and hands it to the user.
 
-### System Email Preview — Default Sample Record
+### Sandbox / Demo Data Mode
 
-A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Scope and persistence model to be agreed before building — may overlap with the Sandbox / Demo Data Mode stub above. Resolve both in the same session if possible.
+A mode or toggle that lets the admin act on a small set of controllable test records without touching real data. For Beta 1: anonymous read-only login to the marketing site admin panel, backed by full dummy data from the sample data generator. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) gates all write operations for safety. Scope and UX to be agreed before building. Related: default sample record for the system email preview wizard — resolve both in the same session if possible.
+
+### System Email Preview — Default Sample Record & Full Coverage
+
+A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Note: the preview wizard already exists (session 080) and is already in use for donation receipts and user invitations — this session extends the same pattern to any remaining system email sends, rather than rebuilding. Resolve alongside Sandbox / Demo Data Mode if possible.
+
+### Batch Edit on Admin Tables
+
+Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
+
+### Help System Enhancements
+
+Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
 
 ### Code Housekeeping Notes
 
@@ -317,9 +285,113 @@ Items spotted during other sessions that need cleanup but don't warrant their ow
 
 - **Orphaned `WidgetRegistry` import** — `PageWidgetsRelationManager.php` imports `App\Widgets\WidgetRegistry`, which does not exist. The relation manager itself appears unused (widget editing goes through the Livewire `PageBuilder` / `PageBuilderBlock` path). Confirm the relation manager is dead code, remove the import, and delete the file if it is no longer referenced anywhere. Spotted session 075.
 
-### Help System Enhancements
+---
 
-Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
+## End of Roadmap — Beta 1
+
+### Onboarding / Install Dashboard Widget
+
+First-run widget: detects unconfigured install, walks admin through minimum viable setup steps (mail, Stripe, branding). Disappears once confirmed. Could double as an ongoing health-check widget for production installs.
+
+### Demo
+
+Anonymous read-only login to the marketing site admin panel backed by full dummy data. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) blocks all write operations. Pitch demo flow: prospect names a company and picks a logo → install runs during the pitch → prospect receives a URL at the end with their company name, logo, and contacts imported from a competitor CSV. The demo is presented on the marketing site; the server flag prevents any data manipulation if someone tries to poke around. The Demo and Installer sessions are the final two pieces of Beta 1.
+
+### Installer
+
+The last piece of Beta 1. Guided first-run setup: database connection, mail provider configuration, admin user creation, initial seed. Must be fast enough to run live during a sales pitch — a prospect-facing demo that ends with their own configured install at a fresh URL.
+
+---
+
+## ── BETA ONE ─────────────────────────────────────────────────────────────────
+
+**Beta One** is the first shippable, publicly demonstrable version of the product. Definition of done: a live hosted site is running on the product's own CMS, anonymous read-only demo access is available for prospects, and a live install demo can be performed during a sales pitch — prospect names a company, picks a logo, imports contacts from a competitor, and receives a URL with their configured install at the end of the meeting. All sessions above this line are planned for Beta 1 delivery.
+
+---
+
+## Post-Beta 1
+
+---
+
+## Volunteer Management *(deferred — post-Beta 1)*
+
+*DOB / age fields on contacts are a prerequisite. Volunteer Portal depends on Member Portal being complete. The entire Volunteer Management section is deferred until after Beta 1.*
+
+*Age gating (agreed session 052): public volunteer registration form gates sign-up to the minimum age threshold. Under-13 parental consent is out of scope for v1.*
+
+### Volunteer Profile & Hours Tracking
+
+*Skills, availability, background check status/expiry, training/certifications, hours log, total hours on contact record.*
+
+### Volunteer Scheduling
+
+*Recurring shift slots with capacity. Admin assignment and self-signup. Connects to Events for event-day volunteer roles.*
+
+### Volunteer Communication & Recognition
+
+*Shift reminders, milestone triggers (100 hours, anniversary). Integrates with the email system.*
+
+### Volunteer Portal
+
+*Public self-service: signup, view shifts, log hours pending admin approval. Extends Member Portal patterns.*
+
+---
+
+## CMS & Page Builder — Post-Beta 1
+
+### SEO — Advanced
+
+JSON-LD structured data (Article, Event, Organization). Global and per-page custom head injection. Global footer injection. Twitter card type. Sanitization strategy. Gate advanced injection by role. Builds on the per-page meta fields added in Beta 1.
+
+### Site Theme & Public Theme Builder
+
+*Merges "Site Theme Enhancement" and "Public Theme Builder / Custom CSS Tool" — both extend SiteThemePage.*
+
+Extends the existing `SiteThemePage` which already has appearance settings and a live SCSS editor. Adds: colours reorganised into light/dark palette rows, "Mirror" buttons applying HSL-based inversion, live WCAG AA contrast checker with nearest-passing-colour suggestions, preset palettes with swatches. Split-pane SCSS editor with live page preview on the right.
+
+### CMS Style System — Full Widget Styling
+
+Full widget style surface schema: each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time. Builds on the front-end pipeline and column widget infrastructure from Beta 1. Planning for this system was partly in scope for Beta 1 sessions — defer the implementation until post-Beta.
+
+### Widget Portability & Distribution
+
+Each widget becomes a self-describing class: handle, config schema, render logic, JS/CSS asset manifest, optional collection type definitions. Foundation for future widget distribution.
+
+### Page Builder — Live Preview
+
+Split-pane or overlay preview of page changes before saving. Requires the front-end build pipeline to be stable.
+
+### Media Library UI
+
+Centralised media browser for images and files uploaded across the admin. Scope discussion required before building — may overlap with the image optimization work in Beta 1. Deferred pending a scoping decision on whether this belongs in Beta 1 or post-Beta.
+
+### Image & Media Handling — Carousels & Galleries
+
+Full carousel and gallery widget types beyond the basic image slider added in Beta 1. Lightbox, captions, reorder controls.
+
+---
+
+## Infrastructure & Ops — Post-Beta 1
+
+### Integration Setup Wizards — Stripe & Mailchimp
+
+Multi-step guided wizards for connecting Stripe and Mailchimp. Each wizard walks through entering API keys (with the existing high-friction rotation pattern), verifying connectivity, and confirming the integration is live. QuickBooks wizard to follow once the QuickBooks Sync session is scoped. Consider a unified "Integrations" page as the entry point.
+
+### Scheduled System Email Sends
+
+Allow admin-initiated system emails (donor receipts, event notifications, etc.) to be scheduled for a future send-at time rather than sent immediately. Requires a `scheduled_emails` table, a queue/scheduler job, and cancellation UI. Resend does not support native scheduled send — scheduling is handled by the application. Review the System Email Preview Wizard (session 080) before designing this — the wizard's Step 3 is the natural place to surface the scheduler.
+
+### Public API Endpoints
+
+REST or GraphQL API for external integrations. Important long-term — should not be half-baked. Deferred until post-Beta 1 to allow proper design and authentication modelling.
+
+### CDN Integration
+
+Asset delivery via CDN for uploaded images and static files. Pairs with the image optimization pipeline from Beta 1. Provider TBD.
+
+### Multi-Vendor Mail Support
+
+*Additional sending providers: SMTP, AWS SES, Postmark, Mailgun. Switchable driver pattern already in place.*
 
 ### Accessibility — ARIA, ADA & Colour Contrast
 
@@ -329,36 +401,12 @@ ARIA landmark roles, correct states on interactive elements, keyboard navigation
 
 *Example custom footer component with placeholder slots for privacy policy and terms. Reference implementation for customers.*
 
-### Scheduled System Email Sends
-
-Allow admin-initiated system emails (donor receipts, event notifications, etc.) to be scheduled for a future send-at time rather than sent immediately. Requires a `scheduled_emails` table, a queue/scheduler job, and cancellation UI. Resend does not support native scheduled send — scheduling is handled by the application. Review the System Email Preview Wizard (session 080) before designing this — the wizard's Step 3 is the natural place to surface the scheduler.
-
-### Multi-Vendor Mail Support
-
-*Additional sending providers: SMTP, AWS SES, Postmark, Mailgun. Switchable driver pattern already in place.*
-
-### Public API Endpoints
-
-### CDN Integration
-
 ---
 
-## Exploratory & Fun
+## Exploratory & Fun *(post-Beta 1)*
 
 ### LLM Integration — Planning & Brainstorm
 
 ### Wow Features Brainstorm
 
 ### Easter Egg & Fun Features
-
----
-
-## End of Roadmap
-
-### Onboarding / Install Dashboard Widget
-
-*First-run widget: detects unconfigured install, walks admin through minimum viable setup. Disappears once confirmed. Could double as a health-check widget.*
-
-### Installer
-
-### Demo

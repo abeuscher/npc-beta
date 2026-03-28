@@ -1,35 +1,34 @@
 ---
 title: Households
-description: How to create and manage household records that group individual contacts sharing an address or family unit.
-version: "0.24"
-updated: 2026-03-16
+description: How household grouping works — linking contacts who share an address or family unit via the self-referential household_id field.
+version: "0.71"
+updated: 2026-03-28
 tags: [households, crm, contacts]
 routes:
-  - filament.admin.resources.households.index
-  - filament.admin.resources.households.create
-  - filament.admin.resources.households.edit
+  - filament.admin.resources.contacts.index
+  - filament.admin.resources.contacts.edit
 ---
 
 # Households
 
-A Household groups individual contacts who share an address or family relationship. Linking contacts to a household makes it easy to send one mailing to a family rather than separate letters to each person.
+A Household groups individual contacts who share an address or family relationship. Contacts are linked to a household head using the **Household Head** field on each contact record. There is no separate Households resource — household membership is managed entirely from the contact edit form.
 
-## Household List
+## How it works
 
-The Households index shows all household records. You can search by household name and see how many contacts are linked to each.
+Every contact has a `household_id` that points to their household head. By default, each contact is their own household head (solo). When you link a contact to another contact as their head, they become part of that contact's household.
 
-## Creating a Household
+The household head's address is automatically copied to any contact who is newly assigned to their household.
 
-A household record requires:
+## Setting a Household Head
 
-- **Name** — typically a family name (e.g., "Smith Family" or "The Smiths").
-- **Address** — the shared mailing address for the household.
+1. Open a contact record and go to **Edit**.
+2. Expand the **Household** section (collapsed by default).
+3. Use the **Household Head** selector to choose another contact. Clearing the field makes this contact solo again.
+4. Save the record.
 
-After creating the household, open individual contact records and link them to this household using the **Household** field on the contact form.
+## Household display in the contact list
 
-## Editing a Household
-
-Click any household row to open its detail view. From here you can see all linked contacts and update the household's name or address.
+The Contacts index shows a **Household** column. Solo contacts show `—`. Contacts linked to a household show the household name (based on the head's last name, e.g. "Smith Household").
 
 ## Use Cases
 

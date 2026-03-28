@@ -28,6 +28,11 @@ class FundResource extends Resource
         return auth()->user()?->can('view_any_fund') ?? false;
     }
 
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return $record->donations()->doesntExist();
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

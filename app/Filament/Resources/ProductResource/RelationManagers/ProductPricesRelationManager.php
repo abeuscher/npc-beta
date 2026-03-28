@@ -61,7 +61,8 @@ class ProductPricesRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->disabled(fn ($record) => \App\Models\Purchase::where('product_price_id', $record->id)->exists()),
             ]);
     }
 }
