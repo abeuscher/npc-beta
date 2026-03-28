@@ -20,6 +20,7 @@
                         <option value="products">Products</option>
                         <option value="purchases">Purchases</option>
                         <option value="members">Members</option>
+                        <option value="blog_posts">Blog Posts</option>
                     </select>
                 </div>
 

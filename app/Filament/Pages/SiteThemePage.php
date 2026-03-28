@@ -8,6 +8,8 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use ScssPhp\ScssPhp\Compiler;
 
 class SiteThemePage extends Page
@@ -51,7 +53,7 @@ class SiteThemePage extends Page
             'public_primary_color' => SiteSetting::get('public_primary_color', '#0172ad'),
             'public_heading_font'  => SiteSetting::get('public_heading_font', ''),
             'public_body_font'     => SiteSetting::get('public_body_font', ''),
-            'logo_path'            => SiteSetting::get('logo_path'),
+            'logo_upload'          => null,
             'header_bg_color'      => SiteSetting::get('header_bg_color', '#ffffff'),
             'nav_link_color'       => SiteSetting::get('nav_link_color', '#373c44'),
             'nav_hover_color'      => SiteSetting::get('nav_hover_color', '#0172ad'),
@@ -99,14 +101,26 @@ class SiteThemePage extends Page
                                 ->default('footer')
                                 ->helperText('Menu handle to render in the site footer.'),
 
-                            Forms\Components\FileUpload::make('logo_path')
-                                ->label('Logo')
+                            Forms\Components\Placeholder::make('current_logo_preview')
+                                ->label('Current logo')
+                                ->content(function () {
+                                    $path = SiteSetting::get('logo_path', '');
+                                    if (!$path) {
+                                        return 'No logo uploaded.';
+                                    }
+                                    return new HtmlString('<img src="' . e(asset($path)) . '" style="max-height:4rem;">');
+                                })
+                                ->columnSpanFull(),
+
+                            Forms\Components\FileUpload::make('logo_upload')
+                                ->label('Upload new logo')
+                                ->nullable()
                                 ->disk('public')
                                 ->directory('site')
                                 ->visibility('public')
                                 ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])
-                                ->nullable()
-                                ->columnSpanFull(),
+                                ->columnSpanFull()
+                                ->helperText('Replaces the current logo on save.'),
 
                             Forms\Components\RichEditor::make('header_content')
                                 ->label('Header content')
@@ -189,7 +203,9 @@ class SiteThemePage extends Page
         SiteSetting::set('public_primary_color', $data['public_primary_color'] ?? '');
         SiteSetting::set('public_heading_font',  $data['public_heading_font']  ?? '');
         SiteSetting::set('public_body_font',     $data['public_body_font']     ?? '');
-        SiteSetting::set('logo_path',            $data['logo_path'] ? 'storage/' . $data['logo_path'] : '');
+        if (!empty($data['logo_upload'])) {
+            SiteSetting::set('logo_path', 'storage/' . $data['logo_upload']);
+        }
         SiteSetting::set('header_bg_color',      $data['header_bg_color']   ?? '');
         SiteSetting::set('nav_link_color',       $data['nav_link_color']    ?? '');
         SiteSetting::set('nav_hover_color',      $data['nav_hover_color']   ?? '');
@@ -229,7 +245,7 @@ class SiteThemePage extends Page
         $projectRoot = base_path();
         $output = [];
         $exitCode = 0;
-        exec("cd " . escapeshellarg($projectRoot) . " && npm run build 2>&1", $output, $exitCode);
+        exec("cd " . escapeshellarg($projectRoot) . " && ./node_modules/.bin/vite build 2>&1", $output, $exitCode);
 
         $this->buildOutput = implode("\n", $output);
         $this->buildSuccess = ($exitCode === 0);

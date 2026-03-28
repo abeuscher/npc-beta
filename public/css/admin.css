@@ -212,3 +212,9 @@ html:not(.dark) .fi-fo-repeater-item {
     color: #9ca3af;
     flex-shrink: 0;
 }
+
+/* ── Sidebar nav scroll smoothing ────────────────────────────────────────────*/
+
+.fi-sidebar-nav {
+    scroll-behavior: smooth;
+}

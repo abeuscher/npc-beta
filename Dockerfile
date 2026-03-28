@@ -88,7 +88,7 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
     fi
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/resources/scss
 
 EXPOSE 9000
 

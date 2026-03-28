@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\User;
 use App\Models\WidgetType;
 use Illuminate\Database\Seeder;
 
@@ -14,7 +15,8 @@ class SystemPageSeeder extends Seeder
     {
         $this->call(WidgetTypeSeeder::class);
 
-        $prefix = SiteSetting::get('system_prefix', '');
+        $authorId = User::value('id');
+        $prefix   = SiteSetting::get('system_prefix', '');
 
         $pages = [
             [
@@ -45,6 +47,7 @@ class SystemPageSeeder extends Seeder
             $page = Page::firstOrCreate(
                 ['slug' => $slug],
                 [
+                    'author_id'    => $authorId,
                     'title'        => $def['title'],
                     'type'         => 'system',
                     'is_published' => true,

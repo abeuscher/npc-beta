@@ -23,7 +23,7 @@ function makeWidgetType(array $overrides = []): WidgetType
 }
 
 it('can be created and associated with a page', function () {
-    $page       = Page::create([
+    $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page',
         'is_published' => true,
@@ -43,7 +43,7 @@ it('can be created and associated with a page', function () {
 });
 
 it('widgetType relationship returns the correct WidgetType model', function () {
-    $page       = Page::create([
+    $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-2',
         'is_published' => true,
@@ -69,7 +69,7 @@ it('widgetType returns null when widget_type_id is missing', function () {
 });
 
 it('inactive widgets are excluded when loading for a page', function () {
-    $page       = Page::create([
+    $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-4',
         'is_published' => true,

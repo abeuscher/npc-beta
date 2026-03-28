@@ -37,7 +37,9 @@ class CmsSettingsPage extends Page
             'site_description'   => SiteSetting::get('site_description', ''),
             'timezone'           => SiteSetting::get('timezone', 'America/Chicago'),
             'contact_email'      => SiteSetting::get('contact_email', ''),
-            'event_auto_publish' => SiteSetting::get('event_auto_publish', 'false') === 'true',
+            'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'false') === 'true',
+            'auto_publish_pages'  => SiteSetting::get('auto_publish_pages', 'true') === 'true',
+            'auto_publish_posts'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
         ]);
     }
 
@@ -82,6 +84,16 @@ class CmsSettingsPage extends Page
                             ->label('Auto-publish new events')
                             ->helperText('When enabled, the landing page for a newly created event is set to Published. When disabled, it defaults to Draft.')
                             ->columnSpan(4),
+
+                        Forms\Components\Toggle::make('auto_publish_pages')
+                            ->label('Auto-publish new pages')
+                            ->helperText('When enabled, newly created pages default to Published.')
+                            ->columnSpan(4),
+
+                        Forms\Components\Toggle::make('auto_publish_posts')
+                            ->label('Auto-publish new blog posts')
+                            ->helperText('When enabled, newly created blog posts default to Published.')
+                            ->columnSpan(4),
                     ])
                     ->columns(12),
             ])
@@ -105,7 +117,9 @@ class CmsSettingsPage extends Page
         SiteSetting::set('site_description', $data['site_description'] ?? '');
         SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
         SiteSetting::set('contact_email', $data['contact_email'] ?? '');
-        SiteSetting::set('event_auto_publish', $data['event_auto_publish'] ? 'true' : 'false');
+        SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
+        SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
+        SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
 
         Notification::make()
             ->title('Settings saved')

@@ -281,6 +281,7 @@ Events with dates, registration, and venue information.
 | id | uuid | no | PK |
 | title | string | no | |
 | slug | string | no | unique |
+| author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
 | description | text | yes | |
 | status | enum | no | default: 'draft'; values: draft, published, cancelled |
 | address_line_1 | string | yes | |
@@ -770,6 +771,7 @@ Static pages and landing pages. Posts are stored here with `type = 'post'`; memb
 | title | string | no | |
 | slug | string | no | unique |
 | type | string | no | default: 'default'; values: default, post, event, member, system — enforced by DB check constraint |
+| author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
 | meta_title | string | yes | |
 | meta_description | text | yes | |
 | custom_fields | jsonb | yes | |

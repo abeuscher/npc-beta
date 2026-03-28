@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
 use App\Models\Page;
+use App\Models\SiteSetting;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
 
@@ -35,6 +36,18 @@ class CreatePage extends CreateRecord
 
         $data['slug']       = $slug;
         $data['meta_title'] = $data['title'];
+        $data['author_id']  = auth()->id();
+
+        $type = $data['type'] ?? 'default';
+        $autoPublish = match ($type) {
+            'post'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
+            default => SiteSetting::get('auto_publish_pages', 'true') === 'true',
+        };
+
+        if (!isset($data['is_published'])) {
+            $data['is_published'] = $autoPublish;
+            $data['published_at'] = $autoPublish ? now() : null;
+        }
 
         return $data;
     }

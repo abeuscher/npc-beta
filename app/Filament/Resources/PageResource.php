@@ -8,6 +8,7 @@ use App\Livewire\PageBuilder;
 use App\Models\CustomFieldDef;
 use App\Models\Page;
 use App\Models\SiteSetting;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -189,6 +190,13 @@ class PageResource extends Resource
 
                 Forms\Components\Section::make('Settings')
                     ->schema([
+                        Forms\Components\Select::make('author_id')
+                            ->label('Author')
+                            ->relationship('author', 'name')
+                            ->searchable()
+                            ->required()
+                            ->default(fn () => auth()->id()),
+
                         Forms\Components\Toggle::make('is_published')
                             ->label('Published')
                             ->live()

@@ -6,6 +6,7 @@ use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\User;
 use App\Models\WidgetType;
 use Illuminate\Database\Seeder;
 
@@ -16,10 +17,13 @@ class BasePageSeeder extends Seeder
         // Ensure widget types exist before referencing them.
         $this->call(WidgetTypeSeeder::class);
 
+        $authorId = User::value('id');
+
         // Home — already created by DatabaseSeeder, just ensure type is set.
         $home = Page::firstOrCreate(
             ['slug' => 'home'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'Welcome',
                 'type'         => 'default',
                 'is_published' => true,
@@ -31,6 +35,7 @@ class BasePageSeeder extends Seeder
         Page::firstOrCreate(
             ['slug' => 'about'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'About',
                 'type'         => 'default',
                 'is_published' => false,
@@ -41,6 +46,7 @@ class BasePageSeeder extends Seeder
         Page::firstOrCreate(
             ['slug' => 'contact'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'Contact',
                 'type'         => 'default',
                 'is_published' => false,
@@ -51,6 +57,7 @@ class BasePageSeeder extends Seeder
         $eventsPage = Page::firstOrCreate(
             ['slug' => 'events'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'Events',
                 'type'         => 'default',
                 'is_published' => true,
@@ -65,6 +72,7 @@ class BasePageSeeder extends Seeder
         $blogPage   = Page::firstOrCreate(
             ['slug' => $blogPrefix],
             [
+                'author_id'    => $authorId,
                 'title'        => 'News',
                 'type'         => 'default',
                 'is_published' => true,

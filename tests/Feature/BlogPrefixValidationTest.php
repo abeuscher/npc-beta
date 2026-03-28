@@ -37,7 +37,7 @@ beforeEach(function () {
 });
 
 it('rejects a blog prefix that matches an existing page slug', function () {
-    CmsPage::create([
+    CmsPage::factory()->create([
         'title'        => 'About Us',
         'slug'         => 'about',
         'type'         => 'default',
@@ -84,7 +84,7 @@ it('accepts a valid blog prefix', function () {
 
 it('changing the prefix renames all post slugs', function () {
     // Create blog index page
-    CmsPage::create([
+    CmsPage::factory()->create([
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',
@@ -93,7 +93,7 @@ it('changing the prefix renames all post slugs', function () {
     ]);
 
     // Create posts with the old prefix
-    $post1 = CmsPage::create([
+    $post1 = CmsPage::factory()->create([
         'title'        => 'Post One',
         'slug'         => 'news/post-one',
         'type'         => 'post',
@@ -101,7 +101,7 @@ it('changing the prefix renames all post slugs', function () {
         'published_at' => now(),
     ]);
 
-    $post2 = CmsPage::create([
+    $post2 = CmsPage::factory()->create([
         'title'        => 'Post Two',
         'slug'         => 'news/post-two',
         'type'         => 'post',
@@ -126,7 +126,7 @@ it('changing the prefix renames all post slugs', function () {
 it('the trailing-slash query avoids false positives when renaming prefixes', function () {
     // Create a page whose slug starts with 'news' but is NOT a post (e.g. 'newsroom')
     // It should NOT be renamed when the blog prefix changes from 'news' to 'stories'.
-    $newsroomPage = CmsPage::create([
+    $newsroomPage = CmsPage::factory()->create([
         'title'        => 'Newsroom',
         'slug'         => 'newsroom',
         'type'         => 'default',
@@ -135,7 +135,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
     ]);
 
     // Blog index page
-    CmsPage::create([
+    CmsPage::factory()->create([
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',
@@ -143,7 +143,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
         'published_at' => now(),
     ]);
 
-    $post = CmsPage::create([
+    $post = CmsPage::factory()->create([
         'title'        => 'A Post',
         'slug'         => 'news/a-post',
         'type'         => 'post',
@@ -169,7 +169,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
 });
 
 it('changing the prefix also renames the blog index page slug', function () {
-    $blogIndexPage = CmsPage::create([
+    $blogIndexPage = CmsPage::factory()->create([
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',

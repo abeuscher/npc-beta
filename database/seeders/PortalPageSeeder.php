@@ -7,6 +7,7 @@ use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\User;
 use App\Models\WidgetType;
 use Illuminate\Database\Seeder;
 
@@ -16,7 +17,8 @@ class PortalPageSeeder extends Seeder
     {
         $this->call(WidgetTypeSeeder::class);
 
-        $prefix = SiteSetting::get('portal_prefix', 'members');
+        $authorId = User::value('id');
+        $prefix   = SiteSetting::get('portal_prefix', 'members');
 
         // ── Pages ─────────────────────────────────────────────────────────────
 
@@ -26,6 +28,7 @@ class PortalPageSeeder extends Seeder
 
         if (! $dashboard) {
             $dashboard = new Page([
+                'author_id'    => $authorId,
                 'slug'         => $prefix,
                 'title'        => 'Member Dashboard',
                 'type'         => 'member',
@@ -43,6 +46,7 @@ class PortalPageSeeder extends Seeder
         $editAccount = Page::firstOrCreate(
             ['slug' => $prefix . '/edit-account'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'Edit Account',
                 'type'         => 'member',
                 'is_published' => true,
@@ -56,6 +60,7 @@ class PortalPageSeeder extends Seeder
         $changePassword = Page::firstOrCreate(
             ['slug' => $prefix . '/change-password'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'Change Password',
                 'type'         => 'member',
                 'is_published' => true,
@@ -69,6 +74,7 @@ class PortalPageSeeder extends Seeder
         $eventRegs = Page::firstOrCreate(
             ['slug' => $prefix . '/event-registrations'],
             [
+                'author_id'    => $authorId,
                 'title'        => 'My Event Registrations',
                 'type'         => 'member',
                 'is_published' => true,

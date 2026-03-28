@@ -29,7 +29,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'event_id', 'type' => 'text', 'label' => 'Event ID (UUID)'],
+                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
                 ],
                 'template'      => "@include('widgets.event-description')",
             ]
@@ -42,7 +42,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'event_id', 'type' => 'text', 'label' => 'Event ID (UUID)'],
+                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
                 ],
                 'template'      => "@include('widgets.event-dates')",
             ]
@@ -55,7 +55,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'event_id', 'type' => 'text', 'label' => 'Event ID (UUID)'],
+                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
                 ],
                 'template'      => "@include('widgets.event-registration')",
             ]
@@ -84,6 +84,17 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'heading', 'type' => 'text', 'label' => 'Heading'],
                 ],
                 'template'      => "@include('widgets.blog-listing')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'blog_pager'],
+            [
+                'label'         => 'Blog Post Pager',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [],
+                'template'      => "@include('widgets.blog-pager', ['currentPage' => \$currentPage ?? null])",
             ]
         );
 

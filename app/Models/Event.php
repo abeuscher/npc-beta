@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -39,6 +40,7 @@ class Event extends Model
         'external_registration_url',
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
+        'author_id', // required; set to auth user on creation
         'landing_page_id', // system-managed: set by EventObserver when event is created
         'registrants_deleted_at',
         'custom_fields',
@@ -79,6 +81,11 @@ class Event extends Model
     // ──────────────────────────────────────────────────────────
     // Relationships
     // ──────────────────────────────────────────────────────────
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
 
     public function registrations(): HasMany
     {

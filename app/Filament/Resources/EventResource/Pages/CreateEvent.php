@@ -21,7 +21,8 @@ class CreateEvent extends CreateRecord
             $slug = $base . '-' . $i++;
         }
 
-        $data['slug'] = $slug;
+        $data['slug']      = $slug;
+        $data['author_id'] = auth()->id();
 
         return $data;
     }

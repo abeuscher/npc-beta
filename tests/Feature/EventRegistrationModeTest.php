@@ -85,7 +85,7 @@ it('widget shows closed message when registration_mode is closed', function () {
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);
@@ -129,7 +129,7 @@ it('widget shows external registration link when registration_mode is external a
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);
@@ -151,7 +151,7 @@ it('widget shows walk-in message when registration_mode is none', function () {
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);

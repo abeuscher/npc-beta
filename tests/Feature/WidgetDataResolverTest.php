@@ -80,7 +80,7 @@ it('returns published Page records of type post for the blog_posts handle', func
         $blogPostsCollection->update(['is_public' => true, 'is_active' => true]);
     }
 
-    Page::create([
+    Page::factory()->create([
         'title'        => 'Published Post',
         'slug'         => 'news/published-post',
         'type'         => 'post',
@@ -88,7 +88,7 @@ it('returns published Page records of type post for the blog_posts handle', func
         'published_at' => now()->subDay(),
     ]);
 
-    Page::create([
+    Page::factory()->create([
         'title'        => 'Draft Post',
         'slug'         => 'news/draft-post',
         'type'         => 'post',

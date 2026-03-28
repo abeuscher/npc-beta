@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Data\SampleLibrary;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -13,6 +14,7 @@ class EventFactory extends Factory
         $title = fake()->randomElement(SampleLibrary::eventTitles());
 
         return [
+            'author_id'         => User::factory(),
             'title'             => $title,
             'slug'              => Str::slug($title) . '-' . $this->faker->unique()->randomNumber(4),
             'description'       => $this->faker->paragraph(),

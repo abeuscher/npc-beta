@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use App\Observers\PageObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -22,6 +24,7 @@ class Page extends Model
         'title',
         'slug',
         'type',
+        'author_id', // required; set to auth user on creation
         'meta_title',
         'meta_description',
         'custom_fields',
@@ -50,6 +53,11 @@ class Page extends Model
     public function getRouteKeyName(): string
     {
         return 'id';
+    }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id');
     }
 
     public function pageWidgets(): HasMany

@@ -48,7 +48,7 @@ class RoleResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return static::canAccess() && ! in_array($record->name, ['super_admin', 'cms_editor']);
+        return static::canAccess() && $record->name !== 'super_admin';
     }
 
     public static function canDeleteAny(): bool
@@ -222,7 +222,7 @@ class RoleResource extends Resource
                     ->label('Delete')
                     ->icon('heroicon-m-trash')
                     ->color('danger')
-                    ->hidden(fn (Role $record) => in_array($record->name, ['super_admin', 'cms_editor']))
+                    ->hidden(fn (Role $record) => $record->name === 'super_admin')
                     ->modalHeading('Delete Role')
                     ->modalSubmitActionLabel('Confirm')
                     ->form(function (Role $record): array {

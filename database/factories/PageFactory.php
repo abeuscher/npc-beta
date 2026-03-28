@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -12,8 +13,9 @@ class PageFactory extends Factory
         $title = $this->faker->sentence(3);
 
         return [
-            'title' => $title,
-            'slug'  => Str::slug($title) . '-' . $this->faker->unique()->randomNumber(4),
+            'author_id' => User::factory(),
+            'title'     => $title,
+            'slug'      => Str::slug($title) . '-' . $this->faker->unique()->randomNumber(4),
         ];
     }
 }

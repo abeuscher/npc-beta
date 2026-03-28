@@ -7,6 +7,7 @@ use App\Models\Donation;
 use App\Models\Event;
 use App\Models\Fund;
 use App\Models\Membership;
+use App\Models\Page;
 use App\Models\PortalAccount;
 use App\Models\Product;
 use App\Models\ProductPrice;
@@ -50,12 +51,13 @@ class DashboardDebugGeneratorWidget extends Widget
         $count = max(1, min(200, $this->quantity));
 
         match ($this->type) {
-            'contacts'  => $this->generateContacts($count),
-            'events'    => $this->generateEvents($count),
-            'donations' => $this->generateDonations($count),
-            'purchases' => $this->generatePurchases($count),
-            'products'  => $this->generateProducts($count),
-            'members'   => $this->generateMembers($count),
+            'contacts'   => $this->generateContacts($count),
+            'events'     => $this->generateEvents($count),
+            'donations'  => $this->generateDonations($count),
+            'purchases'  => $this->generatePurchases($count),
+            'products'   => $this->generateProducts($count),
+            'members'    => $this->generateMembers($count),
+            'blog_posts' => $this->generateBlogPosts($count),
         };
 
         if (! $this->feedback) {
@@ -218,13 +220,35 @@ class DashboardDebugGeneratorWidget extends Widget
         }
     }
 
+    protected function generateBlogPosts(int $count): void
+    {
+        $blogPrefix = config('site.blog_prefix', 'news');
+        $userIds    = \App\Models\User::pluck('id')->toArray();
+
+        for ($i = 0; $i < $count; $i++) {
+            $title       = fake()->sentence(rand(4, 8));
+            $baseSlug    = \Illuminate\Support\Str::slug($title) . '-' . fake()->unique()->randomNumber(4);
+            $publishedAt = fake()->dateTimeBetween('-2 years', 'now');
+
+            Page::create([
+                'author_id'    => fake()->randomElement($userIds),
+                'title'        => $title,
+                'slug'         => $blogPrefix . '/' . $baseSlug,
+                'type'         => 'post',
+                'is_published' => true,
+                'published_at' => $publishedAt,
+            ]);
+        }
+    }
+
     public function wipe(): void
     {
         match ($this->type) {
-            'donations' => $this->wipeDonations(),
-            'purchases' => $this->wipePurchases(),
-            'products'  => $this->wipeProducts(),
-            default     => $this->wipeGeneric(),
+            'donations'  => $this->wipeDonations(),
+            'purchases'  => $this->wipePurchases(),
+            'products'   => $this->wipeProducts(),
+            'blog_posts' => $this->wipeBlogPosts(),
+            default      => $this->wipeGeneric(),
         };
 
         $this->feedback = "All {$this->type} deleted.";
@@ -246,6 +270,11 @@ class DashboardDebugGeneratorWidget extends Widget
     {
         ProductPrice::query()->delete();
         Product::query()->delete();
+    }
+
+    private function wipeBlogPosts(): void
+    {
+        Page::withTrashed()->where('type', 'post')->forceDelete();
     }
 
     private function wipeGeneric(): void

@@ -8,6 +8,7 @@ use App\Forms\Components\TagSelect;
 use App\Models\CustomFieldDef;
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\User;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
@@ -44,13 +45,14 @@ class EventResource extends Resource
             return; // already has one
         }
 
-        $autoPublish = SiteSetting::get('event_auto_publish', 'false') === 'true';
+        $autoPublish = SiteSetting::get('event_auto_publish', 'true') === 'true';
 
         $page = Page::create([
             'title'        => $event->title,
             'is_published' => $autoPublish,
             'published_at' => $autoPublish ? now() : null,
             'type'         => 'event',
+            'author_id'    => $event->author_id,
         ]);
 
         // Override the auto-generated slug to include the events/ prefix.
@@ -70,7 +72,7 @@ class EventResource extends Resource
                 'page_id'        => $page->id,
                 'widget_type_id' => $widgetType->id,
                 'label'          => $widgetType->label,
-                'config'         => ['event_id' => $event->id],
+                'config'         => ['event_slug' => $event->slug],
                 'sort_order'     => $sort++,
                 'is_active'      => true,
             ]);
@@ -192,6 +194,13 @@ class EventResource extends Resource
                 // ── Right column ──────────────────────────────────────────
                 Forms\Components\Group::make([
                     Forms\Components\Section::make('Settings')->schema([
+                        Forms\Components\Select::make('author_id')
+                            ->label('Author')
+                            ->relationship('author', 'name')
+                            ->searchable()
+                            ->required()
+                            ->default(fn () => auth()->id()),
+
                         Forms\Components\Select::make('status')
                             ->options([
                                 'draft'     => 'Draft',

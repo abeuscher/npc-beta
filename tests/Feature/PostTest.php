@@ -32,15 +32,13 @@ beforeEach(function () {
     );
 
     // Seed the blog index page so index requests succeed
-    Page::firstOrCreate(
-        ['slug' => 'news'],
-        [
-            'title'        => 'News',
-            'type'         => 'default',
-            'is_published' => true,
-            'published_at' => now(),
-        ]
-    );
+    Page::factory()->create([
+        'slug'         => 'news',
+        'title'        => 'News',
+        'type'         => 'default',
+        'is_published' => true,
+        'published_at' => now(),
+    ]);
 });
 
 /**
@@ -55,11 +53,12 @@ function makePost(array $attributes): Page
         $slug = $blogPrefix . '/' . $slug;
     }
 
-    $page = Page::create(array_merge([
+    $pageAttributes = array_diff_key($attributes, ['content' => null]);
+    $page = Page::factory()->create(array_merge([
         'type'         => 'post',
         'is_published' => true,
         'published_at' => now(),
-    ], $attributes, ['slug' => $slug]));
+    ], $pageAttributes, ['slug' => $slug]));
 
     $widgetType = WidgetType::where('handle', 'text_block')->first();
     if ($widgetType && isset($attributes['content'])) {

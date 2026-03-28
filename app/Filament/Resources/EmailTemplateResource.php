@@ -63,7 +63,8 @@ class EmailTemplateResource extends Resource
                 ->columns(2)
                 ->schema([
                     Forms\Components\ColorPicker::make('header_color')
-                        ->label('Header colour'),
+                        ->label('Header colour')
+                        ->default('#1a56db'),
 
                     Forms\Components\FileUpload::make('header_image_path')
                         ->label('Header image')

@@ -206,10 +206,11 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 
     $event = Event::factory()->create(['title' => 'Test Event', 'slug' => 'test-event']);
 
-    $page = Page::create([
+    $page = Page::factory()->create([
         'title'        => $event->title,
         'is_published' => false,
         'type'         => 'event',
+        'author_id'    => $event->author_id,
     ]);
     $page->update(['slug' => 'events/' . $event->slug]);
 
@@ -222,7 +223,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
             'page_id'        => $page->id,
             'widget_type_id' => $widgetType->id,
             'label'          => $widgetType->label,
-            'config'         => ['event_id' => $event->id],
+            'config'         => ['event_slug' => $event->slug],
             'sort_order'     => $sort++,
             'is_active'      => true,
         ]);
@@ -260,7 +261,7 @@ it('event_description widget renders event description on a page', function () {
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Description',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);
@@ -282,7 +283,7 @@ it('event_dates widget renders upcoming dates on a page', function () {
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Dates',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);
@@ -307,7 +308,7 @@ it('event_registration widget renders the registration form on a page', function
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);

@@ -70,8 +70,8 @@ class PageController extends Controller
 
             // Inject event data for event-aware widget types
             $eventData = [];
-            if (isset($config['event_id'])) {
-                $resolvedEvent = \App\Models\Event::find($config['event_id']);
+            if (isset($config['event_slug'])) {
+                $resolvedEvent = \App\Models\Event::where('slug', $config['event_slug'])->first();
                 if ($resolvedEvent) {
                     $eventData = [
                         'event' => $resolvedEvent,
@@ -95,7 +95,7 @@ class PageController extends Controller
                 $html = $widgetType->template
                     ? Blade::render(
                         $widgetType->template,
-                        array_merge($collectionData, $eventData, $productData, ['config' => $config])
+                        array_merge($collectionData, $eventData, $productData, ['config' => $config, 'currentPage' => $page])
                     )
                     : '';
 

@@ -31,7 +31,7 @@ it('opt-in checkbox is not rendered when mailing_list_opt_in_enabled is false', 
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);
@@ -56,7 +56,7 @@ it('opt-in checkbox is rendered when mailing_list_opt_in_enabled is true', funct
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
-        'config'         => ['event_id' => $event->id],
+        'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
     ]);

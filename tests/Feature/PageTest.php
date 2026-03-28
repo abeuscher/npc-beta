@@ -7,7 +7,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 it('serves the home page at /', function () {
-    Page::create([
+    Page::factory()->create([
         'title'        => 'Home',
         'slug'         => 'home',
         'is_published' => true,
@@ -18,7 +18,7 @@ it('serves the home page at /', function () {
 });
 
 it('serves a published page at /{slug}', function () {
-    Page::create([
+    Page::factory()->create([
         'title'        => 'About Us',
         'slug'         => 'about',
         'is_published' => true,
@@ -29,7 +29,7 @@ it('serves a published page at /{slug}', function () {
 });
 
 it('serves a published page with a nested slug', function () {
-    Page::create([
+    Page::factory()->create([
         'title'        => 'Board Meeting',
         'slug'         => 'events/board-meeting',
         'type'         => 'event',
@@ -41,7 +41,7 @@ it('serves a published page with a nested slug', function () {
 });
 
 it('returns 404 for an unpublished page', function () {
-    Page::create([
+    Page::factory()->create([
         'title'        => 'Draft Page',
         'slug'         => 'draft',
         'is_published' => false,
@@ -55,7 +55,9 @@ it('returns 404 for a non-existent slug', function () {
 });
 
 it('auto-generates a slug from the title', function () {
+    $user = \App\Models\User::factory()->create();
     $page = Page::create([
+        'author_id'    => $user->id,
         'title'        => 'Our Mission Statement',
         'is_published' => false,
     ]);
@@ -68,7 +70,7 @@ it('returns 404 at / when no published home page exists', function () {
 });
 
 it('page type defaults to default', function () {
-    $page = Page::create([
+    $page = Page::factory()->create([
         'title'        => 'Simple Page',
         'slug'         => 'simple',
         'is_published' => false,
