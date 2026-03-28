@@ -88,14 +88,69 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 079 | Debug Generator — Donations, Products & Purchases |
 | 080 | System Email Preview Wizard |
 | 081 | Minor Tweaks & Polish |
+| 082 | Codebase Audit & Migration Squash |
 
 ---
 
 ## Codebase Maintenance
 
-### Codebase Audit & Migration Squash
+### Session 083 — Bug Fixes & Polish
 
-Periodic codebase audit and migration squash, following the patterns established in sessions 042 and 062. Session 082 — covers everything added or modified in sessions 063–081. Ten workstreams: field audit, schema doc accuracy, permission gates, soft delete consistency, fillable/casts consistency, FK index audit, orphaned docs and help coverage, factory coverage, migration squash, and route list audit.
+Fixing a backlog of bugs and small improvements identified during testing. Items are scoped for one session; anything that expands significantly should be deferred.
+
+**npm / Vite build on production** — `vite: not found` when running `npm run build` inside the app container. `SiteThemePage.php` calls `npm run build` directly; fix to use `./node_modules/.bin/vite build` (or equivalent absolute path). Verify the build pipeline works end-to-end on the server.
+
+**Custom CSS — permission error on save** — `file_put_contents(/var/www/html/resources/scss/_theme.scss): Permission denied`. The `_theme.scss` file (or its parent directory) is not writable by the PHP-FPM process. Fix file ownership/permissions in the Docker image or write to a writable path.
+
+**Site Theme logo field** — logo upload/display is bugged. Follow the design pattern of the logo field in Admin Settings as the reference implementation.
+
+**Event Registration form widget — silent failure** — the widget renders in the page source but appears empty. Likely an ID or slug reference mismatch. Audit the widget's event lookup — it may be using a record ID where a slug is expected (see also the event widget slug item below).
+
+**Event widgets — slug vs. ID** — event widgets should reference the event by slug, not by database record ID, consistent with how other content-linked widgets work. An ID-based reference breaks when records are reseeded or IDs change. Audit all event widget types for this pattern and fix.
+
+**Blog posts in the data generator** — add blog posts to the debug sample data generator. Lorem ipsum is fine for all text fields. Follow the pattern of existing generator types.
+
+**Blog / page authors** — every page (including blog posts) should record the user who created it as its author. Add an `author_id` FK to the pages table (nullable, references users). Expose it as a searchable user dropdown on the page edit form, defaulting to the authenticated user on creation.
+
+**Blog pager widget** — new widget type: previous/next post navigation for blog post pages. Links to the adjacent posts by published date. Intended for use in the blog post page template.
+
+**System email editor — colour defaults** — the colour fields in the system email template editor should display their defaults visually, matching the behaviour of the theme editor colour controls in the CMS.
+
+**CMS Editor role — deletability** — investigate why the CMS Editor role is editable but not deletable. If there is no documented reason, make it deletable. Only `super_admin` must be indestructible.
+
+**Auto-publish settings** — add toggles to CMS Settings: *Auto-publish new pages* (default: on) and *Auto-publish new posts* (default: on). Also change the default publish state for new events to published. These defaults should reduce friction for common workflows.
+
+**Navigation menu scroll smoothing** — when a left-nav link is clicked, Filament scrolls the menu to centre the active item. If no explicit toggle exists to disable this, try applying `scroll-behavior: smooth` to the nav scroll container as a low-friction improvement before attempting anything more invasive.
+
+---
+
+## CMS & Page Builder — Beta 1 Scope
+
+*The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
+
+### Column Widget & Widget Picker UX
+
+Two related improvements delivered together: (1) a column widget that allows side-by-side widget layouts using named slots with declared widths — child widgets assigned to slots, `display` restricted to grid/flex/block; (2) widget picker UX improvements to reduce friction when adding widgets — categories, collapsible groups, or overall size reduction. Vite/SCSS/PostCSS build pipeline is already in place — plug into it directly.
+
+### Per-Page SEO & Header Snippets
+
+Per-page Meta Title, Meta Description, and OG image fields. Automated extraction where practical (e.g. first heading as default title, first image as default OG image). Global defaults with per-page overrides. Scope for Beta 1: core meta fields only. JSON-LD structured data, Twitter cards, custom head injection, and footer injection are deferred to post-Beta 1 (see SEO — Advanced, below).
+
+### Header & Footer Widget System
+
+Header and footer areas rendered via purpose-built widget types using the same engine as page widgets. Each area becomes a configurable slot rather than a hard-coded Blade partial. Navigation is handled by exposing NavigationMenu collections through the existing nav system, then building a nav widget that can be added to the header or footer slot — no separate nav infrastructure required. Header widgets and footer widgets are separate registries.
+
+### Additional Widget Types
+
+New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image slider, static image, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types.
+
+### Page Templates
+
+Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
+
+### Image Optimization & SVG Support — v1
+
+SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
 
 ---
 
@@ -107,7 +162,7 @@ Periodic codebase audit and migration squash, following the patterns established
 
 Core household model built in session 071 (self-referential `contacts.household_id` FK, admin assignment, portal display, address sync). Remaining for future sessions if needed:
 
-- Member-to-member portal invite flow with staff approval.
+- Member-to-member portal invite flow.
 - Household dissolution / head transfer when the head contact leaves.
 - Household-level aggregate giving and mailing deduplication (Finance sessions).
 
@@ -115,7 +170,7 @@ Core household model built in session 071 (self-referential `contacts.household_
 
 ## Communication & Accountability
 
-*Activity log built in session 072. Future additions: global filterable log, field-level diff, observers for Finance and other models.*
+*Future additions: global filterable log, field-level diff, observers for Finance and other models.*
 
 ### Activity Log Viewer
 
@@ -140,40 +195,6 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 *Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data. The application is deposit-only — it never initiates a refund, payout, or balance transfer. All financial reversals are handled in the Stripe dashboard.*
 
 *A dedicated Financial Settings page (gated to developer/treasurer roles) holds Stripe and QuickBooks API keys. Keys are encrypted at rest.*
-
-### ~~Stripe Foundation~~ *(completed session 073)*
-
-Webhook receiver, encrypted key storage, polymorphic transaction table, and restricted API key scoped to minimum permissions. The Stripe Checkout pattern established in session 074 is the template for event ticketing and membership payment in future sessions.
-
-### ~~Products & Checkout~~ *(completed session 074)*
-
-Stripe Checkout for one-off and waitlist-gated products. Admin product/price management, purchase tracking, contact auto-creation on webhook.
-
-### ~~Donations — Foundation~~ *(completed session 075)*
-
-One-off and recurring Stripe donations. Donation widget with configurable preset amounts and frequency toggles. Webhook handling for checkout completion and recurring billing cycles. Contact auto-creation. Activity logging on status transitions. Admin view/audit resource with transaction history.
-
-### ~~Tax Receipts~~ *(completed session 076)*
-
-Fund designation on donations (`fund_id` FK, `restriction_type` on funds). Donors page with year/threshold filter table. `donation_receipts` table for audit trail. `DonationReceipt` mailable through existing email system. Admin send and force-resend actions.
-
-*Pledge tracking was considered and deliberately excluded. Pledges that don't flow through Stripe belong in QuickBooks, not here.*
-
-### ~~Finance Data Boundary~~ *(completed session 078)*
-
-Financial amounts and Stripe links removed from CRM and CMS views. Transactions table is now the single place for dollar values and Stripe dashboard links, with contact and product filters. Purchases now create Transaction rows alongside Purchase records. `contact_id` denormalized onto transactions for efficient filtering. Navigation affordances replace inline financial data in non-Finance views.
-
-### ~~Debug Generator — Donations, Products & Purchases~~ *(completed session 079)*
-
-New factories (`ProductFactory`, `ProductPriceFactory`, `PurchaseFactory`) and improved `DonationFactory`. Widget gains Tax Year input and two new type options (products, purchases). Donations and purchases link to existing contacts/funds/products and each produce a matching Transaction row. Wipe extended for new types. Product names generated by recombining 1980s toy franchises and characters from `SampleLibrary`.
-
-### ~~System Email Preview Wizard~~ *(completed session 080)*
-
-Multi-step confirmation modal for admin-initiated system email sends. Step 1: confirm recipient count and email type. Step 2: preview merged message (first recipient for bulk sends) in an iframe. Step 3: editable test-send address + final submit. Reusable factory (`EmailPreviewWizardAction`). Retrofitted to donor receipts, user invitations, and event cancellation. Event cancellation moved from auto-firing observer to explicit wizard action. `testHtmlResolver` parameter keeps real PII/financial data out of test sends.
-
-### ~~Edit Transaction View~~ *(resolved session 081)*
-
-Resource-level `canEdit()` and `canDelete()` gates added, scoped to `!$record->stripe_id`. Stripe-originated transactions are fully immutable at every entry point. Manual-entry type dropdown was already correctly scoped. No further work required.
 
 ### Stripe Payment Method Manager
 
@@ -227,36 +248,6 @@ Audit every deletion path. Define and implement what happens when: a user is del
 
 ---
 
-## CMS & Page Builder — Beta 1 Scope
-
-*The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
-
-### Column Widget & Widget Picker UX
-
-Two related improvements delivered together: (1) a column widget that allows side-by-side widget layouts using named slots with declared widths — child widgets assigned to slots, `display` restricted to grid/flex/block; (2) widget picker UX improvements to reduce friction when adding widgets — categories, collapsible groups, or overall size reduction. The column widget requires front-end build infrastructure (Vite, SCSS, PostCSS + autoprefixer + cssnano) — agree the build pipeline as part of planning this session.
-
-### Per-Page SEO & Header Snippets
-
-Per-page Meta Title, Meta Description, and OG image fields. Automated extraction where practical (e.g. first heading as default title, first image as default OG image). Global defaults with per-page overrides. Scope for Beta 1: core meta fields only. JSON-LD structured data, Twitter cards, custom head injection, and footer injection are deferred to post-Beta 1 (see SEO — Advanced, below).
-
-### Header & Footer Widget System
-
-Header and footer areas rendered via purpose-built widget types using the same engine as page widgets. Each area becomes a configurable slot rather than a hard-coded Blade partial. Widgets are self-contained — adding a new header or footer layout requires no changes to the application itself. Header widgets and footer widgets are separate registries (a header widget is not available in the footer slot and vice versa). Planning questions to resolve: how are active header/footer widgets selected (one per area, or stacked/sequential)? How does this interact with the existing NavigationMenu model? Does the page builder editor extend to these areas, or is there a separate admin surface?
-
-### Additional Widget Types
-
-New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image slider, static image, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types.
-
-### Page Templates
-
-Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
-
-### Image Optimization & SVG Support — v1
-
-SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
-
----
-
 ## Infrastructure & Ops — Beta 1 Scope
 
 ### Admin User — Secure Password Generator
@@ -297,10 +288,6 @@ First-run widget: detects unconfigured install, walks admin through minimum viab
 
 Anonymous read-only login to the marketing site admin panel backed by full dummy data. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) blocks all write operations. Pitch demo flow: prospect names a company and picks a logo → install runs during the pitch → prospect receives a URL at the end with their company name, logo, and contacts imported from a competitor CSV. The demo is presented on the marketing site; the server flag prevents any data manipulation if someone tries to poke around. The Demo and Installer sessions are the final two pieces of Beta 1.
 
-### Installer
-
-The last piece of Beta 1. Guided first-run setup: database connection, mail provider configuration, admin user creation, initial seed. Must be fast enough to run live during a sales pitch — a prospect-facing demo that ends with their own configured install at a fresh URL.
-
 ---
 
 ## ── BETA ONE ─────────────────────────────────────────────────────────────────
@@ -310,6 +297,22 @@ The last piece of Beta 1. Guided first-run setup: database connection, mail prov
 ---
 
 ## Post-Beta 1
+
+### Control Pattern Homogenisation Audit
+
+Audit the admin UI for combination input controls (file upload + preview, logo pickers, image fields, etc.) that exist in more than one place but behave differently without a documented reason. Define the canonical pattern for each control type and bring all instances into conformance. The logo field inconsistency between Site Theme and Admin Settings is the known starting point.
+
+### Custom Field Grouping & Layout
+
+Allow admins to group and arrange custom contact fields into labelled sections with a configurable column count. The form-builder approach is the right model — give users control over column count per section and let fields stack within each column. JSON schema should be extended to support containers/fieldsets when a clean implementation path is available.
+
+### Default Content State
+
+All five starter pages in a published state. Default seed includes one sample event and one sample blog post so all major features are demonstrated on a fresh install. Add an install option to skip default content for users who prefer a blank slate.
+
+### Installer
+
+Guided first-run setup: database connection, mail provider configuration, admin user creation, initial seed. Must be fast enough to run live during a sales pitch — a prospect-facing demo that ends with their own configured install at a fresh URL.
 
 ---
 
