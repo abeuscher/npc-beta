@@ -50,6 +50,19 @@ class DatabaseSeeder extends Seeder
             $admin->assignRole('super_admin');
         }
 
+        // Ensure at least one user exists so page seeders can assign author_id.
+        // This matters in environments where ADMIN_EMAIL/PASSWORD are not set (e.g. CI).
+        if (! User::exists()) {
+            User::firstOrCreate(
+                ['email' => 'seed@localhost'],
+                [
+                    'name'      => 'Seed User',
+                    'password'  => Hash::make(\Illuminate\Support\Str::random(32)),
+                    'is_active' => false,
+                ]
+            );
+        }
+
         // ── Site settings (installation defaults) ───────────────────────────
         $siteSettingDefaults = [
             ['key' => 'site_name',        'value' => 'My Organization',    'group' => 'general', 'type' => 'string'],
