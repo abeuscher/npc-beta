@@ -22,7 +22,11 @@
       "Bash(grep -r \"Intervention\\\\|intervention\" app/ --include=*.php)",
       "Bash(grep -i \"image_driver\\\\|IMAGE_DRIVER\" .env*)",
       "Bash(grep -r \"registerMediaConversions\\\\|addMedia\\\\|registerMediaCollections\" app/ --include=*.php)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:bundlephobia.com)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations"

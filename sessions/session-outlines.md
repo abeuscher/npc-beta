@@ -106,9 +106,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 088 — Image Optimization & SVG Support~~ *(completed)*
 
-### Session 089 — Image/Carousel Widget
+### Session 089 — Image & Carousel Widgets
 
-New page builder widget type: accepts one or more images via the media library. Single image renders as a static `<picture>` element using the picture component from session 088. Multiple images render as a carousel/slider. No carousel library currently in the project — one will need to be selected and installed. Exercises the image optimization pipeline end-to-end with real content.
+Two new page builder widget types: a static picture widget (single image via `<x-picture>`) and a carousel widget powered by Swiper.js (collection-backed slides with token-based captions). Inspector advanced/primary field grouping. Exercises the image optimization pipeline end-to-end.
+
+### WYSIWYG Inline Image Insert
+
+Add image upload and insertion to the Quill rich text editor used in the page builder. Requires a custom Quill module for upload handling, media library integration within the editor context, and `<x-picture>` rendering in saved HTML output. Separate integration surface from page builder widgets — the editor stores raw HTML rather than structured config.
 
 ### Per-Page SEO & Header Snippets
 
@@ -263,6 +267,12 @@ First-run widget: detects unconfigured install, walks admin through minimum viab
 ### Demo
 
 Anonymous read-only login to the marketing site admin panel backed by full dummy data. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) blocks all write operations. Pitch demo flow: prospect names a company and picks a logo → install runs during the pitch → prospect receives a URL at the end with their company name, logo, and contacts imported from a competitor CSV. The demo is presented on the marketing site; the server flag prevents any data manipulation if someone tries to poke around. The Demo and Installer sessions are the final two pieces of Beta 1.
+
+### Third-Party Licensing Compliance Audit
+
+Before Beta 1 ships: audit all third-party dependencies for license compliance. Known items requiring verification:
+- **Swiper.js** — MIT license (copyright Vladimir Kharlampidi). MIT requires the copyright notice and license text be included in distributions. Verify the Vite build or a LICENSES file satisfies this. Swiper Studio (no-code builder) is a separate paid product — confirm we are not using any Studio-only assets.
+- Review all other npm and Composer dependencies for license compatibility with a commercial product.
 
 ---
 

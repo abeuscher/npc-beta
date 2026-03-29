@@ -145,4 +145,5 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 | `scssphp/scssphp` | SCSS compilation for the site theme editor |
 | `laravel/horizon` | Queue monitoring dashboard |
 | `predis/predis` | Redis client (cache + queues) |
+| `swiper` | Carousel/slider — Swiper.js (MIT license, copyright Vladimir Kharlampidi) |
 | Pest v2 | Test runner |
