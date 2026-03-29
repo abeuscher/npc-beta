@@ -47,6 +47,7 @@ class WidgetType extends Model
         'label',
         'render_mode',
         'collections',
+        'default_open',
         'config_schema',
         'template',
         'css',
@@ -58,6 +59,7 @@ class WidgetType extends Model
     protected $casts = [
         'collections'   => 'array',
         'config_schema' => 'array',
+        'default_open'  => 'boolean',
     ];
 
     public function pageWidgets(): HasMany

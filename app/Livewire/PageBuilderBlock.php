@@ -50,15 +50,16 @@ class PageBuilderBlock extends Component
         }
 
         $this->block = [
-            'id'                        => $pw->id,
-            'widget_type_handle'        => $pw->widgetType?->handle ?? '',
-            'widget_type_label'         => $pw->widgetType?->label ?? 'Unknown',
-            'widget_type_collections'   => $pw->widgetType?->collections ?? [],
-            'widget_type_config_schema' => $pw->widgetType?->config_schema ?? [],
-            'label'                     => $pw->label ?? '',
-            'config'                    => $pw->config ?? [],
-            'query_config'              => $pw->query_config ?? [],
-            'sort_order'                => $pw->sort_order ?? 0,
+            'id'                          => $pw->id,
+            'widget_type_handle'          => $pw->widgetType?->handle ?? '',
+            'widget_type_label'           => $pw->widgetType?->label ?? 'Unknown',
+            'widget_type_collections'     => $pw->widgetType?->collections ?? [],
+            'widget_type_config_schema'   => $pw->widgetType?->config_schema ?? [],
+            'widget_type_default_open'    => $pw->widgetType?->default_open ?? false,
+            'label'                       => $pw->label ?? '',
+            'config'                      => $pw->config ?? [],
+            'query_config'                => $pw->query_config ?? [],
+            'sort_order'                  => $pw->sort_order ?? 0,
         ];
     }
 

@@ -70,6 +70,10 @@ class WidgetTypeResource extends Resource
                     ->options(fn () => Collection::public()->pluck('name', 'handle')->all())
                     ->helperText('Collection handles this widget declares as data sources.')
                     ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('default_open')
+                    ->label('Start open in page builder')
+                    ->columnSpanFull(),
             ])->columns(2),
 
             Forms\Components\Section::make('Singleton Fields')

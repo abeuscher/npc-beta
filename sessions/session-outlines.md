@@ -91,6 +91,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 082 | Codebase Audit & Migration Squash |
 | 083 | Bug Fixes & Polish |
 | 084 | Widget Render Context |
+| 085 | Widget Migration |
 
 ---
 
@@ -130,15 +131,21 @@ Fixing a backlog of bugs and small improvements identified during testing. Items
 
 *The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
 
-### Session 085 — Widget Migration
+### Session 086 — Column Widget & Widget Picker UX
 
-Migrate all five remaining broken widget templates to use `$pageContext`: `event_description`, `event_dates`, and `event_registration` (each assigns `$event = $pageContext->event($config['event_slug'] ?? null)`); `events_listing` (uses `$pageContext->collection('events', $limit)`); `product_display` (uses `$pageContext->product($config['product_slug'] ?? null)`, with `->with('prices')` added to `PageContext::product()`). Clear `collections` on the `events_listing` seeder entry. Delete three orphaned blade files (rich-text, blog-roll, collection-list). All portal widgets, web_form, and donation_form already work and require no changes.
+Column layout widget with unlimited child nesting, CSS grid presets, and a universal `style_config` layer for per-widget padding and margin.
 
----
+**Schema:** `page_widgets` gains `parent_widget_id` (uuid nullable, self-referential FK, set-null on delete), `column_index` (smallint unsigned nullable), and `style_config` (jsonb, default {}).
 
-### Column Widget & Widget Picker UX
+**style_config:** Universal — padding and margin (T/R/B/L as individual pixel keys) applied as inline styles on every widget's wrapper div by the renderer. Available on all widget types. Advanced controls hidden behind a per-block show/hide toggle (`x-show`). Padding/margin UI: shorthand "all sides" input drives four individual T/R/B/L fields; individuals remain editable; shorthand shows "mixed" when values differ.
 
-Two related improvements delivered together: (1) a column widget that allows side-by-side widget layouts using named slots with declared widths — child widgets assigned to slots, `display` restricted to grid/flex/block; (2) widget picker UX improvements to reduce friction when adding widgets — categories, collapsible groups, or overall size reduction. Vite/SCSS/PostCSS build pipeline is already in place — plug into it directly.
+**Column widget:** CSS grid only — no display mode selector, no row controls. Config: `num_columns` and `grid_template_columns`. Four presets: Equal halves (`1fr 1fr`), Equal thirds (`1fr 1fr 1fr`), 2/3 + 1/3 (`2fr 1fr`), 1/3 + 2/3 (`1fr 2fr`). Custom text input always overrides preset. Defaults to open in the page builder.
+
+**Nesting:** Unlimited depth. No code or UI limit imposed. Drag-and-drop at root level continues to work on collapsed column containers. Within column slots: up/down buttons only.
+
+**Add Block flow:** `PageBuilder::createBlock()` accepts optional `parentWidgetId` and `columnIndex`; column slot panels each carry their own "Add Block" button scoped to that slot.
+
+**Docs:** `resources/docs/widget-types.md` receives a full architecture section covering the column widget, the parent/child nesting model, and the style_config layer. File will be split in a future housekeeping session.
 
 ### Per-Page SEO & Header Snippets
 
@@ -362,7 +369,7 @@ Extends the existing `SiteThemePage` which already has appearance settings and a
 
 ### CMS Style System — Full Widget Styling
 
-Full widget style surface schema: each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time. Builds on the front-end pipeline and column widget infrastructure from Beta 1. Planning for this system was partly in scope for Beta 1 sessions — defer the implementation until post-Beta.
+Full widget style surface schema: each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time. Builds on the front-end pipeline and column widget infrastructure from Beta 1. The `style_config` column and universal padding/margin controls are laid in session 086 — this session extends that foundation. Planning for this system was partly in scope for Beta 1 sessions — defer the implementation until post-Beta.
 
 ### Widget Portability & Distribution
 

@@ -1,3 +1,8 @@
+@php
+    $limit  = isset($config['limit']) && $config['limit'] !== '' ? (int) $config['limit'] : null;
+    $events = $pageContext->collection('events', $limit);
+@endphp
+
 @if (!empty($config['heading']))
     <h2>{{ $config['heading'] }}</h2>
 @endif

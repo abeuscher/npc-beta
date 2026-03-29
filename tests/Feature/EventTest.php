@@ -271,18 +271,18 @@ it('event_description widget renders event description on a page', function () {
         ->assertSee('Join us for a wonderful evening', false);
 });
 
-it('event_dates widget renders upcoming dates on a page', function () {
+it('event_description widget renders event date on a page', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $event = Event::factory()->create(['starts_at' => now()->addDays(5)]);
 
-    $widgetType = WidgetType::where('handle', 'event_dates')->first();
+    $widgetType = WidgetType::where('handle', 'event_description')->first();
 
     $page = Page::factory()->create(['is_published' => true]);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
-        'label'          => 'Event Dates',
+        'label'          => 'Event Date',
         'config'         => ['event_slug' => $event->slug],
         'sort_order'     => 1,
         'is_active'      => true,
@@ -290,7 +290,7 @@ it('event_dates widget renders upcoming dates on a page', function () {
 
     $this->get('/' . $page->slug)
         ->assertOk()
-        ->assertSee('event-dates-list', false);
+        ->assertSee('event-date', false);
 });
 
 it('event_registration widget renders the registration form on a page', function () {

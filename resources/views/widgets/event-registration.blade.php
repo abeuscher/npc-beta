@@ -1,3 +1,4 @@
+@php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
 @isset($event)
     @php
         $isCancelled  = $event->status === 'cancelled';

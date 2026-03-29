@@ -57,7 +57,7 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
             x-on:keydown.escape.window="$wire.set('showAddModal', false)"
         >
-            <div class="w-full rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
+            <div class="container mx-auto rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900">
                 <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">Add Block</h3>
 
                 {{-- Block label --}}
@@ -78,7 +78,7 @@
                 {{-- Widget type grid — scrollable, tiles across then down --}}
                 <p class="mb-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Choose a block type</p>
                 <div class="overflow-y-auto rounded-lg" style="max-height: 50vh;">
-                    <div style="--cols-default: repeat(2, minmax(0, 1fr)); gap: 0.75rem;" class="grid grid-cols-[--cols-default]">
+                    <div style="--cols-default: repeat(3, minmax(0, 1fr)); gap: 0.75rem;" class="grid grid-cols-[--cols-default]">
                         @foreach ($widgetTypes as $wt)
                             <button
                                 type="button"

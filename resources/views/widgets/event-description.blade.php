@@ -1,4 +1,7 @@
+@php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
 @isset($event)
+    <h1 class="event-title">{{ $event->title }}</h1>
+
     @if ($event->starts_at)
         @php
             $startDate = $event->starts_at->format('F jS');
@@ -15,8 +18,26 @@
             } else {
                 $dateString = $startDate . ', ' . $startTime;
             }
+
+            if ($event->is_in_person && $event->is_virtual) {
+                $location = 'In-person + Online';
+                if ($event->city) {
+                    $location .= ' (' . $event->city . ($event->state ? ', ' . $event->state : '') . ')';
+                }
+            } elseif ($event->is_in_person) {
+                $location = $event->city ? $event->city . ($event->state ? ', ' . $event->state : '') : null;
+            } elseif ($event->is_virtual) {
+                $location = 'Online';
+            } else {
+                $location = null;
+            }
         @endphp
-        <p class="event-date">{{ $dateString }}</p>
+        <p class="event-date">
+            <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $dateString }}</time>
+            @if ($location)
+                &mdash; {{ $location }}
+            @endif
+        </p>
     @endif
 
     @if ($event->description)

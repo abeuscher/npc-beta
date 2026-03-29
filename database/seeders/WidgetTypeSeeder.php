@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PageWidget;
 use App\Models\WidgetType;
 use Illuminate\Database\Seeder;
 
@@ -9,12 +10,20 @@ class WidgetTypeSeeder extends Seeder
 {
     public function run(): void
     {
+        // Remove the now-merged event_dates widget type and any associated widgets.
+        $eventDates = WidgetType::where('handle', 'event_dates')->first();
+        if ($eventDates) {
+            PageWidget::where('widget_type_id', $eventDates->id)->delete();
+            $eventDates->delete();
+        }
+
         WidgetType::updateOrCreate(
             ['handle' => 'text_block'],
             [
                 'label'         => 'Text Block',
                 'render_mode'   => 'server',
                 'collections'   => [],
+                'default_open'  => true,
                 'config_schema' => [
                     ['key' => 'content', 'type' => 'richtext', 'label' => 'Content'],
                 ],
@@ -35,20 +44,7 @@ class WidgetTypeSeeder extends Seeder
             ]
         );
 
-        WidgetType::updateOrCreate(
-            ['handle' => 'event_dates'],
-            [
-                'label'         => 'Event Dates List',
-                'render_mode'   => 'server',
-                'collections'   => [],
-                'config_schema' => [
-                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
-                ],
-                'template'      => "@include('widgets.event-dates')",
-            ]
-        );
-
-        WidgetType::updateOrCreate(
+WidgetType::updateOrCreate(
             ['handle' => 'event_registration'],
             [
                 'label'         => 'Event Registration Form',
@@ -66,7 +62,7 @@ class WidgetTypeSeeder extends Seeder
             [
                 'label'         => 'Events Listing',
                 'render_mode'   => 'server',
-                'collections'   => ['events'],
+                'collections'   => [],
                 'config_schema' => [
                     ['key' => 'heading', 'type' => 'text', 'label' => 'Heading'],
                 ],

@@ -1,3 +1,4 @@
+@php $product = $pageContext->product($config['product_slug'] ?? null); @endphp
 @isset($product)
     @php
         $isAtCapacity   = $product->isAtCapacity();

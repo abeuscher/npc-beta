@@ -75,8 +75,12 @@ class PageContext
         return $this->collectionCache[$key];
     }
 
-    public function event(string $slug): ?Event
+    public function event(?string $slug): ?Event
     {
+        if ($slug === null) {
+            return null;
+        }
+
         if (! array_key_exists($slug, $this->eventCache)) {
             $this->eventCache[$slug] = Event::published()
                 ->where('slug', $slug)
@@ -86,11 +90,16 @@ class PageContext
         return $this->eventCache[$slug];
     }
 
-    public function product(string $slug): ?Product
+    public function product(?string $slug): ?Product
     {
+        if ($slug === null) {
+            return null;
+        }
+
         if (! array_key_exists($slug, $this->productCache)) {
             $this->productCache[$slug] = Product::where('slug', $slug)
                 ->where('status', 'published')
+                ->with('prices')
                 ->first();
         }
 
