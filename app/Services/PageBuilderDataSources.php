@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Collection;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\Product;
@@ -15,10 +16,11 @@ class PageBuilderDataSources
     public static function resolve(string $source): array
     {
         return match ($source) {
-            'events'   => static::events(),
-            'products' => static::products(),
-            'forms'    => static::forms(),
-            default    => [],
+            'events'      => static::events(),
+            'products'    => static::products(),
+            'forms'       => static::forms(),
+            'collections' => static::collections(),
+            default       => [],
         };
     }
 
@@ -46,6 +48,15 @@ class PageBuilderDataSources
             ->orderBy('title')
             ->get(['handle', 'title'])
             ->pluck('title', 'handle')
+            ->all();
+    }
+
+    private static function collections(): array
+    {
+        return Collection::where('is_active', true)
+            ->orderBy('name')
+            ->get(['handle', 'name'])
+            ->pluck('name', 'handle')
             ->all();
     }
 }

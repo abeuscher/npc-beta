@@ -244,5 +244,47 @@ class WidgetTypeSeeder extends Seeder
                 'template'      => "@include('widgets.column-widget')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'image'],
+            [
+                'label'         => 'Image',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'image',      'type' => 'image',  'label' => 'Image'],
+                    ['key' => 'alt_text',   'type' => 'text',   'label' => 'Alt text'],
+                    ['key' => 'object_fit', 'type' => 'select', 'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain']],
+                    ['key' => 'link_url',   'type' => 'url',    'label' => 'Link URL'],
+                ],
+                'template'      => "@include('widgets.image')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'carousel'],
+            [
+                'label'         => 'Carousel',
+                'render_mode'   => 'server',
+                'collections'   => ['slides'],
+                'config_schema' => [
+                    ['key' => 'collection_handle', 'type' => 'select',  'label' => 'Collection', 'options_from' => 'collections'],
+                    ['key' => 'image_field',       'type' => 'select',  'label' => 'Image field', 'options_from' => 'collection_fields:image', 'depends_on' => 'collection_handle'],
+                    ['key' => 'caption_template',  'type' => 'text',    'label' => 'Caption template', 'default' => '{{title}}'],
+                    ['key' => 'object_fit',        'type' => 'select',  'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain']],
+                    ['key' => 'autoplay',          'type' => 'toggle',  'label' => 'Autoplay',           'default' => true,    'advanced' => true],
+                    ['key' => 'interval',          'type' => 'number',  'label' => 'Interval (ms)',       'default' => 5000,    'advanced' => true],
+                    ['key' => 'loop',              'type' => 'toggle',  'label' => 'Loop',                'default' => true,    'advanced' => true],
+                    ['key' => 'pagination',        'type' => 'toggle',  'label' => 'Pagination dots',    'default' => true,    'advanced' => true],
+                    ['key' => 'navigation',        'type' => 'toggle',  'label' => 'Navigation arrows',  'default' => true,    'advanced' => true],
+                    ['key' => 'slides_per_view',   'type' => 'number',  'label' => 'Slides per view',    'default' => 1,       'advanced' => true],
+                    ['key' => 'effect',            'type' => 'select',  'label' => 'Transition effect',  'default' => 'slide', 'advanced' => true, 'options' => ['slide' => 'Slide', 'fade' => 'Fade']],
+                    ['key' => 'speed',             'type' => 'number',  'label' => 'Speed (ms)',          'default' => 300,     'advanced' => true],
+                    ['key' => 'link_color',        'type' => 'text',    'label' => 'Link color',                                'advanced' => true],
+                    ['key' => 'text_color',        'type' => 'text',    'label' => 'Text color',                                'advanced' => true],
+                ],
+                'template'      => "@include('widgets.carousel')",
+            ]
+        );
     }
 }

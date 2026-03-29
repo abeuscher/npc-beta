@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Services\PageContext;
+use App\Services\WidgetDataResolver;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 
@@ -88,8 +89,16 @@ class PageController extends Controller
             }
         }
 
+        // Resolve collection data for widgets that declare collections
+        $collectionData = [];
+        foreach ($widgetType->collections ?? [] as $collSlot) {
+            $collHandle = $config['collection_handle'] ?? $collSlot;
+            $queryConfig = $pw->query_config[$collSlot] ?? [];
+            $collectionData[$collSlot] = WidgetDataResolver::resolve($collHandle, $queryConfig);
+        }
+
         if ($widgetType->render_mode === 'server') {
-            $templateVars = ['config' => $config, 'configMedia' => $configMedia];
+            $templateVars = ['config' => $config, 'configMedia' => $configMedia, 'collectionData' => $collectionData];
 
             if ($widgetType->handle === 'column_widget') {
                 $children = $this->renderColumnChildren($pw);

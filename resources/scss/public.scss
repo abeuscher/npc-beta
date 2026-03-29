@@ -1,8 +1,24 @@
-// Import theme overrides before Pico so variables take effect
-@use "theme";
+// Layer order: base (Pico) < libraries (Swiper, etc.) < unlayered (our styles).
+// Unlayered CSS always wins, so layout and theme need no layer declaration.
+// Uses @import throughout because SCSS requires @use before any other rules,
+// and @layer counts as a rule.
+@layer base, libraries;
+
+// Theme variables — load before Pico so overrides take effect
+@import "theme";
 
 // Pico CSS — classless semantic theme
-@use "../../node_modules/@picocss/pico/scss/pico";
+@layer base {
+    @import "../../node_modules/@picocss/pico/scss/pico";
+}
 
-// Public layout utilities
-@use "layout";
+// Swiper carousel
+@layer libraries {
+    @import "../../node_modules/swiper/swiper";
+    @import "../../node_modules/swiper/modules/navigation";
+    @import "../../node_modules/swiper/modules/pagination";
+    @import "../../node_modules/swiper/modules/effect-fade";
+}
+
+// Public layout utilities (unlayered — highest priority)
+@import "layout";

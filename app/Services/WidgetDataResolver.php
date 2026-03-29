@@ -59,6 +59,7 @@ class WidgetDataResolver
 
         $query = CollectionItem::where('collection_id', $collectionId)
             ->where('is_published', true)
+            ->with('media')
             ->orderBy($orderBy, $direction);
 
         if ($limit) {
@@ -73,7 +74,16 @@ class WidgetDataResolver
             $query->whereDoesntHave('cmsTags', fn ($q) => $q->whereIn('slug', $excludeTags));
         }
 
-        return $query->pluck('data')->all();
+        // Identify image fields so we can include media objects in the result.
+        $imageFieldKeys = static::getCollectionImageFieldKeys($collectionId);
+
+        return $query->get()->map(function (CollectionItem $item) use ($imageFieldKeys) {
+            $row = $item->data ?? [];
+            foreach ($imageFieldKeys as $fieldKey) {
+                $row['_media'][$fieldKey] = $item->getFirstMedia($fieldKey);
+            }
+            return $row;
+        })->all();
     }
 
     private static function resolveBlogPosts(array $queryConfig): array
@@ -157,6 +167,24 @@ class WidgetDataResolver
         }
 
         return collect($collection->fields ?? [])
+            ->pluck('key')
+            ->filter()
+            ->all();
+    }
+
+    /**
+     * Return field keys that are image-type for a given collection.
+     */
+    private static function getCollectionImageFieldKeys(string $collectionId): array
+    {
+        $collection = Collection::find($collectionId);
+
+        if (! $collection) {
+            return [];
+        }
+
+        return collect($collection->fields ?? [])
+            ->where('type', 'image')
             ->pluck('key')
             ->filter()
             ->all();

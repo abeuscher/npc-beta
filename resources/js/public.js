@@ -1,4 +1,9 @@
 import Alpine from 'alpinejs'
+import Swiper from 'swiper'
+import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules'
+
+window.Swiper = Swiper
+window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade }
 
 window.Alpine = Alpine
 

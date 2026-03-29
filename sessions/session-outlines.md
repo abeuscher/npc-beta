@@ -95,6 +95,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 086 | Column Widget & Widget Picker UX |
 | 087 | Inspector Panel & Shared Page Builder Form |
 | 088 | Image Optimization & SVG Support |
+| 089 | Image & Carousel Widgets |
 
 ---
 
@@ -106,9 +107,15 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 088 — Image Optimization & SVG Support~~ *(completed)*
 
-### Session 089 — Image & Carousel Widgets
+### ~~Session 089 — Image & Carousel Widgets~~ *(completed)*
 
-Two new page builder widget types: a static picture widget (single image via `<x-picture>`) and a carousel widget powered by Swiper.js (collection-backed slides with token-based captions). Inspector advanced/primary field grouping. Exercises the image optimization pipeline end-to-end.
+### Session 090 — Tailwind Migration — Layouts & Infrastructure
+
+Replace Pico CSS with Tailwind CSS across the public frontend. Install Tailwind, migrate design tokens to `tailwind.config.js`, rewrite layout templates (header, footer, portal chrome), convert structural components, wire site theme editor to CSS custom properties. Motivated by systemic CSS collisions between Pico's classless element styles and third-party library CSS (Swiper) discovered in session 089.
+
+### Session 091 — Tailwind Migration — Widget Templates
+
+Convert all 18 public-facing widget templates from Pico's classless HTML to Tailwind utility classes. Replace the `.form-grid` / `.col-N` system with Tailwind's grid utilities. Dark mode variants on every widget. Visual audit of all page types.
 
 ### WYSIWYG Inline Image Insert
 
@@ -124,7 +131,7 @@ Header and footer areas rendered via purpose-built widget types using the same e
 
 ### Additional Widget Types
 
-New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image slider, static image, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types.
+New widget types for Beta 1: calendar, graph/chart, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types. Static image and carousel widgets already built in session 089.
 
 **Table and Flexbox widgets** — a table layout widget and a flexbox layout widget would complement the existing column (CSS grid) widget and give users more layout options. These should be straightforward to build following the same `parent_widget_id` / `column_index` nesting model as the column widget. Consider whether the column widget needs usage limits (max nesting depth, max columns) to keep it manageable once alternatives exist.
 

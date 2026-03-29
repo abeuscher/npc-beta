@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Collection;
 use App\Models\PageWidget;
 use App\Models\Tag;
 use App\Services\PageBuilderDataSources;
@@ -141,10 +142,48 @@ class PageBuilderInspector extends Component
         $this->selectOptions = [];
 
         foreach ($this->block['widget_type_config_schema'] as $field) {
-            if (($field['type'] ?? '') === 'select' && ! empty($field['options_from'])) {
-                $this->selectOptions[$field['key']] = PageBuilderDataSources::resolve($field['options_from']);
+            if (($field['type'] ?? '') !== 'select') {
+                continue;
+            }
+
+            if (! empty($field['options_from'])) {
+                $source = $field['options_from'];
+
+                // Dynamic source: "collection_fields:type" resolves fields from the
+                // collection currently selected in the config's depends_on field.
+                if (str_starts_with($source, 'collection_fields:')) {
+                    $this->selectOptions[$field['key']] = $this->resolveCollectionFieldOptions($field);
+                } else {
+                    $this->selectOptions[$field['key']] = PageBuilderDataSources::resolve($source);
+                }
+            } elseif (! empty($field['options'])) {
+                $this->selectOptions[$field['key']] = $field['options'];
             }
         }
+    }
+
+    private function resolveCollectionFieldOptions(array $field): array
+    {
+        $dependsOn = $field['depends_on'] ?? 'collection_handle';
+        $handle = $this->block['config'][$dependsOn] ?? '';
+
+        if ($handle === '') {
+            return [];
+        }
+
+        $collection = Collection::where('handle', $handle)->first();
+        if (! $collection) {
+            return [];
+        }
+
+        $filterType = str_replace('collection_fields:', '', $field['options_from']);
+        $fields = collect($collection->fields ?? []);
+
+        if ($filterType !== '') {
+            $fields = $fields->where('type', $filterType);
+        }
+
+        return $fields->pluck('label', 'key')->all();
     }
 
     /**
@@ -180,6 +219,7 @@ class PageBuilderInspector extends Component
 
         if (str_starts_with($name, 'block.config')) {
             PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+            $this->resolveSelectOptions();
             return;
         }
 
