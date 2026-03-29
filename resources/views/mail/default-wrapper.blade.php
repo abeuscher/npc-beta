@@ -24,8 +24,8 @@
         {{-- Header --}}
         <tr>
           <td class="header" style="background: {{ $template->header_color ?: '#1a56db' }}; padding: 24px 32px; text-align: center;">
-            @if ($template->header_image_path)
-              <img src="{{ Storage::disk('public')->url($template->header_image_path) }}"
+            @if ($headerImageUrl = $template->getHeaderImageUrl())
+              <img src="{{ $headerImageUrl }}"
                    alt="{{ $template->header_text ?: '' }}"
                    style="max-height: 60px; display: block; margin: 0 auto 12px;">
             @endif

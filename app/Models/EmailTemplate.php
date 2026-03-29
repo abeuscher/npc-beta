@@ -2,11 +2,19 @@
 
 namespace App\Models;
 
+use App\Services\ImageSizeProfile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class EmailTemplate extends Model
+class EmailTemplate extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
+    protected $keyType = 'string';
+
     protected $fillable = [
         'handle',     // system-managed: template identifier, set by seeder (e.g. registration_confirmation)
         'subject',
@@ -20,6 +28,45 @@ class EmailTemplate extends Model
         'footer_reason',
         'custom_template_path',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('header_image')->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if ($media && str_contains($media->mime_type, 'svg')) {
+            return;
+        }
+
+        $profile = ImageSizeProfile::thumbnail();
+
+        $this->addMediaConversion('webp')
+            ->width($profile->maxWidth)
+            ->height($profile->maxHeight)
+            ->format('webp');
+
+        foreach ($profile->breakpoints as $width) {
+            $this->addMediaConversion("responsive-{$width}")
+                ->width($width)
+                ->format('webp');
+        }
+    }
+
+    public function getHeaderImageUrl(): ?string
+    {
+        $media = $this->getFirstMedia('header_image');
+        if ($media) {
+            return $media->getUrl();
+        }
+
+        if ($this->header_image_path) {
+            return Storage::disk('public')->url($this->header_image_path);
+        }
+
+        return null;
+    }
 
     public static function forHandle(string $handle): self
     {

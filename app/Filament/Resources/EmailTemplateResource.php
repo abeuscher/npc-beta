@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 
 class EmailTemplateResource extends Resource
 {
@@ -66,10 +67,10 @@ class EmailTemplateResource extends Resource
                         ->label('Header colour')
                         ->default('#1a56db'),
 
-                    Forms\Components\FileUpload::make('header_image_path')
+                    SpatieMediaLibraryFileUpload::make('header_image')
                         ->label('Header image')
+                        ->collection('header_image')
                         ->disk('public')
-                        ->directory('email-templates')
                         ->visibility('public')
                         ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/svg+xml'])
                         ->nullable(),

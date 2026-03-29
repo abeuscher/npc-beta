@@ -94,6 +94,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 085 | Widget Migration |
 | 086 | Column Widget & Widget Picker UX |
 | 087 | Inspector Panel & Shared Page Builder Form |
+| 088 | Image Optimization & SVG Support |
 
 ---
 
@@ -103,9 +104,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 087 — Inspector Panel & Shared Page Builder Form~~ *(completed)*
 
-### Session 088 — Image Optimization & SVG Support
+### ~~Session 088 — Image Optimization & SVG Support~~ *(completed)*
 
-SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
+### Session 089 — Image/Carousel Widget
+
+New page builder widget type: accepts one or more images via the media library. Single image renders as a static `<picture>` element using the picture component from session 088. Multiple images render as a carousel/slider. No carousel library currently in the project — one will need to be selected and installed. Exercises the image optimization pipeline end-to-end with real content.
 
 ### Per-Page SEO & Header Snippets
 

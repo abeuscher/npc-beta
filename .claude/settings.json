@@ -17,7 +17,12 @@
       "Bash(find E:Clientsnonprofitcrmapp -type f -name *.php -path *config*)",
       "Bash(grep -r \"APP_ENV\\\\|app_env\\\\|isProduction\\\\|non.production\" app/Filament --include=*.php -l)",
       "Bash(find e:/Clients/nonprofitcrm/app -name *Summary* -o -name *summary*)",
-      "Bash(grep -r \"Giving Summary\\\\|GivingSummary\" e:/Clients/nonprofitcrm/app --include=*.php -n)"
+      "Bash(grep -r \"Giving Summary\\\\|GivingSummary\" e:/Clients/nonprofitcrm/app --include=*.php -n)",
+      "Bash(grep -r use.*FileUpload app/ --include=*.php)",
+      "Bash(grep -r \"Intervention\\\\|intervention\" app/ --include=*.php)",
+      "Bash(grep -i \"image_driver\\\\|IMAGE_DRIVER\" .env*)",
+      "Bash(grep -r \"registerMediaConversions\\\\|addMedia\\\\|registerMediaCollections\" app/ --include=*.php)",
+      "Bash(docker compose:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations"

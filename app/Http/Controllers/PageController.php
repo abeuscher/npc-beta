@@ -80,15 +80,26 @@ class PageController extends Controller
         $scripts     = '';
         $html        = '';
 
+        // Resolve image config fields to media objects for the picture component
+        $configMedia = [];
+        foreach ($widgetType->config_schema ?? [] as $field) {
+            if (($field['type'] ?? '') === 'image' && !empty($config[$field['key']])) {
+                $configMedia[$field['key']] = $pw->getFirstMedia("config_{$field['key']}");
+            }
+        }
+
         if ($widgetType->render_mode === 'server') {
+            $templateVars = ['config' => $config, 'configMedia' => $configMedia];
+
             if ($widgetType->handle === 'column_widget') {
                 $children = $this->renderColumnChildren($pw);
+                $templateVars['children'] = $children;
                 $html = $widgetType->template
-                    ? Blade::render($widgetType->template, ['config' => $config, 'children' => $children])
+                    ? Blade::render($widgetType->template, $templateVars)
                     : '';
             } else {
                 $html = $widgetType->template
-                    ? Blade::render($widgetType->template, ['config' => $config])
+                    ? Blade::render($widgetType->template, $templateVars)
                     : '';
             }
 

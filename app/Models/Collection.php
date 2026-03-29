@@ -20,6 +20,7 @@ namespace App\Models;
  */
 
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -109,7 +110,11 @@ class Collection extends Model
                 'number'    => Forms\Components\TextInput::make("data.{$key}")->numeric(),
                 'date'      => Forms\Components\DatePicker::make("data.{$key}"),
                 'toggle'    => Forms\Components\Toggle::make("data.{$key}"),
-                'image'     => Forms\Components\FileUpload::make("data.{$key}")->image(),
+                'image'     => SpatieMediaLibraryFileUpload::make($key)
+                                    ->collection($key)
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']),
                 'url'       => Forms\Components\TextInput::make("data.{$key}")->url(),
                 'email'     => Forms\Components\TextInput::make("data.{$key}")->email(),
                 'select'    => Forms\Components\Select::make("data.{$key}")

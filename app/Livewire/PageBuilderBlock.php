@@ -152,6 +152,7 @@ class PageBuilderBlock extends Component
             $defaultConfig[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
                 'toggle' => false,
                 'number' => null,
+                'image'  => null,
                 default  => '',
             };
         }

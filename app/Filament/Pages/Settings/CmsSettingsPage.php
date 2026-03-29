@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Settings;
 
 use App\Models\SiteSetting;
+use App\Services\ImageSizeProfile;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -40,6 +41,10 @@ class CmsSettingsPage extends Page
             'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'false') === 'true',
             'auto_publish_pages'  => SiteSetting::get('auto_publish_pages', 'true') === 'true',
             'auto_publish_posts'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
+            'image_breakpoints'   => collect(ImageSizeProfile::configuredBreakpoints())
+                ->map(fn ($w) => ['width' => $w])
+                ->values()
+                ->all(),
         ]);
     }
 
@@ -96,6 +101,27 @@ class CmsSettingsPage extends Page
                             ->columnSpan(4),
                     ])
                     ->columns(12),
+
+                Forms\Components\Section::make('Image Sizes')
+                    ->description('Responsive breakpoints used when generating optimized image variants. Widths in pixels, sorted largest to smallest. Defaults match Pico.css breakpoints.')
+                    ->schema([
+                        Forms\Components\Repeater::make('image_breakpoints')
+                            ->label('Breakpoints')
+                            ->schema([
+                                Forms\Components\TextInput::make('width')
+                                    ->label('Width')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(64)
+                                    ->maxValue(3840)
+                                    ->suffix('px'),
+                            ])
+                            ->columns(1)
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->addActionLabel('Add breakpoint')
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -120,6 +146,26 @@ class CmsSettingsPage extends Page
         SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
+
+        $breakpoints = collect($data['image_breakpoints'] ?? [])
+            ->pluck('width')
+            ->map(fn ($v) => (int) $v)
+            ->filter(fn ($v) => $v >= 64)
+            ->sortDesc()
+            ->values()
+            ->all();
+
+        $setting = \App\Models\SiteSetting::where('key', 'image_breakpoints')->first();
+        if ($setting) {
+            $setting->update(['value' => json_encode($breakpoints)]);
+        } else {
+            \App\Models\SiteSetting::create([
+                'key'   => 'image_breakpoints',
+                'value' => json_encode($breakpoints),
+                'type'  => 'json',
+            ]);
+        }
+        \Illuminate\Support\Facades\Cache::forget('site_setting:image_breakpoints');
 
         Notification::make()
             ->title('Settings saved')

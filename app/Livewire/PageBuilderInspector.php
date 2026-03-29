@@ -6,9 +6,12 @@ use App\Models\PageWidget;
 use App\Models\Tag;
 use App\Services\PageBuilderDataSources;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class PageBuilderInspector extends Component
 {
+    use WithFileUploads;
+
     public string $blockId = '';
 
     /** @var array<string, mixed> */
@@ -19,6 +22,12 @@ class PageBuilderInspector extends Component
 
     /** @var array<string, array<string, string>> Resolved options for select fields, keyed by field key. */
     public array $selectOptions = [];
+
+    /** @var array<string, mixed> Temporary file uploads for image config fields, keyed by field key. */
+    public array $imageUploads = [];
+
+    /** @var array<string, string|null> Current image URLs for preview, keyed by field key. */
+    public array $imageUrls = [];
 
     public function mount(string $blockId = ''): void
     {
@@ -57,6 +66,74 @@ class PageBuilderInspector extends Component
             ->toArray();
 
         $this->resolveSelectOptions();
+        $this->resolveImageUrls();
+    }
+
+    private function resolveImageUrls(): void
+    {
+        $this->imageUrls = [];
+        $this->imageUploads = [];
+
+        $pw = PageWidget::find($this->blockId);
+        if (!$pw) {
+            return;
+        }
+
+        foreach ($this->block['widget_type_config_schema'] as $field) {
+            if (($field['type'] ?? '') === 'image') {
+                $media = $pw->getFirstMedia("config_{$field['key']}");
+                $this->imageUrls[$field['key']] = $media?->getUrl();
+            }
+        }
+    }
+
+    public function updatedImageUploads(mixed $value, string $key): void
+    {
+        if (!$this->validateBlockOwnership()) {
+            return;
+        }
+
+        $upload = $this->imageUploads[$key] ?? null;
+        if (!$upload) {
+            return;
+        }
+
+        $pw = PageWidget::find($this->blockId);
+        if (!$pw) {
+            return;
+        }
+
+        $collectionName = "config_{$key}";
+
+        $pw->addMedia($upload->getRealPath())
+            ->usingFileName($upload->hashName())
+            ->toMediaCollection($collectionName, 'public');
+
+        $media = $pw->getFirstMedia($collectionName);
+        $this->imageUrls[$key] = $media?->getUrl();
+
+        $this->block['config'][$key] = $media?->id;
+        PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+
+        $this->imageUploads[$key] = null;
+    }
+
+    public function removeImage(string $key): void
+    {
+        if (!$this->validateBlockOwnership()) {
+            return;
+        }
+
+        $pw = PageWidget::find($this->blockId);
+        if (!$pw) {
+            return;
+        }
+
+        $pw->clearMediaCollection("config_{$key}");
+        $this->imageUrls[$key] = null;
+
+        $this->block['config'][$key] = null;
+        PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
     }
 
     private function resolveSelectOptions(): void
@@ -88,6 +165,10 @@ class PageBuilderInspector extends Component
      */
     public function updated(string $name): void
     {
+        if (str_starts_with($name, 'imageUploads')) {
+            return;
+        }
+
         if (! $this->validateBlockOwnership()) {
             return;
         }
