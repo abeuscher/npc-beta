@@ -26,7 +26,7 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Welcome',
                 'type'         => 'default',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );
@@ -38,7 +38,7 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'About',
                 'type'         => 'default',
-                'is_published' => false,
+                'status' => 'draft',
             ]
         );
 
@@ -49,7 +49,7 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Contact',
                 'type'         => 'default',
-                'is_published' => false,
+                'status' => 'draft',
             ]
         );
 
@@ -60,7 +60,7 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Events',
                 'type'         => 'default',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );
@@ -75,7 +75,7 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'News',
                 'type'         => 'default',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );

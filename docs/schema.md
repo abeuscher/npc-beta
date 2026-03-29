@@ -775,10 +775,10 @@ Static pages and landing pages. Posts are stored here with `type = 'post'`; memb
 | slug | string | no | unique |
 | type | string | no | default: 'default'; values: default, post, event, member, system — enforced by DB check constraint |
 | author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
+| status | string | no | default: 'draft'; values: draft, published |
 | meta_title | string | yes | |
 | meta_description | text | yes | |
 | custom_fields | jsonb | yes | |
-| is_published | boolean | no | default: false |
 | published_at | timestamp | yes | |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

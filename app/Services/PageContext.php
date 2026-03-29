@@ -31,7 +31,7 @@ class PageContext
     {
         if ($this->postsCache === null) {
             $this->postsCache = Page::where('type', 'post')
-                ->where('is_published', true)
+                ->published()
                 ->orderByRaw('COALESCE(published_at, created_at) DESC')
                 ->get();
         }
@@ -43,7 +43,7 @@ class PageContext
     {
         if ($this->pagesCache === null) {
             $this->pagesCache = Page::where('type', '!=', 'post')
-                ->where('is_published', true)
+                ->published()
                 ->orderBy('title')
                 ->get();
         }

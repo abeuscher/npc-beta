@@ -10,7 +10,7 @@ it('serves the home page at /', function () {
     Page::factory()->create([
         'title'        => 'Home',
         'slug'         => 'home',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -21,7 +21,7 @@ it('serves a published page at /{slug}', function () {
     Page::factory()->create([
         'title'        => 'About Us',
         'slug'         => 'about',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -33,7 +33,7 @@ it('serves a published page with a nested slug', function () {
         'title'        => 'Board Meeting',
         'slug'         => 'events/board-meeting',
         'type'         => 'event',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -44,7 +44,7 @@ it('returns 404 for an unpublished page', function () {
     Page::factory()->create([
         'title'        => 'Draft Page',
         'slug'         => 'draft',
-        'is_published' => false,
+        'status' => 'draft',
     ]);
 
     $this->get('/draft')->assertNotFound();
@@ -59,7 +59,7 @@ it('auto-generates a slug from the title', function () {
     $page = Page::create([
         'author_id'    => $user->id,
         'title'        => 'Our Mission Statement',
-        'is_published' => false,
+        'status' => 'draft',
     ]);
 
     expect($page->slug)->toBe('our-mission-statement');
@@ -73,7 +73,7 @@ it('page type defaults to default', function () {
     $page = Page::factory()->create([
         'title'        => 'Simple Page',
         'slug'         => 'simple',
-        'is_published' => false,
+        'status' => 'draft',
     ]);
 
     expect($page->type)->toBe('default');

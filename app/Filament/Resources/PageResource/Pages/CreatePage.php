@@ -44,8 +44,8 @@ class CreatePage extends CreateRecord
             default => SiteSetting::get('auto_publish_pages', 'true') === 'true',
         };
 
-        if (!isset($data['is_published'])) {
-            $data['is_published'] = $autoPublish;
+        if (!isset($data['status'])) {
+            $data['status']       = $autoPublish ? 'published' : 'draft';
             $data['published_at'] = $autoPublish ? now() : null;
         }
 

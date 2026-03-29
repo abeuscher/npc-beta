@@ -26,7 +26,7 @@ it('can be created and associated with a page', function () {
     $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page',
-        'is_published' => true,
+        'status' => 'published',
     ]);
     $widgetType = makeWidgetType();
 
@@ -46,7 +46,7 @@ it('widgetType relationship returns the correct WidgetType model', function () {
     $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-2',
-        'is_published' => true,
+        'status' => 'published',
     ]);
     $widgetType = makeWidgetType(['handle' => 'text_block_2', 'label' => 'Text Block 2']);
 
@@ -72,7 +72,7 @@ it('inactive widgets are excluded when loading for a page', function () {
     $page       = Page::factory()->create([
         'title'        => 'Test Page',
         'slug'         => 'test-page-4',
-        'is_published' => true,
+        'status' => 'published',
     ]);
     $widgetType = makeWidgetType();
 

@@ -3,20 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
-use App\Forms\Components\TagSelect;
-use App\Livewire\PageBuilder;
-use App\Models\CustomFieldDef;
 use App\Models\Page;
-use App\Models\SiteSetting;
-use App\Models\User;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\HtmlString;
 
 class PageResource extends Resource
 {
@@ -54,88 +47,18 @@ class PageResource extends Resource
     {
         return $form->schema(
             static::pageBuilderFormSchema(
-                titleSectionFields: [
-                    Forms\Components\TextInput::make('title')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpan(2),
-
-                    Forms\Components\Placeholder::make('public_url')
-                        ->hiddenLabel()
-                        ->content(function ($record): HtmlString|string {
-                            if (! $record) {
-                                return '';
-                            }
-                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                            $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
-                            $url  = $base . $path;
-
-                            return new HtmlString(
-                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                                'class="text-primary-600 hover:underline text-sm font-mono">' .
-                                e($url) . '</a>'
-                            );
-                        })
-                        ->columnSpan(1),
-
-                    Forms\Components\TextInput::make('slug')
-                        ->required()
-                        ->maxLength(255)
-                        ->rules([
-                            'regex:/^[a-z0-9\-\/]+$/',
-                            fn (Forms\Get $get, ?Model $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
-                                $type   = $get('type');
-                                $prefix = match ($type) {
-                                    'post'  => SiteSetting::get('blog_prefix', 'news') . '/',
-                                    'event' => SiteSetting::get('events_prefix', 'events') . '/',
-                                    default => '',
-                                };
-                                $fullSlug = $prefix . ltrim($value, '/');
-                                $query    = Page::where('slug', $fullSlug);
-                                if ($record?->id) {
-                                    $query->where('id', '!=', $record->id);
-                                }
-                                if ($query->exists()) {
-                                    $fail('This slug is already in use.');
-                                }
-                            },
-                        ])
-                        ->notIn(['admin', 'horizon', 'up', 'login', 'logout', 'register'])
-                        ->prefix(fn (Forms\Get $get): ?string => match ($get('type')) {
-                            'member' => '/' . SiteSetting::get('portal_prefix', 'members') . '/',
-                            'post'   => '/' . SiteSetting::get('blog_prefix', 'news') . '/',
-                            'event'  => '/' . SiteSetting::get('events_prefix', 'events') . '/',
-                            default  => null,
-                        })
-                        ->formatStateUsing(fn ($state, Forms\Get $get): string => match ($get('type')) {
-                            'member' => ltrim(str_replace(SiteSetting::get('portal_prefix', 'members') . '/', '', $state ?? ''), '/'),
-                            'post'   => ltrim(str_replace(SiteSetting::get('blog_prefix', 'news') . '/', '', $state ?? ''), '/'),
-                            'event'  => ltrim(str_replace(SiteSetting::get('events_prefix', 'events') . '/', '', $state ?? ''), '/'),
-                            default  => $state ?? '',
-                        })
-                        ->dehydrateStateUsing(fn ($state, Forms\Get $get): string => match ($get('type')) {
-                            'post'  => SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/'),
-                            'event' => SiteSetting::get('events_prefix', 'events') . '/' . ltrim($state ?? '', '/'),
-                            default => $state ?? '',
-                        })
-                        ->disabled(fn (Forms\Get $get): bool => $get('type') === 'member')
-                        ->dehydrated()
-                        ->helperText(fn (Forms\Get $get) => match ($get('type')) {
-                            'member' => 'Slug is locked — member page slugs are managed by the portal prefix setting.',
-                            'post'   => 'Edit the slug segment after the blog prefix.',
-                            'event'  => 'Edit the slug segment after the events prefix.',
-                            default  => null,
-                        })
-                        ->hidden(fn (string $operation, Forms\Get $get): bool => $operation === 'create' || $get('type') === 'system')
-                        ->columnSpanFull(),
-
+                type: 'page',
+                modelType: 'page',
+                tagType: 'page',
+                extraTitleFields: [
                     // System pages: show the full stored slug as read-only text.
                     Forms\Components\Placeholder::make('system_slug_display')
                         ->label('Slug')
                         ->content(fn ($record): string => $record?->slug ?? '—')
                         ->helperText('Slug is locked — system page slugs can only be changed via the System Pages Prefix setting.')
                         ->visibleOn('edit')
-                        ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system'),
+                        ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system')
+                        ->columnSpanFull(),
 
                     // Shown on create only — editable type selection.
                     Forms\Components\Select::make('type')
@@ -145,40 +68,17 @@ class PageResource extends Resource
                             'member'  => 'Member Page',
                         ])
                         ->default('default')
-                        ->hiddenOn('edit'),
+                        ->hiddenOn('edit')
+                        ->columnSpanFull(),
 
                     // Shown on edit only for system pages — read-only type label.
                     Forms\Components\Placeholder::make('type_display')
                         ->label('Page Type')
                         ->content('System Page')
                         ->visibleOn('edit')
-                        ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system'),
+                        ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system')
+                        ->columnSpanFull(),
                 ],
-                settingsSectionSchema: [
-                    Forms\Components\Select::make('author_id')
-                        ->label('Author')
-                        ->relationship('author', 'name')
-                        ->searchable()
-                        ->required()
-                        ->default(fn () => auth()->id()),
-
-                    Forms\Components\Toggle::make('is_published')
-                        ->label('Published')
-                        ->inline(false)
-                        ->live()
-                        ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
-                            if ($state && ! $get('published_at')) {
-                                $set('published_at', now());
-                            }
-                        }),
-
-                    Forms\Components\DateTimePicker::make('published_at')
-                        ->label('Publish Date')
-                        ->visible(fn (Forms\Get $get) => $get('is_published')),
-
-                    TagSelect::make('page')->columnSpanFull(),
-                ],
-                modelType: 'page',
                 withSeo: true,
                 pageBuilderProps: fn ($record) => ['pageId' => $record->id],
             )
@@ -228,9 +128,11 @@ class PageResource extends Resource
                         default   => 'Page',
                     }),
 
-                Tables\Columns\IconColumn::make('is_published')
-                    ->label('Published')
-                    ->boolean(),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'gray'    => 'draft',
+                        'success' => 'published',
+                    ]),
 
                 Tables\Columns\TextColumn::make('published_at')
                     ->label('Published At')
@@ -243,10 +145,11 @@ class PageResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_published')
-                    ->label('Published')
-                    ->trueLabel('Published only')
-                    ->falseLabel('Unpublished only'),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft'     => 'Draft',
+                        'published' => 'Published',
+                    ]),
 
                 Tables\Filters\SelectFilter::make('type')
                     ->label('Type')

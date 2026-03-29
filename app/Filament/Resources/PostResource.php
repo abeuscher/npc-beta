@@ -3,20 +3,13 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PostResource\Pages;
-use App\Forms\Components\TagSelect;
-use App\Livewire\PageBuilder;
-use App\Models\CustomFieldDef;
 use App\Models\Page;
-use App\Models\SiteSetting;
-use App\Models\User;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\HtmlString;
 
 class PostResource extends Resource
 {
@@ -58,85 +51,13 @@ class PostResource extends Resource
     {
         return $form->schema(
             static::pageBuilderFormSchema(
-                titleSectionFields: [
-                    Forms\Components\TextInput::make('title')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpan(2),
-
-                    Forms\Components\Placeholder::make('public_url')
-                        ->hiddenLabel()
-                        ->content(function ($record): HtmlString|string {
-                            if (! $record) {
-                                return '';
-                            }
-                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                            $url  = $base . '/' . $record->slug;
-
-                            return new HtmlString(
-                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                                'class="text-primary-600 hover:underline text-sm font-mono">' .
-                                e($url) . '</a>'
-                            );
-                        })
-                        ->columnSpan(1),
-
-                    Forms\Components\TextInput::make('slug')
-                        ->required()
-                        ->maxLength(255)
-                        ->rules([
-                            'regex:/^[a-z0-9\-\/]+$/',
-                            fn (?Model $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
-                                $prefix   = SiteSetting::get('blog_prefix', 'news') . '/';
-                                $fullSlug = $prefix . ltrim($value, '/');
-                                $query    = Page::where('slug', $fullSlug);
-                                if ($record?->id) {
-                                    $query->where('id', '!=', $record->id);
-                                }
-                                if ($query->exists()) {
-                                    $fail('This slug is already in use.');
-                                }
-                            },
-                        ])
-                        ->prefix(fn (): string => '/' . SiteSetting::get('blog_prefix', 'news') . '/')
-                        ->formatStateUsing(fn ($state): string =>
-                            ltrim(str_replace(SiteSetting::get('blog_prefix', 'news') . '/', '', $state ?? ''), '/')
-                        )
-                        ->dehydrateStateUsing(fn ($state): string =>
-                            SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/')
-                        )
-                        ->helperText('Edit the slug segment after the blog prefix.')
-                        ->hiddenOn('create')
-                        ->columnSpanFull(),
-
+                type: 'post',
+                modelType: 'page',
+                tagType: 'post',
+                extraTitleFields: [
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
                 ],
-                settingsSectionSchema: [
-                    Forms\Components\Select::make('author_id')
-                        ->label('Author')
-                        ->relationship('author', 'name')
-                        ->searchable()
-                        ->required()
-                        ->default(fn () => auth()->id()),
-
-                    Forms\Components\Toggle::make('is_published')
-                        ->label('Published')
-                        ->inline(false)
-                        ->live()
-                        ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
-                            if ($state && ! $get('published_at')) {
-                                $set('published_at', now());
-                            }
-                        }),
-
-                    Forms\Components\DateTimePicker::make('published_at')
-                        ->label('Publish Date')
-                        ->visible(fn (Forms\Get $get) => $get('is_published')),
-
-                    TagSelect::make('post')->columnSpanFull(),
-                ],
-                modelType: 'page',
                 withSeo: true,
                 pageBuilderProps: fn ($record) => ['pageId' => $record->id],
             )
@@ -154,9 +75,11 @@ class PostResource extends Resource
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
 
-                Tables\Columns\IconColumn::make('is_published')
-                    ->label('Published')
-                    ->boolean(),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'gray'    => 'draft',
+                        'success' => 'published',
+                    ]),
 
                 Tables\Columns\TextColumn::make('published_at')
                     ->label('Published At')
@@ -169,10 +92,11 @@ class PostResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_published')
-                    ->label('Published')
-                    ->trueLabel('Published only')
-                    ->falseLabel('Unpublished only'),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft'     => 'Draft',
+                        'published' => 'Published',
+                    ]),
 
                 Tables\Filters\TrashedFilter::make(),
             ])

@@ -32,7 +32,7 @@ class PortalPageSeeder extends Seeder
                 'slug'         => $prefix,
                 'title'        => 'Member Dashboard',
                 'type'         => 'member',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]);
             $dashboard->saveQuietly();
@@ -49,7 +49,7 @@ class PortalPageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Edit Account',
                 'type'         => 'member',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );
@@ -63,7 +63,7 @@ class PortalPageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Change Password',
                 'type'         => 'member',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );
@@ -77,7 +77,7 @@ class PortalPageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'My Event Registrations',
                 'type'         => 'member',
-                'is_published' => true,
+                'status' => 'published',
                 'published_at' => now(),
             ]
         );

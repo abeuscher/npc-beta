@@ -84,7 +84,7 @@ it('returns published Page records of type post for the blog_posts handle', func
         'title'        => 'Published Post',
         'slug'         => 'news/published-post',
         'type'         => 'post',
-        'is_published' => true,
+        'status'       => 'published',
         'published_at' => now()->subDay(),
     ]);
 
@@ -92,7 +92,7 @@ it('returns published Page records of type post for the blog_posts handle', func
         'title'        => 'Draft Post',
         'slug'         => 'news/draft-post',
         'type'         => 'post',
-        'is_published' => false,
+        'status'       => 'draft',
         'published_at' => null,
     ]);
 

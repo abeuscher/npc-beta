@@ -36,7 +36,7 @@ beforeEach(function () {
         'slug'         => 'news',
         'title'        => 'News',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 });
@@ -56,7 +56,7 @@ function makePost(array $attributes): Page
     $pageAttributes = array_diff_key($attributes, ['content' => null]);
     $page = Page::factory()->create(array_merge([
         'type'         => 'post',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ], $pageAttributes, ['slug' => $slug]));
 
@@ -99,7 +99,7 @@ it('unpublished post returns 404', function () {
     makePost([
         'title'        => 'Draft Post',
         'slug'         => 'news/draft-post',
-        'is_published' => false,
+        'status' => 'draft',
         'published_at' => null,
     ]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Forms\Fieldsets\CmsFormFields;
 use App\Livewire\PageBuilder;
 use App\Models\CustomFieldDef;
 use Filament\Forms;
@@ -9,53 +10,63 @@ use Filament\Forms;
 trait HasPageBuilderForm
 {
     /**
-     * Assemble the standard 3-column CMS edit form layout.
+     * Assemble the standard CMS edit form layout.
      *
-     * @param  array  $titleSectionFields    Fields rendered inside the unnamed left-column section.
-     * @param  array  $settingsSectionSchema  Fields rendered inside the Settings section (right, 2 cols).
-     * @param  string $modelType             Model type string passed to CustomFieldDef::forModel().
-     * @param  array  $uniqueSections        Additional form components appended to the left column below
-     *                                       the title section (e.g. event location/meeting sections).
-     * @param  bool   $withSeo               Whether to include the full-width SEO section (Row 3).
-     * @param  callable|null $pageBuilderProps  Callable `fn($record) => ['pageId' => $record->id]`.
-     *                                          When null the Page Builder section is omitted (Row 4).
+     * @param  string  $type           Content type: 'page', 'post', or 'event'.
+     * @param  string  $modelType      Model type string for CustomFieldDef::forModel().
+     * @param  string  $tagType        Tag type key for TagSelect (page, post, event).
+     * @param  array   $extraTitleFields  Additional fields appended inside the Page Name section
+     *                                    (e.g. page type selector, system slug display).
+     * @param  array   $uniqueSections    Additional sections below the top row (e.g. event location).
+     * @param  bool    $withSeo           Include the full-width SEO section.
+     * @param  callable|null $pageBuilderProps  Callable for page builder; null to omit.
      */
     public static function pageBuilderFormSchema(
-        array $titleSectionFields,
-        array $settingsSectionSchema,
+        string $type,
         string $modelType,
+        string $tagType,
+        array $extraTitleFields = [],
         array $uniqueSections = [],
         bool $withSeo = true,
         ?callable $pageBuilderProps = null
     ): array {
+        // ── Row 1: Page Name | Settings | Tags — 3 equal columns ─────────
+        $pageNameSection = CmsFormFields::pageName($type);
+
+        // Append any extra fields (type selector, system slug display) to the Page Name section
+        if (! empty($extraTitleFields)) {
+            $pageNameSection = $pageNameSection->schema(array_merge(
+                $pageNameSection->getChildComponents(),
+                $extraTitleFields
+            ));
+        }
+
         $schema = [
-            // ── Row 1: Title section (1 col) + Settings section (2 cols) ──────
             Forms\Components\Group::make([
-                Forms\Components\Group::make(array_merge(
-                    [Forms\Components\Section::make()->schema($titleSectionFields)->columns(3)],
-                    $uniqueSections
-                ))->columnSpan(1),
-
-                Forms\Components\Section::make('Settings')
-                    ->schema($settingsSectionSchema)
-                    ->columns(3)
-                    ->columnSpan(2),
+                $pageNameSection->columnSpan(1),
+                CmsFormFields::settings($type)->columnSpan(1),
+                CmsFormFields::tags($tagType)->columnSpan(1),
             ])->columns(3)->columnSpanFull(),
-
-            // ── Row 2: Custom Fields (full width, collapsed, hidden when none) ─
-            Forms\Components\Section::make('Custom Fields')
-                ->schema(fn () => CustomFieldDef::forModel($modelType)->get()
-                    ->map(fn ($def) => $def->toFilamentFormComponent())
-                    ->toArray()
-                )
-                ->columns(2)
-                ->collapsible()
-                ->collapsed()
-                ->hidden(fn () => CustomFieldDef::forModel($modelType)->doesntExist())
-                ->columnSpanFull(),
         ];
 
-        // ── Row 3: SEO (full width, collapsed, always visible) ────────────────
+        // ── Unique sections (event location, meeting, registration, etc.) ─
+        foreach ($uniqueSections as $section) {
+            $schema[] = $section->columnSpanFull();
+        }
+
+        // ── Custom Fields (full width, collapsed, hidden when none) ───────
+        $schema[] = Forms\Components\Section::make('Custom Fields')
+            ->schema(fn () => CustomFieldDef::forModel($modelType)->get()
+                ->map(fn ($def) => $def->toFilamentFormComponent())
+                ->toArray()
+            )
+            ->columns(2)
+            ->collapsible()
+            ->collapsed()
+            ->hidden(fn () => CustomFieldDef::forModel($modelType)->doesntExist())
+            ->columnSpanFull();
+
+        // ── SEO (full width, collapsed, always visible) ───────────────────
         if ($withSeo) {
             $schema[] = Forms\Components\Section::make('SEO')
                 ->schema([
@@ -73,7 +84,7 @@ trait HasPageBuilderForm
                 ->columnSpanFull();
         }
 
-        // ── Row 4: Page Builder (full width, hidden on create) ────────────────
+        // ── Page Builder (full width, hidden on create) ───────────────────
         if ($pageBuilderProps !== null) {
             $props = $pageBuilderProps;
             $schema[] = Forms\Components\Section::make('Page Builder')

@@ -13,7 +13,7 @@ class PageController extends Controller
     public function home()
     {
         $page = Page::where('slug', 'home')
-            ->where('is_published', true)
+            ->published()
             ->firstOrFail();
 
         return $this->renderPage($page);
@@ -22,7 +22,7 @@ class PageController extends Controller
     public function show(string $slug)
     {
         $page = Page::where('slug', $slug)
-            ->where('is_published', true)
+            ->published()
             ->firstOrFail();
 
         if ($page->type === 'member') {

@@ -235,7 +235,7 @@ class DashboardDebugGeneratorWidget extends Widget
                 'title'        => $title,
                 'slug'         => $blogPrefix . '/' . $baseSlug,
                 'type'         => 'post',
-                'is_published' => true,
+                'status'       => 'published',
                 'published_at' => $publishedAt,
             ]);
         }

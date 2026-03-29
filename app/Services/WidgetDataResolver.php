@@ -81,7 +81,7 @@ class WidgetDataResolver
         $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
 
         $query = Page::where('type', 'post')
-            ->where('is_published', true)
+            ->published()
             ->orderBy('published_at', 'desc');
 
         if ($limit) {

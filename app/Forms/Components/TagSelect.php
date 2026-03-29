@@ -49,6 +49,6 @@ class TagSelect
                             $set('_new_tag', null);
                         })
                 ),
-        ])->columns(2);
+        ]);
     }
 }

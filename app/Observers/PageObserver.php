@@ -44,8 +44,12 @@ class PageObserver
         }
 
         $description = null;
-        if ($page->wasChanged('is_published')) {
-            $description = $page->is_published ? 'Published' : 'Unpublished';
+        if ($page->wasChanged('status')) {
+            $description = match ($page->status) {
+                'published' => 'Published',
+                'draft'     => 'Unpublished',
+                default     => null,
+            };
         }
 
         ActivityLogger::log($page, 'updated', $description);

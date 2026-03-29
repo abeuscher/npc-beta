@@ -50,7 +50,7 @@ class SystemPageSeeder extends Seeder
                     'author_id'    => $authorId,
                     'title'        => $def['title'],
                     'type'         => 'system',
-                    'is_published' => true,
+                    'status' => 'published',
                     'published_at' => now(),
                 ]
             );

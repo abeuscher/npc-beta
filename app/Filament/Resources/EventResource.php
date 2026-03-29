@@ -4,11 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
 use App\Filament\Resources\EventResource\RelationManagers;
-use App\Forms\Components\TagSelect;
-use App\Models\CustomFieldDef;
 use App\Models\Event;
 use App\Models\Page;
-use App\Models\User;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
@@ -52,7 +49,7 @@ class EventResource extends Resource
 
         $page = Page::create([
             'title'        => $event->title,
-            'is_published' => $autoPublish,
+            'status'       => $autoPublish ? 'published' : 'draft',
             'published_at' => $autoPublish ? now() : null,
             'type'         => 'event',
             'author_id'    => $event->author_id,
@@ -97,87 +94,28 @@ class EventResource extends Resource
     {
         return $form->schema(
             static::pageBuilderFormSchema(
-                titleSectionFields: [
-                    Forms\Components\TextInput::make('title')
-                        ->required()
-                        ->maxLength(255)
-                        ->columnSpanFull(),
-
-                    Forms\Components\TextInput::make('slug')
-                        ->required()
-                        ->maxLength(255)
-                        ->unique(Event::class, 'slug', ignoreRecord: true)
-                        ->regex('/^[a-z0-9\-]+$/')
-                        ->helperText('URL-safe identifier. Auto-generated from title on create.')
-                        ->hiddenOn('create')
-                        ->columnSpanFull(),
-
+                type: 'event',
+                modelType: 'event',
+                tagType: 'event',
+                extraTitleFields: [
                     Forms\Components\DateTimePicker::make('starts_at')
                         ->label('Start')
                         ->required()
-                        ->seconds(false),
+                        ->seconds(false)
+                        ->columnSpan(2),
 
                     Forms\Components\DateTimePicker::make('ends_at')
                         ->label('End')
                         ->nullable()
                         ->seconds(false)
-                        ->after('starts_at'),
+                        ->after('starts_at')
+                        ->columnSpan(2),
 
                     QuillEditor::make('description')
                         ->label('Description')
                         ->nullable()
                         ->columnSpanFull(),
                 ],
-                settingsSectionSchema: [
-                    Forms\Components\Select::make('author_id')
-                        ->label('Author')
-                        ->relationship('author', 'name')
-                        ->searchable()
-                        ->required()
-                        ->default(fn () => auth()->id()),
-
-                    Forms\Components\Select::make('status')
-                        ->options([
-                            'draft'     => 'Draft',
-                            'published' => 'Published',
-                            'cancelled' => 'Cancelled',
-                        ])
-                        ->default('draft')
-                        ->required(),
-
-                    // empty third cell — keeps Author/Status in the first two grid columns
-                    Forms\Components\Placeholder::make('_spacer')
-                        ->hiddenLabel()
-                        ->content(''),
-
-                    Forms\Components\Actions::make([
-                        FormAction::make('editLandingPage')
-                            ->icon('heroicon-m-pencil-square')
-                            ->label('Edit landing page')
-                            ->url(function ($record): string {
-                                if (! $record?->landingPage) {
-                                    return '';
-                                }
-                                return PageResource::getUrl('edit', ['record' => $record->landingPage]);
-                            })
-                            ->visible(fn ($record) => $record?->landing_page_id !== null),
-
-                        FormAction::make('viewLandingPage')
-                            ->icon('heroicon-m-arrow-top-right-on-square')
-                            ->label('View public page')
-                            ->url(function ($record): string {
-                                if (! $record?->landingPage) {
-                                    return '';
-                                }
-                                return url('/' . $record->landingPage->slug);
-                            })
-                            ->openUrlInNewTab()
-                            ->visible(fn ($record) => $record?->landing_page_id !== null),
-                    ])->hiddenOn('create')->columnSpanFull(),
-
-                    TagSelect::make('event')->columnSpanFull(),
-                ],
-                modelType: 'event',
                 uniqueSections: [
                     Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')

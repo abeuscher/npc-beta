@@ -14,7 +14,7 @@ class PostController extends Controller
         $blogPrefix = config('site.blog_prefix', 'news');
 
         $page = Page::where('slug', $blogPrefix)
-            ->where('is_published', true)
+            ->published()
             ->firstOrFail();
 
         return $this->renderPage($page);
@@ -26,7 +26,7 @@ class PostController extends Controller
 
         $page = Page::where('type', 'post')
             ->where('slug', $blogPrefix . '/' . $slug)
-            ->where('is_published', true)
+            ->published()
             ->firstOrFail();
 
         return $this->renderPage($page);

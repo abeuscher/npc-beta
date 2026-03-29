@@ -41,7 +41,7 @@ it('rejects a blog prefix that matches an existing page slug', function () {
         'title'        => 'About Us',
         'slug'         => 'about',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -88,7 +88,7 @@ it('changing the prefix renames all post slugs', function () {
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -97,7 +97,7 @@ it('changing the prefix renames all post slugs', function () {
         'title'        => 'Post One',
         'slug'         => 'news/post-one',
         'type'         => 'post',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -105,7 +105,7 @@ it('changing the prefix renames all post slugs', function () {
         'title'        => 'Post Two',
         'slug'         => 'news/post-two',
         'type'         => 'post',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -130,7 +130,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
         'title'        => 'Newsroom',
         'slug'         => 'newsroom',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -139,7 +139,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -147,7 +147,7 @@ it('the trailing-slash query avoids false positives when renaming prefixes', fun
         'title'        => 'A Post',
         'slug'         => 'news/a-post',
         'type'         => 'post',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 
@@ -173,7 +173,7 @@ it('changing the prefix also renames the blog index page slug', function () {
         'title'        => 'News',
         'slug'         => 'news',
         'type'         => 'default',
-        'is_published' => true,
+        'status' => 'published',
         'published_at' => now(),
     ]);
 

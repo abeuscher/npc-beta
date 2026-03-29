@@ -28,19 +28,24 @@ class Page extends Model
         'meta_title',
         'meta_description',
         'custom_fields',
-        'is_published',
+        'status',
         'published_at',
     ];
 
     protected $attributes = [
-        'type' => 'default',
+        'type'   => 'default',
+        'status' => 'draft',
     ];
 
     protected $casts = [
         'custom_fields' => 'array',
-        'is_published'  => 'boolean',
-        'published_at' => 'datetime',
+        'published_at'  => 'datetime',
     ];
+
+    public function scopePublished($query): void
+    {
+        $query->where('status', 'published');
+    }
 
     public function getSlugOptions(): SlugOptions
     {

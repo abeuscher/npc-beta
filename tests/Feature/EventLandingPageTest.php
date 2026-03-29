@@ -23,7 +23,7 @@ it('createLandingPageForEvent creates a page of type event at the correct slug',
     $page = Page::where('slug', 'events/my-event')->first();
     expect($page)->not->toBeNull();
     expect($page->type)->toBe('event');
-    expect($page->is_published)->toBeTrue();
+    expect($page->status)->toBe('published');
     expect($page->title)->toBe('My Event');
 });
 

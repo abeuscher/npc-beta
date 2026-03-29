@@ -53,7 +53,7 @@ it('published upcoming event dates appear on the events listing page via widget'
     $event = Event::factory()->create(['title' => 'Annual Gala', 'status' => 'published', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
-    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    $page = Page::factory()->create(['slug' => 'events', 'status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
@@ -77,7 +77,7 @@ it('draft events do not appear on the events listing page', function () {
     $event = Event::factory()->draft()->create(['title' => 'Hidden Draft', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
-    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    $page = Page::factory()->create(['slug' => 'events', 'status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
@@ -109,7 +109,7 @@ it('registration form creates an EventRegistration record', function () {
 });
 
 it('registration redirects to the landing page when one exists', function () {
-    $landingPage = Page::factory()->create(['slug' => 'events/my-event', 'is_published' => false]);
+    $landingPage = Page::factory()->create(['slug' => 'events/my-event', 'status' => 'draft']);
     $event       = Event::factory()->create([
         'status'          => 'published',
         'is_free'         => true,
@@ -208,7 +208,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 
     $page = Page::factory()->create([
         'title'        => $event->title,
-        'is_published' => false,
+        'status' => 'draft',
         'type'         => 'event',
         'author_id'    => $event->author_id,
     ]);
@@ -238,7 +238,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 });
 
 it('view event page button uses landing page URL when landing_page_id is set', function () {
-    $page  = Page::factory()->create(['slug' => 'events/my-event', 'is_published' => false]);
+    $page  = Page::factory()->create(['slug' => 'events/my-event', 'status' => 'draft']);
     $event = Event::factory()->create(['slug' => 'my-event', 'landing_page_id' => $page->id]);
 
     expect($event->landing_page_id)->toBe($page->id);
@@ -256,7 +256,7 @@ it('event_description widget renders event description on a page', function () {
 
     $widgetType = WidgetType::where('handle', 'event_description')->first();
 
-    $page = Page::factory()->create(['is_published' => true]);
+    $page = Page::factory()->create(['status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
@@ -278,7 +278,7 @@ it('event_description widget renders event date on a page', function () {
 
     $widgetType = WidgetType::where('handle', 'event_description')->first();
 
-    $page = Page::factory()->create(['is_published' => true]);
+    $page = Page::factory()->create(['status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
@@ -303,7 +303,7 @@ it('event_registration widget renders the registration form on a page', function
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
 
-    $page = Page::factory()->create(['is_published' => true]);
+    $page = Page::factory()->create(['status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
@@ -329,7 +329,7 @@ it('events_listing widget renders upcoming events on a page', function () {
     $event = Event::factory()->create(['title' => 'Fundraiser Dinner', 'status' => 'published', 'starts_at' => now()->addDays(5)]);
 
     $widgetType = WidgetType::where('handle', 'events_listing')->first();
-    $page = Page::factory()->create(['slug' => 'events', 'is_published' => true]);
+    $page = Page::factory()->create(['slug' => 'events', 'status' => 'published']);
     PageWidget::create([
         'page_id'        => $page->id,
         'widget_type_id' => $widgetType->id,
