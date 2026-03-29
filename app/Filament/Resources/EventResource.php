@@ -100,7 +100,8 @@ class EventResource extends Resource
                 titleSectionFields: [
                     Forms\Components\TextInput::make('title')
                         ->required()
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->columnSpanFull(),
 
                     Forms\Components\TextInput::make('slug')
                         ->required()
@@ -108,7 +109,8 @@ class EventResource extends Resource
                         ->unique(Event::class, 'slug', ignoreRecord: true)
                         ->regex('/^[a-z0-9\-]+$/')
                         ->helperText('URL-safe identifier. Auto-generated from title on create.')
-                        ->hiddenOn('create'),
+                        ->hiddenOn('create')
+                        ->columnSpanFull(),
 
                     Forms\Components\DateTimePicker::make('starts_at')
                         ->label('Start')

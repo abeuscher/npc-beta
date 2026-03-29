@@ -3,10 +3,10 @@
     {{-- ------------------------------------------------------------------ --}}
     {{-- Two-column layout: block list (left ~55%) + inspector (right ~45%) --}}
     {{-- ------------------------------------------------------------------ --}}
-    <div class="grid grid-cols-12 gap-4">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
 
-        {{-- ── Left column: structural block list (8 of 12 cols) ───────── --}}
-        <div class="col-span-8 min-w-0 space-y-4">
+        {{-- ── Left column: structural block list (8/12) ───────────────── --}}
+        <div class="min-w-0 space-y-4">
 
             {{-- Header --}}
             <div class="flex items-center justify-between">
@@ -49,9 +49,9 @@
 
         </div>
 
-        {{-- ── Right column: inspector panel (4 of 12 cols) ──────────── --}}
+        {{-- ── Right column: inspector panel (4/12) ──────────────────── --}}
         <div
-            class="col-span-4 min-w-0"
+            class="min-w-0"
             style="position: sticky; top: 1rem; max-height: calc(100vh - 6rem); overflow-y: auto; align-self: flex-start;"
         >
             @livewire('page-builder-inspector', ['blockId' => $selectedBlockId], key('inspector-' . $selectedBlockId))

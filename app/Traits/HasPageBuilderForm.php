@@ -32,7 +32,7 @@ trait HasPageBuilderForm
             // ── Row 1: Title section (1 col) + Settings section (2 cols) ──────
             Forms\Components\Group::make([
                 Forms\Components\Group::make(array_merge(
-                    [Forms\Components\Section::make()->schema($titleSectionFields)->columns(2)],
+                    [Forms\Components\Section::make()->schema($titleSectionFields)->columns(3)],
                     $uniqueSections
                 ))->columnSpan(1),
 

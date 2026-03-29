@@ -58,7 +58,25 @@ class PageResource extends Resource
                     Forms\Components\TextInput::make('title')
                         ->required()
                         ->maxLength(255)
-                        ->columnSpanFull(),
+                        ->columnSpan(2),
+
+                    Forms\Components\Placeholder::make('public_url')
+                        ->hiddenLabel()
+                        ->content(function ($record): HtmlString|string {
+                            if (! $record) {
+                                return '';
+                            }
+                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                            $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
+                            $url  = $base . $path;
+
+                            return new HtmlString(
+                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
+                                'class="text-primary-600 hover:underline text-sm font-mono">' .
+                                e($url) . '</a>'
+                            );
+                        })
+                        ->columnSpan(1),
 
                     Forms\Components\TextInput::make('slug')
                         ->required()
@@ -135,25 +153,6 @@ class PageResource extends Resource
                         ->content('System Page')
                         ->visibleOn('edit')
                         ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system'),
-
-                    Forms\Components\Placeholder::make('public_url')
-                        ->label('Public URL')
-                        ->content(function ($record): HtmlString|string {
-                            if (! $record) {
-                                return '—';
-                            }
-                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                            $path = $record->slug === 'home' ? '/' : '/' . $record->slug;
-                            $url  = $base . $path;
-
-                            return new HtmlString(
-                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                                'class="text-primary-600 hover:underline text-sm font-mono">' .
-                                e($url) . '</a> ' .
-                                '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
-                            );
-                        })
-                        ->columnSpanFull(),
                 ],
                 settingsSectionSchema: [
                     Forms\Components\Select::make('author_id')

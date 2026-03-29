@@ -62,7 +62,24 @@ class PostResource extends Resource
                     Forms\Components\TextInput::make('title')
                         ->required()
                         ->maxLength(255)
-                        ->columnSpanFull(),
+                        ->columnSpan(2),
+
+                    Forms\Components\Placeholder::make('public_url')
+                        ->hiddenLabel()
+                        ->content(function ($record): HtmlString|string {
+                            if (! $record) {
+                                return '';
+                            }
+                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                            $url  = $base . '/' . $record->slug;
+
+                            return new HtmlString(
+                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
+                                'class="text-primary-600 hover:underline text-sm font-mono">' .
+                                e($url) . '</a>'
+                            );
+                        })
+                        ->columnSpan(1),
 
                     Forms\Components\TextInput::make('slug')
                         ->required()
@@ -89,28 +106,11 @@ class PostResource extends Resource
                             SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/')
                         )
                         ->helperText('Edit the slug segment after the blog prefix.')
-                        ->hiddenOn('create'),
+                        ->hiddenOn('create')
+                        ->columnSpanFull(),
 
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
-
-                    Forms\Components\Placeholder::make('public_url')
-                        ->label('Public URL')
-                        ->content(function ($record): HtmlString|string {
-                            if (! $record) {
-                                return '—';
-                            }
-                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                            $url  = $base . '/' . $record->slug;
-
-                            return new HtmlString(
-                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                                'class="text-primary-600 hover:underline text-sm font-mono">' .
-                                e($url) . '</a> ' .
-                                '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
-                            );
-                        })
-                        ->columnSpanFull(),
                 ],
                 settingsSectionSchema: [
                     Forms\Components\Select::make('author_id')
