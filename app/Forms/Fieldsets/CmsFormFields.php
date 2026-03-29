@@ -52,7 +52,7 @@ class CmsFormFields
                     ->searchable()
                     ->required()
                     ->default(fn () => auth()->id())
-                    ->columnSpan(3),
+                    ->columnSpan(2),
 
                 Forms\Components\Select::make('status')
                     ->options($statusOptions)
@@ -64,7 +64,7 @@ class CmsFormFields
                             $set('published_at', now());
                         }
                     })
-                    ->columnSpan(1),
+                    ->columnSpan(2),
 
                 Forms\Components\DateTimePicker::make('published_at')
                     ->label('Publish Date')
@@ -100,7 +100,6 @@ class CmsFormFields
                 ->maxLength(255)
                 ->unique(Event::class, 'slug', ignoreRecord: true)
                 ->regex('/^[a-z0-9\-]+$/')
-                ->helperText('URL-safe identifier. Auto-generated from title on create.')
                 ->hiddenOn('create');
         }
 
@@ -129,7 +128,6 @@ class CmsFormFields
                 ->dehydrateStateUsing(fn ($state): string =>
                     SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/')
                 )
-                ->helperText('Edit the slug segment after the blog prefix.')
                 ->hiddenOn('create');
         }
 

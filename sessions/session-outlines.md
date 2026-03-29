@@ -93,38 +93,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 084 | Widget Render Context |
 | 085 | Widget Migration |
 | 086 | Column Widget & Widget Picker UX |
-
----
-
-## Codebase Maintenance
-
-### Session 083 — Bug Fixes & Polish
-
-Fixing a backlog of bugs and small improvements identified during testing. Items are scoped for one session; anything that expands significantly should be deferred.
-
-**npm / Vite build on production** — `vite: not found` when running `npm run build` inside the app container. `SiteThemePage.php` calls `npm run build` directly; fix to use `./node_modules/.bin/vite build` (or equivalent absolute path). Verify the build pipeline works end-to-end on the server.
-
-**Custom CSS — permission error on save** — `file_put_contents(/var/www/html/resources/scss/_theme.scss): Permission denied`. The `_theme.scss` file (or its parent directory) is not writable by the PHP-FPM process. Fix file ownership/permissions in the Docker image or write to a writable path.
-
-**Site Theme logo field** — logo upload/display is bugged. Follow the design pattern of the logo field in Admin Settings as the reference implementation.
-
-**Event Registration form widget — silent failure** — the widget renders in the page source but appears empty. Likely an ID or slug reference mismatch. Audit the widget's event lookup — it may be using a record ID where a slug is expected (see also the event widget slug item below).
-
-**Event widgets — slug vs. ID** — event widgets should reference the event by slug, not by database record ID, consistent with how other content-linked widgets work. An ID-based reference breaks when records are reseeded or IDs change. Audit all event widget types for this pattern and fix.
-
-**Blog posts in the data generator** — add blog posts to the debug sample data generator. Lorem ipsum is fine for all text fields. Follow the pattern of existing generator types.
-
-**Blog / page authors** — every page (including blog posts) should record the user who created it as its author. Add an `author_id` FK to the pages table (nullable, references users). Expose it as a searchable user dropdown on the page edit form, defaulting to the authenticated user on creation.
-
-**Blog pager widget** — new widget type: previous/next post navigation for blog post pages. Links to the adjacent posts by published date. Intended for use in the blog post page template.
-
-**System email editor — colour defaults** — the colour fields in the system email template editor should display their defaults visually, matching the behaviour of the theme editor colour controls in the CMS.
-
-**CMS Editor role — deletability** — investigate why the CMS Editor role is editable but not deletable. If there is no documented reason, make it deletable. Only `super_admin` must be indestructible.
-
-**Auto-publish settings** — add toggles to CMS Settings: *Auto-publish new pages* (default: on) and *Auto-publish new posts* (default: on). Also change the default publish state for new events to published. These defaults should reduce friction for common workflows.
-
-**Navigation menu scroll smoothing** — when a left-nav link is clicked, Filament scrolls the menu to centre the active item. If no explicit toggle exists to disable this, try applying `scroll-behavior: smooth` to the nav scroll container as a low-friction improvement before attempting anything more invasive.
+| 087 | Inspector Panel & Shared Page Builder Form |
 
 ---
 
@@ -132,17 +101,11 @@ Fixing a backlog of bugs and small improvements identified during testing. Items
 
 *The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
 
-### Session 087 — Inspector Panel & Shared Page Builder Form
+### ~~Session 087 — Inspector Panel & Shared Page Builder Form~~ *(completed)*
 
-Refactor all page-builder edit pages to share a single form layout via a trait (`HasPageBuilderForm`), reshape that layout to surface SEO and Custom Fields at full width, give the page builder full 3-column width, and replace inline block editing with a fixed inspector panel (`PageBuilderInspector` Livewire component) so that widget controls are accessible at any nesting depth.
+### Session 088 — Image Optimization & SVG Support
 
-**Form layout (all three resources):** Row 1 = title/slug (1 col) + settings Author/Published/Date/Tags (2 col). Row 2 = Custom Fields (3 col, collapsed, hidden if none). Row 3 = SEO (3 col, collapsed). Row 4 = Page Builder (3 col).
-
-**Inspector:** `PageBuilder` becomes a two-column layout — structural block list (left) + `PageBuilderInspector` (right, sticky). Clicking a block selects it; the inspector loads its config fields, query settings, and style_config spacing panel. `PageBuilderBlock` stripped to structural handle only.
-
-**`config_schema` select type:** New `select` field type with `options_from` key. Built-in sources: `events`, `products`, `forms`. Existing `event_slug`, `product_slug`, `form_handle` text fields in the seeder converted to `select`. Inspector resolves sources at mount.
-
-**Dependencies:** Builds on column widget nesting model from session 086. Preset picker and `grid_template_columns` input (hidden in 086) surfaced in the inspector.
+SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
 
 ### Per-Page SEO & Header Snippets
 
@@ -161,10 +124,6 @@ New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image
 ### Page Templates
 
 Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
-
-### Image Optimization & SVG Support — v1
-
-SVG support: inline in page builder / rich text, as `<img src>` in image widgets. Image optimization on upload: basic compression and resize with optional quality controls. No CDN for Beta 1. Inline and `src` SVGs both supported. Post-Beta 1: CDN integration, advanced optimization, srcset/responsive images.
 
 ---
 

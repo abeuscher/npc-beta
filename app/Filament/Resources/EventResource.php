@@ -97,26 +97,25 @@ class EventResource extends Resource
                 type: 'event',
                 modelType: 'event',
                 tagType: 'event',
-                extraTitleFields: [
-                    Forms\Components\DateTimePicker::make('starts_at')
-                        ->label('Start')
-                        ->required()
-                        ->seconds(false)
-                        ->columnSpan(2),
-
-                    Forms\Components\DateTimePicker::make('ends_at')
-                        ->label('End')
-                        ->nullable()
-                        ->seconds(false)
-                        ->after('starts_at')
-                        ->columnSpan(2),
-
-                    QuillEditor::make('description')
-                        ->label('Description')
-                        ->nullable()
-                        ->columnSpanFull(),
-                ],
                 uniqueSections: [
+                    Forms\Components\Section::make('Event Details')->schema([
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\DateTimePicker::make('starts_at')
+                                ->label('Start')
+                                ->required()
+                                ->seconds(false),
+
+                            Forms\Components\DateTimePicker::make('ends_at')
+                                ->label('End')
+                                ->nullable()
+                                ->seconds(false)
+                                ->after('starts_at'),
+                        ]),
+
+                        QuillEditor::make('description')
+                            ->label('Description')
+                            ->nullable(),
+                    ]),
                     Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')
                             ->label('Address line 1')
