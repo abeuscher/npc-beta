@@ -209,7 +209,7 @@ class PostResource extends Resource
 
                 Tables\Filters\TrashedFilter::make(),
             ])
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('published_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

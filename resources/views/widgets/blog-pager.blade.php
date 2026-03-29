@@ -2,42 +2,31 @@
     $prev = null;
     $next = null;
 
-    if (isset($currentPage) && $currentPage->type === 'post') {
-        $sortValue = ($currentPage->published_at ?? $currentPage->created_at)->toDateTimeString();
+    if ($pageContext->currentPage && $pageContext->currentPage->type === 'post') {
+        $allPosts = $pageContext->posts(); // DESC order — index 0 = newest
+        $idx = $allPosts->search(fn ($p) => $p->id === $pageContext->currentPage->id);
 
-        $prev = \App\Models\Page::where('type', 'post')
-            ->where('is_published', true)
-            ->whereRaw("COALESCE(published_at, created_at) < ?", [$sortValue])
-            ->orderByRaw('COALESCE(published_at, created_at) DESC')
-            ->first();
-
-        $next = \App\Models\Page::where('type', 'post')
-            ->where('is_published', true)
-            ->whereRaw("COALESCE(published_at, created_at) > ?", [$sortValue])
-            ->orderByRaw('COALESCE(published_at, created_at) ASC')
-            ->first();
+        if ($idx !== false) {
+            $next = $idx > 0                        ? $allPosts->get($idx - 1) : null; // newer
+            $prev = $idx < $allPosts->count() - 1   ? $allPosts->get($idx + 1) : null; // older
+        }
     }
 @endphp
 
-@if (config('app.debug'))
-    <div style="background:#fef3c7;border:1px solid #d97706;padding:8px;font-size:12px;font-family:monospace;margin:8px 0">
-        <strong>blog-pager debug</strong><br>
-        currentPage: {{ isset($currentPage) ? $currentPage->slug . ' (type=' . $currentPage->type . ')' : 'NOT SET' }}<br>
-        sortValue: {{ isset($sortValue) ? $sortValue : 'NOT SET' }}<br>
-        prev: {{ $prev ? $prev->slug : 'none' }}<br>
-        next: {{ $next ? $next->slug : 'none' }}<br>
-        total published posts: {{ \App\Models\Page::where('type','post')->where('is_published',true)->count() }}
-    </div>
-@endif
-
 @if ($prev || $next)
     <nav class="blog-pager" aria-label="Post navigation">
-        @if ($prev)
-            <a href="/{{ $prev->slug }}" rel="prev">&larr; {{ $prev->title }}</a>
-        @endif
+        <span class="blog-pager__next">
+            @if ($next)
+                <a href="/{{ $next->slug }}" rel="next">&larr; {{ $next->title }}</a>
+                <small>{{ $next->author?->name }} | {{ ($next->published_at ?? $next->created_at)->format('F j, Y') }}</small>
+            @endif
+        </span>
 
-        @if ($next)
-            <a href="/{{ $next->slug }}" rel="next">{{ $next->title }} &rarr;</a>
-        @endif
+        <span class="blog-pager__prev">
+            @if ($prev)
+                <a href="/{{ $prev->slug }}" rel="prev">{{ $prev->title }} &rarr;</a>
+                <small>{{ $prev->author?->name }} | {{ ($prev->published_at ?? $prev->created_at)->format('F j, Y') }}</small>
+            @endif
+        </span>
     </nav>
 @endif

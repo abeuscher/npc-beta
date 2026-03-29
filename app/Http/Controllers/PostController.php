@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
-use App\Services\WidgetDataResolver;
+use App\Services\PageContext;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
 
 class PostController extends Controller
 {
@@ -33,6 +34,9 @@ class PostController extends Controller
 
     private function renderPage(Page $page)
     {
+        $pageContext = new PageContext($page);
+        View::share('pageContext', $pageContext);
+
         $pageWidgets = $page->pageWidgets()
             ->with('widgetType')
             ->where('is_active', true)
@@ -50,21 +54,11 @@ class PostController extends Controller
                 continue;
             }
 
-            $config      = $pw->config ?? [];
-            $queryConfig = $pw->query_config ?? [];
-
-            $collectionData = [];
-            foreach ($widgetType->collections ?? [] as $handle) {
-                $perHandleConfig         = $queryConfig[$handle] ?? [];
-                $collectionData[$handle] = WidgetDataResolver::resolve($handle, $perHandleConfig);
-            }
+            $config = $pw->config ?? [];
 
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
-                    ? Blade::render(
-                        $widgetType->template,
-                        array_merge($collectionData, ['config' => $config])
-                    )
+                    ? Blade::render($widgetType->template, ['config' => $config])
                     : '';
 
                 $blocks[] = [
@@ -83,16 +77,9 @@ class PostController extends Controller
                     $inlineScripts .= "\n" . $widgetType->js;
                 }
             } else {
-                $clientHtml = '';
-
-                foreach ($collectionData as $handle => $data) {
-                    $varName = $widgetType->variable_name ?? $handle;
-                    $clientHtml .= '<script>window.' . e($varName) . ' = ' . json_encode($data) . ';</script>' . "\n";
-                }
-
-                if ($widgetType->code) {
-                    $clientHtml .= '<script>' . $widgetType->code . '</script>';
-                }
+                $clientHtml = $widgetType->code
+                    ? '<script>' . $widgetType->code . '</script>'
+                    : '';
 
                 $blocks[] = [
                     'handle'      => $widgetType->handle,

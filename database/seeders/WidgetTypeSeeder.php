@@ -79,9 +79,10 @@ class WidgetTypeSeeder extends Seeder
             [
                 'label'         => 'Blog Listing',
                 'render_mode'   => 'server',
-                'collections'   => ['blog_posts'],
+                'collections'   => [],
                 'config_schema' => [
                     ['key' => 'heading', 'type' => 'text', 'label' => 'Heading'],
+                    ['key' => 'limit',   'type' => 'text', 'label' => 'Max posts (leave blank for all)'],
                 ],
                 'template'      => "@include('widgets.blog-listing')",
             ]
@@ -94,7 +95,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [],
-                'template'      => "@include('widgets.blog-pager', ['currentPage' => \$currentPage ?? null])",
+                'template'      => "@include('widgets.blog-pager')",
             ]
         );
 

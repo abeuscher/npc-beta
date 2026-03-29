@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
-use App\Models\Product;
-use App\Services\WidgetDataResolver;
+use App\Services\PageContext;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
 
 class PageController extends Controller
 {
@@ -41,6 +41,9 @@ class PageController extends Controller
 
     private function renderPage(Page $page)
     {
+        $pageContext = new PageContext($page);
+        View::share('pageContext', $pageContext);
+
         $pageWidgets = $page->pageWidgets()
             ->with('widgetType')
             ->where('is_active', true)
@@ -58,45 +61,11 @@ class PageController extends Controller
                 continue;
             }
 
-            $config      = $pw->config ?? [];
-            $queryConfig = $pw->query_config ?? [];
-
-            // Resolve collection data for each declared collection handle.
-            $collectionData = [];
-            foreach ($widgetType->collections ?? [] as $handle) {
-                $perHandleConfig = $queryConfig[$handle] ?? [];
-                $collectionData[$handle] = WidgetDataResolver::resolve($handle, $perHandleConfig);
-            }
-
-            // Inject event data for event-aware widget types
-            $eventData = [];
-            if (isset($config['event_slug'])) {
-                $resolvedEvent = \App\Models\Event::where('slug', $config['event_slug'])->first();
-                if ($resolvedEvent) {
-                    $eventData = [
-                        'event' => $resolvedEvent,
-                    ];
-                }
-            }
-
-            // Inject product data for product_display widget type
-            $productData = [];
-            if (isset($config['product_slug'])) {
-                $resolvedProduct = Product::with('prices')
-                    ->where('slug', $config['product_slug'])
-                    ->where('status', 'published')
-                    ->first();
-                if ($resolvedProduct) {
-                    $productData = ['product' => $resolvedProduct];
-                }
-            }
+            $config = $pw->config ?? [];
 
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
-                    ? Blade::render(
-                        $widgetType->template,
-                        array_merge($collectionData, $eventData, $productData, ['config' => $config, 'currentPage' => $page])
-                    )
+                    ? Blade::render($widgetType->template, ['config' => $config])
                     : '';
 
                 $blocks[] = [
@@ -115,17 +84,10 @@ class PageController extends Controller
                     $inlineScripts .= "\n" . $widgetType->js;
                 }
             } else {
-                // Client mode: inject JSON data as window variables, then append code.
-                $clientHtml = '';
-
-                foreach ($collectionData as $handle => $data) {
-                    $varName = $widgetType->variable_name ?? $handle;
-                    $clientHtml .= '<script>window.' . e($varName) . ' = ' . json_encode($data) . ';</script>' . "\n";
-                }
-
-                if ($widgetType->code) {
-                    $clientHtml .= '<script>' . $widgetType->code . '</script>';
-                }
+                // Client mode: append code.
+                $clientHtml = $widgetType->code
+                    ? '<script>' . $widgetType->code . '</script>'
+                    : '';
 
                 $blocks[] = [
                     'handle'      => $widgetType->handle,
