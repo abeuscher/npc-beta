@@ -1,51 +1,62 @@
-<div class="page-builder space-y-4">
+<div class="page-builder">
 
     {{-- ------------------------------------------------------------------ --}}
-    {{-- Header                                                               --}}
+    {{-- Two-column layout: block list (left ~55%) + inspector (right ~45%) --}}
     {{-- ------------------------------------------------------------------ --}}
-    <div class="flex items-center justify-between">
-        <p class="text-sm text-gray-500">
-            {{ count($blocks) }} block(s) on this page.
-        </p>
-        <button
-            type="button"
-            wire:click="openAddModal()"
-            class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none"
-        >
-            + Add Block
-        </button>
-    </div>
+    <div class="grid grid-cols-12 gap-4">
 
-    {{-- ------------------------------------------------------------------ --}}
-    {{-- Block list                                                           --}}
-    {{--                                                                      --}}
-    {{-- @alpinejs/sort is loaded via AdminPanelProvider and enables          --}}
-    {{-- drag-to-reorder via x-sort / x-sort:item / x-sort:handle below.     --}}
-    {{-- If CSP blocks it (eval() issue from Session 007), the Up / Down      --}}
-    {{-- options in each block's ellipsis menu serve as a fallback.           --}}
-    {{-- TODO: remove moveUp/moveDown from PageBuilder.php and the ellipsis   --}}
-    {{-- menu once CSP is resolved and drag-to-reorder is confirmed working.  --}}
-    {{-- ------------------------------------------------------------------ --}}
-    <div
-        x-data
-        x-sort="() => {
-            const ids = [...$el.querySelectorAll('[data-block-id]')].map(e => e.getAttribute('data-block-id'));
-            $wire.updateOrder(ids);
-        }"
-        class="space-y-2"
-    >
-        @forelse ($blocks as $index => $block)
-            @livewire('page-builder-block', [
-                'blockId'    => $block['id'],
-                'isFirst'    => $loop->first,
-                'isLast'     => $loop->last,
-                'isRequired' => $block['is_required'],
-            ], key('block-' . $block['id']))
-        @empty
-            <div class="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center text-sm text-gray-400 dark:border-gray-700">
-                No blocks yet. Click <strong>+ Add Block</strong> to get started.
+        {{-- ── Left column: structural block list (8 of 12 cols) ───────── --}}
+        <div class="col-span-8 min-w-0 space-y-4">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-gray-500">
+                    {{ count($blocks) }} block(s) on this page.
+                </p>
+                <button
+                    type="button"
+                    wire:click="openAddModal()"
+                    class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none"
+                >
+                    + Add Block
+                </button>
             </div>
-        @endforelse
+
+            {{-- Block list                                                      --}}
+            {{-- @alpinejs/sort is loaded via AdminPanelProvider and enables     --}}
+            {{-- drag-to-reorder via x-sort / x-sort:item / x-sort:handle.      --}}
+            <div
+                x-data
+                x-sort="() => {
+                    const ids = [...$el.querySelectorAll('[data-block-id]')].map(e => e.getAttribute('data-block-id'));
+                    $wire.updateOrder(ids);
+                }"
+                class="space-y-2"
+            >
+                @forelse ($blocks as $index => $block)
+                    @livewire('page-builder-block', [
+                        'blockId'    => $block['id'],
+                        'isFirst'    => $loop->first,
+                        'isLast'     => $loop->last,
+                        'isRequired' => $block['is_required'],
+                    ], key('block-' . $block['id']))
+                @empty
+                    <div class="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center text-sm text-gray-400 dark:border-gray-700">
+                        No blocks yet. Click <strong>+ Add Block</strong> to get started.
+                    </div>
+                @endforelse
+            </div>
+
+        </div>
+
+        {{-- ── Right column: inspector panel (4 of 12 cols) ──────────── --}}
+        <div
+            class="col-span-4 min-w-0"
+            style="position: sticky; top: 1rem; max-height: calc(100vh - 6rem); overflow-y: auto; align-self: flex-start;"
+        >
+            @livewire('page-builder-inspector', ['blockId' => $selectedBlockId], key('inspector-' . $selectedBlockId))
+        </div>
+
     </div>
 
     {{-- ------------------------------------------------------------------ --}}
@@ -75,7 +86,7 @@
                     <p class="mt-1 text-xs text-gray-400">Optional. If blank, auto-named by type (e.g. "Text Block 1").</p>
                 </div>
 
-                {{-- Widget type grid — scrollable, tiles across then down --}}
+                {{-- Widget type grid --}}
                 <p class="mb-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Choose a block type</p>
                 <div class="overflow-y-auto rounded-lg" style="max-height: 50vh;">
                     <div style="--cols-default: repeat(3, minmax(0, 1fr)); gap: 0.75rem;" class="grid grid-cols-[--cols-default]">

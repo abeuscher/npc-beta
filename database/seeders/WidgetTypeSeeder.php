@@ -38,20 +38,20 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
+                    ['key' => 'event_slug', 'type' => 'select', 'label' => 'Event', 'options_from' => 'events'],
                 ],
                 'template'      => "@include('widgets.event-description')",
             ]
         );
 
-WidgetType::updateOrCreate(
+        WidgetType::updateOrCreate(
             ['handle' => 'event_registration'],
             [
                 'label'         => 'Event Registration Form',
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'event_slug', 'type' => 'text', 'label' => 'Event slug'],
+                    ['key' => 'event_slug', 'type' => 'select', 'label' => 'Event', 'options_from' => 'events'],
                 ],
                 'template'      => "@include('widgets.event-registration')",
             ]
@@ -102,7 +102,7 @@ WidgetType::updateOrCreate(
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'form_handle', 'type' => 'text', 'label' => 'Form handle'],
+                    ['key' => 'form_handle', 'type' => 'select', 'label' => 'Form', 'options_from' => 'forms'],
                 ],
                 'template'      => "@include('widgets.web-form')",
             ]
@@ -207,7 +207,7 @@ WidgetType::updateOrCreate(
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'config_schema' => [
-                    ['key' => 'product_slug', 'type' => 'text', 'label' => 'Product slug'],
+                    ['key' => 'product_slug', 'type' => 'select', 'label' => 'Product', 'options_from' => 'products'],
                 ],
                 'template'      => "@include('widgets.product-display')",
             ]
@@ -238,8 +238,8 @@ WidgetType::updateOrCreate(
                 'collections'   => [],
                 'default_open'  => true,
                 'config_schema' => [
-                    ['key' => 'num_columns',           'type' => 'number', 'label' => 'Number of columns'],
-                    ['key' => 'grid_template_columns', 'type' => 'text',   'label' => 'Column widths (e.g. 1fr 1fr)'],
+                    ['key' => 'num_columns',           'type' => 'number', 'label' => 'Number of columns', 'default' => 2],
+                    ['key' => 'grid_template_columns', 'type' => 'text',   'label' => 'Column widths (e.g. 1fr 1fr)', 'default' => '1fr 1fr'],
                 ],
                 'template'      => "@include('widgets.column-widget')",
             ]

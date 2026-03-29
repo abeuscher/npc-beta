@@ -9,6 +9,7 @@ use App\Models\CustomFieldDef;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -19,6 +20,8 @@ use Illuminate\Support\HtmlString;
 
 class PostResource extends Resource
 {
+    use HasPageBuilderForm;
+
     protected static ?string $model = Page::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-pencil-square';
@@ -53,127 +56,91 @@ class PostResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Forms\Components\Group::make([
-
-                Forms\Components\Group::make([
-                    Forms\Components\Section::make()->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255),
-
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->rules([
-                                'regex:/^[a-z0-9\-\/]+$/',
-                                fn (?Model $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
-                                    $prefix   = SiteSetting::get('blog_prefix', 'news') . '/';
-                                    $fullSlug = $prefix . ltrim($value, '/');
-                                    $query    = Page::where('slug', $fullSlug);
-                                    if ($record?->id) {
-                                        $query->where('id', '!=', $record->id);
-                                    }
-                                    if ($query->exists()) {
-                                        $fail('This slug is already in use.');
-                                    }
-                                },
-                            ])
-                            ->prefix(fn (): string => '/' . SiteSetting::get('blog_prefix', 'news') . '/')
-                            ->formatStateUsing(fn ($state): string =>
-                                ltrim(str_replace(SiteSetting::get('blog_prefix', 'news') . '/', '', $state ?? ''), '/')
-                            )
-                            ->dehydrateStateUsing(fn ($state): string =>
-                                SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/')
-                            )
-                            ->helperText('Edit the slug segment after the blog prefix.')
-                            ->hiddenOn('create'),
-
-                        Forms\Components\Hidden::make('type')
-                            ->default('post'),
-
-                        Forms\Components\Placeholder::make('public_url')
-                            ->label('Public URL')
-                            ->content(function ($record): HtmlString|string {
-                                if (! $record) {
-                                    return '—';
-                                }
-                                $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-                                $url  = $base . '/' . $record->slug;
-
-                                return new HtmlString(
-                                    '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
-                                    'class="text-primary-600 hover:underline text-sm font-mono">' .
-                                    e($url) . '</a> ' .
-                                    '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
-                                );
-                            })
-                            ->columnSpanFull(),
-                    ])->columns(2),
-
-                    Forms\Components\Section::make('Page Builder')
-                        ->description('Add and arrange content blocks for this post.')
-                        ->schema([
-                            Forms\Components\Livewire::make(
-                                PageBuilder::class,
-                                fn ($record) => $record ? ['pageId' => $record->id] : []
-                            )->columnSpanFull(),
-                        ])
-                        ->hidden(fn ($record) => $record === null)
+        return $form->schema(
+            static::pageBuilderFormSchema(
+                titleSectionFields: [
+                    Forms\Components\TextInput::make('title')
+                        ->required()
+                        ->maxLength(255)
                         ->columnSpanFull(),
 
-                    Forms\Components\Section::make('SEO')
-                        ->schema([
-                            Forms\Components\TextInput::make('meta_title')
-                                ->maxLength(255)
-                                ->helperText('Defaults to post title if blank.'),
-
-                            Forms\Components\Textarea::make('meta_description')
-                                ->rows(3)
-                                ->maxLength(160),
-                        ])
-                        ->columns(1)
-                        ->collapsible()
-                        ->collapsed(),
-
-                    Forms\Components\Section::make('Custom Fields')
-                        ->schema(fn () => CustomFieldDef::forModel('page')->get()
-                            ->map(fn ($def) => $def->toFilamentFormComponent())
-                            ->toArray()
-                        )
-                        ->columns(2)
-                        ->hidden(fn () => CustomFieldDef::forModel('page')->doesntExist()),
-
-                ])->columnSpan(2),
-
-                Forms\Components\Section::make('Settings')
-                    ->schema([
-                        Forms\Components\Select::make('author_id')
-                            ->label('Author')
-                            ->relationship('author', 'name')
-                            ->searchable()
-                            ->required()
-                            ->default(fn () => auth()->id()),
-
-                        Forms\Components\Toggle::make('is_published')
-                            ->label('Published')
-                            ->live()
-                            ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
-                                if ($state && ! $get('published_at')) {
-                                    $set('published_at', now());
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->rules([
+                            'regex:/^[a-z0-9\-\/]+$/',
+                            fn (?Model $record) => function (string $attribute, $value, \Closure $fail) use ($record) {
+                                $prefix   = SiteSetting::get('blog_prefix', 'news') . '/';
+                                $fullSlug = $prefix . ltrim($value, '/');
+                                $query    = Page::where('slug', $fullSlug);
+                                if ($record?->id) {
+                                    $query->where('id', '!=', $record->id);
                                 }
-                            }),
+                                if ($query->exists()) {
+                                    $fail('This slug is already in use.');
+                                }
+                            },
+                        ])
+                        ->prefix(fn (): string => '/' . SiteSetting::get('blog_prefix', 'news') . '/')
+                        ->formatStateUsing(fn ($state): string =>
+                            ltrim(str_replace(SiteSetting::get('blog_prefix', 'news') . '/', '', $state ?? ''), '/')
+                        )
+                        ->dehydrateStateUsing(fn ($state): string =>
+                            SiteSetting::get('blog_prefix', 'news') . '/' . ltrim($state ?? '', '/')
+                        )
+                        ->helperText('Edit the slug segment after the blog prefix.')
+                        ->hiddenOn('create'),
 
-                        Forms\Components\DateTimePicker::make('published_at')
-                            ->label('Publish Date')
-                            ->visible(fn (Forms\Get $get) => $get('is_published')),
+                    Forms\Components\Hidden::make('type')
+                        ->default('post'),
 
-                        TagSelect::make('post'),
-                    ])
-                    ->columnSpan(1),
+                    Forms\Components\Placeholder::make('public_url')
+                        ->label('Public URL')
+                        ->content(function ($record): HtmlString|string {
+                            if (! $record) {
+                                return '—';
+                            }
+                            $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+                            $url  = $base . '/' . $record->slug;
 
-            ])->columns(3)->columnSpanFull(),
-        ]);
+                            return new HtmlString(
+                                '<a href="' . e($url) . '" target="_blank" rel="noopener" ' .
+                                'class="text-primary-600 hover:underline text-sm font-mono">' .
+                                e($url) . '</a> ' .
+                                '<span class="text-xs text-gray-400">(saves slug changes first)</span>'
+                            );
+                        })
+                        ->columnSpanFull(),
+                ],
+                settingsSectionSchema: [
+                    Forms\Components\Select::make('author_id')
+                        ->label('Author')
+                        ->relationship('author', 'name')
+                        ->searchable()
+                        ->required()
+                        ->default(fn () => auth()->id()),
+
+                    Forms\Components\Toggle::make('is_published')
+                        ->label('Published')
+                        ->inline(false)
+                        ->live()
+                        ->afterStateUpdated(function (bool $state, Forms\Set $set, Forms\Get $get) {
+                            if ($state && ! $get('published_at')) {
+                                $set('published_at', now());
+                            }
+                        }),
+
+                    Forms\Components\DateTimePicker::make('published_at')
+                        ->label('Publish Date')
+                        ->visible(fn (Forms\Get $get) => $get('is_published')),
+
+                    TagSelect::make('post')->columnSpanFull(),
+                ],
+                modelType: 'page',
+                withSeo: true,
+                pageBuilderProps: fn ($record) => ['pageId' => $record->id],
+            )
+        );
     }
 
     public static function table(Table $table): Table

@@ -111,6 +111,7 @@ class AdminPanelProvider extends PanelProvider
                 'panels::head.end',
                 fn (): HtmlString => new HtmlString('
                     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+                    <style>.ql-editor { min-height: 12rem; }</style>
                     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
                     <script>
                         document.addEventListener("DOMContentLoaded", function () {

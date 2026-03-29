@@ -14,6 +14,7 @@ use App\Models\SiteSetting;
 use App\Models\WidgetType;
 use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
+use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Form;
@@ -25,6 +26,8 @@ use Filament\Tables\Table;
 
 class EventResource extends Resource
 {
+    use HasPageBuilderForm;
+
     protected static ?string $model = Event::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
@@ -92,41 +95,88 @@ class EventResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Forms\Components\Group::make([
+        return $form->schema(
+            static::pageBuilderFormSchema(
+                titleSectionFields: [
+                    Forms\Components\TextInput::make('title')
+                        ->required()
+                        ->maxLength(255),
 
-                // ── Left column ───────────────────────────────────────────
-                Forms\Components\Group::make([
-                    Forms\Components\Section::make('Main Info')->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255),
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->unique(Event::class, 'slug', ignoreRecord: true)
+                        ->regex('/^[a-z0-9\-]+$/')
+                        ->helperText('URL-safe identifier. Auto-generated from title on create.')
+                        ->hiddenOn('create'),
 
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(Event::class, 'slug', ignoreRecord: true)
-                            ->regex('/^[a-z0-9\-]+$/')
-                            ->helperText('URL-safe identifier. Auto-generated from title on create.')
-                            ->hiddenOn('create'),
+                    Forms\Components\DateTimePicker::make('starts_at')
+                        ->label('Start')
+                        ->required()
+                        ->seconds(false),
 
-                        QuillEditor::make('description')
-                            ->label('Description')
-                            ->nullable()
-                            ->columnSpanFull(),
+                    Forms\Components\DateTimePicker::make('ends_at')
+                        ->label('End')
+                        ->nullable()
+                        ->seconds(false)
+                        ->after('starts_at'),
 
-                        Forms\Components\DateTimePicker::make('starts_at')
-                            ->label('Start')
-                            ->required()
-                            ->seconds(false),
+                    QuillEditor::make('description')
+                        ->label('Description')
+                        ->nullable()
+                        ->columnSpanFull(),
+                ],
+                settingsSectionSchema: [
+                    Forms\Components\Select::make('author_id')
+                        ->label('Author')
+                        ->relationship('author', 'name')
+                        ->searchable()
+                        ->required()
+                        ->default(fn () => auth()->id()),
 
-                        Forms\Components\DateTimePicker::make('ends_at')
-                            ->label('End')
-                            ->nullable()
-                            ->seconds(false)
-                            ->after('starts_at'),
-                    ])->columns(2),
+                    Forms\Components\Select::make('status')
+                        ->options([
+                            'draft'     => 'Draft',
+                            'published' => 'Published',
+                            'cancelled' => 'Cancelled',
+                        ])
+                        ->default('draft')
+                        ->required(),
 
+                    // empty third cell — keeps Author/Status in the first two grid columns
+                    Forms\Components\Placeholder::make('_spacer')
+                        ->hiddenLabel()
+                        ->content(''),
+
+                    Forms\Components\Actions::make([
+                        FormAction::make('editLandingPage')
+                            ->icon('heroicon-m-pencil-square')
+                            ->label('Edit landing page')
+                            ->url(function ($record): string {
+                                if (! $record?->landingPage) {
+                                    return '';
+                                }
+                                return PageResource::getUrl('edit', ['record' => $record->landingPage]);
+                            })
+                            ->visible(fn ($record) => $record?->landing_page_id !== null),
+
+                        FormAction::make('viewLandingPage')
+                            ->icon('heroicon-m-arrow-top-right-on-square')
+                            ->label('View public page')
+                            ->url(function ($record): string {
+                                if (! $record?->landingPage) {
+                                    return '';
+                                }
+                                return url('/' . $record->landingPage->slug);
+                            })
+                            ->openUrlInNewTab()
+                            ->visible(fn ($record) => $record?->landing_page_id !== null),
+                    ])->hiddenOn('create')->columnSpanFull(),
+
+                    TagSelect::make('event')->columnSpanFull(),
+                ],
+                modelType: 'event',
+                uniqueSections: [
                     Forms\Components\Section::make('Location Info')->schema([
                         Forms\Components\TextInput::make('address_line_1')
                             ->label('Address line 1')
@@ -181,63 +231,6 @@ class EventResource extends Resource
                             ->nullable(),
                     ]),
 
-                    Forms\Components\Section::make('Custom Fields')
-                        ->schema(fn () => CustomFieldDef::forModel('event')->get()
-                            ->map(fn ($def) => $def->toFilamentFormComponent())
-                            ->toArray()
-                        )
-                        ->columns(2)
-                        ->hidden(fn () => CustomFieldDef::forModel('event')->doesntExist()),
-
-                ])->columnSpan(2),
-
-                // ── Right column ──────────────────────────────────────────
-                Forms\Components\Group::make([
-                    Forms\Components\Section::make('Settings')->schema([
-                        Forms\Components\Select::make('author_id')
-                            ->label('Author')
-                            ->relationship('author', 'name')
-                            ->searchable()
-                            ->required()
-                            ->default(fn () => auth()->id()),
-
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'draft'     => 'Draft',
-                                'published' => 'Published',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->default('draft')
-                            ->required(),
-
-                        Forms\Components\Actions::make([
-                            FormAction::make('editLandingPage')
-                                ->icon('heroicon-m-pencil-square')
-                                ->label('Edit landing page')
-                                ->url(function ($record): string {
-                                    if (! $record?->landingPage) {
-                                        return '';
-                                    }
-                                    return PageResource::getUrl('edit', ['record' => $record->landingPage]);
-                                })
-                                ->visible(fn ($record) => $record?->landing_page_id !== null),
-
-                            FormAction::make('viewLandingPage')
-                                ->icon('heroicon-m-arrow-top-right-on-square')
-                                ->label('View public page')
-                                ->url(function ($record): string {
-                                    if (! $record?->landingPage) {
-                                        return '';
-                                    }
-                                    return url('/' . $record->landingPage->slug);
-                                })
-                                ->openUrlInNewTab()
-                                ->visible(fn ($record) => $record?->landing_page_id !== null),
-                        ])->hiddenOn('create'),
-
-                        TagSelect::make('event'),
-                    ]),
-
                     Forms\Components\Section::make('Registration Details')->schema([
                         Forms\Components\Select::make('registration_mode')
                             ->options([
@@ -286,11 +279,11 @@ class EventResource extends Resource
                             ->helperText('Adds an opt-in checkbox to the public registration form.')
                             ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
                     ]),
-
-                ])->columnSpan(1),
-
-            ])->columns(3)->columnSpanFull(),
-        ]);
+                ],
+                withSeo: false,
+                pageBuilderProps: null,
+            )
+        );
     }
 
     // ──────────────────────────────────────────────────────────────────────────

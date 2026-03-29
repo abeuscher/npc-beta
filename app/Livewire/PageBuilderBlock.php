@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\Tag;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
 use Livewire\Attributes\On;
@@ -29,9 +28,6 @@ class PageBuilderBlock extends Component
     /** @var array<string, mixed> */
     public array $block = [];
 
-    /** @var array<int, array<string, mixed>> */
-    public array $cmsTags = [];
-
     public function mount(
         string $blockId,
         bool $isFirst = false,
@@ -52,11 +48,6 @@ class PageBuilderBlock extends Component
         if ($this->block['widget_type_handle'] === 'column_widget') {
             $this->loadChildSlots();
         }
-
-        $this->cmsTags = Tag::where('type', 'collection')
-            ->orderBy('name')
-            ->get(['id', 'name', 'slug'])
-            ->toArray();
     }
 
     public function loadBlock(): void
@@ -76,44 +67,8 @@ class PageBuilderBlock extends Component
             'widget_type_default_open'    => $pw->widgetType?->default_open ?? false,
             'label'                       => $pw->label ?? '',
             'config'                      => $pw->config ?? [],
-            'query_config'                => $pw->query_config ?? [],
-            'style_config'                => $pw->style_config ?? [],
             'sort_order'                  => $pw->sort_order ?? 0,
         ];
-    }
-
-    /**
-     * Explicitly save a richtext (Quill) value — cannot use wire:model due to wire:ignore.
-     */
-    public function updateConfig(string $key, mixed $value): void
-    {
-        $this->block['config'][$key] = $value;
-        PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
-    }
-
-    /**
-     * Auto-persist wire:model-bound field changes.
-     */
-    public function updated(string $name): void
-    {
-        if ($name === 'block.label') {
-            PageWidget::where('id', $this->blockId)->update(['label' => $this->block['label']]);
-            return;
-        }
-
-        if (str_starts_with($name, 'block.config')) {
-            PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
-            return;
-        }
-
-        if (str_starts_with($name, 'block.query_config')) {
-            PageWidget::where('id', $this->blockId)->update(['query_config' => $this->block['query_config']]);
-            return;
-        }
-
-        if (str_starts_with($name, 'block.style_config')) {
-            PageWidget::where('id', $this->blockId)->update(['style_config' => $this->block['style_config']]);
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -194,7 +149,7 @@ class PageBuilderBlock extends Component
 
         $defaultConfig = [];
         foreach ($widgetType->config_schema ?? [] as $field) {
-            $defaultConfig[$field['key']] = match ($field['type'] ?? 'text') {
+            $defaultConfig[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
                 'toggle' => false,
                 'number' => null,
                 default  => '',
@@ -325,6 +280,11 @@ class PageBuilderBlock extends Component
             return;
         }
         $this->dispatch('block-move-down-requested', blockId: $this->blockId);
+    }
+
+    public function selectSelf(): void
+    {
+        $this->dispatch('block-select-requested', blockId: $this->blockId);
     }
 
     public function requestAddAbove(): void

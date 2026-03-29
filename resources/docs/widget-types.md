@@ -1,8 +1,8 @@
 ---
 title: Widget Types
 description: Developer-managed widget type definitions — configuring server-rendered and client-rendered widgets available in the page builder.
-version: "0.86"
-updated: 2026-03-28
+version: "0.87"
+updated: 2026-03-29
 tags: [admin, cms, widgets, developer]
 routes:
   - filament.admin.resources.widget-types.index
@@ -29,7 +29,27 @@ Some built-in widget types are **pinned** — they cannot be deleted. Pinned wid
 
 Config fields are per-instance configuration options that page editors can set when placing the widget on a page. For example, a "Hero" widget might have a config field for the heading text, or an event widget might have a field for the event slug.
 
-Each field has a key, label, and type (`text`, `textarea`, `richtext`, `url`, `number`, `toggle`). In the render template, all config values are available as the `$config` associative array — for example, `$config['heading']` or `$config['event_slug']`.
+Each field has a key, label, and type (`text`, `textarea`, `richtext`, `url`, `number`, `toggle`, `select`). In the render template, all config values are available as the `$config` associative array — for example, `$config['heading']` or `$config['event_slug']`.
+
+### `select` field type
+
+A `select` field renders a dropdown in the inspector panel populated from a named data source. The stored value is a string key (slug or handle) chosen from that source.
+
+Field definition example:
+
+```php
+['key' => 'event_slug', 'type' => 'select', 'label' => 'Event', 'options_from' => 'events']
+```
+
+The `options_from` key names a built-in data source resolved by `App\Services\PageBuilderDataSources`. Available built-in sources:
+
+| Source name | Records returned | Value key | Label key |
+|---|---|---|---|
+| `events` | Published events, ordered by `starts_at` | `slug` | `title` |
+| `products` | Published products, ordered by `name` | `slug` | `name` |
+| `forms` | Active forms, ordered by `title` | `handle` | `title` |
+
+Existing saved config values (slugs/handles) stored as plain strings remain valid — no migration is needed when converting a field from `text` to `select`.
 
 Config values are always strings. Cast to the appropriate type before use:
 
@@ -222,7 +242,7 @@ Values are stored as strings (numeric pixel integers). The renderer casts each v
 
 ## Advanced controls panel
 
-Every block in the page builder has an **advanced panel** for spacing controls. It is hidden by default and toggled by the sliders icon button in the block header (to the left of the ellipsis menu).
+Every block has an **Advanced (Spacing)** section in the inspector panel. Click **Advanced (Spacing)** to expand it.
 
 The panel contains:
 
@@ -232,6 +252,8 @@ The panel contains:
 **Shorthand behaviour:** when all four individual values for a property (padding or margin) are equal and non-empty, the shorthand input shows that value. When they differ, the shorthand input shows an empty field with placeholder `mixed`. Writing to the shorthand input sets all four individual values at once. Individual inputs remain independently editable after that.
 
 Changes are persisted immediately via `wire:model.live` on the individual inputs. The shorthand inputs are Alpine-only and drive the Livewire model by proxy.
+
+The Advanced (Spacing) panel lives in the inspector (`PageBuilderInspector`) — it is no longer accessible from the block header directly.
 
 ---
 

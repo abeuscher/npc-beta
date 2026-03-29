@@ -2,7 +2,14 @@
     wire:key="block-{{ $block['id'] }}"
     x-sort:item="'{{ $block['id'] }}'"
     data-block-id="{{ $block['id'] }}"
-    x-data="{ open: {{ $block['widget_type_default_open'] ? 'true' : 'false' }}, menuOpen: false, confirmDelete: false, advOpen: false }"
+    x-data="{
+        open: {{ $block['widget_type_default_open'] ? 'true' : 'false' }},
+        menuOpen: false,
+        confirmDelete: false,
+        selected: false,
+    }"
+    x-on:block-selected.window="selected = ($event.detail.blockId === '{{ $block['id'] }}')"
+    x-bind:class="{ 'ring-2 ring-primary-500': selected }"
     class="rounded-lg border shadow-sm {{ $block['widget_type_handle'] === 'column_widget' ? 'border-gray-300 bg-[#cccccc] dark:bg-gray-700' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}"
 >
     {{-- Block header --}}
@@ -27,17 +34,24 @@
             {{-- View mode --}}
             <template x-if="!editing">
                 <div class="flex flex-1 items-center gap-1.5 min-w-0">
+                    {{-- Label area: click selects the block in the inspector (and toggles column open) --}}
                     <button
                         type="button"
-                        x-on:click="open = !open"
+                        wire:click="selectSelf"
                         class="flex flex-1 items-center gap-2 text-left min-w-0"
+                        @if ($block['widget_type_handle'] === 'column_widget')
+                        x-on:click="open = !open"
+                        @endif
                     >
                         <span class="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
                             {{ $block['label'] }}
                         </span>
+                        @if ($parentBlockId === '')
                         <span class="flex-shrink-0 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700 dark:text-gray-400">
                             {{ $block['widget_type_label'] }}
                         </span>
+                        @endif
+                        @if ($block['widget_type_handle'] === 'column_widget')
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="ml-auto flex-shrink-0 h-4 w-4 text-gray-400 transition-transform duration-150"
@@ -46,6 +60,7 @@
                         >
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                         </svg>
+                        @endif
                     </button>
                     <button
                         type="button"
@@ -85,19 +100,6 @@
                 </div>
             </template>
         </div>
-
-        {{-- Advanced toggle --}}
-        <button
-            type="button"
-            x-on:click.stop="advOpen = !advOpen"
-            title="Advanced (spacing)"
-            class="flex-shrink-0 rounded p-1 text-gray-300 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-            x-bind:class="{ 'text-primary-500 dark:text-primary-400': advOpen }"
-        >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-            </svg>
-        </button>
 
         {{-- Ellipsis menu --}}
         <div class="relative flex-shrink-0">
@@ -192,362 +194,45 @@
         </div>
     </div>
 
-    {{-- Advanced panel — spacing controls --}}
-    <div x-show="advOpen" x-cloak class="border-t border-gray-100 px-4 py-3 dark:border-gray-700"
-        x-data="{
-            sc: @entangle('block.style_config').live,
-            get paddingAll() {
-                const t = this.sc.padding_top ?? '';
-                const r = this.sc.padding_right ?? '';
-                const b = this.sc.padding_bottom ?? '';
-                const l = this.sc.padding_left ?? '';
-                return (t === r && r === b && b === l && t !== '') ? t : '';
-            },
-            set paddingAll(v) {
-                this.sc = { ...this.sc, padding_top: v, padding_right: v, padding_bottom: v, padding_left: v };
-            },
-            get paddingAllPlaceholder() {
-                const t = this.sc.padding_top ?? '';
-                const r = this.sc.padding_right ?? '';
-                const b = this.sc.padding_bottom ?? '';
-                const l = this.sc.padding_left ?? '';
-                return (t === r && r === b && b === l) ? '' : 'mixed';
-            },
-            get marginAll() {
-                const t = this.sc.margin_top ?? '';
-                const r = this.sc.margin_right ?? '';
-                const b = this.sc.margin_bottom ?? '';
-                const l = this.sc.margin_left ?? '';
-                return (t === r && r === b && b === l && t !== '') ? t : '';
-            },
-            set marginAll(v) {
-                this.sc = { ...this.sc, margin_top: v, margin_right: v, margin_bottom: v, margin_left: v };
-            },
-            get marginAllPlaceholder() {
-                const t = this.sc.margin_top ?? '';
-                const r = this.sc.margin_right ?? '';
-                const b = this.sc.margin_bottom ?? '';
-                const l = this.sc.margin_left ?? '';
-                return (t === r && r === b && b === l) ? '' : 'mixed';
-            },
-        }"
-    >
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Spacing</p>
+    {{-- Column widget slot panels — the only body content for block components --}}
+    @if ($block['widget_type_handle'] === 'column_widget')
+    <div x-show="open" x-cloak class="border-t border-gray-100 p-4 dark:border-gray-700">
 
-        {{-- Padding --}}
-        <div class="mb-3">
-            <p class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Padding (px)</p>
-            <div class="grid grid-cols-5 gap-1.5">
-                <div>
-                    <label class="mb-0.5 block text-xs text-gray-400">All</label>
-                    <input
-                        type="number"
-                        min="0"
-                        x-model="paddingAll"
-                        x-bind:placeholder="paddingAllPlaceholder"
-                        class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                </div>
-                @foreach (['padding_left' => 'Left', 'padding_top' => 'Top', 'padding_right' => 'Right', 'padding_bottom' => 'Bottom'] as $key => $lbl)
-                <div>
-                    <label class="mb-0.5 block text-xs text-gray-400">{{ $lbl }}</label>
-                    <input
-                        type="number"
-                        min="0"
-                        wire:model.live="block.style_config.{{ $key }}"
-                        class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                </div>
-                @endforeach
-            </div>
-        </div>
+        {{-- num_columns display --}}
+        @php $numCols = isset($block['config']['num_columns']) && $block['config']['num_columns'] !== '' ? (int) $block['config']['num_columns'] : 2; @endphp
 
-        {{-- Margin --}}
-        <div>
-            <p class="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Margin (px)</p>
-            <div class="grid grid-cols-5 gap-1.5">
-                <div>
-                    <label class="mb-0.5 block text-xs text-gray-400">All</label>
-                    <input
-                        type="number"
-                        min="0"
-                        x-model="marginAll"
-                        x-bind:placeholder="marginAllPlaceholder"
-                        class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                </div>
-                @foreach (['margin_left' => 'Left', 'margin_top' => 'Top', 'margin_right' => 'Right', 'margin_bottom' => 'Bottom'] as $key => $lbl)
-                <div>
-                    <label class="mb-0.5 block text-xs text-gray-400">{{ $lbl }}</label>
-                    <input
-                        type="number"
-                        min="0"
-                        wire:model.live="block.style_config.{{ $key }}"
-                        class="w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    >
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-
-    {{-- Block body --}}
-    <div x-show="open" x-cloak class="space-y-4 border-t border-gray-100 p-4 dark:border-gray-700">
-
-        @if ($block['widget_type_handle'] === 'column_widget')
-
-            {{-- ------------------------------------------------------------ --}}
-            {{-- Column widget body                                             --}}
-            {{-- ------------------------------------------------------------ --}}
-
-            {{-- num_columns number input --}}
-            <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Number of columns</label>
-                <input
-                    type="number"
-                    min="1"
-                    wire:model.lazy="block.config.num_columns"
-                    placeholder="2"
-                    class="w-32 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                >
-            </div>
-
-            {{-- Column slot panels --}}
-            @php $numCols = isset($block['config']['num_columns']) && $block['config']['num_columns'] !== '' ? (int) $block['config']['num_columns'] : 2; @endphp
-            <div class="flex gap-3 overflow-x-auto">
-                @for ($colIdx = 0; $colIdx < $numCols; $colIdx++)
-                <div class="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                    <div class="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700">
-                        <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Column {{ $colIdx + 1 }}</span>
-                        <button
-                            type="button"
-                            wire:click="openChildAddModal({{ $colIdx }})"
-                            class="rounded bg-primary-600 px-2 py-1 text-xs font-semibold text-white hover:bg-primary-500"
-                        >+ Add Block</button>
-                    </div>
-                    <div class="space-y-2 p-2">
-                        @forelse ($childSlots[$colIdx] ?? [] as $childIdx => $child)
-                            @livewire('page-builder-block', [
-                                'blockId'    => $child['id'],
-                                'isFirst'    => $childIdx === 0,
-                                'isLast'     => $childIdx === count($childSlots[$colIdx]) - 1,
-                                'isRequired' => false,
-                                'parentBlockId' => $block['id'],
-                                'parentColumnIndex' => $colIdx,
-                            ], key('child-block-' . $child['id']))
-                        @empty
-                            <p class="py-3 text-center text-xs text-gray-400">No blocks in this column.</p>
-                        @endforelse
-                    </div>
-                </div>
-                @endfor
-            </div>
-
-        @else
-
-            {{-- ------------------------------------------------------------ --}}
-            {{-- Standard block body                                            --}}
-            {{-- ------------------------------------------------------------ --}}
-
-            {{-- Label --}}
-            <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                    Label <span class="font-normal text-gray-400">(for internal use)</span>
-                </label>
-                <input
-                    type="text"
-                    wire:model.lazy="block.label"
-                    placeholder="{{ $block['widget_type_label'] }}"
-                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                >
-            </div>
-
-            {{-- Singleton fields from config_schema --}}
-            @foreach ($block['widget_type_config_schema'] as $field)
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                        {{ $field['label'] }}
-                    </label>
-
-                    @if ($field['type'] === 'richtext')
-                        <div
-                            wire:ignore
-                            x-data="{
-                                init() {
-                                    const quill = new Quill(this.$refs.editor, {
-                                        theme: 'snow',
-                                        modules: {
-                                            toolbar: [
-                                                [{ font: [] }, { size: [] }],
-                                                ['bold', 'italic', 'underline', 'strike'],
-                                                [{ color: [] }, { background: [] }],
-                                                [{ list: 'ordered' }, { list: 'bullet' }],
-                                                ['link'],
-                                                ['clean']
-                                            ]
-                                        }
-                                    });
-
-                                    const initial = {{ json_encode($block['config'][$field['key']] ?? '') }};
-                                    if (initial) quill.root.innerHTML = initial;
-
-                                    quill.on('text-change', () => {
-                                        $wire.updateConfig('{{ $field['key'] }}', quill.root.innerHTML);
-                                    });
-                                }
-                            }"
-                        >
-                            <div x-ref="editor" class="min-h-[120px]"></div>
-                        </div>
-
-                    @elseif ($field['type'] === 'textarea')
-                        <textarea
-                            wire:model.lazy="block.config.{{ $field['key'] }}"
-                            rows="4"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                        ></textarea>
-
-                    @elseif ($field['type'] === 'toggle')
-                        <label class="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                wire:model="block.config.{{ $field['key'] }}"
-                                class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500"
-                            >
-                            <span class="text-sm text-gray-700 dark:text-gray-300">Enabled</span>
-                        </label>
-
-                    @elseif ($field['type'] === 'number')
-                        <input
-                            type="number"
-                            wire:model.lazy="block.config.{{ $field['key'] }}"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                        >
-
-                    @elseif ($field['type'] === 'url')
-                        <input
-                            type="url"
-                            wire:model.lazy="block.config.{{ $field['key'] }}"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                        >
-
-                    @else {{-- text (default) --}}
-                        <input
-                            type="text"
-                            wire:model.lazy="block.config.{{ $field['key'] }}"
-                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                        >
-                    @endif
-                </div>
-            @endforeach
-
-            {{-- Query Settings — collapsible subsection --}}
-            @if (! empty($block['widget_type_collections']))
-                <div x-data="{ qOpen: false }" class="pt-2">
+        {{-- Column slot panels --}}
+        <div class="flex gap-3 overflow-x-auto">
+            @for ($colIdx = 0; $colIdx < $numCols; $colIdx++)
+            <div class="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                <div class="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700">
+                    <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">Column {{ $colIdx + 1 }}</span>
                     <button
                         type="button"
-                        x-on:click="qOpen = !qOpen"
-                        class="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-3.5 w-3.5 transition-transform duration-150"
-                            x-bind:class="{ 'rotate-90': qOpen }"
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
-                        >
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
-                        Query Settings
-                    </button>
-
-                    <div x-show="qOpen" x-cloak class="mt-3 space-y-4">
-                        @foreach ($block['widget_type_collections'] as $collHandle)
-                            <div class="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                                <h5 class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                                    {{ $collHandle }}
-                                </h5>
-
-                                <div class="mb-3 grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Limit</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            wire:model.lazy="block.query_config.{{ $collHandle }}.limit"
-                                            placeholder="All"
-                                            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                                        >
-                                    </div>
-                                    <div>
-                                        <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Direction</label>
-                                        <select
-                                            wire:model="block.query_config.{{ $collHandle }}.direction"
-                                            class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                                        >
-                                            <option value="asc">Ascending</option>
-                                            <option value="desc">Descending</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Order By</label>
-                                    <select
-                                        wire:model="block.query_config.{{ $collHandle }}.order_by"
-                                        class="w-full rounded border border-gray-300 bg-white px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                                    >
-                                        <option value="sort_order">Sort Order</option>
-                                        <option value="created_at">Created At</option>
-                                        <option value="updated_at">Updated At</option>
-                                        <option value="published_at">Published At</option>
-                                    </select>
-                                </div>
-
-                                @if (count($cmsTags) > 0)
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Include Tags</label>
-                                            <div class="max-h-32 space-y-1 overflow-y-auto">
-                                                @foreach ($cmsTags as $tag)
-                                                    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                                        <input
-                                                            type="checkbox"
-                                                            wire:model="block.query_config.{{ $collHandle }}.include_tags"
-                                                            value="{{ $tag['slug'] }}"
-                                                            class="rounded border-gray-300"
-                                                        >
-                                                        {{ $tag['name'] }}
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Exclude Tags</label>
-                                            <div class="max-h-32 space-y-1 overflow-y-auto">
-                                                @foreach ($cmsTags as $tag)
-                                                    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                                        <input
-                                                            type="checkbox"
-                                                            wire:model="block.query_config.{{ $collHandle }}.exclude_tags"
-                                                            value="{{ $tag['slug'] }}"
-                                                            class="rounded border-gray-300"
-                                                        >
-                                                        {{ $tag['name'] }}
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
+                        wire:click="openChildAddModal({{ $colIdx }})"
+                        class="rounded bg-primary-600 px-2 py-1 text-xs font-semibold text-white hover:bg-primary-500"
+                    >+ Add Block</button>
                 </div>
-            @endif
-
-        @endif
+                <div class="space-y-2 p-2">
+                    @forelse ($childSlots[$colIdx] ?? [] as $childIdx => $child)
+                        @livewire('page-builder-block', [
+                            'blockId'    => $child['id'],
+                            'isFirst'    => $childIdx === 0,
+                            'isLast'     => $childIdx === count($childSlots[$colIdx]) - 1,
+                            'isRequired' => false,
+                            'parentBlockId' => $block['id'],
+                            'parentColumnIndex' => $colIdx,
+                        ], key('child-block-' . $child['id']))
+                    @empty
+                        <p class="py-3 text-center text-xs text-gray-400">No blocks in this column.</p>
+                    @endforelse
+                </div>
+            </div>
+            @endfor
+        </div>
 
     </div>
+    @endif
 
     {{-- Child Add Block Modal (column widget only) --}}
     @if ($showChildAddModal)

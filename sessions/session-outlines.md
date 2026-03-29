@@ -156,6 +156,8 @@ Header and footer areas rendered via purpose-built widget types using the same e
 
 New widget types for Beta 1: calendar, graph/chart, mixed media carousel / image slider, static image, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types.
 
+**Table and Flexbox widgets** — a table layout widget and a flexbox layout widget would complement the existing column (CSS grid) widget and give users more layout options. These should be straightforward to build following the same `parent_widget_id` / `column_index` nesting model as the column widget. Consider whether the column widget needs usage limits (max nesting depth, max columns) to keep it manageable once alternatives exist.
+
 ### Page Templates
 
 Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
@@ -375,6 +377,10 @@ Each widget becomes a self-describing class: handle, config schema, render logic
 ### Page Builder — Live Preview
 
 Split-pane or overlay preview of page changes before saving. Requires the front-end build pipeline to be stable.
+
+### Page Builder — Layer Explorer
+
+A simple text-node tree representation of the page's widget structure (similar to a DOM inspector). Helps users locate deeply nested blocks inside column slots without expanding every level manually. Not front-and-centre — a collapsible sidebar or panel overlay. Needs design discussion before building; deferred to post-Beta 1.
 
 ### Media Library UI
 

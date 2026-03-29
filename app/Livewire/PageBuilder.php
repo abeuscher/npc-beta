@@ -22,6 +22,8 @@ class PageBuilder extends Component
     /** @var array<int, string> Widget handles that are required on this page. */
     protected array $requiredHandles = [];
 
+    public string $selectedBlockId = '';
+
     // Add block modal
     public bool $showAddModal = false;
     public ?int $insertPosition = null;
@@ -121,7 +123,7 @@ class PageBuilder extends Component
         // Build default config from config_schema
         $defaultConfig = [];
         foreach ($widgetType->config_schema ?? [] as $field) {
-            $defaultConfig[$field['key']] = match ($field['type'] ?? 'text') {
+            $defaultConfig[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
                 'toggle' => false,
                 'number' => null,
                 default  => '',
@@ -299,8 +301,31 @@ class PageBuilder extends Component
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Block selection — drives the inspector panel
+    // -------------------------------------------------------------------------
+
+    #[On('block-select-requested')]
+    public function onSelectBlock(string $blockId): void
+    {
+        $this->selectBlock($blockId);
+    }
+
+    public function selectBlock(string $blockId): void
+    {
+        // Validate the block belongs to this page before selecting it.
+        if ($blockId !== '' && ! \App\Models\PageWidget::where('id', $blockId)->where('page_id', $this->pageId)->exists()) {
+            return;
+        }
+
+        $this->selectedBlockId = $blockId;
+
+        // Dispatch a browser event so each block component can update its selected highlight.
+        $this->dispatch('block-selected', blockId: $blockId);
+    }
+
     public function render(): \Illuminate\View\View
     {
-        return view('livewire.page-builder');
+        return view('livewire.page-builder', ['selectedBlockId' => $this->selectedBlockId]);
     }
 }
