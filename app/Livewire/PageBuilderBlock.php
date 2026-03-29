@@ -4,12 +4,18 @@ namespace App\Livewire;
 
 use App\Models\Tag;
 use App\Models\PageWidget;
+use App\Models\WidgetType;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Reactive;
 use Livewire\Component;
 
 class PageBuilderBlock extends Component
 {
     public string $blockId;
+
+    /** Set when this block is a child inside a column slot. */
+    public string $parentBlockId = '';
+    public int $parentColumnIndex = 0;
 
     #[Reactive]
     public bool $isFirst = false;
@@ -26,14 +32,26 @@ class PageBuilderBlock extends Component
     /** @var array<int, array<string, mixed>> */
     public array $cmsTags = [];
 
-    public function mount(string $blockId, bool $isFirst = false, bool $isLast = false, bool $isRequired = false): void
-    {
-        $this->blockId    = $blockId;
-        $this->isFirst    = $isFirst;
-        $this->isLast     = $isLast;
-        $this->isRequired = $isRequired;
+    public function mount(
+        string $blockId,
+        bool $isFirst = false,
+        bool $isLast = false,
+        bool $isRequired = false,
+        string $parentBlockId = '',
+        int $parentColumnIndex = 0,
+    ): void {
+        $this->blockId            = $blockId;
+        $this->isFirst            = $isFirst;
+        $this->isLast             = $isLast;
+        $this->isRequired         = $isRequired;
+        $this->parentBlockId      = $parentBlockId;
+        $this->parentColumnIndex  = $parentColumnIndex;
 
         $this->loadBlock();
+
+        if ($this->block['widget_type_handle'] === 'column_widget') {
+            $this->loadChildSlots();
+        }
 
         $this->cmsTags = Tag::where('type', 'collection')
             ->orderBy('name')
@@ -59,6 +77,7 @@ class PageBuilderBlock extends Component
             'label'                       => $pw->label ?? '',
             'config'                      => $pw->config ?? [],
             'query_config'                => $pw->query_config ?? [],
+            'style_config'                => $pw->style_config ?? [],
             'sort_order'                  => $pw->sort_order ?? 0,
         ];
     }
@@ -89,7 +108,187 @@ class PageBuilderBlock extends Component
 
         if (str_starts_with($name, 'block.query_config')) {
             PageWidget::where('id', $this->blockId)->update(['query_config' => $this->block['query_config']]);
+            return;
         }
+
+        if (str_starts_with($name, 'block.style_config')) {
+            PageWidget::where('id', $this->blockId)->update(['style_config' => $this->block['style_config']]);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Column widget — child slot management
+    // -------------------------------------------------------------------------
+
+    /** @var array<int, array<int, array<string, mixed>>> columnIndex → ordered child block maps */
+    public array $childSlots = [];
+
+    /** @var array<int, array<string, mixed>> */
+    public array $widgetTypes = [];
+
+    public bool $showChildAddModal = false;
+    public ?int $childAddColumn = null;
+    public string $childAddLabel = '';
+
+    public function loadChildSlots(): void
+    {
+        $this->childSlots = [];
+
+        $children = PageWidget::where('parent_widget_id', $this->blockId)
+            ->with('widgetType')
+            ->orderBy('column_index')
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($children as $child) {
+            $idx = $child->column_index ?? 0;
+            $this->childSlots[$idx][] = [
+                'id'                     => $child->id,
+                'widget_type_handle'     => $child->widgetType?->handle ?? '',
+                'widget_type_label'      => $child->widgetType?->label ?? 'Unknown',
+                'widget_type_default_open' => $child->widgetType?->default_open ?? false,
+                'label'                  => $child->label ?? '',
+                'sort_order'             => $child->sort_order ?? 0,
+            ];
+        }
+    }
+
+    public function openChildAddModal(int $columnIndex): void
+    {
+        if (empty($this->widgetTypes)) {
+            $this->widgetTypes = WidgetType::orderBy('label')
+                ->get(['id', 'handle', 'label', 'collections', 'config_schema'])
+                ->toArray();
+        }
+
+        $this->childAddColumn = $columnIndex;
+        $this->childAddLabel  = '';
+        $this->showChildAddModal = true;
+    }
+
+    public function createChildBlock(string $widgetTypeId): void
+    {
+        $this->validate(['childAddLabel' => 'nullable|string|max:255']);
+
+        $widgetType = WidgetType::find($widgetTypeId);
+
+        if (! $widgetType) {
+            return;
+        }
+
+        $columnIndex = $this->childAddColumn ?? 0;
+
+        // Validate parent belongs to same page (security check)
+        $parentWidget = PageWidget::find($this->blockId);
+        if (! $parentWidget) {
+            return;
+        }
+
+        if (blank($this->childAddLabel)) {
+            $count = PageWidget::where('parent_widget_id', $this->blockId)
+                ->where('column_index', $columnIndex)
+                ->whereHas('widgetType', fn ($q) => $q->where('id', $widgetTypeId))
+                ->count();
+            $this->childAddLabel = $widgetType->label . ' ' . ($count + 1);
+        }
+
+        $defaultConfig = [];
+        foreach ($widgetType->config_schema ?? [] as $field) {
+            $defaultConfig[$field['key']] = match ($field['type'] ?? 'text') {
+                'toggle' => false,
+                'number' => null,
+                default  => '',
+            };
+        }
+
+        $sortOrder = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', $columnIndex)
+            ->max('sort_order') ?? -1;
+
+        PageWidget::create([
+            'page_id'          => $parentWidget->page_id,
+            'parent_widget_id' => $this->blockId,
+            'column_index'     => $columnIndex,
+            'widget_type_id'   => $widgetType->id,
+            'label'            => $this->childAddLabel,
+            'config'           => $defaultConfig,
+            'query_config'     => [],
+            'style_config'     => [],
+            'sort_order'       => $sortOrder + 1,
+            'is_active'        => true,
+        ]);
+
+        $this->showChildAddModal = false;
+        $this->childAddColumn    = null;
+        $this->childAddLabel     = '';
+        $this->loadChildSlots();
+    }
+
+    #[On('child-delete-requested')]
+    public function onChildDelete(string $childId, string $parentId): void
+    {
+        if ($parentId !== $this->blockId) {
+            return;
+        }
+
+        PageWidget::where('id', $childId)->delete();
+        $this->loadChildSlots();
+    }
+
+    #[On('child-move-up-requested')]
+    public function onChildMoveUp(string $childId, string $parentId, int $columnIndex): void
+    {
+        if ($parentId !== $this->blockId) {
+            return;
+        }
+
+        $siblings = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', $columnIndex)
+            ->orderBy('sort_order')
+            ->get();
+
+        $idx = $siblings->search(fn ($s) => $s->id === $childId);
+
+        if ($idx === false || $idx === 0) {
+            return;
+        }
+
+        $current  = $siblings[$idx];
+        $previous = $siblings[$idx - 1];
+
+        [$current->sort_order, $previous->sort_order] = [$previous->sort_order, $current->sort_order];
+        $current->save();
+        $previous->save();
+
+        $this->loadChildSlots();
+    }
+
+    #[On('child-move-down-requested')]
+    public function onChildMoveDown(string $childId, string $parentId, int $columnIndex): void
+    {
+        if ($parentId !== $this->blockId) {
+            return;
+        }
+
+        $siblings = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', $columnIndex)
+            ->orderBy('sort_order')
+            ->get();
+
+        $idx = $siblings->search(fn ($s) => $s->id === $childId);
+
+        if ($idx === false || $idx >= $siblings->count() - 1) {
+            return;
+        }
+
+        $current = $siblings[$idx];
+        $next    = $siblings[$idx + 1];
+
+        [$current->sort_order, $next->sort_order] = [$next->sort_order, $current->sort_order];
+        $current->save();
+        $next->save();
+
+        $this->loadChildSlots();
     }
 
     // -------------------------------------------------------------------------
@@ -98,6 +297,10 @@ class PageBuilderBlock extends Component
 
     public function requestDelete(): void
     {
+        if ($this->parentBlockId !== '') {
+            $this->dispatch('child-delete-requested', childId: $this->blockId, parentId: $this->parentBlockId);
+            return;
+        }
         $this->dispatch('block-delete-requested', blockId: $this->blockId);
     }
 
@@ -108,11 +311,19 @@ class PageBuilderBlock extends Component
 
     public function requestMoveUp(): void
     {
+        if ($this->parentBlockId !== '') {
+            $this->dispatch('child-move-up-requested', childId: $this->blockId, parentId: $this->parentBlockId, columnIndex: $this->parentColumnIndex);
+            return;
+        }
         $this->dispatch('block-move-up-requested', blockId: $this->blockId);
     }
 
     public function requestMoveDown(): void
     {
+        if ($this->parentBlockId !== '') {
+            $this->dispatch('child-move-down-requested', childId: $this->blockId, parentId: $this->parentBlockId, columnIndex: $this->parentColumnIndex);
+            return;
+        }
         $this->dispatch('block-move-down-requested', blockId: $this->blockId);
     }
 

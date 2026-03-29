@@ -65,6 +65,7 @@ class PageBuilder extends Component
     public function loadBlocks(): void
     {
         $this->blocks = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
             ->with('widgetType')
             ->orderBy('sort_order')
             ->get()
@@ -78,6 +79,7 @@ class PageBuilder extends Component
                 'label'                     => $pw->label ?? '',
                 'config'                    => $pw->config ?? [],
                 'query_config'              => $pw->query_config ?? [],
+                'style_config'              => $pw->style_config ?? [],
                 'sort_order'                => $pw->sort_order ?? 0,
                 'is_required'               => in_array($pw->widgetType?->handle ?? '', $this->requiredHandles, true),
             ])

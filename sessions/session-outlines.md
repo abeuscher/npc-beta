@@ -92,6 +92,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 083 | Bug Fixes & Polish |
 | 084 | Widget Render Context |
 | 085 | Widget Migration |
+| 086 | Column Widget & Widget Picker UX |
 
 ---
 
@@ -131,21 +132,17 @@ Fixing a backlog of bugs and small improvements identified during testing. Items
 
 *The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
 
-### Session 086 — Column Widget & Widget Picker UX
+### Session 087 — Inspector Panel & Shared Page Builder Form
 
-Column layout widget with unlimited child nesting, CSS grid presets, and a universal `style_config` layer for per-widget padding and margin.
+Refactor all page-builder edit pages to share a single form layout via a trait (`HasPageBuilderForm`), reshape that layout to surface SEO and Custom Fields at full width, give the page builder full 3-column width, and replace inline block editing with a fixed inspector panel (`PageBuilderInspector` Livewire component) so that widget controls are accessible at any nesting depth.
 
-**Schema:** `page_widgets` gains `parent_widget_id` (uuid nullable, self-referential FK, set-null on delete), `column_index` (smallint unsigned nullable), and `style_config` (jsonb, default {}).
+**Form layout (all three resources):** Row 1 = title/slug (1 col) + settings Author/Published/Date/Tags (2 col). Row 2 = Custom Fields (3 col, collapsed, hidden if none). Row 3 = SEO (3 col, collapsed). Row 4 = Page Builder (3 col).
 
-**style_config:** Universal — padding and margin (T/R/B/L as individual pixel keys) applied as inline styles on every widget's wrapper div by the renderer. Available on all widget types. Advanced controls hidden behind a per-block show/hide toggle (`x-show`). Padding/margin UI: shorthand "all sides" input drives four individual T/R/B/L fields; individuals remain editable; shorthand shows "mixed" when values differ.
+**Inspector:** `PageBuilder` becomes a two-column layout — structural block list (left) + `PageBuilderInspector` (right, sticky). Clicking a block selects it; the inspector loads its config fields, query settings, and style_config spacing panel. `PageBuilderBlock` stripped to structural handle only.
 
-**Column widget:** CSS grid only — no display mode selector, no row controls. Config: `num_columns` and `grid_template_columns`. Four presets: Equal halves (`1fr 1fr`), Equal thirds (`1fr 1fr 1fr`), 2/3 + 1/3 (`2fr 1fr`), 1/3 + 2/3 (`1fr 2fr`). Custom text input always overrides preset. Defaults to open in the page builder.
+**`config_schema` select type:** New `select` field type with `options_from` key. Built-in sources: `events`, `products`, `forms`. Existing `event_slug`, `product_slug`, `form_handle` text fields in the seeder converted to `select`. Inspector resolves sources at mount.
 
-**Nesting:** Unlimited depth. No code or UI limit imposed. Drag-and-drop at root level continues to work on collapsed column containers. Within column slots: up/down buttons only.
-
-**Add Block flow:** `PageBuilder::createBlock()` accepts optional `parentWidgetId` and `columnIndex`; column slot panels each carry their own "Add Block" button scoped to that slot.
-
-**Docs:** `resources/docs/widget-types.md` receives a full architecture section covering the column widget, the parent/child nesting model, and the style_config layer. File will be split in a future housekeeping session.
+**Dependencies:** Builds on column widget nesting model from session 086. Preset picker and `grid_template_columns` input (hidden in 086) surfaced in the inspector.
 
 ### Per-Page SEO & Header Snippets
 
