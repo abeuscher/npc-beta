@@ -26,7 +26,13 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.npmjs.com)",
-      "WebFetch(domain:bundlephobia.com)"
+      "WebFetch(domain:bundlephobia.com)",
+      "Bash(ls /e/Clients/nonprofitcrm/database/migrations/*.php)",
+      "Bash(grep -r \"create_collection\" /e/Clients/nonprofitcrm/database/migrations/*.php)",
+      "Bash(xargs ls:*)",
+      "WebFetch(domain:caniuse.com)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx vite:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations"

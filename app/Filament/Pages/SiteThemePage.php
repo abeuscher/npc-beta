@@ -64,14 +64,14 @@ class SiteThemePage extends Page
             'header_content'       => SiteSetting::get('header_content'),
         ]);
 
-        $themeFile = resource_path('scss/_theme.scss');
+        $themeFile = resource_path('scss/_custom.scss');
         $this->themeScss = file_exists($themeFile) ? file_get_contents($themeFile) : '';
     }
 
     public function form(Form $form): Form
     {
         $fontOptions = [
-            ''                                         => '— Default (Pico) —',
+            ''                                         => '— Default (System) —',
             'system-ui, sans-serif'                    => 'System UI',
             'Georgia, serif'                           => 'Georgia (serif)',
             "'Inter', system-ui, sans-serif"           => 'Inter',
@@ -239,7 +239,7 @@ class SiteThemePage extends Page
         }
 
         // Write to file
-        file_put_contents(resource_path('scss/_theme.scss'), $scss);
+        file_put_contents(resource_path('scss/_custom.scss'), $scss);
 
         // Run Vite build
         $projectRoot = base_path();

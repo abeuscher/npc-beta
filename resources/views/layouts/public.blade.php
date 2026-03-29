@@ -20,13 +20,13 @@
         $bodyFont     = \App\Models\SiteSetting::get('public_body_font');
 
         if ($primaryColor) {
-            $cssVars[] = "--pico-primary: {$primaryColor}";
+            $cssVars[] = "--color-primary: {$primaryColor}";
         }
         if ($headingFont) {
-            $cssVars[] = "--pico-font-family-heading: {$headingFont}";
+            $cssVars[] = "--font-family-heading: {$headingFont}";
         }
         if ($bodyFont) {
-            $cssVars[] = "--pico-font-family-sans-serif: {$bodyFont}";
+            $cssVars[] = "--font-family-body: {$bodyFont}";
         }
 
         // Extract Google Font names from font-stack values and build the URL
@@ -88,12 +88,12 @@
 
     @stack('styles')
 </head>
-<body class="{{ $bodyClass ?? 'page-unknown' }}">
+<body class="min-h-screen flex flex-col font-body text-gray-800 dark:text-gray-200 dark:bg-gray-900 {{ $bodyClass ?? 'page-unknown' }}">
 
     @include(view()->exists('custom.header') ? 'custom.header' : 'components.site-header')
 
-    <main>
-        <div class="container">
+    <main class="flex-1">
+        <div class="max-w-7xl mx-auto px-4 py-8">
             @yield('content')
         </div>
     </main>

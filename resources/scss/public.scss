@@ -1,16 +1,9 @@
-// Layer order: base (Pico) < libraries (Swiper, etc.) < unlayered (our styles).
-// Unlayered CSS always wins, so layout and theme need no layer declaration.
-// Uses @import throughout because SCSS requires @use before any other rules,
-// and @layer counts as a rule.
+// Layer order: base (Tailwind) < libraries (Swiper, etc.) < unlayered (our styles).
 @layer base, libraries;
 
-// Theme variables — load before Pico so overrides take effect
-@import "theme";
-
-// Pico CSS — classless semantic theme
-@layer base {
-    @import "../../node_modules/@picocss/pico/scss/pico";
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 // Swiper carousel
 @layer libraries {
@@ -20,5 +13,33 @@
     @import "../../node_modules/swiper/modules/effect-fade";
 }
 
-// Public layout utilities (unlayered — highest priority)
-@import "layout";
+// Base typography — applied via Tailwind's base layer
+@layer base {
+    body {
+        font-family: var(--font-family-body, system-ui, sans-serif);
+        line-height: 1.5;
+        color: theme('colors.gray.800');
+    }
+
+    [data-theme="dark"] body,
+    .dark body {
+        color: theme('colors.gray.200');
+        background-color: theme('colors.gray.900');
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-family-heading, system-ui, sans-serif);
+    }
+
+    a {
+        color: var(--color-primary, #0172ad);
+        text-decoration: underline;
+    }
+
+    a:hover {
+        opacity: 0.8;
+    }
+}
+
+// Custom styles (unlayered — highest priority)
+@import "custom";

@@ -13,7 +13,7 @@
         $inlineStyle = implode(';', $styleProps);
     @endphp
     <div
-        class="widget widget--{{ $block['handle'] }}"
+        class="widget widget--{{ $block['handle'] }} mb-6"
         id="widget-{{ $block['instance_id'] }}"
         @if ($inlineStyle) style="{{ $inlineStyle }}" @endif
     >

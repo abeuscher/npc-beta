@@ -26,8 +26,6 @@
 
 @section('content')
     <article>
-        <h1>{{ $page->title }}</h1>
-
         <x-page-widgets :blocks="$blocks ?? []" />
     </article>
 @endsection

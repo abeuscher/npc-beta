@@ -63,7 +63,7 @@
     <p>{{ session($successKey) }}</p>
 @else
     @if ($errors->has('_form'))
-        <p role="alert" style="color: var(--pico-del-color);">{{ $errors->first('_form') }}</p>
+        <p role="alert" class="text-red-600 dark:text-red-400">{{ $errors->first('_form') }}</p>
     @endif
 
     <form method="POST" action="{{ route('forms.submit', $form->handle) }}">
@@ -133,7 +133,7 @@
                                 {{ $required ? 'required' : '' }}
                             >{{ $old }}</textarea>
                             @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
+                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'select')
                             <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
@@ -150,7 +150,7 @@
                                 @endforeach
                             </select>
                             @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
+                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'state')
                             <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
@@ -165,7 +165,7 @@
                                 @endforeach
                             </select>
                             @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
+                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'country')
                             <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
@@ -184,7 +184,7 @@
                                 @endforeach
                             </select>
                             @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
+                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
 
                         @else
                             {{-- text | email | tel | number --}}
@@ -199,13 +199,13 @@
                                 @if ($pattern) pattern="{{ $pattern }}" title="{{ $errMsg }}" @endif
                             >
                             @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small style="color:var(--pico-del-color)">{{ $message }}</small>@enderror
+                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
                         @endif
                     </div>
                 @endif
             @endforeach
         </div>
 
-        <button type="submit">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
+        <button type="submit" class="mt-4 px-6 py-2 bg-primary text-white rounded hover:opacity-90 cursor-pointer">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
     </form>
 @endif

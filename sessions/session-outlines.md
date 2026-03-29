@@ -96,6 +96,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 087 | Inspector Panel & Shared Page Builder Form |
 | 088 | Image Optimization & SVG Support |
 | 089 | Image & Carousel Widgets |
+| 090 | Tailwind Migration — Layouts & Infrastructure |
 
 ---
 
@@ -109,9 +110,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 089 — Image & Carousel Widgets~~ *(completed)*
 
-### Session 090 — Tailwind Migration — Layouts & Infrastructure
-
-Replace Pico CSS with Tailwind CSS across the public frontend. Install Tailwind, migrate design tokens to `tailwind.config.js`, rewrite layout templates (header, footer, portal chrome), convert structural components, wire site theme editor to CSS custom properties. Motivated by systemic CSS collisions between Pico's classless element styles and third-party library CSS (Swiper) discovered in session 089.
+### ~~Session 090 — Tailwind Migration — Layouts & Infrastructure~~ *(completed)*
 
 ### Session 091 — Tailwind Migration — Widget Templates
 

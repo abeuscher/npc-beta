@@ -1,0 +1,76 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom CSS — styles that don't fit Tailwind utility classes
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Web form grid (used by public-form component)
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+
+@for $i from 1 through 12 {
+    .col-#{$i} { grid-column: span #{$i}; }
+}
+
+@media (max-width: 768px) {
+    [class^="col-"] { grid-column: span 12; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Carousel widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+.widget-carousel {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%;
+    overflow: hidden;
+
+    .swiper {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .swiper-slide {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .swiper-slide picture {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .swiper-slide img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        color: #fff;
+    }
+
+    .carousel-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+        color: #fff;
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+
+    a {
+        color: var(--carousel-link-color, inherit);
+    }
+}
