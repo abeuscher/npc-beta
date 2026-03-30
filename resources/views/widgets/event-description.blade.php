@@ -1,6 +1,6 @@
 @php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
 @isset($event)
-    <h1 class="event-title">{{ $event->title }}</h1>
+    <h1 class="text-3xl font-heading font-bold mb-2 text-gray-900 dark:text-gray-100">{{ $event->title }}</h1>
 
     @if ($event->starts_at)
         @php
@@ -32,7 +32,7 @@
                 $location = null;
             }
         @endphp
-        <p class="event-date">
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
             <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $dateString }}</time>
             @if ($location)
                 &mdash; {{ $location }}
@@ -41,7 +41,7 @@
     @endif
 
     @if ($event->description)
-        <div class="event-description">
+        <div class="text-gray-800 dark:text-gray-200">
             {!! $event->description !!}
         </div>
     @endif

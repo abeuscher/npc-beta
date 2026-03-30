@@ -269,33 +269,39 @@
                     Advanced (Spacing)
                 </button>
 
-                <div x-show="advOpen" x-cloak class="border-t border-gray-100 px-4 py-3 dark:border-gray-700">
-                    {{-- Column headers --}}
-                    <div class="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr] gap-1.5 mb-1">
-                        <span></span>
-                        <span class="text-center text-xs text-gray-400">All</span>
-                        <span class="text-center text-xs text-gray-400">Left</span>
-                        <span class="text-center text-xs text-gray-400">Top</span>
-                        <span class="text-center text-xs text-gray-400">Right</span>
-                        <span class="text-center text-xs text-gray-400">Bottom</span>
+                <div x-show="advOpen" x-cloak class="border-t border-gray-100 px-4 py-3 dark:border-gray-700 space-y-4">
+                    {{-- Padding --}}
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Padding (px)</p>
+                        <div class="grid grid-cols-[--cols-default] gap-2" style="--cols-default:repeat(5,minmax(0,1fr))">
+                            <div>
+                                <label class="block text-center text-xs text-gray-400 mb-1">All</label>
+                                <input type="number" min="0" x-model="paddingAll" x-bind:placeholder="paddingAllPlaceholder" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                            </div>
+                            @foreach (['padding_left' => 'Left', 'padding_top' => 'Top', 'padding_right' => 'Right', 'padding_bottom' => 'Bottom'] as $key => $label)
+                            <div>
+                                <label class="block text-center text-xs text-gray-400 mb-1">{{ $label }}</label>
+                                <input type="number" min="0" wire:model.live="block.style_config.{{ $key }}" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                            </div>
+                            @endforeach
+                        </div>
                     </div>
 
-                    {{-- Padding row --}}
-                    <div class="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr] gap-1.5 mb-1.5 items-center">
-                        <span class="text-xs font-medium text-gray-600 dark:text-gray-400 pr-1">Pad</span>
-                        <input type="number" min="0" x-model="paddingAll" x-bind:placeholder="paddingAllPlaceholder" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
-                        @foreach (['padding_left', 'padding_top', 'padding_right', 'padding_bottom'] as $key)
-                        <input type="number" min="0" wire:model.live="block.style_config.{{ $key }}" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
-                        @endforeach
-                    </div>
-
-                    {{-- Margin row --}}
-                    <div class="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr] gap-1.5 items-center">
-                        <span class="text-xs font-medium text-gray-600 dark:text-gray-400 pr-1">Mar</span>
-                        <input type="number" min="0" x-model="marginAll" x-bind:placeholder="marginAllPlaceholder" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
-                        @foreach (['margin_left', 'margin_top', 'margin_right', 'margin_bottom'] as $key)
-                        <input type="number" min="0" wire:model.live="block.style_config.{{ $key }}" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
-                        @endforeach
+                    {{-- Margin --}}
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Margin (px)</p>
+                        <div class="grid grid-cols-[--cols-default] gap-2" style="--cols-default:repeat(5,minmax(0,1fr))">
+                            <div>
+                                <label class="block text-center text-xs text-gray-400 mb-1">All</label>
+                                <input type="number" min="0" x-model="marginAll" x-bind:placeholder="marginAllPlaceholder" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                            </div>
+                            @foreach (['margin_left' => 'Left', 'margin_top' => 'Top', 'margin_right' => 'Right', 'margin_bottom' => 'Bottom'] as $key => $label)
+                            <div>
+                                <label class="block text-center text-xs text-gray-400 mb-1">{{ $label }}</label>
+                                <input type="number" min="0" wire:model.live="block.style_config.{{ $key }}" class="w-full rounded border border-gray-300 bg-white px-1.5 py-1 text-sm text-center dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
+                            </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>

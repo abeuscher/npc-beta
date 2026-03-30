@@ -83,63 +83,75 @@
 }">
 
     @if ($heading)
-        <h2>{{ $heading }}</h2>
+        <h2 class="text-2xl font-heading font-bold mb-4 text-gray-900 dark:text-gray-100">{{ $heading }}</h2>
     @endif
 
     @if ($donationStatus === 'success')
-        <div role="status">
-            <strong>Thank you for your donation!</strong>
-            <p>Your contribution has been received. You will receive a receipt by email.</p>
+        <div role="status" class="rounded border border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30 p-4 mb-4">
+            <strong class="text-green-800 dark:text-green-200">Thank you for your donation!</strong>
+            <p class="text-green-700 dark:text-green-300 mt-1">Your contribution has been received. You will receive a receipt by email.</p>
         </div>
 
     @elseif ($donationStatus === 'cancelled')
-        <div role="status">
-            <p>Your donation was cancelled. No payment was taken.</p>
+        <div role="status" class="rounded border border-yellow-300 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900/30 p-4 mb-4">
+            <p class="text-yellow-800 dark:text-yellow-200">Your donation was cancelled. No payment was taken.</p>
         </div>
 
     @else
 
-        <div>
-            <p><strong>Select an amount</strong></p>
+        <div class="mb-6">
+            <p class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Select an amount</p>
 
-            <div>
+            <div class="flex flex-wrap gap-2">
                 @foreach ($presetAmounts as $preset)
-                    <button type="button" class="outline"
+                    <button type="button"
                             @click="selectAmount({{ $preset }})"
-                            :aria-pressed="amount === {{ $preset }} && !showCustom">
+                            :aria-pressed="amount === {{ $preset }} && !showCustom"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded font-medium text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                            :class="amount === {{ $preset }} && !showCustom ? 'border-primary bg-primary text-white dark:text-white' : ''">
                         ${{ number_format($preset, strpos((string) $preset, '.') !== false ? 2 : 0) }}
                     </button>
                 @endforeach
-                <button type="button" class="outline" @click="selectCustom()" :aria-pressed="showCustom">Custom</button>
+                <button type="button" @click="selectCustom()" :aria-pressed="showCustom"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded font-medium text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                        :class="showCustom ? 'border-primary bg-primary text-white dark:text-white' : ''">Custom</button>
             </div>
 
-            <div x-show="showCustom" x-cloak>
-                <label for="donation_custom_amount">Custom amount ($)</label>
+            <div x-show="showCustom" x-cloak class="mt-3">
+                <label for="donation_custom_amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custom amount ($)</label>
                 <input type="number" id="donation_custom_amount" x-model="customAmount"
-                       min="1" max="10000" step="0.01" placeholder="Enter amount">
+                       min="1" max="10000" step="0.01" placeholder="Enter amount"
+                       class="block w-full max-w-xs rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
             </div>
         </div>
 
         @if ($showFrequency)
-        <div>
-            <p><strong>Frequency</strong></p>
+        <div class="mb-6">
+            <p class="font-semibold text-gray-900 dark:text-gray-100 mb-3">Frequency</p>
 
-            <div>
-                <button type="button" class="outline" @click="frequency = 'one_off'" :aria-pressed="frequency === 'one_off'">One-time</button>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" @click="frequency = 'one_off'" :aria-pressed="frequency === 'one_off'"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded font-medium text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                        :class="frequency === 'one_off' ? 'border-primary bg-primary text-white dark:text-white' : ''">One-time</button>
                 @if ($showMonthly)
-                <button type="button" class="outline" @click="frequency = 'monthly'" :aria-pressed="frequency === 'monthly'">Monthly</button>
+                <button type="button" @click="frequency = 'monthly'" :aria-pressed="frequency === 'monthly'"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded font-medium text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                        :class="frequency === 'monthly' ? 'border-primary bg-primary text-white dark:text-white' : ''">Monthly</button>
                 @endif
                 @if ($showAnnual)
-                <button type="button" class="outline" @click="frequency = 'annual'"  :aria-pressed="frequency === 'annual'">Annual</button>
+                <button type="button" @click="frequency = 'annual'"  :aria-pressed="frequency === 'annual'"
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded font-medium text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                        :class="frequency === 'annual' ? 'border-primary bg-primary text-white dark:text-white' : ''">Annual</button>
                 @endif
             </div>
         </div>
         @endif
 
         @if ($showFunds)
-        <div>
-            <label for="donation_fund">Designate to a fund (optional)</label>
-            <select id="donation_fund" x-model="fundId">
+        <div class="mb-6">
+            <label for="donation_fund" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Designate to a fund (optional)</label>
+            <select id="donation_fund" x-model="fundId"
+                    class="block w-full max-w-xs rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
                 <option value="">General / Unrestricted</option>
                 @foreach ($activeFunds as $fund)
                     <option value="{{ $fund->id }}">{{ $fund->name }}</option>
@@ -148,11 +160,12 @@
         </div>
         @endif
 
-        <div x-show="error" x-cloak role="alert">
+        <div x-show="error" x-cloak role="alert" class="rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-4 mb-4 text-red-800 dark:text-red-200">
             <span x-text="error"></span>
         </div>
 
-        <button type="button" @click="submit()" :disabled="loading">
+        <button type="button" @click="submit()" :disabled="loading"
+                class="px-6 py-2.5 bg-primary text-white rounded font-semibold hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
             <span x-show="!loading">Donate</span>
             <span x-show="loading" x-cloak>Processing…</span>
         </button>

@@ -97,6 +97,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 088 | Image Optimization & SVG Support |
 | 089 | Image & Carousel Widgets |
 | 090 | Tailwind Migration — Layouts & Infrastructure |
+| 091 | Tailwind Migration — Widget Templates |
 
 ---
 
@@ -112,9 +113,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 090 — Tailwind Migration — Layouts & Infrastructure~~ *(completed)*
 
-### Session 091 — Tailwind Migration — Widget Templates
+### ~~Session 091 — Tailwind Migration — Widget Templates~~ *(completed)*
 
-Convert all 18 public-facing widget templates from Pico's classless HTML to Tailwind utility classes. Replace the `.form-grid` / `.col-N` system with Tailwind's grid utilities. Dark mode variants on every widget. Visual audit of all page types.
+### Session 092 — Media Library Manager
+
+Admin page under CMS group that surfaces all media stored via Spatie Media Library. Browsable table with thumbnails, owner context, conversion status, and single-item delete. Storage summary stats in the header.
 
 ### WYSIWYG Inline Image Insert
 
@@ -360,9 +363,7 @@ Split-pane or overlay preview of page changes before saving. Requires the front-
 
 A simple text-node tree representation of the page's widget structure (similar to a DOM inspector). Helps users locate deeply nested blocks inside column slots without expanding every level manually. Not front-and-centre — a collapsible sidebar or panel overlay. Needs design discussion before building; deferred to post-Beta 1.
 
-### Media Library UI
-
-Centralised media browser for images and files uploaded across the admin. Scope discussion required before building — may overlap with the image optimization work in Beta 1. Deferred pending a scoping decision on whether this belongs in Beta 1 or post-Beta.
+### ~~Media Library UI~~ *(moved to session 092, Beta 1 scope)*
 
 ### Image & Media Handling — Carousels & Galleries
 

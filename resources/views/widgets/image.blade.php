@@ -12,7 +12,7 @@
     <x-picture
         :media="$configMedia['image']"
         :alt="$altText"
-        style="object-fit: {{ $objectFit }}; width: 100%; display: block;"
+        class="w-full block {{ $objectFit === 'contain' ? 'object-contain' : 'object-cover' }}"
     />
 
     @if ($linkUrl)

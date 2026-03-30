@@ -2,21 +2,6 @@
 // Custom CSS — styles that don't fit Tailwind utility classes
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Web form grid (used by public-form component)
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 1rem;
-}
-
-@for $i from 1 through 12 {
-    .col-#{$i} { grid-column: span #{$i}; }
-}
-
-@media (max-width: 768px) {
-    [class^="col-"] { grid-column: span 12; }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Carousel widget
 // ─────────────────────────────────────────────────────────────────────────────

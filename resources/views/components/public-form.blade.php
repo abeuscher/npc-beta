@@ -60,7 +60,7 @@
 @endphp
 
 @if ($submitted)
-    <p>{{ session($successKey) }}</p>
+    <p class="text-green-700 dark:text-green-300">{{ session($successKey) }}</p>
 @else
     @if ($errors->has('_form'))
         <p role="alert" class="text-red-600 dark:text-red-400">{{ $errors->first('_form') }}</p>
@@ -75,7 +75,7 @@
             </div>
         @endif
 
-        <div class="form-grid">
+        <div class="grid grid-cols-12 gap-4">
             @foreach ($form->fields ?? [] as $field)
                 @php
                     $handle      = $field['handle'] ?? '';
@@ -88,59 +88,67 @@
                     $errMsg      = $field['validation_message'] ?? '';
                     $hint        = $field['hint'] ?? '';
                     $old         = old($handle);
+
+                    $inputClasses = 'block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary';
                 @endphp
 
                 @if ($type === 'hidden')
                     <input type="hidden" name="{{ $handle }}" value="{{ $field['default_value'] ?? '' }}">
                 @else
-                    <div class="col-{{ $width }}">
+                    <div class="col-span-{{ $width }} max-md:col-span-12">
                         @if ($type === 'radio')
                             <fieldset>
-                                <legend>{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</legend>
-                                @foreach ($field['options'] ?? [] as $option)
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="{{ $handle }}"
-                                            value="{{ $option['value'] }}"
-                                            {{ $old === $option['value'] ? 'checked' : '' }}
-                                            {{ $required ? 'required' : '' }}
-                                        >
-                                        {{ $option['label'] }}
-                                    </label>
-                                @endforeach
+                                <legend class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</legend>
+                                <div class="space-y-1">
+                                    @foreach ($field['options'] ?? [] as $option)
+                                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <input
+                                                type="radio"
+                                                name="{{ $handle }}"
+                                                value="{{ $option['value'] }}"
+                                                {{ $old === $option['value'] ? 'checked' : '' }}
+                                                {{ $required ? 'required' : '' }}
+                                                class="border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+                                            >
+                                            {{ $option['label'] }}
+                                        </label>
+                                    @endforeach
+                                </div>
                             </fieldset>
-                            @if($hint)<small>{{ $hint }}</small>@endif
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
 
                         @elseif ($type === 'checkbox')
-                            <label>
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                 <input
                                     type="checkbox"
                                     name="{{ $handle }}"
                                     value="1"
                                     {{ $old ? 'checked' : '' }}
+                                    class="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
                                 >
                                 {{ $label }}
                             </label>
-                            @if($hint)<small>{{ $hint }}</small>@endif
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
 
                         @elseif ($type === 'textarea')
-                            <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
+                            <label for="field_{{ $handle }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</label>
                             <textarea
                                 id="field_{{ $handle }}"
                                 name="{{ $handle }}"
                                 placeholder="{{ $placeholder }}"
                                 {{ $required ? 'required' : '' }}
+                                class="{{ $inputClasses }} min-h-[6rem]"
                             >{{ $old }}</textarea>
-                            @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
+                            @error($handle)<small class="text-sm text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'select')
-                            <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
+                            <label for="field_{{ $handle }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</label>
                             <select
                                 id="field_{{ $handle }}"
                                 name="{{ $handle }}"
                                 {{ $required ? 'required' : '' }}
+                                class="{{ $inputClasses }}"
                             >
                                 <option value="">— Select —</option>
                                 @foreach ($field['options'] ?? [] as $option)
@@ -149,30 +157,32 @@
                                     </option>
                                 @endforeach
                             </select>
-                            @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
+                            @error($handle)<small class="text-sm text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'state')
-                            <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
+                            <label for="field_{{ $handle }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</label>
                             <select
                                 id="field_{{ $handle }}"
                                 name="{{ $handle }}"
                                 {{ $required ? 'required' : '' }}
+                                class="{{ $inputClasses }}"
                             >
                                 <option value="">— Select state —</option>
                                 @foreach ($usStates as $abbr => $name)
                                     <option value="{{ $abbr }}" {{ $old === $abbr ? 'selected' : '' }}>{{ $name }}</option>
                                 @endforeach
                             </select>
-                            @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
+                            @error($handle)<small class="text-sm text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'country')
-                            <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
+                            <label for="field_{{ $handle }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</label>
                             <select
                                 id="field_{{ $handle }}"
                                 name="{{ $handle }}"
                                 {{ $required ? 'required' : '' }}
+                                class="{{ $inputClasses }}"
                             >
                                 <option value="">— Select country —</option>
                                 @foreach ($countries as $code => $name)
@@ -183,12 +193,12 @@
                                     @endif
                                 @endforeach
                             </select>
-                            @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
+                            @error($handle)<small class="text-sm text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</small>@enderror
 
                         @else
                             {{-- text | email | tel | number --}}
-                            <label for="field_{{ $handle }}">{{ $label }}@if($required) <span aria-hidden="true">*</span>@endif</label>
+                            <label for="field_{{ $handle }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ $label }}@if($required) <span aria-hidden="true" class="text-red-500">*</span>@endif</label>
                             <input
                                 type="{{ $type }}"
                                 id="field_{{ $handle }}"
@@ -197,15 +207,16 @@
                                 placeholder="{{ $placeholder }}"
                                 {{ $required ? 'required' : '' }}
                                 @if ($pattern) pattern="{{ $pattern }}" title="{{ $errMsg }}" @endif
+                                class="{{ $inputClasses }}"
                             >
-                            @if($hint)<small>{{ $hint }}</small>@endif
-                            @error($handle)<small class="text-red-600 dark:text-red-400">{{ $message }}</small>@enderror
+                            @if($hint)<small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">{{ $hint }}</small>@endif
+                            @error($handle)<small class="text-sm text-red-600 dark:text-red-400 mt-1 block">{{ $message }}</small>@enderror
                         @endif
                     </div>
                 @endif
             @endforeach
         </div>
 
-        <button type="submit" class="mt-4 px-6 py-2 bg-primary text-white rounded hover:opacity-90 cursor-pointer">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
+        <button type="submit" class="mt-4 px-6 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
     </form>
 @endif

@@ -290,7 +290,7 @@ it('event_description widget renders event date on a page', function () {
 
     $this->get('/' . $page->slug)
         ->assertOk()
-        ->assertSee('event-date', false);
+        ->assertSee('<time datetime=', false);
 });
 
 it('event_registration widget renders the registration form on a page', function () {

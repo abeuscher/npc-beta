@@ -1,4 +1,4 @@
-<div style="display:grid; grid-template-columns:{{ $config['grid_template_columns'] ?? '1fr 1fr' }}">
+<div class="gap-6" style="display:grid; grid-template-columns:{{ $config['grid_template_columns'] ?? '1fr 1fr' }}">
     @php $numColumns = isset($config['num_columns']) && $config['num_columns'] !== '' ? (int) $config['num_columns'] : 2; @endphp
     @for ($i = 0; $i < $numColumns; $i++)
         <div>
