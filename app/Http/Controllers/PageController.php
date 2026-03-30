@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Services\InlineImageRenderer;
 use App\Services\PageContext;
 use App\Services\WidgetDataResolver;
 use Illuminate\Support\Facades\Blade;
@@ -95,6 +96,13 @@ class PageController extends Controller
             $collHandle = $config['collection_handle'] ?? $collSlot;
             $queryConfig = $pw->query_config[$collSlot] ?? [];
             $collectionData[$collSlot] = WidgetDataResolver::resolve($collHandle, $queryConfig);
+        }
+
+        // Process inline images in richtext config fields
+        foreach ($widgetType->config_schema ?? [] as $field) {
+            if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
+                $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
+            }
         }
 
         if ($widgetType->render_mode === 'server') {

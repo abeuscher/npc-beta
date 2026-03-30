@@ -32,7 +32,9 @@
       "Bash(xargs ls:*)",
       "WebFetch(domain:caniuse.com)",
       "Bash(npm uninstall:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(grep -r \"x-picture\\\\|<picture\" /e/Clients/nonprofitcrm/resources/views --include=*.blade.php)",
+      "Bash(docker compose exec app php -r \":*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations"

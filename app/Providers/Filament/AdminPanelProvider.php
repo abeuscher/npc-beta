@@ -53,6 +53,9 @@ class AdminPanelProvider extends PanelProvider
                     ->name('invitation.show');
                 \Illuminate\Support\Facades\Route::post('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'store'])
                     ->name('invitation.store');
+                \Illuminate\Support\Facades\Route::post('/inline-image-upload', [\App\Http\Controllers\Admin\InlineImageUploadController::class, 'store'])
+                    ->name('inline-image-upload')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
             })
             ->colors([
                 'primary' => Color::hex($primaryColor),
@@ -111,16 +114,8 @@ class AdminPanelProvider extends PanelProvider
                 'panels::head.end',
                 fn (): HtmlString => new HtmlString('
                     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
-                    <style>.ql-editor { min-height: 12rem; }</style>
+                    <style>.ql-editor { min-height: 16rem; }</style>
                     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                            if (typeof Quill === "undefined") return;
-                            var FontAttributor = Quill.import("formats/font");
-                            FontAttributor.whitelist = ["serif", "monospace"];
-                            Quill.register(FontAttributor, true);
-                        });
-                    </script>
                 ')
             )
             // Site-wide Livewire loading bar — fixed top bar that appears on any

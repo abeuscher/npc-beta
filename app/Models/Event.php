@@ -12,12 +12,17 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use App\Services\ImageSizeProfile;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[ObservedBy(EventObserver::class)]
-class Event extends Model
+class Event extends Model implements HasMedia
 {
     use HasFactory;
     use HasUuids;
+    use InteractsWithMedia;
 
     protected $fillable = [
         'title',
@@ -124,6 +129,26 @@ class Event extends Model
     // ──────────────────────────────────────────────────────────
     // Methods
     // ──────────────────────────────────────────────────────────
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if ($media && str_contains($media->mime_type, 'svg')) {
+            return;
+        }
+
+        $profile = ImageSizeProfile::photo();
+
+        $this->addMediaConversion('webp')
+            ->width($profile->maxWidth)
+            ->height($profile->maxHeight)
+            ->format('webp');
+
+        foreach ($profile->breakpoints as $width) {
+            $this->addMediaConversion("responsive-{$width}")
+                ->width($width)
+                ->format('webp');
+        }
+    }
 
     public function isAtCapacity(): bool
     {

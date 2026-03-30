@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\ImageSizeProfile;
+use App\Services\InlineImageRenderer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;
@@ -91,7 +92,9 @@ class EmailTemplate extends Model implements HasMedia
 
     public function render(array $tokens): string
     {
-        return $this->replaceTokens($this->body, $tokens);
+        $html = $this->replaceTokens($this->body, $tokens);
+
+        return InlineImageRenderer::process($html);
     }
 
     public function resolveWrapper(string $renderedBody): string

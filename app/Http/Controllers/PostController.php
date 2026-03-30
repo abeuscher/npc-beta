@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Services\InlineImageRenderer;
 use App\Services\PageContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
@@ -55,6 +56,13 @@ class PostController extends Controller
             }
 
             $config = $pw->config ?? [];
+
+            // Process inline images in richtext config fields
+            foreach ($widgetType->config_schema ?? [] as $field) {
+                if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
+                    $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
+                }
+            }
 
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
