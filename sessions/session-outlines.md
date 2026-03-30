@@ -98,6 +98,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 089 | Image & Carousel Widgets |
 | 090 | Tailwind Migration — Layouts & Infrastructure |
 | 091 | Tailwind Migration — Widget Templates |
+| 092 | Media Library Manager |
 
 ---
 
@@ -115,13 +116,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 091 — Tailwind Migration — Widget Templates~~ *(completed)*
 
-### Session 092 — Media Library Manager
+### ~~Session 092 — Media Library Manager~~ *(completed)*
 
-Admin page under CMS group that surfaces all media stored via Spatie Media Library. Browsable table with thumbnails, owner context, conversion status, and single-item delete. Storage summary stats in the header.
+### Session 093 — WYSIWYG Toolbar & Inline Image Insert
 
-### WYSIWYG Inline Image Insert
-
-Add image upload and insertion to the Quill rich text editor used in the page builder. Requires a custom Quill module for upload handling, media library integration within the editor context, and `<x-picture>` rendering in saved HTML output. Separate integration surface from page builder widgets — the editor stores raw HTML rather than structured config.
+Standardise the Quill toolbar across all usage sites (remove font, replace size with heading dropdown H2–H5, add blockquote, text align, background colour, and image insert). Build a custom image upload handler that stores inline images through Spatie Media Library and inserts `<img>` tags by URL. Set editor minimum height to 16rem.
 
 ### Per-Page SEO & Header Snippets
 
