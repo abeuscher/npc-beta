@@ -100,6 +100,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 091 | Tailwind Migration — Widget Templates |
 | 092 | Media Library Manager |
 | 093 | WYSIWYG Toolbar & Inline Image Insert |
+| 094 | Test Audit & Bug Fixes |
 
 ---
 
@@ -121,9 +122,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 093 — WYSIWYG Toolbar & Inline Image Insert~~ *(completed)*
 
-### Session 094 — Test Audit & Bug Fixes
+### ~~Session 094 — Test Audit & Bug Fixes~~ *(completed)*
 
-Audit the existing test suite for correctness, relevance, and coverage gaps. Fix bug: inspector panel stays open after a widget is deleted from the page builder. After implementation, discuss and codify testing policy — when to add tests, fast vs slow classification, and when to run each tier. Update the base prompt and session prompt template with the agreed testing criteria.
+### Session 095 — Test Coverage — Portal, Stripe & Integrations
+
+Add test coverage for the remaining major untested areas: member portal authentication, donation/Stripe checkout, products and purchases, tax receipts, mailing list filter resolution, import review workflow, and activity log. Test-only session — no new application code.
 
 ### Per-Page SEO & Header Snippets
 

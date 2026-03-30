@@ -29,6 +29,13 @@ Describe what is built in this phase.
 
 ---
 
+## Testing
+
+- **Slow test groups to run this session:** none (or list specific groups)
+- **New tests expected:** yes / no — if yes, describe scope briefly
+
+---
+
 ## Security checklist
 
 Before closing:

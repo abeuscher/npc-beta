@@ -166,6 +166,12 @@ class PageBuilder extends Component
         }
 
         PageWidget::where('id', $blockId)->delete();
+
+        if ($this->selectedBlockId === $blockId) {
+            $this->selectedBlockId = '';
+            $this->dispatch('block-selected', blockId: '');
+        }
+
         $this->loadBlocks();
     }
 

@@ -24,7 +24,9 @@ Before doing anything else:
 - **Run migrations via Docker** after writing them: `docker compose exec app php artisan migrate` (or `migrate:fresh --seed` when appropriate). Do not pause to ask first.
 - **Update `docs/schema.md`** after writing any migration — add, modify, or remove the relevant table section(s) to reflect the final column state.
 - **If the PostgreSQL container becomes unresponsive** (500/exec errors), ask the user to restart it rather than retrying.
-- **When implementation is complete**, run `php artisan test` and fix any failures before proceeding.
+- **When implementation is complete**, run the fast test suite: `php artisan test --exclude-group=slow`. Fix any failures before proceeding. If the session prompt specifies slow test groups to run, run those separately as well.
+- **Tests for new behaviour:** every session that changes application behaviour (new models, controllers, routes, scopes, or logic changes) should include tests unless the session prompt explicitly says otherwise. Pure CSS, template, or copy sessions may skip tests. Follow existing test conventions — Pest syntax, `RefreshDatabase`, factory-based setup.
+- **Fast vs slow classification:** tests that individually take >5 seconds belong in a Pest `->group('slow')`. Everything else stays in the default (fast) suite. The fast suite should complete in under 5 minutes.
 - **Pause for manual testing.** Announce that testing is ready. Then stop. Do not suggest closing the session or take any further action.
 
 ---
