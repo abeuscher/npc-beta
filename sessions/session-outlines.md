@@ -101,6 +101,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 092 | Media Library Manager |
 | 093 | WYSIWYG Toolbar & Inline Image Insert |
 | 094 | Test Audit & Bug Fixes |
+| 095 | Test Coverage — Portal, Stripe & Integrations |
 
 ---
 
@@ -124,13 +125,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 094 — Test Audit & Bug Fixes~~ *(completed)*
 
-### Session 095 — Test Coverage — Portal, Stripe & Integrations
+### ~~Session 095 — Test Coverage — Portal, Stripe & Integrations~~ *(completed)*
 
-Add test coverage for the remaining major untested areas: member portal authentication, donation/Stripe checkout, products and purchases, tax receipts, mailing list filter resolution, import review workflow, and activity log. Test-only session — no new application code.
+### Session 096 — Per-Page SEO & Header Snippets
 
-### Per-Page SEO & Header Snippets
-
-Per-page Meta Title, Meta Description, and OG image fields. Automated extraction where practical (e.g. first heading as default title, first image as default OG image). Global defaults with per-page overrides. Scope for Beta 1: core meta fields only. JSON-LD structured data, Twitter cards, custom head injection, and footer injection are deferred to post-Beta 1 (see SEO — Advanced, below).
+Wire up existing meta_title/meta_description columns, add OG image and noindex fields, auto-generate JSON-LD structured data (BlogPosting/WebPage), canonical URLs, and sitemap.xml. Per-page and site-wide header/footer code snippet injection with HTML validation. New `edit_page_snippets` permission for per-page snippets. Site-wide snippets (head, body-open, body-close) and default OG image in CMS Settings.
 
 ### Header & Footer Widget System
 
@@ -162,28 +161,6 @@ Core household model built in session 071 (self-referential `contacts.household_
 
 ---
 
-## Communication & Accountability
-
-*Future additions: global filterable log, field-level diff, observers for Finance and other models.*
-
-### Activity Log Viewer
-
-Filterable admin view of the `activity_logs` table. Who did what, to which record, and when. Covers all logged events including financial key rotations (written in session 073). Simple read-only table — no editing or deletion.
-
-### Mailing List — Field Policy & Targeting Engine
-
-Build a targeting filter UI for mailing lists based on agreed field policy (decided session 081). Allowed filters and rules:
-
-- **Always allowed:** tags, membership status/tier, geographic fields (city, state, postal code), custom fields, event registration history, source + date range.
-- **Donor threshold:** "donated at least $X in year Y" — returns a boolean in/out result. No donation amounts or fund details are surfaced on the list record. Cross-Finance boundary only as a boolean gate.
-- **Age cutoffs:** preset options only — 13+, 18+, 21+. No free-entry age field. No under-age filters.
-- **Household deduplication:** "head of household or solo" filter — includes contacts where `household_id = id` OR `household_id IS NULL`. Excludes non-head household members.
-- **`mailing_list_opt_in`:** available as a filter; show a visible warning when a list is being sent without it applied.
-- **`do_not_contact`:** hard system exclusion — always enforced, cannot be filtered out by the admin. Help copy must state: set only on explicit opt-out; clear only on explicit re-consent (activity log covers audit trail).
-- **Prohibited:** actual donation amounts, fund designation detail, under-age or arbitrary age filters, portal account status (portal communications are a system email concern, not a list concern).
-
----
-
 ## Finance
 
 *Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data. The application is deposit-only — it never initiates a refund, payout, or balance transfer. All financial reversals are handled in the Stripe dashboard.*
@@ -193,10 +170,6 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 ### Stripe Payment Method Manager
 
 Allow admin to configure which Stripe payment methods are accepted (e.g. credit cards, ACH). Default to disabling Link and Klarna. At least one card-based method must remain enabled at all times — enforce this in the UI and surface the constraint on the Financial Settings help page. Requires Stripe PaymentMethod Configuration API or Products/Prices settings depending on the checkout flow in use.
-
-### API Key Pattern Validation & Test-Mode Warning
-
-Two related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected. Scope and warning placement to be agreed following the session 081 discussion.
 
 ### QuickBooks Sync
 
@@ -251,14 +224,6 @@ Add a "Generate secure password" button to the admin user create/edit form, belo
 ### Sandbox / Demo Data Mode
 
 A mode or toggle that lets the admin act on a small set of controllable test records without touching real data. For Beta 1: anonymous read-only login to the marketing site admin panel, backed by full dummy data from the sample data generator. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) gates all write operations for safety. Scope and UX to be agreed before building. Related: default sample record for the system email preview wizard — resolve both in the same session if possible.
-
-### System Email Preview — Default Sample Record & Full Coverage
-
-A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Note: the preview wizard already exists (session 080) and is already in use for donation receipts and user invitations — this session extends the same pattern to any remaining system email sends, rather than rebuilding. Resolve alongside Sandbox / Demo Data Mode if possible.
-
-### Batch Edit on Admin Tables
-
-Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
 
 ### Help System Enhancements
 
@@ -398,6 +363,18 @@ REST or GraphQL API for external integrations. Important long-term — should no
 
 Asset delivery via CDN for uploaded images and static files. Pairs with the image optimization pipeline from Beta 1. Provider TBD.
 
+### API Key Pattern Validation & Test-Mode Warning
+
+Two related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected. Scope and warning placement to be agreed following the session 081 discussion.
+
+### System Email Preview — Default Sample Record & Full Coverage
+
+A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Note: the preview wizard already exists (session 080) and is already in use for donation receipts and user invitations — this session extends the same pattern to any remaining system email sends, rather than rebuilding. Resolve alongside Sandbox / Demo Data Mode if possible.
+
+### Batch Edit on Admin Tables
+
+Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
+
 ### Multi-Vendor Mail Support
 
 *Additional sending providers: SMTP, AWS SES, Postmark, Mailgun. Switchable driver pattern already in place.*
@@ -409,6 +386,28 @@ ARIA landmark roles, correct states on interactive elements, keyboard navigation
 ### Privacy & Legal Footer Example
 
 *Example custom footer component with placeholder slots for privacy policy and terms. Reference implementation for customers.*
+
+---
+
+## Communication & Accountability — Post-Beta 1
+
+*Future additions: global filterable log, field-level diff, observers for Finance and other models.*
+
+### Activity Log Viewer
+
+Filterable admin view of the `activity_logs` table. Who did what, to which record, and when. Covers all logged events including financial key rotations (written in session 073). Simple read-only table — no editing or deletion.
+
+### Mailing List — Field Policy & Targeting Engine
+
+Build a targeting filter UI for mailing lists based on agreed field policy (decided session 081). Allowed filters and rules:
+
+- **Always allowed:** tags, membership status/tier, geographic fields (city, state, postal code), custom fields, event registration history, source + date range.
+- **Donor threshold:** "donated at least $X in year Y" — returns a boolean in/out result. No donation amounts or fund details are surfaced on the list record. Cross-Finance boundary only as a boolean gate.
+- **Age cutoffs:** preset options only — 13+, 18+, 21+. No free-entry age field. No under-age filters.
+- **Household deduplication:** "head of household or solo" filter — includes contacts where `household_id = id` OR `household_id IS NULL`. Excludes non-head household members.
+- **`mailing_list_opt_in`:** available as a filter; show a visible warning when a list is being sent without it applied.
+- **`do_not_contact`:** hard system exclusion — always enforced, cannot be filtered out by the admin. Help copy must state: set only on explicit opt-out; clear only on explicit re-consent (activity log covers audit trail).
+- **Prohibited:** actual donation amounts, fund designation detail, under-age or arbitrary age filters, portal account status (portal communications are a system email concern, not a list concern).
 
 ---
 
