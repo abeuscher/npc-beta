@@ -31,6 +31,23 @@ Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
     ->name('webhooks.stripe');
 
+// Public event JSON endpoint — feeds the calendar widget
+Route::get('/api/events.json', function () {
+    return \App\Models\Event::query()
+        ->published()
+        ->where('starts_at', '>=', now()->subMonths(6))
+        ->orderBy('starts_at')
+        ->get()
+        ->map(fn ($e) => [
+            'id'          => $e->id,
+            'title'       => $e->title,
+            'from'        => $e->starts_at?->toIso8601String(),
+            'to'          => $e->ends_at?->toIso8601String(),
+            'description' => $e->description ? \Illuminate\Support\Str::limit(strip_tags($e->description), 200) : null,
+            'url'         => $e->landingPage ? url($e->landingPage->slug) : null,
+        ]);
+})->name('api.events.json');
+
 Route::get('/', [PageController::class, 'home']);
 
 // Blog routes — prefix is config-driven

@@ -104,6 +104,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 095 | Test Coverage — Portal, Stripe & Integrations |
 | 096 | Per-Page SEO & Header Snippets |
 | 097 | Header & Footer Widget System |
+| 098 | Additional Widget Types — Calendar, Chart & Video |
 
 ---
 
@@ -133,15 +134,15 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 097 — Header & Footer Widget System~~ *(completed)*
 
-### Session 098 — Additional Widget Types
+### ~~Session 098 — Additional Widget Types~~ *(completed)*
 
-New widget types for Beta 1: calendar (event-driven), chart/graph (collection-driven, powered by Chart.js), and video embed (YouTube/Vimeo). Each built to the same config schema pattern as existing widget types. Static image and carousel widgets already built in session 089.
+### Session 099 — Template System — Data Model & Migration
 
-**Table and Flexbox widgets** deferred to post-Beta 1.
+Templates table unifying header/footer, colors/fonts, and SCSS into a single record. Default template seeded from current Site Theme settings. Content templates (saved widget stacks) as a second type in the same table. Per-field inheritance from default for non-default templates. Mandatory event landing pages (opt-out removed). Renderer updated to resolve template values instead of site_settings.
 
-### Page Templates
+### Session 100 — Template Manager UI & Page Creation Flow
 
-Basic page template scaffolding for the demo — not final form. A curated library of named starter layouts (e.g. "Landing Page", "About", "Contact") that a new site can apply with one click. Goal: a prospect can see a polished page without building it from scratch. Full template marketplace and advanced template controls are out of scope for Beta 1.
+Template Manager admin page under CMS with two tabs: Content Templates and Page Templates. Page template editor with inherit-from-default toggles per section. Content/page template picker in the page creation flow. "Save as Content Template" action on the page builder. Page template changeable on edit (non-destructive). Retire Site Theme page — all functionality moves to Templates.
 
 ---
 
@@ -414,5 +415,24 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 ### LLM Integration — Planning & Brainstorm
 
 ### Wow Features Brainstorm
+
+---
+
+## Future Projects *(post-management console)*
+
+### Frontend Build Service
+
+A standalone build server that accepts source assets (SCSS, JS entry points, package manifests) via POST and returns compiled CSS/JS artifacts. Eliminates the need for Node, npm, and build tooling on production app servers.
+
+**Motivation:** production app containers should be PHP + Nginx only — no Node runtime, no node_modules, no npm supply chain exposure. The build service centralizes dependency management and reduces the attack surface across all deployed instances.
+
+**Shape:**
+- Lightweight API with a queue backend (could be a separate Laravel app or a Node service)
+- POST endpoint accepts SCSS source, JS entry config, and package.json fragment
+- Worker runs npm install + Vite/esbuild in a sandboxed temp directory, returns compiled output
+- Input hashing + caching so identical builds are instant
+- App instances pull compiled assets on deploy or on-demand
+
+**Depends on:** the management console (multi-instance orchestration layer) being built first. The build service is a shared infrastructure component that all managed instances connect to.
 
 ### Easter Egg & Fun Features

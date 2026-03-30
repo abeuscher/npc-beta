@@ -59,15 +59,17 @@ class PageController extends Controller
         $blocks         = [];
         $inlineStyles   = '';
         $inlineScripts  = '';
+        $widgetAssets    = ['css' => [], 'js' => [], 'scss' => []];
 
         foreach ($pageWidgets as $pw) {
             [$blockData, $styles, $scripts] = $this->renderWidget($pw);
             $blocks[]        = $blockData;
             $inlineStyles   .= $styles;
             $inlineScripts  .= $scripts;
+            $this->collectAssets($pw->widgetType, $widgetAssets);
         }
 
-        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
+        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
     }
 
     private function renderWidget(PageWidget $pw): array
@@ -149,6 +151,23 @@ class PageController extends Controller
         ];
 
         return [$blockData, $styles, $scripts];
+    }
+
+    private function collectAssets(?\App\Models\WidgetType $widgetType, array &$widgetAssets): void
+    {
+        if (! $widgetType) {
+            return;
+        }
+
+        $assets = $widgetType->assets ?? [];
+
+        foreach (['css', 'js', 'scss'] as $type) {
+            foreach ($assets[$type] ?? [] as $path) {
+                if (! in_array($path, $widgetAssets[$type], true)) {
+                    $widgetAssets[$type][] = $path;
+                }
+            }
+        }
     }
 
     private function renderColumnChildren(PageWidget $pw): array

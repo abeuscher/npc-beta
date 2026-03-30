@@ -47,6 +47,7 @@ class WidgetType extends Model
         'label',
         'render_mode',
         'collections',
+        'assets',
         'default_open',
         'config_schema',
         'template',
@@ -58,6 +59,7 @@ class WidgetType extends Model
 
     protected $casts = [
         'collections'   => 'array',
+        'assets'        => 'array',
         'config_schema' => 'array',
         'default_open'  => 'boolean',
     ];

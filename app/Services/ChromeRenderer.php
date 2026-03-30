@@ -14,7 +14,7 @@ class ChromeRenderer
      * Render a system page's widgets to HTML + inline styles + inline scripts.
      * Returns null if the page has no active widgets.
      *
-     * @return array{html: string, styles: string, scripts: string}|null
+     * @return array{html: string, styles: string, scripts: string, assets: array{css: string[], js: string[], scss: string[]}}|null
      */
     public static function render(string $slug): ?array
     {
@@ -41,6 +41,7 @@ class ChromeRenderer
         $html    = '';
         $styles  = '';
         $scripts = '';
+        $assets  = ['css' => [], 'js' => [], 'scss' => []];
 
         foreach ($widgets as $pw) {
             [$blockHtml, $blockStyles, $blockScripts] = static::renderWidget($pw);
@@ -53,9 +54,10 @@ class ChromeRenderer
             }
             $styles  .= $blockStyles;
             $scripts .= $blockScripts;
+            static::collectAssets($pw->widgetType, $assets);
         }
 
-        return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts];
+        return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts, 'assets' => $assets];
     }
 
     private static function renderWidget(PageWidget $pw): array
@@ -115,6 +117,23 @@ class ChromeRenderer
         }
 
         return [$html, $styles, $scripts];
+    }
+
+    private static function collectAssets(?\App\Models\WidgetType $widgetType, array &$assets): void
+    {
+        if (! $widgetType) {
+            return;
+        }
+
+        $widgetAssets = $widgetType->assets ?? [];
+
+        foreach (['css', 'js', 'scss'] as $type) {
+            foreach ($widgetAssets[$type] ?? [] as $path) {
+                if (! in_array($path, $assets[$type], true)) {
+                    $assets[$type][] = $path;
+                }
+            }
+        }
     }
 
     private static function buildInlineStyle(array $styleConfig): string

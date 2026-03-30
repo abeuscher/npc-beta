@@ -16,6 +16,8 @@
     },
     "dependencies": {
         "alpinejs": "^3.0",
+        "chart.js": "^4.4",
+        "jcalendar.js": "^2.12.6",
         "swiper": "^12.1.3"
     }
 }

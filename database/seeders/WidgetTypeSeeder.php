@@ -292,6 +292,64 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
+            ['handle' => 'video_embed'],
+            [
+                'label'         => 'Video Embed',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'video_url',       'type' => 'text',   'label' => 'Video URL',          'helper' => 'YouTube or Vimeo video URL'],
+                    ['key' => 'show_related',    'type' => 'toggle', 'label' => 'Show related videos', 'default' => false, 'helper' => 'Show related videos at the end (YouTube only)'],
+                    ['key' => 'modest_branding', 'type' => 'toggle', 'label' => 'Reduce branding',    'default' => true,  'helper' => 'Reduce YouTube branding'],
+                    ['key' => 'show_controls',   'type' => 'toggle', 'label' => 'Show controls',      'default' => true,  'helper' => 'Show player controls'],
+                ],
+                'template'      => "@include('widgets.video-embed')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'bar_chart'],
+            [
+                'label'         => 'Bar Chart',
+                'render_mode'   => 'server',
+                'collections'   => ['data'],
+                'assets'        => [
+                    'js' => ['/vendor/chartjs/chart.umd.js'],
+                ],
+                'config_schema' => [
+                    ['key' => 'heading',           'type' => 'text',   'label' => 'Chart title', 'helper' => 'Chart title'],
+                    ['key' => 'collection_handle', 'type' => 'select', 'label' => 'Collection',  'options_from' => 'collections', 'helper' => 'Data source collection'],
+                    ['key' => 'x_field',           'type' => 'select', 'label' => 'X axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for X axis labels'],
+                    ['key' => 'y_field',           'type' => 'select', 'label' => 'Y axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for Y axis values (numeric)'],
+                    ['key' => 'x_label',           'type' => 'text',   'label' => 'X axis label', 'helper' => 'X axis label'],
+                    ['key' => 'y_label',           'type' => 'text',   'label' => 'Y axis label', 'helper' => 'Y axis label'],
+                    ['key' => 'bar_color',         'type' => 'text',   'label' => 'Bar colour',   'helper' => 'Bar colour (hex or CSS variable, defaults to primary)'],
+                ],
+                'template'      => "@include('widgets.bar-chart')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'event_calendar'],
+            [
+                'label'         => 'Event Calendar',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'assets'        => [
+                    'css'  => ['/vendor/calendarjs/calendar.js.min.css'],
+                    'js'   => ['/vendor/calendarjs/calendar.min.js'],
+                    'scss' => ['resources/scss/widgets/_event-calendar.scss'],
+                ],
+                'config_schema' => [
+                    ['key' => 'heading',      'type' => 'text',   'label' => 'Heading', 'helper' => 'Heading displayed above the calendar'],
+                    ['key' => 'default_view', 'type' => 'select', 'label' => 'Default view', 'default' => 'month', 'options' => ['month' => 'Month', 'week' => 'Week'], 'helper' => 'Initial calendar view'],
+                ],
+                'template'      => "@include('widgets.event-calendar')",
+                'css'           => null,
+            ]
+        );
+
+        WidgetType::updateOrCreate(
             ['handle' => 'carousel'],
             [
                 'label'         => 'Carousel',

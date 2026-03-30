@@ -65,6 +65,7 @@
     @if ($showAddModal)
     @teleport('body')
         <div
+            x-data="{ picked: false }"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
             x-on:keydown.escape.window="$wire.set('showAddModal', false)"
         >
@@ -93,7 +94,8 @@
                         @foreach ($widgetTypes as $wt)
                             <button
                                 type="button"
-                                wire:click="createBlock('{{ $wt['id'] }}')"
+                                x-on:click="if (picked) return; picked = true; $wire.createBlock('{{ $wt['id'] }}')"
+                                x-bind:class="{ 'opacity-50 cursor-not-allowed': picked }"
                                 class="flex flex-col items-start rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-left shadow-sm hover:border-primary-400 hover:bg-primary-50 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-500 dark:hover:bg-gray-700"
                             >
                                 <span class="font-medium text-gray-900 dark:text-white text-sm">{{ $wt['label'] }}</span>

@@ -147,6 +147,57 @@
         <style>{!! implode(' ', $scopedRules) !!}</style>
     @endif
 
+    {{-- External CSS assets declared by widget types --}}
+    @php
+        $__widgetAssets = ['css' => [], 'js' => [], 'scss' => []];
+        foreach (['css', 'js', 'scss'] as $__aType) {
+            foreach (($widgetAssets[$__aType] ?? []) as $__aPath) {
+                $__widgetAssets[$__aType][] = $__aPath;
+            }
+            if ($__chromeHeader) {
+                foreach (($__chromeHeader['assets'][$__aType] ?? []) as $__aPath) {
+                    if (! in_array($__aPath, $__widgetAssets[$__aType], true)) {
+                        $__widgetAssets[$__aType][] = $__aPath;
+                    }
+                }
+            }
+            if ($__chromeFooter) {
+                foreach (($__chromeFooter['assets'][$__aType] ?? []) as $__aPath) {
+                    if (! in_array($__aPath, $__widgetAssets[$__aType], true)) {
+                        $__widgetAssets[$__aType][] = $__aPath;
+                    }
+                }
+            }
+        }
+    @endphp
+    @foreach ($__widgetAssets['css'] as $__cssPath)
+        <link rel="stylesheet" href="{{ $__cssPath }}">
+    @endforeach
+
+    {{-- Compiled SCSS from widget assets --}}
+    @if (! empty($__widgetAssets['scss']))
+        @php
+            $__scssInput = '';
+            foreach ($__widgetAssets['scss'] as $__scssPath) {
+                $__fullPath = base_path($__scssPath);
+                if (file_exists($__fullPath)) {
+                    $__scssInput .= file_get_contents($__fullPath) . "\n";
+                }
+            }
+            $__compiledCss = '';
+            if ($__scssInput) {
+                $__cacheKey = 'widget_scss_' . md5($__scssInput);
+                $__compiledCss = cache()->remember($__cacheKey, 3600, function () use ($__scssInput) {
+                    $compiler = new \ScssPhp\ScssPhp\Compiler();
+                    return $compiler->compileString($__scssInput)->getCss();
+                });
+            }
+        @endphp
+        @if ($__compiledCss)
+            <style>{!! $__compiledCss !!}</style>
+        @endif
+    @endif
+
     {{-- Inline CSS collected from active page widgets + chrome widgets --}}
     @php
         $__allInlineStyles = ($inlineStyles ?? '');
@@ -201,6 +252,11 @@
         contactEmail: @json(config('site.contact_email', '')),
     };
     </script>
+
+    {{-- External JS assets declared by widget types --}}
+    @foreach ($__widgetAssets['js'] as $__jsPath)
+        <script src="{{ $__jsPath }}"></script>
+    @endforeach
 
     {{-- Inline JS collected from active page widgets + chrome widgets --}}
     @php
