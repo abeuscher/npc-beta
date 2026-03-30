@@ -103,6 +103,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 094 | Test Audit & Bug Fixes |
 | 095 | Test Coverage — Portal, Stripe & Integrations |
 | 096 | Per-Page SEO & Header Snippets |
+| 097 | Header & Footer Widget System |
 
 ---
 
@@ -130,15 +131,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 096 — Per-Page SEO & Header Snippets~~ *(completed)*
 
-### Session 097 — Header & Footer Widget System
+### ~~Session 097 — Header & Footer Widget System~~ *(completed)*
 
-Header and footer areas rendered via purpose-built widget types using the same page builder engine. Two system pages (`_header`, `_footer`) serve as widget containers. New "Header & Footer" tab on Site Theme page with two stacked PageBuilder instances, gated by `edit_site_chrome` permission. Purpose-built `site_header` and `site_footer` widget types absorb existing logo/nav/content controls. Fallback to legacy Blade partials when no widgets configured.
+### Session 098 — Additional Widget Types
 
-### Additional Widget Types
+New widget types for Beta 1: calendar (event-driven), chart/graph (collection-driven, powered by Chart.js), and video embed (YouTube/Vimeo). Each built to the same config schema pattern as existing widget types. Static image and carousel widgets already built in session 089.
 
-New widget types for Beta 1: calendar, graph/chart, video embed, navigation menu widget. Each built to the same config schema pattern as existing widget types. Static image and carousel widgets already built in session 089.
-
-**Table and Flexbox widgets** — a table layout widget and a flexbox layout widget would complement the existing column (CSS grid) widget and give users more layout options. These should be straightforward to build following the same `parent_widget_id` / `column_index` nesting model as the column widget. Consider whether the column widget needs usage limits (max nesting depth, max columns) to keep it manageable once alternatives exist.
+**Table and Flexbox widgets** deferred to post-Beta 1.
 
 ### Page Templates
 

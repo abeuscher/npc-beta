@@ -6,7 +6,12 @@
 
     @php
         use App\Models\SiteSetting;
+        use App\Services\ChromeRenderer;
         use App\Services\SeoMetaGenerator;
+
+        // Pre-compute chrome (header/footer) widget data once for the entire layout
+        $__chromeHeader = ! view()->exists('custom.header') ? ChromeRenderer::render('_header') : null;
+        $__chromeFooter = ! view()->exists('custom.footer') ? ChromeRenderer::render('_footer') : null;
 
         $siteName = SiteSetting::get('site_name', config('site.name', config('app.name')));
         $baseUrl  = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
@@ -142,9 +147,14 @@
         <style>{!! implode(' ', $scopedRules) !!}</style>
     @endif
 
-    {{-- Inline CSS collected from active page widgets --}}
-    @if (!empty($inlineStyles))
-        <style>{!! $inlineStyles !!}</style>
+    {{-- Inline CSS collected from active page widgets + chrome widgets --}}
+    @php
+        $__allInlineStyles = ($inlineStyles ?? '');
+        if ($__chromeHeader) $__allInlineStyles .= $__chromeHeader['styles'];
+        if ($__chromeFooter) $__allInlineStyles .= $__chromeFooter['styles'];
+    @endphp
+    @if ($__allInlineStyles)
+        <style>{!! $__allInlineStyles !!}</style>
     @endif
 
     @stack('styles')
@@ -162,7 +172,13 @@
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}
 
-    @include(view()->exists('custom.header') ? 'custom.header' : 'components.site-header')
+    @if (view()->exists('custom.header'))
+        @include('custom.header')
+    @elseif ($__chromeHeader)
+        {!! $__chromeHeader['html'] !!}
+    @else
+        @include('components.site-header')
+    @endif
 
     <main class="flex-1">
         <div class="max-w-7xl mx-auto px-4 py-8">
@@ -170,7 +186,13 @@
         </div>
     </main>
 
-    @include(view()->exists('custom.footer') ? 'custom.footer' : 'components.site-footer')
+    @if (view()->exists('custom.footer'))
+        @include('custom.footer')
+    @elseif ($__chromeFooter)
+        {!! $__chromeFooter['html'] !!}
+    @else
+        @include('components.site-footer')
+    @endif
 
     <script>
     window.__site = {
@@ -180,9 +202,14 @@
     };
     </script>
 
-    {{-- Inline JS collected from active page widgets --}}
-    @if (!empty($inlineScripts))
-        <script>{!! $inlineScripts !!}</script>
+    {{-- Inline JS collected from active page widgets + chrome widgets --}}
+    @php
+        $__allInlineScripts = ($inlineScripts ?? '');
+        if ($__chromeHeader) $__allInlineScripts .= $__chromeHeader['scripts'];
+        if ($__chromeFooter) $__allInlineScripts .= $__chromeFooter['scripts'];
+    @endphp
+    @if ($__allInlineScripts)
+        <script>{!! $__allInlineScripts !!}</script>
     @endif
 
     @stack('scripts')

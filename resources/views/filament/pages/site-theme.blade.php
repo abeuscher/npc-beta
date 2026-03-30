@@ -29,6 +29,30 @@
                         SCSS Editor
                     </button>
                 @endif
+
+                @if (auth()->user()?->can('edit_site_chrome'))
+                    <button
+                        type="button"
+                        @click="tab = 'header'"
+                        :class="tab === 'header'
+                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400'"
+                        class="border-b-2 px-1 pb-3 text-sm font-medium"
+                    >
+                        Header
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="tab = 'footer'"
+                        :class="tab === 'footer'
+                            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400'"
+                        class="border-b-2 px-1 pb-3 text-sm font-medium"
+                    >
+                        Footer
+                    </button>
+                @endif
             </nav>
         </div>
 
@@ -73,6 +97,50 @@
                         <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Last build output</h3>
                         <pre class="overflow-x-auto rounded-lg border p-4 text-xs font-mono {{ $buildSuccess ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200' : 'border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200' }}">{{ $buildOutput }}</pre>
                     </div>
+                @endif
+            </div>
+        @endif
+
+        {{-- Header tab --}}
+        @if (auth()->user()?->can('edit_site_chrome'))
+            <div x-show="tab === 'header'" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Widget changes are saved automatically as you edit.
+                    </p>
+                    <button
+                        type="button"
+                        @click="document.activeElement?.blur()"
+                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500"
+                    >
+                        Save
+                    </button>
+                </div>
+
+                @if ($this->headerPageId)
+                    @livewire('page-builder', ['pageId' => $this->headerPageId], key('chrome-header'))
+                @endif
+            </div>
+        @endif
+
+        {{-- Footer tab --}}
+        @if (auth()->user()?->can('edit_site_chrome'))
+            <div x-show="tab === 'footer'" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Widget changes are saved automatically as you edit.
+                    </p>
+                    <button
+                        type="button"
+                        @click="document.activeElement?.blur()"
+                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500"
+                    >
+                        Save
+                    </button>
+                </div>
+
+                @if ($this->footerPageId)
+                    @livewire('page-builder', ['pageId' => $this->footerPageId], key('chrome-footer'))
                 @endif
             </div>
         @endif

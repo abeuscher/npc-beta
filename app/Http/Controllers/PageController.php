@@ -23,6 +23,8 @@ class PageController extends Controller
 
     public function show(string $slug)
     {
+        abort_if(str_starts_with($slug, '_'), 404);
+
         $page = Page::where('slug', $slug)
             ->published()
             ->firstOrFail();

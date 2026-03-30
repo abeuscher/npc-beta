@@ -76,5 +76,24 @@ class SystemPageSeeder extends Seeder
                 ]);
             }
         }
+
+        // ── Chrome system pages (header & footer) ───────────────────────────
+        $chromePages = [
+            ['title' => 'Header', 'slug' => '_header'],
+            ['title' => 'Footer', 'slug' => '_footer'],
+        ];
+
+        foreach ($chromePages as $def) {
+            Page::firstOrCreate(
+                ['slug' => $def['slug']],
+                [
+                    'author_id'    => $authorId,
+                    'title'        => $def['title'],
+                    'type'         => 'system',
+                    'status'       => 'published',
+                    'published_at' => now(),
+                ]
+            );
+        }
     }
 }

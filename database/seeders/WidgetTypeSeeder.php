@@ -262,6 +262,36 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
+            ['handle' => 'site_header'],
+            [
+                'label'         => 'Site Header',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'logo',           'type' => 'image',    'label' => 'Logo'],
+                    ['key' => 'nav_handle',     'type' => 'text',     'label' => 'Navigation menu handle', 'default' => 'primary'],
+                    ['key' => 'header_content', 'type' => 'richtext', 'label' => 'Content beside logo'],
+                ],
+                'template'      => "@include('widgets.site-header')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'site_footer'],
+            [
+                'label'         => 'Site Footer',
+                'render_mode'   => 'server',
+                'collections'   => [],
+                'config_schema' => [
+                    ['key' => 'nav_handle',         'type' => 'text',   'label' => 'Navigation menu handle', 'default' => 'footer'],
+                    ['key' => 'show_theme_toggle',  'type' => 'toggle', 'label' => 'Show light/dark mode toggle', 'default' => true],
+                    ['key' => 'copyright_text',     'type' => 'text',   'label' => 'Copyright text'],
+                ],
+                'template'      => "@include('widgets.site-footer')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
             ['handle' => 'carousel'],
             [
                 'label'         => 'Carousel',
