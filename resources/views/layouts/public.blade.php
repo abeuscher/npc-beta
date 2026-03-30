@@ -4,10 +4,71 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{{ $title ?? config('site.name', config('app.name')) }}</title>
+    @php
+        use App\Models\SiteSetting;
+        use App\Services\SeoMetaGenerator;
 
-    @if (!empty($description))
-        <meta name="description" content="{{ $description }}">
+        $siteName = SiteSetting::get('site_name', config('site.name', config('app.name')));
+        $baseUrl  = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+        $seo      = isset($page) ? SeoMetaGenerator::forPage($page) : null;
+
+        // Title: meta_title → page title → site name
+        $resolvedTitle = $title ?? ($seo['title'] ?? $siteName);
+
+        // Description: meta_description → auto-extracted → site description
+        $resolvedDescription = $description
+            ?? ($seo['description'] ?? SiteSetting::get('site_description', ''));
+
+        // OG image: per-page → first widget image → site default
+        $resolvedOgImage = $seo['og_image'] ?? '';
+        if (! $resolvedOgImage) {
+            $defaultOgPath = SiteSetting::get('site_default_og_image', '');
+            $resolvedOgImage = $defaultOgPath
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($defaultOgPath)
+                : '';
+        }
+
+        // Canonical URL
+        $canonicalUrl = $seo['canonical'] ?? $baseUrl;
+
+        // OG type
+        $ogType = $seo['og_type'] ?? 'website';
+
+        // Favicon
+        $faviconPath = SiteSetting::get('favicon_path', '');
+        $faviconUrl  = $faviconPath
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath)
+            : '';
+    @endphp
+
+    <title>{{ $resolvedTitle }}</title>
+
+    @if ($resolvedDescription)
+        <meta name="description" content="{{ $resolvedDescription }}">
+    @endif
+
+    <meta property="og:title" content="{{ $resolvedTitle }}">
+    @if ($resolvedDescription)
+        <meta property="og:description" content="{{ $resolvedDescription }}">
+    @endif
+    @if ($resolvedOgImage)
+        <meta property="og:image" content="{{ $resolvedOgImage }}">
+    @endif
+    <meta property="og:url" content="{{ $canonicalUrl }}">
+    <meta property="og:type" content="{{ $ogType }}">
+
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+
+    @if (! empty($page) && $page->noindex)
+        <meta name="robots" content="noindex">
+    @endif
+
+    @if ($faviconUrl)
+        <link rel="icon" href="{{ $faviconUrl }}">
+    @endif
+
+    @if ($seo['json_ld'] ?? null)
+        <script type="application/ld+json">{!! $seo['json_ld'] !!}</script>
     @endif
 
     @vite(['resources/scss/public.scss', 'resources/js/public.js'])
@@ -15,9 +76,9 @@
     @php
         $cssVars = [];
 
-        $primaryColor = \App\Models\SiteSetting::get('public_primary_color');
-        $headingFont  = \App\Models\SiteSetting::get('public_heading_font');
-        $bodyFont     = \App\Models\SiteSetting::get('public_body_font');
+        $primaryColor = SiteSetting::get('public_primary_color');
+        $headingFont  = SiteSetting::get('public_heading_font');
+        $bodyFont     = SiteSetting::get('public_body_font');
 
         if ($primaryColor) {
             $cssVars[] = "--color-primary: {$primaryColor}";
@@ -49,11 +110,11 @@
         }
 
         // Scoped header/nav colour rules — also applied to footer nav/icons for consistency
-        $headerBgColor  = \App\Models\SiteSetting::get('header_bg_color');
-        $footerBgColor  = \App\Models\SiteSetting::get('footer_bg_color');
-        $navLinkColor   = \App\Models\SiteSetting::get('nav_link_color');
-        $navHoverColor  = \App\Models\SiteSetting::get('nav_hover_color');
-        $navActiveColor = \App\Models\SiteSetting::get('nav_active_color');
+        $headerBgColor  = SiteSetting::get('header_bg_color');
+        $footerBgColor  = SiteSetting::get('footer_bg_color');
+        $navLinkColor   = SiteSetting::get('nav_link_color');
+        $navHoverColor  = SiteSetting::get('nav_hover_color');
+        $navActiveColor = SiteSetting::get('nav_active_color');
 
         $scopedRules = [];
         if ($headerBgColor) $scopedRules[] = "header { background: {$headerBgColor}; }";
@@ -87,8 +148,19 @@
     @endif
 
     @stack('styles')
+
+    {{-- Site-wide head snippet --}}
+    {!! SiteSetting::get('site_head_snippet', '') !!}
+
+    {{-- Per-page head snippet --}}
+    @if (! empty($page) && $page->head_snippet)
+        {!! $page->head_snippet !!}
+    @endif
 </head>
 <body class="min-h-screen flex flex-col font-body text-gray-800 dark:text-gray-200 dark:bg-gray-900 {{ $bodyClass ?? 'page-unknown' }}">
+
+    {{-- Site-wide body-open snippet --}}
+    {!! SiteSetting::get('site_body_open_snippet', '') !!}
 
     @include(view()->exists('custom.header') ? 'custom.header' : 'components.site-header')
 
@@ -114,5 +186,13 @@
     @endif
 
     @stack('scripts')
+
+    {{-- Site-wide body snippet --}}
+    {!! SiteSetting::get('site_body_snippet', '') !!}
+
+    {{-- Per-page body snippet --}}
+    @if (! empty($page) && $page->body_snippet)
+        {!! $page->body_snippet !!}
+    @endif
 </body>
 </html>

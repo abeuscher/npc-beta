@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DonationCheckoutController;
@@ -100,6 +101,10 @@ Route::patch('/account/password', [AccountController::class, 'updatePassword'])-
 Route::post('/account/email',        [AccountController::class, 'requestEmailChange'])->name('portal.account.request-email-change')->middleware(array_merge($portalAuth, ['throttle:5,1']));
 Route::get('/account/email/confirm', [AccountController::class, 'confirmEmailChange'])->name('portal.account.confirm-email')->middleware($portalAuth);
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Sitemap and robots.txt
+Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // Slug route is registered last so Filament and other named routes take priority.
 // The .* pattern allows forward-slash segments (e.g. events/board-meeting).

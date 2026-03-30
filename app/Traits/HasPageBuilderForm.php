@@ -72,11 +72,27 @@ trait HasPageBuilderForm
                 ->schema([
                     Forms\Components\TextInput::make('meta_title')
                         ->maxLength(255)
+                        ->placeholder(fn ($record) => $record?->title ?? '')
                         ->helperText('Defaults to page title if blank.'),
 
                     Forms\Components\Textarea::make('meta_description')
                         ->rows(3)
-                        ->maxLength(160),
+                        ->maxLength(160)
+                        ->placeholder('Auto-extracted from page content if blank.'),
+
+                    Forms\Components\FileUpload::make('og_image_path')
+                        ->label('Open Graph image')
+                        ->helperText('Image used for social sharing previews. Replaces current image on save.')
+                        ->disk('public')
+                        ->directory('og-images')
+                        ->visibility('public')
+                        ->image()
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->columnSpanFull(),
+
+                    Forms\Components\Toggle::make('noindex')
+                        ->label('Hide from search engines')
+                        ->helperText('Adds a noindex meta tag. Use for thank-you pages, confirmation pages, etc.'),
                 ])
                 ->columns(1)
                 ->collapsible()

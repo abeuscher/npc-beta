@@ -102,6 +102,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 093 | WYSIWYG Toolbar & Inline Image Insert |
 | 094 | Test Audit & Bug Fixes |
 | 095 | Test Coverage — Portal, Stripe & Integrations |
+| 096 | Per-Page SEO & Header Snippets |
 
 ---
 
@@ -127,13 +128,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 095 — Test Coverage — Portal, Stripe & Integrations~~ *(completed)*
 
-### Session 096 — Per-Page SEO & Header Snippets
+### ~~Session 096 — Per-Page SEO & Header Snippets~~ *(completed)*
 
-Wire up existing meta_title/meta_description columns, add OG image and noindex fields, auto-generate JSON-LD structured data (BlogPosting/WebPage), canonical URLs, and sitemap.xml. Per-page and site-wide header/footer code snippet injection with HTML validation. New `edit_page_snippets` permission for per-page snippets. Site-wide snippets (head, body-open, body-close) and default OG image in CMS Settings.
+### Session 097 — Header & Footer Widget System
 
-### Header & Footer Widget System
-
-Header and footer areas rendered via purpose-built widget types using the same engine as page widgets. Each area becomes a configurable slot rather than a hard-coded Blade partial. Navigation is handled by exposing NavigationMenu collections through the existing nav system, then building a nav widget that can be added to the header or footer slot — no separate nav infrastructure required. Header widgets and footer widgets are separate registries.
+Header and footer areas rendered via purpose-built widget types using the same page builder engine. Two system pages (`_header`, `_footer`) serve as widget containers. New "Header & Footer" tab on Site Theme page with two stacked PageBuilder instances, gated by `edit_site_chrome` permission. Purpose-built `site_header` and `site_footer` widget types absorb existing logo/nav/content controls. Fallback to legacy Blade partials when no widgets configured.
 
 ### Additional Widget Types
 
@@ -309,7 +308,7 @@ Guided first-run setup: database connection, mail provider configuration, admin 
 
 ### SEO — Advanced
 
-JSON-LD structured data (Article, Event, Organization). Global and per-page custom head injection. Global footer injection. Twitter card type. Sanitization strategy. Gate advanced injection by role. Builds on the per-page meta fields added in Beta 1.
+Twitter card meta tags. Manual canonical URL override. SEO scoring/audit checklists. Search console integration. Alt-text validation. Builds on the JSON-LD, OG tags, snippets, sitemap, and noindex controls delivered in session 096.
 
 ### Site Theme & Public Theme Builder
 

@@ -27,6 +27,10 @@ class Page extends Model
         'author_id', // required; set to auth user on creation
         'meta_title',
         'meta_description',
+        'og_image_path',
+        'noindex',
+        'head_snippet',
+        'body_snippet',
         'custom_fields',
         'status',
         'published_at',
@@ -39,6 +43,7 @@ class Page extends Model
 
     protected $casts = [
         'custom_fields' => 'array',
+        'noindex'       => 'boolean',
         'published_at'  => 'datetime',
     ];
 

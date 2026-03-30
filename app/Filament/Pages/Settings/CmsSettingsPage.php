@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Settings;
 
 use App\Models\SiteSetting;
+use App\Rules\ValidHtmlSnippet;
 use App\Services\ImageSizeProfile;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -41,6 +42,11 @@ class CmsSettingsPage extends Page
             'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'false') === 'true',
             'auto_publish_pages'  => SiteSetting::get('auto_publish_pages', 'true') === 'true',
             'auto_publish_posts'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
+            'favicon_upload'         => null,
+            'site_head_snippet'      => SiteSetting::get('site_head_snippet', ''),
+            'site_body_open_snippet' => SiteSetting::get('site_body_open_snippet', ''),
+            'site_body_snippet'      => SiteSetting::get('site_body_snippet', ''),
+            'site_default_og_image'  => null,
             'image_breakpoints'   => collect(ImageSizeProfile::configuredBreakpoints())
                 ->map(fn ($w) => ['width' => $w])
                 ->values()
@@ -83,7 +89,7 @@ class CmsSettingsPage extends Page
                             ->label('Contact Email')
                             ->email()
                             ->nullable()
-                            ->columnSpan(4),
+                            ->columnSpan(8),
 
                         Forms\Components\Toggle::make('event_auto_publish')
                             ->label('Auto-publish new events')
@@ -101,6 +107,80 @@ class CmsSettingsPage extends Page
                             ->columnSpan(4),
                     ])
                     ->columns(12),
+
+                Forms\Components\Section::make('Header & Footer Code Snippets')
+                    ->schema([
+                        Forms\Components\Placeholder::make('current_favicon_preview')
+                            ->label('Current favicon')
+                            ->content(function () {
+                                $path = SiteSetting::get('favicon_path', '');
+                                if (! $path) {
+                                    return 'No favicon uploaded.';
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    '<img src="' . e(\Illuminate\Support\Facades\Storage::disk('public')->url($path)) . '" style="max-height:2rem;">'
+                                );
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\FileUpload::make('favicon_upload')
+                            ->label('Upload favicon')
+                            ->helperText('Accepts .ico, .png, or .svg. Replaces the current favicon on save.')
+                            ->nullable()
+                            ->disk('public')
+                            ->directory('site')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/svg+xml'])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('site_head_snippet')
+                            ->label('Site head snippet (before </head>)')
+                            ->rows(4)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidHtmlSnippet()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('site_body_open_snippet')
+                            ->label('Snippet below <body> tag')
+                            ->helperText('Use this for Google Tag Manager, Google Analytics, or similar scripts that must load immediately after the body tag opens.')
+                            ->rows(4)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidHtmlSnippet()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('site_body_snippet')
+                            ->label('Site body snippet (before </body>)')
+                            ->rows(4)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidHtmlSnippet()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Placeholder::make('current_og_image_preview')
+                            ->label('Current default OG image')
+                            ->content(function () {
+                                $path = SiteSetting::get('site_default_og_image', '');
+                                if (! $path) {
+                                    return 'No image set.';
+                                }
+
+                                return new \Illuminate\Support\HtmlString(
+                                    '<img src="' . e(\Illuminate\Support\Facades\Storage::disk('public')->url($path)) . '" style="max-height:6rem;">'
+                                );
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\FileUpload::make('site_default_og_image')
+                            ->label('Upload default Open Graph image')
+                            ->helperText('Fallback image used for social sharing when a page has no OG image set. Replaces the current image on save.')
+                            ->nullable()
+                            ->disk('public')
+                            ->directory('site')
+                            ->visibility('public')
+                            ->image()
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Section::make('Image Sizes')
                     ->description('Responsive breakpoints used when generating optimized image variants. Widths in pixels, sorted largest to smallest. Defaults match Pico.css breakpoints.')
@@ -146,6 +226,17 @@ class CmsSettingsPage extends Page
         SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
+
+        if (! empty($data['favicon_upload'])) {
+            SiteSetting::set('favicon_path', $data['favicon_upload']);
+        }
+
+        SiteSetting::set('site_head_snippet', $data['site_head_snippet'] ?? '');
+        SiteSetting::set('site_body_open_snippet', $data['site_body_open_snippet'] ?? '');
+        SiteSetting::set('site_body_snippet', $data['site_body_snippet'] ?? '');
+        if (! empty($data['site_default_og_image'])) {
+            SiteSetting::set('site_default_og_image', $data['site_default_og_image']);
+        }
 
         $breakpoints = collect($data['image_breakpoints'] ?? [])
             ->pluck('width')

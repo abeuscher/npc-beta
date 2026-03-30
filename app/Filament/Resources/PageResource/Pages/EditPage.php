@@ -3,8 +3,12 @@
 namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
+use App\Filament\Pages\Settings\CmsSettingsPage;
 use App\Models\SiteSetting;
+use App\Rules\ValidHtmlSnippet;
 use Filament\Actions;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPage extends EditRecord
@@ -44,6 +48,51 @@ class EditPage extends EditRecord
 
             Actions\DeleteAction::make()
                 ->hidden(fn () => $this->record->type === 'system'),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('editSnippets')
+                    ->label('Edit Header & Footer Snippets')
+                    ->icon('heroicon-o-code-bracket')
+                    ->visible(fn () => auth()->user()?->can('edit_page_snippets') ?? false)
+                    ->fillForm(fn () => [
+                        'head_snippet' => $this->record->head_snippet,
+                        'body_snippet' => $this->record->body_snippet,
+                    ])
+                    ->form([
+                        Forms\Components\Placeholder::make('snippet_info')
+                            ->label('')
+                            ->content(new \Illuminate\Support\HtmlString(
+                                'This control is for per-page code snippets only. If you are trying to install Google Tag Manager or any other site-wide scripts, please use the Site Header and Site Footer fields on the <a href="' . CmsSettingsPage::getUrl() . '" class="underline text-primary-600 dark:text-primary-400" target="_blank">CMS Settings Page</a>.'
+                            )),
+
+                        Forms\Components\Textarea::make('head_snippet')
+                            ->label('Head snippet (before </head>)')
+                            ->rows(4)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidHtmlSnippet()]),
+
+                        Forms\Components\Textarea::make('body_snippet')
+                            ->label('Body snippet (before </body>)')
+                            ->rows(4)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidHtmlSnippet()]),
+                    ])
+                    ->action(function (array $data) {
+                        $this->record->update([
+                            'head_snippet' => $data['head_snippet'],
+                            'body_snippet' => $data['body_snippet'],
+                        ]);
+
+                        Notification::make()
+                            ->title('Snippets saved')
+                            ->success()
+                            ->send();
+                    })
+                    ->modalHeading('Header & Footer Snippets')
+                    ->modalSubmitActionLabel('Save Snippets'),
+            ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->tooltip('More actions'),
         ];
     }
 }

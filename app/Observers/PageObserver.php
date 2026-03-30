@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Page;
 use App\Services\ActivityLogger;
+use Illuminate\Support\Facades\Cache;
 
 class PageObserver
 {
@@ -13,6 +14,7 @@ class PageObserver
             $this->applyMemberPrefix($page);
         }
 
+        Cache::forget('sitemap_xml');
         ActivityLogger::log($page, 'created');
     }
 
@@ -43,6 +45,8 @@ class PageObserver
             $this->applyMemberPrefix($page);
         }
 
+        Cache::forget('sitemap_xml');
+
         $description = null;
         if ($page->wasChanged('status')) {
             $description = match ($page->status) {
@@ -57,11 +61,13 @@ class PageObserver
 
     public function deleted(Page $page): void
     {
+        Cache::forget('sitemap_xml');
         ActivityLogger::log($page, 'deleted');
     }
 
     public function restored(Page $page): void
     {
+        Cache::forget('sitemap_xml');
         ActivityLogger::log($page, 'restored');
     }
 
