@@ -5,7 +5,11 @@
 
 ## Git Workflow
 
-- Before writing any code, create a new branch: `git checkout -b session-###`
-- All session work — code, session log, outlines update, next-session prompt — is committed on the session branch. One commit at close; stage all changed files and commit together.
-- **Patch branches** (`session-###-patch-NNN`) are only used when a mid-session deployment is needed (e.g. testing requires the production server). Cut the patch branch from the session branch, commit the deployable changes, and return to the session branch to continue work.
-- Never push or merge — the user handles both.
+Branches use the convention `session-NNN/N` where NNN is the session number and N is the iteration (1, 2, 3, …). Each iteration is a self-contained set of changes that can be merged to main independently.
+
+- **Starting a session:** `git checkout main && git checkout -b session-NNN/1`
+- **Committing:** Commit whenever a set of changes is ready for the user to deploy and test. One or more commits per branch is fine — whatever makes sense for the changeset.
+- **After commit:** Stop and notify the user. The user merges to main, pushes, deploys, and tests.
+- **Next iteration:** After the user merges and reports back, start from main: `git checkout main && git pull && git checkout -b session-NNN/2`. Repeat as needed.
+- **Session close documents** (log, outlines update, next-session prompt) go on the final iteration branch for the session.
+- **Never push or merge** — the user handles both.

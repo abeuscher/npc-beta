@@ -7,7 +7,7 @@ Copy this file to `NNN. Session Title — Log.md` when closing a session. Fill i
 # Session NNN — Session Title — Log
 
 **Date:** YYYY-MM-DD
-**Branch:** session-NNN
+**Branch:** session-NNN/1 … /N
 
 ---
 

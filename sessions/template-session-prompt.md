@@ -57,4 +57,4 @@ Before closing:
 Follow the close gate in the base prompt. Session-specific details:
 
 - **Log file**: `sessions/NNN. Session Title — Log.md`
-- **Branch**: `session-NNN`
+- **Branch**: `session-NNN/N` (final iteration)

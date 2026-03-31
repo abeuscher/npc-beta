@@ -41,7 +41,7 @@ When the user says to close:
 
 - **Session log**: write a log file at `sessions/NNN. Session Title — Log.md`. Use `sessions/template-session-log.md` as the format reference — copy its structure exactly, do not base it on previous logs.
 - **Update session-outlines.md**: move this session's title into the Completed Sessions table. Review upcoming stubs and update them if this session's work affects their scope or dependencies.
-- **Commit**: stage all changed files (including the log and updated outlines), commit to a feature branch named `session-NNN`, and notify the user. Do not push — the user will push and merge when ready.
+- **Commit**: stage all changed files (including the log and updated outlines), commit on the current `session-NNN/N` branch, and notify the user. Do not push — the user will push and merge when ready.
 - **Do not begin the next session** until the user explicitly starts it.
 
 ---
