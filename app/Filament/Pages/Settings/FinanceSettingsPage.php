@@ -340,7 +340,10 @@ class FinanceSettingsPage extends Page
         $accounts = Cache::remember('qb_income_accounts', 3600, function () {
             try {
                 return app(QuickBooksClient::class)->getIncomeAccounts();
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('QB income accounts fetch failed in Finance Settings', [
+                    'error' => $e->getMessage(),
+                ]);
                 return [];
             }
         });

@@ -126,16 +126,51 @@ class QuickBooksClient
      */
     public function getIncomeAccounts(): array
     {
-        $ds = $this->getDataService();
+        Log::info('QB getIncomeAccounts: starting');
 
+        $ds = $this->getDataService();
+        Log::info('QB getIncomeAccounts: DataService ready');
+
+        // Diagnostic: query ALL accounts to see what QB returns
+        $allAccounts = $ds->Query("SELECT * FROM Account MAXRESULTS 200");
+        $allError = $ds->getLastError();
+
+        if ($allError) {
+            Log::error('QB getIncomeAccounts: all-accounts query failed', [
+                'error' => $allError->getResponseBody(),
+            ]);
+        } else {
+            $types = [];
+            if ($allAccounts) {
+                foreach ($allAccounts as $a) {
+                    $types[] = [
+                        'Id' => (string) $a->Id,
+                        'Name' => $a->Name,
+                        'AccountType' => $a->AccountType,
+                        'AccountSubType' => $a->AccountSubType ?? null,
+                        'Active' => $a->Active ?? true,
+                    ];
+                }
+            }
+            Log::info('QB getIncomeAccounts: all accounts returned', ['count' => count($types), 'accounts' => $types]);
+        }
+
+        // Filtered query for Income type only
         $accounts = $ds->Query("SELECT * FROM Account WHERE AccountType = 'Income' MAXRESULTS 200");
         $error = $ds->getLastError();
 
         if ($error) {
+            Log::error('QB getIncomeAccounts: income query failed', [
+                'error' => $error->getResponseBody(),
+            ]);
             throw new RuntimeException(
                 'QuickBooks account query failed: ' . $error->getResponseBody()
             );
         }
+
+        Log::info('QB getIncomeAccounts: income query returned', [
+            'count' => $accounts ? count($accounts) : 0,
+        ]);
 
         $result = [];
 
