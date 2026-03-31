@@ -215,7 +215,7 @@ class TransactionResource extends Resource
                         SyncTransactionToQuickBooks::dispatch($record);
                         Notification::make()->title('Sync job dispatched')->success()->send();
                     })
-                    ->hidden(fn (Transaction $record) use ($qbConnected): bool =>
+                    ->hidden(fn (Transaction $record): bool =>
                         filled($record->quickbooks_id)
                         || ! $qbConnected
                         || ! auth()->user()?->can('manage_financial_settings')
