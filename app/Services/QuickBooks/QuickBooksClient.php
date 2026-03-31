@@ -300,7 +300,7 @@ class QuickBooksClient
         $accessToken = SiteSetting::get('qb_access_token');
         $refreshToken = SiteSetting::get('qb_refresh_token');
         $realmId = $this->auth->getRealmId();
-        $environment = env('QB_ENVIRONMENT', 'production');
+        $environment = SiteSetting::get('qb_environment', 'production');
 
         $this->dataService = DataService::Configure([
             'auth_mode' => 'oauth2',

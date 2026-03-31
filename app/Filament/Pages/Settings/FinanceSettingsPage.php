@@ -253,7 +253,43 @@ class FinanceSettingsPage extends Page
         $expiresAt = $auth->getTokenExpiresAt();
         $isConnected = filled($realmId);
 
+        $currentEnv = SiteSetting::get('qb_environment', 'production');
+
         $sections = [
+            Forms\Components\Section::make('QuickBooks — Environment')
+                ->schema([
+                    Forms\Components\Placeholder::make('qb_environment_display')
+                        ->label('API Environment')
+                        ->content($currentEnv === 'sandbox' ? 'Sandbox' : 'Production'),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('qb_toggle_environment')
+                            ->label($currentEnv === 'sandbox' ? 'Switch to Production' : 'Switch to Sandbox')
+                            ->color('gray')
+                            ->icon('heroicon-o-arrow-path')
+                            ->requiresConfirmation()
+                            ->modalHeading('Switch QuickBooks Environment')
+                            ->modalDescription(
+                                $currentEnv === 'sandbox'
+                                    ? 'This will switch to the production QuickBooks API. Make sure your Client ID and Secret are production keys.'
+                                    : 'This will switch to the sandbox QuickBooks API. Make sure your Client ID and Secret are development/sandbox keys.'
+                            )
+                            ->action(function (): void {
+                                $current = SiteSetting::get('qb_environment', 'production');
+                                $new = $current === 'sandbox' ? 'production' : 'sandbox';
+                                SiteSetting::set('qb_environment', $new);
+                                Cache::forget('site_setting:qb_environment');
+
+                                Notification::make()
+                                    ->title('Switched to ' . ($new === 'sandbox' ? 'Sandbox' : 'Production'))
+                                    ->success()
+                                    ->send();
+
+                                $this->redirect(static::getUrl());
+                            }),
+                    ]),
+                ]),
+
             $this->secretKeySection(
                 'qb_client_id',
                 'QuickBooks — Client ID',
