@@ -27,7 +27,7 @@ class QuickBooksAuth
         $helper = new OAuth2LoginHelper(
             $this->getClientId(),
             $this->getClientSecret(),
-            config('services.quickbooks.redirect_uri'),
+            url('/admin/quickbooks/callback'),
             self::SCOPE,
             $state,
         );
@@ -40,7 +40,7 @@ class QuickBooksAuth
         $helper = new OAuth2LoginHelper(
             $this->getClientId(),
             $this->getClientSecret(),
-            config('services.quickbooks.redirect_uri'),
+            url('/admin/quickbooks/callback'),
         );
 
         $token = $helper->exchangeAuthorizationCodeForToken($code, $realmId);
@@ -67,7 +67,7 @@ class QuickBooksAuth
             $helper = new OAuth2LoginHelper(
                 $this->getClientId(),
                 $this->getClientSecret(),
-                config('services.quickbooks.redirect_uri'),
+                url('/admin/quickbooks/callback'),
             );
 
             $token = $helper->refreshAccessTokenWithRefreshToken($refreshToken);

@@ -122,7 +122,6 @@ it('denies QB connect to users without manage_financial_settings permission', fu
 
 it('allows QB connect for super_admin users', function () {
     seedQbCredentials();
-    config(['services.quickbooks.redirect_uri' => 'http://localhost/admin/quickbooks/callback']);
 
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');

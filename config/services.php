@@ -44,7 +44,6 @@ return [
     ],
 
     'quickbooks' => [
-        'redirect_uri'  => env('QB_REDIRECT_URI'),
         'environment'   => env('QB_ENVIRONMENT', 'sandbox'),
     ],
 
