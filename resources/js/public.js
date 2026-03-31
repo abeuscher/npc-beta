@@ -1,9 +1,13 @@
 import Alpine from 'alpinejs'
 import Swiper from 'swiper'
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules'
+import 'jcalendar.js'
+import 'jcalendar.js/dist/calendar.js.min.css'
+import Chart from 'chart.js/auto'
 
 window.Swiper = Swiper
 window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade }
+window.Chart = Chart
 
 window.Alpine = Alpine
 

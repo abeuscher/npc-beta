@@ -313,9 +313,7 @@ class WidgetTypeSeeder extends Seeder
                 'label'         => 'Bar Chart',
                 'render_mode'   => 'server',
                 'collections'   => ['data'],
-                'assets'        => [
-                    'js' => ['/vendor/chartjs/chart.umd.js'],
-                ],
+                'assets'        => [],
                 'config_schema' => [
                     ['key' => 'heading',           'type' => 'text',   'label' => 'Chart title', 'helper' => 'Chart title'],
                     ['key' => 'collection_handle', 'type' => 'select', 'label' => 'Collection',  'options_from' => 'collections', 'helper' => 'Data source collection'],
@@ -336,8 +334,6 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'   => 'server',
                 'collections'   => [],
                 'assets'        => [
-                    'css'  => ['/vendor/calendarjs/calendar.js.min.css'],
-                    'js'   => ['/vendor/calendarjs/calendar.min.js'],
                     'scss' => ['resources/scss/widgets/_event-calendar.scss'],
                 ],
                 'config_schema' => [
