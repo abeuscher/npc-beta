@@ -110,6 +110,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 101 | Code Review & Cleanup |
 | 102 | Stripe Payment Methods & QuickBooks Connection |
 | 103 | QuickBooks Transaction Sync |
+| 104 | QuickBooks Customer Matching |
 
 ---
 
@@ -351,7 +352,11 @@ Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry 
 
 ### Session 105 — QuickBooks Per-Type Account Mapping
 
-Replace the single global income account with per-transaction-type mapping (donations, product purchases, default) so different revenue streams post to separate QB accounts. Optional per-fund override for donations. Settings UI on Finance Settings page; fund-level override on the Fund resource.
+Replace the single global income account with per-transaction-type mapping (donations, product purchases, default) so different revenue streams post to separate QB accounts. Optional per-fund override for donations. Settings UI on Finance Settings page; fund-level override on the Fund resource. Also corrects the account type query — `DepositToAccountRef` requires Bank or Other Current Asset accounts, not Income type.
+
+### Session 106 — Transaction Ledger Cleanup & Seeder
+
+Clean up the manual transaction form: type drives direction automatically, remove the direction dropdown, make QB reference read-only, add a contact selector. Add a transaction seeder with a representative mix of records (donations, purchases, refunds, manual entries, synced and unsynced, with and without contacts) for testing QB sync, reporting, and UI. Update the transaction factory with state methods for cleaner test setup.
 
 ### Integration Setup Wizards — Stripe & Mailchimp
 
