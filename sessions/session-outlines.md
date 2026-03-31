@@ -108,6 +108,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 099 | Template System — Data Model & Migration |
 | 100 | Template Manager UI & Page Creation Flow |
 | 101 | Code Review & Cleanup |
+| 102 | Stripe Payment Methods & QuickBooks Connection |
 
 ---
 
@@ -145,9 +146,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 101 — Code Review & Cleanup~~ *(completed)*
 
-### Session 102 — Stripe Payment Methods & QuickBooks Connection
-
-Configurable Stripe payment method types for checkout sessions (card, ACH, Link, etc.) on the Finance Settings page. QuickBooks OAuth 2.0 connection flow — connect/disconnect UI, token storage, refresh logic. No QB transaction sync yet.
+### ~~Session 102 — Stripe Payment Methods & QuickBooks Connection~~ *(completed)*
 
 ### Session 103 — QuickBooks Transaction Sync
 
