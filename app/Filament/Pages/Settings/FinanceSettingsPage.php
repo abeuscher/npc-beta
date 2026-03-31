@@ -60,7 +60,8 @@ class FinanceSettingsPage extends Page
 
     public function mount(): void
     {
-        $accountMap = json_decode(SiteSetting::get('qb_account_map', '{}'), true) ?: [];
+        $raw = SiteSetting::get('qb_account_map', []);
+        $accountMap = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
 
         $this->form->fill([
             'stripe_publishable_key'      => SiteSetting::get('stripe_publishable_key', ''),
