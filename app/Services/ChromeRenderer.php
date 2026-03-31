@@ -4,9 +4,6 @@ namespace App\Services;
 
 use App\Models\Page;
 use App\Models\PageWidget;
-use App\Services\InlineImageRenderer;
-use App\Services\WidgetDataResolver;
-use Illuminate\Support\Facades\Blade;
 
 class ChromeRenderer
 {
@@ -43,7 +40,6 @@ class ChromeRenderer
 
     private static function renderPage(?Page $page): ?array
     {
-
         if (! $page) {
             return null;
         }
@@ -65,96 +61,20 @@ class ChromeRenderer
         $assets  = ['css' => [], 'js' => [], 'scss' => []];
 
         foreach ($widgets as $pw) {
-            [$blockHtml, $blockStyles, $blockScripts] = static::renderWidget($pw);
-            if ($blockHtml !== null) {
+            $result = WidgetRenderer::render($pw);
+            if ($result['html'] !== null) {
                 $styleConfig = $pw->style_config ?? [];
                 $inlineStyle = static::buildInlineStyle($styleConfig);
                 $html .= $inlineStyle
-                    ? "<div style=\"{$inlineStyle}\">{$blockHtml}</div>"
-                    : $blockHtml;
+                    ? "<div style=\"{$inlineStyle}\">{$result['html']}</div>"
+                    : $result['html'];
             }
-            $styles  .= $blockStyles;
-            $scripts .= $blockScripts;
-            static::collectAssets($pw->widgetType, $assets);
+            $styles  .= $result['styles'];
+            $scripts .= $result['scripts'];
+            WidgetRenderer::collectAssets($pw->widgetType, $assets);
         }
 
         return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts, 'assets' => $assets];
-    }
-
-    private static function renderWidget(PageWidget $pw): array
-    {
-        $widgetType = $pw->widgetType;
-
-        if (! $widgetType) {
-            return [null, '', ''];
-        }
-
-        $config      = $pw->config ?? [];
-        $styles      = '';
-        $scripts     = '';
-        $html        = '';
-
-        $configMedia = [];
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') === 'image' && !empty($config[$field['key']])) {
-                $configMedia[$field['key']] = $pw->getFirstMedia("config_{$field['key']}");
-            }
-        }
-
-        $collectionData = [];
-        foreach ($widgetType->collections ?? [] as $collSlot) {
-            $collHandle = $config['collection_handle'] ?? $collSlot;
-            $queryConfig = $pw->query_config[$collSlot] ?? [];
-            $collectionData[$collSlot] = WidgetDataResolver::resolve($collHandle, $queryConfig);
-        }
-
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') === 'richtext' && !empty($config[$field['key']])) {
-                $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
-            }
-        }
-
-        if ($widgetType->render_mode === 'server') {
-            $templateVars = ['config' => $config, 'configMedia' => $configMedia, 'collectionData' => $collectionData];
-
-            $html = $widgetType->template
-                ? Blade::render($widgetType->template, $templateVars)
-                : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-            if ($widgetType->js) {
-                $scripts .= "\n" . $widgetType->js;
-            }
-        } else {
-            $html = $widgetType->code
-                ? '<script>' . $widgetType->code . '</script>'
-                : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-        }
-
-        return [$html, $styles, $scripts];
-    }
-
-    private static function collectAssets(?\App\Models\WidgetType $widgetType, array &$assets): void
-    {
-        if (! $widgetType) {
-            return;
-        }
-
-        $widgetAssets = $widgetType->assets ?? [];
-
-        foreach (['css', 'js', 'scss'] as $type) {
-            foreach ($widgetAssets[$type] ?? [] as $path) {
-                if (! in_array($path, $assets[$type], true)) {
-                    $assets[$type][] = $path;
-                }
-            }
-        }
     }
 
     private static function buildInlineStyle(array $styleConfig): string

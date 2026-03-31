@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\TemplateResource\Pages;
 
 use App\Filament\Resources\TemplateResource;
-use App\Models\Page as PageModel;
-use App\Models\PageWidget;
 use App\Models\Template;
 use Filament\Actions;
 use Filament\Forms;
@@ -63,13 +61,13 @@ class ListTemplates extends ListRecords
 
                         // Copy header widgets into a new system page
                         if ($default->header_page_id) {
-                            $headerPage = $this->cloneSystemPage($default->header_page_id, $template, 'header');
+                            $headerPage = $template->createChromePage('header', $default->header_page_id);
                             $template->update(['header_page_id' => $headerPage->id]);
                         }
 
                         // Copy footer widgets into a new system page
                         if ($default->footer_page_id) {
-                            $footerPage = $this->cloneSystemPage($default->footer_page_id, $template, 'footer');
+                            $footerPage = $template->createChromePage('footer', $default->footer_page_id);
                             $template->update(['footer_page_id' => $footerPage->id]);
                         }
 
@@ -85,50 +83,6 @@ class ListTemplates extends ListRecords
                 ->button()
                 ->icon('heroicon-m-plus'),
         ];
-    }
-
-    private function cloneSystemPage(string $sourcePageId, Template $template, string $position): PageModel
-    {
-        $slug = "_{$position}_" . substr($template->id, 0, 8);
-
-        $page = PageModel::create([
-            'title'     => ucfirst($position) . ' — ' . $template->name,
-            'slug'      => $slug,
-            'type'      => 'system',
-            'status'    => 'published',
-            'author_id' => auth()->id(),
-        ]);
-
-        // Copy widgets from the source page
-        $this->copyWidgets($sourcePageId, $page->id);
-
-        return $page;
-    }
-
-    private function copyWidgets(string $sourcePageId, string $targetPageId, ?string $sourceParentId = null, ?string $targetParentId = null): void
-    {
-        $widgets = PageWidget::where('page_id', $sourcePageId)
-            ->where('parent_widget_id', $sourceParentId)
-            ->orderBy('sort_order')
-            ->get();
-
-        foreach ($widgets as $widget) {
-            $newWidget = PageWidget::create([
-                'page_id'          => $targetPageId,
-                'parent_widget_id' => $targetParentId,
-                'column_index'     => $widget->column_index,
-                'widget_type_id'   => $widget->widget_type_id,
-                'label'            => $widget->label,
-                'config'           => $widget->config,
-                'query_config'     => $widget->query_config,
-                'style_config'     => $widget->style_config,
-                'sort_order'       => $widget->sort_order,
-                'is_active'        => $widget->is_active,
-            ]);
-
-            // Recursively copy children (column widget children)
-            $this->copyWidgets($sourcePageId, $targetPageId, $widget->id, $newWidget->id);
-        }
     }
 
     public function getTabs(): array

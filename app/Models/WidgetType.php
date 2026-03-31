@@ -64,6 +64,21 @@ class WidgetType extends Model
         'default_open'  => 'boolean',
     ];
 
+    public function getDefaultConfig(): array
+    {
+        $config = [];
+        foreach ($this->config_schema ?? [] as $field) {
+            $config[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
+                'toggle' => false,
+                'number' => null,
+                'image'  => null,
+                default  => '',
+            };
+        }
+
+        return $config;
+    }
+
     public function pageWidgets(): HasMany
     {
         return $this->hasMany(PageWidget::class);

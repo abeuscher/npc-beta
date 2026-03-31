@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\Template;
-use App\Services\InlineImageRenderer;
 use App\Services\PageContext;
-use App\Services\WidgetDataResolver;
-use Illuminate\Support\Facades\Blade;
+use App\Services\WidgetRenderer;
 use Illuminate\Support\Facades\View;
 
 class PageController extends Controller
@@ -74,112 +72,48 @@ class PageController extends Controller
         $widgetAssets    = ['css' => [], 'js' => [], 'scss' => []];
 
         foreach ($pageWidgets as $pw) {
-            [$blockData, $styles, $scripts] = $this->renderWidget($pw);
-            $blocks[]        = $blockData;
-            $inlineStyles   .= $styles;
-            $inlineScripts  .= $scripts;
-            $this->collectAssets($pw->widgetType, $widgetAssets);
+            $blockData = $this->renderWidgetBlock($pw);
+            if ($blockData) {
+                $blocks[] = $blockData['block'];
+                $inlineStyles  .= $blockData['styles'];
+                $inlineScripts .= $blockData['scripts'];
+            }
+            WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
         }
 
         return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
     }
 
-    private function renderWidget(PageWidget $pw): array
+    private function renderWidgetBlock(PageWidget $pw): ?array
     {
         $widgetType = $pw->widgetType;
 
         if (! $widgetType) {
-            return [null, '', ''];
+            return null;
         }
 
-        $config      = $pw->config ?? [];
-        $styleConfig = $pw->style_config ?? [];
-        $styles      = '';
-        $scripts     = '';
-        $html        = '';
-
-        // Resolve image config fields to media objects for the picture component
-        $configMedia = [];
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') === 'image' && !empty($config[$field['key']])) {
-                $configMedia[$field['key']] = $pw->getFirstMedia("config_{$field['key']}");
-            }
+        // For column widgets, render children first
+        $columnChildren = [];
+        if ($widgetType->handle === 'column_widget') {
+            $columnChildren = $this->renderColumnChildren($pw);
         }
 
-        // Resolve collection data for widgets that declare collections
-        $collectionData = [];
-        foreach ($widgetType->collections ?? [] as $collSlot) {
-            $collHandle = $config['collection_handle'] ?? $collSlot;
-            $queryConfig = $pw->query_config[$collSlot] ?? [];
-            $collectionData[$collSlot] = WidgetDataResolver::resolve($collHandle, $queryConfig);
+        $result = WidgetRenderer::render($pw, $columnChildren);
+
+        if ($result['html'] === null) {
+            return null;
         }
 
-        // Process inline images in richtext config fields
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
-                $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
-            }
-        }
-
-        if ($widgetType->render_mode === 'server') {
-            $templateVars = ['config' => $config, 'configMedia' => $configMedia, 'collectionData' => $collectionData];
-
-            if ($widgetType->handle === 'column_widget') {
-                $children = $this->renderColumnChildren($pw);
-                $templateVars['children'] = $children;
-                $html = $widgetType->template
-                    ? Blade::render($widgetType->template, $templateVars)
-                    : '';
-            } else {
-                $html = $widgetType->template
-                    ? Blade::render($widgetType->template, $templateVars)
-                    : '';
-            }
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-
-            if ($widgetType->js) {
-                $scripts .= "\n" . $widgetType->js;
-            }
-        } else {
-            $html = $widgetType->code
-                ? '<script>' . $widgetType->code . '</script>'
-                : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-        }
-
-        $blockData = [
+        $block = [
             'handle'       => $widgetType->handle,
             'instance_id'  => $pw->id,
-            'html'         => $html,
+            'html'         => $result['html'],
             'css'          => $widgetType->css ?? '',
             'js'           => $widgetType->js ?? '',
-            'style_config' => $styleConfig,
+            'style_config' => $pw->style_config ?? [],
         ];
 
-        return [$blockData, $styles, $scripts];
-    }
-
-    private function collectAssets(?\App\Models\WidgetType $widgetType, array &$widgetAssets): void
-    {
-        if (! $widgetType) {
-            return;
-        }
-
-        $assets = $widgetType->assets ?? [];
-
-        foreach (['css', 'js', 'scss'] as $type) {
-            foreach ($assets[$type] ?? [] as $path) {
-                if (! in_array($path, $widgetAssets[$type], true)) {
-                    $widgetAssets[$type][] = $path;
-                }
-            }
-        }
+        return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
     }
 
     private function renderColumnChildren(PageWidget $pw): array
@@ -191,14 +125,14 @@ class PageController extends Controller
                 continue;
             }
 
-            [$blockData, , ] = $this->renderWidget($child);
+            $blockData = $this->renderWidgetBlock($child);
 
             if ($blockData === null) {
                 continue;
             }
 
             $idx = $child->column_index ?? 0;
-            $children[$idx][] = $blockData;
+            $children[$idx][] = $blockData['block'];
         }
 
         return $children;

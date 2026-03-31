@@ -6,6 +6,7 @@ updated: 2026-03-21
 tags: [cms, forms, contact, submissions]
 routes:
   - filament.admin.resources.forms.index
+  - filament.admin.resources.forms.create
   - filament.admin.resources.forms.edit
 ---
 

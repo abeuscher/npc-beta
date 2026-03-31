@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Page;
-use App\Models\SiteSetting;
 use App\Models\Template;
 use Illuminate\Database\Seeder;
 
@@ -17,14 +16,14 @@ class TemplateSeeder extends Seeder
             [
                 'is_default'       => true,
                 'description'      => 'Default site template — colors, fonts, header, and footer.',
-                'primary_color'    => SiteSetting::get('public_primary_color', '#0172ad'),
-                'heading_font'     => SiteSetting::get('public_heading_font', '') ?: null,
-                'body_font'        => SiteSetting::get('public_body_font', '') ?: null,
-                'header_bg_color'  => SiteSetting::get('header_bg_color', '#ffffff'),
-                'footer_bg_color'  => SiteSetting::get('footer_bg_color', '#ffffff'),
-                'nav_link_color'   => SiteSetting::get('nav_link_color', '#373c44'),
-                'nav_hover_color'  => SiteSetting::get('nav_hover_color', '#0172ad'),
-                'nav_active_color' => SiteSetting::get('nav_active_color', '#0172ad'),
+                'primary_color'    => '#0172ad',
+                'heading_font'     => null,
+                'body_font'        => null,
+                'header_bg_color'  => '#ffffff',
+                'footer_bg_color'  => '#ffffff',
+                'nav_link_color'   => '#373c44',
+                'nav_hover_color'  => '#0172ad',
+                'nav_active_color' => '#0172ad',
                 'custom_scss'      => $this->loadCustomScss(),
                 'header_page_id'   => Page::where('slug', '_header')->value('id'),
                 'footer_page_id'   => Page::where('slug', '_footer')->value('id'),

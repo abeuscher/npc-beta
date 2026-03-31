@@ -107,6 +107,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 098 | Additional Widget Types — Calendar, Chart & Video |
 | 099 | Template System — Data Model & Migration |
 | 100 | Template Manager UI & Page Creation Flow |
+| 101 | Code Review & Cleanup |
 
 ---
 
@@ -142,23 +143,17 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 100 — Template Manager UI & Page Creation Flow~~ *(completed)*
 
-### Session 101 — Code Review & Cleanup
+### ~~Session 101 — Code Review & Cleanup~~ *(completed)*
 
-Post-template-system code review. Artifact hunt for retired SiteSetting keys and deleted SiteThemePage references. Widget copy/serialization consistency audit across all four copy paths. Permission gate verification for template surfaces. Flag large repeated code blocks for discussion and optional refactoring.
+### Session 102 — Stripe Payment Methods & QuickBooks Connection
 
----
+Configurable Stripe payment method types for checkout sessions (card, ACH, Link, etc.) on the Finance Settings page. QuickBooks OAuth 2.0 connection flow — connect/disconnect UI, token storage, refresh logic. No QB transaction sync yet.
 
-## Member Portal & Self-Service
+### Session 103 — QuickBooks Transaction Sync
 
-*Sessions in this group are strictly ordered — each depends on the previous.*
+One-way push of categorised transactions to QuickBooks. Core sync path and error surfacing only; advanced mapping and reconciliation views can follow post-Beta.
 
-### Household — Remaining Features
-
-Core household model built in session 071 (self-referential `contacts.household_id` FK, admin assignment, portal display, address sync). Remaining for future sessions if needed:
-
-- Member-to-member portal invite flow.
-- Household dissolution / head transfer when the head contact leaves.
-- Household-level aggregate giving and mailing deduplication (Finance sessions).
+*Before beginning: review the QuickBooks API payload structure for journal entries / sales receipts. Decide on account mapping strategy — fixed mapping vs admin-configurable.*
 
 ---
 
@@ -167,16 +162,6 @@ Core household model built in session 071 (self-referential `contacts.household_
 *Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data. The application is deposit-only — it never initiates a refund, payout, or balance transfer. All financial reversals are handled in the Stripe dashboard.*
 
 *A dedicated Financial Settings page (gated to developer/treasurer roles) holds Stripe and QuickBooks API keys. Keys are encrypted at rest.*
-
-### Stripe Payment Method Manager
-
-Allow admin to configure which Stripe payment methods are accepted (e.g. credit cards, ACH). Default to disabling Link and Klarna. At least one card-based method must remain enabled at all times — enforce this in the UI and surface the constraint on the Financial Settings help page. Requires Stripe PaymentMethod Configuration API or Products/Prices settings depending on the checkout flow in use.
-
-### QuickBooks Sync
-
-One-way push of categorised transactions to QuickBooks. Scope for Beta 1: must work correctly and reliably — doesn't need to be fancy. Core sync path and error surfacing only; advanced mapping and reconciliation views can follow post-Beta.
-
-*Before beginning: obtain the exact QuickBooks API payload structure and OAuth flow from the QuickBooks documentation. Also decide the UX treatment for the QuickBooks API key on the Financial Settings page — it is currently stored encrypted but uses no gate UX. Decision deferred to this session: does the QuickBooks key warrant the same high-friction rotation flow as Stripe secrets, or a lighter treatment? Review QuickBooks API key permissions and revocation model before deciding.*
 
 ---
 
@@ -229,6 +214,10 @@ A mode or toggle that lets the admin act on a small set of controllable test rec
 ### Help System Enhancements
 
 Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
+
+**Help docs needing body content written** (stubs exist with frontmatter + route mapping):
+
+- `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
 
 ### Code Housekeeping Notes
 
@@ -303,6 +292,18 @@ Guided first-run setup: database connection, mail provider configuration, admin 
 ### Volunteer Portal
 
 *Public self-service: signup, view shifts, log hours pending admin approval. Extends Member Portal patterns.*
+
+---
+
+## Member Portal & Self-Service
+
+### Household — Remaining Features
+
+Core household model built in session 071 (self-referential `contacts.household_id` FK, admin assignment, portal display, address sync). Remaining for future sessions if needed:
+
+- Member-to-member portal invite flow.
+- Household dissolution / head transfer when the head contact leaves.
+- Household-level aggregate giving and mailing deduplication (Finance sessions).
 
 ---
 

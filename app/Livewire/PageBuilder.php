@@ -127,15 +127,7 @@ class PageBuilder extends Component
             $this->addModalLabel = $widgetType->label . ' ' . ($count + 1);
         }
 
-        // Build default config from config_schema
-        $defaultConfig = [];
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            $defaultConfig[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
-                'toggle' => false,
-                'number' => null,
-                default  => '',
-            };
-        }
+        $defaultConfig = $widgetType->getDefaultConfig();
 
         $position = $this->insertPosition ?? count($this->blocks);
 
@@ -355,7 +347,7 @@ class PageBuilder extends Component
             'saveTemplateDescription' => 'nullable|string|max:1000',
         ]);
 
-        $definition = $this->serializeWidgetStack();
+        $definition = PageWidget::serializeStack($this->pageId);
 
         $name = $this->saveTemplateName;
 
@@ -376,36 +368,6 @@ class PageBuilder extends Component
             ->title("Template saved: {$name}")
             ->success()
             ->send();
-    }
-
-    private function serializeWidgetStack(): array
-    {
-        $rootWidgets = PageWidget::where('page_id', $this->pageId)
-            ->whereNull('parent_widget_id')
-            ->with(['widgetType', 'children.widgetType'])
-            ->orderBy('sort_order')
-            ->get();
-
-        return $rootWidgets->map(fn ($pw) => $this->serializeWidget($pw))->toArray();
-    }
-
-    private function serializeWidget(PageWidget $pw): array
-    {
-        $entry = [
-            'handle'     => $pw->widgetType?->handle,
-            'config'     => $pw->config ?? [],
-            'sort_order' => $pw->sort_order,
-        ];
-
-        if ($pw->column_index !== null) {
-            $entry['column_index'] = $pw->column_index;
-        }
-
-        if ($pw->children->isNotEmpty()) {
-            $entry['children'] = $pw->children->map(fn ($child) => $this->serializeWidget($child))->toArray();
-        }
-
-        return $entry;
     }
 
     public function render(): \Illuminate\View\View

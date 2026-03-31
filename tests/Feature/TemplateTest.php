@@ -3,7 +3,6 @@
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
-use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,10 +85,6 @@ it('scopeContent filters to content type', function () {
 // ── TemplateSeeder ──────────────────────────────────────────────────────────
 
 it('TemplateSeeder creates default page template with correct values', function () {
-    SiteSetting::set('public_primary_color', '#123456');
-    SiteSetting::set('public_heading_font', "'Inter', system-ui, sans-serif");
-    SiteSetting::set('header_bg_color', '#aabbcc');
-
     // Create system pages for header/footer
     $header = Page::factory()->create(['slug' => '_header', 'type' => 'system', 'status' => 'published']);
     $footer = Page::factory()->create(['slug' => '_footer', 'type' => 'system', 'status' => 'published']);
@@ -100,9 +95,9 @@ it('TemplateSeeder creates default page template with correct values', function 
 
     expect($default)->not->toBeNull();
     expect($default->name)->toBe('Default');
-    expect($default->primary_color)->toBe('#123456');
-    expect($default->heading_font)->toBe("'Inter', system-ui, sans-serif");
-    expect($default->header_bg_color)->toBe('#aabbcc');
+    expect($default->primary_color)->toBe('#0172ad');
+    expect($default->heading_font)->toBeNull();
+    expect($default->header_bg_color)->toBe('#ffffff');
     expect($default->header_page_id)->toBe($header->id);
     expect($default->footer_page_id)->toBe($footer->id);
 });

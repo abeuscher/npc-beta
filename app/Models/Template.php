@@ -77,6 +77,28 @@ class Template extends Model
         return static::query()->default()->value($field);
     }
 
+    /**
+     * Create a system page for a custom header or footer, copying widgets from a source page.
+     */
+    public function createChromePage(string $position, ?string $sourcePageId = null): Page
+    {
+        $slug = "_{$position}_" . substr($this->id, 0, 8);
+
+        $page = Page::create([
+            'title'     => ucfirst($position) . ' — ' . $this->name,
+            'slug'      => $slug,
+            'type'      => 'system',
+            'status'    => 'published',
+            'author_id' => auth()->id(),
+        ]);
+
+        if ($sourcePageId) {
+            PageWidget::copyBetweenPages($sourcePageId, $page->id);
+        }
+
+        return $page;
+    }
+
     // ── Scopes ──────────────────────────────────────────────────────────────
 
     public function scopeDefault($query): void

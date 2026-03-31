@@ -90,7 +90,10 @@ class CreatePage extends CreateRecord
                 'parent_widget_id' => $parentWidgetId,
                 'column_index'     => $def['column_index'] ?? null,
                 'widget_type_id'   => $widgetType->id,
+                'label'            => $def['label'] ?? null,
                 'config'           => $def['config'] ?? [],
+                'query_config'     => $def['query_config'] ?? [],
+                'style_config'     => $def['style_config'] ?? [],
                 'sort_order'       => $def['sort_order'] ?? 0,
                 'is_active'        => true,
             ]);

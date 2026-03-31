@@ -4,7 +4,6 @@ namespace App\Filament\Resources\TemplateResource\Pages;
 
 use App\Filament\Resources\TemplateResource;
 use App\Models\Page as PageModel;
-use App\Models\PageWidget;
 use App\Models\Template;
 use Filament\Actions;
 use Filament\Forms;
@@ -261,50 +260,10 @@ class EditPageTemplate extends EditRecord
 
     private function createChromePageFor(string $position): PageModel
     {
-        $slug = "_{$position}_" . substr($this->record->id, 0, 8);
-
-        $page = PageModel::create([
-            'title'     => ucfirst($position) . ' — ' . $this->record->name,
-            'slug'      => $slug,
-            'type'      => 'system',
-            'status'    => 'published',
-            'author_id' => auth()->id(),
-        ]);
-
-        // Copy widgets from the default template's header/footer
         $default = Template::page()->where('is_default', true)->first();
         $sourcePageId = $position === 'header' ? $default?->header_page_id : $default?->footer_page_id;
 
-        if ($sourcePageId) {
-            $this->copyWidgets($sourcePageId, $page->id);
-        }
-
-        return $page;
-    }
-
-    private function copyWidgets(string $sourcePageId, string $targetPageId, ?string $sourceParentId = null, ?string $targetParentId = null): void
-    {
-        $widgets = PageWidget::where('page_id', $sourcePageId)
-            ->where('parent_widget_id', $sourceParentId)
-            ->orderBy('sort_order')
-            ->get();
-
-        foreach ($widgets as $widget) {
-            $newWidget = PageWidget::create([
-                'page_id'          => $targetPageId,
-                'parent_widget_id' => $targetParentId,
-                'column_index'     => $widget->column_index,
-                'widget_type_id'   => $widget->widget_type_id,
-                'label'            => $widget->label,
-                'config'           => $widget->config,
-                'query_config'     => $widget->query_config,
-                'style_config'     => $widget->style_config,
-                'sort_order'       => $widget->sort_order,
-                'is_active'        => $widget->is_active,
-            ]);
-
-            $this->copyWidgets($sourcePageId, $targetPageId, $widget->id, $newWidget->id);
-        }
+        return $this->record->createChromePage($position, $sourcePageId);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

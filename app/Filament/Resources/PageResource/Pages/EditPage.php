@@ -7,7 +7,6 @@ use App\Filament\Pages\Settings\CmsSettingsPage;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
-use App\Models\WidgetType;
 use App\Rules\ValidHtmlSnippet;
 use Filament\Actions;
 use Filament\Forms;
@@ -68,7 +67,7 @@ class EditPage extends EditRecord
                             ->maxLength(1000),
                     ])
                     ->action(function (array $data) {
-                        $definition = $this->serializeWidgetStack($this->record->id);
+                        $definition = PageWidget::serializeStack($this->record->id);
 
                         if (empty($definition)) {
                             Notification::make()
@@ -142,33 +141,4 @@ class EditPage extends EditRecord
         ];
     }
 
-    private function serializeWidgetStack(string $pageId): array
-    {
-        $rootWidgets = PageWidget::where('page_id', $pageId)
-            ->whereNull('parent_widget_id')
-            ->with(['widgetType', 'children.widgetType'])
-            ->orderBy('sort_order')
-            ->get();
-
-        return $rootWidgets->map(fn ($pw) => $this->serializeWidget($pw))->toArray();
-    }
-
-    private function serializeWidget(PageWidget $pw): array
-    {
-        $entry = [
-            'handle'     => $pw->widgetType?->handle,
-            'config'     => $pw->config ?? [],
-            'sort_order' => $pw->sort_order,
-        ];
-
-        if ($pw->column_index !== null) {
-            $entry['column_index'] = $pw->column_index;
-        }
-
-        if ($pw->children->isNotEmpty()) {
-            $entry['children'] = $pw->children->map(fn ($child) => $this->serializeWidget($child))->toArray();
-        }
-
-        return $entry;
-    }
 }

@@ -147,15 +147,7 @@ class PageBuilderBlock extends Component
             $this->childAddLabel = $widgetType->label . ' ' . ($count + 1);
         }
 
-        $defaultConfig = [];
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            $defaultConfig[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
-                'toggle' => false,
-                'number' => null,
-                'image'  => null,
-                default  => '',
-            };
-        }
+        $defaultConfig = $widgetType->getDefaultConfig();
 
         $sortOrder = PageWidget::where('parent_widget_id', $this->blockId)
             ->where('column_index', $columnIndex)
