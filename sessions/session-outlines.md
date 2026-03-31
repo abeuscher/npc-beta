@@ -105,6 +105,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 096 | Per-Page SEO & Header Snippets |
 | 097 | Header & Footer Widget System |
 | 098 | Additional Widget Types — Calendar, Chart & Video |
+| 099 | Template System — Data Model & Migration |
 
 ---
 
@@ -136,9 +137,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 098 — Additional Widget Types~~ *(completed)*
 
-### Session 099 — Template System — Data Model & Migration
-
-Templates table unifying header/footer, colors/fonts, and SCSS into a single record. Default template seeded from current Site Theme settings. Content templates (saved widget stacks) as a second type in the same table. Per-field inheritance from default for non-default templates. Mandatory event landing pages (opt-out removed). Renderer updated to resolve template values instead of site_settings.
+### ~~Session 099 — Template System — Data Model & Migration~~ *(completed)*
 
 ### Session 100 — Template Manager UI & Page Creation Flow
 
