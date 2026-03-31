@@ -6,12 +6,23 @@
 
     @php
         use App\Models\SiteSetting;
+        use App\Models\Template;
         use App\Services\ChromeRenderer;
         use App\Services\SeoMetaGenerator;
 
-        // Pre-compute chrome (header/footer) widget data once for the entire layout
-        $__chromeHeader = ! view()->exists('custom.header') ? ChromeRenderer::render('_header') : null;
-        $__chromeFooter = ! view()->exists('custom.footer') ? ChromeRenderer::render('_footer') : null;
+        // Resolve template (shared by PageController, or fall back to default)
+        $__tpl = $__template ?? Template::query()->default()->first();
+
+        // Pre-compute chrome (header/footer) from template-resolved page IDs
+        $__headerPageId = $__tpl?->resolved('header_page_id');
+        $__footerPageId = $__tpl?->resolved('footer_page_id');
+
+        $__chromeHeader = ! view()->exists('custom.header') && $__headerPageId
+            ? ChromeRenderer::renderById($__headerPageId)
+            : (! view()->exists('custom.header') ? ChromeRenderer::render('_header') : null);
+        $__chromeFooter = ! view()->exists('custom.footer') && $__footerPageId
+            ? ChromeRenderer::renderById($__footerPageId)
+            : (! view()->exists('custom.footer') ? ChromeRenderer::render('_footer') : null);
 
         $siteName = SiteSetting::get('site_name', config('site.name', config('app.name')));
         $baseUrl  = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
@@ -81,9 +92,9 @@
     @php
         $cssVars = [];
 
-        $primaryColor = SiteSetting::get('public_primary_color');
-        $headingFont  = SiteSetting::get('public_heading_font');
-        $bodyFont     = SiteSetting::get('public_body_font');
+        $primaryColor = $__tpl?->resolved('primary_color') ?? SiteSetting::get('public_primary_color');
+        $headingFont  = $__tpl?->resolved('heading_font')  ?? SiteSetting::get('public_heading_font');
+        $bodyFont     = $__tpl?->resolved('body_font')     ?? SiteSetting::get('public_body_font');
 
         if ($primaryColor) {
             $cssVars[] = "--color-primary: {$primaryColor}";
@@ -115,11 +126,11 @@
         }
 
         // Scoped header/nav colour rules — also applied to footer nav/icons for consistency
-        $headerBgColor  = SiteSetting::get('header_bg_color');
-        $footerBgColor  = SiteSetting::get('footer_bg_color');
-        $navLinkColor   = SiteSetting::get('nav_link_color');
-        $navHoverColor  = SiteSetting::get('nav_hover_color');
-        $navActiveColor = SiteSetting::get('nav_active_color');
+        $headerBgColor  = $__tpl?->resolved('header_bg_color')  ?? SiteSetting::get('header_bg_color');
+        $footerBgColor  = $__tpl?->resolved('footer_bg_color')  ?? SiteSetting::get('footer_bg_color');
+        $navLinkColor   = $__tpl?->resolved('nav_link_color')   ?? SiteSetting::get('nav_link_color');
+        $navHoverColor  = $__tpl?->resolved('nav_hover_color')  ?? SiteSetting::get('nav_hover_color');
+        $navActiveColor = $__tpl?->resolved('nav_active_color') ?? SiteSetting::get('nav_active_color');
 
         $scopedRules = [];
         if ($headerBgColor) $scopedRules[] = "header { background: {$headerBgColor}; }";
@@ -174,28 +185,33 @@
         <link rel="stylesheet" href="{{ $__cssPath }}">
     @endforeach
 
-    {{-- Compiled SCSS from widget assets --}}
-    @if (! empty($__widgetAssets['scss']))
-        @php
-            $__scssInput = '';
-            foreach ($__widgetAssets['scss'] as $__scssPath) {
-                $__fullPath = base_path($__scssPath);
-                if (file_exists($__fullPath)) {
-                    $__scssInput .= file_get_contents($__fullPath) . "\n";
-                }
+    {{-- Compiled SCSS from widget assets + template custom SCSS --}}
+    @php
+        $__scssInput = '';
+        foreach ($__widgetAssets['scss'] ?? [] as $__scssPath) {
+            $__fullPath = base_path($__scssPath);
+            if (file_exists($__fullPath)) {
+                $__scssInput .= file_get_contents($__fullPath) . "\n";
             }
-            $__compiledCss = '';
-            if ($__scssInput) {
-                $__cacheKey = 'widget_scss_' . md5($__scssInput);
-                $__compiledCss = cache()->remember($__cacheKey, 3600, function () use ($__scssInput) {
-                    $compiler = new \ScssPhp\ScssPhp\Compiler();
-                    return $compiler->compileString($__scssInput)->getCss();
-                });
-            }
-        @endphp
-        @if ($__compiledCss)
-            <style>{!! $__compiledCss !!}</style>
-        @endif
+        }
+
+        // Append template-resolved custom SCSS
+        $__templateScss = $__tpl?->resolved('custom_scss');
+        if ($__templateScss) {
+            $__scssInput .= $__templateScss . "\n";
+        }
+
+        $__compiledCss = '';
+        if ($__scssInput) {
+            $__cacheKey = 'widget_scss_' . md5($__scssInput);
+            $__compiledCss = cache()->remember($__cacheKey, 3600, function () use ($__scssInput) {
+                $compiler = new \ScssPhp\ScssPhp\Compiler();
+                return $compiler->compileString($__scssInput)->getCss();
+            });
+        }
+    @endphp
+    @if ($__compiledCss)
+        <style>{!! $__compiledCss !!}</style>
     @endif
 
     {{-- Inline CSS collected from active page widgets + chrome widgets --}}

@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\Template;
 use App\Models\WidgetType;
 use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
@@ -58,22 +59,37 @@ class EventResource extends Resource
         // Override the auto-generated slug to include the events/ prefix.
         $page->update(['slug' => 'events/' . $event->slug]);
 
-        $widgetHandles = ['event_description', 'event_registration'];
-        $sort = 1;
+        // Try to hydrate widgets from the "Event Landing Page" content template.
+        $template = Template::where('name', 'Event Landing Page')
+            ->where('type', 'content')
+            ->first();
 
-        foreach ($widgetHandles as $handle) {
-            $widgetType = WidgetType::where('handle', $handle)->first();
+        $widgetSpecs = $template?->definition ?? [];
+
+        // Fall back to hardcoded handles if template is missing or empty.
+        if (empty($widgetSpecs)) {
+            $widgetSpecs = [
+                ['handle' => 'event_description',  'config' => [], 'sort_order' => 1],
+                ['handle' => 'event_registration', 'config' => [], 'sort_order' => 2],
+            ];
+        }
+
+        foreach ($widgetSpecs as $spec) {
+            $widgetType = WidgetType::where('handle', $spec['handle'])->first();
 
             if (! $widgetType) {
                 continue;
             }
 
+            $config = $spec['config'] ?? [];
+            $config['event_slug'] = $event->slug;
+
             PageWidget::create([
                 'page_id'        => $page->id,
                 'widget_type_id' => $widgetType->id,
                 'label'          => $widgetType->label,
-                'config'         => ['event_slug' => $event->slug],
-                'sort_order'     => $sort++,
+                'config'         => $config,
+                'sort_order'     => $spec['sort_order'] ?? 0,
                 'is_active'      => true,
             ]);
         }

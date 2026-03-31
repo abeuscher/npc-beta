@@ -6,7 +6,6 @@
 ## Git Workflow
 
 - Before writing any code, create a new branch: `git checkout -b session-###`
-- If a patch mid-session requires a separate branch, use the pattern: `session-###-patch-###`
-- **Session close always goes on a new patch branch** — create `session-###-patch-NNN` (next increment) for the close commit, even if it contains only the log and outlines. Never commit the close onto an existing branch or go back to the session branch.
-- One commit per branch — stage all changed files and commit together
-- Never push or merge — the user handles both
+- All session work — code, session log, outlines update, next-session prompt — is committed on the session branch. One commit at close; stage all changed files and commit together.
+- **Patch branches** (`session-###-patch-NNN`) are only used when a mid-session deployment is needed (e.g. testing requires the production server). Cut the patch branch from the session branch, commit the deployable changes, and return to the session branch to continue work.
+- Never push or merge — the user handles both.

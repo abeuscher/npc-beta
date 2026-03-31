@@ -234,6 +234,13 @@ class EditEvent extends EditRecord
                     $this->redirect(static::getResource()::getUrl('edit', ['record' => $event]));
                 }),
 
+            Actions\Action::make('editLandingPage')
+                ->label('Edit landing page')
+                ->icon('heroicon-o-pencil-square')
+                ->color('gray')
+                ->visible(fn () => $this->getRecord()->landing_page_id !== null)
+                ->url(fn () => \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $this->getRecord()->landing_page_id])),
+
             EmailPreviewWizardAction::make(
                 name: 'cancelEvent',
                 emailTypeName: 'Event Cancellation',

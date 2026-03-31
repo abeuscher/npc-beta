@@ -23,6 +23,27 @@ class ChromeRenderer
             ->published()
             ->first();
 
+        return static::renderPage($page);
+    }
+
+    /**
+     * Render a system page by its ID.
+     *
+     * @return array{html: string, styles: string, scripts: string, assets: array{css: string[], js: string[], scss: string[]}}|null
+     */
+    public static function renderById(string $pageId): ?array
+    {
+        $page = Page::where('id', $pageId)
+            ->where('type', 'system')
+            ->published()
+            ->first();
+
+        return static::renderPage($page);
+    }
+
+    private static function renderPage(?Page $page): ?array
+    {
+
         if (! $page) {
             return null;
         }

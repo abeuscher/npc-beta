@@ -27,7 +27,7 @@ it('createLandingPageForEvent creates a page of type event at the correct slug',
     expect($page->title)->toBe('My Event');
 });
 
-it('createLandingPageForEvent creates the three standard widgets', function () {
+it('createLandingPageForEvent creates the standard widgets', function () {
     $event = Event::factory()->create(['slug' => 'my-event']);
 
     EventResource::createLandingPageForEvent($event);
@@ -39,8 +39,7 @@ it('createLandingPageForEvent creates the three standard widgets', function () {
         ->all();
 
     expect($handles)->toContain('event_description')
-        ->toContain('event_registration')
-        ->not->toContain('event_dates');
+        ->toContain('event_registration');
 });
 
 it('createLandingPageForEvent sets landing_page_id on the event', function () {
@@ -58,7 +57,6 @@ it('createLandingPageForEvent is a no-op when landing_page_id is already set', f
 
     EventResource::createLandingPageForEvent($event);
 
-    // No new page should have been created for this event
     expect(Page::where('slug', 'events/my-event')->exists())->toBeFalse();
     expect($event->fresh()->landing_page_id)->toBe($existing->id);
 });

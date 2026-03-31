@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Resources\EventResource;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -206,31 +207,11 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 
     $event = Event::factory()->create(['title' => 'Test Event', 'slug' => 'test-event']);
 
-    $page = Page::factory()->create([
-        'title'        => $event->title,
-        'status' => 'draft',
-        'type'         => 'event',
-        'author_id'    => $event->author_id,
-    ]);
-    $page->update(['slug' => 'events/' . $event->slug]);
+    EventResource::createLandingPageForEvent($event);
 
-    $widgetHandles = ['event_description', 'event_registration'];
-    $sort = 1;
+    $page = Page::find($event->fresh()->landing_page_id);
 
-    foreach ($widgetHandles as $handle) {
-        $widgetType = WidgetType::where('handle', $handle)->first();
-        PageWidget::create([
-            'page_id'        => $page->id,
-            'widget_type_id' => $widgetType->id,
-            'label'          => $widgetType->label,
-            'config'         => ['event_slug' => $event->slug],
-            'sort_order'     => $sort++,
-            'is_active'      => true,
-        ]);
-    }
-
-    $event->update(['landing_page_id' => $page->id]);
-
+    expect($page)->not->toBeNull();
     expect($page->slug)->toBe('events/test-event');
     expect($page->type)->toBe('event');
     expect(PageWidget::where('page_id', $page->id)->count())->toBe(2);

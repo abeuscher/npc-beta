@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\Template;
 use App\Services\InlineImageRenderer;
 use App\Services\PageContext;
 use App\Services\WidgetDataResolver;
@@ -48,6 +49,17 @@ class PageController extends Controller
     {
         $pageContext = new PageContext($page);
         View::share('pageContext', $pageContext);
+
+        // Resolve the page's template (explicit or default)
+        $template = $page->template_id
+            ? Template::find($page->template_id)
+            : null;
+
+        if (! $template) {
+            $template = Template::query()->default()->first();
+        }
+
+        View::share('__template', $template);
 
         $pageWidgets = $page->pageWidgets()
             ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])

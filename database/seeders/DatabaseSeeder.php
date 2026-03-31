@@ -146,6 +146,7 @@ class DatabaseSeeder extends Seeder
         $this->call(BasePageSeeder::class);
         $this->call(PortalPageSeeder::class);
         $this->call(SystemPageSeeder::class);
+        $this->call(TemplateSeeder::class);
 
         // ── System collections (all environments) ────────────────────────────
         $this->seedSystemCollections();

@@ -34,6 +34,7 @@ class Page extends Model
         'custom_fields',
         'status',
         'published_at',
+        'template_id',
     ];
 
     protected $attributes = [
@@ -73,6 +74,11 @@ class Page extends Model
     public function pageWidgets(): HasMany
     {
         return $this->hasMany(PageWidget::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(Template::class);
     }
 
     public function tags(): MorphToMany
