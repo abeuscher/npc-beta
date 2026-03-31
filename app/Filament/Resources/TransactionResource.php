@@ -89,6 +89,8 @@ class TransactionResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $qbConnected = app(QuickBooksAuth::class)->isConnected();
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('contact.display_name')
@@ -123,8 +125,8 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('qb_status')
                     ->label('QuickBooks')
                     ->badge()
-                    ->state(function (Transaction $record): string {
-                        if (! app(QuickBooksAuth::class)->isConnected()) {
+                    ->state(function (Transaction $record) use ($qbConnected): string {
+                        if (! $qbConnected) {
                             return 'N/A';
                         }
                         if (filled($record->quickbooks_id)) {
@@ -213,9 +215,9 @@ class TransactionResource extends Resource
                         SyncTransactionToQuickBooks::dispatch($record);
                         Notification::make()->title('Sync job dispatched')->success()->send();
                     })
-                    ->hidden(fn (Transaction $record): bool =>
+                    ->hidden(fn (Transaction $record) use ($qbConnected): bool =>
                         filled($record->quickbooks_id)
-                        || ! app(QuickBooksAuth::class)->isConnected()
+                        || ! $qbConnected
                         || ! auth()->user()?->can('manage_financial_settings')
                     ),
 
