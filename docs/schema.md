@@ -135,6 +135,7 @@ Individual people in the CRM — donors, volunteers, members, etc.
 | import_session_id | uuid | yes | FK→import_sessions, nullOnDelete |
 | custom_data | jsonb | yes | SchemalessAttributes; written by importer |
 | custom_fields | jsonb | yes | User-defined custom field values |
+| quickbooks_customer_id | string | yes | QB Customer ID, cached after first match/create |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 | deleted_at | timestamp | yes | Soft delete |

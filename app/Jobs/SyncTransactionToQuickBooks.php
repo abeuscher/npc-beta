@@ -38,9 +38,18 @@ class SyncTransactionToQuickBooks implements ShouldQueue
         try {
             $client = app(QuickBooksClient::class);
 
+            // Resolve QB Customer for attribution
+            $qbCustomerId = null;
+            if ($this->transaction->contact_id) {
+                $this->transaction->loadMissing('contact');
+                if ($this->transaction->contact) {
+                    $qbCustomerId = $client->findOrCreateCustomer($this->transaction->contact);
+                }
+            }
+
             $qbId = $this->transaction->direction === 'out'
-                ? $client->createRefundReceipt($this->transaction)
-                : $client->createSalesReceipt($this->transaction);
+                ? $client->createRefundReceipt($this->transaction, $qbCustomerId)
+                : $client->createSalesReceipt($this->transaction, $qbCustomerId);
 
             $this->transaction->update([
                 'quickbooks_id' => $qbId,

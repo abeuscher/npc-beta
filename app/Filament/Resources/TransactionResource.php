@@ -143,7 +143,12 @@ class TransactionResource extends Resource
                     })
                     ->tooltip(function (Transaction $record): ?string {
                         if (filled($record->qb_synced_at)) {
-                            return 'Synced ' . $record->qb_synced_at->format('M j, Y g:i A');
+                            $tip = 'Synced ' . $record->qb_synced_at->format('M j, Y g:i A');
+                            $qbCustId = $record->contact?->quickbooks_customer_id;
+                            if (filled($qbCustId)) {
+                                $tip .= " — QB Customer #{$qbCustId}";
+                            }
+                            return $tip;
                         }
                         if (filled($record->qb_sync_error)) {
                             return mb_substr($record->qb_sync_error, 0, 200);

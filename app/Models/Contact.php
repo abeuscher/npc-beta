@@ -61,6 +61,7 @@ class Contact extends Model
         'country',
         'custom_data',       // system-managed: SchemalessAttributes, written by importer
         'custom_fields',
+        'quickbooks_customer_id',
         'do_not_contact',
         'mailing_list_opt_in',
         'source',            // system-managed: set at creation (manual/import/web_form/api)

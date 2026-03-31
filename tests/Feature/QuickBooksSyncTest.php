@@ -120,9 +120,10 @@ it('creates a sales receipt for inbound transactions', function () {
     ]);
 
     $mock = Mockery::mock(QuickBooksClient::class);
+    $mock->shouldReceive('findOrCreateCustomer')->andReturn(null);
     $mock->shouldReceive('createSalesReceipt')
         ->once()
-        ->with(Mockery::on(fn ($t) => $t->id === $transaction->id))
+        ->with(Mockery::on(fn ($t) => $t->id === $transaction->id), null)
         ->andReturn('QB-SR-123');
     $mock->shouldNotReceive('createRefundReceipt');
     app()->instance(QuickBooksClient::class, $mock);
@@ -147,9 +148,10 @@ it('creates a refund receipt for outbound transactions', function () {
     ]);
 
     $mock = Mockery::mock(QuickBooksClient::class);
+    $mock->shouldReceive('findOrCreateCustomer')->andReturn(null);
     $mock->shouldReceive('createRefundReceipt')
         ->once()
-        ->with(Mockery::on(fn ($t) => $t->id === $transaction->id))
+        ->with(Mockery::on(fn ($t) => $t->id === $transaction->id), null)
         ->andReturn('QB-RR-456');
     $mock->shouldNotReceive('createSalesReceipt');
     app()->instance(QuickBooksClient::class, $mock);
@@ -174,6 +176,7 @@ it('stores sync error on failure without setting quickbooks_id', function () {
     ]);
 
     $mock = Mockery::mock(QuickBooksClient::class);
+    $mock->shouldReceive('findOrCreateCustomer')->andReturn(null);
     $mock->shouldReceive('createSalesReceipt')
         ->once()
         ->andThrow(new RuntimeException('QuickBooks API unavailable'));
@@ -197,6 +200,7 @@ it('redacts bearer tokens from sync error messages', function () {
     ]);
 
     $mock = Mockery::mock(QuickBooksClient::class);
+    $mock->shouldReceive('findOrCreateCustomer')->andReturn(null);
     $mock->shouldReceive('createSalesReceipt')
         ->once()
         ->andThrow(new RuntimeException('401 Unauthorized Bearer eyJhbGciOiJSUz...secret_token'));
@@ -220,6 +224,7 @@ it('clears previous sync error on successful retry', function () {
     ]);
 
     $mock = Mockery::mock(QuickBooksClient::class);
+    $mock->shouldReceive('findOrCreateCustomer')->andReturn(null);
     $mock->shouldReceive('createSalesReceipt')
         ->once()
         ->andReturn('QB-SR-789');

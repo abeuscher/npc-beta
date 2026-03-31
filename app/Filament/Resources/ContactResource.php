@@ -7,6 +7,7 @@ use App\Forms\Components\TagSelect;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
 use App\Models\PortalAccount;
+use App\Services\QuickBooks\QuickBooksAuth;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -203,6 +204,29 @@ class ContactResource extends Resource
                             ->preload()
                             ->nullable(),
                     ]),
+
+                Forms\Components\Section::make('QuickBooks')
+                    ->collapsible()
+                    ->schema(function (?Contact $record): array {
+                        if (! $record) {
+                            return [];
+                        }
+
+                        if (filled($record->quickbooks_customer_id)) {
+                            return [
+                                Forms\Components\Placeholder::make('qb_status')
+                                    ->label('Status')
+                                    ->content("Linked — QB Customer #{$record->quickbooks_customer_id}"),
+                            ];
+                        }
+
+                        return [
+                            Forms\Components\Placeholder::make('qb_status')
+                                ->label('Status')
+                                ->content('Not linked'),
+                        ];
+                    })
+                    ->hidden(fn () => ! app(QuickBooksAuth::class)->isConnected()),
 
             ])->columnSpan(1),
 

@@ -2,9 +2,12 @@
 
 namespace App\Services\QuickBooks;
 
+use App\Models\Contact;
 use App\Models\SiteSetting;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\Log;
 use QuickBooksOnline\API\DataService\DataService;
+use QuickBooksOnline\API\Facades\Customer;
 use QuickBooksOnline\API\Facades\RefundReceipt;
 use QuickBooksOnline\API\Facades\SalesReceipt;
 use RuntimeException;
@@ -20,14 +23,14 @@ class QuickBooksClient
         $this->auth = app(QuickBooksAuth::class);
     }
 
-    public function createSalesReceipt(Transaction $transaction): string
+    public function createSalesReceipt(Transaction $transaction, ?string $qbCustomerId = null): string
     {
         $ds = $this->getDataService();
         $incomeAccountId = $this->getIncomeAccountId();
 
         $memo = $this->buildMemo($transaction);
 
-        $receipt = SalesReceipt::create([
+        $data = [
             'TxnDate' => $transaction->occurred_at->format('Y-m-d'),
             'PrivateNote' => $memo,
             'Line' => [[
@@ -48,7 +51,13 @@ class QuickBooksClient
             'DepositToAccountRef' => [
                 'value' => $incomeAccountId,
             ],
-        ]);
+        ];
+
+        if ($qbCustomerId) {
+            $data['CustomerRef'] = ['value' => $qbCustomerId];
+        }
+
+        $receipt = SalesReceipt::create($data);
 
         $result = $ds->Add($receipt);
         $error = $ds->getLastError();
@@ -62,14 +71,14 @@ class QuickBooksClient
         return (string) $result->Id;
     }
 
-    public function createRefundReceipt(Transaction $transaction): string
+    public function createRefundReceipt(Transaction $transaction, ?string $qbCustomerId = null): string
     {
         $ds = $this->getDataService();
         $incomeAccountId = $this->getIncomeAccountId();
 
         $memo = $this->buildMemo($transaction);
 
-        $receipt = RefundReceipt::create([
+        $data = [
             'TxnDate' => $transaction->occurred_at->format('Y-m-d'),
             'PrivateNote' => $memo,
             'Line' => [[
@@ -90,7 +99,13 @@ class QuickBooksClient
             'DepositToAccountRef' => [
                 'value' => $incomeAccountId,
             ],
-        ]);
+        ];
+
+        if ($qbCustomerId) {
+            $data['CustomerRef'] = ['value' => $qbCustomerId];
+        }
+
+        $receipt = RefundReceipt::create($data);
 
         $result = $ds->Add($receipt);
         $error = $ds->getLastError();
@@ -133,6 +148,106 @@ class QuickBooksClient
         asort($result);
 
         return $result;
+    }
+
+    public function findOrCreateCustomer(Contact $contact): ?string
+    {
+        if (empty($contact->email)) {
+            return null;
+        }
+
+        // Return cached ID if already linked
+        if (filled($contact->quickbooks_customer_id)) {
+            return $contact->quickbooks_customer_id;
+        }
+
+        $ds = $this->getDataService();
+
+        // Query QB for existing customer by email
+        $email = str_replace("'", "\\'", $contact->email);
+        $customers = $ds->Query("SELECT * FROM Customer WHERE PrimaryEmailAddr = '{$email}' MAXRESULTS 10");
+        $error = $ds->getLastError();
+
+        if ($error) {
+            throw new RuntimeException(
+                'QuickBooks Customer query failed: ' . $error->getResponseBody()
+            );
+        }
+
+        // Use first active match if found
+        if ($customers) {
+            foreach ($customers as $customer) {
+                if (($customer->Active ?? true) !== false) {
+                    $qbCustomerId = (string) $customer->Id;
+
+                    if (count($customers) > 1) {
+                        Log::warning('QuickBooks: multiple customers found for email, using first active match', [
+                            'contact_id' => $contact->id,
+                            'email' => $contact->email,
+                            'qb_customer_id' => $qbCustomerId,
+                        ]);
+                    }
+
+                    $contact->update(['quickbooks_customer_id' => $qbCustomerId]);
+
+                    return $qbCustomerId;
+                }
+            }
+        }
+
+        // No match — create a new QB Customer
+        $displayName = trim("{$contact->first_name} {$contact->last_name}");
+        if (empty($displayName)) {
+            $displayName = $contact->email;
+        }
+
+        $qbCustomerId = $this->createQbCustomer($ds, $contact, $displayName);
+
+        $contact->update(['quickbooks_customer_id' => $qbCustomerId]);
+
+        return $qbCustomerId;
+    }
+
+    private function createQbCustomer(DataService $ds, Contact $contact, string $displayName): string
+    {
+        $customerData = [
+            'DisplayName' => $displayName,
+            'GivenName' => $contact->first_name ?? '',
+            'FamilyName' => $contact->last_name ?? '',
+            'PrimaryEmailAddr' => [
+                'Address' => $contact->email,
+            ],
+        ];
+
+        $customer = Customer::create($customerData);
+        $result = $ds->Add($customer);
+        $error = $ds->getLastError();
+
+        if ($error) {
+            $body = $error->getResponseBody();
+
+            // Handle DisplayName uniqueness collision — retry with email suffix
+            if (str_contains($body, 'Duplicate Name Exists') || str_contains($body, 'already been used')) {
+                $customerData['DisplayName'] = "{$displayName} ({$contact->email})";
+                $customer = Customer::create($customerData);
+                $result = $ds->Add($customer);
+                $error = $ds->getLastError();
+
+                if ($error) {
+                    throw new RuntimeException(
+                        'QuickBooks Customer creation failed on retry: ' . $error->getResponseBody()
+                    );
+                }
+
+                return (string) $result->Id;
+            }
+
+            throw new RuntimeException(
+                'QuickBooks Customer creation failed: ' . $body
+            );
+        }
+
+        return (string) $result->Id;
     }
 
     private function getDataService(): DataService
