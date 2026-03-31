@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
+use App\Models\Template;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -79,6 +80,25 @@ class PageResource extends Resource
                         ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system')
                         ->columnSpanFull(),
                 ],
+                templateSection: Forms\Components\Section::make('Templates')
+                    ->schema([
+                        // Page template — selectable on create and edit.
+                        Forms\Components\Select::make('template_id')
+                            ->label('Page Template')
+                            ->options(fn () => Template::page()->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id'))
+                            ->default(fn () => Template::page()->where('is_default', true)->value('id'))
+                            ->helperText('Header, footer, and styling.')
+                            ->columnSpanFull(),
+
+                        // Content template — create only, used to prepopulate widgets.
+                        Forms\Components\Select::make('content_template_id')
+                            ->label('Content Template')
+                            ->options(fn () => collect(['' => 'Blank'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                            ->default('')
+                            ->helperText('Widget preset — applied once at creation.')
+                            ->hiddenOn('edit')
+                            ->columnSpanFull(),
+                    ]),
                 withSeo: true,
                 pageBuilderProps: fn ($record) => ['pageId' => $record->id],
             )

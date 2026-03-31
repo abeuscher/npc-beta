@@ -106,6 +106,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 097 | Header & Footer Widget System |
 | 098 | Additional Widget Types — Calendar, Chart & Video |
 | 099 | Template System — Data Model & Migration |
+| 100 | Template Manager UI & Page Creation Flow |
 
 ---
 
@@ -139,9 +140,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 099 — Template System — Data Model & Migration~~ *(completed)*
 
-### Session 100 — Template Manager UI & Page Creation Flow
+### ~~Session 100 — Template Manager UI & Page Creation Flow~~ *(completed)*
 
-Template Manager admin page under CMS with two tabs: Content Templates and Page Templates. Page template editor with inherit-from-default toggles per section. Content/page template picker in the page creation flow. "Save as Content Template" action on the page builder. Page template changeable on edit (non-destructive). Retire Site Theme page — all functionality moves to Templates.
+### Session 101 — Code Review & Cleanup
+
+Post-template-system code review. Artifact hunt for retired SiteSetting keys and deleted SiteThemePage references. Widget copy/serialization consistency audit across all four copy paths. Permission gate verification for template surfaces. Flag large repeated code blocks for discussion and optional refactoring.
 
 ---
 

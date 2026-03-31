@@ -28,9 +28,10 @@ trait HasPageBuilderForm
         array $extraTitleFields = [],
         array $uniqueSections = [],
         bool $withSeo = true,
-        ?callable $pageBuilderProps = null
+        ?callable $pageBuilderProps = null,
+        ?Forms\Components\Section $templateSection = null,
     ): array {
-        // ── Row 1: Page Name | Settings | Tags — 3 equal columns ─────────
+        // ── Row 1: Page Name | [Templates] | Settings | Tags ─────────────
         $pageNameSection = CmsFormFields::pageName($type);
 
         // Append any extra fields (type selector, system slug display) to the Page Name section
@@ -41,13 +42,26 @@ trait HasPageBuilderForm
             ));
         }
 
-        $schema = [
-            Forms\Components\Group::make([
-                $pageNameSection->columnSpan(1),
-                CmsFormFields::settings($type)->columnSpan(1),
-                CmsFormFields::tags($tagType)->columnSpan(1),
-            ])->columns(3)->columnSpanFull(),
-        ];
+        if ($templateSection) {
+            // 4-3-3-2 layout: Page Name | Templates | Settings | Tags
+            $schema = [
+                Forms\Components\Group::make([
+                    $pageNameSection->columnSpan(4),
+                    $templateSection->columnSpan(3),
+                    CmsFormFields::settings($type)->columnSpan(3),
+                    CmsFormFields::tags($tagType)->columnSpan(2),
+                ])->columns(12)->columnSpanFull(),
+            ];
+        } else {
+            // Original 3-column layout
+            $schema = [
+                Forms\Components\Group::make([
+                    $pageNameSection->columnSpan(1),
+                    CmsFormFields::settings($type)->columnSpan(1),
+                    CmsFormFields::tags($tagType)->columnSpan(1),
+                ])->columns(3)->columnSpanFull(),
+            ];
+        }
 
         // ── Unique sections (event location, meeting, registration, etc.) ─
         foreach ($uniqueSections as $section) {

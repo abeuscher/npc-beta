@@ -92,9 +92,9 @@
     @php
         $cssVars = [];
 
-        $primaryColor = $__tpl?->resolved('primary_color') ?? SiteSetting::get('public_primary_color');
-        $headingFont  = $__tpl?->resolved('heading_font')  ?? SiteSetting::get('public_heading_font');
-        $bodyFont     = $__tpl?->resolved('body_font')     ?? SiteSetting::get('public_body_font');
+        $primaryColor = $__tpl?->resolved('primary_color');
+        $headingFont  = $__tpl?->resolved('heading_font');
+        $bodyFont     = $__tpl?->resolved('body_font');
 
         if ($primaryColor) {
             $cssVars[] = "--color-primary: {$primaryColor}";
@@ -126,11 +126,11 @@
         }
 
         // Scoped header/nav colour rules — also applied to footer nav/icons for consistency
-        $headerBgColor  = $__tpl?->resolved('header_bg_color')  ?? SiteSetting::get('header_bg_color');
-        $footerBgColor  = $__tpl?->resolved('footer_bg_color')  ?? SiteSetting::get('footer_bg_color');
-        $navLinkColor   = $__tpl?->resolved('nav_link_color')   ?? SiteSetting::get('nav_link_color');
-        $navHoverColor  = $__tpl?->resolved('nav_hover_color')  ?? SiteSetting::get('nav_hover_color');
-        $navActiveColor = $__tpl?->resolved('nav_active_color') ?? SiteSetting::get('nav_active_color');
+        $headerBgColor  = $__tpl?->resolved('header_bg_color');
+        $footerBgColor  = $__tpl?->resolved('footer_bg_color');
+        $navLinkColor   = $__tpl?->resolved('nav_link_color');
+        $navHoverColor  = $__tpl?->resolved('nav_hover_color');
+        $navActiveColor = $__tpl?->resolved('nav_active_color');
 
         $scopedRules = [];
         if ($headerBgColor) $scopedRules[] = "header { background: {$headerBgColor}; }";

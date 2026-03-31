@@ -4,7 +4,10 @@ namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
 use App\Filament\Pages\Settings\CmsSettingsPage;
+use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\Template;
+use App\Models\WidgetType;
 use App\Rules\ValidHtmlSnippet;
 use Filament\Actions;
 use Filament\Forms;
@@ -50,6 +53,49 @@ class EditPage extends EditRecord
                 ->hidden(fn () => $this->record->type === 'system'),
 
             Actions\ActionGroup::make([
+                Actions\Action::make('saveAsContentTemplate')
+                    ->label('Save Block Layout as Template')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->form([
+                        Forms\Components\TextInput::make('template_name')
+                            ->label('Template Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        Forms\Components\Textarea::make('template_description')
+                            ->label('Description')
+                            ->rows(2)
+                            ->maxLength(1000),
+                    ])
+                    ->action(function (array $data) {
+                        $definition = $this->serializeWidgetStack($this->record->id);
+
+                        if (empty($definition)) {
+                            Notification::make()
+                                ->title('No widgets to save')
+                                ->body('This page has no widgets. Add blocks first.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+
+                        Template::create([
+                            'name'        => $data['template_name'],
+                            'type'        => 'content',
+                            'description' => $data['template_description'] ?: null,
+                            'definition'  => $definition,
+                            'is_default'  => false,
+                            'created_by'  => auth()->id(),
+                        ]);
+
+                        Notification::make()
+                            ->title("Template saved: {$data['template_name']}")
+                            ->success()
+                            ->send();
+                    })
+                    ->modalHeading('Save Block Layout as Content Template')
+                    ->modalSubmitActionLabel('Save Template'),
+
                 Actions\Action::make('editSnippets')
                     ->label('Edit Header & Footer Snippets')
                     ->icon('heroicon-o-code-bracket')
@@ -94,5 +140,35 @@ class EditPage extends EditRecord
                 ->icon('heroicon-m-ellipsis-vertical')
                 ->tooltip('More actions'),
         ];
+    }
+
+    private function serializeWidgetStack(string $pageId): array
+    {
+        $rootWidgets = PageWidget::where('page_id', $pageId)
+            ->whereNull('parent_widget_id')
+            ->with(['widgetType', 'children.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        return $rootWidgets->map(fn ($pw) => $this->serializeWidget($pw))->toArray();
+    }
+
+    private function serializeWidget(PageWidget $pw): array
+    {
+        $entry = [
+            'handle'     => $pw->widgetType?->handle,
+            'config'     => $pw->config ?? [],
+            'sort_order' => $pw->sort_order,
+        ];
+
+        if ($pw->column_index !== null) {
+            $entry['column_index'] = $pw->column_index;
+        }
+
+        if ($pw->children->isNotEmpty()) {
+            $entry['children'] = $pw->children->map(fn ($child) => $this->serializeWidget($child))->toArray();
+        }
+
+        return $entry;
     }
 }

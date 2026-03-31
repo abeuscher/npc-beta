@@ -5,7 +5,9 @@ namespace App\Livewire;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\Template;
 use App\Models\WidgetType;
+use Filament\Notifications\Notification;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -28,6 +30,11 @@ class PageBuilder extends Component
     public bool $showAddModal = false;
     public ?int $insertPosition = null;
     public string $addModalLabel = '';
+
+    // Save as template modal
+    public bool $showSaveTemplateModal = false;
+    public string $saveTemplateName = '';
+    public string $saveTemplateDescription = '';
 
     public function mount(string $pageId = ''): void
     {
@@ -328,6 +335,77 @@ class PageBuilder extends Component
 
         // Dispatch a browser event so each block component can update its selected highlight.
         $this->dispatch('block-selected', blockId: $blockId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Save as Content Template
+    // -------------------------------------------------------------------------
+
+    public function openSaveTemplateModal(): void
+    {
+        $this->saveTemplateName = '';
+        $this->saveTemplateDescription = '';
+        $this->showSaveTemplateModal = true;
+    }
+
+    public function saveAsTemplate(): void
+    {
+        $this->validate([
+            'saveTemplateName' => 'required|string|max:255',
+            'saveTemplateDescription' => 'nullable|string|max:1000',
+        ]);
+
+        $definition = $this->serializeWidgetStack();
+
+        $name = $this->saveTemplateName;
+
+        Template::create([
+            'name'        => $name,
+            'type'        => 'content',
+            'description' => $this->saveTemplateDescription ?: null,
+            'definition'  => $definition,
+            'is_default'  => false,
+            'created_by'  => auth()->id(),
+        ]);
+
+        $this->showSaveTemplateModal = false;
+        $this->saveTemplateName = '';
+        $this->saveTemplateDescription = '';
+
+        Notification::make()
+            ->title("Template saved: {$name}")
+            ->success()
+            ->send();
+    }
+
+    private function serializeWidgetStack(): array
+    {
+        $rootWidgets = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->with(['widgetType', 'children.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        return $rootWidgets->map(fn ($pw) => $this->serializeWidget($pw))->toArray();
+    }
+
+    private function serializeWidget(PageWidget $pw): array
+    {
+        $entry = [
+            'handle'     => $pw->widgetType?->handle,
+            'config'     => $pw->config ?? [],
+            'sort_order' => $pw->sort_order,
+        ];
+
+        if ($pw->column_index !== null) {
+            $entry['column_index'] = $pw->column_index;
+        }
+
+        if ($pw->children->isNotEmpty()) {
+            $entry['children'] = $pw->children->map(fn ($child) => $this->serializeWidget($child))->toArray();
+        }
+
+        return $entry;
     }
 
     public function render(): \Illuminate\View\View

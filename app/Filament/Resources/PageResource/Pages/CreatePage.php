@@ -4,13 +4,18 @@ namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
 use App\Models\Page;
+use App\Models\PageWidget;
 use App\Models\SiteSetting;
+use App\Models\Template;
+use App\Models\WidgetType;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
 
 class CreatePage extends CreateRecord
 {
     protected static string $resource = PageResource::class;
+
+    public ?string $contentTemplateId = null;
 
     public function getTitle(): string
     {
@@ -26,6 +31,10 @@ class CreatePage extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // Extract content template ID and remove from data (not a real column)
+        $this->contentTemplateId = $data['content_template_id'] ?? null;
+        unset($data['content_template_id']);
+
         $base = Str::slug($data['title']);
         $slug = $base;
         $i    = 2;
@@ -50,5 +59,46 @@ class CreatePage extends CreateRecord
         }
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        if (! $this->contentTemplateId) {
+            return;
+        }
+
+        $template = Template::content()->find($this->contentTemplateId);
+
+        if (! $template || empty($template->definition)) {
+            return;
+        }
+
+        $this->hydrateWidgets($this->record, $template->definition);
+    }
+
+    private function hydrateWidgets(Page $page, array $definitions, ?string $parentWidgetId = null): void
+    {
+        foreach ($definitions as $def) {
+            $widgetType = WidgetType::where('handle', $def['handle'] ?? '')->first();
+
+            if (! $widgetType) {
+                continue;
+            }
+
+            $widget = PageWidget::create([
+                'page_id'          => $page->id,
+                'parent_widget_id' => $parentWidgetId,
+                'column_index'     => $def['column_index'] ?? null,
+                'widget_type_id'   => $widgetType->id,
+                'config'           => $def['config'] ?? [],
+                'sort_order'       => $def['sort_order'] ?? 0,
+                'is_active'        => true,
+            ]);
+
+            // Recursively create nested children (for column widgets)
+            if (! empty($def['children'])) {
+                $this->hydrateWidgets($page, $def['children'], $widget->id);
+            }
+        }
     }
 }

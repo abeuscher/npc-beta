@@ -2,6 +2,7 @@
 
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\Template;
 use App\Models\User;
 use App\Models\WidgetType;
 use App\Services\ChromeRenderer;
@@ -222,12 +223,13 @@ it('renders widget-driven footer when widgets exist', function () {
 
 it('hides Header and Footer tabs from users without edit_site_chrome permission', function () {
     $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $pt = Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
     $user = User::factory()->create();
     $user->givePermissionTo('view_any_page');
 
     $response = $this->actingAs($user)
-        ->get('/admin/site-theme-page');
+        ->get(\App\Filament\Resources\TemplateResource::getUrl('edit-page', ['record' => $pt]));
 
     $response->assertDontSee("tab = 'header'", false);
     $response->assertDontSee("tab = 'footer'", false);
@@ -235,12 +237,13 @@ it('hides Header and Footer tabs from users without edit_site_chrome permission'
 
 it('shows Header and Footer tabs to users with edit_site_chrome permission', function () {
     $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $pt = Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
     $user = User::factory()->create();
     $user->givePermissionTo(['view_any_page', 'edit_site_chrome']);
 
     $response = $this->actingAs($user)
-        ->get('/admin/site-theme-page')
+        ->get(\App\Filament\Resources\TemplateResource::getUrl('edit-page', ['record' => $pt]))
         ->assertOk();
 
     $response->assertSee("tab = 'header'", false);

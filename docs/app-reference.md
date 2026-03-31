@@ -56,7 +56,9 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Collections (list — custom collections) | `CollectionResource.php` |
 | Collection Manager (list — content collections) | `ContentCollectionResource.php` |
 | Forms (list) | `FormResource.php` |
-| Site Theme | `Filament/Pages/SiteThemePage.php` |
+| Templates (list) | `TemplateResource.php` |
+| Edit Content Template | `TemplateResource/Pages/EditContentTemplate.php` |
+| Edit Page Template | `TemplateResource/Pages/EditPageTemplate.php` |
 | CMS Settings | `Filament/Pages/Settings/CmsSettingsPage.php` |
 
 ### Finance group
