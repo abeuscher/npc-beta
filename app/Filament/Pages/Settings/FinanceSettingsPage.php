@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Settings;
 use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
 use App\Services\QuickBooks\QuickBooksAuth;
+use App\Services\QuickBooks\QuickBooksClient;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -62,6 +63,7 @@ class FinanceSettingsPage extends Page
         $this->form->fill([
             'stripe_publishable_key'      => SiteSetting::get('stripe_publishable_key', ''),
             'stripe_payment_method_types' => SiteSetting::get('stripe_payment_method_types') ?? ['card'],
+            'qb_income_account_id'        => SiteSetting::get('qb_income_account_id', ''),
         ]);
     }
 
@@ -130,6 +132,11 @@ class FinanceSettingsPage extends Page
         $methods = $this->data['stripe_payment_method_types'] ?? null;
         if (is_array($methods)) {
             $this->savePaymentMethodTypes($methods);
+        }
+
+        $incomeAccount = $this->data['qb_income_account_id'] ?? null;
+        if ($incomeAccount !== null) {
+            $this->saveIncomeAccountSetting($incomeAccount);
         }
     }
 
@@ -303,6 +310,8 @@ class FinanceSettingsPage extends Page
                             }),
                     ]),
                 ]);
+
+            $sections[] = $this->quickBooksSyncSection();
         } elseif ($clientIdConfigured && $clientSecretConfigured) {
             $sections[] = Forms\Components\Section::make('QuickBooks — Connection')
                 ->schema([
@@ -326,6 +335,41 @@ class FinanceSettingsPage extends Page
         return $sections;
     }
 
+    private function quickBooksSyncSection(): Forms\Components\Section
+    {
+        $accounts = Cache::remember('qb_income_accounts', 3600, function () {
+            try {
+                return app(QuickBooksClient::class)->getIncomeAccounts();
+            } catch (\Throwable) {
+                return [];
+            }
+        });
+
+        return Forms\Components\Section::make('QuickBooks — Transaction Sync')
+            ->description('All synced transactions will be posted to the selected income account in QuickBooks.')
+            ->schema([
+                Forms\Components\Select::make('qb_income_account_id')
+                    ->label('Income Account')
+                    ->options($accounts)
+                    ->placeholder($accounts ? 'Select an income account' : 'No accounts available — try refreshing')
+                    ->helperText('Completed payments and refunds are automatically synced to this account. Sync is disabled until an account is selected.'),
+
+                Forms\Components\Actions::make([
+                    Forms\Components\Actions\Action::make('qb_refresh_accounts')
+                        ->label('Refresh Accounts')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('gray')
+                        ->action(function (): void {
+                            Cache::forget('qb_income_accounts');
+
+                            Notification::make()->title('Account list refreshed')->success()->send();
+
+                            $this->redirect(static::getUrl());
+                        }),
+                ]),
+            ]);
+    }
+
     protected function getFormActions(): array
     {
         return [
@@ -341,6 +385,8 @@ class FinanceSettingsPage extends Page
 
         SiteSetting::set('stripe_publishable_key', $data['stripe_publishable_key'] ?? '');
         $this->savePaymentMethodTypes($data['stripe_payment_method_types'] ?? ['card']);
+
+        $this->saveIncomeAccountSetting($data['qb_income_account_id'] ?? '');
 
         Artisan::call('config:clear');
 
@@ -368,5 +414,21 @@ class FinanceSettingsPage extends Page
             ]);
         }
         Cache::forget('site_setting:stripe_payment_method_types');
+    }
+
+    private function saveIncomeAccountSetting(string $value): void
+    {
+        $setting = SiteSetting::where('key', 'qb_income_account_id')->first();
+        if ($setting) {
+            $setting->update(['value' => $value ?: null]);
+        } else {
+            SiteSetting::create([
+                'key'   => 'qb_income_account_id',
+                'value' => $value ?: null,
+                'group' => 'finance',
+                'type'  => 'string',
+            ]);
+        }
+        Cache::forget('site_setting:qb_income_account_id');
     }
 }

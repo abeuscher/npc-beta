@@ -1042,6 +1042,8 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | status | string | no | default: 'pending'; values: pending, completed, failed |
 | stripe_id | string | yes | |
 | quickbooks_id | string | yes | |
+| qb_sync_error | text | yes | Last sync error message; cleared on success |
+| qb_synced_at | timestamp | yes | Set when QB sync succeeds |
 | occurred_at | timestamp | no | default: current |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

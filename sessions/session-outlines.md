@@ -109,6 +109,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 100 | Template Manager UI & Page Creation Flow |
 | 101 | Code Review & Cleanup |
 | 102 | Stripe Payment Methods & QuickBooks Connection |
+| 103 | QuickBooks Transaction Sync |
 
 ---
 
@@ -148,11 +149,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ### ~~Session 102 — Stripe Payment Methods & QuickBooks Connection~~ *(completed)*
 
-### Session 103 — QuickBooks Transaction Sync
-
-One-way push of categorised transactions to QuickBooks. Core sync path and error surfacing only; advanced mapping and reconciliation views can follow post-Beta.
-
-*Before beginning: review the QuickBooks API payload structure for journal entries / sales receipts. Decide on account mapping strategy — fixed mapping vs admin-configurable.*
+### ~~Session 103 — QuickBooks Transaction Sync~~ *(completed)*
 
 ---
 
@@ -348,6 +345,14 @@ Full carousel and gallery widget types beyond the basic image slider added in Be
 
 ## Infrastructure & Ops — Post-Beta 1
 
+### Session 104 — QuickBooks Customer Matching
+
+Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry donor/purchaser attribution. Match by email, create if not found, cache the QB Customer ID on the contact record. Transactions without a contact sync anonymously as today. Admin visibility on the contact edit page.
+
+### Session 105 — QuickBooks Per-Type Account Mapping
+
+Replace the single global income account with per-transaction-type mapping (donations, product purchases, default) so different revenue streams post to separate QB accounts. Optional per-fund override for donations. Settings UI on Finance Settings page; fund-level override on the Fund resource.
+
 ### Integration Setup Wizards — Stripe & Mailchimp
 
 Multi-step guided wizards for connecting Stripe and Mailchimp. Each wizard walks through entering API keys (with the existing high-friction rotation pattern), verifying connectivity, and confirming the integration is live. QuickBooks wizard to follow once the QuickBooks Sync session is scoped. Consider a unified "Integrations" page as the entry point.
@@ -363,6 +368,10 @@ REST or GraphQL API for external integrations. Important long-term — should no
 ### CDN Integration
 
 Asset delivery via CDN for uploaded images and static files. Pairs with the image optimization pipeline from Beta 1. Provider TBD.
+
+### Deploy-Server Integration Test Suite
+
+A lightweight test suite that runs on the deploy server against real sandbox APIs (QuickBooks sandbox, Stripe test mode, Resend test keys). Catches integration issues that mocked unit tests cannot — token refresh flows, API payload shape changes, webhook delivery. Runs as `php artisan test --group=integration` using `.env.testing` with sandbox credentials. Could also include a post-deploy smoke check (app boots, key routes respond, queue processes a job). Manual SSH trigger for now; hook into CI/CD later if one is added.
 
 ### API Key Pattern Validation & Test-Mode Warning
 

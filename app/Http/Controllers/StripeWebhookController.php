@@ -7,6 +7,7 @@ use App\Models\Donation;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
 use App\Models\Transaction;
+use App\Jobs\SyncTransactionToQuickBooks;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -78,7 +79,7 @@ class StripeWebhookController extends Controller
         $subjectId   = $metadata->subject_id ?? null;
         $amountTotal = $session->amount_total ?? 0;
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'subject_type' => $subjectType,
             'subject_id'   => $subjectId,
             'contact_id'   => null,
@@ -89,6 +90,8 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $intentId,
             'occurred_at'  => now(),
         ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
 
         return response('OK', 200);
     }
@@ -121,7 +124,7 @@ class StripeWebhookController extends Controller
             'started_at'             => now(),
         ]);
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'subject_type' => Donation::class,
             'subject_id'   => $donation->id,
             'contact_id'   => $contact?->id,
@@ -132,6 +135,8 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $intentId,
             'occurred_at'  => now(),
         ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
 
         return response('OK', 200);
     }
@@ -156,7 +161,7 @@ class StripeWebhookController extends Controller
             return response('OK', 200);
         }
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'subject_type' => Donation::class,
             'subject_id'   => $donation->id,
             'contact_id'   => $donation->contact_id,
@@ -167,6 +172,8 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $invoiceId,
             'occurred_at'  => now(),
         ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
 
         if (($invoice->billing_reason ?? '') !== 'subscription_create' && $donation->contact_id) {
             $donation->loadMissing('contact');
@@ -240,7 +247,7 @@ class StripeWebhookController extends Controller
             'occurred_at'       => now(),
         ]);
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'subject_type' => Purchase::class,
             'subject_id'   => $purchase->id,
             'contact_id'   => $contact?->id,
@@ -251,6 +258,8 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $session->payment_intent,
             'occurred_at'  => now(),
         ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
 
         return response('OK', 200);
     }
@@ -322,7 +331,7 @@ class StripeWebhookController extends Controller
         $subjectType = $original?->subject_type;
         $subjectId   = $original?->subject_id;
 
-        Transaction::create([
+        $transaction = Transaction::create([
             'subject_type' => $subjectType,
             'subject_id'   => $subjectId,
             'contact_id'   => $original?->contact_id,
@@ -333,6 +342,8 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $refundId,
             'occurred_at'  => now(),
         ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
 
         return response('OK', 200);
     }

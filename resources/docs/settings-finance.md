@@ -105,7 +105,7 @@ Select or deselect methods in the checkbox list and click **Save**. Changes take
 
 ## QuickBooks
 
-QuickBooks Online is used for one-way transaction sync — donations and product purchases recorded in this system are automatically pushed to QuickBooks as journal entries. Transaction sync will be available in a future update; connecting now prepares your account for it.
+QuickBooks Online is used for one-way transaction sync — completed payments and refunds recorded in this system are automatically pushed to QuickBooks as Sales Receipts (for payments) and Refund Receipts (for refunds). Sync is automatic once connected and configured.
 
 ### Obtaining OAuth credentials
 
@@ -134,11 +134,36 @@ When connected, the page shows:
 
 Click **Disconnect** (danger button) and confirm. This removes all stored QuickBooks tokens. You will need to re-authorize to reconnect. Disconnecting does not affect data already synced to QuickBooks.
 
+### Transaction Sync
+
+Once connected, a **QuickBooks — Transaction Sync** section appears below the connection panel.
+
+**Income Account:** select the QuickBooks income account where all synced transactions will be posted. This dropdown is populated from your QuickBooks Chart of Accounts (income-type accounts only). The list is cached for one hour — click **Refresh Accounts** to reload it.
+
+Sync is disabled until an income account is selected. Once configured, sync is fully automatic — no manual action is needed for normal operation.
+
+**How sync works:**
+
+- When a payment completes (donation, product purchase, or recurring invoice), a Sales Receipt is created in QuickBooks.
+- When a refund is processed through Stripe, a Refund Receipt is created in QuickBooks.
+- Each transaction is synced exactly once. A transaction that has already been synced is never sent again.
+
+**Sync statuses** (visible on the Transactions list):
+
+| Status | Meaning |
+|---|---|
+| **Synced** | Successfully pushed to QuickBooks (hover for timestamp) |
+| **Error** | Sync failed (hover for error message) |
+| **Pending** | Not yet synced and no error — may be awaiting the queue worker |
+| **N/A** | QuickBooks is not connected |
+
+**Manual re-sync:** if a transaction shows an error, users with the **manage_financial_settings** permission can click the **Sync to QB** action on the Transactions list to retry.
+
 ### Important notes
 
 - QuickBooks OAuth credentials (Client ID and Secret) are encrypted at rest, like Stripe keys. They cannot be viewed after saving.
 - The Connect button only appears after both the Client ID and Client Secret have been set.
-- Transaction sync is not yet active. Connecting now only establishes the authorization — no data is sent to QuickBooks until sync is enabled.
+- Sync only applies to new transactions going forward. Pre-existing transactions are not retroactively synced.
 
 ---
 

@@ -3,12 +3,15 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TransactionResource\Pages;
+use App\Jobs\SyncTransactionToQuickBooks;
 use App\Models\Contact;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Transaction;
+use App\Services\QuickBooks\QuickBooksAuth;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -117,6 +120,37 @@ class TransactionResource extends Resource
                         default                => 'gray',
                     }),
 
+                Tables\Columns\TextColumn::make('qb_status')
+                    ->label('QuickBooks')
+                    ->badge()
+                    ->state(function (Transaction $record): string {
+                        if (! app(QuickBooksAuth::class)->isConnected()) {
+                            return 'N/A';
+                        }
+                        if (filled($record->quickbooks_id)) {
+                            return 'Synced';
+                        }
+                        if (filled($record->qb_sync_error)) {
+                            return 'Error';
+                        }
+                        return 'Pending';
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'Synced'  => 'success',
+                        'Error'   => 'danger',
+                        'Pending' => 'warning',
+                        default   => 'gray',
+                    })
+                    ->tooltip(function (Transaction $record): ?string {
+                        if (filled($record->qb_synced_at)) {
+                            return 'Synced ' . $record->qb_synced_at->format('M j, Y g:i A');
+                        }
+                        if (filled($record->qb_sync_error)) {
+                            return mb_substr($record->qb_sync_error, 0, 200);
+                        }
+                        return null;
+                    }),
+
                 Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
             ])
             ->defaultSort('occurred_at', 'desc')
@@ -162,6 +196,23 @@ class TransactionResource extends Resource
                     )
                     ->openUrlInNewTab()
                     ->hidden(fn (Transaction $record): bool => ! $record->stripe_id),
+
+                Tables\Actions\Action::make('qb_sync')
+                    ->label('Sync to QB')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Re-sync to QuickBooks')
+                    ->modalDescription('This will attempt to sync this transaction to QuickBooks.')
+                    ->action(function (Transaction $record): void {
+                        SyncTransactionToQuickBooks::dispatch($record);
+                        Notification::make()->title('Sync job dispatched')->success()->send();
+                    })
+                    ->hidden(fn (Transaction $record): bool =>
+                        filled($record->quickbooks_id)
+                        || ! app(QuickBooksAuth::class)->isConnected()
+                        || ! auth()->user()?->can('manage_financial_settings')
+                    ),
 
                 Tables\Actions\EditAction::make()
                     ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
