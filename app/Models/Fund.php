@@ -17,6 +17,7 @@ class Fund extends Model
         'description',
         'is_active',
         'restriction_type',
+        'quickbooks_account_id',
     ];
 
     protected $casts = [

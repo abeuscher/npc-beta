@@ -60,10 +60,14 @@ class FinanceSettingsPage extends Page
 
     public function mount(): void
     {
+        $accountMap = json_decode(SiteSetting::get('qb_account_map', '{}'), true) ?: [];
+
         $this->form->fill([
             'stripe_publishable_key'      => SiteSetting::get('stripe_publishable_key', ''),
             'stripe_payment_method_types' => SiteSetting::get('stripe_payment_method_types') ?? ['card'],
-            'qb_income_account_id'        => SiteSetting::get('qb_income_account_id', ''),
+            'qb_default_account'          => $accountMap['default'] ?? SiteSetting::get('qb_income_account_id', ''),
+            'qb_donation_account'         => $accountMap['donation'] ?? '',
+            'qb_purchase_account'         => $accountMap['purchase'] ?? '',
         ]);
     }
 
@@ -134,10 +138,7 @@ class FinanceSettingsPage extends Page
             $this->savePaymentMethodTypes($methods);
         }
 
-        $incomeAccount = $this->data['qb_income_account_id'] ?? null;
-        if ($incomeAccount !== null) {
-            $this->saveIncomeAccountSetting($incomeAccount);
-        }
+        $this->saveAccountMap();
     }
 
     private function secretKeySection(string $key, string $heading, string $helperText): Forms\Components\Section
@@ -373,25 +374,43 @@ class FinanceSettingsPage extends Page
 
     private function quickBooksSyncSection(): Forms\Components\Section
     {
-        $accounts = Cache::remember('qb_income_accounts', 3600, function () {
+        $accounts = Cache::remember('qb_deposit_accounts', 3600, function () {
             try {
-                return app(QuickBooksClient::class)->getIncomeAccounts();
+                return app(QuickBooksClient::class)->getDepositAccounts();
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('QB income accounts fetch failed in Finance Settings', [
+                \Illuminate\Support\Facades\Log::error('QB deposit accounts fetch failed in Finance Settings', [
                     'error' => $e->getMessage(),
                 ]);
                 return [];
             }
         });
 
+        $placeholder = $accounts ? 'Select an account' : 'No accounts available — try refreshing';
+
         return Forms\Components\Section::make('QuickBooks — Transaction Sync')
-            ->description('All synced transactions will be posted to the selected income account in QuickBooks.')
+            ->description('Map each transaction type to a QuickBooks deposit account. Refunds post to the same account as their original transaction.')
             ->schema([
-                Forms\Components\Select::make('qb_income_account_id')
-                    ->label('Income Account')
+                Forms\Components\Select::make('qb_default_account')
+                    ->label('Default Account')
                     ->options($accounts)
-                    ->placeholder($accounts ? 'Select an income account' : 'No accounts available — try refreshing')
-                    ->helperText('Completed payments and refunds are automatically synced to this account. Sync is disabled until an account is selected.'),
+                    ->placeholder($placeholder)
+                    ->helperText('Fallback deposit account for any unmapped transaction type. Sync is disabled until a default is selected.'),
+
+                Forms\Components\Select::make('qb_donation_account')
+                    ->label('Donations')
+                    ->options($accounts)
+                    ->placeholder('Use default')
+                    ->helperText('Deposit account for donation payments. Leave blank to use the default.'),
+
+                Forms\Components\Select::make('qb_purchase_account')
+                    ->label('Product Purchases')
+                    ->options($accounts)
+                    ->placeholder('Use default')
+                    ->helperText('Deposit account for product sales. Leave blank to use the default.'),
+
+                Forms\Components\Placeholder::make('qb_refund_note')
+                    ->label('Refunds')
+                    ->content('Refunds automatically post to the same account as their original transaction.'),
 
                 Forms\Components\Actions::make([
                     Forms\Components\Actions\Action::make('qb_refresh_accounts')
@@ -399,7 +418,7 @@ class FinanceSettingsPage extends Page
                         ->icon('heroicon-o-arrow-path')
                         ->color('gray')
                         ->action(function (): void {
-                            Cache::forget('qb_income_accounts');
+                            Cache::forget('qb_deposit_accounts');
 
                             Notification::make()->title('Account list refreshed')->success()->send();
 
@@ -425,7 +444,7 @@ class FinanceSettingsPage extends Page
         SiteSetting::set('stripe_publishable_key', $data['stripe_publishable_key'] ?? '');
         $this->savePaymentMethodTypes($data['stripe_payment_method_types'] ?? ['card']);
 
-        $this->saveIncomeAccountSetting($data['qb_income_account_id'] ?? '');
+        $this->saveAccountMap();
 
         Artisan::call('config:clear');
 
@@ -455,15 +474,41 @@ class FinanceSettingsPage extends Page
         Cache::forget('site_setting:stripe_payment_method_types');
     }
 
-    private function saveIncomeAccountSetting(string $value): void
+    private function saveAccountMap(): void
     {
-        $setting = SiteSetting::where('key', 'qb_income_account_id')->first();
-        if ($setting) {
-            $setting->update(['value' => $value ?: null]);
+        $default  = $this->data['qb_default_account'] ?? '';
+        $donation = $this->data['qb_donation_account'] ?? '';
+        $purchase = $this->data['qb_purchase_account'] ?? '';
+
+        $map = array_filter([
+            'default'  => $default ?: null,
+            'donation' => $donation ?: null,
+            'purchase' => $purchase ?: null,
+        ]);
+
+        // Store the JSON account map
+        $mapSetting = SiteSetting::where('key', 'qb_account_map')->first();
+        $mapJson = ! empty($map) ? json_encode($map) : null;
+        if ($mapSetting) {
+            $mapSetting->update(['value' => $mapJson]);
+        } else {
+            SiteSetting::create([
+                'key'   => 'qb_account_map',
+                'value' => $mapJson,
+                'group' => 'finance',
+                'type'  => 'json',
+            ]);
+        }
+        Cache::forget('site_setting:qb_account_map');
+
+        // Keep qb_income_account_id in sync as the global default for the sync job skip condition
+        $incomeSetting = SiteSetting::where('key', 'qb_income_account_id')->first();
+        if ($incomeSetting) {
+            $incomeSetting->update(['value' => $default ?: null]);
         } else {
             SiteSetting::create([
                 'key'   => 'qb_income_account_id',
-                'value' => $value ?: null,
+                'value' => $default ?: null,
                 'group' => 'finance',
                 'type'  => 'string',
             ]);

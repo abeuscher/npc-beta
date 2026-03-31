@@ -3,6 +3,8 @@
 namespace App\Services\QuickBooks;
 
 use App\Models\Contact;
+use App\Models\Donation;
+use App\Models\Purchase;
 use App\Models\SiteSetting;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +28,7 @@ class QuickBooksClient
     public function createSalesReceipt(Transaction $transaction, ?string $qbCustomerId = null): string
     {
         $ds = $this->getDataService();
-        $incomeAccountId = $this->getIncomeAccountId();
+        $incomeAccountId = $this->resolveIncomeAccount($transaction);
 
         $memo = $this->buildMemo($transaction);
 
@@ -74,7 +76,7 @@ class QuickBooksClient
     public function createRefundReceipt(Transaction $transaction, ?string $qbCustomerId = null): string
     {
         $ds = $this->getDataService();
-        $incomeAccountId = $this->getIncomeAccountId();
+        $incomeAccountId = $this->resolveIncomeAccount($transaction);
 
         $memo = $this->buildMemo($transaction);
 
@@ -120,63 +122,30 @@ class QuickBooksClient
     }
 
     /**
-     * Fetch income-type accounts from QuickBooks Chart of Accounts.
+     * Fetch deposit-eligible accounts (Bank + Other Current Asset) from QuickBooks Chart of Accounts.
      *
      * @return array<string, string> id => name
      */
-    public function getIncomeAccounts(): array
+    public function getDepositAccounts(): array
     {
-        Log::info('QB getIncomeAccounts: starting');
-
         $ds = $this->getDataService();
-        Log::info('QB getIncomeAccounts: DataService ready');
-
-        // Diagnostic: query ALL accounts to see what QB returns
-        $allAccounts = $ds->Query("SELECT * FROM Account MAXRESULTS 200");
-        $allError = $ds->getLastError();
-
-        if ($allError) {
-            Log::error('QB getIncomeAccounts: all-accounts query failed', [
-                'error' => $allError->getResponseBody(),
-            ]);
-        } else {
-            $types = [];
-            if ($allAccounts) {
-                foreach ($allAccounts as $a) {
-                    $types[] = [
-                        'Id' => (string) $a->Id,
-                        'Name' => $a->Name,
-                        'AccountType' => $a->AccountType,
-                        'AccountSubType' => $a->AccountSubType ?? null,
-                        'Active' => $a->Active ?? true,
-                    ];
-                }
-            }
-            Log::info('QB getIncomeAccounts: all accounts returned', ['count' => count($types), 'accounts' => $types]);
-        }
-
-        // Filtered query for Income type only
-        $accounts = $ds->Query("SELECT * FROM Account WHERE AccountType = 'Income' MAXRESULTS 200");
-        $error = $ds->getLastError();
-
-        if ($error) {
-            Log::error('QB getIncomeAccounts: income query failed', [
-                'error' => $error->getResponseBody(),
-            ]);
-            throw new RuntimeException(
-                'QuickBooks account query failed: ' . $error->getResponseBody()
-            );
-        }
-
-        Log::info('QB getIncomeAccounts: income query returned', [
-            'count' => $accounts ? count($accounts) : 0,
-        ]);
 
         $result = [];
 
-        if ($accounts) {
-            foreach ($accounts as $account) {
-                $result[(string) $account->Id] = $account->Name;
+        foreach (['Bank', 'Other Current Asset'] as $type) {
+            $accounts = $ds->Query("SELECT * FROM Account WHERE AccountType = '{$type}' MAXRESULTS 200");
+            $error = $ds->getLastError();
+
+            if ($error) {
+                throw new RuntimeException(
+                    'QuickBooks account query failed: ' . $error->getResponseBody()
+                );
+            }
+
+            if ($accounts) {
+                foreach ($accounts as $account) {
+                    $result[(string) $account->Id] = $account->Name;
+                }
             }
         }
 
@@ -317,17 +286,48 @@ class QuickBooksClient
         return $this->dataService;
     }
 
-    private function getIncomeAccountId(): string
+    public function resolveIncomeAccount(Transaction $transaction): string
     {
-        $accountId = SiteSetting::get('qb_income_account_id');
+        $transaction->loadMissing('subject');
+        $subject = $transaction->subject;
 
-        if (empty($accountId)) {
-            throw new RuntimeException(
-                'No QuickBooks income account configured. Select one in Finance Settings.'
-            );
+        // 1. Per-fund override: donation with a fund that has a QB account
+        if ($subject instanceof Donation && $subject->fund_id) {
+            $subject->loadMissing('fund');
+            $fundAccount = $subject->fund?->quickbooks_account_id;
+            if (filled($fundAccount)) {
+                return $fundAccount;
+            }
         }
 
-        return $accountId;
+        // 2. Per-type mapping from qb_account_map
+        $typeKey = $this->subjectTypeKey($subject);
+        $raw = SiteSetting::get('qb_account_map', []);
+        $accountMap = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
+
+        if (! empty($accountMap[$typeKey])) {
+            return $accountMap[$typeKey];
+        }
+
+        // 3. Global default
+        $defaultAccount = $accountMap['default'] ?? SiteSetting::get('qb_income_account_id');
+
+        if (filled($defaultAccount)) {
+            return $defaultAccount;
+        }
+
+        throw new RuntimeException(
+            'No QuickBooks deposit account configured. Select one in Finance Settings.'
+        );
+    }
+
+    private function subjectTypeKey($subject): string
+    {
+        return match (true) {
+            $subject instanceof Donation => 'donation',
+            $subject instanceof Purchase => 'purchase',
+            default => 'default',
+        };
     }
 
     private function buildMemo(Transaction $transaction): string

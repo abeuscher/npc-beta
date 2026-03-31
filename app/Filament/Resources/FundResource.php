@@ -4,12 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FundResource\Pages;
 use App\Models\Fund;
+use App\Services\QuickBooks\QuickBooksAuth;
+use App\Services\QuickBooks\QuickBooksClient;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Cache;
 
 class FundResource extends Resource
 {
@@ -55,6 +58,8 @@ class FundResource extends Resource
                 Forms\Components\Toggle::make('is_active')->default(true),
                 Forms\Components\Textarea::make('description')->rows(3)->columnSpanFull(),
             ])->columns(2),
+
+            ...static::quickBooksSection(),
         ]);
     }
 
@@ -83,6 +88,32 @@ class FundResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function quickBooksSection(): array
+    {
+        if (! app(QuickBooksAuth::class)->isConnected()) {
+            return [];
+        }
+
+        $accounts = Cache::remember('qb_deposit_accounts', 3600, function () {
+            try {
+                return app(QuickBooksClient::class)->getDepositAccounts();
+            } catch (\Throwable) {
+                return [];
+            }
+        });
+
+        return [
+            Forms\Components\Section::make('QuickBooks')
+                ->schema([
+                    Forms\Components\Select::make('quickbooks_account_id')
+                        ->label('Deposit Account Override')
+                        ->options($accounts)
+                        ->placeholder('Use default (from Finance Settings)')
+                        ->helperText('Override the deposit account for donations allocated to this fund. Leave blank to use the default donation account.'),
+                ]),
+        ];
     }
 
     public static function getPages(): array
