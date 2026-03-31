@@ -56,6 +56,17 @@ class AdminPanelProvider extends PanelProvider
                 \Illuminate\Support\Facades\Route::post('/inline-image-upload', [\App\Http\Controllers\Admin\InlineImageUploadController::class, 'store'])
                     ->name('inline-image-upload')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
+                // QuickBooks OAuth
+                \Illuminate\Support\Facades\Route::get('/quickbooks/connect', [\App\Http\Controllers\QuickBooksCallbackController::class, 'connect'])
+                    ->name('quickbooks.connect')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                \Illuminate\Support\Facades\Route::get('/quickbooks/callback', [\App\Http\Controllers\QuickBooksCallbackController::class, 'callback'])
+                    ->name('quickbooks.callback')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                \Illuminate\Support\Facades\Route::post('/quickbooks/disconnect', [\App\Http\Controllers\QuickBooksCallbackController::class, 'disconnect'])
+                    ->name('quickbooks.disconnect')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
             })
             ->colors([
                 'primary' => Color::hex($primaryColor),

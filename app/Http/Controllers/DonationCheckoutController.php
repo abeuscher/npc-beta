@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Models\Donation;
+use App\Models\SiteSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,10 +45,16 @@ class DonationCheckoutController extends Controller
         try {
             $stripe = new \Stripe\StripeClient($secret);
 
+            $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
+            if (empty($configuredMethods)) {
+                $configuredMethods = ['card'];
+            }
+
             if ($validated['type'] === 'one_off') {
                 $params = [
-                    'mode'        => 'payment',
-                    'line_items'  => [[
+                    'mode'                 => 'payment',
+                    'payment_method_types' => array_values($configuredMethods),
+                    'line_items'           => [[
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
@@ -61,10 +69,19 @@ class DonationCheckoutController extends Controller
             } else {
                 $interval = $validated['frequency'] === 'annual' ? 'year' : 'month';
 
+                $subscriptionMethods = array_values(array_intersect(
+                    $configuredMethods,
+                    FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
+                ));
+                if (empty($subscriptionMethods)) {
+                    $subscriptionMethods = ['card'];
+                }
+
                 $params = [
-                    'mode'             => 'subscription',
-                    'customer_creation' => 'always',
-                    'line_items'       => [[
+                    'mode'                 => 'subscription',
+                    'payment_method_types' => $subscriptionMethods,
+                    'customer_creation'    => 'always',
+                    'line_items'           => [[
                         'price_data' => [
                             'currency'   => 'usd',
                             'unit_amount' => $amountCents,

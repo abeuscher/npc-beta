@@ -1,9 +1,9 @@
 ---
 title: Finance Settings
 description: Stripe API key configuration, webhook secret setup, and QuickBooks integration credentials.
-version: "0.73"
-updated: 2026-03-24
-tags: [settings, admin, finance, stripe]
+version: "0.74"
+updated: 2026-03-31
+tags: [settings, admin, finance, stripe, payments]
 routes:
   - filament.admin.pages.finance-settings-page
 ---
@@ -77,9 +77,68 @@ The publishable key is set and changed through the standard form — enter the v
 
 ---
 
+## Payment Methods
+
+Controls which payment methods are offered to donors and customers at checkout. Only enabled methods appear in Stripe Checkout.
+
+### Available methods
+
+| Method | Label | Recurring donations? |
+|---|---|---|
+| Card | Visa, Mastercard, Amex, etc. | Yes |
+| ACH Direct Debit | US bank account transfers | Yes |
+| Link | Stripe's one-click checkout | Yes |
+| Cash App Pay | Cash App mobile payments | No — one-time only |
+| Amazon Pay | Amazon account payments | No — one-time only |
+
+**Card payments are always enabled** and cannot be turned off.
+
+### How recurring donations are handled
+
+When a donor selects a recurring donation, the checkout page automatically shows only the methods that Stripe supports for subscriptions (Card, ACH, and Link). Methods that only support one-time payments (Cash App Pay, Amazon Pay) are filtered out automatically — no configuration is needed.
+
+### Changing payment methods
+
+Select or deselect methods in the checkbox list and click **Save**. Changes take effect immediately for all new checkouts. In-progress checkout sessions are not affected.
+
+---
+
 ## QuickBooks
 
-QuickBooks API credentials will appear here when the QuickBooks sync feature is built. No configuration is required at this time.
+QuickBooks Online is used for one-way transaction sync — donations and product purchases recorded in this system are automatically pushed to QuickBooks as journal entries. Transaction sync will be available in a future update; connecting now prepares your account for it.
+
+### Obtaining OAuth credentials
+
+1. Go to the [Intuit Developer Portal](https://developer.intuit.com/) and sign in with your QuickBooks account.
+2. Create a new app (or open an existing one) and select **QuickBooks Online Accounting** as the platform.
+3. Under **Keys & credentials**, note the **Client ID** and **Client Secret**.
+4. Add your callback URL to the **Redirect URIs** list: `https://yourdomain.com/admin/quickbooks/callback`.
+
+### Setting credentials
+
+Enter the Client ID and Client Secret using the **Set Key** buttons in the QuickBooks sections on this page. Like Stripe keys, these values are encrypted at rest and cannot be retrieved after saving — record them in a password manager before proceeding.
+
+### Connecting
+
+Once both the Client ID and Client Secret are configured, a **Connect to QuickBooks** button appears. Click it to be redirected to Intuit's authorization page, where you sign in and grant access. After authorization, you are returned to Finance Settings with a success message.
+
+### Connected state
+
+When connected, the page shows:
+
+- A green **Connected** badge
+- The **Company ID (Realm)** — this identifies which QuickBooks company is linked
+- The **Token expiry** — tokens are refreshed automatically; this is shown for diagnostic purposes
+
+### Disconnecting
+
+Click **Disconnect** (danger button) and confirm. This removes all stored QuickBooks tokens. You will need to re-authorize to reconnect. Disconnecting does not affect data already synced to QuickBooks.
+
+### Important notes
+
+- QuickBooks OAuth credentials (Client ID and Secret) are encrypted at rest, like Stripe keys. They cannot be viewed after saving.
+- The Connect button only appears after both the Client ID and Client Secret have been set.
+- Transaction sync is not yet active. Connecting now only establishes the authorization — no data is sent to QuickBooks until sync is enabled.
 
 ---
 

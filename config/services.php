@@ -43,4 +43,9 @@ return [
         'webhook_path'   => env('MAILCHIMP_WEBHOOK_PATH', 'mailchimp'),
     ],
 
+    'quickbooks' => [
+        'redirect_uri'  => env('QB_REDIRECT_URI'),
+        'environment'   => env('QB_ENVIRONMENT', 'sandbox'),
+    ],
+
 ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductPrice;
+use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -44,13 +45,19 @@ class ProductCheckoutController extends Controller
             ];
 
         try {
+            $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
+            if (empty($configuredMethods)) {
+                $configuredMethods = ['card'];
+            }
+
             $stripe  = new \Stripe\StripeClient($secret);
             $session = $stripe->checkout->sessions->create([
-                'mode'        => 'payment',
-                'line_items'  => [$lineItem],
-                'metadata'    => ['product_price_id' => $price->id],
-                'success_url' => $successUrl,
-                'cancel_url'  => $cancelUrl,
+                'mode'                 => 'payment',
+                'payment_method_types' => array_values($configuredMethods),
+                'line_items'           => [$lineItem],
+                'metadata'             => ['product_price_id' => $price->id],
+                'success_url'          => $successUrl,
+                'cancel_url'           => $cancelUrl,
             ]);
         } catch (\Throwable $e) {
             return back()->withErrors(['checkout' => 'Could not initiate checkout. Please try again.']);

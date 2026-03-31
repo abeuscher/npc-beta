@@ -4,12 +4,15 @@ namespace App\Filament\Pages\Settings;
 
 use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
+use App\Services\QuickBooks\QuickBooksAuth;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\HtmlString;
 
 class FinanceSettingsPage extends Page
@@ -37,10 +40,28 @@ class FinanceSettingsPage extends Page
 
     public ?array $data = [];
 
+    /**
+     * Payment method types supported by Stripe Checkout.
+     * Maps internal key to human-readable label.
+     */
+    public const PAYMENT_METHOD_OPTIONS = [
+        'card'            => 'Card (Visa, Mastercard, Amex, etc.)',
+        'us_bank_account' => 'ACH Direct Debit (US bank account)',
+        'link'            => 'Link (Stripe\'s one-click checkout)',
+        'cashapp'         => 'Cash App Pay',
+        'amazon_pay'      => 'Amazon Pay',
+    ];
+
+    /**
+     * Payment method types that Stripe supports for subscription (recurring) mode.
+     */
+    public const SUBSCRIPTION_COMPATIBLE_METHODS = ['card', 'us_bank_account', 'link'];
+
     public function mount(): void
     {
         $this->form->fill([
-            'stripe_publishable_key' => SiteSetting::get('stripe_publishable_key', ''),
+            'stripe_publishable_key'      => SiteSetting::get('stripe_publishable_key', ''),
+            'stripe_payment_method_types' => SiteSetting::get('stripe_payment_method_types') ?? ['card'],
         ]);
     }
 
@@ -69,6 +90,32 @@ class FinanceSettingsPage extends Page
                     'Stripe — Webhook Secret',
                     'Starts with whsec_. Generated in the Stripe dashboard under Webhooks.',
                 ),
+
+                Forms\Components\Section::make('Payment Methods')
+                    ->description('Choose which payment methods are available at checkout. Card payments cannot be disabled.')
+                    ->schema([
+                        Forms\Components\CheckboxList::make('stripe_payment_method_types')
+                            ->label('')
+                            ->options(self::PAYMENT_METHOD_OPTIONS)
+                            ->descriptions([
+                                'us_bank_account' => 'Supports recurring donations.',
+                                'link'            => 'Supports recurring donations.',
+                                'cashapp'         => 'One-time payments only.',
+                                'amazon_pay'      => 'One-time payments only.',
+                            ])
+                            ->disableOptionWhen(fn (string $value): bool => $value === 'card')
+                            ->default(['card'])
+                            ->afterStateHydrated(function (Forms\Components\CheckboxList $component, $state) {
+                                $values = is_array($state) ? $state : ['card'];
+                                if (! in_array('card', $values)) {
+                                    $values[] = 'card';
+                                }
+                                $component->state($values);
+                            })
+                            ->helperText('Card payments are always enabled. Methods marked "one-time only" are automatically excluded from recurring donation checkout.'),
+                    ]),
+
+                ...$this->quickBooksSection(),
             ])
             ->statePath('data');
     }
@@ -78,6 +125,11 @@ class FinanceSettingsPage extends Page
         $value = $this->data['stripe_publishable_key'] ?? null;
         if (filled($value)) {
             SiteSetting::set('stripe_publishable_key', $value);
+        }
+
+        $methods = $this->data['stripe_payment_method_types'] ?? null;
+        if (is_array($methods)) {
+            $this->savePaymentMethodTypes($methods);
         }
     }
 
@@ -185,6 +237,95 @@ class FinanceSettingsPage extends Page
             });
     }
 
+    private function quickBooksSection(): array
+    {
+        $auth = app(QuickBooksAuth::class);
+        $clientIdConfigured = filled(SiteSetting::get('qb_client_id', ''));
+        $clientSecretConfigured = filled(SiteSetting::get('qb_client_secret', ''));
+        $realmId = $auth->getRealmId();
+        $expiresAt = $auth->getTokenExpiresAt();
+        $isConnected = filled($realmId);
+
+        $sections = [
+            $this->secretKeySection(
+                'qb_client_id',
+                'QuickBooks — Client ID',
+                'OAuth Client ID from the Intuit Developer Portal. Found under your app\'s Keys & credentials tab.',
+            ),
+
+            $this->secretKeySection(
+                'qb_client_secret',
+                'QuickBooks — Client Secret',
+                'OAuth Client Secret from the Intuit Developer Portal. Found under your app\'s Keys & credentials tab.',
+            ),
+        ];
+
+        if ($isConnected) {
+            $expiresFormatted = $expiresAt
+                ? Carbon::parse($expiresAt)->format('M j, Y g:i A T')
+                : 'Unknown';
+
+            $sections[] = Forms\Components\Section::make('QuickBooks — Connection')
+                ->schema([
+                    Forms\Components\Placeholder::make('qb_status')
+                        ->label('')
+                        ->content(new HtmlString(
+                            '<div class="flex items-center gap-2 mb-3">'
+                            . '<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">Connected</span>'
+                            . '</div>'
+                            . '<dl class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">'
+                            . '<div><dt class="text-gray-500 dark:text-gray-400">Company ID (Realm)</dt><dd class="font-mono">' . e($realmId) . '</dd></div>'
+                            . '<div><dt class="text-gray-500 dark:text-gray-400">Token expires</dt><dd>' . e($expiresFormatted) . '</dd></div>'
+                            . '</dl>'
+                        )),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('qb_disconnect')
+                            ->label('Disconnect')
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->modalHeading('Disconnect QuickBooks')
+                            ->modalDescription('This will remove the stored QuickBooks connection. You will need to re-authorize to reconnect.')
+                            ->action(function (): void {
+                                $qbAuth = app(QuickBooksAuth::class);
+                                $currentRealmId = $qbAuth->getRealmId();
+                                $setting = SiteSetting::where('key', 'qb_realm_id')->first();
+
+                                $qbAuth->disconnect();
+
+                                if ($setting) {
+                                    ActivityLogger::log($setting, 'quickbooks_disconnected', "QuickBooks disconnected (Realm ID: {$currentRealmId})");
+                                }
+
+                                Notification::make()->title('QuickBooks disconnected')->success()->send();
+
+                                $this->redirect(static::getUrl());
+                            }),
+                    ]),
+                ]);
+        } elseif ($clientIdConfigured && $clientSecretConfigured) {
+            $sections[] = Forms\Components\Section::make('QuickBooks — Connection')
+                ->schema([
+                    Forms\Components\Placeholder::make('qb_not_connected')
+                        ->label('')
+                        ->content(new HtmlString(
+                            '<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">'
+                            . 'Client ID and Secret are configured. Click below to authorize with QuickBooks Online.'
+                            . '</p>'
+                        )),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('qb_connect')
+                            ->label('Connect to QuickBooks')
+                            ->url(route('filament.admin.quickbooks.connect'))
+                            ->icon('heroicon-o-arrow-top-right-on-square'),
+                    ]),
+                ]);
+        }
+
+        return $sections;
+    }
+
     protected function getFormActions(): array
     {
         return [
@@ -199,11 +340,33 @@ class FinanceSettingsPage extends Page
         $data = $this->form->getState();
 
         SiteSetting::set('stripe_publishable_key', $data['stripe_publishable_key'] ?? '');
+        $this->savePaymentMethodTypes($data['stripe_payment_method_types'] ?? ['card']);
 
         Artisan::call('config:clear');
 
         Notification::make()->title('Settings saved')->success()->send();
 
         $this->redirect(static::getUrl());
+    }
+
+    private function savePaymentMethodTypes(array $types): void
+    {
+        // Ensure 'card' is always present
+        if (! in_array('card', $types)) {
+            $types[] = 'card';
+        }
+
+        $setting = SiteSetting::where('key', 'stripe_payment_method_types')->first();
+        if ($setting) {
+            $setting->update(['value' => json_encode(array_values($types))]);
+        } else {
+            SiteSetting::create([
+                'key'   => 'stripe_payment_method_types',
+                'value' => json_encode(array_values($types)),
+                'group' => 'finance',
+                'type'  => 'json',
+            ]);
+        }
+        Cache::forget('site_setting:stripe_payment_method_types');
     }
 }
