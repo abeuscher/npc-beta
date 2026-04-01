@@ -112,6 +112,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 103 | QuickBooks Transaction Sync |
 | 104 | QuickBooks Customer Matching |
 | 105 | QuickBooks Per-Type Account Mapping |
+| 106 | Transaction Ledger Cleanup & Seeder |
 
 ---
 
@@ -353,9 +354,7 @@ Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry 
 
 ### ~~Session 105 — QuickBooks Per-Type Account Mapping~~ *(completed)*
 
-### Session 106 — Transaction Ledger Cleanup & Seeder
-
-Clean up the manual transaction form: type drives direction automatically, remove the direction dropdown, make QB reference read-only, add a contact selector. Add a transaction seeder with a representative mix of records (donations, purchases, refunds, manual entries, synced and unsynced, with and without contacts) for testing QB sync, reporting, and UI. Update the transaction factory with state methods for cleaner test setup.
+### ~~Session 106 — Transaction Ledger Cleanup & Seeder~~ *(completed)*
 
 ### Session 107 — Paid Event Registration & Membership Checkout
 
