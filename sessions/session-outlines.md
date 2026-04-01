@@ -113,46 +113,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 104 | QuickBooks Customer Matching |
 | 105 | QuickBooks Per-Type Account Mapping |
 | 106 | Transaction Ledger Cleanup & Seeder |
-
----
-
-## CMS & Page Builder — Beta 1 Scope
-
-*The following sessions cover the subset of CMS/page builder work targeted for Beta 1. The goal is a page builder compelling enough to demo — column layouts, polished widget picker, header/footer control, a useful set of widget types, basic page templates, and image/SVG support. Full style system, live preview, widget portability, and theming are deferred to post-Beta 1.*
-
-### ~~Session 087 — Inspector Panel & Shared Page Builder Form~~ *(completed)*
-
-### ~~Session 088 — Image Optimization & SVG Support~~ *(completed)*
-
-### ~~Session 089 — Image & Carousel Widgets~~ *(completed)*
-
-### ~~Session 090 — Tailwind Migration — Layouts & Infrastructure~~ *(completed)*
-
-### ~~Session 091 — Tailwind Migration — Widget Templates~~ *(completed)*
-
-### ~~Session 092 — Media Library Manager~~ *(completed)*
-
-### ~~Session 093 — WYSIWYG Toolbar & Inline Image Insert~~ *(completed)*
-
-### ~~Session 094 — Test Audit & Bug Fixes~~ *(completed)*
-
-### ~~Session 095 — Test Coverage — Portal, Stripe & Integrations~~ *(completed)*
-
-### ~~Session 096 — Per-Page SEO & Header Snippets~~ *(completed)*
-
-### ~~Session 097 — Header & Footer Widget System~~ *(completed)*
-
-### ~~Session 098 — Additional Widget Types~~ *(completed)*
-
-### ~~Session 099 — Template System — Data Model & Migration~~ *(completed)*
-
-### ~~Session 100 — Template Manager UI & Page Creation Flow~~ *(completed)*
-
-### ~~Session 101 — Code Review & Cleanup~~ *(completed)*
-
-### ~~Session 102 — Stripe Payment Methods & QuickBooks Connection~~ *(completed)*
-
-### ~~Session 103 — QuickBooks Transaction Sync~~ *(completed)*
+| 107 | Paid Event Registration & Membership Checkout |
 
 ---
 
@@ -356,9 +317,11 @@ Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry 
 
 ### ~~Session 106 — Transaction Ledger Cleanup & Seeder~~ *(completed)*
 
-### Session 107 — Paid Event Registration & Membership Checkout
+### ~~Session 107 — Paid Event Registration & Membership Checkout~~ *(completed)*
 
-Wire paid event registrations and paid membership signups through Stripe Checkout. Both flows create transactions and trigger QB sync via the existing pipeline. Free events and complimentary memberships remain unchanged. Extends the webhook handler with new metadata keys for `event_registration_id` and `membership_id`.
+### Session 108 — Beta-One Bug Fixes & Migration Squash
+
+Focused bug-fix session addressing QA issues collected during beta-one testing: header/logo rendering, blog post publish-date gating, unpublished page link handling, form Tailwind conversion, event date UX, CMS Settings breakpoints layout, Horizon endpoint access control, and widget inspector auto-open. Migration squash at the end after user sign-off.
 
 ### Integration Setup Wizards — Stripe & Mailchimp
 
