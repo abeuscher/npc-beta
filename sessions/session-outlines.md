@@ -116,6 +116,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 107 | Paid Event Registration & Membership Checkout |
 | 108 | Beta-One Bug Fixes & Migration Squash |
 | 109 | Deletion Guards & Archive Pattern |
+| 110 | Data Retention & Cascading Delete Audit |
 
 ---
 
@@ -161,9 +162,9 @@ Evaluate *Mailing List* and *Collection* against the same criteria during this s
 
 Audit every deletion path. Define and implement what happens when: a user is deleted (notes, tags, import records); a contact is deleted (registrations, memberships, mailing list memberships); an import session is deleted. Define a soft-delete purge policy. Output: code changes (migrations, `onDelete` rules) and a written policy document in the repo.
 
-### Trash Management UI
+### Session 111 — Trash Management UI
 
-Consistent admin interface for viewing, restoring, and permanently deleting soft-deleted records. Ensure `TrashedFilter` is present on every resource that uses `SoftDeletes`, restore actions on trashed records, and force-delete (purge) gated to super_admin. Evaluate whether Filament's built-in trashed record support is sufficient or whether a dedicated "Trash" page is needed. Depends on Sessions 109–110 (deletion guards and cascade audit).
+Wire up Filament's built-in soft-delete support (`TrashedFilter`, `RestoreAction`, `ForceDeleteAction` + bulk equivalents) on every resource with `SoftDeletes`. Standard Filament pattern — no custom Trash page. Force-delete gated to super_admin. Depends on Sessions 109–110 (deletion guards and cascade audit).
 
 ---
 
@@ -329,9 +330,7 @@ Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry 
 
 ### ~~Session 109 — Deletion Guards & Archive Pattern~~ *(completed)*
 
-### Session 110 — Data Retention & Cascading Delete Audit
-
-Audit every FK cascade rule in the database. Fix incorrect onDelete rules. Define what happens when users, contacts, import sessions, and other parent records are deleted. Write a retention policy document. Builds on Session 109 guards.
+### ~~Session 110 — Data Retention & Cascading Delete Audit~~ *(completed)*
 
 ### Integration Setup Wizards — Stripe & Mailchimp
 
