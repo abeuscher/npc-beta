@@ -355,7 +355,7 @@ it('signup without tier creates no membership', function () {
 // ── Portal event checkout ───────────────────────────────────────────────────
 
 it('portal member can access paid event checkout', function () {
-    $contact = Contact::factory()->create();
+    $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
     $event   = Event::factory()->create(['price' => 25.00]);
 
@@ -370,7 +370,7 @@ it('portal member can access paid event checkout', function () {
 });
 
 it('portal member free event registration still works', function () {
-    $contact = Contact::factory()->create();
+    $contact = Contact::factory()->create(['email' => 'portalmember@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
     $event   = Event::factory()->create(['price' => 0]);
 
