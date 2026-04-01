@@ -4,6 +4,7 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Actions\EmailPreviewWizardAction;
 use App\Filament\Resources\EventResource;
+use App\Filament\Resources\TransactionResource;
 use App\Mail\EventCancellation;
 use App\Mail\EventReminder;
 use App\Models\Contact;
@@ -144,6 +145,14 @@ class EditEvent extends EditRecord
                     ->icon('heroicon-o-user-group')
                     ->url(fn () => EventResource::getUrl('registrations', ['record' => $this->getRecord()]))
                     ->visible(fn () => $this->getRecord()->registrations()->exists()),
+
+                Actions\Action::make('viewTicketPurchases')
+                    ->label('View ticket purchases')
+                    ->icon('heroicon-o-receipt-percent')
+                    ->url(fn () => TransactionResource::getUrl('index', [
+                        'tableFilters' => ['event_id' => ['value' => $this->getRecord()->id]],
+                    ]))
+                    ->visible(fn () => $this->getRecord()->price > 0 && $this->getRecord()->registrations()->exists()),
 
                 Actions\Action::make('exportRegistrants')
                     ->label('Export registrants')

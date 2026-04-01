@@ -4,10 +4,8 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\EventResource;
-use App\Filament\Resources\TransactionResource;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\Transaction;
 use Filament\Resources\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -100,42 +98,6 @@ class ViewRegistrations extends Page implements HasTable
                             : null
                     )
                     ->hidden(fn (EventRegistration $record): bool => ! $record->contact_id),
-
-                Tables\Actions\Action::make('view_stripe')
-                    ->label('Stripe')
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->color('gray')
-                    ->url(fn (EventRegistration $record): ?string =>
-                        $record->stripe_payment_intent_id
-                            ? 'https://dashboard.stripe.com/payments/' . $record->stripe_payment_intent_id
-                            : null
-                    )
-                    ->openUrlInNewTab()
-                    ->hidden(fn (EventRegistration $record): bool => ! $record->stripe_payment_intent_id),
-
-                Tables\Actions\Action::make('view_transaction')
-                    ->label('Transaction')
-                    ->icon('heroicon-o-receipt-percent')
-                    ->color('gray')
-                    ->url(function (EventRegistration $record): ?string {
-                        $transaction = Transaction::where('subject_type', EventRegistration::class)
-                            ->where('subject_id', $record->id)
-                            ->first();
-
-                        if (! $transaction) {
-                            return null;
-                        }
-
-                        return TransactionResource::getUrl('index', [
-                            'tableFilters' => ['id' => ['value' => $transaction->id]],
-                        ]);
-                    })
-                    ->openUrlInNewTab()
-                    ->hidden(function (EventRegistration $record): bool {
-                        return ! Transaction::where('subject_type', EventRegistration::class)
-                            ->where('subject_id', $record->id)
-                            ->exists();
-                    }),
 
                 Tables\Actions\DeleteAction::make()
                     ->modalHeading(fn (EventRegistration $record): string =>

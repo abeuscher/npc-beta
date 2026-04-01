@@ -227,6 +227,15 @@ class TransactionResource extends Resource
                     )
                     ->hidden(),
 
+                Tables\Filters\Filter::make('event_id')
+                    ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
+                        ? $query
+                            ->where('subject_type', EventRegistration::class)
+                            ->whereIn('subject_id', EventRegistration::where('event_id', $data['value'])->pluck('id'))
+                        : $query
+                    )
+                    ->hidden(),
+
                 Tables\Filters\SelectFilter::make('contact_id')
                     ->label('Contact')
                     ->options(fn () => Contact::orderByRaw("COALESCE(last_name, first_name)")
