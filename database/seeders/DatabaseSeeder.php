@@ -151,6 +151,9 @@ class DatabaseSeeder extends Seeder
         // ── System collections (all environments) ────────────────────────────
         $this->seedSystemCollections();
 
+        // ── Transactions ─────────────────────────────────────────────────────
+        $this->call(TransactionSeeder::class);
+
         // ── Help articles ────────────────────────────────────────────────────
         Artisan::call('help:sync');
     }

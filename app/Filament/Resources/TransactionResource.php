@@ -41,25 +41,43 @@ class TransactionResource extends Resource
         return ! $record->stripe_id;
     }
 
+    private const MANUAL_TYPES = [
+        'grant'      => 'Grant',
+        'expense'    => 'Expense',
+        'adjustment' => 'Adjustment',
+    ];
+
+    private const TYPE_DIRECTION_MAP = [
+        'grant'      => 'in',
+        'expense'    => 'out',
+        'adjustment' => 'in',
+    ];
+
     public static function form(Form $form): Form
     {
+        $isEdit = $form->getOperation() === 'edit';
+
         return $form->schema([
             Forms\Components\Section::make('Off-system transaction')
                 ->description('Use this form to record transactions that occurred outside any connected system — for example, a grant received by cheque, a project expense paid in cash, or a manual fund adjustment. Payments, refunds, and any other transactions processed through Stripe are recorded automatically and cannot be entered here.')
                 ->schema([
+                    // Known manual type — normal select
                     Forms\Components\Select::make('type')
-                        ->options([
-                            'grant'      => 'Grant',
-                            'expense'    => 'Expense',
-                            'adjustment' => 'Adjustment',
-                        ])
+                        ->options(self::MANUAL_TYPES)
                         ->default('grant')
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('direction', self::TYPE_DIRECTION_MAP[$state] ?? 'in'))
+                        ->visible(fn (?Transaction $record): bool => ! $record || array_key_exists($record->type, self::MANUAL_TYPES)),
 
-                    Forms\Components\Select::make('direction')
-                        ->options(['in' => 'In', 'out' => 'Out'])
-                        ->default('in')
-                        ->required(),
+                    // Unknown type (Stripe-originated record opened defensively) — disabled text
+                    Forms\Components\TextInput::make('type')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->visible(fn (?Transaction $record): bool => $record && ! array_key_exists($record->type, self::MANUAL_TYPES)),
+
+                    Forms\Components\Hidden::make('direction')
+                        ->default('in'),
 
                     Forms\Components\TextInput::make('amount')
                         ->numeric()
@@ -74,6 +92,14 @@ class TransactionResource extends Resource
                         ->default('pending')
                         ->required(),
 
+                    Forms\Components\Select::make('contact_id')
+                        ->label('Contact')
+                        ->relationship('contact', 'first_name')
+                        ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
+                        ->searchable(['first_name', 'last_name', 'email'])
+                        ->nullable()
+                        ->columnSpan(2),
+
                     Forms\Components\DateTimePicker::make('occurred_at')
                         ->default(now())
                         ->required()
@@ -81,7 +107,9 @@ class TransactionResource extends Resource
 
                     Forms\Components\TextInput::make('quickbooks_id')
                         ->label('QuickBooks reference')
-                        ->nullable()
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->visible(fn (?Transaction $record): bool => $record && filled($record->quickbooks_id))
                         ->columnSpan(2),
                 ])->columns(4),
         ]);

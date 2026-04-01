@@ -14,4 +14,19 @@ class EditTransaction extends EditRecord
     {
         return [Actions\DeleteAction::make()];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $directionMap = [
+            'grant'      => 'in',
+            'expense'    => 'out',
+            'adjustment' => 'in',
+        ];
+
+        if (isset($directionMap[$data['type']])) {
+            $data['direction'] = $directionMap[$data['type']];
+        }
+
+        return $data;
+    }
 }
