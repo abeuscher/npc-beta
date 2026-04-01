@@ -6,6 +6,7 @@ use App\Filament\Resources\MembershipTierResource\Pages;
 use App\Models\MembershipTier;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,6 +26,11 @@ class MembershipTierResource extends Resource
     public static function canAccess(): bool
     {
         return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return $record->memberships()->where('status', 'active')->doesntExist();
     }
 
     public static function form(Form $form): Form
@@ -105,15 +111,41 @@ class MembershipTierResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+                Tables\Filters\TernaryFilter::make('is_archived')
+                    ->label('Archived')
+                    ->placeholder('Not archived')
+                    ->trueLabel('Archived only')
+                    ->falseLabel('All'),
             ])
             ->defaultSort('sort_order')
+            ->modifyQueryUsing(fn ($query) => $query->withoutArchived())
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('toggle_archive')
+                    ->label(fn (MembershipTier $record): string => $record->is_archived ? 'Unarchive' : 'Archive')
+                    ->icon(fn (MembershipTier $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->action(function (MembershipTier $record) {
+                        $record->update(['is_archived' => ! $record->is_archived]);
+                        Notification::make()
+                            ->title($record->is_archived ? 'Tier archived' : 'Tier unarchived')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (MembershipTier $record): bool => $record->memberships()->where('status', 'active')->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (MembershipTier $record) {
+                                if ($record->memberships()->where('status', 'active')->doesntExist()) {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

@@ -52,6 +52,7 @@ class MembershipResource extends Resource
                     ->label('Tier')
                     ->options(
                         MembershipTier::where('is_active', true)
+                            ->where('is_archived', false)
                             ->orderBy('sort_order')
                             ->get()
                             ->pluck('name', 'id')

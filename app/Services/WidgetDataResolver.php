@@ -139,6 +139,7 @@ class WidgetDataResolver
         $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
 
         $query = Product::where('status', 'published')
+            ->where('is_archived', false)
             ->orderBy('sort_order', 'asc');
 
         if ($limit) {

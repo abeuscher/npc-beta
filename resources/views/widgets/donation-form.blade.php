@@ -16,7 +16,7 @@
     $showFrequency  = $showMonthly || $showAnnual;
     $successPage    = $config['success_page'] ?? null;
 
-    $activeFunds    = \App\Models\Fund::where('is_active', true)->orderBy('name')->get();
+    $activeFunds    = \App\Models\Fund::where('is_active', true)->where('is_archived', false)->orderBy('name')->get();
     $showFunds      = $activeFunds->isNotEmpty();
 @endphp
 

@@ -8,6 +8,7 @@ use App\Models\CustomFieldDef;
 use App\Models\Form;
 use Filament\Forms;
 use Filament\Forms\Form as FilamentForm;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -311,10 +312,28 @@ class FormResource extends Resource
                     ->sortable(),
             ])
             ->defaultSort('updated_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->withoutArchived())
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                Tables\Filters\TernaryFilter::make('is_archived')
+                    ->label('Archived')
+                    ->placeholder('Not archived')
+                    ->trueLabel('Archived only')
+                    ->falseLabel('All'),
             ])
             ->actions([
+                Tables\Actions\Action::make('toggle_archive')
+                    ->label(fn (Form $record): string => $record->is_archived ? 'Unarchive' : 'Archive')
+                    ->icon(fn (Form $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->action(function (Form $record) {
+                        $record->update(['is_archived' => ! $record->is_archived]);
+                        Notification::make()
+                            ->title($record->is_archived ? 'Form archived' : 'Form unarchived')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('download_json')
                     ->label('Download JSON')
                     ->icon('heroicon-o-arrow-down-tray')
@@ -334,9 +353,19 @@ class FormResource extends Resource
                     }),
 
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalDescription(fn (Form $record): ?string =>
+                        $record->submissions()->exists()
+                            ? "This form has {$record->submissions()->count()} submission(s). Deleting it will also remove all submissions."
+                            : null
+                    ),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->modalDescription(fn (Form $record): ?string =>
+                        $record->submissions()->withTrashed()->exists()
+                            ? "This form has {$record->submissions()->withTrashed()->count()} submission(s) that will be permanently lost."
+                            : null
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

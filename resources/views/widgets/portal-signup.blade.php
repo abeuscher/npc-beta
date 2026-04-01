@@ -1,5 +1,5 @@
 @php
-    $tiers = \App\Models\MembershipTier::where('is_active', true)->orderBy('sort_order')->get();
+    $tiers = \App\Models\MembershipTier::where('is_active', true)->where('is_archived', false)->orderBy('sort_order')->get();
     $hasPaidTiers = $tiers->contains(fn ($t) => $t->default_price && $t->default_price > 0);
 @endphp
 

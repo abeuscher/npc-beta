@@ -217,7 +217,8 @@ class NavigationMenuResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalDescription('This menu may be in use on your site. Deleting it will remove it from any pages where it appears.'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

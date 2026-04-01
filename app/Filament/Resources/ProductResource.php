@@ -7,6 +7,7 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -131,15 +132,41 @@ class ProductResource extends Resource
                         'draft'     => 'Draft',
                         'published' => 'Published',
                     ]),
+                Tables\Filters\TernaryFilter::make('is_archived')
+                    ->label('Archived')
+                    ->placeholder('Not archived')
+                    ->trueLabel('Archived only')
+                    ->falseLabel('All'),
             ])
             ->defaultSort('sort_order', 'asc')
+            ->modifyQueryUsing(fn ($query) => $query->withoutArchived())
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('toggle_archive')
+                    ->label(fn (Product $record): string => $record->is_archived ? 'Unarchive' : 'Archive')
+                    ->icon(fn (Product $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->action(function (Product $record) {
+                        $record->update(['is_archived' => ! $record->is_archived]);
+                        Notification::make()
+                            ->title($record->is_archived ? 'Product archived' : 'Product unarchived')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Product $record): bool => $record->purchases()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Product $record) {
+                                if ($record->purchases()->doesntExist()) {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

@@ -29,6 +29,11 @@ class WidgetTypeResource extends Resource
         return auth()->user()?->can('view_any_widget_type') ?? false;
     }
 
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return ! WidgetType::isPinned($record->handle) && $record->pageWidgets()->doesntExist();
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -184,14 +189,14 @@ class WidgetTypeResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (WidgetType $record): bool => WidgetType::isPinned($record->handle)),
+                    ->hidden(fn (WidgetType $record): bool => WidgetType::isPinned($record->handle) || $record->pageWidgets()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $records->each(function (WidgetType $record) {
-                                if (! WidgetType::isPinned($record->handle)) {
+                                if (! WidgetType::isPinned($record->handle) && $record->pageWidgets()->doesntExist()) {
                                     $record->delete();
                                 }
                             });

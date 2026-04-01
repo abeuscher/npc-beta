@@ -8,6 +8,7 @@ use App\Services\QuickBooks\QuickBooksAuth;
 use App\Services\QuickBooks\QuickBooksClient;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -78,14 +79,42 @@ class FundResource extends Resource
                     }),
                 Tables\Columns\IconColumn::make('is_active')->boolean()->label('Active'),
             ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_archived')
+                    ->label('Archived')
+                    ->placeholder('Not archived')
+                    ->trueLabel('Archived only')
+                    ->falseLabel('All'),
+            ])
             ->defaultSort('name')
+            ->modifyQueryUsing(fn ($query) => $query->withoutArchived())
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('toggle_archive')
+                    ->label(fn (Fund $record): string => $record->is_archived ? 'Unarchive' : 'Archive')
+                    ->icon(fn (Fund $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->action(function (Fund $record) {
+                        $record->update(['is_archived' => ! $record->is_archived]);
+                        Notification::make()
+                            ->title($record->is_archived ? 'Fund archived' : 'Fund unarchived')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Fund $record): bool => $record->donations()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Fund $record) {
+                                if ($record->donations()->doesntExist()) {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

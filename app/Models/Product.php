@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Archivable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    use HasFactory, HasUuids;
+    use Archivable, HasFactory, HasUuids;
 
     protected $fillable = [
         'name',
@@ -18,6 +19,11 @@ class Product extends Model
         'capacity',
         'status',
         'sort_order',
+        'is_archived',
+    ];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
     ];
 
     public function prices(): HasMany

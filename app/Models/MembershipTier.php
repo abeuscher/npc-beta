@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Archivable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class MembershipTier extends Model
 {
-    use HasFactory, HasSlug, HasUuids;
+    use Archivable, HasFactory, HasSlug, HasUuids;
 
     protected $fillable = [
         'name',
@@ -22,11 +23,13 @@ class MembershipTier extends Model
         'description',
         'is_active',
         'sort_order',
+        'is_archived',
     ];
 
     protected $casts = [
         'default_price'       => 'decimal:2',
         'is_active'           => 'boolean',
+        'is_archived'         => 'boolean',
         'renewal_notice_days' => 'integer',
         'sort_order'          => 'integer',
     ];

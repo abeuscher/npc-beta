@@ -103,6 +103,7 @@ class EditContact extends EditRecord
                             ->label('Tier')
                             ->options(function () {
                                 return MembershipTier::where('is_active', true)
+                                    ->where('is_archived', false)
                                     ->orderBy('sort_order')
                                     ->get()
                                     ->mapWithKeys(fn ($tier) => [

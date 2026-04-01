@@ -242,13 +242,23 @@ class CollectionResource extends Resource
                     ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
 
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
+                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection())
+                    ->modalDescription(fn (Collection $record): ?string =>
+                        $record->collectionItems()->exists()
+                            ? "This collection has {$record->collectionItems()->count()} item(s). Deleting it will also remove all items."
+                            : null
+                    ),
 
                 Tables\Actions\RestoreAction::make()
                     ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
 
                 Tables\Actions\ForceDeleteAction::make()
-                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection()),
+                    ->visible(fn (Collection $record): bool => ! $record->isSystemCollection())
+                    ->modalDescription(fn (Collection $record): ?string =>
+                        $record->collectionItems()->withTrashed()->exists()
+                            ? "This collection has {$record->collectionItems()->withTrashed()->count()} item(s) that will be permanently lost."
+                            : null
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -36,7 +36,7 @@ class ContactResource extends Resource
 
     public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->can('delete_contact') ?? false;
+        return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
     public static function form(Form $form): Form
@@ -326,13 +326,15 @@ class ContactResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
                 ]),
             ])
             ->modifyQueryUsing(fn ($query) => $query->with([

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Archivable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Form extends Model
 {
-    use HasFactory, SoftDeletes;
+    use Archivable, HasFactory, SoftDeletes;
     protected $fillable = [
         'title',
         'handle',
@@ -17,12 +18,14 @@ class Form extends Model
         'fields',
         'settings',
         'is_active',
+        'is_archived',
     ];
 
     protected $casts = [
-        'fields'    => 'array',
-        'settings'  => 'array',
-        'is_active' => 'boolean',
+        'fields'      => 'array',
+        'settings'    => 'array',
+        'is_active'   => 'boolean',
+        'is_archived' => 'boolean',
     ];
 
     public function submissions(): HasMany

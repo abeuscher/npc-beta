@@ -190,10 +190,18 @@ class PageResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (Page $record): bool => $record->type === 'system'),
+                    ->hidden(fn (Page $record): bool => $record->type === 'system')
+                    ->modalDescription(fn (Page $record): ?string => match ($record->type) {
+                        'member' => 'Warning: Deleting this page may render the member portal unusable. Are you sure you want to proceed?',
+                        default  => null,
+                    }),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
-                    ->hidden(fn (Page $record): bool => $record->type === 'system'),
+                    ->hidden(fn (Page $record): bool => $record->type === 'system')
+                    ->modalDescription(fn (Page $record): ?string => match ($record->type) {
+                        'member' => 'Warning: Permanently deleting this page may render the member portal unusable.',
+                        default  => null,
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

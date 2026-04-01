@@ -318,7 +318,7 @@ class EditEvent extends EditRecord
 
                     $this->redirect(static::getResource()::getUrl('edit', ['record' => $event]));
                 },
-                submitLabel: 'Cancel Event',
+                submitLabel: 'Send cancellation emails',
             )
                 ->label('Cancel Event')
                 ->icon('heroicon-o-x-circle')

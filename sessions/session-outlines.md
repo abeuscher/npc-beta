@@ -356,7 +356,7 @@ A lightweight test suite that runs on the deploy server against real sandbox API
 
 ### API Key Pattern Validation & Test-Mode Warning
 
-Two related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected. Scope and warning placement to be agreed following the session 081 discussion.
+Three related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected; (3) **environment mismatch hard gate** — on save, detect whether Stripe and QuickBooks are pointing at different environments (e.g. Stripe live + QB sandbox, or vice versa) and refuse to save with a clear error. The dangerous scenario is Stripe test mode pushing fake transactions into a real QuickBooks company. The gate ensures both integrations are in the same mode before the configuration is accepted. Scope and warning placement to be agreed following the session 081 discussion.
 
 ### System Email Preview — Default Sample Record & Full Coverage
 

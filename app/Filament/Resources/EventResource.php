@@ -36,6 +36,11 @@ class EventResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return $record->registrations()->doesntExist();
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Shared: compute ends_at from duration fields
     // ──────────────────────────────────────────────────────────────────────────
@@ -385,11 +390,19 @@ class EventResource extends Resource
             ->defaultSort('starts_at', 'asc')
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn (Event $record): bool => $record->registrations()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Event $record) {
+                                if ($record->registrations()->doesntExist()) {
+                                    $record->delete();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

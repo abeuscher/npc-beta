@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EventResource\RelationManagers;
 
+use App\Models\EventRegistration;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
@@ -15,7 +16,7 @@ class EventRegistrationsRelationManager extends RelationManager
 
     public function isReadOnly(): bool
     {
-        return true;
+        return false;
     }
 
     public function form(Form $form): Form
@@ -60,7 +61,19 @@ class EventRegistrationsRelationManager extends RelationManager
                     ->date('M j, Y')
                     ->sortable(),
             ])
-            ->actions([])
+            ->actions([
+                Tables\Actions\DeleteAction::make()
+                    ->modalHeading(fn (EventRegistration $record): string =>
+                        $record->stripe_payment_intent_id
+                            ? 'This is a paid registration'
+                            : 'Delete registration'
+                    )
+                    ->modalDescription(fn (EventRegistration $record): ?string =>
+                        $record->stripe_payment_intent_id
+                            ? 'This registrant paid via Stripe. Please issue the refund in your Stripe dashboard before deleting this registration. Are you sure you want to proceed?'
+                            : null
+                    ),
+            ])
             ->defaultSort('registered_at', 'desc');
     }
 }

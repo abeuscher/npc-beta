@@ -17,7 +17,7 @@ class FormSubmissionController extends Controller
 {
     public function store(Request $request, string $handle)
     {
-        $form = Form::where('handle', $handle)->where('is_active', true)->firstOrFail();
+        $form = Form::where('handle', $handle)->where('is_active', true)->where('is_archived', false)->firstOrFail();
 
         // ── Honeypot — silently succeed if bot fills the hidden field ──────
         if (($form->settings['honeypot'] ?? true) && $request->filled('_hp')) {
