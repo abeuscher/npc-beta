@@ -115,6 +115,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 106 | Transaction Ledger Cleanup & Seeder |
 | 107 | Paid Event Registration & Membership Checkout |
 | 108 | Beta-One Bug Fixes & Migration Squash |
+| 109 | Deletion Guards & Archive Pattern |
 
 ---
 
@@ -326,9 +327,7 @@ Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry 
 
 ### ~~Session 108 — Beta-One Bug Fixes & Migration Squash~~ *(completed)*
 
-### Session 109 — Deletion Guards & Archive Pattern
-
-Implement deletion safety guards across all content types (hard block, conditional block, or warning) and introduce an "archived" status for Product, Membership Tier, Fund, and Form. Archived records are hidden from default views and excluded from new-association dropdowns.
+### ~~Session 109 — Deletion Guards & Archive Pattern~~ *(completed)*
 
 ### Session 110 — Data Retention & Cascading Delete Audit
 
