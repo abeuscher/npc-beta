@@ -36,8 +36,9 @@ class AppServiceProvider extends ServiceProvider
 
         BasePage::formActionsAlignment(Alignment::End);
 
-        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native());
-        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native());
+        // Filament's built-in JS pickers (not browser-native)
+        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native(false));
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false));
 
         $singleDescription = fn (object $record): string =>
             'You are about to permanently delete this ' .

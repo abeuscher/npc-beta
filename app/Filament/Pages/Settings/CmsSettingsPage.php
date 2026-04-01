@@ -183,7 +183,7 @@ class CmsSettingsPage extends Page
                     ]),
 
                 Forms\Components\Section::make('Image Sizes')
-                    ->description('Responsive breakpoints used when generating optimized image variants. Widths in pixels, sorted largest to smallest. Defaults match Pico.css breakpoints.')
+                    ->description('Responsive breakpoints used when generating optimized image variants. Widths in pixels, sorted largest to smallest.')
                     ->schema([
                         Forms\Components\Repeater::make('image_breakpoints')
                             ->label('Breakpoints')
@@ -196,7 +196,7 @@ class CmsSettingsPage extends Page
                                     ->maxValue(3840)
                                     ->suffix('px'),
                             ])
-                            ->columns(1)
+                            ->grid(5)
                             ->defaultItems(0)
                             ->reorderable()
                             ->addActionLabel('Add breakpoint')

@@ -50,7 +50,11 @@ class Page extends Model
 
     public function scopePublished($query): void
     {
-        $query->where('status', 'published');
+        $query->where('status', 'published')
+            ->where(function ($q) {
+                $q->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            });
     }
 
     public function getSlugOptions(): SlugOptions

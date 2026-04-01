@@ -46,6 +46,7 @@ class GeneralSettingsPage extends Page
             'admin_primary_color' => SiteSetting::get('admin_primary_color', '#f59e0b'),
             'admin_logo_upload'   => null,
             'dashboard_welcome'   => SiteSetting::get('dashboard_welcome', ''),
+            'horizon_enabled'     => SiteSetting::get('horizon_enabled', 'false') === 'true',
             'portal_prefix'       => SiteSetting::get('portal_prefix', 'members'),
             'blog_prefix'         => SiteSetting::get('blog_prefix', 'news'),
             'events_prefix'       => SiteSetting::get('events_prefix', 'events'),
@@ -69,6 +70,10 @@ class GeneralSettingsPage extends Page
                             ->helperText('The public URL of this installation. Used for generating absolute links. Example: https://yourorg.org')
                             ->url()
                             ->required(),
+
+                        Forms\Components\Toggle::make('horizon_enabled')
+                            ->label('Enable Horizon dashboard')
+                            ->helperText('When enabled, the queue monitoring dashboard is available at /horizon for super admins. Disabled by default.'),
                     ])
                     ->visible($isSuperAdmin),
 
@@ -281,6 +286,7 @@ class GeneralSettingsPage extends Page
             SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
             SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
             SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
+            SiteSetting::set('horizon_enabled', ($data['horizon_enabled'] ?? false) ? 'true' : 'false');
         }
 
         Artisan::call('config:clear');

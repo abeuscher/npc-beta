@@ -113,3 +113,35 @@ it('missing slug returns 404', function () {
 it('post index renders the blog index page', function () {
     $this->get('/news')->assertOk()->assertSee('News');
 });
+
+it('future-dated published post is not accessible', function () {
+    makePost([
+        'title'        => 'Scheduled Post',
+        'slug'         => 'news/scheduled-post',
+        'status'       => 'published',
+        'published_at' => now()->addDays(7),
+    ]);
+
+    $this->get('/news/scheduled-post')->assertNotFound();
+});
+
+it('future-dated published post does not appear in blog listing query', function () {
+    makePost([
+        'title'        => 'Visible Post',
+        'slug'         => 'news/visible-post',
+        'status'       => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+
+    makePost([
+        'title'        => 'Scheduled Post',
+        'slug'         => 'news/scheduled-post',
+        'status'       => 'published',
+        'published_at' => now()->addDays(7),
+    ]);
+
+    $posts = Page::where('type', 'post')->published()->get();
+
+    expect($posts)->toHaveCount(1);
+    expect($posts->first()->title)->toBe('Visible Post');
+});

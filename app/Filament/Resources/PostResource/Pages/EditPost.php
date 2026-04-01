@@ -13,20 +13,31 @@ class EditPost extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-        $url  = $base . '/' . $this->record->slug;
+        $base    = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+        $url     = $base . '/' . $this->record->slug;
+        $isDraft = $this->record->status !== 'published';
 
         return [
-            Actions\Action::make('publicUrl')
-                ->label($url)
-                ->url($url)
-                ->openUrlInNewTab()
-                ->link()
-                ->color('primary')
-                ->extraAttributes([
-                    'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                    'title' => $url,
-                ]),
+            $isDraft
+                ? Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->link()
+                    ->color('gray')
+                    ->disabled()
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => 'Post not published',
+                    ])
+                : Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->url($url)
+                    ->openUrlInNewTab()
+                    ->link()
+                    ->color('primary')
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => $url,
+                    ]),
 
             Actions\DeleteAction::make(),
         ];

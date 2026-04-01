@@ -36,17 +36,29 @@ class EditPage extends EditRecord
         $path = $this->record->slug === 'home' ? '/' : '/' . $this->record->slug;
         $url  = $base . $path;
 
+        $isDraft = $this->record->status !== 'published';
+
         return [
-            Actions\Action::make('publicUrl')
-                ->label($url)
-                ->url($url)
-                ->openUrlInNewTab()
-                ->link()
-                ->color('primary')
-                ->extraAttributes([
-                    'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                    'title' => $url,
-                ]),
+            $isDraft
+                ? Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->link()
+                    ->color('gray')
+                    ->disabled()
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => 'Page not published',
+                    ])
+                : Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->url($url)
+                    ->openUrlInNewTab()
+                    ->link()
+                    ->color('primary')
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => $url,
+                    ]),
 
             Actions\DeleteAction::make()
                 ->hidden(fn () => $this->record->type === 'system'),

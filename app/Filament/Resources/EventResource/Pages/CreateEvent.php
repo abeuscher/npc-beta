@@ -24,6 +24,8 @@ class CreateEvent extends CreateRecord
         $data['slug']      = $slug;
         $data['author_id'] = auth()->id();
 
+        $data = EventResource::computeEndsAt($data);
+
         return $data;
     }
 

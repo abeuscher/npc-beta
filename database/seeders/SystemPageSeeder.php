@@ -79,12 +79,12 @@ class SystemPageSeeder extends Seeder
 
         // ── Chrome system pages (header & footer) ───────────────────────────
         $chromePages = [
-            ['title' => 'Header', 'slug' => '_header'],
-            ['title' => 'Footer', 'slug' => '_footer'],
+            ['title' => 'Header', 'slug' => '_header', 'widget_handle' => 'site_header'],
+            ['title' => 'Footer', 'slug' => '_footer', 'widget_handle' => 'site_footer'],
         ];
 
         foreach ($chromePages as $def) {
-            Page::firstOrCreate(
+            $page = Page::firstOrCreate(
                 ['slug' => $def['slug']],
                 [
                     'author_id'    => $authorId,
@@ -94,6 +94,25 @@ class SystemPageSeeder extends Seeder
                     'published_at' => now(),
                 ]
             );
+
+            $widgetType = WidgetType::where('handle', $def['widget_handle'])->first();
+
+            if ($widgetType) {
+                $exists = PageWidget::where('page_id', $page->id)
+                    ->where('widget_type_id', $widgetType->id)
+                    ->exists();
+
+                if (! $exists) {
+                    PageWidget::create([
+                        'page_id'        => $page->id,
+                        'widget_type_id' => $widgetType->id,
+                        'label'          => $def['title'],
+                        'config'         => $widgetType->getDefaultConfig(),
+                        'sort_order'     => 1,
+                        'is_active'      => true,
+                    ]);
+                }
+            }
         }
     }
 }

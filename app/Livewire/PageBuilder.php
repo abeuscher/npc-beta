@@ -136,7 +136,7 @@ class PageBuilder extends Component
             ->where('sort_order', '>=', $position)
             ->increment('sort_order');
 
-        PageWidget::create([
+        $newBlock = PageWidget::create([
             'page_id'        => $this->pageId,
             'widget_type_id' => $widgetType->id,
             'label'          => $this->addModalLabel,
@@ -150,6 +150,7 @@ class PageBuilder extends Component
         $this->insertPosition = null;
         $this->addModalLabel  = '';
         $this->loadBlocks();
+        $this->selectBlock($newBlock->id);
     }
 
     // -------------------------------------------------------------------------

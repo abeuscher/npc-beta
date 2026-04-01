@@ -37,6 +37,44 @@ class EventResource extends Resource
     protected static ?int $navigationSort = 3;
 
     // ──────────────────────────────────────────────────────────────────────────
+    // Shared: compute ends_at from duration fields
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public static function computeEndsAt(array $data): array
+    {
+        if (! empty($data['start_date'])) {
+            $hour   = (int) ($data['start_hour'] ?? 12);
+            $minute = (int) ($data['start_minute'] ?? 0);
+            $ampm   = $data['start_ampm'] ?? 'AM';
+
+            // Convert 12-hour to 24-hour
+            if ($ampm === 'AM' && $hour === 12) {
+                $hour = 0;
+            } elseif ($ampm === 'PM' && $hour !== 12) {
+                $hour += 12;
+            }
+
+            $start = \Carbon\Carbon::parse($data['start_date'])
+                ->setTime($hour, $minute, 0);
+
+            $data['starts_at'] = $start->format('Y-m-d H:i:s');
+
+            if (! empty($data['all_day'])) {
+                $data['ends_at'] = $start->copy()->addDay()->format('Y-m-d H:i:s');
+            } else {
+                $dh = (int) ($data['duration_hours'] ?? 1);
+                $dm = (int) ($data['duration_minutes'] ?? 0);
+                $data['ends_at'] = $start->copy()->addHours($dh)->addMinutes($dm)->format('Y-m-d H:i:s');
+            }
+        }
+
+        unset($data['start_date'], $data['start_hour'], $data['start_minute'], $data['start_ampm'], $data['time_separator'], $data['time_spacer']);
+        unset($data['duration_hours'], $data['duration_minutes'], $data['all_day']);
+
+        return $data;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     // Shared: create the standard landing page for an event
     // ──────────────────────────────────────────────────────────────────────────
 
@@ -114,125 +152,187 @@ class EventResource extends Resource
                 modelType: 'event',
                 tagType: 'event',
                 uniqueSections: [
-                    Forms\Components\Section::make('Event Details')->schema([
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\DateTimePicker::make('starts_at')
-                                ->label('Start')
-                                ->required()
-                                ->seconds(false),
+                    Forms\Components\Grid::make(3)->schema([
+                        // ── Left column (8 of 12 = 2 of 3) ──────────────────
+                        Forms\Components\Group::make([
+                            Forms\Components\Section::make('Event Details')->schema([
+                                Forms\Components\Grid::make(12)->schema([
+                                    Forms\Components\Fieldset::make('Start Time')
+                                        ->id('start-time-fieldset')
+                                        ->schema([
+                                        Forms\Components\DatePicker::make('start_date')
+                                            ->label('Date / Time')
+                                            ->required()
+                                            ->columnSpan(4),
 
-                            Forms\Components\DateTimePicker::make('ends_at')
-                                ->label('End')
-                                ->nullable()
-                                ->seconds(false)
-                                ->after('starts_at'),
-                        ]),
+                                        Forms\Components\Select::make('start_hour')
+                                            ->label("\u{200B}")
+                                            ->options(collect(range(1, 12))->mapWithKeys(fn ($h) => [$h => $h]))
+                                            ->default(12)
+                                            ->required()
+                                            ->columnSpan(3),
 
-                        QuillEditor::make('description')
-                            ->label('Description')
-                            ->nullable(),
-                    ]),
-                    Forms\Components\Section::make('Location Info')->schema([
-                        Forms\Components\TextInput::make('address_line_1')
-                            ->label('Address line 1')
-                            ->maxLength(255),
+                                        Forms\Components\Placeholder::make('time_separator')
+                                            ->label("\u{200B}")
+                                            ->content(new HtmlString('<span style="font-weight:700;font-size:1.25rem;line-height:2.4rem;display:flex;justify-content:center;">:</span>'))
+                                            ->columnSpan(1),
 
-                        Forms\Components\TextInput::make('address_line_2')
-                            ->label('Address line 2')
-                            ->maxLength(255),
+                                        Forms\Components\Select::make('start_minute')
+                                            ->label("\u{200B}")
+                                            ->options(collect(range(0, 59))->mapWithKeys(fn ($m) => [$m => str_pad($m, 2, '0', STR_PAD_LEFT)]))
+                                            ->default(0)
+                                            ->required()
+                                            ->columnSpan(3),
 
-                        Forms\Components\Grid::make(3)->schema([
-                            Forms\Components\TextInput::make('city')
-                                ->maxLength(100),
+                                        Forms\Components\Select::make('start_ampm')
+                                            ->extraAttributes(['class' => 'gap-0'])
+                                            ->label("\u{200B}")
+                                            ->options(['AM' => 'am', 'PM' => 'pm'])
+                                            ->default('AM')
+                                            ->required()
+                                            ->columnSpan(1),
+                                    ])->columns(12)->columnSpan(7),
 
-                            UsStateSelect::make('state'),
+                                    Forms\Components\Fieldset::make('Duration')->schema([
+                                        Forms\Components\Select::make('duration_hours')
+                                            ->label('Hours')
+                                            ->options(collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => $h]))
+                                            ->default(1)
+                                            ->required()
+                                            ->disabled(fn (Forms\Get $get): bool => (bool) $get('all_day')),
 
-                            Forms\Components\TextInput::make('zip')
-                                ->maxLength(20),
-                        ]),
+                                        Forms\Components\Select::make('duration_minutes')
+                                            ->label('Minutes')
+                                            ->options([0 => '00', 15 => '15', 30 => '30', 45 => '45'])
+                                            ->default(0)
+                                            ->required()
+                                            ->disabled(fn (Forms\Get $get): bool => (bool) $get('all_day')),
 
-                        Forms\Components\Placeholder::make('_map_sep')
-                            ->hiddenLabel()
-                            ->content(new HtmlString('<hr class="border-gray-200 -mx-6 -mt-2">')),
+                                        Forms\Components\Checkbox::make('all_day')
+                                            ->label('All day')
+                                            ->live()
+                                            ->inline(false),
+                                    ])->columns(3)->columnSpan(5),
+                                ]),
 
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TextInput::make('map_label')
-                                ->label('Map button label')
-                                ->maxLength(255)
-                                ->placeholder('e.g. View on Google Maps'),
+                                Forms\Components\Hidden::make('starts_at'),
+                                Forms\Components\Hidden::make('ends_at'),
 
-                            Forms\Components\TextInput::make('map_url')
-                                ->label('Map link')
-                                ->url()
-                                ->maxLength(2048),
-                        ]),
-                    ]),
+                                QuillEditor::make('description')
+                                    ->label('Description')
+                                    ->nullable(),
+                            ]),
 
-                    Forms\Components\Section::make('Online Meeting Info')->schema([
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\TextInput::make('meeting_label')
-                                ->label('Link label')
-                                ->maxLength(255)
-                                ->placeholder('e.g. Join on Zoom'),
+                            Forms\Components\Section::make('Location Info')
+                                ->collapsed()
+                                ->schema([
+                                    Forms\Components\TextInput::make('address_line_1')
+                                        ->label('Address line 1')
+                                        ->maxLength(255),
 
-                            Forms\Components\TextInput::make('meeting_url')
-                                ->label('Meeting link')
-                                ->url()
-                                ->maxLength(2048),
-                        ]),
+                                    Forms\Components\TextInput::make('address_line_2')
+                                        ->label('Address line 2')
+                                        ->maxLength(255),
 
-                        QuillEditor::make('meeting_details')
-                            ->label('Joining Details')
-                            ->nullable(),
-                    ]),
+                                    Forms\Components\Grid::make(3)->schema([
+                                        Forms\Components\TextInput::make('city')
+                                            ->maxLength(100),
 
-                    Forms\Components\Section::make('Registration Details')->schema([
-                        Forms\Components\Select::make('registration_mode')
-                            ->options([
-                                'open'     => 'Open — accepting registrations',
-                                'closed'   => 'Closed — at capacity or paused',
-                                'none'     => 'No registration required (walk-in / public event)',
-                                'external' => 'External — handled on another website',
-                            ])
-                            ->default('open')
-                            ->required()
-                            ->live(),
+                                        UsStateSelect::make('state'),
 
-                        Forms\Components\TextInput::make('external_registration_url')
-                            ->label('External registration URL')
-                            ->url()
-                            ->nullable()
-                            ->helperText('Registrants will be redirected to this URL.')
-                            ->visible(fn (Get $get) => $get('registration_mode') === 'external'),
+                                        Forms\Components\TextInput::make('zip')
+                                            ->maxLength(20),
+                                    ]),
 
-                        Forms\Components\TextInput::make('capacity')
-                            ->numeric()
-                            ->minValue(1)
-                            ->nullable()
-                            ->helperText('Leave blank for unlimited capacity.')
-                            ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+                                    Forms\Components\Placeholder::make('_map_sep')
+                                        ->hiddenLabel()
+                                        ->content(new HtmlString('<hr class="border-gray-200 -mx-6 -mt-2">')),
 
-                        Forms\Components\TextInput::make('price')
-                            ->label('Ticket price')
-                            ->numeric()
-                            ->prefix('$')
-                            ->default(0)
-                            ->minValue(0)
-                            ->step(0.01)
-                            ->helperText('Set to 0 for a free event.')
-                            ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+                                    Forms\Components\Grid::make(2)->schema([
+                                        Forms\Components\TextInput::make('map_label')
+                                            ->label('Map button label')
+                                            ->maxLength(255)
+                                            ->placeholder('e.g. View on Google Maps'),
 
-                        Forms\Components\Toggle::make('auto_create_contacts')
-                            ->label('Automatically add registrants to Contacts')
-                            ->default(true)
-                            ->helperText('Creates or updates a Contact record for each new registrant.')
-                            ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+                                        Forms\Components\TextInput::make('map_url')
+                                            ->label('Map link')
+                                            ->url()
+                                            ->maxLength(2048),
+                                    ]),
+                                ]),
 
-                        Forms\Components\Toggle::make('mailing_list_opt_in_enabled')
-                            ->label('Show mailing list opt-in checkbox on registration form')
-                            ->default(false)
-                            ->helperText('Adds an opt-in checkbox to the public registration form.')
-                            ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+                            Forms\Components\Section::make('Online Meeting Info')
+                                ->collapsed()
+                                ->schema([
+                                    Forms\Components\Grid::make(2)->schema([
+                                        Forms\Components\TextInput::make('meeting_label')
+                                            ->label('Link label')
+                                            ->maxLength(255)
+                                            ->placeholder('e.g. Join on Zoom'),
+
+                                        Forms\Components\TextInput::make('meeting_url')
+                                            ->label('Meeting link')
+                                            ->url()
+                                            ->maxLength(2048),
+                                    ]),
+
+                                    QuillEditor::make('meeting_details')
+                                        ->label('Joining Details')
+                                        ->nullable(),
+                                ]),
+                        ])->columnSpan(2),
+
+                        // ── Right column (4 of 12 = 1 of 3) ─────────────────
+                        Forms\Components\Section::make('Registration Details')
+                            ->columnSpan(1)
+                            ->schema([
+                                Forms\Components\Select::make('registration_mode')
+                                    ->options([
+                                        'open'     => 'Open — accepting registrations',
+                                        'closed'   => 'Closed — at capacity or paused',
+                                        'none'     => 'No registration required (walk-in / public event)',
+                                        'external' => 'External — handled on another website',
+                                    ])
+                                    ->default('open')
+                                    ->required()
+                                    ->live(),
+
+                                Forms\Components\TextInput::make('external_registration_url')
+                                    ->label('External registration URL')
+                                    ->url()
+                                    ->nullable()
+                                    ->helperText('Registrants will be redirected to this URL.')
+                                    ->visible(fn (Get $get) => $get('registration_mode') === 'external'),
+
+                                Forms\Components\TextInput::make('capacity')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->nullable()
+                                    ->helperText('Leave blank for unlimited capacity.')
+                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+
+                                Forms\Components\TextInput::make('price')
+                                    ->label('Ticket price')
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->default(0)
+                                    ->minValue(0)
+                                    ->step(0.01)
+                                    ->helperText('Set to 0 for a free event.')
+                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+
+                                Forms\Components\Toggle::make('auto_create_contacts')
+                                    ->label('Automatically add registrants to Contacts')
+                                    ->default(true)
+                                    ->helperText('Creates or updates a Contact record for each new registrant.')
+                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+
+                                Forms\Components\Toggle::make('mailing_list_opt_in_enabled')
+                                    ->label('Show mailing list opt-in checkbox on registration form')
+                                    ->default(false)
+                                    ->helperText('Adds an opt-in checkbox to the public registration form.')
+                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
+                            ]),
                     ]),
                 ],
                 withSeo: false,

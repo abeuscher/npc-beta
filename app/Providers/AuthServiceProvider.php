@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\SiteSetting;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Horizon\Horizon;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,15 @@ class AuthServiceProvider extends ServiceProvider
             if ($user instanceof \App\Models\User && $user->hasRole('super_admin')) {
                 return true;
             }
+        });
+
+        // Horizon dashboard — disabled by default, super_admin only when enabled
+        Horizon::auth(function ($request) {
+            if (SiteSetting::get('horizon_enabled', 'false') !== 'true') {
+                return false;
+            }
+
+            return $request->user()?->hasRole('super_admin') ?? false;
         });
     }
 }

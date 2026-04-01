@@ -20,6 +20,44 @@ class EditEvent extends EditRecord
 {
     protected static string $resource = EventResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $startsAt = ! empty($data['starts_at']) ? \Carbon\Carbon::parse($data['starts_at']) : null;
+        $endsAt   = ! empty($data['ends_at']) ? \Carbon\Carbon::parse($data['ends_at']) : null;
+
+        if ($startsAt) {
+            $data['start_date']   = $startsAt->format('Y-m-d');
+            $data['start_hour']   = (int) $startsAt->format('g'); // 1-12
+            $data['start_minute'] = (int) $startsAt->format('i');
+            $data['start_ampm']   = $startsAt->format('A');
+        } else {
+            $data['start_date']   = null;
+            $data['start_hour']   = 12;
+            $data['start_minute'] = 0;
+            $data['start_ampm']   = 'AM';
+        }
+
+        if ($startsAt && $endsAt) {
+            $totalMinutes = (int) $startsAt->diffInMinutes($endsAt);
+            $isAllDay     = $totalMinutes === 1440;
+
+            $data['duration_hours']   = $isAllDay ? 0 : intdiv($totalMinutes, 60);
+            $data['duration_minutes'] = $isAllDay ? 0 : $totalMinutes % 60;
+            $data['all_day']          = $isAllDay;
+        } else {
+            $data['duration_hours']   = 1;
+            $data['duration_minutes'] = 0;
+            $data['all_day']          = false;
+        }
+
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return EventResource::computeEndsAt($data);
+    }
+
     protected function getHeaderActions(): array
     {
         return [
