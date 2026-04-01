@@ -122,10 +122,15 @@ class ViewRegistrations extends Page implements HasTable
                             ->where('subject_id', $record->id)
                             ->first();
 
-                        return $transaction
-                            ? TransactionResource::getUrl('edit', ['record' => $transaction])
-                            : null;
+                        if (! $transaction) {
+                            return null;
+                        }
+
+                        return TransactionResource::getUrl('index', [
+                            'tableFilters' => ['id' => ['value' => $transaction->id]],
+                        ]);
                     })
+                    ->openUrlInNewTab()
                     ->hidden(function (EventRegistration $record): bool {
                         return ! Transaction::where('subject_type', EventRegistration::class)
                             ->where('subject_id', $record->id)

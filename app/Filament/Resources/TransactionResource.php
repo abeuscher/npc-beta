@@ -220,6 +220,13 @@ class TransactionResource extends Resource
             ]))
             ->defaultSort('occurred_at', 'desc')
             ->filters([
+                Tables\Filters\Filter::make('id')
+                    ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
+                        ? $query->where('id', $data['value'])
+                        : $query
+                    )
+                    ->hidden(),
+
                 Tables\Filters\SelectFilter::make('contact_id')
                     ->label('Contact')
                     ->options(fn () => Contact::orderByRaw("COALESCE(last_name, first_name)")
