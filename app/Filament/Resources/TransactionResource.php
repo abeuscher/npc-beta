@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TransactionResource\Pages;
 use App\Jobs\SyncTransactionToQuickBooks;
 use App\Models\Contact;
+use App\Models\Donation;
+use App\Models\EventRegistration;
+use App\Models\Membership;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Transaction;
@@ -127,18 +130,43 @@ class TransactionResource extends Resource
                         ->orWhere('last_name', 'ilike', "%{$search}%")
                     )),
 
-                Tables\Columns\TextColumn::make('source')
-                    ->label('Source')
+                Tables\Columns\TextColumn::make('category')
+                    ->label('Category')
                     ->badge()
-                    ->state(fn (Transaction $record): string => $record->stripe_id ? 'Stripe' : 'Manual')
-                    ->color(fn (string $state): string => $state === 'Stripe' ? 'info' : 'gray'),
+                    ->state(fn (Transaction $record): string => match ($record->subject_type) {
+                        Donation::class          => 'Donation',
+                        Purchase::class          => 'Purchase',
+                        EventRegistration::class => 'Event',
+                        Membership::class        => 'Membership',
+                        default                  => $record->stripe_id ? 'Stripe' : 'Manual',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'Donation'   => 'success',
+                        'Purchase'   => 'info',
+                        'Event'      => 'warning',
+                        'Membership' => 'primary',
+                        default      => 'gray',
+                    }),
 
-                Tables\Columns\TextColumn::make('type')->badge(),
+                Tables\Columns\TextColumn::make('subject_label')
+                    ->label('Description')
+                    ->state(function (Transaction $record): string {
+                        $subject = $record->subject;
+                        return match ($record->subject_type) {
+                            Donation::class          => $subject?->fund?->name ?? 'General donation',
+                            Purchase::class          => $subject?->product?->name ?? 'Product purchase',
+                            EventRegistration::class => $subject?->event?->title ?? 'Event registration',
+                            Membership::class        => $subject?->tier?->name ? $subject->tier->name . ' membership' : 'Membership',
+                            default                  => ucfirst($record->type),
+                        };
+                    })
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('amount')->money('USD')->sortable(),
 
                 Tables\Columns\TextColumn::make('direction')->badge()
-                    ->color(fn ($state) => $state === 'in' ? 'success' : 'danger'),
+                    ->color(fn ($state) => $state === 'in' ? 'success' : 'danger')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn ($state) => match ($state) {
@@ -186,6 +214,10 @@ class TransactionResource extends Resource
 
                 Tables\Columns\TextColumn::make('occurred_at')->dateTime()->sortable(),
             ])
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'subject',
+                'contact',
+            ]))
             ->defaultSort('occurred_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('contact_id')
@@ -206,12 +238,14 @@ class TransactionResource extends Resource
                     ),
 
                 Tables\Filters\SelectFilter::make('subject_type')
-                    ->label('Subject type')
+                    ->label('Category')
                     ->options([
-                        'App\Models\Donation' => 'Donation',
-                        'App\Models\Purchase' => 'Purchase',
+                        Donation::class          => 'Donation',
+                        Purchase::class          => 'Purchase',
+                        EventRegistration::class => 'Event registration',
+                        Membership::class        => 'Membership',
                     ])
-                    ->placeholder('All types'),
+                    ->placeholder('All categories'),
             ])
             ->actions([
                 Tables\Actions\Action::make('stripe')
