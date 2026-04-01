@@ -9,6 +9,7 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class FormSubmissionsRelationManager extends RelationManager
 {
@@ -60,6 +61,10 @@ class FormSubmissionsRelationManager extends RelationManager
                     ->getStateUsing(fn ($record) => (bool) $record->contact_id),
             ])
             ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->withoutGlobalScopes([SoftDeletingScope::class]))
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+            ])
             ->actions([
                 Tables\Actions\Action::make('view')
                     ->label('View contact')
@@ -74,13 +79,17 @@ class FormSubmissionsRelationManager extends RelationManager
                     ->label('View data')
                     ->visible(fn ($record) => ! $record->contact_id),
 
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
-                    ->visible(fn () => auth()->user()?->can('delete_form_submission')),
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make()
-                        ->visible(fn () => auth()->user()?->can('delete_form_submission')),
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
                 ]),
             ]);
     }

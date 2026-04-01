@@ -1,8 +1,8 @@
 ---
 title: Web Forms
 description: How to create, configure, and embed web forms on public pages. Covers field types, validation, contact field mapping, honeypot spam protection, and viewing submissions.
-version: "0.47"
-updated: 2026-03-21
+version: "0.48"
+updated: 2026-04-01
 tags: [cms, forms, contact, submissions]
 routes:
   - filament.admin.resources.forms.index
@@ -118,3 +118,25 @@ Open any form in the admin and scroll to the **Submissions** tab. Each row shows
 **Rate limiting** — the submission endpoint is limited to 10 submissions per minute per IP address.
 
 **PII screening** — all submitted values are scanned for credit card numbers, Social Security Numbers, and ABA routing numbers before being saved. If detected, the submission is rejected with a generic error message.
+
+## Deleted Records and Trash
+
+When you delete a form, the record is soft-deleted — it is hidden from normal views but kept in the database so it can be restored if needed. Deleted forms return a 404 if someone tries to submit them. Submissions on a deleted form are preserved and restored along with the form.
+
+### Viewing trashed records
+
+Use the **Trashed** filter above the table to control which records appear:
+
+- **Without trashed** (default) — only active records are shown.
+- **With trashed** — active and deleted records are shown together. Deleted records can be identified by the Restore action in their row.
+- **Only trashed** — only deleted records are shown.
+
+The same Trashed filter is available on the Submissions tab within each form.
+
+### Restoring a deleted record
+
+Find the record using the Trashed filter set to **With trashed** or **Only trashed**, then click **Restore** in the row actions. The record is immediately returned to active status.
+
+### Permanently deleting (purge)
+
+Force-delete permanently removes a record from the database. This action is restricted to super-admin users and cannot be undone. Force-delete appears as an action on trashed records only when you are logged in as a super-admin. Force-deleting a form will also permanently destroy all of its submissions.

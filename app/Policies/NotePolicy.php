@@ -36,4 +36,24 @@ class NotePolicy
     {
         return $user->can('delete_note');
     }
+
+    public function restore(User $user, Note $note): bool
+    {
+        return $user->can('delete_note');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_note');
+    }
+
+    public function forceDelete(User $user, Note $note): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

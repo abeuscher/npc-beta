@@ -36,4 +36,24 @@ class CampaignPolicy
     {
         return $user->can('delete_campaign');
     }
+
+    public function restore(User $user, Campaign $campaign): bool
+    {
+        return $user->can('delete_campaign');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_campaign');
+    }
+
+    public function forceDelete(User $user, Campaign $campaign): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

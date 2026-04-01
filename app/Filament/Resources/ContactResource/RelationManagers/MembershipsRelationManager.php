@@ -8,6 +8,7 @@ use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MembershipsRelationManager extends RelationManager
 {
@@ -69,8 +70,25 @@ class MembershipsRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->defaultSort('starts_on', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->withoutGlobalScopes([SoftDeletingScope::class]))
+            ->filters([
+                Tables\Filters\TrashedFilter::make(),
+            ])
             ->headerActions([])
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+                ]),
+            ]);
     }
 }

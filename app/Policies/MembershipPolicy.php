@@ -36,4 +36,24 @@ class MembershipPolicy
     {
         return $user->can('delete_membership');
     }
+
+    public function restore(User $user, Membership $membership): bool
+    {
+        return $user->can('delete_membership');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_membership');
+    }
+
+    public function forceDelete(User $user, Membership $membership): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

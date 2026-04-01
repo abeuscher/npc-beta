@@ -117,6 +117,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 108 | Beta-One Bug Fixes & Migration Squash |
 | 109 | Deletion Guards & Archive Pattern |
 | 110 | Data Retention & Cascading Delete Audit |
+| 111 | Trash Management UI |
 
 ---
 
@@ -162,17 +163,17 @@ Evaluate *Mailing List* and *Collection* against the same criteria during this s
 
 Audit every deletion path. Define and implement what happens when: a user is deleted (notes, tags, import records); a contact is deleted (registrations, memberships, mailing list memberships); an import session is deleted. Define a soft-delete purge policy. Output: code changes (migrations, `onDelete` rules) and a written policy document in the repo.
 
-### Session 111 — Trash Management UI
-
-Wire up Filament's built-in soft-delete support (`TrashedFilter`, `RestoreAction`, `ForceDeleteAction` + bulk equivalents) on every resource with `SoftDeletes`. Standard Filament pattern — no custom Trash page. Force-delete gated to super_admin. Depends on Sessions 109–110 (deletion guards and cascade audit).
+### ~~Session 111 — Trash Management UI~~ *(completed)*
 
 ---
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### Admin User — Secure Password Generator
+### ~~Admin User — Secure Password Generator~~ → Session 112
 
-Add a "Generate secure password" button to the admin user create/edit form, below the password field. Client-side Alpine.js only — generates a cryptographically random string, fills both password and confirm-password fields, and copies to clipboard. No server round-trip. Admin pastes into their password manager and hands it to the user.
+### Session 112 — Password Generator & Data Generator Audit
+
+Two small items combined into one session. (1) Add an Alpine.js "Generate password" button to the admin user create/edit form — crypto-random, fills both fields, copies to clipboard. (2) Audit the dev dashboard data generator: remove financial types (donations, purchases, transactions), improve event generation (random prices, capacities, registrants on free events), and improve blog post generation (text_block + blog_pager widgets with lorem ipsum content).
 
 ### Sandbox / Demo Data Mode
 

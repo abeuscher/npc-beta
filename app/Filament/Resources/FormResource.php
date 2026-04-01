@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
 class FormResource extends Resource
@@ -38,7 +39,7 @@ class FormResource extends Resource
 
     public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->can('delete_form') ?? false;
+        return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
     public static function form(FilamentForm $form): FilamentForm
@@ -361,6 +362,7 @@ class FormResource extends Resource
                     ),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false)
                     ->modalDescription(fn (Form $record): ?string =>
                         $record->submissions()->withTrashed()->exists()
                             ? "This form has {$record->submissions()->withTrashed()->count()} submission(s) that will be permanently lost."
@@ -371,9 +373,16 @@ class FormResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function getRelations(): array

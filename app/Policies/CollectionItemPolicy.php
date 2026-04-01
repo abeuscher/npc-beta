@@ -36,4 +36,24 @@ class CollectionItemPolicy
     {
         return $user->can('delete_collection_item');
     }
+
+    public function restore(User $user, CollectionItem $collectionItem): bool
+    {
+        return $user->can('delete_collection_item');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_collection_item');
+    }
+
+    public function forceDelete(User $user, CollectionItem $collectionItem): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PageResource extends Resource
 {
@@ -41,7 +42,7 @@ class PageResource extends Resource
 
     public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->can('delete_page') ?? false;
+        return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
     public static function form(Form $form): Form
@@ -108,6 +109,7 @@ class PageResource extends Resource
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return parent::getEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class])
             ->where('type', '!=', 'event')
             ->where('type', '!=', 'post');
     }
@@ -198,6 +200,7 @@ class PageResource extends Resource
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
                     ->hidden(fn (Page $record): bool => $record->type === 'system')
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false)
                     ->modalDescription(fn (Page $record): ?string => match ($record->type) {
                         'member' => 'Warning: Permanently deleting this page may render the member portal unusable.',
                         default  => null,
@@ -215,6 +218,7 @@ class PageResource extends Resource
                         }),
                     Tables\Actions\RestoreBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false)
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $records->each(function (Page $record) {
                                 if ($record->type !== 'system') {

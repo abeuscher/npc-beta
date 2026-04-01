@@ -36,4 +36,24 @@ class ContactPolicy
     {
         return $user->can('delete_contact');
     }
+
+    public function restore(User $user, Contact $contact): bool
+    {
+        return $user->can('delete_contact');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_contact');
+    }
+
+    public function forceDelete(User $user, Contact $contact): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

@@ -1,8 +1,8 @@
 ---
 title: Memberships
 description: How to manage membership records that track a contact's formal membership status, type, and renewal dates.
-version: "0.24"
-updated: 2026-03-16
+version: "0.25"
+updated: 2026-04-01
 tags: [memberships, crm, contacts]
 routes:
   - filament.admin.resources.memberships.index
@@ -33,3 +33,23 @@ To renew, open the existing membership record and update the expiration date and
 ## Reporting
 
 Membership records can be filtered and exported from the list view. Use the date range filter to find memberships expiring in the next 30–90 days to support renewal outreach.
+
+## Deleted Records and Trash
+
+When you delete a membership, the record is soft-deleted — it is hidden from normal views but kept in the database so it can be restored if needed. Memberships can also be managed from the Memberships tab on a contact record, where the same trash controls are available.
+
+### Viewing trashed records
+
+Use the **Trashed** filter above the table to control which records appear:
+
+- **Without trashed** (default) — only active records are shown.
+- **With trashed** — active and deleted records are shown together. Deleted records can be identified by the Restore action in their row.
+- **Only trashed** — only deleted records are shown.
+
+### Restoring a deleted record
+
+Find the record using the Trashed filter set to **With trashed** or **Only trashed**, then click **Restore** in the row actions. The record is immediately returned to active status.
+
+### Permanently deleting (purge)
+
+Force-delete permanently removes a record from the database. This action is restricted to super-admin users and cannot be undone. Force-delete appears as an action on trashed records only when you are logged in as a super-admin.

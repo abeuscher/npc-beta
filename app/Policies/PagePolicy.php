@@ -36,4 +36,24 @@ class PagePolicy
     {
         return $user->can('delete_page');
     }
+
+    public function restore(User $user, Page $page): bool
+    {
+        return $user->can('delete_page');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_page');
+    }
+
+    public function forceDelete(User $user, Page $page): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

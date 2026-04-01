@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PostResource extends Resource
 {
@@ -29,7 +30,9 @@ class PostResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()->where('type', 'post');
+        return parent::getEloquentQuery()
+            ->withoutGlobalScopes([SoftDeletingScope::class])
+            ->where('type', 'post');
     }
 
     public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
@@ -39,7 +42,7 @@ class PostResource extends Resource
 
     public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->can('delete_post') ?? false;
+        return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
     public static function canViewAny(): bool
@@ -105,13 +108,15 @@ class PostResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
                 ]),
             ]);
     }

@@ -36,4 +36,24 @@ class PostPolicy
     {
         return $user->can('delete_post');
     }
+
+    public function restore(User $user, Post $post): bool
+    {
+        return $user->can('delete_post');
+    }
+
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('delete_post');
+    }
+
+    public function forceDelete(User $user, Post $post): bool
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->hasRole('super_admin');
+    }
 }

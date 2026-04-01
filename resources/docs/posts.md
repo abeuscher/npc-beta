@@ -1,8 +1,8 @@
 ---
 title: Blog Posts
 description: How to write, publish, and manage blog posts that appear on the public website.
-version: "0.24"
-updated: 2026-03-16
+version: "0.25"
+updated: 2026-04-01
 tags: [cms, posts, blog, content]
 routes:
   - filament.admin.resources.posts.index
@@ -39,3 +39,23 @@ Posts can be tagged to help readers find related content. Tags appear on the pub
 ## Editing Published Posts
 
 You can edit a published post at any time. Changes take effect immediately on save. If you need to make substantial changes to a live post, consider setting it back to draft until edits are complete.
+
+## Deleted Records and Trash
+
+When you delete a post, the record is soft-deleted — it is hidden from normal views and the public blog but kept in the database so it can be restored if needed.
+
+### Viewing trashed records
+
+Use the **Trashed** filter above the table to control which records appear:
+
+- **Without trashed** (default) — only active records are shown.
+- **With trashed** — active and deleted records are shown together. Deleted records can be identified by the Restore action in their row.
+- **Only trashed** — only deleted records are shown.
+
+### Restoring a deleted record
+
+Find the record using the Trashed filter set to **With trashed** or **Only trashed**, then click **Restore** in the row actions. The record is immediately returned to active status.
+
+### Permanently deleting (purge)
+
+Force-delete permanently removes a record from the database. This action is restricted to super-admin users and cannot be undone. Force-delete appears as an action on trashed records only when you are logged in as a super-admin.
