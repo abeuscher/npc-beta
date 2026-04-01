@@ -111,6 +111,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 102 | Stripe Payment Methods & QuickBooks Connection |
 | 103 | QuickBooks Transaction Sync |
 | 104 | QuickBooks Customer Matching |
+| 105 | QuickBooks Per-Type Account Mapping |
 
 ---
 
@@ -350,13 +351,15 @@ Full carousel and gallery widget types beyond the basic image slider added in Be
 
 Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry donor/purchaser attribution. Match by email, create if not found, cache the QB Customer ID on the contact record. Transactions without a contact sync anonymously as today. Admin visibility on the contact edit page.
 
-### Session 105 — QuickBooks Per-Type Account Mapping
-
-Replace the single global income account with per-transaction-type mapping (donations, product purchases, default) so different revenue streams post to separate QB accounts. Optional per-fund override for donations. Settings UI on Finance Settings page; fund-level override on the Fund resource. Also corrects the account type query — `DepositToAccountRef` requires Bank or Other Current Asset accounts, not Income type.
+### ~~Session 105 — QuickBooks Per-Type Account Mapping~~ *(completed)*
 
 ### Session 106 — Transaction Ledger Cleanup & Seeder
 
 Clean up the manual transaction form: type drives direction automatically, remove the direction dropdown, make QB reference read-only, add a contact selector. Add a transaction seeder with a representative mix of records (donations, purchases, refunds, manual entries, synced and unsynced, with and without contacts) for testing QB sync, reporting, and UI. Update the transaction factory with state methods for cleaner test setup.
+
+### Session 107 — Paid Event Registration & Membership Checkout
+
+Wire paid event registrations and paid membership signups through Stripe Checkout. Both flows create transactions and trigger QB sync via the existing pipeline. Free events and complimentary memberships remain unchanged. Extends the webhook handler with new metadata keys for `event_registration_id` and `membership_id`.
 
 ### Integration Setup Wizards — Stripe & Mailchimp
 
