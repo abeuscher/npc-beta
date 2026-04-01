@@ -220,27 +220,22 @@ class TransactionResource extends Resource
             ]))
             ->defaultSort('occurred_at', 'desc')
             ->filters([
-                Tables\Filters\Filter::make('id')
-                    ->form([
-                        Forms\Components\Hidden::make('value'),
-                    ])
-                    ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
-                        ? $query->where('id', $data['value'])
-                        : $query
-                    )
-                    ->hidden(),
+                Tables\Filters\SelectFilter::make('id')
+                    ->label('Transaction ID')
+                    ->options(fn () => Transaction::pluck('id', 'id'))
+                    ->searchable()
+                    ->visible(false),
 
-                Tables\Filters\Filter::make('event_id')
-                    ->form([
-                        Forms\Components\Hidden::make('value'),
-                    ])
+                Tables\Filters\SelectFilter::make('event_id')
+                    ->label('Event')
+                    ->options(fn () => \App\Models\Event::orderBy('title')->pluck('title', 'id'))
+                    ->searchable()
                     ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
                         ? $query
                             ->where('subject_type', EventRegistration::class)
                             ->whereIn('subject_id', EventRegistration::where('event_id', $data['value'])->pluck('id'))
                         : $query
-                    )
-                    ->hidden(),
+                    ),
 
                 Tables\Filters\SelectFilter::make('contact_id')
                     ->label('Contact')
