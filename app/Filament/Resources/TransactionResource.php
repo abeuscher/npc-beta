@@ -221,6 +221,9 @@ class TransactionResource extends Resource
             ->defaultSort('occurred_at', 'desc')
             ->filters([
                 Tables\Filters\Filter::make('id')
+                    ->form([
+                        Forms\Components\Hidden::make('value'),
+                    ])
                     ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
                         ? $query->where('id', $data['value'])
                         : $query
@@ -228,6 +231,9 @@ class TransactionResource extends Resource
                     ->hidden(),
 
                 Tables\Filters\Filter::make('event_id')
+                    ->form([
+                        Forms\Components\Hidden::make('value'),
+                    ])
                     ->query(fn ($query, array $data) => isset($data['value']) && $data['value']
                         ? $query
                             ->where('subject_type', EventRegistration::class)
