@@ -30,6 +30,7 @@ class EventRegistration extends Model
         'status',
         'registered_at',
         'stripe_payment_intent_id',
+        'stripe_session_id',
         'notes',
         'mailing_list_opt_in',
     ];

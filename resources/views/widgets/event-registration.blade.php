@@ -4,15 +4,21 @@
         $isCancelled  = $event->status === 'cancelled';
         $isAtCapacity = $event->isAtCapacity();
         $mode         = $event->registration_mode ?? 'open';
-        $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity && $event->is_free;
+        $isPaid       = ! $event->is_free;
+        $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
         $portalUser   = auth('portal')->user();
         $portalContact = $portalUser?->contact;
     @endphp
 
-    @if (session('registration_success'))
+    @if (session('registration_success') || request()->query('registration') === 'success')
         <div role="status" class="rounded border border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30 p-4 mb-4">
             <strong class="text-green-800 dark:text-green-200">You're registered!</strong>
             <p class="text-green-700 dark:text-green-300 mt-1">We look forward to seeing you.</p>
+        </div>
+
+    @elseif (request()->query('registration') === 'cancelled')
+        <div role="status" class="rounded border border-yellow-300 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900/30 p-4 mb-4">
+            <p class="text-yellow-800 dark:text-yellow-200">Registration was cancelled. No payment was taken.</p>
         </div>
 
     @elseif ($isCancelled)
@@ -41,10 +47,16 @@
             <div role="alert" class="rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-4 mb-4 text-red-800 dark:text-red-200">{{ $errors->first('register') }}</div>
         @endif
 
+        @if ($isPaid)
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Registration fee: <strong>${{ number_format((float) $event->price, 2) }}</strong></p>
+        @endif
+
         @if ($portalUser)
-            <form method="POST" action="{{ route('portal.events.register', $event->slug) }}" class="mb-2">
+            <form method="POST" action="{{ $isPaid ? route('portal.events.checkout', $event->slug) : route('portal.events.register', $event->slug) }}" class="mb-2">
                 @csrf
-                <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">Register as member</button>
+                <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">
+                    {{ $isPaid ? 'Register & pay as member' : 'Register as member' }}
+                </button>
             </form>
             <form method="POST" action="{{ route('portal.logout') }}">
                 @csrf
@@ -56,7 +68,7 @@
 
             <h3 class="text-lg font-heading font-semibold mt-6 mb-3 text-gray-900 dark:text-gray-100">Or register as a guest</h3>
 
-            <form method="POST" action="{{ route('events.register', $event->slug) }}" class="space-y-4">
+            <form method="POST" action="{{ $isPaid ? route('events.checkout', $event->slug) : route('events.register', $event->slug) }}" class="space-y-4">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -143,7 +155,9 @@
                     </div>
                 @endif
 
-                <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">Register for this event</button>
+                <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">
+                    {{ $isPaid ? 'Register & pay' : 'Register for this event' }}
+                </button>
             </form>
         @endif
     @endif

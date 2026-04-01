@@ -263,9 +263,10 @@ Registrations submitted for an event.
 | city | string(100) | yes | |
 | state | string(100) | yes | |
 | zip | string(20) | yes | |
-| status | enum | no | default: 'registered'; values: registered, waitlisted, cancelled, attended |
+| status | enum | no | default: 'registered'; values: pending, registered, waitlisted, cancelled, attended |
 | registered_at | timestamp | no | default: current |
 | stripe_payment_intent_id | string | yes | |
+| stripe_session_id | string | yes | Stripe Checkout session ID for paid registrations |
 | mailing_list_opt_in | boolean | no | default: false |
 | notes | text | yes | |
 | created_at | timestamp | no | |
@@ -633,6 +634,8 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 | starts_on | date | yes | |
 | expires_on | date | yes | null for lifetime tiers |
 | amount_paid | decimal(10,2) | yes | |
+| stripe_session_id | string | yes | Stripe Checkout session ID for paid memberships |
+| stripe_subscription_id | string | yes | Stripe subscription ID for recurring memberships |
 | notes | text | yes | |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

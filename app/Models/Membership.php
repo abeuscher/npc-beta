@@ -19,6 +19,8 @@ class Membership extends Model
         'starts_on',
         'expires_on',
         'amount_paid',
+        'stripe_session_id',
+        'stripe_subscription_id',
         'notes',
     ];
 

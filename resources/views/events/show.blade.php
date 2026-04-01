@@ -85,10 +85,15 @@
 
         {{-- Registration area --}}
         <section>
-            @if (session('registration_success'))
+            @if (session('registration_success') || request()->query('registration') === 'success')
                 <div role="status">
                     <strong>You're registered!</strong>
                     <p>We look forward to seeing you. A confirmation will be sent to your email address.</p>
+                </div>
+
+            @elseif (request()->query('registration') === 'cancelled')
+                <div role="status">
+                    <p>Registration was cancelled. No payment was taken.</p>
                 </div>
 
             @elseif ($isCancelled)
@@ -107,7 +112,11 @@
                     <div role="alert">{{ $errors->first('register') }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('events.register', $event->slug) }}">
+                @if (! $event->is_free)
+                    <p>Registration fee: <strong>${{ number_format((float) $event->price, 2) }}</strong></p>
+                @endif
+
+                <form method="POST" action="{{ $event->is_free ? route('events.register', $event->slug) : route('events.checkout', $event->slug) }}">
                     @csrf
 
                     {{-- Honeypot — hidden from real users, bots fill it --}}
@@ -182,7 +191,7 @@
                         </fieldset>
                     @endif
 
-                    <button type="submit">Register for this event</button>
+                    <button type="submit">{{ $event->is_free ? 'Register for this event' : 'Register & pay' }}</button>
                 </form>
             @endif
         </section>

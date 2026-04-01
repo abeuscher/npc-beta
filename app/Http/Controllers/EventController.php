@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\EventCheckoutController;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use Illuminate\Http\RedirectResponse;
@@ -56,7 +57,8 @@ class EventController extends Controller
         }
 
         if (! $event->is_free) {
-            return back()->withErrors(['register' => 'Paid registration is not yet available.']);
+            return redirect()->action([EventCheckoutController::class, 'store'], ['slug' => $slug])
+                ->withInput();
         }
 
         if ($event->isAtCapacity()) {

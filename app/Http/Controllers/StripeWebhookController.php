@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use App\Models\Donation;
+use App\Models\EventRegistration;
+use App\Models\Membership;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
 use App\Models\Transaction;
@@ -61,6 +63,16 @@ class StripeWebhookController extends Controller
         // ── Donation ──────────────────────────────────────────────────────────
         if (! empty($metadata->donation_id)) {
             return $this->handleDonationCheckout($event);
+        }
+
+        // ── Event registration ───────────────────────────────────────────────
+        if (! empty($metadata->event_registration_id)) {
+            return $this->handleEventRegistrationCheckout($session, $metadata);
+        }
+
+        // ── Membership ──────────────────────────────────────────────────────
+        if (! empty($metadata->membership_id)) {
+            return $this->handleMembershipCheckout($session, $metadata);
         }
 
         // ── Product purchase ─────────────────────────────────────────────────
@@ -141,6 +153,101 @@ class StripeWebhookController extends Controller
         return response('OK', 200);
     }
 
+    private function handleEventRegistrationCheckout(object $session, object $metadata): Response
+    {
+        $registrationId = $metadata->event_registration_id;
+        $registration   = EventRegistration::find($registrationId);
+
+        if (! $registration) {
+            Log::warning('Stripe event registration checkout: registration not found', ['event_registration_id' => $registrationId]);
+            return response('OK', 200);
+        }
+
+        if ($registration->status !== 'pending') {
+            return response('OK', 200);
+        }
+
+        $intentId    = $session->payment_intent;
+        $amountTotal = $session->amount_total ?? 0;
+
+        $contact = $registration->contact_id
+            ? $registration->contact
+            : $this->findOrCreateContact($session->customer_details ?? null);
+
+        if ($contact && ! $registration->contact_id) {
+            $registration->contact_id = $contact->id;
+        }
+
+        $registration->update([
+            'status'                   => 'registered',
+            'stripe_payment_intent_id' => $intentId,
+        ]);
+
+        $transaction = Transaction::create([
+            'subject_type' => EventRegistration::class,
+            'subject_id'   => $registration->id,
+            'contact_id'   => $contact?->id,
+            'type'         => 'payment',
+            'amount'       => $amountTotal / 100,
+            'direction'    => 'in',
+            'status'       => 'completed',
+            'stripe_id'    => $intentId,
+            'occurred_at'  => now(),
+        ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
+
+        return response('OK', 200);
+    }
+
+    private function handleMembershipCheckout(object $session, object $metadata): Response
+    {
+        $membershipId = $metadata->membership_id;
+        $membership   = Membership::find($membershipId);
+
+        if (! $membership) {
+            Log::warning('Stripe membership checkout: membership not found', ['membership_id' => $membershipId]);
+            return response('OK', 200);
+        }
+
+        if ($membership->status !== 'pending') {
+            return response('OK', 200);
+        }
+
+        $intentId    = $session->payment_intent;
+        $amountTotal = $session->amount_total ?? 0;
+
+        $tier = $membership->tier;
+
+        $membership->update([
+            'status'                  => 'active',
+            'starts_on'               => now()->toDateString(),
+            'expires_on'              => match ($tier?->billing_interval) {
+                'monthly' => now()->addMonth()->toDateString(),
+                'annual'  => now()->addYear()->toDateString(),
+                default   => null, // lifetime / one_time
+            },
+            'amount_paid'             => $amountTotal / 100,
+            'stripe_subscription_id'  => $session->subscription ?? null,
+        ]);
+
+        $transaction = Transaction::create([
+            'subject_type' => Membership::class,
+            'subject_id'   => $membership->id,
+            'contact_id'   => $membership->contact_id,
+            'type'         => 'payment',
+            'amount'       => $amountTotal / 100,
+            'direction'    => 'in',
+            'status'       => 'completed',
+            'stripe_id'    => $intentId ?? ($session->subscription ?? $session->id),
+            'occurred_at'  => now(),
+        ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
+
+        return response('OK', 200);
+    }
+
     private function handleInvoicePaymentSucceeded(\Stripe\Event $event): Response
     {
         $invoice        = $event->data->object;
@@ -151,10 +258,12 @@ class StripeWebhookController extends Controller
             return response('OK', 200);
         }
 
+        // ── Donation renewal ────────────────────────────────────────────────
         $donation = Donation::where('stripe_subscription_id', $subscriptionId)->first();
 
         if (! $donation) {
-            return response('OK', 200);
+            // ── Membership renewal ──────────────────────────────────────────
+            return $this->handleMembershipInvoice($invoice, $subscriptionId);
         }
 
         if (Transaction::where('stripe_id', $invoiceId)->exists()) {
@@ -256,6 +365,48 @@ class StripeWebhookController extends Controller
             'direction'    => 'in',
             'status'       => 'completed',
             'stripe_id'    => $session->payment_intent,
+            'occurred_at'  => now(),
+        ]);
+
+        SyncTransactionToQuickBooks::dispatch($transaction);
+
+        return response('OK', 200);
+    }
+
+    private function handleMembershipInvoice(object $invoice, string $subscriptionId): Response
+    {
+        $membership = Membership::where('stripe_subscription_id', $subscriptionId)->first();
+
+        if (! $membership) {
+            return response('OK', 200);
+        }
+
+        $invoiceId = $invoice->id;
+
+        if (Transaction::where('stripe_id', $invoiceId)->exists()) {
+            return response('OK', 200);
+        }
+
+        // Extend the membership period on renewal
+        $tier = $membership->tier;
+        if ($tier && in_array($tier->billing_interval, ['monthly', 'annual'])) {
+            $membership->update([
+                'expires_on' => match ($tier->billing_interval) {
+                    'monthly' => now()->addMonth()->toDateString(),
+                    'annual'  => now()->addYear()->toDateString(),
+                },
+            ]);
+        }
+
+        $transaction = Transaction::create([
+            'subject_type' => Membership::class,
+            'subject_id'   => $membership->id,
+            'contact_id'   => $membership->contact_id,
+            'type'         => 'payment',
+            'amount'       => ($invoice->amount_paid ?? 0) / 100,
+            'direction'    => 'in',
+            'status'       => 'completed',
+            'stripe_id'    => $invoiceId,
             'occurred_at'  => now(),
         ]);
 

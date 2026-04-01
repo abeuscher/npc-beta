@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\PageController;
 use App\Mail\PortalEmailVerification;
 use App\Models\Contact;
+use App\Models\Membership;
+use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +43,7 @@ class SignupController extends Controller
             'last_name'  => ['required', 'string', 'max:100'],
             'email'      => ['required', 'email', 'max:255'],
             'password'   => ['required', 'string', 'min:12', 'confirmed'],
+            'tier_id'    => ['nullable', 'uuid', 'exists:membership_tiers,id'],
         ]);
 
         // If a portal account already exists for this email, give no signal — silent redirect.
@@ -73,6 +76,24 @@ class SignupController extends Controller
         Mail::to($account->email)->send(new PortalEmailVerification($account));
 
         Auth::guard('portal')->login($account);
+
+        // Create membership for complimentary tier if selected
+        if (! empty($validated['tier_id'])) {
+            $tier = MembershipTier::find($validated['tier_id']);
+            if ($tier && $tier->is_active && (! $tier->default_price || $tier->default_price <= 0)) {
+                Membership::create([
+                    'contact_id' => $contact->id,
+                    'tier_id'    => $tier->id,
+                    'status'     => 'active',
+                    'starts_on'  => now()->toDateString(),
+                    'expires_on' => match ($tier->billing_interval) {
+                        'monthly'  => now()->addMonth()->toDateString(),
+                        'annual'   => now()->addYear()->toDateString(),
+                        default    => null, // lifetime / one_time
+                    },
+                ]);
+            }
+        }
 
         return redirect()->route('portal.verification.notice');
     }

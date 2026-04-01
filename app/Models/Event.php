@@ -157,7 +157,7 @@ class Event extends Model implements HasMedia
         }
 
         $registered = $this->registrations()
-            ->whereIn('status', ['registered', 'waitlisted', 'attended'])
+            ->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])
             ->count();
 
         return $registered >= $this->capacity;

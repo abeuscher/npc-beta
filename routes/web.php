@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\EventCheckoutController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
+use App\Http\Controllers\Portal\EventCheckoutController as PortalEventCheckoutController;
 use App\Http\Controllers\Portal\EventRegistrationController as PortalEventRegistrationController;
 use App\Http\Controllers\Portal\ForgotPasswordController;
 use App\Http\Controllers\Portal\LoginController;
@@ -60,6 +63,9 @@ $eventsPrefix = config('site.events_prefix', 'events');
 Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'register'])
     ->name('events.register')
     ->middleware('throttle:10,1');
+Route::post("/{$eventsPrefix}/{slug}/checkout", [EventCheckoutController::class, 'store'])
+    ->name('events.checkout')
+    ->middleware('throttle:10,1');
 
 // Donation checkout
 $donationsPrefix = config('site.donations_prefix', 'donate');
@@ -88,6 +94,7 @@ $systemBase   = $systemPrefix ? '/' . $systemPrefix : '';
 
 Route::get("{$systemBase}/signup",  [SignupController::class, 'show'])->name('portal.signup');
 Route::post('/signup', [SignupController::class, 'store'])->name('portal.signup.post')->middleware('throttle:10,1');
+Route::post('/membership/checkout', [MembershipCheckoutController::class, 'store'])->name('membership.checkout')->middleware('throttle:10,1');
 
 Route::get("{$systemBase}/login",   [LoginController::class, 'show'])->name('portal.login');
 Route::post('/login',  [LoginController::class, 'store'])->name('portal.login.post')->middleware('throttle:10,1');
@@ -112,6 +119,7 @@ Route::get("{$systemBase}/account", function () {
 })->name('portal.account')->middleware($portalAuth);
 
 Route::post('/account/events/{slug}/register', [PortalEventRegistrationController::class, 'store'])->name('portal.events.register')->middleware($portalAuth);
+Route::post('/account/events/{slug}/checkout', [PortalEventCheckoutController::class, 'store'])->name('portal.events.checkout')->middleware($portalAuth);
 
 Route::patch('/account/address', [AccountController::class, 'updateAddress'])->name('portal.account.update-address')->middleware($portalAuth);
 Route::patch('/account/password', [AccountController::class, 'updatePassword'])->name('portal.account.update-password')->middleware($portalAuth);
