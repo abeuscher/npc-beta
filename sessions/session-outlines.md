@@ -118,6 +118,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 109 | Deletion Guards & Archive Pattern |
 | 110 | Data Retention & Cascading Delete Audit |
 | 111 | Trash Management UI |
+| 112 | Password Generator & Data Generator Audit |
 
 ---
 
@@ -169,15 +170,29 @@ Audit every deletion path. Define and implement what happens when: a user is del
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### ~~Admin User — Secure Password Generator~~ → Session 112
+### Session 113 — Local Dev Environment — WSL2 Migration
 
-### Session 112 — Password Generator & Data Generator Audit
+Migrate the local development environment from Windows bind-mount Docker to WSL2-native filesystem for better I/O performance and container reliability. Full database wipe and rebuild to verify clean setup. Deploy to production afterward to confirm no regressions.
 
-Two small items combined into one session. (1) Add an Alpine.js "Generate password" button to the admin user create/edit form — crypto-random, fills both fields, copies to clipboard. (2) Audit the dev dashboard data generator: remove financial types (donations, purchases, transactions), improve event generation (random prices, capacities, registrants on free events), and improve blog post generation (text_block + blog_pager widgets with lorem ipsum content).
+### Session 114 — Demo Role & Read-Only Enforcement
 
-### Sandbox / Demo Data Mode
+Create the `demo` role with view-only permissions. Audit and enforce read-only across every Filament resource, page, action, settings page, and Livewire method. Block Horizon, hide routing settings, suppress outbound email in demo mode (`APP_ENV=demo`). Scope Users list to hide demo-role accounts. Build the initial demo mode test suite (slow group).
 
-A mode or toggle that lets the admin act on a small set of controllable test records without touching real data. For Beta 1: anonymous read-only login to the marketing site admin panel, backed by full dummy data from the sample data generator. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) gates all write operations for safety. Scope and UX to be agreed before building. Related: default sample record for the system email preview wizard — resolve both in the same session if possible.
+### Session 115 — Demo Signup & Account Expiry
+
+Email-only signup that sends a set-password link via the existing invitation flow. New accounts auto-assigned demo role. Scheduled command deletes demo accounts after 1 hour. Resend API key sourced from `.env` in demo mode, bypassing DB settings. Rate-limited signup endpoint.
+
+### Session 116 — CMS Content Export/Import
+
+Artisan commands (`cms:export`, `cms:import`) to round-trip marketing site content (pages, page widgets, navigation menus/items) as a JSON file in the repo. UUID-based idempotent import. Images committed to a repo directory. Developer tool — not the final production import/export feature.
+
+### Session 117 — Demo Data Seeder & Scheduled Refresh
+
+Dedicated `DemoSeeder` populating all CRM content areas: contacts, members, organizations, events with registrations, products, donations, purchases, transactions, blog posts with widgets, tags, forms, custom fields, mailing lists. Scheduled hourly wipe and reseed of CRM sample data — marketing site pages and navigation never touched.
+
+### Session 118 — Demo Instance Configuration & Hardening
+
+Custom route prefixes for the demo instance (`/blog`, `/portal`, etc.). Comprehensive demo mode test suite verifying every write path is blocked. Full security audit: route audit, port audit, debug surfaces, public file access, server headers. Documentation of the complete demo setup.
 
 ### Help System Enhancements
 
@@ -201,9 +216,9 @@ Items spotted during other sessions that need cleanup but don't warrant their ow
 
 First-run widget: detects unconfigured install, walks admin through minimum viable setup steps (mail, Stripe, branding). Disappears once confirmed. Could double as an ongoing health-check widget for production installs.
 
-### Demo
+### ~~Demo~~ → Sessions 114–118
 
-Anonymous read-only login to the marketing site admin panel backed by full dummy data. A server-side demo-mode flag (`APP_DEMO=true` or equivalent) blocks all write operations. Pitch demo flow: prospect names a company and picks a logo → install runs during the pitch → prospect receives a URL at the end with their company name, logo, and contacts imported from a competitor CSV. The demo is presented on the marketing site; the server flag prevents any data manipulation if someone tries to poke around. The Demo and Installer sessions are the final two pieces of Beta 1.
+Replaced by the demo session group: 114 (role & read-only enforcement), 115 (signup & expiry), 116 (CMS export/import), 117 (data seeder & refresh), 118 (configuration & hardening).
 
 ### Third-Party Licensing Compliance Audit
 

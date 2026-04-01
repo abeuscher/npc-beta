@@ -57,7 +57,23 @@ class UserResource extends Resource
                     ->required(fn (string $operation) => $operation === 'create')
                     ->label(fn (string $operation) => $operation === 'create' ? 'Password' : 'New Password (leave blank to keep current)')
                     ->same('password_confirmation')
-                    ->validationMessages(['same' => 'The passwords do not match.']),
+                    ->validationMessages(['same' => 'The passwords do not match.'])
+                    ->hintAction(
+                        Forms\Components\Actions\Action::make('generatePassword')
+                            ->label('Generate')
+                            ->icon('heroicon-o-key')
+                            ->alpineClickHandler(<<<'JS'
+                                const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{}|;:,.<>?';
+                                const bytes = new Uint8Array(20);
+                                crypto.getRandomValues(bytes);
+                                let pw = '';
+                                for (let i = 0; i < 20; i++) pw += chars[bytes[i] % chars.length];
+                                $wire.$set('data.password', pw);
+                                $wire.$set('data.password_confirmation', pw);
+                                navigator.clipboard.writeText(pw);
+                                new FilamentNotification().title('Password copied to clipboard').success().send();
+                            JS)
+                    ),
 
                 Forms\Components\TextInput::make('password_confirmation')
                     ->password()
