@@ -149,14 +149,6 @@ class TransactionSeeder extends Seeder
         ]);
 
         Transaction::create([
-            'type'        => 'expense',
-            'amount'      => 1200.00,
-            'direction'   => 'out',
-            'status'      => 'cleared',
-            'occurred_at' => now()->subDays(rand(5, 30)),
-        ]);
-
-        Transaction::create([
             'contact_id'  => $contacts[3]->id,
             'type'        => 'adjustment',
             'amount'      => 150.00,

@@ -48,23 +48,6 @@ it('creates a manual grant with auto-set direction', function () {
         ->stripe_id->toBeNull();
 });
 
-it('creates an expense with direction auto-set to out', function () {
-    Livewire::test(Pages\CreateTransaction::class)
-        ->fillForm([
-            'type'        => 'expense',
-            'amount'      => 250,
-            'status'      => 'pending',
-            'occurred_at' => now()->toDateTimeString(),
-        ])
-        ->call('create')
-        ->assertHasNoFormErrors();
-
-    $transaction = Transaction::latest('created_at')->first();
-    expect($transaction)
-        ->type->toBe('expense')
-        ->direction->toBe('out');
-});
-
 it('creates an adjustment with direction auto-set to in', function () {
     Livewire::test(Pages\CreateTransaction::class)
         ->fillForm([
@@ -134,8 +117,8 @@ it('prevents editing Stripe-originated transactions', function () {
 it('seeder creates expected record counts', function () {
     (new TransactionSeeder)->run();
 
-    // 6 donation txns + 3 purchase txns + 2 refunds + 3 manual + 1 error = 15
-    expect(Transaction::count())->toBe(15);
+    // 6 donation txns + 3 purchase txns + 2 refunds + 2 manual + 1 error = 14
+    expect(Transaction::count())->toBe(14);
     expect(Contact::count())->toBe(10);
 });
 
@@ -150,10 +133,10 @@ it('seeder is idempotent', function () {
 it('seeder creates manual transactions without stripe_id', function () {
     (new TransactionSeeder)->run();
 
-    $manualTypes = ['grant', 'expense', 'adjustment'];
+    $manualTypes = ['grant', 'adjustment'];
     $manual = Transaction::whereIn('type', $manualTypes)->get();
 
-    expect($manual)->toHaveCount(3);
+    expect($manual)->toHaveCount(2);
     $manual->each(fn ($t) => expect($t->stripe_id)->toBeNull());
 });
 

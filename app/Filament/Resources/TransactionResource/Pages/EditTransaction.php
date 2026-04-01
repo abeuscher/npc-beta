@@ -19,7 +19,6 @@ class EditTransaction extends EditRecord
     {
         $directionMap = [
             'grant'      => 'in',
-            'expense'    => 'out',
             'adjustment' => 'in',
         ];
 

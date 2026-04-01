@@ -13,7 +13,6 @@ class CreateTransaction extends CreateRecord
     {
         $directionMap = [
             'grant'      => 'in',
-            'expense'    => 'out',
             'adjustment' => 'in',
         ];
 

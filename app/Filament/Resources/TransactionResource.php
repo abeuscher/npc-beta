@@ -43,13 +43,11 @@ class TransactionResource extends Resource
 
     private const MANUAL_TYPES = [
         'grant'      => 'Grant',
-        'expense'    => 'Expense',
         'adjustment' => 'Adjustment',
     ];
 
     private const TYPE_DIRECTION_MAP = [
         'grant'      => 'in',
-        'expense'    => 'out',
         'adjustment' => 'in',
     ];
 
@@ -59,7 +57,7 @@ class TransactionResource extends Resource
 
         return $form->schema([
             Forms\Components\Section::make('Off-system transaction')
-                ->description('Use this form to record transactions that occurred outside any connected system — for example, a grant received by cheque, a project expense paid in cash, or a manual fund adjustment. Payments, refunds, and any other transactions processed through Stripe are recorded automatically and cannot be entered here.')
+                ->description('Use this form to record inbound transactions that occurred outside any connected system — for example, a grant received by cheque or a manual fund adjustment. Payments, refunds, and any other transactions processed through Stripe are recorded automatically and cannot be entered here.')
                 ->schema([
                     // Known manual type — normal select
                     Forms\Components\Select::make('type')
