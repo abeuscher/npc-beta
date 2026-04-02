@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\EventResource\Pages;
-use App\Filament\Resources\EventResource\RelationManagers;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -14,7 +13,6 @@ use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
-use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Illuminate\Support\HtmlString;

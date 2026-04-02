@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\SiteSetting;
 use Filament\Widgets\Widget;
 
 class DashboardWelcomeWidget extends Widget

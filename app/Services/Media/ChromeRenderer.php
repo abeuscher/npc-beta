@@ -3,7 +3,6 @@
 namespace App\Services\Media;
 
 use App\Models\Page;
-use App\Models\PageWidget;
 use App\Services\WidgetRenderer;
 
 class ChromeRenderer

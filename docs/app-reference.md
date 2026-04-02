@@ -38,8 +38,10 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Contacts (list) | `ContactResource.php` |
 | Edit Contact | `ContactResource/Pages/EditContact.php` |
 | Members (list) | `MemberResource.php` |
+| Memberships (list) | `MembershipResource.php` |
 | Membership Tiers (list) | `MembershipTierResource.php` |
 | Organizations (list) | `OrganizationResource.php` |
+| Notes (list) | `NoteResource.php` |
 | Custom Fields (list) | `CustomFieldDefResource.php` |
 
 ### CMS group
@@ -66,10 +68,11 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | View title (as seen in UI) | Resource / Page file |
 |---------------------------|----------------------|
 | Donations (list) | `DonationResource.php` |
+| Transactions (list) | `TransactionResource.php` |
 | Giving Summary | `Filament/Pages/DonorsPage.php` |
 | Products (list) | `ProductResource.php` |
 | Funds & Grants (list) | `FundResource.php` |
-| Generate Tax Receipts | `Filament/Pages/GenerateTaxReceiptsPage.php` |
+| Campaigns (list) | `CampaignResource.php` |
 | Finance Settings | `Filament/Pages/Settings/FinanceSettingsPage.php` |
 
 ### Tools group
@@ -79,6 +82,8 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Importer | `Filament/Pages/ImporterPage.php` |
 | Import Contacts | `Filament/Pages/ImportContactsPage.php` |
 | Import History | `Filament/Pages/ImportHistoryPage.php` |
+| Import Progress | `Filament/Pages/ImportProgressPage.php` |
+| Media Library | `Filament/Pages/MediaLibraryPage.php` |
 | Mailing Lists (list) | `MailingListResource.php` |
 | Tag Manager (list) | `TagResource.php` |
 | Widget Manager (list) | `WidgetTypeResource.php` |
@@ -110,6 +115,15 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Product checkout (POST) | `ProductCheckoutController::store` |
 | Donation checkout (POST) | `DonationCheckoutController::store` |
 | Web form submission (POST) | `FormSubmissionController::store` |
+| Event checkout (POST) | `EventCheckoutController::store` |
+| Membership checkout (POST) | `MembershipCheckoutController::store` |
+| Product waitlist (POST) | `ProductWaitlistController::store` |
+| Events API (JSON) (`/api/events.json`) | `Api\EventsController::index` |
+| Sitemap (`/sitemap.xml`) | `SitemapController::index` |
+| Robots (`/robots.txt`) | `RobotsController::index` |
+| Portal password reset | `Portal\PasswordResetController` |
+| Portal email verification | `Portal\EmailVerificationController` |
+| Portal account update (address, password, email) | `Portal\AccountController` |
 
 All public controllers live in `app/Http/Controllers/`. Portal routes are prefixed by the `portal_prefix` site setting (default: `members`). Blog prefix is the `blog_prefix` site setting (default: `news`).
 

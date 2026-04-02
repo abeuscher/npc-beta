@@ -23,6 +23,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Collection::class     => \App\Policies\CollectionPolicy::class,
         \App\Models\CollectionItem::class => \App\Policies\CollectionItemPolicy::class,
         \App\Models\NavigationItem::class => \App\Policies\NavigationItemPolicy::class,
+        \App\Models\NavigationMenu::class => \App\Policies\NavigationMenuPolicy::class,
         \App\Models\User::class           => \App\Policies\UserPolicy::class,
         \App\Models\WidgetType::class     => \App\Policies\WidgetTypePolicy::class,
         \App\Models\Event::class          => \App\Policies\EventPolicy::class,

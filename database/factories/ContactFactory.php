@@ -15,8 +15,12 @@ class ContactFactory extends Factory
         $firstName = fake()->randomElement(SampleLibrary::firstNames());
         $lastName  = fake()->randomElement(SampleLibrary::lastNames());
 
+        // Strip characters that would trigger quoted-string local parts in RFC 2822.
+        $safeFirst = preg_replace('/[^a-z0-9._-]/', '', strtolower($firstName));
+        $safeLast  = preg_replace('/[^a-z0-9._-]/', '', strtolower($lastName));
+
         $email = fake()->boolean(80)
-            ? strtolower($firstName . '.' . $lastName) . fake()->unique()->numerify('.###') . '@' . fake()->randomElement(SampleLibrary::emailDomains())
+            ? $safeFirst . '.' . $safeLast . fake()->unique()->numerify('.###') . '@' . fake()->randomElement(SampleLibrary::emailDomains())
             : null;
 
         return [
@@ -47,8 +51,8 @@ class ContactFactory extends Factory
         $localPart = str_contains($base, '@') ? explode('@', $base)[0] : $base;
 
         return $this->state(function (array $attributes) use ($localPart) {
-            $first = strtolower($attributes['first_name']);
-            $last  = strtolower($attributes['last_name']);
+            $first = preg_replace('/[^a-z0-9._-]/', '', strtolower($attributes['first_name']));
+            $last  = preg_replace('/[^a-z0-9._-]/', '', strtolower($attributes['last_name']));
 
             return ['email' => "{$localPart}+{$first}_{$last}@gmail.com"];
         });

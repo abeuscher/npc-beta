@@ -39,6 +39,7 @@ class PermissionSeeder extends Seeder
             'collection',
             'collection_item',
             'navigation_item',
+            'navigation_menu',
             'product',
             // Admin
             'user',
