@@ -8,7 +8,7 @@ Fast-orientation index for Claude. Read this at the start of any session before 
 
 | Name | Host | App path | Artisan |
 |------|------|----------|---------|
-| **Local** | `localhost` | `e:\Clients\nonprofitcrm` | `docker compose exec app php artisan` |
+| **Local (WSL2)** | `localhost` | `~/nonprofitcrm` (WSL2 Linux filesystem) | `docker compose exec app php artisan` |
 | **Deploy server** | `root@167.172.141.225` (DigitalOcean, Ubuntu 22.04) | `/opt/nonprofitcrm` | `docker exec nonprofitcrm_app php artisan` |
 
 ### Deploy server — Docker containers

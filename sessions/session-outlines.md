@@ -119,6 +119,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 110 | Data Retention & Cascading Delete Audit |
 | 111 | Trash Management UI |
 | 112 | Password Generator & Data Generator Audit |
+| 113 | Local Dev Environment — WSL2 Migration |
 
 ---
 
@@ -170,9 +171,7 @@ Audit every deletion path. Define and implement what happens when: a user is del
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### Session 113 — Local Dev Environment — WSL2 Migration
-
-Migrate the local development environment from Windows bind-mount Docker to WSL2-native filesystem for better I/O performance and container reliability. Full database wipe and rebuild to verify clean setup. Deploy to production afterward to confirm no regressions.
+### ~~Session 113 — Local Dev Environment — WSL2 Migration~~ *(completed)*
 
 ### Session 114 — Demo Role & Read-Only Enforcement
 
@@ -193,6 +192,18 @@ Dedicated `DemoSeeder` populating all CRM content areas: contacts, members, orga
 ### Session 118 — Demo Instance Configuration & Hardening
 
 Custom route prefixes for the demo instance (`/blog`, `/portal`, etc.). Comprehensive demo mode test suite verifying every write path is blocked. Full security audit: route audit, port audit, debug surfaces, public file access, server headers. Documentation of the complete demo setup.
+
+### Session 119 — Housekeeping & Consistency Audit
+
+Infrastructure and consistency pass after the demo session group. Three workstreams:
+
+1. **Schema doc restructure** — split `docs/schema.md` into a `docs/schema/` folder with one file per table, named after the table. Faster to index and easier to maintain.
+2. **Folder structure inventory** — account for every file in the project tree. Build a manifest that describes what each file/directory is for. Many can be inferred from filename alone; only open files where the purpose is ambiguous.
+3. **Admin field input audit** — audit every field input type used across the admin panel (image uploaders, date/time pickers, color pickers, etc.) and ensure each type is used consistently everywhere it appears. Identify and resolve cases where the same logical input exists in two different implementations (e.g. native file picker vs Filament image field for logo uploads). Define the canonical pattern for each control type and bring all instances into conformance.
+
+### Session 120 — Code Review & Cleanup
+
+Post-demo-mode code review, following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–118. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features.
 
 ### Help System Enhancements
 
@@ -236,9 +247,7 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 
 ## Post-Beta 1
 
-### Control Pattern Homogenisation Audit
-
-Audit the admin UI for combination input controls (file upload + preview, logo pickers, image fields, etc.) that exist in more than one place but behave differently without a documented reason. Define the canonical pattern for each control type and bring all instances into conformance. The logo field inconsistency between Site Theme and Admin Settings is the known starting point.
+### ~~Control Pattern Homogenisation Audit~~ *(moved to session 119)*
 
 ### Custom Field Grouping & Layout
 

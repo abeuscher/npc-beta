@@ -106,6 +106,8 @@ class PageBuilderInspector extends Component
 
         $collectionName = "config_{$key}";
 
+        $pw->clearMediaCollection($collectionName);
+
         $pw->addMedia($upload->getRealPath())
             ->usingFileName($upload->hashName())
             ->toMediaCollection($collectionName, 'public');
