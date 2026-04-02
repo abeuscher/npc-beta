@@ -29,6 +29,21 @@ class NavigationMenuResource extends Resource
         return auth()->user()?->can('view_any_navigation_item') ?? false;
     }
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_navigation_item') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('update_navigation_item') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('delete_navigation_item') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

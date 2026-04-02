@@ -34,13 +34,28 @@ class TransactionResource extends Resource
         return auth()->user()?->can('view_any_transaction') ?? false;
     }
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_transaction') ?? false;
+    }
+
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('update_transaction')) {
+            return false;
+        }
+
         return ! $record->stripe_id;
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('delete_transaction')) {
+            return false;
+        }
+
         return ! $record->stripe_id;
     }
 
@@ -299,9 +314,9 @@ class TransactionResource extends Resource
                     ),
 
                 Tables\Actions\EditAction::make()
-                    ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
+                    ->visible(fn (Transaction $record): bool => auth()->user()?->can('update_transaction') && ! $record->stripe_id),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Transaction $record): bool => ! $record->stripe_id),
+                    ->visible(fn (Transaction $record): bool => auth()->user()?->can('delete_transaction') && ! $record->stripe_id),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

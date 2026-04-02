@@ -326,6 +326,8 @@ class DonorsPage extends Page implements HasTable
 
     public function sendReceipts(bool $forceAll): void
     {
+        abort_unless(auth()->user()?->can('manage_donations'), 403);
+
         $year = $this->taxYear === 'all' ? null : (int) $this->taxYear;
 
         $eligible = $this->eligibleContactIds($year);

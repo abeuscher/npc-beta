@@ -31,6 +31,11 @@ class WidgetTypeResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('delete_widget_type')) {
+            return false;
+        }
+
         return ! WidgetType::isPinned($record->handle) && $record->pageWidgets()->doesntExist();
     }
 

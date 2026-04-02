@@ -177,6 +177,8 @@ class UserResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Support\Collection $records) {
+                            abort_unless(auth()->user()?->can('delete_user'), 403);
+
                             $protected = $records->filter(fn (User $u) => $u->isProtected());
                             $records->filter(fn (User $u) => ! $u->isProtected())->each->delete();
 

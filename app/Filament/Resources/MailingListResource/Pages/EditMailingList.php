@@ -44,8 +44,10 @@ class EditMailingList extends ReadOnlyAwareEditRecord
                 ->requiresConfirmation()
                 ->modalHeading('Sync to MailChimp')
                 ->modalDescription('This will push all contactable members of this list to your MailChimp audience and apply the list tag. The sync runs in the background — large lists may take a minute to appear in MailChimp.')
+                ->hidden(fn () => ! auth()->user()?->can('update_mailing_list'))
                 ->visible(fn () => app(MailChimpService::class)->isConfigured())
                 ->action(function (MailingList $record): void {
+                    abort_unless(auth()->user()?->can('update_mailing_list'), 403);
                     app(MailChimpService::class)->syncList($record);
                     Notification::make()
                         ->title('Sync submitted to MailChimp')

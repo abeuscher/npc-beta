@@ -80,6 +80,7 @@ class EditContact extends ReadOnlyAwareEditRecord
             Actions\Action::make('view_transactions')
                 ->label('View transactions →')
                 ->color('gray')
+                ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
                 ->url(fn () => TransactionResource::getUrl('index')
                     . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 
@@ -97,6 +98,7 @@ class EditContact extends ReadOnlyAwareEditRecord
             Actions\Action::make('view_transactions')
                 ->label('View transactions →')
                 ->color('gray')
+                ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
                 ->url(fn () => TransactionResource::getUrl('index')
                     . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 

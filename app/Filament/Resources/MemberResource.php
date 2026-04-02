@@ -100,11 +100,15 @@ class MemberResource extends Resource
                 Tables\Actions\Action::make('edit')
                     ->label('Edit')
                     ->icon('heroicon-m-pencil-square')
+                    ->hidden(fn () => ! auth()->user()?->can('update_contact'))
                     ->url(fn (Contact $record): string => ContactResource::getUrl('edit', ['record' => $record])),
 
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('delete_contact')),
+                Tables\Actions\RestoreAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('delete_contact')),
+                Tables\Actions\ForceDeleteAction::make()
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

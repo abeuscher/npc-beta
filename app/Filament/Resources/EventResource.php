@@ -403,6 +403,8 @@ class EventResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            abort_unless(auth()->user()?->can('delete_event'), 403);
+
                             $records->each(function (Event $record) {
                                 if ($record->registrations()->doesntExist()) {
                                     $record->delete();

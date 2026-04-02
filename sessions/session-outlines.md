@@ -2,7 +2,7 @@
 
 This is the single working reference for all sessions. Completed sessions are listed by title below. Future sessions are organised by group — reorder and rewrite them freely as the project evolves.
 
-A **Beta One** milestone is planned as the first shippable, demonstrable version of the product: a live hosted site, anonymous read-only demo access, and a live install demo performable for prospects in real time. All sessions before the milestone marker are planned for Beta 1 delivery. Sessions after the marker are deferred until post-Beta 1.
+A **Beta One** milestone is planned as the first shippable, demonstrable version of the product: a live hosted site and a live install demo performable for prospects in real time. All sessions before the milestone marker are planned for Beta 1 delivery. Sessions after the marker are deferred until post-Beta 1.
 
 ---
 
@@ -120,93 +120,25 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 111 | Trash Management UI |
 | 112 | Password Generator & Data Generator Audit |
 | 113 | Local Dev Environment — WSL2 Migration |
-| 114 | Demo Role & Read-Only Enforcement |
+| 114 | Permissions Audit & Coverage |
 
 ---
-
-## Finance
-
-*Scope boundaries: no grants, wages, payroll, or disbursements. No card data stored — Stripe handles all sensitive payment data. The application is deposit-only — it never initiates a refund, payout, or balance transfer. All financial reversals are handled in the Stripe dashboard.*
-
-*A dedicated Financial Settings page (gated to developer/treasurer roles) holds Stripe and QuickBooks API keys. Keys are encrypted at rest.*
-
----
-
-## Data Retention & Deletion Policy
-
-### Content Type Deletability Audit & Archive Pattern
-
-Implement the agreed rules from the session 081 discussion. Two parallel concerns:
-
-**Deletion guards:**
-- *Contact* — soft-delete in place; hard-delete super_admin only.
-- *Event registration (paid)* — block deletion with a warning directing admin to issue the refund in Stripe first; allow after acknowledgement. Do not automate the refund — Stripe webhook will reconcile.
-- *Event* — block deletion if any registrations exist; allow for drafts/no registrations.
-- *Membership Tier* — block deletion if any active memberships reference it.
-- *Fund* — block deletion if any donations reference it.
-- *Product* — block deletion if any purchases reference it.
-- *Widget Type* — block deletion if any pages reference it.
-- *Donation* — not deletable; financial record, Stripe is source of truth.
-- *Email Template* — not deletable; already enforced.
-- *Page (system/portal)* — audit existing page-type protection system and plug any gaps. Add a second-tier loud warning for portal-system pages: "Deleting this page may render the member portal unusable."
-- *Navigation Menu* — general warning on delete ("this menu may be in use on your site"); no dependency check — too unpredictable given widget-level nav use.
-- *Form* — warn if submissions exist.
-- *Collection* — warn or cascade-confirm if items exist.
-
-**Archive / expiry pattern (new status, not deletion):**
-Introduce an explicit "archived" state for types where "retired but historically referenced" is a real operational state. Archived items are hidden from default admin list views and cannot be selected for new associations, but all history is preserved. Apply to:
-- *Product* — "no longer for sale"
-- *Membership Tier* — "closed to new members"
-- *Fund* — "no longer accepting donations"
-- *Form* — "retired"
-
-Evaluate *Mailing List* and *Collection* against the same criteria during this session. Implement archive toggle, default-view filter, and guard on new associations for each approved type.
-
-### Data Retention & Cascading Delete Audit
-
-Audit every deletion path. Define and implement what happens when: a user is deleted (notes, tags, import records); a contact is deleted (registrations, memberships, mailing list memberships); an import session is deleted. Define a soft-delete purge policy. Output: code changes (migrations, `onDelete` rules) and a written policy document in the repo.
-
-### ~~Session 111 — Trash Management UI~~ *(completed)*
 
 ---
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### ~~Session 113 — Local Dev Environment — WSL2 Migration~~ *(completed)*
+### Session 115 — Housekeeping & Consistency Audit
 
-### ~~Session 114 — Demo Role & Read-Only Enforcement~~ *(completed)*
-
-### Session 115 — Demo Signup & Account Expiry
-
-Email-only signup that sends a set-password link via the existing invitation flow. New accounts auto-assigned demo role. Scheduled command deletes demo accounts after 1 hour. Resend API key sourced from `.env` in demo mode, bypassing DB settings. Rate-limited signup endpoint.
-
-### Session 116 — CMS Content Export/Import
-
-Artisan commands (`cms:export`, `cms:import`) to round-trip marketing site content (pages, page widgets, navigation menus/items) as a JSON file in the repo. UUID-based idempotent import. Images committed to a repo directory. Developer tool — not the final production import/export feature.
-
-### Session 117 — Demo Data Seeder & Scheduled Refresh
-
-Dedicated `DemoSeeder` populating all CRM content areas: contacts, members, organizations, events with registrations, products, donations, purchases, transactions, blog posts with widgets, tags, forms, custom fields, mailing lists. Scheduled hourly wipe and reseed of CRM sample data — marketing site pages and navigation never touched.
-
-### Session 118 — Demo Instance Configuration & Hardening
-
-Custom route prefixes for the demo instance (`/blog`, `/portal`, etc.). Comprehensive demo mode test suite verifying every write path is blocked. Full security audit: route audit, port audit, debug surfaces, public file access, server headers. Documentation of the complete demo setup.
-
-### Session 119 — Housekeeping & Consistency Audit
-
-Infrastructure and consistency pass after the demo session group. Three workstreams:
+Infrastructure and consistency pass. Three workstreams:
 
 1. **Schema doc restructure** — split `docs/schema.md` into a `docs/schema/` folder with one file per table, named after the table. Faster to index and easier to maintain.
 2. **Folder structure inventory** — account for every file in the project tree. Build a manifest that describes what each file/directory is for. Many can be inferred from filename alone; only open files where the purpose is ambiguous.
 3. **Admin field input audit** — audit every field input type used across the admin panel (image uploaders, date/time pickers, color pickers, etc.) and ensure each type is used consistently everywhere it appears. Identify and resolve cases where the same logical input exists in two different implementations (e.g. native file picker vs Filament image field for logo uploads). Define the canonical pattern for each control type and bring all instances into conformance.
 
-### Session 120 — Code Review & Cleanup
+### Session 116 — Code Review & Cleanup
 
-Post-demo-mode code review, following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–118. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features.
-
-### Session 121 — Demo Data Generator — Relational Sample Data
-
-Extend the debug data generator to produce interconnected sample data that demonstrates the relationships between CRM views. Generated contacts should have memberships (with tiers), donations (with transactions and fund allocations), event registrations, and portal accounts — so a demo user clicking through a contact record can follow links to their membership history, donation receipts, event attendance, and transaction ledger. The goal is a single "populate demo" action that creates a realistic, navigable dataset showing how the system connects its views. This is a prerequisite for the demo launch.
+Code review following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–115. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features.
 
 ### Help System Enhancements
 
@@ -230,10 +162,6 @@ Items spotted during other sessions that need cleanup but don't warrant their ow
 
 First-run widget: detects unconfigured install, walks admin through minimum viable setup steps (mail, Stripe, branding). Disappears once confirmed. Could double as an ongoing health-check widget for production installs.
 
-### ~~Demo~~ → Sessions 114–118
-
-Replaced by the demo session group: 114 (role & read-only enforcement), 115 (signup & expiry), 116 (CMS export/import), 117 (data seeder & refresh), 118 (configuration & hardening).
-
 ### Third-Party Licensing Compliance Audit
 
 Before Beta 1 ships: audit all third-party dependencies for license compliance. Known items requiring verification:
@@ -244,13 +172,11 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 
 ## ── BETA ONE ─────────────────────────────────────────────────────────────────
 
-**Beta One** is the first shippable, publicly demonstrable version of the product. Definition of done: a live hosted site is running on the product's own CMS, anonymous read-only demo access is available for prospects, and a live install demo can be performed during a sales pitch — prospect names a company, picks a logo, imports contacts from a competitor, and receives a URL with their configured install at the end of the meeting. All sessions above this line are planned for Beta 1 delivery.
+**Beta One** is the first shippable, publicly demonstrable version of the product. Definition of done: a live hosted site is running on the product's own CMS, and a live install demo can be performed during a sales pitch — prospect names a company, picks a logo, imports contacts from a competitor, and receives a URL with their configured install at the end of the meeting. All sessions above this line are planned for Beta 1 delivery.
 
 ---
 
 ## Post-Beta 1
-
-### ~~Control Pattern Homogenisation Audit~~ *(moved to session 119)*
 
 ### Custom Field Grouping & Layout
 
@@ -334,8 +260,6 @@ Split-pane or overlay preview of page changes before saving. Requires the front-
 
 A simple text-node tree representation of the page's widget structure (similar to a DOM inspector). Helps users locate deeply nested blocks inside column slots without expanding every level manually. Not front-and-centre — a collapsible sidebar or panel overlay. Needs design discussion before building; deferred to post-Beta 1.
 
-### ~~Media Library UI~~ *(moved to session 092, Beta 1 scope)*
-
 ### Image & Media Handling — Carousels & Galleries
 
 Full carousel and gallery widget types beyond the basic image slider added in Beta 1. Lightbox, captions, reorder controls.
@@ -343,22 +267,6 @@ Full carousel and gallery widget types beyond the basic image slider added in Be
 ---
 
 ## Infrastructure & Ops — Post-Beta 1
-
-### Session 104 — QuickBooks Customer Matching
-
-Link CRM contacts to QuickBooks Customer records so synced Sales Receipts carry donor/purchaser attribution. Match by email, create if not found, cache the QB Customer ID on the contact record. Transactions without a contact sync anonymously as today. Admin visibility on the contact edit page.
-
-### ~~Session 105 — QuickBooks Per-Type Account Mapping~~ *(completed)*
-
-### ~~Session 106 — Transaction Ledger Cleanup & Seeder~~ *(completed)*
-
-### ~~Session 107 — Paid Event Registration & Membership Checkout~~ *(completed)*
-
-### ~~Session 108 — Beta-One Bug Fixes & Migration Squash~~ *(completed)*
-
-### ~~Session 109 — Deletion Guards & Archive Pattern~~ *(completed)*
-
-### ~~Session 110 — Data Retention & Cascading Delete Audit~~ *(completed)*
 
 ### Integration Setup Wizards — Stripe & Mailchimp
 
@@ -386,7 +294,7 @@ Three related features: (1) form-level validation that recognises API key format
 
 ### System Email Preview — Default Sample Record & Full Coverage
 
-A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Note: the preview wizard already exists (session 080) and is already in use for donation receipts and user invitations — this session extends the same pattern to any remaining system email sends, rather than rebuilding. Resolve alongside Sandbox / Demo Data Mode if possible.
+A user-editable singleton record that pre-fills the email preview wizard with representative sample data when no real recipient is available (e.g. test sends). Note: the preview wizard already exists (session 080) and is already in use for donation receipts and user invitations — this session extends the same pattern to any remaining system email sends, rather than rebuilding.
 
 ### Batch Edit on Admin Tables
 

@@ -57,11 +57,14 @@ class ProductPricesRelationManager extends RelationManager
                     ->sortable(),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('update_product')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('update_product')),
                 Tables\Actions\DeleteAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('update_product'))
                     ->disabled(fn ($record) => \App\Models\Purchase::where('product_price_id', $record->id)->exists()),
             ]);
     }

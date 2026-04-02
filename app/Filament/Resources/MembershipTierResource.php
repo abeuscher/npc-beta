@@ -30,6 +30,11 @@ class MembershipTierResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->isSuperAdmin()) {
+            return false;
+        }
+
         return $record->memberships()->where('status', 'active')->doesntExist();
     }
 

@@ -27,8 +27,24 @@ class TemplateResource extends Resource
         return auth()->user()?->can('view_any_page') || auth()->user()?->can('edit_theme_scss') ?? false;
     }
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('update_page') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        $user = auth()->user();
+        return ($user?->can('update_page') || $user?->can('edit_theme_scss') || $user?->can('edit_site_chrome')) ?? false;
+    }
+
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('update_page')) {
+            return false;
+        }
+
         // Cannot delete the default page template
         return ! $record->is_default;
     }

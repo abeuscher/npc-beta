@@ -277,6 +277,8 @@ class RoleResource extends Resource
                         ];
                     })
                     ->action(function (Role $record, array $data): void {
+                        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
                         $count = $record->users()->count();
 
                         if ($count === 0) {
@@ -299,6 +301,8 @@ class RoleResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Support\Collection $records): void {
+                            abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
                             $blocked = $records->filter(fn (Role $r) => $r->users()->count() > 0);
 
                             if ($blocked->isNotEmpty()) {

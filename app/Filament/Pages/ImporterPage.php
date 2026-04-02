@@ -133,6 +133,7 @@ class ImporterPage extends Page implements HasTable
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
+                    ->hidden(fn () => ! auth()->user()?->can('review_imports'))
                     ->requiresConfirmation()
                     ->modalHeading('Approve import?')
                     ->modalDescription(fn (ImportSession $record): string =>
@@ -140,6 +141,7 @@ class ImporterPage extends Page implements HasTable
                     )
                     ->modalSubmitActionLabel('Approve')
                     ->action(function (ImportSession $record): void {
+                        abort_unless(auth()->user()?->can('review_imports'), 403);
                         $record->update([
                             'status'      => 'approved',
                             'approved_by' => auth()->id(),
@@ -181,6 +183,7 @@ class ImporterPage extends Page implements HasTable
                     ->label('Rollback')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
+                    ->hidden(fn () => ! auth()->user()?->can('review_imports'))
                     ->requiresConfirmation()
                     ->modalHeading('Roll back import?')
                     ->modalDescription(function (ImportSession $record): string {
@@ -200,6 +203,8 @@ class ImporterPage extends Page implements HasTable
                     })
                     ->modalSubmitActionLabel('Delete contacts and roll back')
                     ->action(function (ImportSession $record): void {
+                        abort_unless(auth()->user()?->can('review_imports'), 403);
+
                         $contactIds = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->pluck('id')

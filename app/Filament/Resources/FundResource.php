@@ -116,6 +116,8 @@ class FundResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            abort_unless(auth()->user()?->can('delete_fund'), 403);
+
                             $records->each(function (Fund $record) {
                                 if ($record->donations()->doesntExist()) {
                                     $record->delete();

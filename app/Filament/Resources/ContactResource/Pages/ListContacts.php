@@ -171,11 +171,13 @@ class ListContacts extends ListRecords
                 Actions\Action::make('importContacts')
                     ->label('Import Contacts')
                     ->icon('heroicon-o-arrow-up-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('create_contact'))
                     ->url(ImporterPage::getUrl()),
 
                 Actions\Action::make('exportContacts')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_contact'))
                     ->action(function (HasTable $livewire): StreamedResponse {
                     $query    = $livewire->getFilteredSortedTableQuery();
                     $filename = 'contacts-' . now()->format('Y-m-d') . '.csv';

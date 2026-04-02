@@ -81,7 +81,7 @@ class EditEvent extends ReadOnlyAwareEditRecord
                 ->url(fn () => TransactionResource::getUrl('index', [
                     'tableFilters' => ['event_id' => ['value' => $this->getRecord()->id]],
                 ]))
-                ->visible(fn () => $this->getRecord()->price > 0 && $this->getRecord()->registrations()->exists()),
+                ->visible(fn () => auth()->user()?->can('view_any_transaction') && $this->getRecord()->price > 0 && $this->getRecord()->registrations()->exists()),
         ];
     }
 
