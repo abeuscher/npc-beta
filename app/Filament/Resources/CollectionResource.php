@@ -37,15 +37,6 @@ class CollectionResource extends Resource
         return auth()->user()?->hasRole('super_admin') ?? false;
     }
 
-    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return static::canAccess();
-    }
-
-    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return static::canAccess();
-    }
 
     protected static ?string $model = Collection::class;
 

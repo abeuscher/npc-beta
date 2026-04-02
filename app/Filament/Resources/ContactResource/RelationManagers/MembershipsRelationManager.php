@@ -79,15 +79,13 @@ class MembershipsRelationManager extends RelationManager
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make()
-                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make()
-                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -39,15 +39,6 @@ class MemberResource extends Resource
         return false;
     }
 
-    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_contact') ?? false;
-    }
-
-    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_contact') ?? false;
-    }
 
     public static function table(Table $table): Table
     {
@@ -103,12 +94,9 @@ class MemberResource extends Resource
                     ->hidden(fn () => ! auth()->user()?->can('update_contact'))
                     ->url(fn (Contact $record): string => ContactResource::getUrl('edit', ['record' => $record])),
 
-                Tables\Actions\DeleteAction::make()
-                    ->hidden(fn () => ! auth()->user()?->can('delete_contact')),
-                Tables\Actions\RestoreAction::make()
-                    ->hidden(fn () => ! auth()->user()?->can('delete_contact')),
-                Tables\Actions\ForceDeleteAction::make()
-                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

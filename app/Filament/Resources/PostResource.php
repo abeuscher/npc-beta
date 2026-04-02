@@ -35,16 +35,6 @@ class PostResource extends Resource
             ->where('type', 'post');
     }
 
-    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_post') ?? false;
-    }
-
-    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->hasRole('super_admin') ?? false;
-    }
-
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('view_any_post') ?? false;
@@ -109,15 +99,13 @@ class PostResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
-                Tables\Actions\ForceDeleteAction::make()
-                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make()
-                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

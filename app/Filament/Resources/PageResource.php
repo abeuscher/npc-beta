@@ -35,15 +35,6 @@ class PageResource extends Resource
         return $record->type !== 'system' && (auth()->user()?->can('delete_page') ?? false);
     }
 
-    public static function canRestore(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->can('delete_page') ?? false;
-    }
-
-    public static function canForceDelete(\Illuminate\Database\Eloquent\Model $record): bool
-    {
-        return auth()->user()?->hasRole('super_admin') ?? false;
-    }
 
     public static function form(Form $form): Form
     {
@@ -201,7 +192,6 @@ class PageResource extends Resource
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
                     ->hidden(fn (Page $record): bool => $record->type === 'system')
-                    ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false)
                     ->modalDescription(fn (Page $record): ?string => match ($record->type) {
                         'member' => 'Warning: Permanently deleting this page may render the member portal unusable.',
                         default  => null,
@@ -219,7 +209,6 @@ class PageResource extends Resource
                         }),
                     Tables\Actions\RestoreBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make()
-                        ->visible(fn (): bool => auth()->user()?->hasRole('super_admin') ?? false)
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $records->each(function (Page $record) {
                                 if ($record->type !== 'system') {
