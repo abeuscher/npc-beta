@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Models\Donation;
-use App\Models\SiteSetting;
+use App\Services\StripeCheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,18 +42,11 @@ class DonationCheckoutController extends Controller
         $amountCents = (int) round($validated['amount'] * 100);
 
         try {
-            $stripe = new \Stripe\StripeClient($secret);
-
-            $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
-            if (empty($configuredMethods)) {
-                $configuredMethods = ['card'];
-            }
+            $checkout = new StripeCheckoutService();
 
             if ($validated['type'] === 'one_off') {
-                $params = [
-                    'mode'                 => 'payment',
-                    'payment_method_types' => array_values($configuredMethods),
-                    'line_items'           => [[
+                $session = $checkout->createSession(
+                    lineItems: [[
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
@@ -62,41 +54,30 @@ class DonationCheckoutController extends Controller
                         ],
                         'quantity' => 1,
                     ]],
-                    'metadata'    => ['donation_id' => $donation->id],
-                    'success_url' => $successUrl,
-                    'cancel_url'  => $cancelUrl,
-                ];
+                    metadata: ['donation_id' => $donation->id],
+                    successUrl: $successUrl,
+                    cancelUrl: $cancelUrl,
+                );
             } else {
                 $interval = $validated['frequency'] === 'annual' ? 'year' : 'month';
 
-                $subscriptionMethods = array_values(array_intersect(
-                    $configuredMethods,
-                    FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
-                ));
-                if (empty($subscriptionMethods)) {
-                    $subscriptionMethods = ['card'];
-                }
-
-                $params = [
-                    'mode'                 => 'subscription',
-                    'payment_method_types' => $subscriptionMethods,
-                    'customer_creation'    => 'always',
-                    'line_items'           => [[
+                $session = $checkout->createSession(
+                    lineItems: [[
                         'price_data' => [
-                            'currency'   => 'usd',
-                            'unit_amount' => $amountCents,
+                            'currency'     => 'usd',
+                            'unit_amount'  => $amountCents,
                             'product_data' => ['name' => 'Recurring Donation'],
-                            'recurring'  => ['interval' => $interval],
+                            'recurring'    => ['interval' => $interval],
                         ],
                         'quantity' => 1,
                     ]],
-                    'metadata'    => ['donation_id' => $donation->id],
-                    'success_url' => $successUrl,
-                    'cancel_url'  => $cancelUrl,
-                ];
+                    metadata: ['donation_id' => $donation->id],
+                    successUrl: $successUrl,
+                    cancelUrl: $cancelUrl,
+                    mode: 'subscription',
+                    extra: ['customer_creation' => 'always'],
+                );
             }
-
-            $session = $stripe->checkout->sessions->create($params);
         } catch (\Throwable $e) {
             $donation->delete();
             return response()->json(['error' => 'Could not initiate checkout. Please try again.'], 422);

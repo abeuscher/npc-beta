@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Mail\PortalEmailVerification;
 use App\Models\Contact;
 use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
+use App\Services\StripeCheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,28 +117,13 @@ class MembershipCheckoutController extends Controller
         $isSubscription = in_array($tier->billing_interval, ['monthly', 'annual']);
 
         try {
-            $stripe            = new \Stripe\StripeClient($secret);
-            $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
-            if (empty($configuredMethods)) {
-                $configuredMethods = ['card'];
-            }
+            $checkout = new StripeCheckoutService();
 
             if ($isSubscription) {
                 $interval = $tier->billing_interval === 'annual' ? 'year' : 'month';
 
-                $subscriptionMethods = array_values(array_intersect(
-                    $configuredMethods,
-                    FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
-                ));
-                if (empty($subscriptionMethods)) {
-                    $subscriptionMethods = ['card'];
-                }
-
-                $params = [
-                    'mode'                 => 'subscription',
-                    'payment_method_types' => $subscriptionMethods,
-                    'customer_creation'    => 'always',
-                    'line_items'           => [[
+                $session = $checkout->createSession(
+                    lineItems: [[
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
@@ -147,15 +132,15 @@ class MembershipCheckoutController extends Controller
                         ],
                         'quantity' => 1,
                     ]],
-                    'metadata'    => ['membership_id' => $membership->id],
-                    'success_url' => $successUrl,
-                    'cancel_url'  => $cancelUrl,
-                ];
+                    metadata: ['membership_id' => $membership->id],
+                    successUrl: $successUrl,
+                    cancelUrl: $cancelUrl,
+                    mode: 'subscription',
+                    extra: ['customer_creation' => 'always'],
+                );
             } else {
-                $params = [
-                    'mode'                 => 'payment',
-                    'payment_method_types' => array_values($configuredMethods),
-                    'line_items'           => [[
+                $session = $checkout->createSession(
+                    lineItems: [[
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
@@ -163,13 +148,11 @@ class MembershipCheckoutController extends Controller
                         ],
                         'quantity' => 1,
                     ]],
-                    'metadata'    => ['membership_id' => $membership->id],
-                    'success_url' => $successUrl,
-                    'cancel_url'  => $cancelUrl,
-                ];
+                    metadata: ['membership_id' => $membership->id],
+                    successUrl: $successUrl,
+                    cancelUrl: $cancelUrl,
+                );
             }
-
-            $session = $stripe->checkout->sessions->create($params);
         } catch (\Throwable $e) {
             $membership->delete();
             return back()->withErrors(['checkout' => 'Could not initiate checkout. Please try again.']);

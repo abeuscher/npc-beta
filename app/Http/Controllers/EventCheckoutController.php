@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\SiteSetting;
+use App\Services\StripeCheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -80,16 +80,8 @@ class EventCheckoutController extends Controller
         $amountCents = (int) round((float) $event->price * 100);
 
         try {
-            $stripe            = new \Stripe\StripeClient($secret);
-            $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
-            if (empty($configuredMethods)) {
-                $configuredMethods = ['card'];
-            }
-
-            $session = $stripe->checkout->sessions->create([
-                'mode'                 => 'payment',
-                'payment_method_types' => array_values($configuredMethods),
-                'line_items'           => [[
+            $session = (new StripeCheckoutService())->createSession(
+                lineItems: [[
                     'price_data' => [
                         'currency'     => 'usd',
                         'unit_amount'  => $amountCents,
@@ -97,10 +89,10 @@ class EventCheckoutController extends Controller
                     ],
                     'quantity' => 1,
                 ]],
-                'metadata'    => ['event_registration_id' => $registration->id],
-                'success_url' => $eventPageUrl . '?registration=success',
-                'cancel_url'  => $eventPageUrl . '?registration=cancelled',
-            ]);
+                metadata: ['event_registration_id' => $registration->id],
+                successUrl: $eventPageUrl . '?registration=success',
+                cancelUrl: $eventPageUrl . '?registration=cancelled',
+            );
         } catch (\Throwable $e) {
             $registration->delete();
             return back()->withErrors(['register' => 'Could not initiate checkout. Please try again.']);
