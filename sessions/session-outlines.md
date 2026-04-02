@@ -121,6 +121,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 112 | Password Generator & Data Generator Audit |
 | 113 | Local Dev Environment — WSL2 Migration |
 | 114 | Permissions Audit & Coverage |
+| 115 | Housekeeping & Consistency Audit |
 
 ---
 
@@ -128,23 +129,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### Session 115 — Housekeeping & Consistency Audit
+### Session 116 — Code Review & Framework Alignment Audit
 
-Infrastructure and consistency pass. Three workstreams:
-
-1. **Schema doc restructure** — split `docs/schema.md` into a `docs/schema/` folder with one file per table, named after the table. Faster to index and easier to maintain.
-2. **Folder structure inventory** — account for every file in the project tree. Build a manifest that describes what each file/directory is for. Many can be inferred from filename alone; only open files where the purpose is ambiguous.
-3. **Admin field input audit** — audit every field input type used across the admin panel (image uploaders, date/time pickers, color pickers, etc.) and ensure each type is used consistently everywhere it appears. Identify and resolve cases where the same logical input exists in two different implementations (e.g. native file picker vs Filament image field for logo uploads). Define the canonical pattern for each control type and bring all instances into conformance.
-
-### Session 116 — Code Review & Cleanup
-
-Code review following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–115. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features. 
-
-Items spotted during other sessions that need cleanup but don't warrant their own session:
-
-- **Orphaned `WidgetRegistry` import** — `PageWidgetsRelationManager.php` imports `App\Widgets\WidgetRegistry`, which does not exist. The relation manager itself appears unused (widget editing goes through the Livewire `PageBuilder` / `PageBuilderBlock` path). Confirm the relation manager is dead code, remove the import, and delete the file if it is no longer referenced anywhere. Spotted session 075.
-
-Fixx these in the session work.
+Two-track code review. Track 1: systematic audit for custom code that reimplements or displaces framework-provided behaviour (Filament, Laravel, Spatie packages) — produces a findings table for discussion, no automatic fixes. Track 2: standard cleanup — dead imports, orphaned code, duplicated logic blocks. Includes the orphaned WidgetRegistry import flagged in session 075.
 
 ### Help System Enhancements
 
