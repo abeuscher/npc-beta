@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\SyncTransactionToQuickBooks;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,28 @@ class Transaction extends Model
         'occurred_at'  => 'datetime',
         'qb_synced_at' => 'datetime',
     ];
+
+    /**
+     * Create a transaction originating from Stripe and optionally sync to QuickBooks.
+     *
+     * Amount should already be converted to dollars (not cents).
+     * Failed transactions are recorded but not dispatched to QuickBooks.
+     */
+    public static function recordStripe(array $attributes): self
+    {
+        $transaction = static::create(array_merge([
+            'type'        => 'payment',
+            'direction'   => 'in',
+            'status'      => 'completed',
+            'occurred_at' => now(),
+        ], $attributes));
+
+        if ($transaction->status !== 'failed') {
+            SyncTransactionToQuickBooks::dispatch($transaction);
+        }
+
+        return $transaction;
+    }
 
     public function subject(): MorphTo
     {
