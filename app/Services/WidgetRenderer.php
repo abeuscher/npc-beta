@@ -44,7 +44,7 @@ class WidgetRenderer
         // Process inline images in richtext fields
         foreach ($widgetType->config_schema ?? [] as $field) {
             if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
-                $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
+                $config[$field['key']] = \App\Services\Media\InlineImageRenderer::process($config[$field['key']]);
             }
         }
 

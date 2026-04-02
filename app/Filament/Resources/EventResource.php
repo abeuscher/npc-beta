@@ -218,10 +218,9 @@ class EventResource extends Resource
                                             ->required()
                                             ->disabled(fn (Forms\Get $get): bool => (bool) $get('all_day')),
 
-                                        Forms\Components\Checkbox::make('all_day')
+                                        Forms\Components\Toggle::make('all_day')
                                             ->label('All day')
-                                            ->live()
-                                            ->inline(false),
+                                            ->live(),
                                     ])->columns(3)->columnSpan(5),
                                 ]),
 

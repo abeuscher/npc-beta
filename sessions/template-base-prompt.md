@@ -9,7 +9,7 @@ We are about to begin a new session: **NNN. Session Title**.
 Before doing anything else:
 
 1. Read `sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, and `sessions/template-session-log.md`. These files are the **canonical format reference** for all session documents. Do not infer format from previous session logs — the templates take precedence.
-2. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema.md` and note every table relevant to this session's scope.
+2. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
 3. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
 4. Summarise your understanding and confirm you are ready to proceed.
 
@@ -22,7 +22,7 @@ Before doing anything else:
 - **Pause and ask** any time a decision point arises that is not covered by the agreed prompt.
 - **If any external service is unavailable**, stop and ask — do not attempt to troubleshoot.
 - **Run migrations via Docker** after writing them: `docker compose exec app php artisan migrate` (or `migrate:fresh --seed` when appropriate). Do not pause to ask first.
-- **Update `docs/schema.md`** after writing any migration — add, modify, or remove the relevant table section(s) to reflect the final column state.
+- **Update `docs/schema/`** after writing any migration — add, modify, or remove the relevant table file(s) under `docs/schema/` to reflect the final column state. If adding a new table, create a new file and add it to `docs/schema/README.md`.
 - **If the PostgreSQL container becomes unresponsive** (500/exec errors), ask the user to restart it rather than retrying.
 - **When implementation is complete**, run the fast test suite: `php artisan test --exclude-group=slow`. Fix any failures before proceeding. If the session prompt specifies slow test groups to run, run those separately as well.
 - **Tests for new behaviour:** every session that changes application behaviour (new models, controllers, routes, scopes, or logic changes) should include tests unless the session prompt explicitly says otherwise. Pure CSS, template, or copy sessions may skip tests. Follow existing test conventions — Pest syntax, `RefreshDatabase`, factory-based setup.

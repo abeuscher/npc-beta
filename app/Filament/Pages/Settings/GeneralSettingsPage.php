@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Forms\Components\QuillEditor;
 use App\Models\Page as CmsPage;
 use App\Models\SiteSetting;
 use Filament\Actions\Action;
@@ -90,7 +91,7 @@ class GeneralSettingsPage extends Page
                             ->helperText('The accent colour used throughout the admin panel. Default: #f59e0b')
                             ->columnSpanFull(),
 
-                        Forms\Components\RichEditor::make('dashboard_welcome')
+                        QuillEditor::make('dashboard_welcome')
                             ->label('Dashboard welcome message')
                             ->nullable()
                             ->columnSpanFull()
@@ -191,13 +192,13 @@ class GeneralSettingsPage extends Page
                 Forms\Components\Section::make('System Page Content')
                     ->description('Editable content rendered on system pages that cannot use the CMS page builder.')
                     ->schema([
-                        Forms\Components\RichEditor::make('system_page_content_reset_password')
+                        QuillEditor::make('system_page_content_reset_password')
                             ->label('Reset password page')
                             ->nullable()
                             ->columnSpanFull()
                             ->helperText('Rendered above the reset-password form.'),
 
-                        Forms\Components\RichEditor::make('system_page_content_email_verify')
+                        QuillEditor::make('system_page_content_email_verify')
                             ->label('Email verification page')
                             ->nullable()
                             ->columnSpanFull()

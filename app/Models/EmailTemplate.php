@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Services\ImageSizeProfile;
-use App\Services\InlineImageRenderer;
+use App\Services\Media\ImageSizeProfile;
+use App\Services\Media\InlineImageRenderer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;

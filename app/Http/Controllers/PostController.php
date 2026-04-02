@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
-use App\Services\InlineImageRenderer;
+use App\Services\Media\InlineImageRenderer;
 use App\Services\PageContext;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;

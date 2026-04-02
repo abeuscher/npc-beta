@@ -4,7 +4,7 @@ namespace App\Filament\Pages\Settings;
 
 use App\Models\SiteSetting;
 use App\Rules\ValidHtmlSnippet;
-use App\Services\ImageSizeProfile;
+use App\Services\Media\ImageSizeProfile;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;

@@ -42,7 +42,7 @@
 
     @if ($event->description)
         <div class="text-gray-800 dark:text-gray-200">
-            {!! \App\Services\InlineImageRenderer::process($event->description) !!}
+            {!! \App\Services\Media\InlineImageRenderer::process($event->description) !!}
         </div>
     @endif
 @endisset

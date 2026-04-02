@@ -1,6 +1,6 @@
 # App Reference
 
-Fast-orientation index for Claude. Read this at the start of any session before searching for files. It is not a replacement for `docs/schema.md` — it is a map to where things live.
+Fast-orientation index for Claude. Read this at the start of any session before searching for files. It is not a replacement for `docs/schema/` — it is a map to where things live.
 
 ---
 

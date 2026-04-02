@@ -138,7 +138,13 @@ Infrastructure and consistency pass. Three workstreams:
 
 ### Session 116 — Code Review & Cleanup
 
-Code review following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–115. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features.
+Code review following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–115. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features. 
+
+Items spotted during other sessions that need cleanup but don't warrant their own session:
+
+- **Orphaned `WidgetRegistry` import** — `PageWidgetsRelationManager.php` imports `App\Widgets\WidgetRegistry`, which does not exist. The relation manager itself appears unused (widget editing goes through the Livewire `PageBuilder` / `PageBuilderBlock` path). Confirm the relation manager is dead code, remove the import, and delete the file if it is no longer referenced anywhere. Spotted session 075.
+
+Fixx these in the session work.
 
 ### Help System Enhancements
 
@@ -150,9 +156,6 @@ Help index page with table of contents and search bar. Link in the left navigati
 
 ### Code Housekeeping Notes
 
-Items spotted during other sessions that need cleanup but don't warrant their own session:
-
-- **Orphaned `WidgetRegistry` import** — `PageWidgetsRelationManager.php` imports `App\Widgets\WidgetRegistry`, which does not exist. The relation manager itself appears unused (widget editing goes through the Livewire `PageBuilder` / `PageBuilderBlock` path). Confirm the relation manager is dead code, remove the import, and delete the file if it is no longer referenced anywhere. Spotted session 075.
 
 ---
 

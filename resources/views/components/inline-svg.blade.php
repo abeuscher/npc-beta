@@ -8,7 +8,7 @@
      *   $class — CSS class to inject into the <svg> tag
      */
 
-    use App\Services\SvgSanitizer;
+    use App\Services\Media\SvgSanitizer;
     use Illuminate\Support\Facades\Storage;
 
     $svgContent = null;

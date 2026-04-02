@@ -7,7 +7,7 @@
     @php
         use App\Models\SiteSetting;
         use App\Models\Template;
-        use App\Services\ChromeRenderer;
+        use App\Services\Media\ChromeRenderer;
         use App\Services\SeoMetaGenerator;
 
         // Resolve template (shared by PageController, or fall back to default)

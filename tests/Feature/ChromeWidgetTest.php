@@ -5,7 +5,7 @@ use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\WidgetType;
-use App\Services\ChromeRenderer;
+use App\Services\Media\ChromeRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

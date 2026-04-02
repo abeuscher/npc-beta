@@ -98,13 +98,15 @@
       "Bash(grep -rl \"use Filament\\\\\\\\\\\\\\\\Resources\\\\\\\\\\\\\\\\Pages\\\\\\\\\\\\\\\\EditRecord;\" app/Filament/Resources/*/Pages/Edit*.php)",
       "Bash(git status:*)",
       "Bash(git branch:*)",
-      "Bash(ls /home/al/nonprofitcrm/sessions/11[5-8]*)"
+      "Bash(ls /home/al/nonprofitcrm/sessions/11[5-8]*)",
+      "Bash(ls /home/al/nonprofitcrm/sessions/*base-prompt*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",
       "/home/al/nonprofitcrm/public",
       "/home/al/nonprofitcrm-stash",
-      "/home/al/nonprofitcrm/sessions"
+      "/home/al/nonprofitcrm/sessions",
+      "/home/al/nonprofitcrm/docs"
     ]
   }
 }

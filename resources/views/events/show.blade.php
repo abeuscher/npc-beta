@@ -79,7 +79,7 @@
 
         @if ($event->description)
             <div class="event-description">
-                {!! \App\Services\InlineImageRenderer::process($event->description) !!}
+                {!! \App\Services\Media\InlineImageRenderer::process($event->description) !!}
             </div>
         @endif
 
