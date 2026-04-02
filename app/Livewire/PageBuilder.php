@@ -15,6 +15,11 @@ class PageBuilder extends Component
 {
     public string $pageId = '';
 
+    private function assertCanEdit(): void
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+    }
+
     /** @var array<int, array<string, mixed>> */
     public array $blocks = [];
 
@@ -109,6 +114,8 @@ class PageBuilder extends Component
 
     public function createBlock(string $widgetTypeId): void
     {
+        $this->assertCanEdit();
+
         $this->validate([
             'addModalLabel' => 'nullable|string|max:255',
         ]);
@@ -159,6 +166,8 @@ class PageBuilder extends Component
 
     public function deleteBlock(string $blockId): void
     {
+        $this->assertCanEdit();
+
         $pw = PageWidget::with('widgetType')->find($blockId);
 
         if ($pw && in_array($pw->widgetType?->handle ?? '', $this->requiredHandles, true)) {
@@ -181,6 +190,8 @@ class PageBuilder extends Component
 
     public function copyBlock(int $index): void
     {
+        $this->assertCanEdit();
+
         $block = $this->blocks[$index] ?? null;
 
         if (! $block) {
@@ -218,6 +229,8 @@ class PageBuilder extends Component
 
     public function updateOrder(array $orderedIds): void
     {
+        $this->assertCanEdit();
+
         foreach ($orderedIds as $i => $id) {
             PageWidget::where('id', $id)->update(['sort_order' => $i]);
         }
@@ -231,6 +244,8 @@ class PageBuilder extends Component
 
     public function moveUp(int $index): void
     {
+        $this->assertCanEdit();
+
         if ($index === 0) {
             return;
         }
@@ -243,6 +258,8 @@ class PageBuilder extends Component
 
     public function moveDown(int $index): void
     {
+        $this->assertCanEdit();
+
         if ($index >= count($this->blocks) - 1) {
             return;
         }
@@ -343,6 +360,8 @@ class PageBuilder extends Component
 
     public function saveAsTemplate(): void
     {
+        $this->assertCanEdit();
+
         $this->validate([
             'saveTemplateName' => 'required|string|max:255',
             'saveTemplateDescription' => 'nullable|string|max:1000',

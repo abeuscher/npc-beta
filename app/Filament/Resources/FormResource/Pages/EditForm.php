@@ -4,10 +4,10 @@ namespace App\Filament\Resources\FormResource\Pages;
 
 use App\Filament\Resources\FormResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Str;
 
-class EditForm extends EditRecord
+class EditForm extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = FormResource::class;
 
@@ -26,6 +26,7 @@ class EditForm extends EditRecord
                 ->label('Download JSON')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
+                ->hidden(fn () => ! auth()->user()?->can('update_form'))
                 ->action(fn () => $this->downloadJson()),
 
             Actions\DeleteAction::make(),

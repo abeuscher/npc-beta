@@ -112,6 +112,7 @@ class ContactNotes extends Page implements HasActions
             Actions\Action::make('create_note')
                 ->label('Create note')
                 ->icon('heroicon-o-plus')
+                ->hidden(fn () => ! auth()->user()?->can('create_note'))
                 ->modalHeading('Create Note')
                 ->modalWidth('lg')
                 ->form([
@@ -129,6 +130,8 @@ class ContactNotes extends Page implements HasActions
                         ->default(fn () => Auth::id()),
                 ])
                 ->action(function (array $data) {
+                    abort_unless(auth()->user()?->can('create_note'), 403);
+
                     $this->record->notes()->create($data);
 
                     Notification::make()
@@ -161,6 +164,7 @@ class ContactNotes extends Page implements HasActions
     public function editNoteAction(): Action
     {
         return Action::make('editNote')
+            ->hidden(fn () => ! auth()->user()?->can('update_note'))
             ->modalHeading('Edit Note')
             ->modalWidth('lg')
             ->fillForm(function (array $arguments): array {
@@ -185,6 +189,8 @@ class ContactNotes extends Page implements HasActions
                     ->label('Occurred At'),
             ])
             ->action(function (array $data, array $arguments): void {
+                abort_unless(auth()->user()?->can('update_note'), 403);
+
                 Note::where('id', $arguments['note'])
                     ->where('notable_type', Contact::class)
                     ->where('notable_id', $this->record->id)
@@ -201,11 +207,14 @@ class ContactNotes extends Page implements HasActions
     public function deleteNoteAction(): Action
     {
         return Action::make('deleteNote')
+            ->hidden(fn () => ! auth()->user()?->can('delete_note'))
             ->requiresConfirmation()
             ->modalHeading('Delete Note')
             ->modalDescription('Are you sure you want to delete this note? This cannot be undone.')
             ->color('danger')
             ->action(function (array $arguments): void {
+                abort_unless(auth()->user()?->can('delete_note'), 403);
+
                 Note::where('id', $arguments['note'])
                     ->where('notable_type', Contact::class)
                     ->where('notable_id', $this->record->id)

@@ -4,9 +4,9 @@ namespace App\Filament\Resources\CustomFieldDefResource\Pages;
 
 use App\Filament\Resources\CustomFieldDefResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditCustomFieldDef extends EditRecord
+class EditCustomFieldDef extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = CustomFieldDefResource::class;
 

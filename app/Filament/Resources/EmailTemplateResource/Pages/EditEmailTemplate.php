@@ -7,10 +7,10 @@ use App\Models\SiteSetting;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Facades\Mail;
 
-class EditEmailTemplate extends EditRecord
+class EditEmailTemplate extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = EmailTemplateResource::class;
 

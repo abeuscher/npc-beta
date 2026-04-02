@@ -182,8 +182,11 @@ class MediaLibraryPage extends Page implements HasTable
                     ->requiresConfirmation()
                     ->modalHeading('Delete media file')
                     ->modalDescription(fn (Media $record): string => "Are you sure you want to delete \"{$record->file_name}\"? This will remove the file from disk and cannot be undone.")
-                    ->action(fn (Media $record) => $record->delete())
-                    ->visible(fn (): bool => auth()->user()?->can('view_any_page') ?? false),
+                    ->action(function (Media $record) {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+                        $record->delete();
+                    })
+                    ->visible(fn (): bool => auth()->user()?->can('update_page') ?? false),
             ])
             ->defaultSort('created_at', 'desc');
     }

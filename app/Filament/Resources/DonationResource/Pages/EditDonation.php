@@ -4,9 +4,9 @@ namespace App\Filament\Resources\DonationResource\Pages;
 
 use App\Filament\Resources\DonationResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditDonation extends EditRecord
+class EditDonation extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = DonationResource::class;
 

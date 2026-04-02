@@ -11,9 +11,9 @@ use App\Rules\ValidHtmlSnippet;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditPage extends EditRecord
+class EditPage extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = PageResource::class;
 
@@ -28,6 +28,38 @@ class EditPage extends EditRecord
         };
 
         return 'Edit ' . $typeLabel;
+    }
+
+    protected function getReadOnlyHeaderActions(): array
+    {
+        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+        $path = $this->record->slug === 'home' ? '/' : '/' . $this->record->slug;
+        $url  = $base . $path;
+
+        $isDraft = $this->record->status !== 'published';
+
+        return [
+            $isDraft
+                ? Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->link()
+                    ->color('gray')
+                    ->disabled()
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => 'Page not published',
+                    ])
+                : Actions\Action::make('publicUrl')
+                    ->label($url)
+                    ->url($url)
+                    ->openUrlInNewTab()
+                    ->link()
+                    ->color('primary')
+                    ->extraAttributes([
+                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
+                        'title' => $url,
+                    ]),
+        ];
     }
 
     protected function getHeaderActions(): array
@@ -67,6 +99,7 @@ class EditPage extends EditRecord
                 Actions\Action::make('saveAsContentTemplate')
                     ->label('Save Block Layout as Template')
                     ->icon('heroicon-o-clipboard-document-list')
+                    ->hidden(fn () => ! auth()->user()?->can('update_page'))
                     ->form([
                         Forms\Components\TextInput::make('template_name')
                             ->label('Template Name')
@@ -79,6 +112,7 @@ class EditPage extends EditRecord
                             ->maxLength(1000),
                     ])
                     ->action(function (array $data) {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
                         $definition = PageWidget::serializeStack($this->record->id);
 
                         if (empty($definition)) {
@@ -135,6 +169,7 @@ class EditPage extends EditRecord
                             ->rules([new ValidHtmlSnippet()]),
                     ])
                     ->action(function (array $data) {
+                        abort_unless(auth()->user()?->can('edit_page_snippets'), 403);
                         $this->record->update([
                             'head_snippet' => $data['head_snippet'],
                             'body_snippet' => $data['body_snippet'],

@@ -9,10 +9,10 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use ScssPhp\ScssPhp\Compiler;
 
-class EditPageTemplate extends EditRecord
+class EditPageTemplate extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = TemplateResource::class;
 
@@ -135,8 +135,14 @@ class EditPageTemplate extends EditRecord
         return Template::page()->where('is_default', true)->first();
     }
 
+    private function assertCanEdit(): void
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+    }
+
     public function clearAppearance(): void
     {
+        $this->assertCanEdit();
         $this->record->update([
             'primary_color'    => null,
             'heading_font'     => null,
@@ -157,6 +163,7 @@ class EditPageTemplate extends EditRecord
 
     public function clearScss(): void
     {
+        $this->assertCanEdit();
         $this->record->update(['custom_scss' => null]);
         $this->themeScss = '';
 
@@ -165,6 +172,7 @@ class EditPageTemplate extends EditRecord
 
     public function saveAndBuildScss(): void
     {
+        $this->assertCanEdit();
         $scss = $this->themeScss;
 
         // Validate SCSS
@@ -214,6 +222,7 @@ class EditPageTemplate extends EditRecord
 
     public function enableCustomHeader(): void
     {
+        $this->assertCanEdit();
         $page = $this->createChromePageFor('header');
         $this->record->update(['header_page_id' => $page->id]);
         $this->headerPageId = $page->id;
@@ -223,6 +232,7 @@ class EditPageTemplate extends EditRecord
 
     public function inheritHeader(): void
     {
+        $this->assertCanEdit();
         $this->record->update(['header_page_id' => null]);
         $default = Template::page()->where('is_default', true)->first();
         $this->headerPageId = $default?->header_page_id;
@@ -232,6 +242,7 @@ class EditPageTemplate extends EditRecord
 
     public function enableCustomFooter(): void
     {
+        $this->assertCanEdit();
         $page = $this->createChromePageFor('footer');
         $this->record->update(['footer_page_id' => $page->id]);
         $this->footerPageId = $page->id;
@@ -241,6 +252,7 @@ class EditPageTemplate extends EditRecord
 
     public function inheritFooter(): void
     {
+        $this->assertCanEdit();
         $this->record->update(['footer_page_id' => null]);
         $default = Template::page()->where('is_default', true)->first();
         $this->footerPageId = $default?->footer_page_id;

@@ -12,6 +12,11 @@ class PageBuilderBlock extends Component
 {
     public string $blockId;
 
+    private function assertCanEdit(): void
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+    }
+
     /** Set when this block is a child inside a column slot. */
     public string $parentBlockId = '';
     public int $parentColumnIndex = 0;
@@ -123,6 +128,8 @@ class PageBuilderBlock extends Component
 
     public function createChildBlock(string $widgetTypeId): void
     {
+        $this->assertCanEdit();
+
         $this->validate(['childAddLabel' => 'nullable|string|max:255']);
 
         $widgetType = WidgetType::find($widgetTypeId);
@@ -175,6 +182,8 @@ class PageBuilderBlock extends Component
     #[On('child-delete-requested')]
     public function onChildDelete(string $childId, string $parentId): void
     {
+        $this->assertCanEdit();
+
         if ($parentId !== $this->blockId) {
             return;
         }
@@ -186,6 +195,8 @@ class PageBuilderBlock extends Component
     #[On('child-move-up-requested')]
     public function onChildMoveUp(string $childId, string $parentId, int $columnIndex): void
     {
+        $this->assertCanEdit();
+
         if ($parentId !== $this->blockId) {
             return;
         }
@@ -214,6 +225,8 @@ class PageBuilderBlock extends Component
     #[On('child-move-down-requested')]
     public function onChildMoveDown(string $childId, string $parentId, int $columnIndex): void
     {
+        $this->assertCanEdit();
+
         if ($parentId !== $this->blockId) {
             return;
         }

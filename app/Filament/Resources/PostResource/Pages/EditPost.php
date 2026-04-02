@@ -5,9 +5,9 @@ namespace App\Filament\Resources\PostResource\Pages;
 use App\Filament\Resources\PostResource;
 use App\Models\SiteSetting;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditPost extends EditRecord
+class EditPost extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = PostResource::class;
 

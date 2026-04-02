@@ -12,12 +12,12 @@ use App\Models\PortalAccount;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
-class EditContact extends EditRecord
+class EditContact extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = ContactResource::class;
 
@@ -74,6 +74,23 @@ class EditContact extends EditRecord
         }
     }
 
+    protected function getReadOnlyHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('view_transactions')
+                ->label('View transactions →')
+                ->color('gray')
+                ->url(fn () => TransactionResource::getUrl('index')
+                    . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
+
+            Actions\Action::make('notes')
+                ->label('Timeline')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -95,7 +112,7 @@ class EditContact extends EditRecord
                 Actions\Action::make('promote_to_member')
                     ->label('Promote to Member')
                     ->icon('heroicon-o-identification')
-                    ->hidden(fn () => $this->record->memberships()->where('status', 'active')->exists())
+                    ->hidden(fn () => ! auth()->user()?->can('create_membership') || $this->record->memberships()->where('status', 'active')->exists())
                     ->modalHeading('Promote to Member')
                     ->modalWidth('lg')
                     ->form([
@@ -143,6 +160,8 @@ class EditContact extends EditRecord
                             ->helperText('Leave as 0 for complimentary'),
                     ])
                     ->action(function (array $data) {
+                        abort_unless(auth()->user()?->can('create_membership'), 403);
+
                         $tierId = $data['tier_id'];
                         $tier   = MembershipTier::find($tierId);
 
@@ -168,7 +187,7 @@ class EditContact extends EditRecord
                 Actions\Action::make('grant_portal_access')
                     ->label('Grant Portal Access')
                     ->icon('heroicon-o-key')
-                    ->hidden(fn () => $this->record->portalAccount !== null)
+                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount !== null)
                     ->modalHeading('Grant Portal Access')
                     ->modalWidth('md')
                     ->form([
@@ -183,6 +202,8 @@ class EditContact extends EditRecord
                             ->default(true),
                     ])
                     ->action(function (array $data) {
+                        abort_unless(auth()->user()?->can('update_contact'), 403);
+
                         $sendInvite = $data['send_invite'];
 
                         $portal = PortalAccount::create([
@@ -207,9 +228,11 @@ class EditContact extends EditRecord
                     ->label('Suspend portal access')
                     ->icon('heroicon-o-no-symbol')
                     ->color('danger')
-                    ->hidden(fn () => $this->record->portalAccount === null || ! $this->record->portalAccount->is_active)
+                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || ! $this->record->portalAccount->is_active)
                     ->requiresConfirmation()
                     ->action(function () {
+                        abort_unless(auth()->user()?->can('update_contact'), 403);
+
                         $this->record->portalAccount->update(['is_active' => false]);
 
                         Notification::make()
@@ -222,9 +245,11 @@ class EditContact extends EditRecord
                     ->label('Restore portal access')
                     ->icon('heroicon-o-arrow-path')
                     ->color('success')
-                    ->hidden(fn () => $this->record->portalAccount === null || $this->record->portalAccount->is_active)
+                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->is_active)
                     ->requiresConfirmation()
                     ->action(function () {
+                        abort_unless(auth()->user()?->can('update_contact'), 403);
+
                         $this->record->portalAccount->update(['is_active' => true]);
 
                         Notification::make()
@@ -236,9 +261,11 @@ class EditContact extends EditRecord
                 Actions\Action::make('mark_email_verified')
                     ->label('Mark email verified')
                     ->icon('heroicon-o-check-badge')
-                    ->hidden(fn () => $this->record->portalAccount === null || $this->record->portalAccount->email_verified_at !== null)
+                    ->hidden(fn () => ! auth()->user()?->can('update_contact') || $this->record->portalAccount === null || $this->record->portalAccount->email_verified_at !== null)
                     ->requiresConfirmation()
                     ->action(function () {
+                        abort_unless(auth()->user()?->can('update_contact'), 403);
+
                         $this->record->portalAccount->update(['email_verified_at' => now()]);
 
                         Notification::make()

@@ -4,9 +4,9 @@ namespace App\Filament\Resources\FundResource\Pages;
 
 use App\Filament\Resources\FundResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditFund extends EditRecord
+class EditFund extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = FundResource::class;
 

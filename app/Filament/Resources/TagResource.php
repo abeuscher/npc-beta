@@ -61,6 +61,7 @@ class TagResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record): string => static::getUrl('edit', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()

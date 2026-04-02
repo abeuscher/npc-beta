@@ -189,11 +189,12 @@ class WidgetTypeResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->hidden(fn (WidgetType $record): bool => WidgetType::isPinned($record->handle) || $record->pageWidgets()->exists()),
+                    ->hidden(fn (WidgetType $record): bool => ! auth()->user()?->can('delete_widget_type') || WidgetType::isPinned($record->handle) || $record->pageWidgets()->exists()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
+                        ->hidden(fn () => ! auth()->user()?->can('delete_widget_type'))
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $records->each(function (WidgetType $record) {
                                 if (! WidgetType::isPinned($record->handle) && $record->pageWidgets()->doesntExist()) {

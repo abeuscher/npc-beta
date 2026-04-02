@@ -120,6 +120,11 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function ($query) {
+                if (auth()->user()?->isDemo()) {
+                    $query->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['demo', 'super_admin']));
+                }
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable()->copyable(),
@@ -138,7 +143,7 @@ class UserResource extends Resource
                     ->label('Invite')
                     ->icon('heroicon-o-envelope')
                     ->color('warning')
-                    ->hidden(fn (User $record) => DB::table('sessions')->where('user_id', $record->id)->exists())
+                    ->hidden(fn (User $record) => ! auth()->user()?->can('update_user') || DB::table('sessions')->where('user_id', $record->id)->exists())
                     ->form([
                         Forms\Components\Select::make('roles')
                             ->label('Role')
@@ -148,6 +153,7 @@ class UserResource extends Resource
                             ->preload(),
                     ])
                     ->action(function (User $record, array $data) {
+                        abort_unless(auth()->user()?->can('update_user'), 403);
                         $record->update(['is_active' => false]);
                         $record->syncRoles($data['roles'] ?? []);
 

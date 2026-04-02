@@ -34,6 +34,11 @@ class FundResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('delete_fund')) {
+            return false;
+        }
+
         return $record->donations()->doesntExist();
     }
 
@@ -95,7 +100,9 @@ class FundResource extends Resource
                     ->icon(fn (Fund $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
                     ->color('gray')
                     ->requiresConfirmation()
+                    ->hidden(fn () => ! auth()->user()?->can('update_fund'))
                     ->action(function (Fund $record) {
+                        abort_unless(auth()->user()?->can('update_fund'), 403);
                         $record->update(['is_archived' => ! $record->is_archived]);
                         Notification::make()
                             ->title($record->is_archived ? 'Fund archived' : 'Fund unarchived')

@@ -12,12 +12,12 @@ use App\Models\EmailTemplate;
 use App\Models\SiteSetting;
 use Filament\Actions;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class EditEvent extends EditRecord
+class EditEvent extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = EventResource::class;
 
@@ -59,6 +59,32 @@ class EditEvent extends EditRecord
         return EventResource::computeEndsAt($data);
     }
 
+    protected function getReadOnlyHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('editLandingPage')
+                ->label('View landing page')
+                ->icon('heroicon-o-pencil-square')
+                ->color('gray')
+                ->visible(fn () => $this->getRecord()->landing_page_id !== null)
+                ->url(fn () => \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $this->getRecord()->landing_page_id])),
+
+            Actions\Action::make('viewRegistrants')
+                ->label('View registrants')
+                ->icon('heroicon-o-user-group')
+                ->url(fn () => EventResource::getUrl('registrations', ['record' => $this->getRecord()]))
+                ->visible(fn () => $this->getRecord()->registrations()->exists()),
+
+            Actions\Action::make('viewTicketPurchases')
+                ->label('View ticket purchases')
+                ->icon('heroicon-o-receipt-percent')
+                ->url(fn () => TransactionResource::getUrl('index', [
+                    'tableFilters' => ['event_id' => ['value' => $this->getRecord()->id]],
+                ]))
+                ->visible(fn () => $this->getRecord()->price > 0 && $this->getRecord()->registrations()->exists()),
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -66,11 +92,13 @@ class EditEvent extends EditRecord
                 ->label('Create basic landing page')
                 ->icon('heroicon-o-document-plus')
                 ->color('primary')
-                ->visible(fn () => $this->getRecord()->landing_page_id === null)
+                ->visible(fn () => auth()->user()?->can('update_event') && $this->getRecord()->landing_page_id === null)
                 ->requiresConfirmation()
                 ->modalHeading('Create landing page')
                 ->modalDescription('This will create a new draft page with event widgets pre-configured. You can edit it fully after creation.')
                 ->action(function () {
+                    abort_unless(auth()->user()?->can('update_event'), 403);
+
                     $event = $this->getRecord();
 
                     EventResource::createLandingPageForEvent($event);
@@ -107,6 +135,8 @@ class EditEvent extends EditRecord
                 },
                 previewHtmlResolver: fn () => $this->cancellationPreviewHtml(),
                 sendCallable: function (array $data) {
+                    abort_unless(auth()->user()?->can('update_event'), 403);
+
                     $event = $this->getRecord();
 
                     $registrations = $event->registrations()
@@ -137,7 +167,7 @@ class EditEvent extends EditRecord
                 ->label('Cancel Event')
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn () => $this->getRecord()->status !== 'cancelled'),
+                ->visible(fn () => auth()->user()?->can('update_event') && $this->getRecord()->status !== 'cancelled'),
 
             Actions\ActionGroup::make([
                 Actions\Action::make('viewRegistrants')
@@ -197,12 +227,17 @@ class EditEvent extends EditRecord
                     ->modalHeading('Send reminder emails')
                     ->modalDescription('This will immediately email all current registrants who have an email address. Continue?')
                     ->visible(function () {
+                        if (! auth()->user()?->can('update_event')) {
+                            return false;
+                        }
                         $event       = $this->getRecord();
                         $hasUpcoming = $event->starts_at && $event->starts_at >= now();
                         $hasEmails   = $event->registrations()->where('status', 'registered')->whereNotNull('email')->where('email', '!=', '')->exists();
                         return $hasUpcoming && $hasEmails;
                     })
                     ->action(function () {
+                        abort_unless(auth()->user()?->can('update_event'), 403);
+
                         $event = $this->getRecord();
 
                         $registrations = $event->registrations()
@@ -230,6 +265,10 @@ class EditEvent extends EditRecord
                     ->icon('heroicon-o-user-minus')
                     ->color('danger')
                     ->visible(function () {
+                        if (! auth()->user()?->can('delete_contact')) {
+                            return false;
+                        }
+
                         $event = $this->getRecord();
 
                         if ($event->status === 'cancelled') {
@@ -285,6 +324,8 @@ class EditEvent extends EditRecord
                     })
                     ->modalSubmitActionLabel('Delete')
                     ->action(function () {
+                        abort_unless(auth()->user()?->can('delete_contact'), 403);
+
                         $event   = $this->getRecord();
                         $eventId = $event->id;
 

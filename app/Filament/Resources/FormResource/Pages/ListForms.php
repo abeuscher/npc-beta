@@ -29,6 +29,7 @@ class ListForms extends ListRecords
                 ->label('Import JSON')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
+                ->hidden(fn () => ! auth()->user()?->can('create_form'))
                 ->modalHeading('Import Form from JSON')
                 ->modalWidth('3xl')
                 ->form([
@@ -39,6 +40,8 @@ class ListForms extends ListRecords
                         ->helperText('Paste a form definition exported from this system. The imported form will be saved as inactive — review and activate it when ready.'),
                 ])
                 ->action(function (array $data, Actions\Action $action) {
+                    abort_unless(auth()->user()?->can('create_form'), 403);
+
                     $errors = [];
 
                     // ── Parse ─────────────────────────────────────────────

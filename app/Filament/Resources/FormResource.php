@@ -291,6 +291,7 @@ class FormResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record): string => static::getUrl('edit', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
@@ -328,7 +329,9 @@ class FormResource extends Resource
                     ->icon(fn (Form $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
                     ->color('gray')
                     ->requiresConfirmation()
+                    ->hidden(fn () => ! auth()->user()?->can('update_form'))
                     ->action(function (Form $record) {
+                        abort_unless(auth()->user()?->can('update_form'), 403);
                         $record->update(['is_archived' => ! $record->is_archived]);
                         Notification::make()
                             ->title($record->is_archived ? 'Form archived' : 'Form unarchived')
@@ -338,6 +341,7 @@ class FormResource extends Resource
                 Tables\Actions\Action::make('download_json')
                     ->label('Download JSON')
                     ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('update_form'))
                     ->action(function (Form $record) {
                         $json = json_encode([
                             'title'    => $record->title,

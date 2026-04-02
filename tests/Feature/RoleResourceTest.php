@@ -87,16 +87,17 @@ it('syncing permissions removes permissions that were unchecked', function () {
 
 // ── Built-in role protection ──────────────────────────────────────────────────
 
-it('super admin cannot navigate to the super_admin role edit page', function () {
+it('super admin can view but not edit the super_admin role edit page', function () {
     $admin          = User::factory()->create();
     $superAdminRole = Role::findByName('super_admin');
 
     $admin->assignRole('super_admin');
 
-    // canEdit() returns false for super_admin role, so Filament returns 403
+    // canEdit() returns false for super_admin role, but ReadOnlyAwareEditRecord
+    // allows access in read-only mode (form disabled, save buttons hidden)
     $this->actingAs($admin)
         ->get("/admin/roles/{$superAdminRole->id}/edit")
-        ->assertForbidden();
+        ->assertSuccessful();
 });
 
 it('super admin can navigate to the cms_editor role edit page', function () {

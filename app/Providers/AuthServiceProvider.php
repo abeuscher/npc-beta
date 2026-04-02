@@ -25,6 +25,11 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\NavigationItem::class => \App\Policies\NavigationItemPolicy::class,
         \App\Models\User::class           => \App\Policies\UserPolicy::class,
         \App\Models\WidgetType::class     => \App\Policies\WidgetTypePolicy::class,
+        \App\Models\Event::class          => \App\Policies\EventPolicy::class,
+        \App\Models\Form::class           => \App\Policies\FormPolicy::class,
+        \App\Models\Product::class        => \App\Policies\ProductPolicy::class,
+        \App\Models\MailingList::class      => \App\Policies\MailingListPolicy::class,
+        \App\Models\FormSubmission::class  => \App\Policies\FormSubmissionPolicy::class,
     ];
 
     public function boot(): void

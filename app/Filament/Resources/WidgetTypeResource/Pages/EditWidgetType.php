@@ -4,9 +4,9 @@ namespace App\Filament\Resources\WidgetTypeResource\Pages;
 
 use App\Filament\Resources\WidgetTypeResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditWidgetType extends EditRecord
+class EditWidgetType extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = WidgetTypeResource::class;
 

@@ -126,7 +126,9 @@ class MembershipTierResource extends Resource
                     ->icon(fn (MembershipTier $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
                     ->color('gray')
                     ->requiresConfirmation()
+                    ->hidden(fn () => ! auth()->user()?->isSuperAdmin())
                     ->action(function (MembershipTier $record) {
+                        abort_unless(auth()->user()?->isSuperAdmin(), 403);
                         $record->update(['is_archived' => ! $record->is_archived]);
                         Notification::make()
                             ->title($record->is_archived ? 'Tier archived' : 'Tier unarchived')

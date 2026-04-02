@@ -87,5 +87,10 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults
         }
+
+        // Demo mode: force mail to log to prevent outbound email regardless of DB settings.
+        if (isDemoMode()) {
+            config(['mail.default' => 'log']);
+        }
     }
 }

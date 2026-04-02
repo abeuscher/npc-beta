@@ -38,6 +38,11 @@ class EventResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('delete_event')) {
+            return false;
+        }
+
         return $record->registrations()->doesntExist();
     }
 
@@ -353,6 +358,7 @@ class EventResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record): string => static::getUrl('edit', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()

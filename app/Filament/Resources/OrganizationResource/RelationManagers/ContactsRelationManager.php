@@ -38,7 +38,14 @@ class ContactsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('phone'),
             ])
             ->headerActions([Tables\Actions\CreateAction::make()])
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DetachAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DetachBulkAction::make()])]);
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DetachAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('update_organization')),
+            ])
+            ->bulkActions([Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DetachBulkAction::make()
+                    ->hidden(fn () => ! auth()->user()?->can('update_organization')),
+            ])]);
     }
 }

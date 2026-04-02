@@ -5,9 +5,9 @@ namespace App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource;
 use App\Filament\Resources\TransactionResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditProduct extends EditRecord
+class EditProduct extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = ProductResource::class;
 

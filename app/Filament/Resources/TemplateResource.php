@@ -107,10 +107,11 @@ class TemplateResource extends Resource
                     ->icon('heroicon-m-star')
                     ->requiresConfirmation()
                     ->action(function (Template $record) {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
                         Template::page()->where('is_default', true)->update(['is_default' => false]);
                         $record->update(['is_default' => true]);
                     })
-                    ->visible(fn (Template $record): bool => $record->type === 'page' && ! $record->is_default),
+                    ->visible(fn (Template $record): bool => auth()->user()?->can('update_page') && $record->type === 'page' && ! $record->is_default),
 
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (Template $record): bool => $record->is_default),

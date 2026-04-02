@@ -4,9 +4,9 @@ namespace App\Filament\Resources\OrganizationResource\Pages;
 
 use App\Filament\Resources\OrganizationResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditOrganization extends EditRecord
+class EditOrganization extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = OrganizationResource::class;
 

@@ -4,9 +4,9 @@ namespace App\Filament\Resources\MembershipResource\Pages;
 
 use App\Filament\Resources\MembershipResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditMembership extends EditRecord
+class EditMembership extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = MembershipResource::class;
 

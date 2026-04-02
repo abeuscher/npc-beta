@@ -4,9 +4,9 @@ namespace App\Filament\Resources\NavigationMenuResource\Pages;
 
 use App\Filament\Resources\NavigationMenuResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditNavigationMenu extends EditRecord
+class EditNavigationMenu extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = NavigationMenuResource::class;
 

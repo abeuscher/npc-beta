@@ -120,6 +120,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 111 | Trash Management UI |
 | 112 | Password Generator & Data Generator Audit |
 | 113 | Local Dev Environment — WSL2 Migration |
+| 114 | Demo Role & Read-Only Enforcement |
 
 ---
 
@@ -173,9 +174,7 @@ Audit every deletion path. Define and implement what happens when: a user is del
 
 ### ~~Session 113 — Local Dev Environment — WSL2 Migration~~ *(completed)*
 
-### Session 114 — Demo Role & Read-Only Enforcement
-
-Create the `demo` role with view-only permissions. Audit and enforce read-only across every Filament resource, page, action, settings page, and Livewire method. Block Horizon, hide routing settings, suppress outbound email in demo mode (`APP_ENV=demo`). Scope Users list to hide demo-role accounts. Build the initial demo mode test suite (slow group).
+### ~~Session 114 — Demo Role & Read-Only Enforcement~~ *(completed)*
 
 ### Session 115 — Demo Signup & Account Expiry
 
@@ -204,6 +203,10 @@ Infrastructure and consistency pass after the demo session group. Three workstre
 ### Session 120 — Code Review & Cleanup
 
 Post-demo-mode code review, following the same structure as session 101. Focus on artifacts and duplication introduced across sessions 109–118. Read all changed files, flag orphaned code, duplicated logic, inconsistent patterns, and permission gaps. Propose refactoring targets for discussion before executing. No new features.
+
+### Session 121 — Demo Data Generator — Relational Sample Data
+
+Extend the debug data generator to produce interconnected sample data that demonstrates the relationships between CRM views. Generated contacts should have memberships (with tiers), donations (with transactions and fund allocations), event registrations, and portal accounts — so a demo user clicking through a contact record can follow links to their membership history, donation receipts, event attendance, and transaction ledger. The goal is a single "populate demo" action that creates a realistic, navigable dataset showing how the system connects its views. This is a prerequisite for the demo launch.
 
 ### Help System Enhancements
 

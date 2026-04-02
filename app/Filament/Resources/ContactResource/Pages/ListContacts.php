@@ -53,6 +53,8 @@ class ListContacts extends ListRecords
 
     public function dismissPair(): void
     {
+        abort_unless(auth()->user()?->can('update_contact'), 403);
+
         $pair = $this->duplicatePairs[$this->currentPairIndex] ?? null;
 
         if (! $pair) {
@@ -90,6 +92,8 @@ class ListContacts extends ListRecords
 
     public function mergePair(): void
     {
+        abort_unless(auth()->user()?->can('delete_contact'), 403);
+
         $pair = $this->duplicatePairs[$this->currentPairIndex] ?? null;
 
         if (! $pair) {
@@ -139,6 +143,7 @@ class ListContacts extends ListRecords
                 Actions\Action::make('reviewDuplicates')
                     ->label('Review Duplicates')
                     ->icon('heroicon-o-identification')
+                    ->hidden(fn () => ! auth()->user()?->can('delete_contact'))
                     ->mountUsing(function ($livewire): void {
                         $livewire->loadDuplicatePairs();
                     })

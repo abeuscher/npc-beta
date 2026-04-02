@@ -11,11 +11,11 @@ use App\Models\Role;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
-class EditUser extends EditRecord
+class EditUser extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = UserResource::class;
 
@@ -28,6 +28,7 @@ class EditUser extends EditRecord
                 recipientSummary: fn () => 'An invitation email will be sent to <strong>' . e($this->record->email) . '</strong>.',
                 previewHtmlResolver: fn () => $this->invitationPreviewHtml(),
                 sendCallable: function (array $data) {
+                    abort_unless(auth()->user()?->can('update_user'), 403);
                     $this->record->update(['is_active' => false]);
                     $this->record->syncRoles($data['roles'] ?? []);
 
@@ -53,7 +54,7 @@ class EditUser extends EditRecord
                 ->label('Send Invitation')
                 ->icon('heroicon-o-envelope')
                 ->color('warning')
-                ->hidden(fn () => DB::table('sessions')->where('user_id', $this->record->id)->exists()),
+                ->hidden(fn () => ! auth()->user()?->can('update_user') || DB::table('sessions')->where('user_id', $this->record->id)->exists()),
 
             EmailPreviewWizardAction::make(
                 name: 'resend',
@@ -61,6 +62,7 @@ class EditUser extends EditRecord
                 recipientSummary: fn () => 'A new invitation link will be sent to <strong>' . e($this->record->email) . '</strong>. The previous link will be invalidated.',
                 previewHtmlResolver: fn () => $this->invitationPreviewHtml(),
                 sendCallable: function (array $data) {
+                    abort_unless(auth()->user()?->can('update_user'), 403);
                     [$plain] = InvitationToken::createForUser($this->record);
 
                     Mail::to($this->record->email)->send(new AdminInvitation($this->record, $plain));
@@ -74,17 +76,18 @@ class EditUser extends EditRecord
                 ->label('Resend Invitation')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn () => (bool) $this->record->pendingInvitationToken()),
+                ->visible(fn () => auth()->user()?->can('update_user') && (bool) $this->record->pendingInvitationToken()),
 
             Actions\Action::make('revoke')
                 ->label('Revoke Invitation')
                 ->icon('heroicon-o-x-circle')
                 ->color('danger')
-                ->visible(fn () => (bool) $this->record->pendingInvitationToken())
+                ->visible(fn () => auth()->user()?->can('update_user') && (bool) $this->record->pendingInvitationToken())
                 ->requiresConfirmation()
                 ->modalHeading('Revoke invitation?')
                 ->modalDescription('The pending invitation link will be deleted. The user account will not be affected.')
                 ->action(function () {
+                    abort_unless(auth()->user()?->can('update_user'), 403);
                     InvitationToken::where('user_id', $this->record->id)
                         ->whereNull('accepted_at')
                         ->delete();

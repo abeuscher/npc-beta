@@ -6,9 +6,9 @@ use App\Filament\Resources\TemplateResource;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditContentTemplate extends EditRecord
+class EditContentTemplate extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = TemplateResource::class;
 

@@ -8,9 +8,9 @@ use App\Models\MailingList;
 use App\Services\MailChimpService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditMailingList extends EditRecord
+class EditMailingList extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = MailingListResource::class;
 

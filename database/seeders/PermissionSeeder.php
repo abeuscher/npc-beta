@@ -220,6 +220,19 @@ class PermissionSeeder extends Seeder
             $fullPermissions('navigation_item'),
         ));
 
+        // ── demo ─────────────────────────────────────────────────────────────
+        // View-only access across all resources. No create/update/delete.
+        $demo = Role::firstOrCreate(
+            ['name' => 'demo', 'guard_name' => 'web'],
+            ['label' => 'Demo'],
+        );
+        $demo->update(['label' => 'Demo']);
+        $demoPermissions = array_merge(...array_map($viewPermissions, $resources));
+        $demoPermissions = array_merge($demoPermissions, [
+            'view_any_form_submission', 'view_form_submission', 'view_any_member',
+        ]);
+        $demo->syncPermissions($demoPermissions);
+
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.
         Role::firstOrCreate(

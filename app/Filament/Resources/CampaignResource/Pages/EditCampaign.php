@@ -4,9 +4,9 @@ namespace App\Filament\Resources\CampaignResource\Pages;
 
 use App\Filament\Resources\CampaignResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditCampaign extends EditRecord
+class EditCampaign extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = CampaignResource::class;
 

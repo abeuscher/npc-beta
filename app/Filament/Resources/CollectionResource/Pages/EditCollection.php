@@ -4,9 +4,9 @@ namespace App\Filament\Resources\CollectionResource\Pages;
 
 use App\Filament\Resources\CollectionResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 
-class EditCollection extends EditRecord
+class EditCollection extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = CollectionResource::class;
 

@@ -32,6 +32,11 @@ class ProductResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        $user = auth()->user();
+        if ($user && ! $user->can('delete_product')) {
+            return false;
+        }
+
         return $record->purchases()->doesntExist();
     }
 
@@ -98,6 +103,7 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordUrl(fn ($record): string => static::getUrl('edit', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
@@ -147,7 +153,9 @@ class ProductResource extends Resource
                     ->icon(fn (Product $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
                     ->color('gray')
                     ->requiresConfirmation()
+                    ->hidden(fn () => ! auth()->user()?->can('update_product'))
                     ->action(function (Product $record) {
+                        abort_unless(auth()->user()?->can('update_product'), 403);
                         $record->update(['is_archived' => ! $record->is_archived]);
                         Notification::make()
                             ->title($record->is_archived ? 'Product archived' : 'Product unarchived')

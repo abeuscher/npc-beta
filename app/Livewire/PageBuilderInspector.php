@@ -15,6 +15,11 @@ class PageBuilderInspector extends Component
 
     public string $blockId = '';
 
+    private function assertCanEdit(): void
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+    }
+
     /** @var array<string, mixed> */
     public array $block = [];
 
@@ -90,6 +95,8 @@ class PageBuilderInspector extends Component
 
     public function updatedImageUploads(mixed $value, string $key): void
     {
+        $this->assertCanEdit();
+
         if (!$this->validateBlockOwnership()) {
             return;
         }
@@ -123,6 +130,8 @@ class PageBuilderInspector extends Component
 
     public function removeImage(string $key): void
     {
+        $this->assertCanEdit();
+
         if (!$this->validateBlockOwnership()) {
             return;
         }
@@ -193,6 +202,8 @@ class PageBuilderInspector extends Component
      */
     public function updateConfig(string $key, mixed $value): void
     {
+        $this->assertCanEdit();
+
         if (! $this->validateBlockOwnership()) {
             return;
         }
@@ -209,6 +220,8 @@ class PageBuilderInspector extends Component
         if (str_starts_with($name, 'imageUploads')) {
             return;
         }
+
+        $this->assertCanEdit();
 
         if (! $this->validateBlockOwnership()) {
             return;

@@ -123,6 +123,7 @@ class GeneralSettingsPage extends Page
 
                 Forms\Components\Section::make('Routing')
                     ->description('Changing these prefixes will break existing bookmarked links and any external links published elsewhere. Old URLs will return 404 unless redirects are configured.')
+                    ->hidden(fn () => isDemoMode())
                     ->schema([
                         Forms\Components\TextInput::make('blog_prefix')
                             ->label('Blog prefix')
@@ -224,18 +225,21 @@ class GeneralSettingsPage extends Page
         $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
 
         // Routing prefixes — available to all who can access this page.
-        $oldBlogPrefix    = SiteSetting::get('blog_prefix', 'news');
-        $newBlogPrefix    = $data['blog_prefix'] ?? 'news';
-        $oldEventsPrefix  = SiteSetting::get('events_prefix', 'events');
-        $newEventsPrefix  = $data['events_prefix'] ?? 'events';
-        $oldSystemPrefix  = SiteSetting::get('system_prefix', '');
-        $newSystemPrefix  = $data['system_prefix'] ?? '';
+        // Blocked entirely in demo mode — routing changes could break the demo instance.
+        $oldBlogPrefix   = SiteSetting::get('blog_prefix', 'news');
+        $newBlogPrefix   = isDemoMode() ? $oldBlogPrefix : ($data['blog_prefix'] ?? 'news');
+        $oldEventsPrefix = SiteSetting::get('events_prefix', 'events');
+        $newEventsPrefix = isDemoMode() ? $oldEventsPrefix : ($data['events_prefix'] ?? 'events');
+        $oldSystemPrefix = SiteSetting::get('system_prefix', '');
+        $newSystemPrefix = isDemoMode() ? $oldSystemPrefix : ($data['system_prefix'] ?? '');
 
-        SiteSetting::set('blog_prefix', $newBlogPrefix);
-        SiteSetting::set('events_prefix', $newEventsPrefix);
-        SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
-        SiteSetting::set('system_prefix', $newSystemPrefix);
-        SiteSetting::set('donations_prefix', $data['donations_prefix'] ?? 'donate');
+        if (! isDemoMode()) {
+            SiteSetting::set('blog_prefix', $newBlogPrefix);
+            SiteSetting::set('events_prefix', $newEventsPrefix);
+            SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
+            SiteSetting::set('system_prefix', $newSystemPrefix);
+            SiteSetting::set('donations_prefix', $data['donations_prefix'] ?? 'donate');
+        }
 
         if ($newBlogPrefix !== $oldBlogPrefix) {
             CmsPage::where('type', 'post')
