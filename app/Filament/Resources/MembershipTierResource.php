@@ -25,13 +25,13 @@ class MembershipTierResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->isSuperAdmin() ?? false;
+        return auth()->user()?->can('manage_membership_tiers') ?? false;
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         $user = auth()->user();
-        if ($user && ! $user->isSuperAdmin()) {
+        if ($user && ! $user->can('manage_membership_tiers')) {
             return false;
         }
 
@@ -131,9 +131,9 @@ class MembershipTierResource extends Resource
                     ->icon(fn (MembershipTier $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')
                     ->color('gray')
                     ->requiresConfirmation()
-                    ->hidden(fn () => ! auth()->user()?->isSuperAdmin())
+                    ->hidden(fn () => ! auth()->user()?->can('manage_membership_tiers'))
                     ->action(function (MembershipTier $record) {
-                        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+                        abort_unless(auth()->user()?->can('manage_membership_tiers'), 403);
                         $record->update(['is_archived' => ! $record->is_archived]);
                         Notification::make()
                             ->title($record->is_archived ? 'Tier archived' : 'Tier unarchived')

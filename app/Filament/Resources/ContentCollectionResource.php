@@ -22,11 +22,6 @@ class ContentCollectionResource extends Resource
 
     protected static ?string $slug = 'browse-collections';
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_collection') ?? false;
-    }
-
     public static function table(Table $table): Table
     {
         return $table

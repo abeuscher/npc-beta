@@ -47,11 +47,6 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasRole('super_admin');
     }
 
-    public function isDemo(): bool
-    {
-        return $this->hasRole('demo');
-    }
-
     public function isProtected(): bool
     {
         return $this->id === User::oldest()->value('id');

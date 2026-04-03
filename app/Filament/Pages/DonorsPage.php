@@ -42,11 +42,7 @@ class DonorsPage extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        if (! $user) {
-            return false;
-        }
-        return $user->hasRole('super_admin') || $user->can('manage_donations');
+        return auth()->user()?->can('manage_donations') ?? false;
     }
 
     public function getBreadcrumbs(): array

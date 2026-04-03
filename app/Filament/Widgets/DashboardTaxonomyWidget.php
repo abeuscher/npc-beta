@@ -16,7 +16,7 @@ class DashboardTaxonomyWidget extends Widget
 
     public static function canView(): bool
     {
-        return auth()->user()?->isSuperAdmin() ?? false;
+        return auth()->check();
     }
 
     public function getArticleHtml(): string

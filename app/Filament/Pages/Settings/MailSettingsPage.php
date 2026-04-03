@@ -18,7 +18,7 @@ class MailSettingsPage extends Page
 {
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->can('manage_mail_settings') ?? false;
     }
 
     protected static ?string $navigationGroup = 'Settings';

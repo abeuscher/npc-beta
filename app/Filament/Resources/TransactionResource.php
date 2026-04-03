@@ -29,11 +29,6 @@ class TransactionResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_transaction') ?? false;
-    }
-
     public static function canCreate(): bool
     {
         return auth()->user()?->can('create_transaction') ?? false;

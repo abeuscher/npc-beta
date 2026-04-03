@@ -18,11 +18,7 @@ class GeneralSettingsPage extends Page
 {
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        if (! $user) {
-            return false;
-        }
-        return $user->hasRole('super_admin') || $user->can('manage_routing_prefixes');
+        return auth()->user()?->can('manage_routing_prefixes') ?? false;
     }
 
     protected static ?string $navigationGroup = 'Settings';

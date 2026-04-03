@@ -114,6 +114,20 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // Tier 2 — standalone capabilities for features converted from super_admin-only
+        foreach ([
+            'manage_custom_fields',
+            'manage_email_templates',
+            'manage_cms_settings',
+            'manage_mail_settings',
+            'manage_membership_tiers',
+        ] as $perm) {
+            Permission::firstOrCreate([
+                'name'       => $perm,
+                'guard_name' => 'web',
+            ]);
+        }
+
         // ── cms_editor ───────────────────────────────────────────────────────
         // Can manage CMS content only. No CRM, Finance, or Admin access.
         $fullPermissions = fn (string $resource): array => [
@@ -141,6 +155,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('page'),
             $fullPermissions('tag'),
             $fullPermissions('product'),
+            $fullPermissions('navigation_menu'),
         ));
 
         // ── crm_editor ───────────────────────────────────────────────────────
@@ -220,18 +235,61 @@ class PermissionSeeder extends Seeder
             $fullPermissions('navigation_menu'),
         ));
 
-        // ── demo ─────────────────────────────────────────────────────────────
-        // View-only access across all resources. No create/update/delete.
-        $demo = Role::firstOrCreate(
-            ['name' => 'demo', 'guard_name' => 'web'],
-            ['label' => 'Demo'],
+        // ── developer ────────────────────────────────────────────────────────
+        // Full CMS + CRM access, read-only finance, no user/role management.
+        // Covers everything cms_editor and crm_editor can do, plus elevated
+        // features (custom fields, email templates, settings pages).
+        $developer = Role::firstOrCreate(
+            ['name' => 'developer', 'guard_name' => 'web'],
+            ['label' => 'Developer'],
         );
-        $demo->update(['label' => 'Demo']);
-        $demoPermissions = array_merge(...array_map($viewPermissions, $resources));
-        $demoPermissions = array_merge($demoPermissions, [
-            'view_any_form_submission', 'view_form_submission', 'view_any_member',
-        ]);
-        $demo->syncPermissions($demoPermissions);
+        $developer->update(['label' => 'Developer']);
+        $developer->syncPermissions(array_merge(
+            // Full CRM
+            $fullPermissions('contact'),
+            $fullPermissions('organization'),
+            $fullPermissions('household'),
+            $fullPermissions('membership'),
+            $fullPermissions('note'),
+            $fullPermissions('tag'),
+            $fullPermissions('mailing_list'),
+            // Full CMS
+            $fullPermissions('page'),
+            $fullPermissions('post'),
+            $fullPermissions('form'),
+            $fullPermissions('collection'),
+            $fullPermissions('collection_item'),
+            $fullPermissions('navigation_menu'),
+            $fullPermissions('product'),
+            $fullPermissions('widget_type'),
+            // Read-only CRM
+            $viewPermissions('event'),
+            // Read-only Finance
+            $viewPermissions('donation'),
+            $viewPermissions('transaction'),
+            $viewPermissions('fund'),
+            $viewPermissions('campaign'),
+            // Standalone capabilities
+            [
+                'view_any_member',
+                'import_data',
+                'review_imports',
+                'edit_theme_scss',
+                'edit_site_chrome',
+                'edit_page_snippets',
+                'manage_routing_prefixes',
+                'manage_financial_settings',
+                'use_advanced_list_filters',
+                'view_any_form_submission',
+                'view_form_submission',
+                'delete_form_submission',
+                'manage_custom_fields',
+                'manage_email_templates',
+                'manage_cms_settings',
+                'manage_mail_settings',
+                'manage_membership_tiers',
+            ],
+        ));
 
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.

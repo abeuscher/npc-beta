@@ -123,6 +123,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 114 | Permissions Audit & Coverage |
 | 115 | Housekeeping & Consistency Audit |
 | 116 | Code Review & Framework Alignment Audit |
+| 117 | Permissions Framework & Coverage Audit |
 
 ---
 
@@ -130,17 +131,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### Session 116 — Code Review & Framework Alignment Audit
+### Session 118 — Help System — Search, Standalone Pages & Related Articles
 
-Two-track code review. Track 1: systematic audit for custom code that reimplements or displaces framework-provided behaviour (Filament, Laravel, Spatie packages) — produces a findings table for discussion, no automatic fixes. Track 2: standard cleanup — dead imports, orphaned code, duplicated logic blocks. Includes the orphaned WidgetRegistry import flagged in session 075.
-
-### Session 117 — Permissions Framework & Coverage Audit
-
-Establish guiding principles for how permissions work in this app (two-tier model, role-as-bucket design, no isSuperAdmin-as-permission-substitute). Produce a full inventory matrix of every admin feature × every role. Add a `developer` role. Convert isSuperAdmin() gates to proper permissions. Remove redundant resource authorization overrides. Align seeder role assignments with the confirmed matrix.
-
-### Help System Enhancements
-
-Help index page with table of contents and search bar. Link in the left navigation. Process articles: Google Analytics / GTM, Google site verification, custom CSS, custom collections, custom widgets, Google Fonts.
+Add searchable help via a Livewire search component in the admin top bar, standalone article pages with related-article navigation, and a `category` taxonomy (CRM, CMS, Finance, Tools, Settings, General) to help article frontmatter and data model. Remove dashboard help placeholder and taxonomy widgets. Add "Open in full page" link from the existing slide-over.
 
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
 
@@ -258,6 +251,30 @@ A simple text-node tree representation of the page's widget structure (similar t
 ### Image & Media Handling — Carousels & Galleries
 
 Full carousel and gallery widget types beyond the basic image slider added in Beta 1. Lightbox, captions, reorder controls.
+
+---
+
+## Help System — Post-Beta 1
+
+### Help System — Navigable Index & Category Browser
+
+Category-based help index page with table of contents grouped by category (CRM, CMS, Finance, Tools, Settings, General). Searchable from the index. Link in the admin left navigation. Foundation for a self-service knowledge base.
+
+### Help System — Tutorials Content Type
+
+A new content type for multi-step instructional content (e.g. "How to set up event registration end-to-end"). Distinct from contextual help articles — tutorials span multiple features and follow a narrative arc. Requires a `type` field on help articles and a tutorial-specific template with step navigation.
+
+### Help System — API Documentation Content Type
+
+Structured reference documentation for the public API (when built). Auto-generated from route definitions and request/response schemas. Distinct rendering template with endpoint listings, parameter tables, and example payloads.
+
+### Help System — Weighted & Semantic Search
+
+Upgrade help search from simple string matching to weighted ranking (TF-IDF or similar) and eventually semantic search using the `embedding` column on `help_articles`. Requires a vector similarity search approach — investigate pgvector or application-level cosine similarity.
+
+### Help System — External Help Site
+
+Move the help system to its own web address as a standalone, publicly accessible knowledge base. The admin panel consumes this endpoint as the source of truth for help content on an update schedule (cache + periodic refresh). Decouples help authoring from product release cycles and enables a single help site to serve multiple product instances.
 
 ---
 

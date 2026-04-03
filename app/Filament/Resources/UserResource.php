@@ -30,11 +30,6 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_user') ?? false;
-    }
-
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -120,11 +115,6 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(function ($query) {
-                if (auth()->user()?->isDemo()) {
-                    $query->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['demo', 'super_admin']));
-                }
-            })
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable()->copyable(),

@@ -34,7 +34,7 @@ class CollectionResource extends Resource
 {
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasRole('super_admin') ?? false;
+        return auth()->user()?->can('view_any_collection') ?? false;
     }
 
 

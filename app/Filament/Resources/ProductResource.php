@@ -25,11 +25,6 @@ class ProductResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_product') ?? false;
-    }
-
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         $user = auth()->user();

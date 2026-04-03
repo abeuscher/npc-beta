@@ -27,12 +27,6 @@ class FormResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_form') ?? false;
-    }
-
-
     public static function form(FilamentForm $form): FilamentForm
     {
         return $form->schema([

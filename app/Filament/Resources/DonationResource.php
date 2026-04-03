@@ -38,11 +38,6 @@ class DonationResource extends Resource
         return false;
     }
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_donation') ?? false;
-    }
-
     public static function form(Form $form): Form
     {
         return $form->schema([

@@ -61,6 +61,10 @@ class RoleResource extends Resource
     public static function standalonePermissions(): array
     {
         return [
+            'view_any_member' => [
+                'label'       => 'View Members List',
+                'description' => 'Grants access to the Members list view (read-only view of contacts with active memberships).',
+            ],
             'use_advanced_list_filters' => [
                 'label'       => 'Use Advanced List Filters',
                 'description' => 'Grants access to the raw SQL WHERE clause editor on mailing lists. Only assign to users who understand database queries.',
@@ -76,6 +80,14 @@ class RoleResource extends Resource
             'edit_theme_scss' => [
                 'label'       => 'Edit Theme SCSS',
                 'description' => 'Grants access to the SCSS editor tab on the Site Theme page. Developer-level access only.',
+            ],
+            'edit_site_chrome' => [
+                'label'       => 'Edit Site Chrome',
+                'description' => 'Grants access to edit the site header/footer HTML snippets on the CMS Settings page.',
+            ],
+            'edit_page_snippets' => [
+                'label'       => 'Edit Page Snippets',
+                'description' => 'Grants access to edit custom HTML/JS snippets injected into page templates.',
             ],
             'view_any_form_submission' => [
                 'label'       => 'View Form Submissions',
@@ -93,6 +105,34 @@ class RoleResource extends Resource
                 'label'       => 'Manage Routing Prefixes',
                 'description' => 'Grants access to the Routing Prefixes section in General Settings — blog, events, and member portal URL prefixes.',
             ],
+            'manage_financial_settings' => [
+                'label'       => 'Manage Financial Settings',
+                'description' => 'Grants access to the Finance Settings page — Stripe keys, QuickBooks integration, and payment configuration.',
+            ],
+            'manage_donations' => [
+                'label'       => 'Manage Donations / Giving Summary',
+                'description' => 'Grants access to the Giving Summary page and donation management features.',
+            ],
+            'manage_custom_fields' => [
+                'label'       => 'Manage Custom Fields',
+                'description' => 'Grants access to create, edit, and delete custom field definitions on contacts and events.',
+            ],
+            'manage_email_templates' => [
+                'label'       => 'Manage Email Templates',
+                'description' => 'Grants access to edit system email templates (invitation, password reset, receipts, etc.).',
+            ],
+            'manage_cms_settings' => [
+                'label'       => 'Manage CMS Settings',
+                'description' => 'Grants access to the CMS Settings page — site chrome, image sizes, and page snippets.',
+            ],
+            'manage_mail_settings' => [
+                'label'       => 'Manage Mail Settings',
+                'description' => 'Grants access to the Mail Settings page — SMTP configuration, from address, and test email.',
+            ],
+            'manage_membership_tiers' => [
+                'label'       => 'Manage Membership Tiers',
+                'description' => 'Grants access to create, edit, archive, and delete membership tier definitions.',
+            ],
         ];
     }
 
@@ -101,7 +141,7 @@ class RoleResource extends Resource
         return [
             'crm'     => ['contact', 'household', 'organization', 'membership', 'note', 'tag', 'event', 'mailing_list'],
             'finance' => ['donation', 'transaction', 'fund', 'campaign'],
-            'cms'     => ['post', 'page', 'form', 'collection', 'collection_item', 'navigation_menu'],
+            'cms'     => ['post', 'page', 'form', 'collection', 'collection_item', 'navigation_menu', 'product'],
             'admin'   => ['user', 'widget_type'],
         ];
     }

@@ -34,8 +34,7 @@ class DashboardDebugGeneratorWidget extends Widget
 
     public static function canView(): bool
     {
-        return filter_var(env('APP_DEBUG_TOOLS', false), FILTER_VALIDATE_BOOLEAN)
-            && ! auth()->user()?->isDemo();
+        return filter_var(env('APP_DEBUG_TOOLS', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     public function generate(): void

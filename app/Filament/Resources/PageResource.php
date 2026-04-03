@@ -25,11 +25,6 @@ class PageResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
-    public static function canViewAny(): bool
-    {
-        return auth()->user()?->can('view_any_page') ?? false;
-    }
-
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         return $record->type !== 'system' && (auth()->user()?->can('delete_page') ?? false);

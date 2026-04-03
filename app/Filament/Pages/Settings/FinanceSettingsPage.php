@@ -20,11 +20,7 @@ class FinanceSettingsPage extends Page
 {
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        if (! $user) {
-            return false;
-        }
-        return $user->hasRole('super_admin') || $user->can('manage_financial_settings');
+        return auth()->user()?->can('manage_financial_settings') ?? false;
     }
 
     protected static ?string $navigationGroup = 'Settings';

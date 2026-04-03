@@ -168,10 +168,10 @@ class PermissionTest extends TestCase
         $this->assertFalse($user->can('viewAny', WidgetType::class));
     }
 
-    public function test_cms_editor_cannot_access_navigation_items(): void
+    public function test_cms_editor_can_access_navigation_items(): void
     {
         $user = $this->makeUser('cms_editor');
-        $this->assertFalse($user->can('viewAny', NavigationItem::class));
+        $this->assertTrue($user->can('viewAny', NavigationItem::class));
     }
 
     // ── no-role user ─────────────────────────────────────────────────────────
