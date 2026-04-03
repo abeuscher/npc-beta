@@ -7,6 +7,7 @@ tags: [households, crm, contacts]
 routes:
   - filament.admin.resources.contacts.index
   - filament.admin.resources.contacts.edit
+category: crm
 ---
 
 # Households

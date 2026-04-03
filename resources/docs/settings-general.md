@@ -6,6 +6,7 @@ updated: 2026-03-23
 tags: [settings, admin, routing]
 routes:
   - filament.admin.pages.general-settings-page
+category: settings
 ---
 
 # General Settings

@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.products.index
   - filament.admin.resources.products.create
   - filament.admin.resources.products.edit
+category: cms
 ---
 
 # Products

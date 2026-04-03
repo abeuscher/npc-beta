@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.navigation-menus.index
   - filament.admin.resources.navigation-menus.create
   - filament.admin.resources.navigation-menus.edit
+category: cms
 ---
 
 # Navigation

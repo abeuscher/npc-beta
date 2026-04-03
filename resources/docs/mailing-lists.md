@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.mailing-lists.index
   - filament.admin.resources.mailing-lists.create
   - filament.admin.resources.mailing-lists.edit
+category: crm
 ---
 
 # Mailing Lists

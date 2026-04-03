@@ -6,6 +6,7 @@ updated: 2026-03-20
 tags: [import, contacts, crm]
 routes:
   - filament.admin.pages.importer-page
+category: tools
 ---
 
 # Importer

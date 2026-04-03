@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.forms.index
   - filament.admin.resources.forms.create
   - filament.admin.resources.forms.edit
+category: cms
 ---
 
 # Web Forms

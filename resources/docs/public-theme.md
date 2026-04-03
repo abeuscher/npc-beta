@@ -4,6 +4,7 @@ handle: public-theme
 description: Manage the public site's visual appearance — brand colour, fonts, logo, site chrome, and advanced SCSS.
 routes:
   - filament.admin.resources.templates.index
+category: cms
 ---
 
 # Public Theme

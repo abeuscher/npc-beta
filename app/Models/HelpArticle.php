@@ -15,6 +15,7 @@ class HelpArticle extends Model
         'tags',
         'app_version',
         'last_updated',
+        'category',
         'embedding',
     ];
 

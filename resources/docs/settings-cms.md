@@ -6,6 +6,7 @@ updated: 2026-03-23
 tags: [settings, admin, cms]
 routes:
   - filament.admin.pages.cms-settings-page
+category: settings
 ---
 
 # CMS Settings

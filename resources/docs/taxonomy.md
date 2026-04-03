@@ -5,6 +5,7 @@ version: "0.25"
 updated: 2026-03-23
 standalone: true
 tags: [reference, taxonomy, vocabulary]
+category: general
 ---
 
 # System Taxonomy

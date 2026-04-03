@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.custom-field-defs.index
   - filament.admin.resources.custom-field-defs.create
   - filament.admin.resources.custom-field-defs.edit
+category: crm
 ---
 
 # Custom Fields

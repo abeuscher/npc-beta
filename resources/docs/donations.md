@@ -7,6 +7,7 @@ tags: [finance, donations, stripe, contacts]
 routes:
   - filament.admin.resources.donations.index
   - filament.admin.resources.donations.view
+category: finance
 ---
 
 # Donations

@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.users.index
   - filament.admin.resources.users.create
   - filament.admin.resources.users.edit
+category: settings
 ---
 
 # Users

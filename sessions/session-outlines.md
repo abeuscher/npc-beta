@@ -124,6 +124,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 115 | Housekeeping & Consistency Audit |
 | 116 | Code Review & Framework Alignment Audit |
 | 117 | Permissions Framework & Coverage Audit |
+| 118 | Help System — Search, Standalone Pages & Related Articles |
 
 ---
 
@@ -131,16 +132,72 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Infrastructure & Ops — Beta 1 Scope
 
-### Session 118 — Help System — Search, Standalone Pages & Related Articles
-
-Add searchable help via a Livewire search component in the admin top bar, standalone article pages with related-article navigation, and a `category` taxonomy (CRM, CMS, Finance, Tools, Settings, General) to help article frontmatter and data model. Remove dashboard help placeholder and taxonomy widgets. Add "Open in full page" link from the existing slide-over.
-
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
 
 - `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
 
 ### Code Housekeeping Notes
 
+
+---
+
+## Widget System — Beta 1 Scope
+
+### Session 119 — Widget Picker — Categories, Page-Type Filtering & Search
+
+Add `category` and `allowed_page_types` columns to `widget_types`. Categorise all 23 existing widgets. Filter the picker modal by page type, group widgets by category with collapsible sections, and add an Alpine.js title filter to the picker header.
+
+### Session 120 — Widget — Hero
+
+Full-width banner: heading, subheading, background image, optional CTA button, configurable text alignment and overlay opacity. Standard marketing hero.
+
+### Session 121 — Widget — Full Size Hero
+
+Viewport-height (`100vh`) hero variant. Same structure as standard hero but fills the browser window. Optional scroll-down indicator.
+
+### Session 122 — Widget — Video & Image Background
+
+Section with either a looping background video (HTML5 `<video>`, self-hosted MP4/WebM) or a background image, with text content overlaid. Toggle between video and image source.
+
+### Session 123 — Widget — Logo Garden
+
+Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect.
+
+### Session 124 — Widget — Board Members
+
+People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages.
+
+### Session 125 — Widget — Three Buckets
+
+Three side-by-side content blocks, each with optional image, heading, body text, and CTA link. Config-driven (not collection-backed). Fixed at three.
+
+### Session 126 — Widget — Alternating Panels
+
+Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
+
+### Session 127 — Widget — Product Carousel
+
+Swiper-based carousel of published products: image, name, price, link. Uses the existing `products` data source in `WidgetDataResolver`.
+
+### Session 128 — Widget — Event Map
+
+Google Maps embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.
+
+### Session 129 — Widget — Headline Patterns
+
+Configurable heading element: heading level (h1–h6), alignment, optional subtitle, decorative styles (underline, overline, rule, none). Section divider / visual break.
+
+### Session 130 — Widget — CTA Patterns
+
+Call-to-action section: heading, body text, one or two styled buttons (solid, outline, pill). Configurable background (transparent, light, dark).
+
+### Session 131 — Widget — Social Sharing
+
+Row of share buttons (Facebook, Twitter/X, LinkedIn, Email, Copy Link). Pure anchor tags with platform share URLs — no third-party scripts. Toggleable per platform.
+
+### Session 132 — Widget — Modal
+
+Button-triggered modal overlay containing child widgets. Nesting container like column_widget but triggered by click. Alpine.js open/close. Configurable trigger button and modal size.
 
 ---
 

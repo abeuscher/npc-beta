@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.memberships.index
   - filament.admin.resources.memberships.create
   - filament.admin.resources.memberships.edit
+category: crm
 ---
 
 # Memberships

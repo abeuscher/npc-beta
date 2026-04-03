@@ -6,6 +6,7 @@ updated: 2026-03-29
 tags: [admin, cms, media]
 routes:
   - filament.admin.pages.media-library-page
+category: cms
 ---
 
 # Media Library

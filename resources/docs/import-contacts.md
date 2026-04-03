@@ -8,6 +8,7 @@ routes:
   - filament.admin.pages.import-contacts-page
   - filament.admin.pages.import-history-page
   - filament.admin.pages.import-progress-page
+category: tools
 ---
 
 # Import Contacts

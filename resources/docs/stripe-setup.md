@@ -5,6 +5,7 @@ version: "0.25"
 updated: 2026-03-25
 standalone: true
 tags: [stripe, finance, setup, payments]
+category: finance
 ---
 
 # Setting up Stripe

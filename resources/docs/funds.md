@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.funds.index
   - filament.admin.resources.funds.create
   - filament.admin.resources.funds.edit
+category: finance
 ---
 
 # Funds

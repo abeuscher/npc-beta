@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.transactions.index
   - filament.admin.resources.transactions.create
   - filament.admin.resources.transactions.edit
+category: finance
 ---
 
 # Transactions

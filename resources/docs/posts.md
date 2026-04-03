@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.posts.index
   - filament.admin.resources.posts.create
   - filament.admin.resources.posts.edit
+category: cms
 ---
 
 # Blog Posts

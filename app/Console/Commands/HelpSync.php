@@ -57,7 +57,19 @@ class HelpSync extends Command
 
             $routes = $standalone ? [] : (array) $frontmatter['routes'];
 
-            DB::transaction(function () use ($slug, $frontmatter, $content, $routes) {
+            $validCategories = ['crm', 'cms', 'finance', 'tools', 'settings', 'general'];
+            $category = $frontmatter['category'] ?? null;
+
+            if ($category && ! in_array($category, $validCategories, true)) {
+                $this->warn("  ⚠ {$slug} — invalid category '{$category}', ignoring");
+                $category = null;
+            }
+
+            if (! $category) {
+                $this->warn("  ⚠ {$slug} — no category specified");
+            }
+
+            DB::transaction(function () use ($slug, $frontmatter, $content, $routes, $category) {
                 $article = HelpArticle::updateOrCreate(
                     ['slug' => $slug],
                     [
@@ -67,6 +79,7 @@ class HelpSync extends Command
                         'tags'        => isset($frontmatter['tags']) ? (array) $frontmatter['tags'] : [],
                         'app_version' => $frontmatter['version'] ?? null,
                         'last_updated' => isset($frontmatter['updated']) ? $frontmatter['updated'] : null,
+                        'category'    => $category,
                     ]
                 );
 

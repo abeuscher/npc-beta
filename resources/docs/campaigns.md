@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.campaigns.index
   - filament.admin.resources.campaigns.create
   - filament.admin.resources.campaigns.edit
+category: finance
 ---
 
 # Campaigns

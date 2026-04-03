@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.tags.index
   - filament.admin.resources.tags.create
   - filament.admin.resources.tags.edit
+category: crm
 ---
 
 # Tags

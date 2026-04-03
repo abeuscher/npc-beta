@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.roles.index
   - filament.admin.resources.roles.create
   - filament.admin.resources.roles.edit
+category: settings
 ---
 
 # Roles

@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.widget-types.index
   - filament.admin.resources.widget-types.create
   - filament.admin.resources.widget-types.edit
+category: cms
 ---
 
 # Widget Types

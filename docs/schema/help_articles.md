@@ -12,6 +12,7 @@ Seeded help documentation articles shown in the admin sidebar.
 | tags | json | yes | |
 | app_version | string | yes | |
 | last_updated | date | yes | |
+| category | string | yes | crm, cms, finance, tools, settings, general |
 | embedding | jsonb | yes | Reserved for future semantic search |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

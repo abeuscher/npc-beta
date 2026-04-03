@@ -7,6 +7,7 @@ tags: [cms, collections, content, widgets]
 routes:
   - filament.admin.resources.browse-collections.index
   - filament.admin.resources.browse-collections.items
+category: cms
 ---
 
 # Content Collections

@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.collections.index
   - filament.admin.resources.collections.create
   - filament.admin.resources.collections.edit
+category: tools
 ---
 
 # Collection Manager

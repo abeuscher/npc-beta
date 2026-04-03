@@ -7,6 +7,7 @@ tags: [settings, users, invitations, access]
 routes:
   - filament.admin.resources.users.index
   - filament.admin.resources.users.edit
+category: settings
 ---
 
 # User Invitations

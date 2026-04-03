@@ -6,6 +6,7 @@ updated: 2026-03-23
 tags: [members, crm, membership]
 routes:
   - filament.admin.resources.members.index
+category: crm
 ---
 
 # Members

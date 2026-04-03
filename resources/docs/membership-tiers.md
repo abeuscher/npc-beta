@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.membership-tiers.index
   - filament.admin.resources.membership-tiers.create
   - filament.admin.resources.membership-tiers.edit
+category: crm
 ---
 
 # Membership Tiers

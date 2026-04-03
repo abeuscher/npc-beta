@@ -6,6 +6,7 @@ updated: 2026-04-01
 tags: [notes, crm, contacts]
 routes:
   - filament.admin.resources.contacts.notes
+category: crm
 ---
 
 # Notes

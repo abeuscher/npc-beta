@@ -7,6 +7,7 @@ tags: [email, settings, compliance]
 routes:
   - filament.admin.resources.email-templates.index
   - filament.admin.resources.email-templates.edit
+category: settings
 ---
 
 # System Emails

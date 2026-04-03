@@ -49,6 +49,12 @@
                 @if ($article->app_version)
                     &middot; v{{ $article->app_version }}
                 @endif
+                <a href="{{ \App\Filament\Pages\HelpArticlePage::articleUrl($article->slug) }}"
+                   class="help-panel-full-link"
+                   style="display: block; margin-top: 0.5rem; font-weight: 500; color: var(--c-500, #6366f1); text-decoration: none;"
+                >
+                    Open in full page &rarr;
+                </a>
             </div>
         </div>
     </div>

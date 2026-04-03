@@ -7,6 +7,7 @@ updated: 2026-03-31
 tags: [finance, donations, receipts, tax]
 routes:
   - filament.admin.pages.generate-tax-receipts-page
+category: finance
 ---
 
 # Generate Tax Receipts

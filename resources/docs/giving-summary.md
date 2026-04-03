@@ -6,6 +6,7 @@ updated: 2026-03-28
 tags: [finance, donations, receipts, tax, donors]
 routes:
   - filament.admin.pages.donors-page
+category: finance
 ---
 
 # Giving Summary

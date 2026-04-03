@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.pages.index
   - filament.admin.resources.pages.create
   - filament.admin.resources.pages.edit
+category: cms
 ---
 
 # Pages

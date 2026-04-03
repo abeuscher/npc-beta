@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.organizations.index
   - filament.admin.resources.organizations.create
   - filament.admin.resources.organizations.edit
+category: crm
 ---
 
 # Organizations

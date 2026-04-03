@@ -6,6 +6,7 @@ updated: 2026-03-31
 tags: [settings, admin, finance, stripe, payments]
 routes:
   - filament.admin.pages.finance-settings-page
+category: settings
 ---
 
 # Finance Settings

@@ -5,6 +5,7 @@ standalone: true
 version: "0.93"
 updated: 2026-03-30
 tags: [reference, admin, editor, quill]
+category: general
 ---
 
 # Text Editor

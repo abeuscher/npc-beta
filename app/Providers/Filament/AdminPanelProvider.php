@@ -136,6 +136,13 @@ class AdminPanelProvider extends PanelProvider
                     '<div wire:loading.delay class="fixed inset-x-0 top-0 z-[200] h-0.5 bg-primary-500 animate-pulse pointer-events-none"></div>'
                 )
             )
+            // Help search component in the top bar.
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn (): HtmlString => new HtmlString(
+                    \Livewire\Livewire::mount('help-search')
+                )
+            )
             // "View public site" link on the left side of the topbar.
             ->renderHook(
                 PanelsRenderHook::TOPBAR_START,

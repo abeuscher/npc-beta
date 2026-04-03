@@ -5,6 +5,7 @@ version: "0.25"
 updated: 2026-03-31
 standalone: true
 tags: [quickbooks, finance, setup, accounting]
+category: finance
 ---
 
 # Setting up QuickBooks

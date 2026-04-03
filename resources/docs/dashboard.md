@@ -6,6 +6,7 @@ updated: 2026-03-19
 tags: [dashboard, overview]
 routes:
   - filament.admin.pages.dashboard
+category: general
 ---
 
 # Dashboard
