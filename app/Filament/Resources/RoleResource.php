@@ -101,7 +101,7 @@ class RoleResource extends Resource
         return [
             'crm'     => ['contact', 'household', 'organization', 'membership', 'note', 'tag', 'event', 'mailing_list'],
             'finance' => ['donation', 'transaction', 'fund', 'campaign'],
-            'cms'     => ['post', 'page', 'form', 'collection', 'collection_item', 'navigation_item', 'navigation_menu'],
+            'cms'     => ['post', 'page', 'form', 'collection', 'collection_item', 'navigation_menu'],
             'admin'   => ['user', 'widget_type'],
         ];
     }

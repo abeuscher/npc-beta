@@ -38,7 +38,6 @@ class PermissionSeeder extends Seeder
             'form',
             'collection',
             'collection_item',
-            'navigation_item',
             'navigation_menu',
             'product',
             // Admin
@@ -218,7 +217,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('post'),
             $fullPermissions('collection'),
             $fullPermissions('collection_item'),
-            $fullPermissions('navigation_item'),
+            $fullPermissions('navigation_menu'),
         ));
 
         // ── demo ─────────────────────────────────────────────────────────────
