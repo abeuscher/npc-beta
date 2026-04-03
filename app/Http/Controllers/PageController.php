@@ -87,6 +87,8 @@ class PageController extends Controller
             && $firstPw->widgetType?->handle === 'hero'
             && (($firstPw->config['overlap_nav'] ?? false) == true);
         View::share('__navOverlap', $navOverlap);
+        View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
+        View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
 
         return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
     }
@@ -111,6 +113,10 @@ class PageController extends Controller
             return null;
         }
 
+        // Config-level full_width toggle (e.g. hero widget) overrides the widget type default
+        $configFullWidth = $pw->config['full_width'] ?? null;
+        $fullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
+
         $block = [
             'handle'       => $widgetType->handle,
             'instance_id'  => $pw->id,
@@ -118,7 +124,7 @@ class PageController extends Controller
             'css'          => $widgetType->css ?? '',
             'js'           => $widgetType->js ?? '',
             'style_config' => $pw->style_config ?? [],
-            'full_width'   => $widgetType->full_width ?? false,
+            'full_width'   => $fullWidth,
         ];
 
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];

@@ -1,10 +1,12 @@
 @php
     $content        = $config['content'] ?? '';
     $overlayOpacity = max(0, min(100, (int) ($config['overlay_opacity'] ?? 50))) / 100;
-    $minHeight      = in_array($config['min_height'] ?? '', ['16rem', '24rem', '32rem', '40rem']) ? $config['min_height'] : '24rem';
     $ctas           = $config['ctas'] ?? [];
     $overlapNav     = ($config['overlap_nav'] ?? false) == true;
+    $fullscreen     = ($config['fullscreen'] ?? false) == true;
+    $showScroll     = ($config['scroll_indicator'] ?? false) == true;
     $position       = $config['text_position'] ?? 'center-center';
+    $minHeight      = $config['min_height'] ?? '24rem';
 
     $bgUrl = '';
     if (!empty($configMedia['background_image'])) {
@@ -14,50 +16,58 @@
             : $media->getUrl();
     }
 
-    // Map position value to flex alignment classes
-    $positionMap = [
-        'top-left'       => 'items-start justify-start text-left',
-        'top-center'     => 'items-start justify-center text-center',
-        'top-right'      => 'items-start justify-end text-right',
-        'center-left'    => 'items-center justify-start text-left',
-        'center-center'  => 'items-center justify-center text-center',
-        'center-right'   => 'items-center justify-end text-right',
-        'bottom-left'    => 'items-end justify-start text-left',
-        'bottom-center'  => 'items-end justify-center text-center',
-        'bottom-right'   => 'items-end justify-end text-right',
-    ];
-    $positionClasses = $positionMap[$position] ?? $positionMap['center-center'];
+    $videoUrl = '';
+    if (!empty($configMedia['background_video'])) {
+        $videoUrl = $configMedia['background_video']->getUrl();
+    }
 
-    // Derive button alignment from text position
-    $buttonAlignment = str_contains($positionClasses, 'text-center')
-        ? 'justify-center'
-        : (str_contains($positionClasses, 'text-right') ? 'justify-end' : 'justify-start');
+    $hasBg = $videoUrl || $bgUrl;
+
+    $classes = ['widget--hero'];
+    if ($fullscreen)  $classes[] = 'hero--fullscreen';
+    if ($overlapNav)  $classes[] = 'hero--overlap-nav';
+    if ($showScroll)  $classes[] = 'hero--has-scroll';
+    $classes[] = 'hero--pos-' . ($position ?: 'center-center');
+    if (!$fullscreen) $classes[] = 'hero--height-' . str_replace('rem', '', $minHeight);
 @endphp
 
-<div class="widget--hero relative overflow-hidden" style="min-height: {{ $minHeight }}{{ $overlapNav ? '; margin-top: -4.5rem' : '' }}">
+<div class="{{ implode(' ', $classes) }}" style="--hero-bg: url('{{ $bgUrl }}') center/cover no-repeat; --hero-overlay: {{ $overlayOpacity }};">
 
-    @if ($bgUrl)
-        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ $bgUrl }}')"></div>
+    @if ($videoUrl)
+        <video class="hero-video" autoplay muted loop playsinline preload="auto">
+            <source src="{{ $videoUrl }}" type="{{ $configMedia['background_video']->mime_type }}">
+        </video>
+    @elseif ($bgUrl)
+        <div class="hero-bg"></div>
     @endif
 
-    @if ($bgUrl)
-        <div class="absolute inset-0 bg-black" style="opacity: {{ $overlayOpacity }}"></div>
+    @if ($hasBg)
+        <div class="hero-overlay"></div>
     @endif
 
-    <div class="relative z-10 flex flex-col {{ $positionClasses }} w-full h-full p-8 md:p-12 {{ $overlapNav ? 'pt-24' : '' }}" style="min-height: {{ $minHeight }}">
-        <div class="max-w-2xl">
+    <div class="hero-body">
+        <div class="hero-inner">
             @if ($content)
-                <div class="hero-content {{ $bgUrl ? 'text-white' : '' }}">
+                <div class="hero-content {{ $hasBg ? 'hero-content--on-image' : '' }}">
                     {!! $content !!}
                 </div>
             @endif
 
             @if (!empty($ctas))
-                <div class="mt-6">
-                    @include('widgets.components.buttons', ['buttons' => $ctas, 'alignment' => $buttonAlignment])
+                <div class="hero-ctas">
+                    @include('widgets.components.buttons', [
+                        'buttons'   => $ctas,
+                        'alignment' => str_contains($position, 'center') ? 'center' : (str_contains($position, 'right') ? 'right' : 'left'),
+                    ])
                 </div>
             @endif
         </div>
     </div>
+
+    @if ($showScroll)
+        <div class="hero-scroll-indicator">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+    @endif
 
 </div>

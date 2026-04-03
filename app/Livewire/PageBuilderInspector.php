@@ -86,7 +86,7 @@ class PageBuilderInspector extends Component
         }
 
         foreach ($this->block['widget_type_config_schema'] as $field) {
-            if (($field['type'] ?? '') === 'image') {
+            if (in_array($field['type'] ?? '', ['image', 'video'])) {
                 $media = $pw->getFirstMedia("config_{$field['key']}");
                 $this->imageUrls[$field['key']] = $media?->getUrl();
             }

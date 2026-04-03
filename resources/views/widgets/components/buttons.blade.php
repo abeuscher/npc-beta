@@ -1,17 +1,12 @@
 @php
-    $styleMap = [
-        'primary'   => 'btn-primary',
-        'secondary' => 'btn-secondary',
-        'text'      => 'btn-text',
-    ];
-    $alignment = $alignment ?? 'justify-start';
+    $alignment = $alignment ?? 'left';
 @endphp
 
 @if (!empty($buttons))
-    <div class="flex flex-wrap gap-3 {{ $alignment }}">
+    <div class="btn-group btn-group--{{ $alignment }}">
         @foreach ($buttons as $btn)
             @if (!empty($btn['text']))
-                <a href="{{ e($btn['url'] ?? '#') }}" class="{{ $styleMap[$btn['style'] ?? 'primary'] ?? 'btn-primary' }}">
+                <a href="{{ e($btn['url'] ?? '#') }}" class="btn btn--{{ $btn['style'] ?? 'primary' }}">
                     {{ $btn['text'] }}
                 </a>
             @endif

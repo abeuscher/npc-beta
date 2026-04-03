@@ -64,7 +64,7 @@
                             href="{{ $href }}"
                             target="{{ $item->target ?? '_self' }}"
                             {{ $currentUrl === $href ? 'aria-current="page"' : '' }}
-                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded no-underline whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700 max-md:w-full max-md:px-4 max-md:py-2"
+                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded no-underline whitespace-nowrap max-md:w-full max-md:px-4 max-md:py-2"
                         >
                             {{ $item->label }}
                             <span class="inline-block w-0 h-0 border-l-[0.2em] border-l-transparent border-r-[0.2em] border-r-transparent border-t-[0.25em] border-t-current transition-transform duration-150 group-hover:rotate-180"></span>
@@ -75,13 +75,13 @@
                                     $childHref = ($child->page_id && $child->page) ? url('/' . $child->page->slug) : ($child->url ?? '#');
                                 @endphp
                                 <li>
-                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" {{ $currentUrl === $childHref ? 'aria-current="page"' : '' }} class="block px-4 py-1 no-underline hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary">{{ $child->label }}</a>
+                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" {{ $currentUrl === $childHref ? 'aria-current="page"' : '' }} class="block px-4 py-1 no-underline hover:text-primary">{{ $child->label }}</a>
                                 </li>
                             @endforeach
                         </ul>
                     </span>
                 @else
-                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }} class="px-2.5 py-1.5 rounded no-underline whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700 max-md:w-full max-md:px-4 max-md:py-2">{{ $item->label }}</a>
+                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }} class="px-2.5 py-1.5 rounded no-underline whitespace-nowrap max-md:w-full max-md:px-4 max-md:py-2">{{ $item->label }}</a>
                 @endif
             @endforeach
         </nav>

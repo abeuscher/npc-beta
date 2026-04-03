@@ -239,7 +239,12 @@
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}
 
-    <div class="relative z-20 {{ ($__navOverlap ?? false) ? 'bg-transparent' : 'bg-white dark:bg-gray-900' }}">
+    @php
+        $__navStyle = '';
+        if (!empty($__navOverlayLinkColor ?? '')) $__navStyle .= '--nav-link-color:' . $__navOverlayLinkColor . ';';
+        if (!empty($__navOverlayHoverColor ?? '')) $__navStyle .= '--nav-hover-color:' . $__navOverlayHoverColor . ';';
+    @endphp
+    <div class="site-nav-wrapper {{ ($__navOverlap ?? false) ? 'site-nav-wrapper--overlay' : '' }}" @if ($__navStyle) style="{{ $__navStyle }}" @endif>
         @if (view()->exists('custom.header'))
             @include('custom.header')
         @elseif ($__chromeHeader)

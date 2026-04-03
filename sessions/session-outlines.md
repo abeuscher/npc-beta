@@ -128,6 +128,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 119 | Widget Picker — Categories, Page-Type Filtering & Search |
 | 120 | Filament Custom Theme — Admin Panel Tailwind Build |
 | 121 | Widget — Hero |
+| 122 | Widget — Hero Enhancements (Fullscreen, Video Background, Full Bleed, Semantic Markup) |
 
 ---
 
@@ -150,13 +151,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 Connect the app to the external build server, migrate public-facing CSS from Tailwind to a custom SCSS framework, and repackage all widgets into the installable folder structure. Multi-session effort. See `docs/widget-system-spec.md` and `docs/build-server-spec.md` for full specifications.
 
-### Session 123 — Widget — Full Size Hero
+### Session 123 — Widget — Video & Image Background *(partially complete)*
 
-Viewport-height (`100vh`) hero variant. Same structure as standard hero but fills the browser window. Optional scroll-down indicator.
-
-### Session 124 — Widget — Video & Image Background
-
-Section with either a looping background video (HTML5 `<video>`, self-hosted MP4/WebM) or a background image, with text content overlaid. Toggle between video and image source.
+Video background and `video` field type were built in session 122 as part of the hero widget. Remaining: decide whether a standalone `background_media` widget is needed or if the hero covers all use cases.
 
 ### Session 125 — Widget — Logo Garden
 

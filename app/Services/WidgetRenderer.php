@@ -28,7 +28,7 @@ class WidgetRenderer
         // Resolve image config fields to media objects
         $configMedia = [];
         foreach ($widgetType->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') === 'image' && ! empty($config[$field['key']])) {
+            if (in_array($field['type'] ?? '', ['image', 'video']) && ! empty($config[$field['key']])) {
                 $configMedia[$field['key']] = $pw->getFirstMedia("config_{$field['key']}");
             }
         }

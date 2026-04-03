@@ -17,6 +17,13 @@ class WidgetTypeSeeder extends Seeder
             $eventDates->delete();
         }
 
+        // Remove hero_fullsize — merged into hero as a toggle.
+        $heroFullsize = WidgetType::where('handle', 'hero_fullsize')->first();
+        if ($heroFullsize) {
+            PageWidget::where('widget_type_id', $heroFullsize->id)->delete();
+            $heroFullsize->delete();
+        }
+
         WidgetType::updateOrCreate(
             ['handle' => 'text_block'],
             [
@@ -459,6 +466,7 @@ class WidgetTypeSeeder extends Seeder
                 'config_schema'      => [
                     ['key' => 'content',          'type' => 'richtext', 'label' => 'Content'],
                     ['key' => 'background_image', 'type' => 'image',   'label' => 'Background Image'],
+                    ['key' => 'background_video', 'type' => 'video',   'label' => 'Background Video', 'helper' => 'MP4 or WebM — plays on loop, overrides background image'],
                     ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
                         'top-left'       => 'Top Left',
                         'top-center'     => 'Top Center',
@@ -479,9 +487,14 @@ class WidgetTypeSeeder extends Seeder
                             'text'      => 'Text Only',
                         ]],
                     ]],
-                    ['key' => 'overlap_nav',      'type' => 'toggle',  'label' => 'Overlap Navigation', 'default' => false],
+                    ['key' => 'fullscreen',       'type' => 'toggle',  'label' => 'Full Viewport Height', 'default' => false, 'helper' => 'Makes the hero fill the entire browser window (100vh)'],
+                    ['key' => 'scroll_indicator', 'type' => 'toggle',  'label' => 'Scroll Indicator', 'default' => false, 'helper' => 'Show animated down arrow at bottom (useful with full viewport height)'],
+                    ['key' => 'full_width',       'type' => 'toggle',  'label' => 'Full Width', 'default' => true, 'helper' => 'Extend edge-to-edge without content container'],
+                    ['key' => 'overlap_nav',      'type' => 'toggle',  'label' => 'Full Bleed', 'default' => false, 'helper' => 'Hero extends behind the navigation bar'],
                     ['key' => 'overlay_opacity',  'type' => 'number',  'label' => 'Overlay Opacity', 'default' => 50, 'helper' => '0–100, rendered as percentage'],
-                    ['key' => 'min_height',       'type' => 'select',  'label' => 'Minimum Height', 'default' => '24rem', 'options' => [
+                    ['key' => 'nav_link_color',  'type' => 'color', 'label' => 'Nav Link Color',  'default' => '', 'shown_when' => 'overlap_nav', 'group' => 'nav_colors', 'helper' => '#ffffff'],
+                    ['key' => 'nav_hover_color', 'type' => 'color', 'label' => 'Nav Hover Color', 'default' => '', 'shown_when' => 'overlap_nav', 'group' => 'nav_colors', 'helper' => '#cccccc'],
+                    ['key' => 'min_height',       'type' => 'select',  'label' => 'Minimum Height', 'default' => '24rem', 'hidden_when' => 'fullscreen', 'options' => [
                         '16rem' => 'Small (16rem)',
                         '24rem' => 'Medium (24rem)',
                         '32rem' => 'Large (32rem)',
