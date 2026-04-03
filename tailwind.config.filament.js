@@ -1,4 +1,4 @@
-import preset from './filament.tailwind.preset'
+import preset from './vendor/filament/support/tailwind.config.preset'
 
 export default {
     presets: [preset],

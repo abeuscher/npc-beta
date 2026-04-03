@@ -1,5 +1,6 @@
 # Dependencies — rebuilt inside container
 vendor/
+!vendor/filament/
 
 # Local environment — never bake secrets into an image
 .env
