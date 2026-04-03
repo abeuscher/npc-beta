@@ -5,13 +5,16 @@ FROM node:22-alpine AS node-builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json vite.config.js postcss.config.js tailwind.config.js ./
+COPY package.json package-lock.json vite.config.js postcss.config.js tailwind.config.js tailwind.config.filament.js ./
 RUN npm ci
 
 COPY resources/scss ./resources/scss
 COPY resources/js  ./resources/js
+COPY resources/css  ./resources/css
 COPY resources/views ./resources/views
 COPY app/Livewire ./app/Livewire
+COPY app/Filament ./app/Filament
+COPY vendor/filament ./vendor/filament
 
 RUN npm run build
 
