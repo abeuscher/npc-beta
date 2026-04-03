@@ -1,3 +1,16 @@
-@import '/vendor/filament/filament/resources/css/theme.css';
-
 @config '../../../../tailwind.config.filament.js';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind variants;
+
+@layer base {
+    :root.dark {
+        color-scheme: dark;
+    }
+
+    [data-field-wrapper] {
+        scroll-margin-top: 8rem;
+    }
+}
