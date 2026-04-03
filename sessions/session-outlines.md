@@ -122,6 +122,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 113 | Local Dev Environment — WSL2 Migration |
 | 114 | Permissions Audit & Coverage |
 | 115 | Housekeeping & Consistency Audit |
+| 116 | Code Review & Framework Alignment Audit |
 
 ---
 
@@ -132,6 +133,10 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 ### Session 116 — Code Review & Framework Alignment Audit
 
 Two-track code review. Track 1: systematic audit for custom code that reimplements or displaces framework-provided behaviour (Filament, Laravel, Spatie packages) — produces a findings table for discussion, no automatic fixes. Track 2: standard cleanup — dead imports, orphaned code, duplicated logic blocks. Includes the orphaned WidgetRegistry import flagged in session 075.
+
+### Session 117 — Permissions Framework & Coverage Audit
+
+Establish guiding principles for how permissions work in this app (two-tier model, role-as-bucket design, no isSuperAdmin-as-permission-substitute). Produce a full inventory matrix of every admin feature × every role. Add a `developer` role. Convert isSuperAdmin() gates to proper permissions. Remove redundant resource authorization overrides. Align seeder role assignments with the confirmed matrix.
 
 ### Help System Enhancements
 
