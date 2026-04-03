@@ -126,6 +126,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 117 | Permissions Framework & Coverage Audit |
 | 118 | Help System — Search, Standalone Pages & Related Articles |
 | 119 | Widget Picker — Categories, Page-Type Filtering & Search |
+| 120 | Filament Custom Theme — Admin Panel Tailwind Build |
 
 ---
 
@@ -143,10 +144,6 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 ---
 
 ## Widget System — Beta 1 Scope
-
-### Session 120 — Filament Custom Theme — Admin Panel Tailwind Build
-
-Set up a Filament custom theme so the admin panel compiles its own Tailwind CSS from project blade files. Gives access to the full Tailwind utility class set in custom admin views like the page builder widget picker. Replaces inline style workarounds for missing padding/gap classes.
 
 ### Session 121 — Widget — Hero
 
