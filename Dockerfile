@@ -5,18 +5,15 @@ FROM node:22-alpine AS node-builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json vite.config.js postcss.config.js tailwind.config.js tailwind.config.filament.js ./
+COPY package.json package-lock.json vite.config.public.js postcss.config.js tailwind.config.js ./
 RUN npm ci
 
 COPY resources/scss ./resources/scss
 COPY resources/js  ./resources/js
-COPY resources/css  ./resources/css
 COPY resources/views ./resources/views
 COPY app/Livewire ./app/Livewire
-COPY app/Filament ./app/Filament
-COPY vendor/filament ./vendor/filament
 
-RUN npm run build
+RUN npx vite build --config vite.config.public.js
 
 # ─────────────────────────────────────────
 # Stage 2: PHP-FPM Application
@@ -89,8 +86,12 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
 # Copy application files
 COPY . .
 
-# Copy compiled frontend assets from node-builder stage
-COPY --from=node-builder /app/public/build ./public/build
+# Build all frontend assets (public + Filament admin theme).
+# Runs here instead of the node-builder because the admin theme needs
+# vendor/filament for the Tailwind preset and blade content scanning.
+# The node-builder's public-only output is discarded in favour of this
+# complete build which produces a single unified manifest.
+RUN npm ci && npm run build
 
 # Generate the optimised autoloader now that all files are present
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
