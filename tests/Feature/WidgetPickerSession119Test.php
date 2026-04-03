@@ -45,7 +45,7 @@ it('seeder assigns portal widgets to member page type only', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $portalHandles = [
-        'portal_login', 'portal_signup', 'portal_forgot_password',
+        'portal_forgot_password',
         'portal_account_dashboard', 'portal_contact_edit',
         'portal_change_password', 'portal_event_registrations',
     ];
@@ -53,6 +53,12 @@ it('seeder assigns portal widgets to member page type only', function () {
     foreach ($portalHandles as $handle) {
         $wt = WidgetType::where('handle', $handle)->first();
         expect($wt->allowed_page_types)->toBe(['member'], "Widget '{$handle}' should be restricted to member pages");
+    }
+
+    // Login and signup are available on all page types (public-facing forms)
+    foreach (['portal_login', 'portal_signup'] as $handle) {
+        $wt = WidgetType::where('handle', $handle)->first();
+        expect($wt->allowed_page_types)->toBeNull("Widget '{$handle}' should be available on all page types");
     }
 });
 
@@ -104,7 +110,7 @@ it('default page excludes portal widgets', function () {
         ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true));
 
     $portalHandles = [
-        'portal_login', 'portal_signup', 'portal_forgot_password',
+        'portal_forgot_password',
         'portal_account_dashboard', 'portal_contact_edit',
         'portal_change_password', 'portal_event_registrations',
     ];
@@ -112,6 +118,10 @@ it('default page excludes portal widgets', function () {
     foreach ($portalHandles as $handle) {
         expect($filtered->pluck('handle'))->not->toContain($handle);
     }
+
+    // Login and signup should appear on default pages
+    expect($filtered->pluck('handle'))->toContain('portal_login')
+        ->toContain('portal_signup');
 });
 
 it('post page includes blog_pager and universal widgets but excludes portal widgets', function () {
@@ -125,7 +135,8 @@ it('post page includes blog_pager and universal widgets but excludes portal widg
 
     expect($handles)->toContain('blog_pager')
         ->toContain('text_block')
-        ->not->toContain('portal_login');
+        ->toContain('portal_login')
+        ->not->toContain('portal_account_dashboard');
 });
 
 // ── Multi-category assignment ───────────────────────────────────────────────
