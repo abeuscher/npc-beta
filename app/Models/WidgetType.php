@@ -55,6 +55,7 @@ class WidgetType extends Model implements HasMedia
         'collections',
         'assets',
         'default_open',
+        'full_width',
         'config_schema',
         'template',
         'css',
@@ -69,6 +70,7 @@ class WidgetType extends Model implements HasMedia
         'config_schema'      => 'array',
         'category'           => 'array',
         'default_open'       => 'boolean',
+        'full_width'         => 'boolean',
         'allowed_page_types' => 'array',
     ];
 

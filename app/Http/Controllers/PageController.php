@@ -81,6 +81,13 @@ class PageController extends Controller
             WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
         }
 
+        // Check if the first widget is a hero with overlap_nav enabled
+        $firstPw = $pageWidgets->first();
+        $navOverlap = $firstPw
+            && $firstPw->widgetType?->handle === 'hero'
+            && (($firstPw->config['overlap_nav'] ?? false) == true);
+        View::share('__navOverlap', $navOverlap);
+
         return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
     }
 
@@ -111,6 +118,7 @@ class PageController extends Controller
             'css'          => $widgetType->css ?? '',
             'js'           => $widgetType->js ?? '',
             'style_config' => $pw->style_config ?? [],
+            'full_width'   => $widgetType->full_width ?? false,
         ];
 
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];

@@ -11,12 +11,21 @@
             }
         }
         $inlineStyle = implode(';', $styleProps);
+        // Per-instance override in style_config takes precedence over widget type default
+        $instanceFullWidth = $sc['full_width'] ?? null;
+        $isFullWidth = $instanceFullWidth !== null ? (bool) $instanceFullWidth : ($block['full_width'] ?? false);
     @endphp
     <div
         class="widget widget--{{ $block['handle'] }} mb-6"
         id="widget-{{ $block['instance_id'] }}"
         @if ($inlineStyle) style="{{ $inlineStyle }}" @endif
     >
-        {!! $block['html'] !!}
+        @if ($isFullWidth)
+            {!! $block['html'] !!}
+        @else
+            <div class="max-w-7xl mx-auto px-4">
+                {!! $block['html'] !!}
+            </div>
+        @endif
     </div>
 @endforeach

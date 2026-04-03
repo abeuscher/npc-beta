@@ -127,6 +127,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 118 | Help System — Search, Standalone Pages & Related Articles |
 | 119 | Widget Picker — Categories, Page-Type Filtering & Search |
 | 120 | Filament Custom Theme — Admin Panel Tailwind Build |
+| 121 | Widget — Hero |
 
 ---
 
@@ -145,55 +146,55 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 121 — Widget — Hero
+### Session 122 — Widget System — Build Server Integration
 
-Full-width banner: heading, subheading, background image, optional CTA button, configurable text alignment and overlay opacity. Standard marketing hero.
+Connect the app to the external build server, migrate public-facing CSS from Tailwind to a custom SCSS framework, and repackage all widgets into the installable folder structure. Multi-session effort. See `docs/widget-system-spec.md` and `docs/build-server-spec.md` for full specifications.
 
-### Session 122 — Widget — Full Size Hero
+### Session 123 — Widget — Full Size Hero
 
 Viewport-height (`100vh`) hero variant. Same structure as standard hero but fills the browser window. Optional scroll-down indicator.
 
-### Session 123 — Widget — Video & Image Background
+### Session 124 — Widget — Video & Image Background
 
 Section with either a looping background video (HTML5 `<video>`, self-hosted MP4/WebM) or a background image, with text content overlaid. Toggle between video and image source.
 
-### Session 124 — Widget — Logo Garden
+### Session 125 — Widget — Logo Garden
 
 Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect.
 
-### Session 125 — Widget — Board Members
+### Session 126 — Widget — Board Members
 
 People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages.
 
-### Session 126 — Widget — Three Buckets
+### Session 127 — Widget — Three Buckets
 
 Three side-by-side content blocks, each with optional image, heading, body text, and CTA link. Config-driven (not collection-backed). Fixed at three.
 
-### Session 127 — Widget — Alternating Panels
+### Session 128 — Widget — Alternating Panels
 
 Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
 
-### Session 128 — Widget — Product Carousel
+### Session 129 — Widget — Product Carousel
 
 Swiper-based carousel of published products: image, name, price, link. Uses the existing `products` data source in `WidgetDataResolver`.
 
-### Session 129 — Widget — Event Map
+### Session 130 — Widget — Event Map
 
 Google Maps embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.
 
-### Session 130 — Widget — Headline Patterns
+### Session 131 — Widget — Headline Patterns
 
 Configurable heading element: heading level (h1–h6), alignment, optional subtitle, decorative styles (underline, overline, rule, none). Section divider / visual break.
 
-### Session 131 — Widget — CTA Patterns
+### Session 132 — Widget — CTA Patterns
 
 Call-to-action section: heading, body text, one or two styled buttons (solid, outline, pill). Configurable background (transparent, light, dark).
 
-### Session 132 — Widget — Social Sharing
+### Session 133 — Widget — Social Sharing
 
 Row of share buttons (Facebook, Twitter/X, LinkedIn, Email, Copy Link). Pure anchor tags with platform share URLs — no third-party scripts. Toggleable per platform.
 
-### Session 133 — Widget — Modal
+### Session 134 — Widget — Modal
 
 Button-triggered modal overlay containing child widgets. Nesting container like column_widget but triggered by click. Alpine.js open/close. Configurable trigger button and modal size.
 
@@ -415,17 +416,6 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 
 ### Frontend Build Service
 
-A standalone build server that accepts source assets (SCSS, JS entry points, package manifests) via POST and returns compiled CSS/JS artifacts. Eliminates the need for Node, npm, and build tooling on production app servers.
-
-**Motivation:** production app containers should be PHP + Nginx only — no Node runtime, no node_modules, no npm supply chain exposure. The build service centralizes dependency management and reduces the attack surface across all deployed instances.
-
-**Shape:**
-- Lightweight API with a queue backend (could be a separate Laravel app or a Node service)
-- POST endpoint accepts SCSS source, JS entry config, and package.json fragment
-- Worker runs npm install + Vite/esbuild in a sandboxed temp directory, returns compiled output
-- Input hashing + caching so identical builds are instant
-- App instances pull compiled assets on deploy or on-demand
-
-**Depends on:** the management console (multi-instance orchestration layer) being built first. The build service is a shared infrastructure component that all managed instances connect to.
+**Pulled forward to pre-beta scope as Session 122.** The build server is being built as a separate repo and integrated into the app before the remaining widget sessions. See `docs/build-server-spec.md` for the full specification. The admin panel CSS (Filament theme) remains on Vite — the build server handles only public-facing widget and site styles.
 
 ### Easter Egg & Fun Features

@@ -75,6 +75,7 @@ class PostController extends Controller
                     'html'        => $html,
                     'css'         => $widgetType->css ?? '',
                     'js'          => $widgetType->js ?? '',
+                    'full_width'  => $widgetType->full_width ?? false,
                 ];
 
                 if ($widgetType->css) {
@@ -95,6 +96,7 @@ class PostController extends Controller
                     'html'        => $clientHtml,
                     'css'         => $widgetType->css ?? '',
                     'js'          => '',
+                    'full_width'  => $widgetType->full_width ?? false,
                 ];
 
                 if ($widgetType->css) {

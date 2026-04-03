@@ -239,18 +239,18 @@
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}
 
-    @if (view()->exists('custom.header'))
-        @include('custom.header')
-    @elseif ($__chromeHeader)
-        {!! $__chromeHeader['html'] !!}
-    @else
-        @include('components.site-header')
-    @endif
+    <div class="relative z-20 {{ ($__navOverlap ?? false) ? 'bg-transparent' : 'bg-white dark:bg-gray-900' }}">
+        @if (view()->exists('custom.header'))
+            @include('custom.header')
+        @elseif ($__chromeHeader)
+            {!! $__chromeHeader['html'] !!}
+        @else
+            @include('components.site-header')
+        @endif
+    </div>
 
     <main class="flex-1">
-        <div class="max-w-7xl mx-auto px-4 py-8">
-            @yield('content')
-        </div>
+        @yield('content')
     </main>
 
     @if (view()->exists('custom.footer'))

@@ -324,6 +324,7 @@ class WidgetTypeSeeder extends Seeder
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => [],
+                'full_width'         => true,
                 'config_schema'      => [
                     ['key' => 'logo',           'type' => 'image',    'label' => 'Logo'],
                     ['key' => 'nav_handle',     'type' => 'text',     'label' => 'Navigation menu handle', 'default' => 'primary'],
@@ -342,6 +343,7 @@ class WidgetTypeSeeder extends Seeder
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => [],
+                'full_width'         => true,
                 'config_schema'      => [
                     ['key' => 'nav_handle',         'type' => 'text',   'label' => 'Navigation menu handle', 'default' => 'footer'],
                     ['key' => 'show_theme_toggle',  'type' => 'toggle', 'label' => 'Show light/dark mode toggle', 'default' => true],
@@ -440,6 +442,53 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'text_color',        'type' => 'text',    'label' => 'Text color',                                'advanced' => true],
                 ],
                 'template'      => "@include('widgets.carousel')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'hero'],
+            [
+                'label'              => 'Hero',
+                'description'        => 'Full-width banner with background image, text overlay, and call-to-action buttons.',
+                'category'           => ['content'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => [],
+                'default_open'       => false,
+                'full_width'         => true,
+                'config_schema'      => [
+                    ['key' => 'content',          'type' => 'richtext', 'label' => 'Content'],
+                    ['key' => 'background_image', 'type' => 'image',   'label' => 'Background Image'],
+                    ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
+                        'top-left'       => 'Top Left',
+                        'top-center'     => 'Top Center',
+                        'top-right'      => 'Top Right',
+                        'center-left'    => 'Center Left',
+                        'center-center'  => 'Center',
+                        'center-right'   => 'Center Right',
+                        'bottom-left'    => 'Bottom Left',
+                        'bottom-center'  => 'Bottom Center',
+                        'bottom-right'   => 'Bottom Right',
+                    ]],
+                    ['key' => 'ctas',             'type' => 'buttons', 'label' => 'Buttons', 'fields' => [
+                        ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                        ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                        ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                            'primary'   => 'Primary',
+                            'secondary' => 'Secondary',
+                            'text'      => 'Text Only',
+                        ]],
+                    ]],
+                    ['key' => 'overlap_nav',      'type' => 'toggle',  'label' => 'Overlap Navigation', 'default' => false],
+                    ['key' => 'overlay_opacity',  'type' => 'number',  'label' => 'Overlay Opacity', 'default' => 50, 'helper' => '0–100, rendered as percentage'],
+                    ['key' => 'min_height',       'type' => 'select',  'label' => 'Minimum Height', 'default' => '24rem', 'options' => [
+                        '16rem' => 'Small (16rem)',
+                        '24rem' => 'Medium (24rem)',
+                        '32rem' => 'Large (32rem)',
+                        '40rem' => 'Extra Large (40rem)',
+                    ]],
+                ],
+                'template'           => "@include('widgets.hero')",
             ]
         );
     }

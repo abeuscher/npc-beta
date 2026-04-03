@@ -3,6 +3,29 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Button components — named classes built from Tailwind utilities.
+// These are the canonical button styles used by widget templates.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.btn-primary {
+    @apply inline-block px-6 py-2.5 bg-primary text-white rounded font-semibold
+           no-underline cursor-pointer transition-opacity hover:opacity-80;
+}
+
+.btn-secondary {
+    @apply inline-block px-6 py-2.5 border border-gray-300 rounded font-semibold
+           text-gray-700 no-underline cursor-pointer transition-colors
+           hover:border-primary hover:text-primary
+           dark:border-gray-600 dark:text-gray-300
+           dark:hover:border-primary dark:hover:text-primary;
+}
+
+.btn-text {
+    @apply inline-block text-primary no-underline cursor-pointer font-medium
+           transition-opacity hover:opacity-80;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Carousel widget
 // ─────────────────────────────────────────────────────────────────────────────
 

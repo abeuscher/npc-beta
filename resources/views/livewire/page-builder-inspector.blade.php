@@ -270,6 +270,16 @@
                 </button>
 
                 <div x-show="advOpen" x-cloak class="border-t border-gray-100 px-4 py-3 dark:border-gray-700 space-y-4">
+                    {{-- Full width --}}
+                    <label class="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            wire:model.live="block.style_config.full_width"
+                            class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500"
+                        >
+                        <span class="text-sm text-gray-700 dark:text-gray-300">Full width</span>
+                    </label>
+
                     {{-- Padding --}}
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Padding (px)</p>
