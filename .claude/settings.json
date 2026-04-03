@@ -147,7 +147,9 @@
       "Bash(grep -r \"vertical\\\\|layout\" /home/al/nonprofitcrm/vendor/filament/forms/src/Components/Tabs* --include=\"*.php\")",
       "Bash(ls -1 12[0-9]*.md)",
       "Bash(grep \"session:\" sessions/12[89]*base* sessions/130*base*)",
-      "Bash(ls sessions/12[89]*.md sessions/130*.md)"
+      "Bash(ls sessions/12[89]*.md sessions/130*.md)",
+      "Bash(ls /home/al/nonprofitcrm/postcss.config.*)",
+      "Bash(npm i:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",
@@ -156,7 +158,8 @@
       "/home/al/nonprofitcrm/sessions",
       "/home/al/nonprofitcrm/docs",
       "/home/al/nonprofitcrm/app/Filament/Resources/PageResource/RelationManagers",
-      "/tmp"
+      "/tmp",
+      "/home/al/nonprofitcrm/resources/css/filament"
     ]
   }
 }

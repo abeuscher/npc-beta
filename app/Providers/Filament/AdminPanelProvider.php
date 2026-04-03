@@ -98,6 +98,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(new HtmlString(
                 '<img src="' . e($logoSrc) . '">' .
                 '<h1>' . e($brandName) . '</h1>'

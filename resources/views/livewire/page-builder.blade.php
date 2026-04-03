@@ -103,9 +103,9 @@
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
             x-on:keydown.escape.window="if (filter !== '') { filter = ''; activeCategory = ''; } else { $wire.set('showAddModal', false); }"
         >
-            <div class="container mx-auto rounded-xl bg-white shadow-xl dark:bg-gray-900 flex flex-col" style="max-height: 90vh;">
+            <div class="container mx-auto rounded-xl bg-white shadow-xl dark:bg-gray-900 flex flex-col" style="height: 90vh;">
                 {{-- Header with close button --}}
-                <div class="flex items-center justify-between px-6" style="padding-top: 1.25rem;">
+                <div class="flex items-center justify-between px-6 pt-5">
                     <h3 class="text-base font-semibold text-gray-900 dark:text-white">Add Block</h3>
                     <button
                         type="button"
@@ -119,7 +119,7 @@
                 </div>
 
                 {{-- Filter input --}}
-                <div class="px-6" style="padding-top: 1rem; padding-bottom: 0.75rem;">
+                <div class="px-6 pt-4 pb-3">
                     <input
                         type="text"
                         x-model="filter"
@@ -130,7 +130,7 @@
                 </div>
 
                 {{-- Category filter toolbar --}}
-                <div class="flex flex-wrap px-6" style="gap: 0.375rem; padding-bottom: 0.75rem;">
+                <div class="flex flex-wrap gap-1.5 px-6 pb-3">
                     <button
                         type="button"
                         x-on:click="activeCategory = ''"
@@ -151,7 +151,7 @@
 
                 {{-- Widget tile grid --}}
                 <div class="overflow-y-auto px-6 pb-5 flex-1 min-h-0">
-                    <div class="grid gap-3" style="grid-template-columns: repeat(6, minmax(0, 1fr));">
+                    <div class="grid grid-cols-6 gap-3">
                         @foreach ($widgetTypes as $wt)
                             <button
                                 type="button"

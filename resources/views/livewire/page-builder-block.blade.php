@@ -314,7 +314,7 @@
 
                 {{-- Widget tile grid --}}
                 <div class="overflow-y-auto px-6 pb-5 flex-1 min-h-0">
-                    <div class="grid gap-3" style="grid-template-columns: repeat(6, minmax(0, 1fr));">
+                    <div class="grid grid-cols-6 gap-3">
                         @foreach ($widgetTypes as $wt)
                             <button
                                 type="button"
