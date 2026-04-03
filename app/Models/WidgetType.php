@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class WidgetType extends Model
+class WidgetType extends Model implements HasMedia
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, InteractsWithMedia;
 
     /**
      * Maps bare page slugs (stripped of any type prefix) to the widget handles
@@ -45,6 +48,9 @@ class WidgetType extends Model
     protected $fillable = [
         'handle',
         'label',
+        'description',
+        'category',
+        'allowed_page_types',
         'render_mode',
         'collections',
         'assets',
@@ -58,10 +64,12 @@ class WidgetType extends Model
     ];
 
     protected $casts = [
-        'collections'   => 'array',
-        'assets'        => 'array',
-        'config_schema' => 'array',
-        'default_open'  => 'boolean',
+        'collections'        => 'array',
+        'assets'             => 'array',
+        'config_schema'      => 'array',
+        'category'           => 'array',
+        'default_open'       => 'boolean',
+        'allowed_page_types' => 'array',
     ];
 
     public function getDefaultConfig(): array
@@ -77,6 +85,21 @@ class WidgetType extends Model
         }
 
         return $config;
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('thumbnail')->singleFile();
+        $this->addMediaCollection('thumbnail_hover')->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('picker')
+            ->width(320)
+            ->height(180)
+            ->format('webp')
+            ->nonQueued();
     }
 
     public function pageWidgets(): HasMany

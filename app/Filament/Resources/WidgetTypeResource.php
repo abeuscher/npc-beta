@@ -6,6 +6,7 @@ use App\Filament\Resources\WidgetTypeResource\Pages;
 use App\Models\Collection;
 use App\Models\WidgetType;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -14,6 +15,24 @@ use Illuminate\Support\Str;
 
 class WidgetTypeResource extends Resource
 {
+    public const CATEGORY_OPTIONS = [
+        'content'          => 'Content',
+        'layout'           => 'Layout',
+        'media'            => 'Media',
+        'blog'             => 'Blog',
+        'events'           => 'Events',
+        'forms'            => 'Forms',
+        'portal'           => 'Portal',
+        'giving_and_sales' => 'Giving & Sales',
+    ];
+
+    public const PAGE_TYPE_OPTIONS = [
+        'default' => 'Default',
+        'post'    => 'Post',
+        'member'  => 'Member',
+        'system'  => 'System',
+    ];
+
     protected static ?string $model = WidgetType::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
@@ -56,6 +75,25 @@ class WidgetTypeResource extends Resource
                     ->helperText('Machine identifier. Auto-generated from label on create. Cannot be changed after creation.')
                     ->disabled(fn (string $operation) => $operation === 'edit'),
 
+                Forms\Components\Textarea::make('description')
+                    ->rows(2)
+                    ->maxLength(500)
+                    ->helperText('Short description shown in the widget picker.')
+                    ->columnSpanFull(),
+
+                Forms\Components\CheckboxList::make('category')
+                    ->required()
+                    ->options(self::CATEGORY_OPTIONS)
+                    ->columns(4)
+                    ->columnSpanFull(),
+
+                Forms\Components\CheckboxList::make('allowed_page_types')
+                    ->options(self::PAGE_TYPE_OPTIONS)
+                    ->columns(4)
+                    ->helperText('Leave all unchecked to allow on all page types.')
+                    ->columnSpanFull()
+                    ->dehydrateStateUsing(fn ($state) => empty($state) ? null : array_values($state)),
+
                 Forms\Components\Select::make('render_mode')
                     ->required()
                     ->options([
@@ -80,6 +118,24 @@ class WidgetTypeResource extends Resource
                     ->label('Start open in page builder')
                     ->columnSpanFull(),
             ])->columns(2),
+
+            Forms\Components\Section::make('Picker Thumbnails')
+                ->description('16:9 images shown in the widget picker. Upload a static thumbnail and an optional animated hover image (e.g. GIF).')
+                ->schema([
+                    SpatieMediaLibraryFileUpload::make('thumbnail')
+                        ->collection('thumbnail')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'])
+                        ->helperText('Static thumbnail (16:9 aspect ratio).'),
+
+                    SpatieMediaLibraryFileUpload::make('thumbnail_hover')
+                        ->collection('thumbnail_hover')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'])
+                        ->helperText('Animated or alternate image shown on hover (16:9 aspect ratio).'),
+                ])->columns(2),
 
             Forms\Components\Section::make('Singleton Fields')
                 ->description('Fields the editor fills in per block instance. Values are stored in page_widgets.config.')
@@ -167,6 +223,16 @@ class WidgetTypeResource extends Resource
 
                 Tables\Columns\TextColumn::make('handle')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('category')
+                    ->formatStateUsing(function ($state) {
+                        if (is_array($state)) {
+                            return collect($state)->map(fn ($c) => self::CATEGORY_OPTIONS[$c] ?? ucfirst($c))->join(', ');
+                        }
+
+                        return self::CATEGORY_OPTIONS[$state] ?? ucfirst($state);
+                    })
+                    ->wrap(),
 
                 Tables\Columns\BadgeColumn::make('render_mode')
                     ->label('Mode')

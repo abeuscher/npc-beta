@@ -29,6 +29,8 @@ class PageBuilder extends Component
     /** @var array<int, string> Widget handles that are required on this page. */
     protected array $requiredHandles = [];
 
+    public string $pageType = 'default';
+
     public string $selectedBlockId = '';
 
     // Add block modal
@@ -48,6 +50,7 @@ class PageBuilder extends Component
         if ($pageId) {
             $page = Page::find($pageId);
             if ($page) {
+                $this->pageType = $page->type;
                 $this->requiredHandles = WidgetType::requiredForPage(
                     $this->computeBareSlug($page)
                 );
@@ -55,7 +58,21 @@ class PageBuilder extends Component
         }
 
         $this->widgetTypes = WidgetType::orderBy('label')
-            ->get(['id', 'handle', 'label', 'collections', 'config_schema'])
+            ->with('media')
+            ->get()
+            ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($this->pageType, $wt->allowed_page_types, true))
+            ->map(fn ($wt) => [
+                'id'              => $wt->id,
+                'handle'          => $wt->handle,
+                'label'           => $wt->label,
+                'description'     => $wt->description,
+                'category'        => $wt->category ?? ['content'],
+                'collections'     => $wt->collections,
+                'config_schema'   => $wt->config_schema,
+                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
+                'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
+            ])
+            ->values()
             ->toArray();
 
         $this->loadBlocks();

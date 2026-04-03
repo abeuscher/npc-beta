@@ -132,7 +132,22 @@
       "Bash(ls -1 /home/al/nonprofitcrm/app/Filament/Pages/*.php)",
       "Bash(grep -l \"help_article\" /home/al/nonprofitcrm/database/migrations/*)",
       "Bash(find /home/al/nonprofitcrm/database -name \"*.php\" -type f -exec grep -l \"help_article\" {} \\\\;)",
-      "Bash(grep -h \"^tags:\" /home/al/nonprofitcrm/resources/docs/*.md)"
+      "Bash(grep -h \"^tags:\" /home/al/nonprofitcrm/resources/docs/*.md)",
+      "Bash(ls /home/al/nonprofitcrm/resources/docs/*.md)",
+      "Bash(xargs -I{} basename {} .md)",
+      "Bash(grep -n 'sort\\\\|Sort' app/Filament/Widgets/Dashboard*.php)",
+      "Bash(python3 -c \"import json,sys; [print\\(f'{r[\\\\\"method\\\\\"]:12s} {r[\\\\\"uri\\\\\"]:40s} {r[\\\\\"name\\\\\"]}'\\) for r in json.load\\(sys.stdin\\)]\")",
+      "Bash(grep -l \"widget_types\\\\|page_widgets\" /home/al/nonprofitcrm/database/migrations/*.php)",
+      "Bash(grep -l \"createTable.*widget\" /home/al/nonprofitcrm/database/migrations/*.php)",
+      "Bash(git log:*)",
+      "Bash(ls /home/al/nonprofitcrm/sessions/*.md)",
+      "Bash(grep -n \"type.*=>\" database/seeders/*.php)",
+      "Bash(ls /home/al/nonprofitcrm/sessions/123.*)",
+      "Bash(grep -E \"\\\\.php$\")",
+      "Bash(grep -r \"vertical\\\\|layout\" /home/al/nonprofitcrm/vendor/filament/forms/src/Components/Tabs* --include=\"*.php\")",
+      "Bash(ls -1 12[0-9]*.md)",
+      "Bash(grep \"session:\" sessions/12[89]*base* sessions/130*base*)",
+      "Bash(ls sessions/12[89]*.md sessions/130*.md)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",

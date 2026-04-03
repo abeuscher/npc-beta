@@ -17,6 +17,8 @@ class PageBuilderBlock extends Component
         abort_unless(auth()->user()?->can('update_page'), 403);
     }
 
+    public string $pageType = 'default';
+
     /** Set when this block is a child inside a column slot. */
     public string $parentBlockId = '';
     public int $parentColumnIndex = 0;
@@ -40,6 +42,7 @@ class PageBuilderBlock extends Component
         bool $isRequired = false,
         string $parentBlockId = '',
         int $parentColumnIndex = 0,
+        string $pageType = 'default',
     ): void {
         $this->blockId            = $blockId;
         $this->isFirst            = $isFirst;
@@ -47,6 +50,7 @@ class PageBuilderBlock extends Component
         $this->isRequired         = $isRequired;
         $this->parentBlockId      = $parentBlockId;
         $this->parentColumnIndex  = $parentColumnIndex;
+        $this->pageType           = $pageType;
 
         $this->loadBlock();
 
@@ -117,7 +121,21 @@ class PageBuilderBlock extends Component
     {
         if (empty($this->widgetTypes)) {
             $this->widgetTypes = WidgetType::orderBy('label')
-                ->get(['id', 'handle', 'label', 'collections', 'config_schema'])
+                ->with('media')
+                ->get()
+                ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($this->pageType, $wt->allowed_page_types, true))
+                ->map(fn ($wt) => [
+                    'id'              => $wt->id,
+                    'handle'          => $wt->handle,
+                    'label'           => $wt->label,
+                    'description'     => $wt->description,
+                    'category'        => $wt->category ?? ['content'],
+                    'collections'     => $wt->collections,
+                    'config_schema'   => $wt->config_schema,
+                    'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
+                    'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
+                ])
+                ->values()
                 ->toArray();
         }
 
