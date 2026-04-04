@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Install PHP dependencies (only needed for Tailwind content scanning)
 COPY composer.json composer.lock ./
-RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev
+RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
 # Install Node dependencies
 COPY package.json package-lock.json vite.config.js vite.config.public.js postcss.config.js tailwind.config.js ./
