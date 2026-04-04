@@ -81,7 +81,7 @@ it('parses youtube watch url into nocookie embed url', function () {
         ->toContain('rel=0')
         ->toContain('autoplay=0')
         ->toContain('<iframe')
-        ->toContain('padding-bottom: 56.25%');
+        ->toContain('video-wrapper');
 });
 
 it('parses youtube short url into nocookie embed url', function () {
@@ -114,7 +114,7 @@ it('parses vimeo url into embed url', function () {
     expect($html)->toContain('player.vimeo.com/video/123456789')
         ->toContain('autoplay=0')
         ->toContain('<iframe')
-        ->toContain('padding-bottom: 56.25%');
+        ->toContain('video-wrapper');
 });
 
 it('shows fallback for unsupported video url', function () {
