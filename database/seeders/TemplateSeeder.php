@@ -24,7 +24,7 @@ class TemplateSeeder extends Seeder
                 'nav_link_color'   => '#373c44',
                 'nav_hover_color'  => '#0172ad',
                 'nav_active_color' => '#0172ad',
-                'custom_scss'      => $this->loadCustomScss(),
+                'custom_scss'      => null,
                 'header_page_id'   => Page::where('slug', '_header')->value('id'),
                 'footer_page_id'   => Page::where('slug', '_footer')->value('id'),
             ]
@@ -90,16 +90,4 @@ class TemplateSeeder extends Seeder
         );
     }
 
-    private function loadCustomScss(): ?string
-    {
-        $path = resource_path('scss/_custom.scss');
-
-        if (! file_exists($path)) {
-            return null;
-        }
-
-        $content = file_get_contents($path);
-
-        return $content !== '' ? $content : null;
-    }
 }

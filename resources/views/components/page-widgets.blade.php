@@ -16,14 +16,14 @@
         $isFullWidth = $instanceFullWidth !== null ? (bool) $instanceFullWidth : ($block['full_width'] ?? false);
     @endphp
     <div
-        class="widget widget--{{ $block['handle'] }} mb-6"
+        class="widget widget--{{ $block['handle'] }}"
         id="widget-{{ $block['instance_id'] }}"
         @if ($inlineStyle) style="{{ $inlineStyle }}" @endif
     >
         @if ($isFullWidth)
             {!! $block['html'] !!}
         @else
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="site-container">
                 {!! $block['html'] !!}
             </div>
         @endif

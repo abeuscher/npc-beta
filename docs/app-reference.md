@@ -158,8 +158,64 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 | `spatie/laravel-schemaless-attributes` | Flexible JSONB fields on models |
 | `resend/resend-php` | Transactional email sending |
 | `mailchimp/marketing` | MailChimp sync |
-| `scssphp/scssphp` | SCSS compilation for the site theme editor |
+| `scssphp/scssphp` | Runtime SCSS compilation for template `custom_scss` (will move to build server post-beta) |
+| `modern-normalize` | CSS reset for public pages (replaces Tailwind preflight) |
 | `laravel/horizon` | Queue monitoring dashboard |
 | `predis/predis` | Redis client (cache + queues) |
 | `swiper` | Carousel/slider — Swiper.js (MIT license, copyright Vladimir Kharlampidi) |
 | Pest v2 | Test runner |
+
+---
+
+## Build server — public asset pipeline
+
+The public site's widget CSS and JS are compiled by an external build server. The admin panel CSS (Filament theme) stays on Vite.
+
+### Connection
+
+| Setting | Value |
+|---------|-------|
+| Config key | `services.build_server.url` / `services.build_server.api_key` |
+| Env vars | `BUILD_SERVER_URL`, `BUILD_SERVER_API_KEY` |
+| Local dev URL | `http://bundleserver:8080` |
+| Auth | Bearer token (API key) |
+
+### Triggering a build
+
+```bash
+# Inside the app container:
+docker compose exec app php artisan build:public
+
+# With detailed error output:
+docker compose exec app php artisan build:public --debug
+```
+
+The command calls `App\Services\AssetBuildService::build()`, which:
+
+1. Collects all SCSS partials from `resources/scss/` (in dependency order) and widget CSS/JS from `widget_types` records
+2. Generates content-hashed filenames (`public-widgets-{hash}.css/js`)
+3. POSTs the sources to the build server with Bearer auth
+4. Writes the compiled bundles to `public/build/widgets/`
+5. Writes `public/build/widgets/manifest.json` with the current filenames
+6. Cleans up old bundles
+
+### Where bundles live
+
+```
+public/build/widgets/
+├── manifest.json
+├── public-widgets-{hash}.css
+└── public-widgets-{hash}.js
+```
+
+### How the layout loads bundles
+
+The public layout (`resources/views/layouts/public.blade.php`) reads `public/build/widgets/manifest.json` and renders a `<link>` tag for the CSS bundle and a `<script>` tag for the JS bundle. If the manifest doesn't exist (build server hasn't run), no bundle tags are rendered and the site works normally via Vite.
+
+### Template custom SCSS
+
+Per-template `custom_scss` is still compiled at runtime by ScssPhp and injected as an inline `<style>` block. This is separate from the build server pipeline and will move to the build server post-beta. Note: ScssPhp does not support Sass `@use` modules, so template custom SCSS must use plain SCSS or CSS custom properties (`var(--color-primary)`) — not `$variables`.
+
+### Fallback when the build server is unavailable
+
+The existing bundles in `public/build/widgets/` persist on disk. If the build server is unreachable, the `build:public` command fails with an error, but the site continues serving the last successful build.

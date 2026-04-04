@@ -1,3 +1,5 @@
+@use "variables" as *;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Button group
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,9 +25,22 @@
     text-decoration: none;
     cursor: pointer;
     transition: opacity 0.15s;
-    border-radius: 0.25rem;
+    border-radius: $radius;
 
     &:hover { opacity: 0.8; }
+
+    &--link {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        color: inherit;
+        font-size: inherit;
+        cursor: pointer;
+        text-decoration: underline;
+
+        &:hover { opacity: 0.75; }
+    }
 
     &--primary {
         background: $color-primary;

@@ -1,12 +1,12 @@
 @if (auth('portal')->check())
 
     @if (session('success'))
-        <div role="status" class="rounded border border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30 p-4 mb-4 text-green-800 dark:text-green-200">{{ session('success') }}</div>
+        <div role="status" class="alert alert--success">{{ session('success') }}</div>
     @endif
 
     @if ($errors->any())
-        <div role="alert" class="rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-4 mb-4">
-            <ul class="list-disc pl-5 text-sm text-red-800 dark:text-red-200 space-y-1">
+        <div role="alert" class="alert alert--error">
+            <ul class="error-list">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -14,31 +14,28 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('portal.account.update-password') }}" id="portal-pw-form" class="space-y-4">
+    <form method="POST" action="{{ route('portal.account.update-password') }}" id="portal-pw-form" class="form-stack">
         @csrf
         @method('PATCH')
 
         <div>
-            <label for="ppw_current" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
-            <input type="password" id="ppw_current" name="current_password" required autocomplete="current-password"
-                   class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
+            <label for="ppw_current" class="form-label">Current Password</label>
+            <input type="password" id="ppw_current" name="current_password" required autocomplete="current-password">
         </div>
 
         <div>
-            <label for="ppw_new" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password <small class="text-gray-400 font-normal">(minimum 12 characters)</small></label>
-            <input type="password" id="ppw_new" name="password" required minlength="12" autocomplete="new-password"
-                   class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
+            <label for="ppw_new" class="form-label">New Password <small class="form-hint" style="display: inline; margin: 0;">(minimum 12 characters)</small></label>
+            <input type="password" id="ppw_new" name="password" required minlength="12" autocomplete="new-password">
         </div>
 
         <div>
-            <label for="ppw_confirm" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
-            <input type="password" id="ppw_confirm" name="password_confirmation" required minlength="12" autocomplete="new-password"
-                   class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
+            <label for="ppw_confirm" class="form-label">Confirm New Password</label>
+            <input type="password" id="ppw_confirm" name="password_confirmation" required minlength="12" autocomplete="new-password">
         </div>
 
-        <div id="ppw-match-error" style="display:none;" role="alert" class="text-sm text-red-600 dark:text-red-400">Passwords do not match.</div>
+        <div id="ppw-match-error" style="display:none;" role="alert" class="form-error">Passwords do not match.</div>
 
-        <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">Update password</button>
+        <button type="submit" class="btn btn--primary">Update password</button>
     </form>
 
     <script>

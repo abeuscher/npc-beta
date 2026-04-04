@@ -47,4 +47,9 @@ return [
         'environment'   => env('QB_ENVIRONMENT', 'sandbox'),
     ],
 
+    'build_server' => [
+        'url' => env('BUILD_SERVER_URL'),
+        'api_key' => env('BUILD_SERVER_API_KEY'),
+    ],
+
 ];

@@ -1,0 +1,125 @@
+@use "variables" as *;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form element defaults
+// ─────────────────────────────────────────────────────────────────────────────
+// These style the elements directly so templates don't need a class on every
+// input. The public SCSS is only loaded on public pages (admin uses Filament's
+// own pipeline), so there is no collision risk.
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+select,
+textarea {
+    display: block;
+    width: 100%;
+    border-radius: $input-radius;
+    border: 1px solid $color-border-input;
+    padding: $input-padding-y $input-padding-x;
+    font-size: 1rem;
+    line-height: 1.5;
+    background: $input-bg;
+    color: inherit;
+
+    .dark & {
+        border-color: $color-border-input-dk;
+        background: $input-bg-dark;
+        color: $input-text-dark;
+    }
+
+    &:focus {
+        border-color: $color-primary;
+        outline: 2px solid $color-primary;
+        outline-offset: -1px;
+    }
+}
+
+textarea {
+    min-height: 6rem;
+    resize: vertical;
+}
+
+select {
+    appearance: auto;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--color-primary, #0172ad);
+}
+
+fieldset {
+    border: 1px solid $color-border;
+    border-radius: $radius;
+    padding: 1rem;
+
+    .dark & { border-color: $color-border-dark; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form layout helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+.form-stack {
+    > * + * { margin-top: 1rem; }
+}
+
+.form-stack--tight {
+    > * + * { margin-top: 0.75rem; }
+}
+
+.form-narrow {
+    max-width: 20rem;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form labels, hints, errors
+// ─────────────────────────────────────────────────────────────────────────────
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $color-text-label;
+    margin-bottom: 0.25rem;
+
+    .dark & { color: $color-text-label-dk; }
+}
+
+.form-check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: $color-text-label;
+
+    .dark & { color: $color-text-label-dk; }
+}
+
+.form-hint {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    color: $color-text-muted;
+
+    .dark & { color: $color-text-muted-dk; }
+}
+
+.form-error {
+    display: block;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    color: $color-error-inline;
+
+    .dark & { color: $color-error-inline-dk; }
+}
+
+.required-star {
+    color: $color-required;
+}

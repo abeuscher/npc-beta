@@ -33,15 +33,14 @@
 @endphp
 
 @if ($embedUrl)
-    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+    <div class="video-wrapper">
         <iframe
             src="{{ $embedUrl }}"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
             allow="fullscreen; picture-in-picture"
             allowfullscreen
             loading="lazy"
         ></iframe>
     </div>
 @elseif ($videoUrl)
-    <p class="text-gray-500">Unsupported video URL</p>
+    <p class="text-muted">Unsupported video URL</p>
 @endif

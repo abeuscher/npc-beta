@@ -1,21 +1,21 @@
-// Reset
-@use "../../node_modules/modern-normalize/modern-normalize.css";
-
-// Swiper carousel
-@use "../../node_modules/swiper/swiper";
-@use "../../node_modules/swiper/modules/navigation";
-@use "../../node_modules/swiper/modules/pagination";
-@use "../../node_modules/swiper/modules/effect-fade";
+@use "variables" as *;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Custom SCSS partials — variables loaded per-file via @use
+// 12-column grid (used by the public form builder)
 // ─────────────────────────────────────────────────────────────────────────────
 
-@use "base";
-@use "layout";
-@use "grid";
-@use "forms";
-@use "buttons";
-@use "icons";
-@use "media";
-@use "custom";
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+
+@for $i from 1 through 12 {
+    .col-#{$i} { grid-column: span #{$i}; }
+}
+
+@media (max-width: $bp-md) {
+    @for $i from 1 through 12 {
+        .col-#{$i} { grid-column: span 12; }
+    }
+}

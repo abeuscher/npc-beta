@@ -17,11 +17,11 @@
     $currentUrl = url()->current();
 @endphp
 
-<header x-data="{ open: false }" class="relative">
-    <div class="max-w-7xl mx-auto px-4 py-3 grid grid-cols-[1fr_auto] md:grid-cols-[1fr_2fr] items-center">
+<header class="site-header" x-data="{ open: false }">
+    <div class="site-container site-header__bar">
         <div>
             @if ($logoPath)
-                <img src="{{ asset($logoPath) }}" alt="{{ config('site.name', config('app.name')) }}" class="h-10">
+                <img src="{{ asset($logoPath) }}" alt="{{ config('site.name', config('app.name')) }}" class="site-header__logo">
             @endif
             @if ($headerContent)
                 {!! $headerContent !!}
@@ -29,7 +29,7 @@
         </div>
 
         <button
-            class="md:hidden flex items-center justify-self-end p-1 bg-transparent border-0 cursor-pointer text-current leading-none"
+            class="site-nav__toggle"
             @click="open = !open"
             :aria-expanded="open"
             aria-label="Toggle navigation"
@@ -42,46 +42,35 @@
             </svg>
         </button>
 
-        <nav
-            role="group"
-            class="hidden md:flex items-center justify-end gap-1
-                   max-md:absolute max-md:top-full max-md:left-0 max-md:right-0 max-md:z-[200]
-                   max-md:flex-col max-md:items-start max-md:gap-0
-                   max-md:bg-white max-md:dark:bg-gray-800
-                   max-md:border-b max-md:border-gray-200 max-md:dark:border-gray-700
-                   max-md:shadow-lg
-                   max-md:max-h-0 max-md:overflow-hidden max-md:opacity-0
-                   max-md:transition-all max-md:duration-200"
-            :class="open ? 'max-md:!flex max-md:!max-h-96 max-md:!opacity-100 max-md:!py-2' : ''"
-        >
+        <nav role="group" class="site-nav" :class="open ? 'is-open' : ''">
             @foreach ($headerNavItems as $item)
                 @php
                     $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
                 @endphp
                 @if ($item->children->isNotEmpty())
-                    <span class="relative inline-flex items-center group max-md:w-full max-md:flex-col max-md:items-start">
+                    <span class="site-nav__dropdown">
                         <a
                             href="{{ $href }}"
                             target="{{ $item->target ?? '_self' }}"
                             {{ $currentUrl === $href ? 'aria-current="page"' : '' }}
-                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded no-underline whitespace-nowrap max-md:w-full max-md:px-4 max-md:py-2"
+                            class="site-nav__link"
                         >
                             {{ $item->label }}
-                            <span class="inline-block w-0 h-0 border-l-[0.2em] border-l-transparent border-r-[0.2em] border-r-transparent border-t-[0.25em] border-t-current transition-transform duration-150 group-hover:rotate-180"></span>
+                            <span class="site-nav__caret"></span>
                         </a>
-                        <ul class="hidden group-hover:block absolute top-full right-0 min-w-[12rem] m-0 py-2 list-none bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-[100] max-md:static max-md:shadow-none max-md:border-0 max-md:pl-4 max-md:min-w-0 max-md:w-full">
+                        <ul class="site-nav__dropdown-menu">
                             @foreach ($item->children as $child)
                                 @php
                                     $childHref = ($child->page_id && $child->page) ? url('/' . $child->page->slug) : ($child->url ?? '#');
                                 @endphp
                                 <li>
-                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" {{ $currentUrl === $childHref ? 'aria-current="page"' : '' }} class="block px-4 py-1 no-underline hover:text-primary">{{ $child->label }}</a>
+                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" {{ $currentUrl === $childHref ? 'aria-current="page"' : '' }} class="site-nav__dropdown-link">{{ $child->label }}</a>
                                 </li>
                             @endforeach
                         </ul>
                     </span>
                 @else
-                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }} class="px-2.5 py-1.5 rounded no-underline whitespace-nowrap max-md:w-full max-md:px-4 max-md:py-2">{{ $item->label }}</a>
+                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" {{ $currentUrl === $href ? 'aria-current="page"' : '' }} class="site-nav__link">{{ $item->label }}</a>
                 @endif
             @endforeach
         </nav>

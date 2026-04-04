@@ -145,49 +145,57 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ---
 
+## Public Styles & Form Controls — Beta 1 Scope
+
+### Session 124 — Custom Form Fields & Site Styles
+
+Build custom form controls (styled select, toggle switch, radio buttons) that replace browser defaults and wire to the underlying form elements. Collaborate with user on overall site visual polish. See session prompt for details.
+
+---
+
 ## Widget System — Beta 1 Scope
 
 ### Session 123 — Tailwind Removal & Build Server Integration
 
 Remove all Tailwind utilities from public-facing templates (SCSS framework established in session 122). Connect the app to the external build server to produce one CSS and one JS bundle. Document the integration. Discuss fallback options. See `docs/build-server-spec.md`.
 
-### Session 125 — Widget — Logo Garden
+### Widget — Logo Garden
 
-Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect.
+Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect. Collection-backed via `WidgetDataResolver`.
 
-### Session 126 — Widget — Board Members
+### Widget — Board Members
 
-People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages.
+People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages. Collection-backed.
 
-### Session 127 — Widget — Three Buckets
+### Widget — Three Buckets
 
 Three side-by-side content blocks, each with optional image, heading, body text, and CTA link. Config-driven (not collection-backed). Fixed at three.
 
-### Session 128 — Widget — Alternating Panels
+### Widget — Alternating Panels
 
 Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
 
-### Session 129 — Widget — Product Carousel
+### Widget — Product Carousel
 
 Swiper-based carousel of published products: image, name, price, link. Uses the existing `products` data source in `WidgetDataResolver`.
 
-### Session 130 — Widget — Event Map
+### Widget — Map Embed
 
-Google Maps embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.
+Google Maps iframe embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.
 
-### Session 131 — Widget — Headline Patterns
+### Widget — Headline Patterns
 
 Configurable heading element: heading level (h1–h6), alignment, optional subtitle, decorative styles (underline, overline, rule, none). Section divider / visual break.
 
-### Session 132 — Widget — CTA Patterns
+### Widget — CTA Patterns
 
 Call-to-action section: heading, body text, one or two styled buttons (solid, outline, pill). Configurable background (transparent, light, dark).
 
-### Session 133 — Widget — Social Sharing
+### Widget — Social Sharing
 
 Row of share buttons (Facebook, Twitter/X, LinkedIn, Email, Copy Link). Pure anchor tags with platform share URLs — no third-party scripts. Toggleable per platform.
 
-### Session 134 — Widget — Modal
+### Widget — Modal
 
 Button-triggered modal overlay containing child widgets. Nesting container like column_widget but triggered by click. Alpine.js open/close. Configurable trigger button and modal size.
 

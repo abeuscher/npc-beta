@@ -158,55 +158,27 @@
         <style>{!! implode(' ', $scopedRules) !!}</style>
     @endif
 
-    {{-- External CSS assets declared by widget types --}}
+    {{-- Widget CSS/JS bundle from build server manifest --}}
     @php
-        $__widgetAssets = ['css' => [], 'js' => [], 'scss' => []];
-        foreach (['css', 'js', 'scss'] as $__aType) {
-            foreach (($widgetAssets[$__aType] ?? []) as $__aPath) {
-                $__widgetAssets[$__aType][] = $__aPath;
-            }
-            if ($__chromeHeader) {
-                foreach (($__chromeHeader['assets'][$__aType] ?? []) as $__aPath) {
-                    if (! in_array($__aPath, $__widgetAssets[$__aType], true)) {
-                        $__widgetAssets[$__aType][] = $__aPath;
-                    }
-                }
-            }
-            if ($__chromeFooter) {
-                foreach (($__chromeFooter['assets'][$__aType] ?? []) as $__aPath) {
-                    if (! in_array($__aPath, $__widgetAssets[$__aType], true)) {
-                        $__widgetAssets[$__aType][] = $__aPath;
-                    }
-                }
-            }
+        $__widgetManifest = null;
+        $__manifestPath = public_path('build/widgets/manifest.json');
+        if (file_exists($__manifestPath)) {
+            $__widgetManifest = json_decode(file_get_contents($__manifestPath), true);
         }
     @endphp
-    @foreach ($__widgetAssets['css'] as $__cssPath)
-        <link rel="stylesheet" href="{{ $__cssPath }}">
-    @endforeach
+    @if ($__widgetManifest && ! empty($__widgetManifest['css']))
+        <link rel="stylesheet" href="/build/widgets/{{ $__widgetManifest['css'] }}">
+    @endif
 
-    {{-- Compiled SCSS from widget assets + template custom SCSS --}}
+    {{-- Template custom SCSS — runtime compilation (moves to build server post-beta) --}}
     @php
-        $__scssInput = '';
-        foreach ($__widgetAssets['scss'] ?? [] as $__scssPath) {
-            $__fullPath = base_path($__scssPath);
-            if (file_exists($__fullPath)) {
-                $__scssInput .= file_get_contents($__fullPath) . "\n";
-            }
-        }
-
-        // Append template-resolved custom SCSS
         $__templateScss = $__tpl?->resolved('custom_scss');
-        if ($__templateScss) {
-            $__scssInput .= $__templateScss . "\n";
-        }
-
         $__compiledCss = '';
-        if ($__scssInput) {
-            $__cacheKey = 'widget_scss_' . md5($__scssInput);
-            $__compiledCss = cache()->remember($__cacheKey, 3600, function () use ($__scssInput) {
+        if ($__templateScss) {
+            $__cacheKey = 'widget_scss_' . md5($__templateScss);
+            $__compiledCss = cache()->remember($__cacheKey, 3600, function () use ($__templateScss) {
                 $compiler = new \ScssPhp\ScssPhp\Compiler();
-                return $compiler->compileString($__scssInput)->getCss();
+                return $compiler->compileString($__templateScss)->getCss();
             });
         }
     @endphp
@@ -234,7 +206,7 @@
         {!! $page->head_snippet !!}
     @endif
 </head>
-<body class="min-h-screen flex flex-col font-body text-gray-800 dark:text-gray-200 dark:bg-gray-900 {{ $bodyClass ?? 'page-unknown' }}">
+<body class="{{ $bodyClass ?? 'page-unknown' }}">
 
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}
@@ -254,7 +226,7 @@
         @endif
     </div>
 
-    <main class="flex-1">
+    <main>
         @yield('content')
     </main>
 
@@ -274,10 +246,10 @@
     };
     </script>
 
-    {{-- External JS assets declared by widget types --}}
-    @foreach ($__widgetAssets['js'] as $__jsPath)
-        <script src="{{ $__jsPath }}"></script>
-    @endforeach
+    {{-- Widget JS bundle from build server manifest --}}
+    @if ($__widgetManifest && ! empty($__widgetManifest['js']))
+        <script src="/build/widgets/{{ $__widgetManifest['js'] }}"></script>
+    @endif
 
     {{-- Inline JS collected from active page widgets + chrome widgets --}}
     @php

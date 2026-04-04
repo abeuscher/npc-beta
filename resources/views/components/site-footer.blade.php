@@ -11,30 +11,29 @@
         : collect();
 @endphp
 
-<footer class="py-6">
-    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between flex-wrap gap-4">
+<footer class="site-footer">
+    <div class="site-container site-footer__bar">
         @if ($footerNavItems->isNotEmpty())
-            <nav class="flex items-center gap-4">
+            <nav class="site-footer__nav">
                 @foreach ($footerNavItems as $item)
                     @php
                         $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');
                     @endphp
-                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" class="no-underline hover:opacity-75">{{ $item->label }}</a>
+                    <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}">{{ $item->label }}</a>
                 @endforeach
             </nav>
         @endif
 
-        <div x-data class="inline-flex items-center gap-2">
-            <x-svg-icon name="moon" class="w-4 h-4 shrink-0" />
+        <div x-data class="theme-toggle">
+            <x-svg-icon name="moon" class="icon-sm" />
             <input
                 type="checkbox"
                 role="switch"
                 :checked="$store.theme.current === 'light'"
                 @change="$store.theme.toggle()"
                 aria-label="Toggle light/dark mode"
-                class="m-0"
             >
-            <x-svg-icon name="sun" class="w-4 h-4 shrink-0" />
+            <x-svg-icon name="sun" class="icon-sm" />
         </div>
     </div>
 </footer>

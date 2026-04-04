@@ -4,19 +4,19 @@
 @endphp
 
 @if (!empty($config['heading']))
-    <h2 class="text-2xl font-heading font-bold mb-4 text-gray-900 dark:text-gray-100">{{ $config['heading'] }}</h2>
+    <h2>{{ $config['heading'] }}</h2>
 @endif
 
 @if ($posts->isEmpty())
-    <p class="text-gray-600 dark:text-gray-400">No posts to display.</p>
+    <p class="text-muted">No posts to display.</p>
 @else
-    <ul class="space-y-3 list-none pl-0">
+    <ul class="post-list">
         @foreach ($posts as $post)
-            <li class="flex flex-col gap-0.5">
-                <a href="/{{ $post->slug }}" class="text-primary font-medium hover:opacity-80">{{ $post->title }}</a>
+            <li class="post-list__item">
+                <a href="/{{ $post->slug }}" class="post-list__link">{{ $post->title }}</a>
 
                 @if ($post->published_at)
-                    <time datetime="{{ $post->published_at->toIso8601String() }}" class="text-sm text-gray-500 dark:text-gray-400">
+                    <time datetime="{{ $post->published_at->toIso8601String() }}" class="post-list__date">
                         {{ $post->published_at->format('F j, Y') }}
                     </time>
                 @endif

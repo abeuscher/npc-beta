@@ -1,0 +1,189 @@
+@use "variables" as *;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Base element styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-family-body, system-ui, sans-serif);
+    line-height: 1.5;
+    color: $color-text;
+
+    .dark & {
+        color: $color-text-dark;
+        background-color: $color-bg-dark;
+    }
+}
+
+main { flex: 1; }
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-heading, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.875rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+button {
+    appearance: none;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+}
+
+a {
+    color: $color-primary;
+    text-decoration: underline;
+
+    &:hover { opacity: 0.8; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Text utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+.text-muted {
+    color: $color-text-muted;
+    .dark & { color: $color-text-muted-dk; }
+}
+
+.text-muted-light {
+    color: $color-text-muted-dk;
+    .dark & { color: $color-text-muted; }
+}
+
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alerts
+// ─────────────────────────────────────────────────────────────────────────────
+
+.alert {
+    border-radius: $radius;
+    border: 1px solid;
+    padding: 1rem;
+    margin-bottom: 1rem;
+
+    strong { display: block; }
+    p { margin-top: 0.25rem; }
+
+    &--success {
+        border-color: $color-success-border;
+        background: $color-success-bg;
+        color: $color-success;
+
+        .dark & {
+            border-color: #15803d;
+            background: rgba(20, 83, 45, 0.3);
+            color: #bbf7d0;
+        }
+
+        strong {
+            color: $color-success;
+            .dark & { color: #bbf7d0; }
+        }
+
+        p {
+            color: #15803d;
+            .dark & { color: $color-success-border; }
+        }
+    }
+
+    &--error {
+        border-color: $color-error-border;
+        background: $color-error-bg;
+        color: $color-error;
+
+        .dark & {
+            border-color: #b91c1c;
+            background: rgba(127, 29, 29, 0.3);
+            color: #fecaca;
+        }
+    }
+
+    &--warning {
+        border-color: $color-warning-border;
+        background: $color-warning-bg;
+        color: $color-warning;
+
+        .dark & {
+            border-color: #a16207;
+            background: rgba(113, 63, 18, 0.3);
+            color: #fef08a;
+        }
+    }
+}
+
+.error-list {
+    list-style: disc;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+
+    li + li { margin-top: 0.25rem; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tables
+// ─────────────────────────────────────────────────────────────────────────────
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+
+    th {
+        padding: 0.5rem 1rem 0.5rem 0;
+        font-weight: 600;
+        color: $color-text-heading;
+        border-bottom: 1px solid $color-border;
+
+        .dark & { color: $color-text-heading-dk; border-color: $color-border-dark; }
+    }
+
+    td {
+        padding: 0.5rem 1rem 0.5rem 0;
+        color: $color-text-label;
+        border-bottom: 1px solid $color-bg-surface;
+
+        .dark & { color: $color-text-label-dk; border-color: $color-bg-surface-dk; }
+    }
+
+    th:last-child, td:last-child { padding-right: 0; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Widget wrapper spacing
+// ─────────────────────────────────────────────────────────────────────────────
+
+.widget + .widget {
+    margin-top: 1.5rem;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}

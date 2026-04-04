@@ -4,8 +4,8 @@
 @endphp
 
 @if ($errors->any())
-    <div role="alert" class="rounded border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/30 p-4 mb-4">
-        <ul class="list-disc pl-5 text-sm text-red-800 dark:text-red-200 space-y-1">
+    <div role="alert" class="alert alert--error">
+        <ul class="error-list">
             @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach
@@ -16,7 +16,7 @@
 <form method="POST"
       x-data="{ tierId: '{{ old('tier_id', '') }}', tiers: {{ Js::from($tiers->map(fn ($t) => ['id' => $t->id, 'price' => (float) $t->default_price])) }} }"
       :action="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? '{{ route('membership.checkout') }}' : '{{ route('portal.signup.post') }}'; })()"
-      class="space-y-4">
+      class="form-stack">
     @csrf
 
     {{-- Honeypot --}}
@@ -27,50 +27,44 @@
     <input type="hidden" name="_form_start" value="{{ time() }}">
 
     <div>
-        <label for="sw_first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First name <span aria-hidden="true" class="text-red-500">*</span></label>
+        <label for="sw_first_name" class="form-label">First name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_first_name" name="first_name" required
-               value="{{ old('first_name') }}" autocomplete="given-name"
-               class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
-        @error('first_name')<span role="alert" class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>@enderror
+               value="{{ old('first_name') }}" autocomplete="given-name">
+        @error('first_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div>
-        <label for="sw_last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last name <span aria-hidden="true" class="text-red-500">*</span></label>
+        <label for="sw_last_name" class="form-label">Last name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_last_name" name="last_name" required
-               value="{{ old('last_name') }}" autocomplete="family-name"
-               class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
-        @error('last_name')<span role="alert" class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>@enderror
+               value="{{ old('last_name') }}" autocomplete="family-name">
+        @error('last_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div>
-        <label for="sw_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email address <span aria-hidden="true" class="text-red-500">*</span></label>
+        <label for="sw_email" class="form-label">Email address <span aria-hidden="true" class="required-star">*</span></label>
         <input type="email" id="sw_email" name="email" required
-               value="{{ old('email') }}" autocomplete="email"
-               class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
-        @error('email')<span role="alert" class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>@enderror
+               value="{{ old('email') }}" autocomplete="email">
+        @error('email')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div>
-        <label for="sw_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password <span aria-hidden="true" class="text-red-500">*</span></label>
+        <label for="sw_password" class="form-label">Password <span aria-hidden="true" class="required-star">*</span></label>
         <input type="password" id="sw_password" name="password" required
-               autocomplete="new-password" minlength="12"
-               class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
-        <small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">Minimum 12 characters.</small>
-        @error('password')<span role="alert" class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>@enderror
+               autocomplete="new-password" minlength="12">
+        <small class="form-hint">Minimum 12 characters.</small>
+        @error('password')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div>
-        <label for="sw_password_confirmation" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm password <span aria-hidden="true" class="text-red-500">*</span></label>
+        <label for="sw_password_confirmation" class="form-label">Confirm password <span aria-hidden="true" class="required-star">*</span></label>
         <input type="password" id="sw_password_confirmation" name="password_confirmation" required
-               autocomplete="new-password" minlength="12"
-               class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
+               autocomplete="new-password" minlength="12">
     </div>
 
     @if ($tiers->isNotEmpty())
         <div>
-            <label for="sw_tier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Membership tier</label>
-            <select id="sw_tier" name="tier_id" x-model="tierId"
-                    class="block w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 focus:border-primary focus:ring-primary">
+            <label for="sw_tier" class="form-label">Membership tier</label>
+            <select id="sw_tier" name="tier_id" x-model="tierId">
                 <option value="">No membership</option>
                 @foreach ($tiers as $tier)
                     <option value="{{ $tier->id }}">
@@ -83,13 +77,13 @@
                     </option>
                 @endforeach
             </select>
-            @error('tier_id')<span role="alert" class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>@enderror
+            @error('tier_id')<span role="alert" class="form-error">{{ $message }}</span>@enderror
         </div>
     @endif
 
-    <button type="submit" class="px-5 py-2 bg-primary text-white rounded font-medium hover:opacity-80 cursor-pointer">
+    <button type="submit" class="btn btn--primary">
         <span x-text="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? 'Create account & pay' : 'Create account'; })()">Create account</span>
     </button>
 </form>
 
-<p class="mt-4 text-sm text-gray-600 dark:text-gray-400"><a href="{{ route('portal.login') }}" class="text-primary hover:opacity-80">Already have an account? Log in</a></p>
+<p class="text-muted text-sm" style="margin-top: 1rem;"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>

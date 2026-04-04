@@ -20,7 +20,71 @@ $container-xl:  1140px;
 $container-xxl: 1320px;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Colours
+// Brand
 // ─────────────────────────────────────────────────────────────────────────────
 
 $color-primary: var(--color-primary, #0172ad);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Text
+// ─────────────────────────────────────────────────────────────────────────────
+
+$color-text:          #1f2937;
+$color-text-dark:     #e5e7eb;
+$color-text-muted:    #6b7280;
+$color-text-muted-dk: #9ca3af;
+$color-text-heading:  #111827;
+$color-text-heading-dk: #f3f4f6;
+$color-text-label:    #374151;
+$color-text-label-dk: #d1d5db;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Surfaces & borders
+// ─────────────────────────────────────────────────────────────────────────────
+
+$color-bg-dark:       #111827;
+$color-bg-surface:    #f3f4f6;
+$color-bg-surface-dk: #1f2937;
+
+$color-border:          #e5e7eb;
+$color-border-dark:     #374151;
+$color-border-input:    #d1d5db;
+$color-border-input-dk: #4b5563;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Forms
+// ─────────────────────────────────────────────────────────────────────────────
+
+$input-radius:    0.25rem;
+$input-padding-y: 0.5rem;
+$input-padding-x: 0.75rem;
+$input-bg:        white;
+$input-bg-dark:   #1f2937;
+$input-text-dark: #f3f4f6;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alerts
+// ─────────────────────────────────────────────────────────────────────────────
+
+$color-success:       #166534;
+$color-success-bg:    #f0fdf4;
+$color-success-border:#86efac;
+
+$color-error:         #991b1b;
+$color-error-bg:      #fef2f2;
+$color-error-border:  #fca5a5;
+$color-error-inline:  #dc2626;
+$color-error-inline-dk: #f87171;
+
+$color-warning:       #854d0e;
+$color-warning-bg:    #fefce8;
+$color-warning-border:#fde68a;
+
+$color-required:      #ef4444;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Misc
+// ─────────────────────────────────────────────────────────────────────────────
+
+$radius:     0.25rem;
+$shadow-sm:  0 4px 6px -1px rgba(0, 0, 0, 0.1);

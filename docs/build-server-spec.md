@@ -316,11 +316,17 @@ The build server is stateless per-request. Multiple app instances can use the sa
 
 ---
 
+## Status
+
+The build server has been built as a separate repo and runs locally via Docker at `http://bundleserver:8080` on the shared `nonprofitcrm` Docker network. API key for local dev: `sk_build_test123`.
+
+---
+
 ## Open questions
 
 1. **Response format — base64 JSON vs. binary download?** Base64 in JSON is simpler to parse but ~33% larger. A multipart response or separate download URLs would be more efficient for large bundles. For the initial implementation, base64 JSON is fine — the bundles are under 1MB.
 
-2. **Tailwind content scanning.** Tailwind needs to scan HTML/Blade for class usage to tree-shake unused utilities. The caller would need to send template content (or extracted class lists) in the request for accurate purging. Alternatively, the build server can use `safelist` or skip purging and accept a larger CSS output. This needs design.
+2. **Tailwind removal.** The decision has been made to drop Tailwind from the public-facing CSS and replace it with a custom SCSS framework. This eliminates the content scanning problem entirely — SCSS compiles without knowledge of the HTML. The build server no longer needs Tailwind/PostCSS for the public bundle. The `options.tailwind_config` field in the API can be ignored/removed once the migration is complete.
 
 3. **Hot reload for local dev.** In local development, you want instant feedback when editing widget styles. The build server adds latency. Options: (a) keep a local Vite dev server for development, use the build server only for production builds; (b) the build server supports a websocket mode for watch/rebuild; (c) accept the latency — a 3-second round trip is fine for widget development.
 

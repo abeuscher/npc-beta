@@ -4,18 +4,18 @@
 @endphp
 
 @if ($portalUser && $contact)
-    <p class="text-gray-700 dark:text-gray-300 mb-4">Welcome back, {{ $contact->first_name }}.</p>
+    <p class="text-muted" style="margin-bottom: 1rem;">Welcome back, {{ $contact->first_name }}.</p>
 
-    <dl class="space-y-2">
-        <div class="flex gap-2">
-            <dt class="font-medium text-gray-900 dark:text-gray-100">Email</dt>
-            <dd class="text-gray-600 dark:text-gray-400">{{ $portalUser->email }}</dd>
+    <dl class="portal-dl">
+        <div class="portal-dl__row">
+            <dt class="portal-dl__label">Email</dt>
+            <dd class="portal-dl__value">{{ $portalUser->email }}</dd>
         </div>
 
         @if ($contact->household_id && $contact->household_id !== $contact->id)
-        <div class="flex gap-2">
-            <dt class="font-medium text-gray-900 dark:text-gray-100">Household</dt>
-            <dd class="text-gray-600 dark:text-gray-400">{{ $contact->householdName() }}</dd>
+        <div class="portal-dl__row">
+            <dt class="portal-dl__label">Household</dt>
+            <dd class="portal-dl__value">{{ $contact->householdName() }}</dd>
         </div>
         @endif
     </dl>

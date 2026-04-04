@@ -1,0 +1,35 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Icon sizing
+// ─────────────────────────────────────────────────────────────────────────────
+// Inline SVG icons use these classes for consistent sizing. The SVGs inherit
+// currentColor via stroke/fill, so they adapt to surrounding text colour.
+
+.icon-xs {
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+}
+
+.icon-sm {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.icon-md {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.icon-lg {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+}
+
+.icon-xl {
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+}
