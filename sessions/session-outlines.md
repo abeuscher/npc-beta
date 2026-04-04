@@ -131,6 +131,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 122 | Widget — Hero Enhancements (Fullscreen, Video Background, Full Bleed, Semantic Markup) |
 | 123 | Tailwind Removal & Build Server Integration |
 | 124 | Custom Form Fields & Site Styles |
+| 125 | Build Server Settings & CI Pipeline |
 
 ---
 
@@ -149,17 +150,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Public Styles & Form Controls — Beta 1 Scope
 
-### Session 125 — Build Server Integration Settings & CI Build Pipeline
-
-Move build server URL and API key into the admin settings panel (alongside Stripe, MailChimp, QuickBooks keys). Add a build server health check to the dashboard integrations widget — show a warning when the build server is unavailable or unconfigured. Move both the Vite build (admin theme + public SCSS) and `build:public` (widget bundle) into the GitHub Actions deploy pipeline so they run at deploy time. Remove Node/npm from the production Docker image — CI handles all asset compilation.
-
 ---
 
 ## Widget System — Beta 1 Scope
 
-### Session 123 — Tailwind Removal & Build Server Integration
+### Session 126 — Logo Garden Widget & Demo Collection Seeding
 
-Remove all Tailwind utilities from public-facing templates (SCSS framework established in session 122). Connect the app to the external build server to produce one CSS and one JS bundle. Document the integration. Discuss fallback options. See `docs/build-server-spec.md`.
+Build a logo garden widget (static grid, carousel, or flipper mode) backed by a custom collection. Add a "Seed widget collections" button to the debug data generator that populates all widget demo collections in one click.
 
 ### Widget — Logo Garden
 
