@@ -164,6 +164,7 @@ class AssetBuildService
             '_layout.scss',
             '_grid.scss',
             '_forms.scss',
+            '_controls.scss',
             '_buttons.scss',
             '_icons.scss',
             '_media.scss',

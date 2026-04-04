@@ -49,31 +49,33 @@
                 </form>
             </div>
         @else
-            <form method="POST" action="{{ route('portal.account.update-address') }}" class="form-stack">
+            <form method="POST" action="{{ route('portal.account.update-address') }}" class="form-grid">
                 @csrf
                 @method('PATCH')
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('city') }}">
                     <label for="pce_city" class="form-label">City</label>
                     <input type="text" id="pce_city" name="city" value="{{ old('city', $contact->city) }}" maxlength="255">
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('state') }}">
                     <label for="pce_state" class="form-label">State / Province</label>
                     <input type="text" id="pce_state" name="state" value="{{ old('state', $contact->state) }}" maxlength="255">
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('postal_code') }}">
                     <label for="pce_postal_code" class="form-label">Postal Code</label>
                     <input type="text" id="pce_postal_code" name="postal_code" value="{{ old('postal_code', $contact->postal_code) }}" maxlength="20">
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('country') }}">
                     <label for="pce_country" class="form-label">Country</label>
                     <input type="text" id="pce_country" name="country" value="{{ old('country', $contact->country) }}" maxlength="255">
                 </div>
 
-                <button type="submit" class="btn btn--primary">Save address</button>
+                <div class="col-12">
+                    <button type="submit" class="btn btn--primary">Save address</button>
+                </div>
             </form>
         @endif
     </section>

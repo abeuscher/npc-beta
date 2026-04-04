@@ -68,7 +68,7 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ $isPaid ? route('events.checkout', $event->slug) : route('events.register', $event->slug) }}" class="form-stack">
+            <form method="POST" action="{{ $isPaid ? route('events.checkout', $event->slug) : route('events.register', $event->slug) }}" class="form-grid">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -78,57 +78,60 @@
                 </div>
                 <input type="hidden" name="_form_start" value="{{ time() }}">
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('name') }}">
                     <label for="reg_name" class="form-label">Full Name <span aria-hidden="true" class="required-star">*</span></label>
                     <input type="text" id="reg_name" name="name" required
                            value="{{ old('name') }}" autocomplete="name">
                     @error('name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('email') }}">
                     <label for="reg_email" class="form-label">Email Address <span aria-hidden="true" class="required-star">*</span></label>
                     <input type="email" id="reg_email" name="email" required
                            value="{{ old('email') }}" autocomplete="email">
                     @error('email')<span role="alert" class="form-error">{{ $message }}</span>@enderror
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('phone') }}">
                     <label for="reg_phone" class="form-label">Phone <span class="text-muted-light" style="font-weight: normal;">(optional)</span></label>
                     <input type="tel" id="reg_phone" name="phone"
                            value="{{ old('phone') }}" autocomplete="tel">
                 </div>
 
-                <div>
+                <div class="col-{{ \App\Support\FormFieldConfig::width('company') }}">
                     <label for="reg_company" class="form-label">Organization <span class="text-muted-light" style="font-weight: normal;">(optional)</span></label>
                     <input type="text" id="reg_company" name="company"
                            value="{{ old('company') }}" autocomplete="organization">
                 </div>
 
                 @if ($event->is_in_person)
-                    <fieldset class="form-fieldset">
+                    <fieldset class="form-fieldset col-12">
                         <legend class="form-label">Mailing Address <span class="text-muted-light" style="font-weight: normal;">(optional)</span></legend>
-                        <div class="form-stack--tight">
-                            <div>
+                        <div class="form-grid">
+                            <div class="col-{{ \App\Support\FormFieldConfig::width('address_line_1') }}">
                                 <label for="reg_addr1" class="form-label">Address</label>
                                 <input type="text" id="reg_addr1" name="address_line_1"
                                        value="{{ old('address_line_1') }}" autocomplete="address-line1">
                             </div>
-                            <div>
+                            <div class="col-{{ \App\Support\FormFieldConfig::width('address_line_2') }}">
                                 <label for="reg_addr2" class="form-label">Address Line 2</label>
                                 <input type="text" id="reg_addr2" name="address_line_2"
                                        value="{{ old('address_line_2') }}" autocomplete="address-line2">
                             </div>
-                            <div>
+                            <div class="col-{{ \App\Support\FormFieldConfig::width('city') }}">
                                 <label for="reg_city" class="form-label">City</label>
                                 <input type="text" id="reg_city" name="city"
                                        value="{{ old('city') }}" autocomplete="address-level2">
                             </div>
-                            <div>
+                            <div class="col-{{ \App\Support\FormFieldConfig::width('state') }}">
                                 <label for="reg_state" class="form-label">State</label>
-                                <input type="text" id="reg_state" name="state"
-                                       value="{{ old('state') }}" autocomplete="address-level1">
+                                <x-state-select
+                                    name="state"
+                                    id="reg_state"
+                                    :value="old('state')"
+                                />
                             </div>
-                            <div>
+                            <div class="col-{{ \App\Support\FormFieldConfig::width('zip') }}">
                                 <label for="reg_zip" class="form-label">Zip Code</label>
                                 <input type="text" id="reg_zip" name="zip"
                                        value="{{ old('zip') }}" autocomplete="postal-code">
@@ -138,7 +141,7 @@
                 @endif
 
                 @if ($event->mailing_list_opt_in_enabled)
-                    <div>
+                    <div class="col-12">
                         <label class="form-check-label">
                             <input type="checkbox" name="mailing_list_opt_in" value="1"
                                    {{ old('mailing_list_opt_in') ? 'checked' : '' }}>
@@ -147,9 +150,11 @@
                     </div>
                 @endif
 
-                <button type="submit" class="btn btn--primary">
-                    {{ $isPaid ? 'Register & pay' : 'Register for this event' }}
-                </button>
+                <div class="col-12">
+                    <button type="submit" class="btn btn--primary">
+                        {{ $isPaid ? 'Register & pay' : 'Register for this event' }}
+                    </button>
+                </div>
             </form>
         @endif
     @endif

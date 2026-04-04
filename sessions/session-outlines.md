@@ -129,6 +129,8 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 120 | Filament Custom Theme — Admin Panel Tailwind Build |
 | 121 | Widget — Hero |
 | 122 | Widget — Hero Enhancements (Fullscreen, Video Background, Full Bleed, Semantic Markup) |
+| 123 | Tailwind Removal & Build Server Integration |
+| 124 | Custom Form Fields & Site Styles |
 
 ---
 
@@ -146,10 +148,6 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 ---
 
 ## Public Styles & Form Controls — Beta 1 Scope
-
-### Session 124 — Custom Form Fields & Site Styles
-
-Build custom form controls (styled select, toggle switch, radio buttons) that replace browser defaults and wire to the underlying form elements. Collaborate with user on overall site visual polish. See session prompt for details.
 
 ### Session 125 — Build Server Integration Settings & CI Build Pipeline
 

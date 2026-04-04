@@ -1,0 +1,27 @@
+{
+    "widths": {
+        "first_name": 6,
+        "last_name": 6,
+        "name": 12,
+        "email": 12,
+        "phone": 6,
+        "tel": 6,
+        "password": 6,
+        "password_confirmation": 6,
+        "current_password": 12,
+        "city": 5,
+        "state": 4,
+        "zip": 3,
+        "postal_code": 3,
+        "address": 12,
+        "address_line_1": 12,
+        "address_line_2": 12,
+        "country": 6,
+        "organization": 6,
+        "company": 6,
+        "tier_id": 12
+    },
+    "rules": [
+    ],
+    "default_width": 12
+}

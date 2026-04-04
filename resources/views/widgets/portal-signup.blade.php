@@ -16,7 +16,7 @@
 <form method="POST"
       x-data="{ tierId: '{{ old('tier_id', '') }}', tiers: {{ Js::from($tiers->map(fn ($t) => ['id' => $t->id, 'price' => (float) $t->default_price])) }} }"
       :action="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? '{{ route('membership.checkout') }}' : '{{ route('portal.signup.post') }}'; })()"
-      class="form-stack">
+      class="form-grid">
     @csrf
 
     {{-- Honeypot --}}
@@ -26,28 +26,28 @@
     </div>
     <input type="hidden" name="_form_start" value="{{ time() }}">
 
-    <div>
+    <div class="col-{{ \App\Support\FormFieldConfig::width('first_name') }}">
         <label for="sw_first_name" class="form-label">First name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_first_name" name="first_name" required
                value="{{ old('first_name') }}" autocomplete="given-name">
         @error('first_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div>
+    <div class="col-{{ \App\Support\FormFieldConfig::width('last_name') }}">
         <label for="sw_last_name" class="form-label">Last name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_last_name" name="last_name" required
                value="{{ old('last_name') }}" autocomplete="family-name">
         @error('last_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div>
+    <div class="col-{{ \App\Support\FormFieldConfig::width('email') }}">
         <label for="sw_email" class="form-label">Email address <span aria-hidden="true" class="required-star">*</span></label>
         <input type="email" id="sw_email" name="email" required
                value="{{ old('email') }}" autocomplete="email">
         @error('email')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div>
+    <div class="col-{{ \App\Support\FormFieldConfig::width('password') }}">
         <label for="sw_password" class="form-label">Password <span aria-hidden="true" class="required-star">*</span></label>
         <input type="password" id="sw_password" name="password" required
                autocomplete="new-password" minlength="12">
@@ -55,35 +55,48 @@
         @error('password')<span role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
-    <div>
+    <div class="col-{{ \App\Support\FormFieldConfig::width('password_confirmation') }}">
         <label for="sw_password_confirmation" class="form-label">Confirm password <span aria-hidden="true" class="required-star">*</span></label>
         <input type="password" id="sw_password_confirmation" name="password_confirmation" required
                autocomplete="new-password" minlength="12">
     </div>
 
     @if ($tiers->isNotEmpty())
-        <div>
+        <div class="col-{{ \App\Support\FormFieldConfig::width('tier_id') }}" @custom-select-change="tierId = $event.detail.value">
             <label for="sw_tier" class="form-label">Membership tier</label>
-            <select id="sw_tier" name="tier_id" x-model="tierId">
-                <option value="">No membership</option>
-                @foreach ($tiers as $tier)
-                    <option value="{{ $tier->id }}">
-                        {{ $tier->name }}
-                        @if ($tier->default_price && $tier->default_price > 0)
-                            — ${{ number_format((float) $tier->default_price, 2) }}/{{ $tier->billing_interval === 'monthly' ? 'month' : ($tier->billing_interval === 'annual' ? 'year' : ($tier->billing_interval === 'lifetime' ? 'lifetime' : 'one-time')) }}
-                        @else
-                            — Free
-                        @endif
-                    </option>
-                @endforeach
-            </select>
+            @php
+                $tierOptions = $tiers->map(function ($tier) {
+                    $label = $tier->name;
+                    if ($tier->default_price && $tier->default_price > 0) {
+                        $interval = match ($tier->billing_interval) {
+                            'monthly' => 'month',
+                            'annual' => 'year',
+                            'lifetime' => 'lifetime',
+                            default => 'one-time',
+                        };
+                        $label .= ' — $' . number_format((float) $tier->default_price, 2) . '/' . $interval;
+                    } else {
+                        $label .= ' — Free';
+                    }
+                    return ['value' => (string) $tier->id, 'label' => $label];
+                })->values()->all();
+            @endphp
+            <x-custom-select
+                name="tier_id"
+                id="sw_tier"
+                :options="$tierOptions"
+                placeholder="No membership"
+                :value="old('tier_id', '')"
+            />
             @error('tier_id')<span role="alert" class="form-error">{{ $message }}</span>@enderror
         </div>
     @endif
 
-    <button type="submit" class="btn btn--primary">
-        <span x-text="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? 'Create account & pay' : 'Create account'; })()">Create account</span>
-    </button>
+    <div class="col-12">
+        <button type="submit" class="btn btn--primary">
+            <span x-text="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? 'Create account & pay' : 'Create account'; })()">Create account</span>
+        </button>
+    </div>
 </form>
 
 <p class="text-muted text-sm" style="margin-top: 1rem;"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>

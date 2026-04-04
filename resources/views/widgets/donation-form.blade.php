@@ -148,15 +148,14 @@
         @endif
 
         @if ($showFunds)
-        <div style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1.5rem;" @custom-select-change="fundId = $event.detail.value">
             <label for="donation_fund" class="form-label">Designate to a fund (optional)</label>
-            <select id="donation_fund" x-model="fundId"
-                    class="form-narrow">
-                <option value="">General / Unrestricted</option>
-                @foreach ($activeFunds as $fund)
-                    <option value="{{ $fund->id }}">{{ $fund->name }}</option>
-                @endforeach
-            </select>
+            <x-custom-select
+                name="fund_id"
+                id="donation_fund"
+                :options="$activeFunds->map(fn ($f) => ['value' => (string) $f->id, 'label' => $f->name])->values()->all()"
+                placeholder="General / Unrestricted"
+            />
         </div>
         @endif
 

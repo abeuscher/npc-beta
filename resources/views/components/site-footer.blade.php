@@ -26,13 +26,11 @@
 
         <div x-data class="theme-toggle">
             <x-svg-icon name="moon" class="icon-sm" />
-            <input
-                type="checkbox"
-                role="switch"
-                :checked="$store.theme.current === 'light'"
-                @change="$store.theme.toggle()"
+            <x-toggle
+                alpine-checked="$store.theme.current === 'light'"
+                alpine-change="$store.theme.toggle()"
                 aria-label="Toggle light/dark mode"
-            >
+            />
             <x-svg-icon name="sun" class="icon-sm" />
         </div>
     </div>

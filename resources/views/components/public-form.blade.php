@@ -83,7 +83,8 @@
                     $label       = $field['label'] ?? '';
                     $placeholder = $field['placeholder'] ?? '';
                     $required    = ! empty($field['required']);
-                    $width       = $field['width'] ?? 12;
+                    $explicitW   = isset($field['width']) ? (int) $field['width'] : null;
+                    $width       = \App\Support\FormFieldConfig::width($handle, $label, $explicitW);
                     $pattern     = (! empty($field['validation_regex'])) ? $field['validation_regex'] : null;
                     $errMsg      = $field['validation_message'] ?? '';
                     $hint        = $field['hint'] ?? '';
@@ -97,20 +98,12 @@
                         @if ($type === 'radio')
                             <fieldset>
                                 <legend class="form-label">{{ $label }}@if($required) <span aria-hidden="true" class="required-star">*</span>@endif</legend>
-                                <div class="form-stack--tight">
-                                    @foreach ($field['options'] ?? [] as $option)
-                                        <label class="form-check-label">
-                                            <input
-                                                type="radio"
-                                                name="{{ $handle }}"
-                                                value="{{ $option['value'] }}"
-                                                {{ $old === $option['value'] ? 'checked' : '' }}
-                                                {{ $required ? 'required' : '' }}
-                                            >
-                                            {{ $option['label'] }}
-                                        </label>
-                                    @endforeach
-                                </div>
+                                <x-radio-group
+                                    :name="$handle"
+                                    :options="$field['options'] ?? []"
+                                    :required="$required"
+                                    :value="$old"
+                                />
                             </fieldset>
                             @if($hint)<small class="form-hint">{{ $hint }}</small>@endif
 
@@ -139,52 +132,52 @@
 
                         @elseif ($type === 'select')
                             <label for="field_{{ $handle }}" class="form-label">{{ $label }}@if($required) <span aria-hidden="true" class="required-star">*</span>@endif</label>
-                            <select
-                                id="field_{{ $handle }}"
-                                name="{{ $handle }}"
-                                {{ $required ? 'required' : '' }}
-                            >
-                                <option value="">— Select —</option>
-                                @foreach ($field['options'] ?? [] as $option)
-                                    <option value="{{ $option['value'] }}" {{ $old === $option['value'] ? 'selected' : '' }}>
-                                        {{ $option['label'] }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <x-custom-select
+                                :name="$handle"
+                                :id="'field_' . $handle"
+                                :options="$field['options'] ?? []"
+                                :required="$required"
+                                :value="$old"
+                            />
                             @if($hint)<small class="form-hint">{{ $hint }}</small>@endif
                             @error($handle)<small class="form-error">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'state')
                             <label for="field_{{ $handle }}" class="form-label">{{ $label }}@if($required) <span aria-hidden="true" class="required-star">*</span>@endif</label>
-                            <select
-                                id="field_{{ $handle }}"
-                                name="{{ $handle }}"
-                                {{ $required ? 'required' : '' }}
-                            >
-                                <option value="">— Select state —</option>
-                                @foreach ($usStates as $abbr => $name)
-                                    <option value="{{ $abbr }}" {{ $old === $abbr ? 'selected' : '' }}>{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-state-select
+                                :name="$handle"
+                                :id="'field_' . $handle"
+                                :required="$required"
+                                :value="$old"
+                            />
                             @if($hint)<small class="form-hint">{{ $hint }}</small>@endif
                             @error($handle)<small class="form-error">{{ $message }}</small>@enderror
 
                         @elseif ($type === 'country')
                             <label for="field_{{ $handle }}" class="form-label">{{ $label }}@if($required) <span aria-hidden="true" class="required-star">*</span>@endif</label>
-                            <select
-                                id="field_{{ $handle }}"
-                                name="{{ $handle }}"
-                                {{ $required ? 'required' : '' }}
-                            >
-                                <option value="">— Select country —</option>
-                                @foreach ($countries as $code => $name)
-                                    @if ($code === '---')
-                                        <option disabled>{{ $name }}</option>
-                                    @else
-                                        <option value="{{ $code }}" {{ $old === $code ? 'selected' : '' }}>{{ $name }}</option>
-                                    @endif
-                                @endforeach
-                            </select>
+                            @php
+                                $countryOptions = collect($countries)
+                                    ->reject(fn ($name, $code) => $code === '---')
+                                    ->map(fn ($name, $code) => ['value' => $code, 'label' => $name])
+                                    ->values()
+                                    ->all();
+                                // Move United States to top
+                                $usIndex = array_search('US', array_column($countryOptions, 'value'));
+                                if ($usIndex !== false) {
+                                    $us = $countryOptions[$usIndex];
+                                    array_splice($countryOptions, $usIndex, 1);
+                                    array_unshift($countryOptions, $us);
+                                }
+                            @endphp
+                            <x-custom-select
+                                :name="$handle"
+                                :id="'field_' . $handle"
+                                :options="$countryOptions"
+                                placeholder="— Select country —"
+                                :required="$required"
+                                :value="$old ?? 'US'"
+                                :searchable="true"
+                            />
                             @if($hint)<small class="form-hint">{{ $hint }}</small>@endif
                             @error($handle)<small class="form-error">{{ $message }}</small>@enderror
 

@@ -1,0 +1,247 @@
+@use "variables" as *;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom select dropdown
+// ─────────────────────────────────────────────────────────────────────────────
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    border-radius: $input-radius;
+    border: 1px solid $color-border-input;
+    padding: $input-padding-y $input-padding-x;
+    font-size: 1rem;
+    line-height: 1.5;
+    background: $input-bg;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+
+    .dark & {
+        border-color: $color-border-input-dk;
+        background: $input-bg-dark;
+        color: $input-text-dark;
+    }
+
+    &:focus {
+        border-color: $color-primary;
+        outline: 2px solid $color-primary;
+        outline-offset: -1px;
+    }
+}
+
+.custom-select__placeholder {
+    color: $color-text-muted;
+
+    .dark & { color: $color-text-muted-dk; }
+}
+
+.custom-select__arrow {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+    transition: transform 150ms ease;
+
+    &.is-open { transform: rotate(180deg); }
+}
+
+.custom-select__dropdown {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    border-radius: $input-radius;
+    border: 1px solid $color-border-input;
+    background: $input-bg;
+    box-shadow: $shadow-sm;
+
+    .dark & {
+        border-color: $color-border-input-dk;
+        background: $input-bg-dark;
+    }
+}
+
+.custom-select__search-wrap {
+    padding: 0.375rem;
+    border-bottom: 1px solid $color-border;
+
+    .dark & { border-color: $color-border-dark; }
+}
+
+.custom-select__search {
+    width: 100%;
+    border: 1px solid $color-border-input;
+    border-radius: $input-radius;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    background: $input-bg;
+    color: inherit;
+
+    .dark & {
+        border-color: $color-border-input-dk;
+        background: $input-bg-dark;
+        color: $input-text-dark;
+    }
+
+    &:focus {
+        border-color: $color-primary;
+        outline: none;
+    }
+}
+
+.custom-select__options {
+    max-height: 15rem;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+}
+
+.custom-select__no-results {
+    padding: $input-padding-y $input-padding-x;
+    font-size: 0.875rem;
+    color: $color-text-muted;
+
+    .dark & { color: $color-text-muted-dk; }
+}
+
+.custom-select__option {
+    padding: $input-padding-y $input-padding-x;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1.5;
+
+    &.is-active {
+        background: $color-bg-surface;
+
+        .dark & { background: $color-bg-surface-dk; }
+    }
+
+    &.is-selected {
+        font-weight: 600;
+        color: $color-primary;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Toggle switch
+// ─────────────────────────────────────────────────────────────────────────────
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.toggle__track {
+    position: relative;
+    display: inline-block;
+    width: 2.5rem;
+    height: 1.375rem;
+    flex-shrink: 0;
+}
+
+.toggle__input {
+    &:focus + .toggle__slider {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
+    }
+
+    &:checked + .toggle__slider {
+        background: $color-primary;
+
+        &::after {
+            transform: translateX(1.125rem);
+        }
+    }
+}
+
+.toggle__slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: $color-border-input;
+    transition: background 150ms ease;
+
+    .dark & { background: $color-border-input-dk; }
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 1.125rem;
+        height: 1.125rem;
+        border-radius: 50%;
+        background: white;
+        transition: transform 150ms ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.toggle__label {
+    font-size: 0.875rem;
+    color: $color-text-label;
+
+    .dark & { color: $color-text-label-dk; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Radio group (button-style)
+// ─────────────────────────────────────────────────────────────────────────────
+
+.radio-group {
+    display: flex;
+    gap: 0.5rem;
+
+    &--stacked {
+        flex-direction: column;
+    }
+}
+
+.radio-group__option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $input-radius;
+    border: 1px solid $color-border-input;
+    padding: $input-padding-y $input-padding-x;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    background: $input-bg;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease;
+
+    .dark & {
+        border-color: $color-border-input-dk;
+        background: $input-bg-dark;
+        color: $input-text-dark;
+    }
+
+    &:hover {
+        border-color: $color-primary;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: -1px;
+    }
+
+    &.is-selected {
+        border-color: $color-primary;
+        background: $color-primary;
+        color: white;
+        font-weight: 600;
+    }
+}
