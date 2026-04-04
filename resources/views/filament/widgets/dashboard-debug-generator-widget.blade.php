@@ -62,6 +62,15 @@
                 >
                     Wipe all
                 </x-filament::button>
+
+                <x-filament::button
+                    wire:click="seedWidgetCollections"
+                    wire:loading.attr="disabled"
+                    color="gray"
+                    size="sm"
+                >
+                    Seed widget collections
+                </x-filament::button>
             </div>
 
             @if ($feedback)

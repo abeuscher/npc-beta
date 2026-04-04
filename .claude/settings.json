@@ -149,7 +149,16 @@
       "Bash(grep \"session:\" sessions/12[89]*base* sessions/130*base*)",
       "Bash(ls sessions/12[89]*.md sessions/130*.md)",
       "Bash(ls /home/al/nonprofitcrm/postcss.config.*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(grep -E \"\\\\.blade\\\\.php$\")",
+      "Bash(grep -A 20 \"table->json\\\\|->config\\\\|->query_config\" /home/al/nonprofitcrm/database/migrations/*page_widget*)",
+      "Bash(ls -1 /home/al/nonprofitcrm/sessions/122.*)",
+      "Bash(ls /home/al/nonprofitcrm/sessions/12[3-9]* /home/al/nonprofitcrm/sessions/13[0-3]*)",
+      "Bash(ls /home/al/nonprofitcrm/sessions/123*)",
+      "Bash(docker network:*)",
+      "Bash(grep -A5 \"cssMode\\\\|speed\\\\|delay\" /home/al/nonprofitcrm/node_modules/swiper/types/*.d.ts)",
+      "Bash(grep -l \"cssMode\\\\|SwiperOptions\" /home/al/nonprofitcrm/node_modules/swiper/types/*.d.ts)",
+      "Bash(sudo npm:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",

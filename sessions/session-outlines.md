@@ -132,6 +132,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 123 | Tailwind Removal & Build Server Integration |
 | 124 | Custom Form Fields & Site Styles |
 | 125 | Build Server Settings & CI Pipeline |
+| 126 | Logo Garden Widget & Demo Collection Seeding |
 
 ---
 
@@ -154,21 +155,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 126 — Logo Garden Widget & Demo Collection Seeding
+### Session 127 — Board Members & Three Buckets Widgets
 
-Build a logo garden widget (static grid, carousel, or flipper mode) backed by a custom collection. Add a "Seed widget collections" button to the debug data generator that populates all widget demo collections in one click.
-
-### Widget — Logo Garden
-
-Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect. Collection-backed via `WidgetDataResolver`.
-
-### Widget — Board Members
-
-People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages. Collection-backed.
-
-### Widget — Three Buckets
-
-Three side-by-side content blocks, each with optional image, heading, body text, and CTA link. Config-driven (not collection-backed). Fixed at three.
+Two new widget types: a board members grid for displaying people profiles from a collection (photo, name, title, bio, social links), and a three-column content block with headings, body text, and CTA buttons. Board members is collection-backed; three buckets is config-driven.
 
 ### Widget — Alternating Panels
 

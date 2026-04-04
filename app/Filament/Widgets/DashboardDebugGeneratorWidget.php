@@ -14,6 +14,7 @@ use App\Models\ProductPrice;
 use App\Models\WidgetType;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 
 class DashboardDebugGeneratorWidget extends Widget
@@ -212,6 +213,15 @@ class DashboardDebugGeneratorWidget extends Widget
                 ]);
             }
         }
+    }
+
+    public function seedWidgetCollections(): void
+    {
+        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\CarouselDemoSeeder']);
+        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ChartDemoSeeder']);
+        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\LogoGardenDemoSeeder']);
+
+        $this->feedback = 'Widget demo collections seeded.';
     }
 
     public function wipe(): void
