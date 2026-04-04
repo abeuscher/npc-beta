@@ -160,6 +160,10 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 Swiper-based coverflow carousel of published products with images, pricing, and buy buttons. Adds image field to Product model, updates `resolveProducts()` with image/price data, adds `success_page` redirect to `ProductCheckoutController`, and includes a demo product seeder.
 
+### Widget — Alternating Panels
+
+Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
+
 ### Widget — Map Embed
 
 Google Maps iframe embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.

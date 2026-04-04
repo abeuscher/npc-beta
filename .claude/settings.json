@@ -161,7 +161,8 @@
       "Bash(sudo npm:*)",
       "Read(//mnt/e/Clients/nonprofitcrm/resources/icons/**)",
       "Bash(git stash:*)",
-      "Read(//mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits/**)"
+      "Read(//mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits/**)",
+      "Bash(git commit:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",

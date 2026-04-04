@@ -219,9 +219,10 @@ class DashboardDebugGeneratorWidget extends Widget
     {
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\CarouselDemoSeeder', '--force' => true]);
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ChartDemoSeeder', '--force' => true]);
+        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\LogoGardenDemoSeeder', '--force' => true]);
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\BoardMembersDemoSeeder', '--force' => true]);
 
-        $this->feedback = 'Widget demo collections seeded (carousel, chart, board members).';
+        $this->feedback = 'Widget demo collections seeded (carousel, chart, logo garden, board members).';
     }
 
     public function wipe(): void

@@ -453,6 +453,34 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
+            ['handle' => 'logo_garden'],
+            [
+                'label'              => 'Logo Garden',
+                'description'        => 'Grid or carousel of partner/sponsor logos from a custom collection.',
+                'category'           => ['content', 'media'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => ['logos'],
+                'assets'             => [
+                    'scss' => ['resources/scss/widgets/_logo-garden.scss'],
+                ],
+                'config_schema'      => [
+                    ['key' => 'collection_handle', 'type' => 'select',  'label' => 'Collection',        'options_from' => 'collections'],
+                    ['key' => 'image_field',       'type' => 'select',  'label' => 'Image field',       'options_from' => 'collection_fields:image', 'depends_on' => 'collection_handle'],
+                    ['key' => 'display_mode',      'type' => 'select',  'label' => 'Display mode',      'default' => 'static', 'options' => ['static' => 'Static Grid', 'carousel' => 'Carousel', 'smooth' => 'Smooth Scroll', 'flipper' => 'Flipper']],
+                    ['key' => 'show_name',         'type' => 'toggle',  'label' => 'Show name',         'default' => false],
+                    ['key' => 'name_field',        'type' => 'select',  'label' => 'Name field',        'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'shown_when' => 'show_name'],
+                    ['key' => 'background_color',  'type' => 'text',    'label' => 'Background colour', 'default' => '#ffffff'],
+                    ['key' => 'logos_per_row',     'type' => 'number',  'label' => 'Logos per row',     'default' => 5,    'advanced' => true],
+                    ['key' => 'logo_max_height',   'type' => 'number',  'label' => 'Logo max size (px)',   'default' => 150, 'advanced' => true],
+                    ['key' => 'carousel_duration', 'type' => 'number',  'label' => 'Carousel interval (ms)', 'default' => 3000, 'advanced' => true],
+                    ['key' => 'flip_duration',     'type' => 'number',  'label' => 'Flip interval (ms)',     'default' => 4000, 'advanced' => true],
+                ],
+                'template'      => "@include('widgets.logo-garden')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
             ['handle' => 'board_members'],
             [
                 'label'              => 'Board Members',

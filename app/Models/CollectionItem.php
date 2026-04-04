@@ -57,5 +57,12 @@ class CollectionItem extends Model implements HasMedia
                 ->width($width)
                 ->format('webp');
         }
+
+        // Logo-sized conversion for logo garden collections
+        $this->addMediaConversion('logo')
+            ->width(200)
+            ->height(200)
+            ->format('webp')
+            ->performOnCollections('logo');
     }
 }

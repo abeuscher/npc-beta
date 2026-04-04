@@ -1,0 +1,124 @@
+.widget-logo-garden {
+    --logo-columns: 5;
+    --logo-bg: #ffffff;
+    --logo-max-height: 150px;
+
+    // Static + flipper: flexbox with centered last row
+    &--static,
+    &--flipper {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    // Carousel overrides
+    &--carousel {
+        position: relative;
+
+        .swiper {
+            overflow: hidden;
+        }
+
+        // Swiper manages slide widths — don't apply flex width to cells
+        .logo-garden__cell {
+            width: auto;
+        }
+    }
+}
+
+// Shared cell styles
+.logo-garden__cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--logo-bg);
+    padding: 1rem;
+    min-height: calc(var(--logo-max-height) + 2rem);
+    // Width calculated from logos_per_row, accounting for gap
+    width: calc((100% - (var(--logo-columns) - 1) * 1rem) / var(--logo-columns));
+
+    @media (max-width: $bp-md) {
+        width: calc((100% - 2rem) / 3);
+    }
+
+    @media (max-width: $bp-sm) {
+        width: calc((100% - 1rem) / 2);
+    }
+}
+
+.logo-garden__img {
+    display: block;
+    max-height: var(--logo-max-height);
+    max-width: var(--logo-max-height);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+
+    // Also target the img inside <picture>
+    img {
+        max-height: var(--logo-max-height);
+        max-width: var(--logo-max-height);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+    }
+}
+
+.logo-garden__name {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    text-align: center;
+    color: var(--color-text, #333);
+}
+
+// Flipper 3D styles
+.logo-garden__flip-container {
+    perspective: 600px;
+    min-height: calc(var(--logo-max-height) + 2rem);
+    // Same width calculation as cells
+    width: calc((100% - (var(--logo-columns) - 1) * 1rem) / var(--logo-columns));
+
+    @media (max-width: $bp-md) {
+        width: calc((100% - 2rem) / 3);
+    }
+
+    @media (max-width: $bp-sm) {
+        width: calc((100% - 1rem) / 2);
+    }
+}
+
+.logo-garden__flipper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    transition: transform 0.6s ease-in-out;
+    transform-style: preserve-3d;
+
+    &.is-flipped {
+        transform: rotateY(180deg);
+    }
+}
+
+.logo-garden__flip-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--logo-bg);
+    padding: 1rem;
+    backface-visibility: hidden;
+}
+
+.logo-garden__flip-front {
+    z-index: 2;
+}
+
+.logo-garden__flip-back {
+    transform: rotateY(180deg);
+}
