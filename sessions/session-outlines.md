@@ -151,6 +151,10 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 Build custom form controls (styled select, toggle switch, radio buttons) that replace browser defaults and wire to the underlying form elements. Collaborate with user on overall site visual polish. See session prompt for details.
 
+### Session 125 — Build Server Integration Settings & CI Build Pipeline
+
+Move build server URL and API key into the admin settings panel (alongside Stripe, MailChimp, QuickBooks keys). Add a build server health check to the dashboard integrations widget — show a warning when the build server is unavailable or unconfigured. Move both the Vite build (admin theme + public SCSS) and `build:public` (widget bundle) into the GitHub Actions deploy pipeline so they run at deploy time. Remove Node/npm from the production Docker image — CI handles all asset compilation.
+
 ---
 
 ## Widget System — Beta 1 Scope
