@@ -1,29 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Custom CSS — styles that don't fit Tailwind utility classes
+// Custom CSS — widget and component styles
 // ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Button components — named classes built from Tailwind utilities.
-// These are the canonical button styles used by widget templates.
-// ─────────────────────────────────────────────────────────────────────────────
-
-.btn-primary {
-    @apply inline-block px-6 py-2.5 bg-primary text-white rounded font-semibold
-           no-underline cursor-pointer transition-opacity hover:opacity-80;
-}
-
-.btn-secondary {
-    @apply inline-block px-6 py-2.5 border border-gray-300 rounded font-semibold
-           text-gray-700 no-underline cursor-pointer transition-colors
-           hover:border-primary hover:text-primary
-           dark:border-gray-600 dark:text-gray-300
-           dark:hover:border-primary dark:hover:text-primary;
-}
-
-.btn-text {
-    @apply inline-block text-primary no-underline cursor-pointer font-medium
-           transition-opacity hover:opacity-80;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carousel widget
@@ -84,48 +61,14 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Site nav wrapper — overlay mode for hero full-bleed
-// ─────────────────────────────────────────────────────────────────────────────
-
-.site-nav-wrapper {
-    position: relative;
-    z-index: 20;
-    background: white;
-
-    .dark & { background: theme('colors.gray.900'); }
-
-    &--overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 20;
-        background: transparent;
-
-        header {
-            background: transparent;
-        }
-
-        nav a {
-            color: var(--nav-link-color, inherit);
-
-            &:hover {
-                color: var(--nav-hover-color, inherit);
-            }
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Hero widget
 // ─────────────────────────────────────────────────────────────────────────────
 
 .widget--hero {
     position: relative;
     overflow: hidden;
-    min-height: 24rem; // default
+    min-height: 24rem;
 
-    // Height variants
     &.hero--height-16 { min-height: 16rem; }
     &.hero--height-24 { min-height: 24rem; }
     &.hero--height-32 { min-height: 32rem; }
@@ -161,11 +104,11 @@
     flex-direction: column;
     width: 100%;
     height: 100%;
-    padding: 2rem;
+    padding: 2rem 0;
     min-height: inherit;
 
-    @media (min-width: 768px) {
-        padding: 3rem;
+    @media (min-width: $bp-md) {
+        padding: 3rem 0;
     }
 
     .hero--overlap-nav & {
@@ -187,7 +130,6 @@
 
 // ── Position variants ───────────────────────────────────────────────────────
 
-// Vertical alignment
 .hero--pos-top-left .hero-body,
 .hero--pos-top-center .hero-body,
 .hero--pos-top-right .hero-body       { justify-content: flex-start; }
@@ -200,7 +142,6 @@
 .hero--pos-bottom-center .hero-body,
 .hero--pos-bottom-right .hero-body    { justify-content: flex-end; }
 
-// Horizontal alignment
 .hero--pos-top-left .hero-body,
 .hero--pos-center-left .hero-body,
 .hero--pos-bottom-left .hero-body     { align-items: flex-start; text-align: left; }
@@ -232,50 +173,161 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Button group (used by hero CTAs, potentially reusable)
+// Site header
 // ─────────────────────────────────────────────────────────────────────────────
 
-.btn-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+.site-header {
+    position: relative;
 
-    &--left   { justify-content: flex-start; }
-    &--center { justify-content: center; }
-    &--right  { justify-content: flex-end; }
-}
+    &__bar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
 
-.btn {
-    display: inline-block;
-    padding: 0.625rem 1.5rem;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    border-radius: 0.25rem;
-
-    &:hover { opacity: 0.8; }
-
-    &--primary {
-        background: var(--color-primary, #0172ad);
-        color: white;
-    }
-
-    &--secondary {
-        border: 1px solid #d1d5db;
-        color: #374151;
-        background: transparent;
-
-        &:hover {
-            border-color: var(--color-primary, #0172ad);
-            color: var(--color-primary, #0172ad);
+        @media (min-width: $bp-md) {
+            grid-template-columns: 1fr 2fr;
         }
     }
 
-    &--text {
-        color: var(--color-primary, #0172ad);
-        padding-left: 0;
-        padding-right: 0;
-        background: transparent;
+    &__logo {
+        height: 2.5rem;
+    }
+}
+
+.site-nav {
+    display: none;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+
+    @media (min-width: $bp-md) {
+        display: flex;
+    }
+
+    // Mobile open state (toggled by Alpine)
+    &.is-open {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 0.5rem 0;
+
+        .dark & {
+            background: #1f2937;
+            border-color: #374151;
+        }
+    }
+}
+
+.site-nav__link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.25rem;
+    text-decoration: none;
+    white-space: nowrap;
+    color: inherit;
+
+    .is-open & {
+        width: 100%;
+        padding: 0.5rem 1rem;
+    }
+}
+
+.site-nav__dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    .is-open & {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.site-nav__dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 12rem;
+    margin: 0;
+    padding: 0.5rem 0;
+    list-style: none;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+
+    .dark & {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .site-nav__dropdown:hover & {
+        display: block;
+    }
+
+    .is-open & {
+        position: static;
+        box-shadow: none;
+        border: 0;
+        padding-left: 1rem;
+        min-width: 0;
+        width: 100%;
+    }
+}
+
+.site-nav__dropdown-link {
+    display: block;
+    padding: 0.25rem 1rem;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover {
+        color: $color-primary;
+    }
+}
+
+.site-nav__caret {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 0.2em solid transparent;
+    border-right: 0.2em solid transparent;
+    border-top: 0.25em solid currentColor;
+    transition: transform 0.15s;
+    margin-left: 0.25rem;
+
+    .site-nav__dropdown:hover & {
+        transform: rotate(180deg);
+    }
+}
+
+.site-nav__toggle {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    padding: 0.25rem;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: inherit;
+    line-height: 1;
+
+    @media (min-width: $bp-md) {
+        display: none;
     }
 }

@@ -1,0 +1,53 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Container
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Fluid by default (90% width on small screens), steps up to fixed max-widths
+// at each breakpoint. Same mental model as Bootstrap / Foundation containers.
+
+.site-container {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+
+    @media (min-width: $bp-sm)  { max-width: $container-sm; }
+    @media (min-width: $bp-md)  { max-width: $container-md; }
+    @media (min-width: $bp-lg)  { max-width: $container-lg; }
+    @media (min-width: $bp-xl)  { max-width: $container-xl; }
+    @media (min-width: $bp-xxl) { max-width: $container-xxl; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Site nav wrapper — overlay mode for hero full-bleed
+// ─────────────────────────────────────────────────────────────────────────────
+
+.site-nav-wrapper {
+    position: relative;
+    z-index: 20;
+    background: white;
+
+    .dark & { background: #111827; }
+
+    &--overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        background: transparent;
+
+        header {
+            background: transparent;
+        }
+
+        nav a {
+            color: var(--nav-link-color, inherit);
+
+            &:hover {
+                color: var(--nav-hover-color, inherit);
+            }
+        }
+    }
+}

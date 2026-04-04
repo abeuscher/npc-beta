@@ -1,0 +1,52 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Button group
+// ─────────────────────────────────────────────────────────────────────────────
+
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    &--left   { justify-content: flex-start; }
+    &--center { justify-content: center; }
+    &--right  { justify-content: flex-end; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Buttons
+// ─────────────────────────────────────────────────────────────────────────────
+
+.btn {
+    display: inline-block;
+    padding: 0.625rem 1.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    border-radius: 0.25rem;
+
+    &:hover { opacity: 0.8; }
+
+    &--primary {
+        background: $color-primary;
+        color: white;
+    }
+
+    &--secondary {
+        border: 1px solid #d1d5db;
+        color: #374151;
+        background: transparent;
+
+        &:hover {
+            border-color: $color-primary;
+            color: $color-primary;
+        }
+    }
+
+    &--text {
+        color: $color-primary;
+        padding-left: 0;
+        padding-right: 0;
+        background: transparent;
+    }
+}

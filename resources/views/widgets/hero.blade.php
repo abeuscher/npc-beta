@@ -46,7 +46,8 @@
     @endif
 
     <div class="hero-body">
-        <div class="hero-inner">
+        <div class="site-container">
+            <div class="hero-inner">
             @if ($content)
                 <div class="hero-content {{ $hasBg ? 'hero-content--on-image' : '' }}">
                     {!! $content !!}
@@ -61,6 +62,7 @@
                     ])
                 </div>
             @endif
+            </div>
         </div>
     </div>
 

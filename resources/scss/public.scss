@@ -51,5 +51,11 @@
     }
 }
 
-// Custom styles (unlayered — highest priority)
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom SCSS partials — variables must come first
+// ─────────────────────────────────────────────────────────────────────────────
+
+@import "variables";
+@import "layout";
+@import "buttons";
 @import "custom";

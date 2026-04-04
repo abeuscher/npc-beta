@@ -147,6 +147,10 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
+### Pre-task for next session — Remove Tailwind from public-facing templates
+
+Remove all Tailwind utility classes from widget templates and public frontend views. Replace with semantic classes styled in the SCSS partials (`_variables.scss`, `_layout.scss`, `_buttons.scss`, `_custom.scss`). Use `.site-container` for content width. The hero widget and site-header widget were converted in session 122 as the reference pattern. Work with the user to verify layout correctness as each template is converted. Once all Tailwind utilities are removed from templates, remove `@tailwind` imports from `public.scss`.
+
 ### Session 122 — Widget System — Build Server Integration
 
 Connect the app to the external build server, migrate public-facing CSS from Tailwind to a custom SCSS framework, and repackage all widgets into the installable folder structure. Multi-session effort. See `docs/widget-system-spec.md` and `docs/build-server-spec.md` for full specifications.
