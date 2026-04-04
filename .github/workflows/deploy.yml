@@ -27,6 +27,24 @@ jobs:
         id: tag
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_pgsql, gd, zip, intl, bcmath, redis
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Build widget bundle via build server
+        if: ${{ vars.BUILD_SERVER_URL != '' }}
+        continue-on-error: true
+        env:
+          BUILD_SERVER_URL: ${{ vars.BUILD_SERVER_URL }}
+          BUILD_SERVER_API_KEY: ${{ secrets.BUILD_SERVER_API_KEY }}
+        run: php artisan build:public
+
       - name: Build and push app image
         uses: docker/build-push-action@v6
         with:
@@ -77,4 +95,5 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
             docker compose -f docker-compose.prod.yml exec -T app php artisan storage:link
+            docker compose -f docker-compose.prod.yml exec -T app php artisan build:public || true
             docker image prune -af

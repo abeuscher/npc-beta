@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\SiteSetting;
 use App\Models\WidgetType;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -22,8 +23,8 @@ class AssetBuildService
     {
         $startTime = microtime(true);
 
-        $url = config('services.build_server.url');
-        $apiKey = config('services.build_server.api_key');
+        $url = SiteSetting::get('build_server_url', '') ?: config('services.build_server.url');
+        $apiKey = SiteSetting::get('build_server_api_key', '') ?: config('services.build_server.api_key');
 
         if (! $url || ! $apiKey) {
             return BuildResult::fail('Build server URL or API key not configured.');

@@ -3,17 +3,32 @@
 # ─────────────────────────────────────────
 FROM node:22-alpine AS node-builder
 
+# Install PHP and Composer so Vite can scan vendor/filament blade files
+# for the admin theme Tailwind build.
+RUN apk add --no-cache php83 php83-phar php83-mbstring php83-openssl php83-curl php83-tokenizer \
+    && ln -sf /usr/bin/php83 /usr/bin/php
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 WORKDIR /app
 
-COPY package.json package-lock.json vite.config.public.js postcss.config.js tailwind.config.js ./
+# Install PHP dependencies (only needed for Tailwind content scanning)
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev
+
+# Install Node dependencies
+COPY package.json package-lock.json vite.config.js vite.config.public.js postcss.config.js tailwind.config.js ./
 RUN npm ci
 
+# Copy source files needed for the build
 COPY resources/scss ./resources/scss
 COPY resources/js  ./resources/js
+COPY resources/css ./resources/css
 COPY resources/views ./resources/views
 COPY app/Livewire ./app/Livewire
 
-RUN npx vite build --config vite.config.public.js
+# Full Vite build (public assets + Filament admin theme)
+RUN npm run build
 
 # ─────────────────────────────────────────
 # Stage 2: PHP-FPM Application
@@ -24,7 +39,7 @@ FROM php:8.4-fpm AS app
 # widget and factories work. production strips them.
 ARG BUILD_ENV=production
 
-# System dependencies + Node.js 22 (required for npm run build in SCSS editor)
+# System dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -40,8 +55,6 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     postgresql-client \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -86,12 +99,11 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
 # Copy application files
 COPY . .
 
-# Build all frontend assets (public + Filament admin theme).
-# Runs here instead of the node-builder because the admin theme needs
-# vendor/filament for the Tailwind preset and blade content scanning.
-# The node-builder's public-only output is discarded in favour of this
-# complete build which produces a single unified manifest.
-RUN npm ci && npm run build
+# Copy Vite-built assets from the node-builder stage.
+# Only copy the Vite manifest and assets dir — leave public/build/widgets/
+# intact if it was placed in the build context by a CI build:public step.
+COPY --from=node-builder /app/public/build/manifest.json ./public/build/manifest.json
+COPY --from=node-builder /app/public/build/assets ./public/build/assets
 
 # Generate the optimised autoloader now that all files are present
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \

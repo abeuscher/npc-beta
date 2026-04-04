@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Http;
 
 class CmsSettingsPage extends Page
 {
@@ -42,6 +43,8 @@ class CmsSettingsPage extends Page
             'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'false') === 'true',
             'auto_publish_pages'  => SiteSetting::get('auto_publish_pages', 'true') === 'true',
             'auto_publish_posts'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
+            'build_server_url'       => SiteSetting::get('build_server_url', '') ?: config('services.build_server.url', ''),
+            'build_server_api_key'   => '',
             'favicon_upload'         => null,
             'site_head_snippet'      => SiteSetting::get('site_head_snippet', ''),
             'site_body_open_snippet' => SiteSetting::get('site_body_open_snippet', ''),
@@ -107,6 +110,73 @@ class CmsSettingsPage extends Page
                             ->columnSpan(4),
                     ])
                     ->columns(12),
+
+                Forms\Components\Section::make('Build Server')
+                    ->schema([
+                        Forms\Components\TextInput::make('build_server_url')
+                            ->label('Build Server URL')
+                            ->nullable()
+                            ->placeholder('http://bundleserver:8080')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('build_server_api_key')
+                            ->label('Build Server API Key')
+                            ->password()
+                            ->extraInputAttributes(['autocomplete' => 'new-password'])
+                            ->nullable()
+                            ->placeholder(filled(SiteSetting::get('build_server_api_key', '')) ? '••••••••' : '')
+                            ->helperText(filled(SiteSetting::get('build_server_api_key', ''))
+                                ? 'A key is currently stored. Leave blank to keep the existing key.'
+                                : 'No key configured. Falls back to the BUILD_SERVER_API_KEY environment variable.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\Actions::make([
+                            Forms\Components\Actions\Action::make('test_build_server')
+                                ->label('Test Connection')
+                                ->icon('heroicon-o-signal')
+                                ->color('gray')
+                                ->action(function () {
+                                    $url = $this->data['build_server_url']
+                                        ?: SiteSetting::get('build_server_url', '')
+                                        ?: config('services.build_server.url');
+
+                                    $apiKey = SiteSetting::get('build_server_api_key', '')
+                                        ?: config('services.build_server.api_key');
+
+                                    if (! $url) {
+                                        Notification::make()
+                                            ->title('No build server URL configured')
+                                            ->danger()
+                                            ->send();
+                                        return;
+                                    }
+
+                                    try {
+                                        $response = Http::timeout(10)
+                                            ->withToken($apiKey ?: '')
+                                            ->get(rtrim($url, '/') . '/health');
+
+                                        if ($response->successful()) {
+                                            Notification::make()
+                                                ->title('Build server is reachable')
+                                                ->success()
+                                                ->send();
+                                        } else {
+                                            Notification::make()
+                                                ->title('Build server returned HTTP ' . $response->status())
+                                                ->danger()
+                                                ->send();
+                                        }
+                                    } catch (\Throwable $e) {
+                                        Notification::make()
+                                            ->title('Build server unreachable')
+                                            ->body($e->getMessage())
+                                            ->danger()
+                                            ->send();
+                                    }
+                                }),
+                        ]),
+                    ]),
 
                 Forms\Components\Section::make('Header & Footer Code Snippets')
                     ->schema([
@@ -226,6 +296,22 @@ class CmsSettingsPage extends Page
         SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
+
+        SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
+
+        if (filled($data['build_server_api_key'] ?? '')) {
+            $setting = SiteSetting::where('key', 'build_server_api_key')->first();
+            if ($setting) {
+                $setting->update(['value' => \Illuminate\Support\Facades\Crypt::encryptString($data['build_server_api_key'])]);
+            } else {
+                SiteSetting::create([
+                    'key'   => 'build_server_api_key',
+                    'value' => \Illuminate\Support\Facades\Crypt::encryptString($data['build_server_api_key']),
+                    'type'  => 'encrypted',
+                ]);
+            }
+            \Illuminate\Support\Facades\Cache::forget('site_setting:build_server_api_key');
+        }
 
         if (! empty($data['favicon_upload'])) {
             SiteSetting::set('favicon_path', $data['favicon_upload']);
