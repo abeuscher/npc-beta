@@ -17,7 +17,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
 # Install Node dependencies
-COPY package.json package-lock.json vite.config.js vite.config.public.js postcss.config.js tailwind.config.js ./
+COPY package.json package-lock.json vite.config.js vite.config.public.js postcss.config.js tailwind.config.js tailwind.config.filament.js ./
 RUN npm ci
 
 # Copy source files needed for the build
@@ -25,6 +25,7 @@ COPY resources/scss ./resources/scss
 COPY resources/js  ./resources/js
 COPY resources/css ./resources/css
 COPY resources/views ./resources/views
+COPY app/Filament ./app/Filament
 COPY app/Livewire ./app/Livewire
 
 # Full Vite build (public assets + Filament admin theme)
