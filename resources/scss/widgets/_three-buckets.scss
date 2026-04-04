@@ -1,0 +1,46 @@
+// ── Three Buckets widget ────────────────────────────────────────────────────
+
+.widget-three-buckets {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--bucket-gap, $gutter);
+}
+
+.three-buckets__bucket {
+    width: calc((100% - 2 * var(--bucket-gap, $gutter)) / 3);
+    display: flex;
+    flex-direction: column;
+}
+
+// ── Text content ────────────────────────────────────────────────────────────
+
+.three-buckets__heading {
+    margin: 0 0 0.75rem;
+}
+
+.three-buckets__body {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+// ── Alignment modifiers ─────────────────────────────────────────────────────
+
+.three-buckets--headings-left   .three-buckets__heading { text-align: left; }
+.three-buckets--headings-center .three-buckets__heading { text-align: center; }
+.three-buckets--headings-right  .three-buckets__heading { text-align: right; }
+
+.three-buckets--body-left   .three-buckets__body { text-align: left; }
+.three-buckets--body-center .three-buckets__body { text-align: center; }
+.three-buckets--body-right  .three-buckets__body { text-align: right; }
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+
+@media (max-width: $bp-md) {
+    .widget-three-buckets {
+        flex-direction: column;
+    }
+
+    .three-buckets__bucket {
+        width: 100%;
+    }
+}

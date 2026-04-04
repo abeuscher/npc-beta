@@ -132,6 +132,8 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 123 | Tailwind Removal & Build Server Integration |
 | 124 | Custom Form Fields & Site Styles |
 | 125 | Build Server Settings & CI Pipeline |
+| 126 | Logo Garden Widget & Demo Collection Seeding |
+| 127 | Board Members & Three Buckets Widgets |
 
 ---
 
@@ -154,29 +156,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 126 — Logo Garden Widget & Demo Collection Seeding
+### Session 128 — Product Carousel Widget
 
-Build a logo garden widget (static grid, carousel, or flipper mode) backed by a custom collection. Add a "Seed widget collections" button to the debug data generator that populates all widget demo collections in one click.
-
-### Widget — Logo Garden
-
-Responsive grid of partner/sponsor logos from a custom collection. Configurable columns, optional grayscale-to-colour hover effect. Collection-backed via `WidgetDataResolver`.
-
-### Widget — Board Members
-
-People grid from a custom collection: photo, name, title, optional bio. Grid or list layout. For board of directors, staff, or team pages. Collection-backed.
-
-### Widget — Three Buckets
-
-Three side-by-side content blocks, each with optional image, heading, body text, and CTA link. Config-driven (not collection-backed). Fixed at three.
-
-### Widget — Alternating Panels
-
-Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
-
-### Widget — Product Carousel
-
-Swiper-based carousel of published products: image, name, price, link. Uses the existing `products` data source in `WidgetDataResolver`.
+Swiper-based coverflow carousel of published products with images, pricing, and buy buttons. Adds image field to Product model, updates `resolveProducts()` with image/price data, adds `success_page` redirect to `ProductCheckoutController`, and includes a demo product seeder.
 
 ### Widget — Map Embed
 

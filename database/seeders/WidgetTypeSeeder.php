@@ -453,6 +453,98 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
+            ['handle' => 'board_members'],
+            [
+                'label'              => 'Board Members',
+                'description'        => 'People grid with photos, names, titles, and optional bios from a custom collection.',
+                'category'           => ['content'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => ['members'],
+                'assets'             => [
+                    'scss' => ['resources/scss/widgets/_board-members.scss'],
+                ],
+                'config_schema'      => [
+                    ['key' => 'heading',              'type' => 'text',   'label' => 'Heading'],
+                    ['key' => 'collection_handle',    'type' => 'select', 'label' => 'Collection',        'options_from' => 'collections'],
+                    ['key' => 'image_field',          'type' => 'select', 'label' => 'Image field',       'options_from' => 'collection_fields:image', 'depends_on' => 'collection_handle'],
+                    ['key' => 'name_field',           'type' => 'select', 'label' => 'Name field',        'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'title_field',          'type' => 'select', 'label' => 'Job title field',   'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'department_field',     'type' => 'select', 'label' => 'Department field',  'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'description_field',    'type' => 'select', 'label' => 'Description field', 'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'linkedin_field',       'type' => 'select', 'label' => 'LinkedIn field',    'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'github_field',         'type' => 'select', 'label' => 'GitHub field',      'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'extra_url_field',      'type' => 'select', 'label' => 'Extra URL field',   'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle'],
+                    ['key' => 'extra_url_label_field','type' => 'select', 'label' => 'Extra URL label field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle'],
+                    ['key' => 'image_shape',          'type' => 'select', 'label' => 'Image shape',       'default' => 'circle', 'options' => ['circle' => 'Circle', 'rectangle' => 'Rectangle']],
+                    ['key' => 'background_color',     'type' => 'color',  'label' => 'Background Color',  'default' => '#ffffff', 'group' => 'colors'],
+                    ['key' => 'pane_color',           'type' => 'color',  'label' => 'Card Color',        'default' => '#ffffff', 'group' => 'colors'],
+                    ['key' => 'border_color',         'type' => 'color',  'label' => 'Border Color',      'default' => '#cccccc', 'group' => 'colors'],
+                    ['key' => 'items_per_row',        'type' => 'number', 'label' => 'Items per row',     'default' => 3, 'advanced' => true],
+                    ['key' => 'row_alignment',        'type' => 'select', 'label' => 'Last row alignment','default' => 'center', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'advanced' => true],
+                    ['key' => 'image_aspect_ratio',   'type' => 'text',   'label' => 'Image aspect ratio','default' => '1 / 1', 'advanced' => true, 'helper' => 'CSS aspect-ratio value for rectangle mode. Ignored when shape is circle.'],
+                    ['key' => 'border_radius',        'type' => 'number', 'label' => 'Card border radius (px)', 'default' => 5, 'advanced' => true],
+                ],
+                'template'           => "@include('widgets.board-members')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'three_buckets'],
+            [
+                'label'              => 'Three Buckets',
+                'description'        => 'Three side-by-side content blocks with headings, body text, and call-to-action buttons.',
+                'category'           => ['content', 'layout'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => [],
+                'assets'             => [
+                    'scss' => ['resources/scss/widgets/_three-buckets.scss'],
+                ],
+                'config_schema'      => [
+                    ['key' => 'heading_1', 'type' => 'text',     'label' => 'Heading 1'],
+                    ['key' => 'body_1',    'type' => 'richtext', 'label' => 'Body 1'],
+                    ['key' => 'ctas_1',    'type' => 'buttons',  'label' => 'Buttons 1', 'fields' => [
+                        ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                        ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                        ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                            'primary'   => 'Primary',
+                            'secondary' => 'Secondary',
+                            'text'      => 'Text Only',
+                        ]],
+                    ]],
+                    ['key' => 'heading_2', 'type' => 'text',     'label' => 'Heading 2'],
+                    ['key' => 'body_2',    'type' => 'richtext', 'label' => 'Body 2'],
+                    ['key' => 'ctas_2',    'type' => 'buttons',  'label' => 'Buttons 2', 'fields' => [
+                        ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                        ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                        ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                            'primary'   => 'Primary',
+                            'secondary' => 'Secondary',
+                            'text'      => 'Text Only',
+                        ]],
+                    ]],
+                    ['key' => 'heading_3', 'type' => 'text',     'label' => 'Heading 3'],
+                    ['key' => 'body_3',    'type' => 'richtext', 'label' => 'Body 3'],
+                    ['key' => 'ctas_3',    'type' => 'buttons',  'label' => 'Buttons 3', 'fields' => [
+                        ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                        ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                        ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                            'primary'   => 'Primary',
+                            'secondary' => 'Secondary',
+                            'text'      => 'Text Only',
+                        ]],
+                    ]],
+                    ['key' => 'heading_alignment', 'type' => 'select', 'label' => 'Heading alignment', 'default' => 'left', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'advanced' => true],
+                    ['key' => 'body_alignment',    'type' => 'select', 'label' => 'Body alignment',    'default' => 'left', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'advanced' => true],
+                    ['key' => 'button_alignment',  'type' => 'select', 'label' => 'Button alignment',  'default' => 'left', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'advanced' => true],
+                    ['key' => 'gap',               'type' => 'text',   'label' => 'Custom gap',        'default' => '',     'advanced' => true, 'helper' => 'CSS gap value (e.g. 2rem). Leave blank for default.'],
+                ],
+                'template'           => "@include('widgets.three-buckets')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
             ['handle' => 'hero'],
             [
                 'label'              => 'Hero',

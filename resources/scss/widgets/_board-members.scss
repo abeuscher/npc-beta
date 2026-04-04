@@ -1,0 +1,142 @@
+// ── Board Members widget ────────────────────────────────────────────────────
+
+.widget-board-members {
+    display: block;
+    background-color: var(--bm-bg, #ffffff);
+    padding: 2rem 0;
+}
+
+.board-members__heading {
+    margin: 0 0 1.5rem;
+}
+
+// ── Grid ────────────────────────────────────────────────────────────────────
+
+.board-members__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+// Alignment modifiers on the container — control last-row justification
+.board-members--align-left   .board-members__grid { justify-content: flex-start; }
+.board-members--align-center .board-members__grid { justify-content: center; }
+.board-members--align-right  .board-members__grid { justify-content: flex-end; }
+
+// Column count modifiers — each sets the card width
+@for $i from 1 through 6 {
+    .board-members--cols-#{$i} .board-member {
+        @if $i == 1 {
+            width: 100%;
+        } @else {
+            width: calc((100% - #{$i - 1} * 1.5rem) / #{$i});
+        }
+    }
+}
+
+// ── Card ────────────────────────────────────────────────────────────────────
+
+.board-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background-color: var(--bm-pane, #ffffff);
+    border: 1px solid var(--bm-border, #cccccc);
+    border-radius: var(--bm-radius, 5px);
+    padding: 2rem;
+}
+
+// ── Portrait image ──────────────────────────────────────────────────────────
+
+.board-member__image {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: var(--bm-padding, 100%);
+    overflow: hidden;
+    margin-bottom: 1rem;
+
+    img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top center;
+    }
+}
+
+.board-member--circle .board-member__image {
+    clip-path: circle(50%);
+}
+
+// ── Text content ────────────────────────────────────────────────────────────
+
+.board-member__name {
+    margin: 0 0 0.25rem;
+    font-size: 1.125rem;
+}
+
+.board-member__title {
+    margin: 0 0 0.25rem;
+    color: $color-text-muted;
+    font-size: 0.9375rem;
+}
+
+.board-member__department {
+    margin: 0 0 0.5rem;
+    color: $color-text-muted;
+    font-size: 0.875rem;
+}
+
+.board-member__bio {
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+// ── Social links ────────────────────────────────────────────────────────────
+
+.board-member__links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.board-member__link {
+    display: inline-flex;
+    align-items: center;
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.board-member__link--extra {
+    font-size: 0.875rem;
+    color: $color-primary;
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+
+@media (max-width: $bp-md) {
+    // Override all column counts to 2 at tablet
+    [class*="board-members--cols-"] .board-member {
+        width: calc((100% - 1.5rem) / 2);
+    }
+
+    .board-members--cols-1 .board-member {
+        width: 100%;
+    }
+}
+
+@media (max-width: $bp-sm) {
+    [class*="board-members--cols-"] .board-member {
+        width: 100%;
+    }
+}
