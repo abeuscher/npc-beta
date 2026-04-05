@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Services\Media\ImageSizeProfile;
 use App\Traits\Archivable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Product extends Model
+class Product extends Model implements HasMedia
 {
-    use Archivable, HasFactory, HasUuids;
+    use Archivable, HasFactory, HasUuids, InteractsWithMedia;
 
     protected $fillable = [
         'name',
@@ -49,5 +53,30 @@ class Product extends Model
     public function isAtCapacity(): bool
     {
         return $this->activePurchasesCount() >= $this->capacity;
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('product_image')->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if ($media && str_contains($media->mime_type, 'svg')) {
+            return;
+        }
+
+        $profile = ImageSizeProfile::photo();
+
+        $this->addMediaConversion('webp')
+            ->width($profile->maxWidth)
+            ->height($profile->maxHeight)
+            ->format('webp');
+
+        foreach ($profile->breakpoints as $width) {
+            $this->addMediaConversion("responsive-{$width}")
+                ->width($width)
+                ->format('webp');
+        }
     }
 }

@@ -78,7 +78,7 @@ it('seedWidgetCollections runs all three demo seeders', function () {
         ->and(Collection::where('handle', 'chart-demo')->exists())->toBeTrue()
         ->and(Collection::where('handle', 'logo-garden-demo')->exists())->toBeTrue();
 
-    expect($widget->feedback)->toBe('Widget demo collections seeded.');
+    expect($widget->feedback)->toBe('Widget demo collections seeded (carousel, chart, logo garden, board members, products).');
 });
 
 // ── Logo garden blade template rendering ────────────────────────────────────

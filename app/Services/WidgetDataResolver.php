@@ -134,11 +134,12 @@ class WidgetDataResolver
         ])->all();
     }
 
-    private static function resolveProducts(array $queryConfig): array
+    public static function resolveProducts(array $queryConfig = []): array
     {
         $limit = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
 
-        $query = Product::where('status', 'published')
+        $query = Product::with(['prices', 'media'])
+            ->where('status', 'published')
             ->where('is_archived', false)
             ->orderBy('sort_order', 'asc');
 
@@ -153,6 +154,13 @@ class WidgetDataResolver
             'description' => $product->description,
             'capacity'    => $product->capacity,
             'available'   => max(0, $product->capacity - $product->purchases()->where('status', 'active')->count()),
+            'image_url'   => $product->getFirstMediaUrl('product_image', 'webp') ?: $product->getFirstMediaUrl('product_image'),
+            'prices'      => $product->prices->map(fn ($price) => [
+                'id'              => $price->id,
+                'label'           => $price->label,
+                'amount'          => $price->amount,
+                'stripe_price_id' => $price->stripe_price_id,
+            ])->all(),
         ])->all();
     }
 

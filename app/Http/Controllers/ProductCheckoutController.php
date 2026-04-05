@@ -13,6 +13,7 @@ class ProductCheckoutController extends Controller
     {
         $validated = $request->validate([
             'product_price_id' => ['required', 'uuid', 'exists:product_prices,id'],
+            'success_page'     => ['nullable', 'string', 'exists:pages,slug'],
         ]);
 
         $price   = ProductPrice::with('product')->findOrFail($validated['product_price_id']);
@@ -28,7 +29,9 @@ class ProductCheckoutController extends Controller
         }
 
         $referer    = strtok($request->header('Referer', url('/')), '?');
-        $successUrl = $referer . '?checkout=success';
+        $successUrl = isset($validated['success_page'])
+            ? url($validated['success_page']) . '?checkout=success'
+            : $referer . '?checkout=success';
         $cancelUrl  = $referer . '?checkout=cancelled';
 
         $lineItem = $price->stripe_price_id

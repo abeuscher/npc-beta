@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Illuminate\Support\Str;
 
 class ProductResource extends Resource
@@ -64,6 +65,15 @@ class ProductResource extends Resource
                         Forms\Components\Textarea::make('description')
                             ->nullable()
                             ->rows(4)
+                            ->columnSpanFull(),
+
+                        SpatieMediaLibraryFileUpload::make('product_image')
+                            ->label('Product image')
+                            ->collection('product_image')
+                            ->disk('public')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->nullable()
                             ->columnSpanFull(),
                     ])->columns(2),
                 ])->columnSpan(2),

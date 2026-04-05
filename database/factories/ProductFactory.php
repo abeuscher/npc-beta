@@ -17,7 +17,7 @@ class ProductFactory extends Factory
         return [
             'name'       => $name,
             'slug'       => Str::slug($name) . '-' . $this->faker->unique()->numerify('###'),
-            'status'     => 'active',
+            'status'     => 'published',
             'capacity'   => $this->faker->numberBetween(10, 200),
             'sort_order' => 0,
         ];

@@ -14,3 +14,9 @@ Named finite-inventory entitlements offered by the organisation (plots, slots, p
 | is_archived | boolean | no | default: false |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+
+### Media collections
+
+| Collection | Type | Notes |
+|---|---|---|
+| product_image | single file | Product photo. Conversions: webp, responsive breakpoints via `ImageSizeProfile::photo()`. |

@@ -266,6 +266,32 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
+            ['handle' => 'product_carousel'],
+            [
+                'label'              => 'Product Carousel',
+                'description'        => 'Coverflow carousel of published products with images, pricing, and buy buttons.',
+                'category'           => ['giving_and_sales'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => [],
+                'config_schema'      => [
+                    ['key' => 'heading',          'type' => 'text',   'label' => 'Heading'],
+                    ['key' => 'limit',            'type' => 'number', 'label' => 'Max products',              'advanced' => true],
+                    ['key' => 'navigation',       'type' => 'toggle', 'label' => 'Navigation arrows',        'default' => false],
+                    ['key' => 'pagination',       'type' => 'toggle', 'label' => 'Pagination dots',          'default' => false],
+                    ['key' => 'autoplay',         'type' => 'toggle', 'label' => 'Auto-advance',             'default' => false],
+                    ['key' => 'interval',         'type' => 'number', 'label' => 'Auto-advance interval (ms)', 'default' => 5000, 'advanced' => true],
+                    ['key' => 'background_color', 'type' => 'color',  'label' => 'Background color',         'default' => '#000000'],
+                    ['key' => 'text_color',       'type' => 'color',  'label' => 'Text color',               'default' => '#ffffff'],
+                    ['key' => 'success_page',     'type' => 'select', 'label' => 'Thank-you page',           'options_from' => 'pages'],
+                    ['key' => 'full_width',       'type' => 'toggle', 'label' => 'Full width',               'default' => true],
+                ],
+                'assets'             => ['scss' => ['resources/scss/widgets/_product-carousel.scss']],
+                'template'           => "@include('widgets.product-carousel')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
             ['handle' => 'donation_form'],
             [
                 'label'              => 'Donation Form',

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\Page;
 use App\Models\Product;
 
 class PageBuilderDataSources
@@ -20,6 +21,7 @@ class PageBuilderDataSources
             'products'    => static::products(),
             'forms'       => static::forms(),
             'collections' => static::collections(),
+            'pages'       => static::pages(),
             default       => [],
         };
     }
@@ -57,6 +59,16 @@ class PageBuilderDataSources
             ->orderBy('name')
             ->get(['handle', 'name'])
             ->pluck('name', 'handle')
+            ->all();
+    }
+
+    private static function pages(): array
+    {
+        return Page::published()
+            ->where('type', 'default')
+            ->orderBy('title')
+            ->get(['slug', 'title'])
+            ->pluck('title', 'slug')
             ->all();
     }
 }
