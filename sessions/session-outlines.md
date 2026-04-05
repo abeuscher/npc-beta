@@ -139,20 +139,15 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 130 | Social Sharing Widget |
 | 131 | Content Listing Widgets |
 | 132 | Widget Audit |
-
----
+| 133 | Admin Layout & Chrome |
 
 ---
 
 ## Admin UI & Layout — Beta 1 Scope
 
-### Session 133 — Admin Layout & Chrome
+### Session 134 — Design System Editor: Buttons
 
-Interactive exploration of the admin panel's structural UI: left navigation menu, page body area, and header bar. Review current layout, discuss alternative configurations, and agree on changes. This is a design-driven session — decisions made here will be implemented in-place.
-
-### Session 134 — Front-End Buttons & Controls
-
-Review default button styles on both public and admin sides. Evaluate exposing a button style configuration tool in CMS Settings (border-radius, color overrides, hover effects). Audit current button usage across widgets for consistency.
+Launches the Design System Editor (tabbed page under Tools) and builds the first functional tab: Buttons. Five built-in variants (primary, secondary, text, destructive, link) with admin controls for radius, colors, hover, weight, borders. Includes icon button controls and form-append button support. Full spec in `sessions/134. Design System Editor Buttons.md`.
 
 ### Session 135 — Column Widget UI Improvements
 
@@ -176,6 +171,36 @@ Build a logo block widget for the site header. Restructure the default header an
 
 ### Code Housekeeping Notes
 
+
+---
+
+## Page Builder Overhaul — Beta 1 Scope
+
+The page builder evolves from a form-based editor into a constrained design tool. The user edits content inline and controls appearance via a right-hand properties panel (Adobe-style). The system owns the design; the user owns the content and arrangement. Widgets self-describe their data shape and carry demo payloads so they always render meaningfully — even before real content is bound.
+
+### Session 138 — Widget Data Contract & Demo Data
+
+Each widget type becomes a complete, self-describing contract. Add a `demo_data` key (or `getDemoData()` method) to `WidgetType` that returns sample payloads matching the shape `WidgetDataResolver` produces for that widget's collection type. For system collection types (events, posts, products), wire the existing debug data generator to produce ephemeral in-memory sample records — not persisted, just the right-shaped arrays. For custom collections, generate plausible sample values from the collection's field schema (text → lorem, image → placeholder, date → recent date, etc.). Add a `group` key to `config_schema` field definitions: `content`, `appearance`, or `layout` — backfill all existing widgets. This is the foundation everything else builds on.
+
+### Session 139 — Widget Preview Iframe
+
+Build a preview route (admin-authenticated) that renders a single widget using `WidgetRenderer::render()` inside a lightweight shell: public CSS bundle + modern-normalize, no Filament styles. The shell loads in an iframe within the page builder. Implement a `postMessage` protocol to push updated config into the iframe, triggering server-side re-render via a Livewire endpoint with debounce (~300ms). When no real collection is bound, the preview falls back to `getDemoData()`. The widget picker also benefits — it can render live thumbnails from real widget output instead of static screenshots.
+
+### Session 140 — Properties Panel & Config Split
+
+Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 138: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+
+### Session 141 — Builder Layout Overhaul
+
+Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
+
+### Session 142 — Inline Text Editing
+
+Map `contenteditable` regions in the preview iframe to richtext `config_schema` fields. When the user clicks a text region in the preview, it becomes editable in-place. Changes sync bidirectionally: edits in the iframe update Livewire state, edits in the content form update the iframe. Handle selection/focus management across the iframe boundary. Scope to richtext and plain-text fields only — structured fields (dropdowns, toggles, images) stay in the properties panel. This is the hardest session in the sequence and may need outside help or may split into two sessions.
+
+### Session 143 — Interactive Preview & Polish
+
+Load the public JS bundle inside the preview iframe so widgets with client-side behavior (Swiper carousels, Alpine.js interactions, map embeds) render correctly. Handle JS re-initialization after each re-render cycle. Add responsive preview toggle (desktop/tablet/mobile viewport simulation). Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget).
 
 ---
 
@@ -278,14 +303,6 @@ Full widget style surface schema: each widget type declares a `style_schema` (CS
 ### Widget Portability & Distribution
 
 Each widget becomes a self-describing class: handle, config schema, render logic, JS/CSS asset manifest, optional collection type definitions. Foundation for future widget distribution.
-
-### Page Builder — Live Preview
-
-Split-pane or overlay preview of page changes before saving. Requires the front-end build pipeline to be stable.
-
-### Page Builder — Layer Explorer
-
-A simple text-node tree representation of the page's widget structure (similar to a DOM inspector). Helps users locate deeply nested blocks inside column slots without expanding every level manually. Not front-and-centre — a collapsible sidebar or panel overlay. Needs design discussion before building; deferred to post-Beta 1.
 
 ### Image & Media Handling — Carousels & Galleries
 
@@ -396,9 +413,5 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 ---
 
 ## Future Projects *(post-management console)*
-
-### Frontend Build Service
-
-**Pulled forward to pre-beta scope as Session 122.** The build server is being built as a separate repo and integrated into the app before the remaining widget sessions. See `docs/build-server-spec.md` for the full specification. The admin panel CSS (Filament theme) remains on Vite — the build server handles only public-facing widget and site styles.
 
 ### Easter Egg & Fun Features

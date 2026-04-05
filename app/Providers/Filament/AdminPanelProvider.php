@@ -7,6 +7,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
@@ -66,6 +67,11 @@ class AdminPanelProvider extends PanelProvider
                 \Illuminate\Support\Facades\Route::post('/quickbooks/disconnect', [\App\Http\Controllers\QuickBooksCallbackController::class, 'disconnect'])
                     ->name('quickbooks.disconnect')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
+                // Content width toggle
+                \Illuminate\Support\Facades\Route::post('/toggle-full-width', \App\Http\Controllers\Admin\ToggleFullWidthController::class)
+                    ->name('toggle-full-width')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
             })
             ->colors([
                 'primary' => Color::hex($primaryColor),
@@ -76,6 +82,13 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Finance')->collapsed(),
                 NavigationGroup::make('Tools')->collapsed(),
                 NavigationGroup::make('Settings')->collapsed(),
+            ])
+            ->sidebarCollapsibleOnDesktop()
+            ->userMenuItems([
+                'layout-toggle' => MenuItem::make()
+                    ->label(fn (): string => session('admin_full_width') ? 'Restricted width' : 'Full width')
+                    ->icon(fn (): string => session('admin_full_width') ? 'heroicon-m-arrows-pointing-in' : 'heroicon-m-arrows-pointing-out')
+                    ->postAction(fn (): string => route('filament.admin.toggle-full-width')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -109,6 +122,13 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(
                     '<link rel="stylesheet" href="/css/admin.css">'
                 )
+            )
+            // Full-width content toggle — removes max-width cap on main content area.
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => session('admin_full_width')
+                    ? new HtmlString('<style>.fi-main { max-width: 100% !important; }</style>')
+                    : new HtmlString('')
             )
             // @alpinejs/sort enables drag-to-reorder in the page builder.
             // If CSP blocks this (eval() error), the Up/Down fallback in the
