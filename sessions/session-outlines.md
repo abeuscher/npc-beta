@@ -135,6 +135,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 126 | Logo Garden Widget & Demo Collection Seeding |
 | 127 | Board Members & Three Buckets Widgets |
 | 128 | Product Carousel Widget |
+| 129 | Embed Map Widget |
 
 ---
 
@@ -157,15 +158,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 129 — Embed Map Widget
+### Session 130 — Social Sharing Widget
 
-Google Maps embed widget: admin pastes a share URL or iframe snippet, widget extracts embed URL and renders a responsive iframe with scroll-lock overlay. Introduces `notice` config field type for the inspector. See `sessions/129. Embed Map Widget.md`.
-
-### Widget — Social Sharing
-
-### Widget — Social Sharing
-
-Row of share buttons (Facebook, Twitter/X, LinkedIn, Email, Copy Link). Pure anchor tags with platform share URLs — no third-party scripts. Toggleable per platform.
+Thin inline row of share icons — pure anchor tags, no third-party scripts. Platforms: Bluesky, Mastodon, Email, Copy Link, LinkedIn, Facebook (fediverse first). Background color, full-width background toggle (content stays in site-container), alignment control, per-platform checkboxes (3 per row). Introduces `checkboxes` config field type. Icons provided by user as SVGs. See `sessions/130. Social Sharing Widget.md`.
 
 ### Widget — Modal
 

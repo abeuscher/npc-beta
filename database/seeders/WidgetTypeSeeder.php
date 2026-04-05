@@ -650,5 +650,28 @@ class WidgetTypeSeeder extends Seeder
                 'template'           => "@include('widgets.hero')",
             ]
         );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'map_embed'],
+            [
+                'label'              => 'Map Embed',
+                'description'        => 'Embedded Google Map from a share link or iframe snippet.',
+                'category'           => ['content'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => [],
+                'assets'             => ['scss' => ['resources/scss/widgets/_map-embed.scss']],
+                'config_schema'      => [
+                    ['type' => 'notice', 'label' => 'Privacy', 'content' => 'Google may use embedded maps to collect visitor data. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google\'s Privacy Policy</a>.', 'variant' => 'warning'],
+                    ['key' => 'heading',      'type' => 'text',     'label' => 'Heading'],
+                    ['key' => 'map_input',    'type' => 'textarea',  'label' => 'Google Maps link or embed code'],
+                    ['key' => 'aspect_ratio', 'type' => 'select',   'label' => 'Aspect Ratio', 'default' => '16/9', 'options' => ['16/9' => '16:9', '4/3' => '4:3', '1/1' => '1:1', '21/9' => '21:9']],
+                    ['key' => 'min_height',   'type' => 'number',   'label' => 'Minimum height (px)', 'default' => 300, 'advanced' => true],
+                    ['key' => 'max_height',   'type' => 'number',   'label' => 'Maximum height (px)', 'default' => 600, 'advanced' => true],
+                    ['key' => 'full_width',   'type' => 'toggle',   'label' => 'Full width',          'default' => false],
+                ],
+                'template'           => "@include('widgets.map-embed')",
+            ]
+        );
     }
 }

@@ -78,6 +78,9 @@ class WidgetType extends Model implements HasMedia
     {
         $config = [];
         foreach ($this->config_schema ?? [] as $field) {
+            if (empty($field['key'])) {
+                continue;
+            }
             $config[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
                 'toggle' => false,
                 'number' => null,
