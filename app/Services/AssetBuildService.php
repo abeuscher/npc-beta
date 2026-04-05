@@ -183,6 +183,12 @@ class AssetBuildService
             }
         }
 
+        // Append button style overrides from Design System settings
+        $buttonOverrides = $this->generateButtonOverrideCss();
+        if ($buttonOverrides) {
+            $combined .= "// ── button-overrides (from DB) ──\n" . $buttonOverrides . "\n";
+        }
+
         if ($combined) {
             $scss[] = [
                 'path' => 'theme/public.scss',
@@ -277,5 +283,60 @@ class AssetBuildService
                 File::delete($file->getPathname());
             }
         }
+    }
+
+    protected function generateButtonOverrideCss(): string
+    {
+        $styles = SiteSetting::get('button_styles');
+        if (! $styles || ! is_array($styles)) {
+            return '';
+        }
+
+        $radiusMap = [
+            'sharp'            => '0',
+            'slightly-rounded' => '0.25em',
+            'rounded'          => '0.5em',
+            'pill'             => '999px',
+        ];
+
+        $variantHandles = ['primary', 'secondary', 'text', 'destructive', 'link'];
+        $lines = [":root {\n"];
+
+        foreach ($variantHandles as $handle) {
+            $v = $styles[$handle] ?? [];
+
+            if (! empty($v['border_radius'])) {
+                $lines[] = "    --btn-{$handle}-radius: " . ($radiusMap[$v['border_radius']] ?? '0.25em') . ";\n";
+            }
+            if (! empty($v['bg_color'])) {
+                $lines[] = "    --btn-{$handle}-bg: {$v['bg_color']};\n";
+            }
+            if (! empty($v['text_color'])) {
+                $lines[] = "    --btn-{$handle}-color: {$v['text_color']};\n";
+            }
+            if (! empty($v['border_color'])) {
+                $lines[] = "    --btn-{$handle}-border-color: {$v['border_color']};\n";
+            }
+            if (! empty($v['border_width']) && $v['border_width'] !== '0') {
+                $lines[] = "    --btn-{$handle}-border-width: {$v['border_width']};\n";
+            }
+            if (! empty($v['font_weight'])) {
+                $lines[] = "    --btn-{$handle}-font-weight: {$v['font_weight']};\n";
+            }
+            if (! empty($v['text_transform']) && $v['text_transform'] !== 'none') {
+                $lines[] = "    --btn-{$handle}-text-transform: {$v['text_transform']};\n";
+            }
+        }
+
+        // Icon settings
+        $icon = $styles['icon'] ?? [];
+        $iconSizeMap = ['match' => '1em', 'larger' => '1.25em', '1.5x' => '1.5em'];
+        if (! empty($icon['icon_size'])) {
+            $lines[] = "    --btn-icon-size: " . ($iconSizeMap[$icon['icon_size']] ?? '1em') . ";\n";
+        }
+
+        $lines[] = "}\n";
+
+        return implode('', $lines);
     }
 }

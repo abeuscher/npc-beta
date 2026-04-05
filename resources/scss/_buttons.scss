@@ -15,53 +15,173 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Buttons
+// Button base — system-managed structure
 // ─────────────────────────────────────────────────────────────────────────────
 
 .btn {
     display: inline-block;
     padding: 0.625rem 1.5rem;
-    font-weight: 600;
+    font-weight: var(--btn-font-weight, 600);
     text-decoration: none;
     cursor: pointer;
-    transition: opacity 0.15s;
-    border-radius: $radius;
+    transition: background-color 0.15s, opacity 0.15s, filter 0.15s;
+    border-radius: var(--btn-radius, #{$radius});
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    border: var(--btn-border-width, 0) solid var(--btn-border-color, transparent);
+    text-transform: var(--btn-text-transform, none);
+    background: var(--btn-bg, transparent);
+    color: var(--btn-color, inherit);
 
-    &:hover { opacity: 0.8; }
-
-    &--link {
-        background: transparent;
-        border: 0;
-        padding: 0;
-        margin: 0;
-        color: inherit;
-        font-size: inherit;
-        cursor: pointer;
-        text-decoration: underline;
-
-        &:hover { opacity: 0.75; }
+    &:focus-visible {
+        outline: 2px solid $color-primary;
+        outline-offset: 2px;
     }
 
-    &--primary {
-        background: $color-primary;
-        color: white;
+    &:disabled,
+    &[aria-disabled="true"] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
-    &--secondary {
-        border: 1px solid #d1d5db;
-        color: #374151;
-        background: transparent;
+    // Hover behaviors — applied via data attribute set in compiled overrides
+    &[data-hover="opacity"]:hover { opacity: 0.8; }
+    &[data-hover="darken"]:hover  { filter: brightness(0.85); }
+    &[data-hover="lighten"]:hover { filter: brightness(1.15); }
 
-        &:hover {
-            border-color: $color-primary;
-            color: $color-primary;
+    // Fallback hover when no data-hover
+    &:not([data-hover]):hover { opacity: 0.8; }
+
+    // ── Modifiers (wrap / block-mobile) ─────────────────────────────────
+    &--wrap {
+        white-space: normal;
+        text-align: center;
+    }
+
+    &--block-mobile {
+        @media (max-width: $bp-md) {
+            display: block;
+            width: 100%;
         }
     }
 
+    // ── Size modifiers (system-managed, applied by widget templates) ────
+    &--sm { padding: 0.375rem 1rem; font-size: 0.875rem; }
+    &--lg { padding: 0.75rem 2rem;  font-size: 1.125rem; }
+
+    // ── Variants ────────────────────────────────────────────────────────
+
+    &--primary {
+        --btn-bg: var(--btn-primary-bg, #{$color-primary});
+        --btn-color: var(--btn-primary-color, white);
+        --btn-radius: var(--btn-primary-radius, #{$radius});
+        --btn-border-width: var(--btn-primary-border-width, 0);
+        --btn-border-color: var(--btn-primary-border-color, transparent);
+        --btn-font-weight: var(--btn-primary-font-weight, 600);
+        --btn-text-transform: var(--btn-primary-text-transform, none);
+    }
+
+    &--secondary {
+        --btn-bg: var(--btn-secondary-bg, transparent);
+        --btn-color: var(--btn-secondary-color, #374151);
+        --btn-radius: var(--btn-secondary-radius, #{$radius});
+        --btn-border-width: var(--btn-secondary-border-width, 1px);
+        --btn-border-color: var(--btn-secondary-border-color, #d1d5db);
+        --btn-font-weight: var(--btn-secondary-font-weight, 600);
+        --btn-text-transform: var(--btn-secondary-text-transform, none);
+    }
+
     &--text {
-        color: $color-primary;
+        --btn-bg: var(--btn-text-bg, transparent);
+        --btn-color: var(--btn-text-color, #{$color-primary});
+        --btn-radius: var(--btn-text-radius, #{$radius});
+        --btn-border-width: var(--btn-text-border-width, 0);
+        --btn-border-color: var(--btn-text-border-color, transparent);
+        --btn-font-weight: var(--btn-text-font-weight, 600);
+        --btn-text-transform: var(--btn-text-text-transform, none);
         padding-left: 0;
         padding-right: 0;
-        background: transparent;
+    }
+
+    &--destructive {
+        --btn-bg: var(--btn-destructive-bg, #dc2626);
+        --btn-color: var(--btn-destructive-color, white);
+        --btn-radius: var(--btn-destructive-radius, #{$radius});
+        --btn-border-width: var(--btn-destructive-border-width, 0);
+        --btn-border-color: var(--btn-destructive-border-color, transparent);
+        --btn-font-weight: var(--btn-destructive-font-weight, 600);
+        --btn-text-transform: var(--btn-destructive-text-transform, none);
+    }
+
+    &--link {
+        --btn-bg: transparent;
+        --btn-color: var(--btn-link-color, inherit);
+        --btn-radius: 0;
+        --btn-border-width: 0;
+        --btn-font-weight: var(--btn-link-font-weight, 400);
+        --btn-text-transform: var(--btn-link-text-transform, none);
+        padding: 0;
+        margin: 0;
+        border: 0;
+        font-size: inherit;
+        text-decoration: underline;
+    }
+
+    // ── Icon buttons ────────────────────────────────────────────────────
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        flex-shrink: 0;
+
+        svg {
+            width: var(--btn-icon-size, 1em);
+            height: var(--btn-icon-size, 1em);
+        }
+    }
+
+    &--icon-left  { display: inline-flex; align-items: center; gap: 0.375em; }
+    &--icon-right { display: inline-flex; align-items: center; flex-direction: row-reverse; gap: 0.375em; }
+
+    &--icon-only {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1;
+        padding: 0.625rem;
+    }
+
+    &--icon-collapse-mobile {
+        @media (max-width: $bp-md) {
+            .btn__text { display: none; }
+            aspect-ratio: 1;
+            padding: 0.625rem;
+            justify-content: center;
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Form-append buttons
+// ─────────────────────────────────────────────────────────────────────────────
+
+.input-group {
+    display: flex;
+
+    > input,
+    > .form-control {
+        flex: 1;
+        border-radius: $input-radius 0 0 $input-radius;
+        border-right: 0;
+    }
+
+    > .btn {
+        border-radius: 0 var(--btn-radius, #{$radius}) var(--btn-radius, #{$radius}) 0;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 }

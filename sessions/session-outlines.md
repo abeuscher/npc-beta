@@ -140,24 +140,51 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 131 | Content Listing Widgets |
 | 132 | Widget Audit |
 | 133 | Admin Layout & Chrome |
+| 134 | Design System Editor: Buttons |
 
 ---
 
-## Admin UI & Layout — Beta 1 Scope
+## Page Builder Overhaul — Beta 1 Scope
 
-### Session 134 — Design System Editor: Buttons
+The page builder evolves from a form-based editor into a constrained design tool. The user edits content inline and controls appearance via a right-hand properties panel (Adobe-style). The system owns the design; the user owns the content and arrangement. Widgets self-describe their data shape and carry demo payloads so they always render meaningfully — even before real content is bound.
 
-Launches the Design System Editor (tabbed page under Tools) and builds the first functional tab: Buttons. Five built-in variants (primary, secondary, text, destructive, link) with admin controls for radius, colors, hover, weight, borders. Includes icon button controls and form-append button support. Full spec in `sessions/134. Design System Editor Buttons.md`.
+### Session 135 — Widget Data Contract & Demo Data
 
-### Session 135 — Column Widget UI Improvements
+Each widget type becomes a complete, self-describing contract. Add a `demo_data` key (or `getDemoData()` method) to `WidgetType` that returns sample payloads matching the shape `WidgetDataResolver` produces for that widget's collection type. For system collection types (events, posts, products), wire the existing debug data generator to produce ephemeral in-memory sample records — not persisted, just the right-shaped arrays. For custom collections, generate plausible sample values from the collection's field schema (text → lorem, image → placeholder, date → recent date, etc.). Add a `group` key to `config_schema` field definitions: `content`, `appearance`, or `layout` — backfill all existing widgets. This is the foundation everything else builds on.
 
-UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed.
+### Session 136 — Widget Preview Iframe
 
-### Session 136 — Page Copy with Guardrails
+Build a preview route (admin-authenticated) that renders a single widget using `WidgetRenderer::render()` inside a lightweight shell: public CSS bundle + modern-normalize, no Filament styles. The shell loads in an iframe within the page builder. Implement a `postMessage` protocol to push updated config into the iframe, triggering server-side re-render via a Livewire endpoint with debounce (~300ms). When no real collection is bound, the preview falls back to `DemoDataService::generateForWidget()`. The widget picker also benefits — it can render live thumbnails from real widget output instead of static screenshots.
+
+### Session 137 — Properties Panel & Config Split
+
+Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+
+### Session 138 — Builder Layout Overhaul
+
+Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
+
+### Session 139 — Inline Text Editing
+
+Map `contenteditable` regions in the preview iframe to richtext `config_schema` fields. When the user clicks a text region in the preview, it becomes editable in-place. Changes sync bidirectionally: edits in the iframe update Livewire state, edits in the content form update the iframe. Handle selection/focus management across the iframe boundary. Scope to richtext and plain-text fields only — structured fields (dropdowns, toggles, images) stay in the properties panel. This is the hardest session in the sequence and may need outside help or may split into two sessions.
+
+### Session 140 — Interactive Preview & Polish
+
+Load the public JS bundle inside the preview iframe so widgets with client-side behavior (Swiper carousels, Alpine.js interactions, map embeds) render correctly. Handle JS re-initialization after each re-render cycle. Add responsive preview toggle (desktop/tablet/mobile viewport simulation). Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget).
+
+---
+
+## Admin UI & CMS — Beta 1 Scope (post-builder overhaul)
+
+### Session 141 — Column Widget UI Improvements
+
+UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Fix ellipsis menu overflow / z-index issue for nested columns. Benefits from the builder overhaul — rework to use the new properties panel and preview iframe.
+
+### Session 142 — Page Copy with Guardrails
 
 Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
 
-### Session 137 — Site Chrome Widgets & Navigation
+### Session 143 — Site Chrome Widgets & Navigation
 
 Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
 
@@ -170,37 +197,6 @@ Build a logo block widget for the site header. Restructure the default header an
 - `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
 
 ### Code Housekeeping Notes
-
-
----
-
-## Page Builder Overhaul — Beta 1 Scope
-
-The page builder evolves from a form-based editor into a constrained design tool. The user edits content inline and controls appearance via a right-hand properties panel (Adobe-style). The system owns the design; the user owns the content and arrangement. Widgets self-describe their data shape and carry demo payloads so they always render meaningfully — even before real content is bound.
-
-### Session 138 — Widget Data Contract & Demo Data
-
-Each widget type becomes a complete, self-describing contract. Add a `demo_data` key (or `getDemoData()` method) to `WidgetType` that returns sample payloads matching the shape `WidgetDataResolver` produces for that widget's collection type. For system collection types (events, posts, products), wire the existing debug data generator to produce ephemeral in-memory sample records — not persisted, just the right-shaped arrays. For custom collections, generate plausible sample values from the collection's field schema (text → lorem, image → placeholder, date → recent date, etc.). Add a `group` key to `config_schema` field definitions: `content`, `appearance`, or `layout` — backfill all existing widgets. This is the foundation everything else builds on.
-
-### Session 139 — Widget Preview Iframe
-
-Build a preview route (admin-authenticated) that renders a single widget using `WidgetRenderer::render()` inside a lightweight shell: public CSS bundle + modern-normalize, no Filament styles. The shell loads in an iframe within the page builder. Implement a `postMessage` protocol to push updated config into the iframe, triggering server-side re-render via a Livewire endpoint with debounce (~300ms). When no real collection is bound, the preview falls back to `getDemoData()`. The widget picker also benefits — it can render live thumbnails from real widget output instead of static screenshots.
-
-### Session 140 — Properties Panel & Config Split
-
-Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 138: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
-
-### Session 141 — Builder Layout Overhaul
-
-Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
-
-### Session 142 — Inline Text Editing
-
-Map `contenteditable` regions in the preview iframe to richtext `config_schema` fields. When the user clicks a text region in the preview, it becomes editable in-place. Changes sync bidirectionally: edits in the iframe update Livewire state, edits in the content form update the iframe. Handle selection/focus management across the iframe boundary. Scope to richtext and plain-text fields only — structured fields (dropdowns, toggles, images) stay in the properties panel. This is the hardest session in the sequence and may need outside help or may split into two sessions.
-
-### Session 143 — Interactive Preview & Polish
-
-Load the public JS bundle inside the preview iframe so widgets with client-side behavior (Swiper carousels, Alpine.js interactions, map embeds) render correctly. Handle JS re-initialization after each re-render cycle. Add responsive preview toggle (desktop/tablet/mobile viewport simulation). Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget).
 
 ---
 
