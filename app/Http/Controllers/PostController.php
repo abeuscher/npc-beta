@@ -105,6 +105,15 @@ class PostController extends Controller
             }
         }
 
+        // Check if the first widget is a hero with overlap_nav enabled
+        $firstPw = $pageWidgets->first();
+        $navOverlap = $firstPw
+            && $firstPw->widgetType?->handle === 'hero'
+            && (($firstPw->config['overlap_nav'] ?? false) == true);
+        View::share('__navOverlap', $navOverlap);
+        View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
+        View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
+
         return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
     }
 }

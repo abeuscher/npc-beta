@@ -82,10 +82,11 @@ class WidgetType extends Model implements HasMedia
                 continue;
             }
             $config[$field['key']] = $field['default'] ?? match ($field['type'] ?? 'text') {
-                'toggle' => false,
-                'number' => null,
-                'image'  => null,
-                default  => '',
+                'toggle'     => false,
+                'number'     => null,
+                'image'      => null,
+                'checkboxes' => [],
+                default      => '',
             };
         }
 

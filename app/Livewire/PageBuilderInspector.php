@@ -213,6 +213,32 @@ class PageBuilderInspector extends Component
     }
 
     /**
+     * Toggle a value in a checkboxes config array.
+     */
+    public function toggleCheckbox(string $key, string $value): void
+    {
+        $this->assertCanEdit();
+
+        if (! $this->validateBlockOwnership()) {
+            return;
+        }
+
+        $current = $this->block['config'][$key] ?? [];
+        if (! is_array($current)) {
+            $current = [];
+        }
+
+        if (in_array($value, $current)) {
+            $current = array_values(array_diff($current, [$value]));
+        } else {
+            $current[] = $value;
+        }
+
+        $this->block['config'][$key] = $current;
+        PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+    }
+
+    /**
      * Auto-persist wire:model-bound field changes.
      */
     public function updated(string $name): void

@@ -136,6 +136,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 127 | Board Members & Three Buckets Widgets |
 | 128 | Product Carousel Widget |
 | 129 | Embed Map Widget |
+| 130 | Social Sharing Widget |
 
 ---
 
@@ -158,9 +159,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 130 — Social Sharing Widget
+### Session 131 — Content Listing Widgets
 
-Thin inline row of share icons — pure anchor tags, no third-party scripts. Platforms: Bluesky, Mastodon, Email, Copy Link, LinkedIn, Facebook (fediverse first). Background color, full-width background toggle (content stays in site-container), alignment control, per-platform checkboxes (3 per row). Introduces `checkboxes` config field type. Icons provided by user as SVGs. See `sessions/130. Social Sharing Widget.md`.
+Upgrade blog listing and events listing widgets with images, client-side pagination, search, sort, layout controls (list/grid), and a reusable content template pattern (`{{field_name}}` tokens). Add `post_thumbnail` and `post_header` media collections to Page model, `event_thumbnail` to Event model. Shared pager partial for reuse across all listing widgets. See `sessions/131. Content Listing Widgets.md`.
 
 ### Widget — Modal
 

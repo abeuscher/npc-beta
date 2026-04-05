@@ -1,12 +1,14 @@
 @php
-    $content        = $config['content'] ?? '';
-    $overlayOpacity = max(0, min(100, (int) ($config['overlay_opacity'] ?? 50))) / 100;
-    $ctas           = $config['ctas'] ?? [];
-    $overlapNav     = ($config['overlap_nav'] ?? false) == true;
-    $fullscreen     = ($config['fullscreen'] ?? false) == true;
-    $showScroll     = ($config['scroll_indicator'] ?? false) == true;
-    $position       = $config['text_position'] ?? 'center-center';
-    $minHeight      = $config['min_height'] ?? '24rem';
+    $content         = $config['content'] ?? '';
+    $overlayOpacity  = max(0, min(100, (int) ($config['overlay_opacity'] ?? 50))) / 100;
+    $ctas            = $config['ctas'] ?? [];
+    $overlapNav      = ($config['overlap_nav'] ?? false) == true;
+    $fullscreen      = ($config['fullscreen'] ?? false) == true;
+    $showScroll      = ($config['scroll_indicator'] ?? false) == true;
+    $position        = $config['text_position'] ?? 'center-center';
+    $minHeight       = $config['min_height'] ?? '24rem';
+    $backgroundColor = $config['background_color'] ?? '';
+    $textColor       = $config['text_color'] ?? '';
 
     $bgUrl = '';
     if (!empty($configMedia['background_image'])) {
@@ -21,7 +23,7 @@
         $videoUrl = $configMedia['background_video']->getUrl();
     }
 
-    $hasBg = $videoUrl || $bgUrl;
+    $hasBg = $videoUrl || $bgUrl || $backgroundColor;
 
     $classes = ['widget--hero'];
     if ($fullscreen)  $classes[] = 'hero--fullscreen';
@@ -31,13 +33,13 @@
     if (!$fullscreen) $classes[] = 'hero--height-' . str_replace('rem', '', $minHeight);
 @endphp
 
-<div class="{{ implode(' ', $classes) }}" style="--hero-bg: url('{{ $bgUrl }}') center/cover no-repeat; --hero-overlay: {{ $overlayOpacity }};">
+<div class="{{ implode(' ', $classes) }}" style="--hero-bg: {{ $backgroundColor ? e($backgroundColor) . ' ' : '' }}url('{{ $bgUrl }}') center/cover no-repeat; --hero-overlay: {{ $overlayOpacity }};{{ $textColor ? ' color:' . e($textColor) . ';' : '' }}">
 
     @if ($videoUrl)
         <video class="hero-video" autoplay muted loop playsinline preload="auto">
             <source src="{{ $videoUrl }}" type="{{ $configMedia['background_video']->mime_type }}">
         </video>
-    @elseif ($bgUrl)
+    @elseif ($bgUrl || $backgroundColor)
         <div class="hero-bg"></div>
     @endif
 

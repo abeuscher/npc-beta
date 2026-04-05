@@ -611,6 +611,8 @@ class WidgetTypeSeeder extends Seeder
                 'full_width'         => true,
                 'config_schema'      => [
                     ['key' => 'content',          'type' => 'richtext', 'label' => 'Content'],
+                    ['key' => 'background_color', 'type' => 'color',   'label' => 'Background Color', 'group' => 'hero_colors'],
+                    ['key' => 'text_color',       'type' => 'color',   'label' => 'Text Color',       'group' => 'hero_colors'],
                     ['key' => 'background_image', 'type' => 'image',   'label' => 'Background Image'],
                     ['key' => 'background_video', 'type' => 'video',   'label' => 'Background Video', 'helper' => 'MP4 or WebM — plays on loop, overrides background image'],
                     ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
@@ -671,6 +673,37 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'full_width',   'type' => 'toggle',   'label' => 'Full width',          'default' => false],
                 ],
                 'template'           => "@include('widgets.map-embed')",
+            ]
+        );
+
+        WidgetType::updateOrCreate(
+            ['handle' => 'social_sharing'],
+            [
+                'label'              => 'Social Sharing',
+                'description'        => 'Row of share buttons for social platforms, email, and link copying. No third-party scripts.',
+                'category'           => ['content'],
+                'allowed_page_types' => null,
+                'render_mode'        => 'server',
+                'collections'        => [],
+                'config_schema'      => [
+                    ['key' => 'heading',           'type' => 'text',       'label' => 'Heading'],
+                    ['key' => 'platforms',          'type' => 'checkboxes', 'label' => 'Platforms', 'columns' => 3, 'default' => ['bluesky', 'mastodon', 'email', 'copy_link', 'linkedin', 'facebook'], 'options' => [
+                        'bluesky'   => 'Bluesky',
+                        'mastodon'  => 'Mastodon',
+                        'email'     => 'Email',
+                        'copy_link' => 'Copy Link',
+                        'linkedin'  => 'LinkedIn',
+                        'facebook'  => 'Facebook',
+                    ]],
+                    ['key' => 'alignment',         'type' => 'select',     'label' => 'Alignment',    'default' => 'center', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right']],
+                    ['key' => 'icon_size',          'type' => 'select',     'label' => 'Icon size',    'default' => 'small',  'options' => ['small' => 'Small (20px)', 'medium' => 'Medium (28px)']],
+                    ['key' => 'background_color',   'type' => 'color',      'label' => 'Background color'],
+                    ['key' => 'text_color',         'type' => 'color',      'label' => 'Text color'],
+                    ['key' => 'full_width',         'type' => 'toggle',     'label' => 'Full width',   'default' => false],
+                    ['key' => 'mastodon_instance',  'type' => 'text',       'label' => 'Mastodon instance domain', 'default' => 'mastodon.social', 'advanced' => true],
+                ],
+                'assets'             => ['scss' => ['resources/scss/widgets/_social-sharing.scss']],
+                'template'           => "@include('widgets.social-sharing')",
             ]
         );
     }
