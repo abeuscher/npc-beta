@@ -25,7 +25,7 @@ it('creates hero widget type with correct category and config schema after seedi
         ->and($hero->allowed_page_types)->toBeNull();
 
     $keys = collect($hero->config_schema)->pluck('key')->all();
-    expect($keys)->toBe(['content', 'background_image', 'background_video', 'text_position', 'ctas', 'fullscreen', 'scroll_indicator', 'full_width', 'overlap_nav', 'overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height']);
+    expect($keys)->toBe(['content', 'background_color', 'text_color', 'background_image', 'background_video', 'text_position', 'ctas', 'fullscreen', 'scroll_indicator', 'full_width', 'overlap_nav', 'overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height']);
 });
 
 it('renders content from config in the hero template', function () {
