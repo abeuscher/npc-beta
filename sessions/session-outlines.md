@@ -134,6 +134,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 125 | Build Server Settings & CI Pipeline |
 | 126 | Logo Garden Widget & Demo Collection Seeding |
 | 127 | Board Members & Three Buckets Widgets |
+| 128 | Product Carousel Widget |
 
 ---
 
@@ -156,25 +157,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 128 — Product Carousel Widget
+### Session 129 — Embed Map Widget
 
-Swiper-based coverflow carousel of published products with images, pricing, and buy buttons. Adds image field to Product model, updates `resolveProducts()` with image/price data, adds `success_page` redirect to `ProductCheckoutController`, and includes a demo product seeder.
+Google Maps embed widget: admin pastes a share URL or iframe snippet, widget extracts embed URL and renders a responsive iframe with scroll-lock overlay. Introduces `notice` config field type for the inspector. See `sessions/129. Embed Map Widget.md`.
 
-### Widget — Alternating Panels
-
-Vertical stack of image-plus-text panels that alternate image side (left, right, left, right). Collection-backed. For feature tours and storytelling sections.
-
-### Widget — Map Embed
-
-Google Maps iframe embed: admin pastes a Maps share URL, widget converts to iframe. Configurable height, optional heading and caption.
-
-### Widget — Headline Patterns
-
-Configurable heading element: heading level (h1–h6), alignment, optional subtitle, decorative styles (underline, overline, rule, none). Section divider / visual break.
-
-### Widget — CTA Patterns
-
-Call-to-action section: heading, body text, one or two styled buttons (solid, outline, pill). Configurable background (transparent, light, dark).
+### Widget — Social Sharing
 
 ### Widget — Social Sharing
 
