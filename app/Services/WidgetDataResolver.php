@@ -92,6 +92,7 @@ class WidgetDataResolver
 
         $query = Page::where('type', 'post')
             ->published()
+            ->with('media')
             ->orderBy('published_at', 'desc');
 
         if ($limit) {
@@ -99,10 +100,11 @@ class WidgetDataResolver
         }
 
         return $query->get()->map(fn (Page $page) => [
-            'id'           => $page->id,
-            'title'        => $page->title,
-            'slug'         => $page->slug,
-            'published_at' => $page->published_at?->toIso8601String(),
+            'id'            => $page->id,
+            'title'         => $page->title,
+            'slug'          => $page->slug,
+            'published_at'  => $page->published_at?->toIso8601String(),
+            'thumbnail_url' => $page->getFirstMediaUrl('post_thumbnail', 'webp') ?: $page->getFirstMediaUrl('post_thumbnail'),
         ])->all();
     }
 
@@ -111,7 +113,7 @@ class WidgetDataResolver
         $limit        = isset($queryConfig['limit']) ? (int) $queryConfig['limit'] : null;
         $eventsPrefix = config('site.events_prefix', 'events');
 
-        $query = Event::with('landingPage')
+        $query = Event::with(['landingPage', 'media'])
             ->published()
             ->upcoming()
             ->orderBy('starts_at', 'asc');
@@ -121,16 +123,17 @@ class WidgetDataResolver
         }
 
         return $query->get()->map(fn (Event $event) => [
-            'id'         => $event->id,
-            'title'      => $event->title,
-            'slug'       => $event->slug,
-            'starts_at'  => $event->starts_at->toIso8601String(),
-            'ends_at'    => $event->ends_at?->toIso8601String(),
-            'is_virtual' => $event->is_virtual,
-            'is_free'    => $event->is_free,
-            'url'        => $event->landingPage
+            'id'            => $event->id,
+            'title'         => $event->title,
+            'slug'          => $event->slug,
+            'starts_at'     => $event->starts_at->toIso8601String(),
+            'ends_at'       => $event->ends_at?->toIso8601String(),
+            'is_virtual'    => $event->is_virtual,
+            'is_free'       => $event->is_free,
+            'url'           => $event->landingPage
                 ? url('/' . $event->landingPage->slug)
                 : url('/' . $eventsPrefix),
+            'thumbnail_url' => $event->getFirstMediaUrl('event_thumbnail', 'webp') ?: $event->getFirstMediaUrl('event_thumbnail'),
         ])->all();
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\User;
 use App\Observers\PageObserver;
+use App\Services\Media\ImageSizeProfile;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,13 +13,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 #[ObservedBy(PageObserver::class)]
-class Page extends Model
+class Page extends Model implements HasMedia
 {
-    use HasFactory, HasSlug, HasUuids, SoftDeletes;
+    use HasFactory, HasSlug, HasUuids, InteractsWithMedia, SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -88,5 +92,31 @@ class Page extends Model
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('post_thumbnail')->singleFile();
+        $this->addMediaCollection('post_header')->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        if ($media && str_contains($media->mime_type, 'svg')) {
+            return;
+        }
+
+        $profile = ImageSizeProfile::photo();
+
+        $this->addMediaConversion('webp')
+            ->width($profile->maxWidth)
+            ->height($profile->maxHeight)
+            ->format('webp');
+
+        foreach ($profile->breakpoints as $width) {
+            $this->addMediaConversion("responsive-{$width}")
+                ->width($width)
+                ->format('webp');
+        }
     }
 }

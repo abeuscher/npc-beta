@@ -137,6 +137,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 128 | Product Carousel Widget |
 | 129 | Embed Map Widget |
 | 130 | Social Sharing Widget |
+| 131 | Content Listing Widgets |
 
 ---
 
@@ -159,13 +160,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ## Widget System — Beta 1 Scope
 
-### Session 131 — Content Listing Widgets
+### Session 132 — Widget Audit
 
-Upgrade blog listing and events listing widgets with images, client-side pagination, search, sort, layout controls (list/grid), and a reusable content template pattern (`{{field_name}}` tokens). Add `post_thumbnail` and `post_header` media collections to Page model, `event_thumbnail` to Event model. Shared pager partial for reuse across all listing widgets. See `sessions/131. Content Listing Widgets.md`.
-
-### Widget — Modal
-
-Button-triggered modal overlay containing child widgets. Nesting container like column_widget but triggered by click. Alpine.js open/close. Configurable trigger button and modal size.
+Systematic audit of all widget types. Fix residual Tailwind utility classes, relocate misplaced inline CSS/JS to SCSS partials, ensure color config fields use `type: 'color'`, and report orphaned fields, unused variables, and other structural issues. Report-first: scan and present findings before applying fixes. See `sessions/132. Widget Audit.md`.
 
 ---
 

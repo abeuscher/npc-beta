@@ -13,6 +13,7 @@ use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Illuminate\Support\HtmlString;
@@ -223,6 +224,16 @@ class EventResource extends Resource
                                 QuillEditor::make('description')
                                     ->label('Description')
                                     ->nullable(),
+
+                                SpatieMediaLibraryFileUpload::make('event_thumbnail')
+                                    ->label('Thumbnail image')
+                                    ->helperText('Used in events listing widgets.')
+                                    ->collection('event_thumbnail')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                                    ->nullable()
+                                    ->columnSpanFull(),
                             ]),
 
                             Forms\Components\Section::make('Location Info')

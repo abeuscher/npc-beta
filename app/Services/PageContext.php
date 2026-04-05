@@ -32,6 +32,7 @@ class PageContext
         if ($this->postsCache === null) {
             $this->postsCache = Page::where('type', 'post')
                 ->published()
+                ->with('media')
                 ->orderByRaw('COALESCE(published_at, created_at) DESC')
                 ->get();
         }
@@ -56,6 +57,7 @@ class PageContext
         if ($this->eventsCache === null) {
             $this->eventsCache = Event::published()
                 ->upcoming()
+                ->with(['media', 'landingPage'])
                 ->orderBy('starts_at')
                 ->get();
         }

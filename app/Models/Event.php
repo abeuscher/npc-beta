@@ -130,6 +130,11 @@ class Event extends Model implements HasMedia
     // Methods
     // ──────────────────────────────────────────────────────────
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('event_thumbnail')->singleFile();
+    }
+
     public function registerMediaConversions(?Media $media = null): void
     {
         if ($media && str_contains($media->mime_type, 'svg')) {

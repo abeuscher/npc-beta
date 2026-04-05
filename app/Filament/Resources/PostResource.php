@@ -6,6 +6,7 @@ use App\Filament\Resources\PostResource\Pages;
 use App\Models\Page;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -50,6 +51,26 @@ class PostResource extends Resource
                 extraTitleFields: [
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
+
+                    SpatieMediaLibraryFileUpload::make('post_thumbnail')
+                        ->label('Thumbnail image')
+                        ->helperText('Used in blog listing widgets and social sharing.')
+                        ->collection('post_thumbnail')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
+                    SpatieMediaLibraryFileUpload::make('post_header')
+                        ->label('Header image')
+                        ->helperText('Optional banner image displayed at the top of the post.')
+                        ->collection('post_header')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
                 ],
                 withSeo: true,
                 pageBuilderProps: fn ($record) => ['pageId' => $record->id],
