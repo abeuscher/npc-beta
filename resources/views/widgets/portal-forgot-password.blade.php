@@ -20,4 +20,4 @@
     <button type="submit" class="btn btn--primary">Send reset link</button>
 </form>
 
-<p class="text-muted text-sm" style="margin-top: 1rem;"><a href="{{ route('portal.login') }}">Back to log in</a></p>
+<p class="text-muted text-sm portal-alt-link"><a href="{{ route('portal.login') }}">Back to log in</a></p>

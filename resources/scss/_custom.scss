@@ -385,6 +385,18 @@
     padding: 2rem 0;
 }
 
+.portal-alt-link {
+    margin-top: 1rem;
+}
+
+.portal-description {
+    margin-bottom: 1rem;
+}
+
+.portal-description--tight {
+    margin-bottom: 0.5rem;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget: events listing
 // ─────────────────────────────────────────────────────────────────────────────
@@ -518,6 +530,15 @@
 // Widget: product display
 // ─────────────────────────────────────────────────────────────────────────────
 
+.widget-product-display__description,
+.widget-product-display__status {
+    margin-bottom: 1rem;
+}
+
+.widget-product-display__subtitle {
+    margin-bottom: 0.75rem;
+}
+
 .price-card {
     display: flex;
     align-items: center;
@@ -550,6 +571,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget: donation form
 // ─────────────────────────────────────────────────────────────────────────────
+
+.donation-section {
+    margin-bottom: 1.5rem;
+}
+
+.donation-section__heading {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.donation-section__sub {
+    margin-top: 0.75rem;
+}
 
 .amount-grid,
 .frequency-grid {

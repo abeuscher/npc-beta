@@ -99,4 +99,4 @@
     </div>
 </form>
 
-<p class="text-muted text-sm" style="margin-top: 1rem;"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>
+<p class="text-muted text-sm portal-alt-link"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>

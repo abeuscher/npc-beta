@@ -36,7 +36,7 @@
 <div class="{{ implode(' ', $classes) }}" style="--hero-bg: {{ $backgroundColor ? e($backgroundColor) . ' ' : '' }}url('{{ $bgUrl }}') center/cover no-repeat; --hero-overlay: {{ $overlayOpacity }};{{ $textColor ? ' color:' . e($textColor) . ';' : '' }}">
 
     @if ($videoUrl)
-        <video class="hero-video" autoplay muted loop playsinline preload="auto">
+        <video class="hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
             <source src="{{ $videoUrl }}" type="{{ $configMedia['background_video']->mime_type }}">
         </video>
     @elseif ($bgUrl || $backgroundColor)

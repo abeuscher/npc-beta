@@ -9,7 +9,7 @@
         <h2>{{ $product->name }}</h2>
 
         @if ($product->description)
-            <p class="text-muted" style="margin-bottom: 1rem;">{{ $product->description }}</p>
+            <p class="text-muted widget-product-display__description">{{ $product->description }}</p>
         @endif
 
         @if ($checkoutStatus === 'success')
@@ -30,9 +30,9 @@
             </div>
 
         @elseif ($isAtCapacity)
-            <p class="text-muted" style="margin-bottom: 1rem;">This item is currently sold out.</p>
+            <p class="text-muted widget-product-display__status">This item is currently sold out.</p>
 
-            <h3 style="margin-bottom: 0.75rem;">Join the waitlist</h3>
+            <h3 class="widget-product-display__subtitle">Join the waitlist</h3>
 
             @if ($errors->has('waitlist'))
                 <div role="alert" class="alert alert--error">{{ $errors->first('waitlist') }}</div>

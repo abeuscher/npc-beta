@@ -102,8 +102,8 @@
             @endif
 
             @if ($showNavigation)
-                <button x-ref="prev" class="swiper-button-prev" type="button"></button>
-                <button x-ref="next" class="swiper-button-next" type="button"></button>
+                <button x-ref="prev" class="swiper-button-prev" type="button" aria-label="Previous slide"></button>
+                <button x-ref="next" class="swiper-button-next" type="button" aria-label="Next slide"></button>
             @endif
         </div>
     </div>

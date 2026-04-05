@@ -138,8 +138,33 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 129 | Embed Map Widget |
 | 130 | Social Sharing Widget |
 | 131 | Content Listing Widgets |
+| 132 | Widget Audit |
 
 ---
+
+---
+
+## Admin UI & Layout — Beta 1 Scope
+
+### Session 133 — Admin Layout & Chrome
+
+Interactive exploration of the admin panel's structural UI: left navigation menu, page body area, and header bar. Review current layout, discuss alternative configurations, and agree on changes. This is a design-driven session — decisions made here will be implemented in-place.
+
+### Session 134 — Front-End Buttons & Controls
+
+Review default button styles on both public and admin sides. Evaluate exposing a button style configuration tool in CMS Settings (border-radius, color overrides, hover effects). Audit current button usage across widgets for consistency.
+
+### Session 135 — Column Widget UI Improvements
+
+UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed.
+
+### Session 136 — Page Copy with Guardrails
+
+Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
+
+### Session 137 — Site Chrome Widgets & Navigation
+
+Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
 
 ---
 
@@ -155,14 +180,6 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 ---
 
 ## Public Styles & Form Controls — Beta 1 Scope
-
----
-
-## Widget System — Beta 1 Scope
-
-### Session 132 — Widget Audit
-
-Systematic audit of all widget types. Fix residual Tailwind utility classes, relocate misplaced inline CSS/JS to SCSS partials, ensure color config fields use `type: 'color'`, and report orphaned fields, unused variables, and other structural issues. Report-first: scan and present findings before applying fixes. See `sessions/132. Widget Audit.md`.
 
 ---
 

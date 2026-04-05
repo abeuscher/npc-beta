@@ -441,7 +441,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'y_field',           'type' => 'select', 'label' => 'Y axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for Y axis values (numeric)'],
                     ['key' => 'x_label',           'type' => 'text',   'label' => 'X axis label', 'helper' => 'X axis label'],
                     ['key' => 'y_label',           'type' => 'text',   'label' => 'Y axis label', 'helper' => 'Y axis label'],
-                    ['key' => 'bar_color',         'type' => 'text',   'label' => 'Bar colour',   'helper' => 'Bar colour (hex or CSS variable, defaults to primary)'],
+                    ['key' => 'bar_color',         'type' => 'color',  'label' => 'Bar colour',   'helper' => '#0172ad'],
                 ],
                 'template'      => "@include('widgets.bar-chart')",
             ]
@@ -490,8 +490,8 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'slides_per_view',   'type' => 'number',  'label' => 'Slides per view',    'default' => 1,       'advanced' => true],
                     ['key' => 'effect',            'type' => 'select',  'label' => 'Transition effect',  'default' => 'slide', 'advanced' => true, 'options' => ['slide' => 'Slide', 'fade' => 'Fade']],
                     ['key' => 'speed',             'type' => 'number',  'label' => 'Speed (ms)',          'default' => 300,     'advanced' => true],
-                    ['key' => 'link_color',        'type' => 'text',    'label' => 'Link color',                                'advanced' => true],
-                    ['key' => 'text_color',        'type' => 'text',    'label' => 'Text color',                                'advanced' => true],
+                    ['key' => 'link_color',        'type' => 'color',   'label' => 'Link color',                                'advanced' => true],
+                    ['key' => 'text_color',        'type' => 'color',   'label' => 'Text color',                                'advanced' => true],
                 ],
                 'template'      => "@include('widgets.carousel')",
             ]
@@ -515,7 +515,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'display_mode',      'type' => 'select',  'label' => 'Display mode',      'default' => 'static', 'options' => ['static' => 'Static Grid', 'carousel' => 'Carousel', 'smooth' => 'Smooth Scroll', 'flipper' => 'Flipper']],
                     ['key' => 'show_name',         'type' => 'toggle',  'label' => 'Show name',         'default' => false],
                     ['key' => 'name_field',        'type' => 'select',  'label' => 'Name field',        'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'shown_when' => 'show_name'],
-                    ['key' => 'background_color',  'type' => 'text',    'label' => 'Background colour', 'default' => '#ffffff'],
+                    ['key' => 'background_color',  'type' => 'color',   'label' => 'Background colour', 'default' => '#ffffff'],
                     ['key' => 'logos_per_row',     'type' => 'number',  'label' => 'Logos per row',     'default' => 5,    'advanced' => true],
                     ['key' => 'logo_max_height',   'type' => 'number',  'label' => 'Logo max size (px)',   'default' => 150, 'advanced' => true],
                     ['key' => 'carousel_duration', 'type' => 'number',  'label' => 'Carousel interval (ms)', 'default' => 3000, 'advanced' => true],

@@ -23,7 +23,7 @@
         <h2>Mailing Address</h2>
 
         @if (session('household_address_choice'))
-            <p class="text-muted" style="margin-bottom: 1rem;">You are part of the <strong>{{ $contact->householdName() }}</strong>. How would you like to apply this change?</p>
+            <p class="text-muted portal-description">You are part of the <strong>{{ $contact->householdName() }}</strong>. How would you like to apply this change?</p>
 
             <div class="portal-household-choice">
                 <form method="POST" action="{{ route('portal.account.update-address') }}">
@@ -82,8 +82,8 @@
 
     <section class="portal-section">
         <h2>Email Address</h2>
-        <p class="text-muted" style="margin-bottom: 0.5rem;">Your current email address is <strong>{{ $portalUser->email }}</strong>.</p>
-        <p class="text-muted" style="margin-bottom: 1rem;">Enter a new email below. A confirmation link will be sent to the new address — your email will not change until you click it.</p>
+        <p class="text-muted portal-description--tight">Your current email address is <strong>{{ $portalUser->email }}</strong>.</p>
+        <p class="text-muted portal-description">Enter a new email below. A confirmation link will be sent to the new address — your email will not change until you click it.</p>
         <form method="POST" action="{{ route('portal.account.request-email-change') }}" class="form-stack">
             @csrf
 

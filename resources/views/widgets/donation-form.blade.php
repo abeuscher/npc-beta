@@ -99,8 +99,8 @@
 
     @else
 
-        <div style="margin-bottom: 1.5rem;">
-            <p style="font-weight: 600; margin-bottom: 0.75rem;">Select an amount</p>
+        <div class="donation-section">
+            <p class="donation-section__heading">Select an amount</p>
 
             <div class="amount-grid">
                 @foreach ($presetAmounts as $preset)
@@ -117,7 +117,7 @@
                         :class="showCustom ? 'is-active' : ''">Custom</button>
             </div>
 
-            <div x-show="showCustom" x-cloak style="margin-top: 0.75rem;">
+            <div x-show="showCustom" x-cloak class="donation-section__sub">
                 <label for="donation_custom_amount" class="form-label">Custom amount ($)</label>
                 <input type="number" id="donation_custom_amount" x-model="customAmount"
                        min="1" max="10000" step="0.01" placeholder="Enter amount"
@@ -126,8 +126,8 @@
         </div>
 
         @if ($showFrequency)
-        <div style="margin-bottom: 1.5rem;">
-            <p style="font-weight: 600; margin-bottom: 0.75rem;">Frequency</p>
+        <div class="donation-section">
+            <p class="donation-section__heading">Frequency</p>
 
             <div class="frequency-grid">
                 <button type="button" @click="frequency = 'one_off'" :aria-pressed="frequency === 'one_off'"
@@ -148,7 +148,7 @@
         @endif
 
         @if ($showFunds)
-        <div style="margin-bottom: 1.5rem;" @custom-select-change="fundId = $event.detail.value">
+        <div class="donation-section" @custom-select-change="fundId = $event.detail.value">
             <label for="donation_fund" class="form-label">Designate to a fund (optional)</label>
             <x-custom-select
                 name="fund_id"
@@ -164,7 +164,7 @@
         </div>
 
         <button type="button" @click="submit()" :disabled="loading"
-                class="btn btn--primary" style="padding: 0.625rem 1.5rem;">
+                class="btn btn--primary">
             <span x-show="!loading">Donate</span>
             <span x-show="loading" x-cloak>Processing…</span>
         </button>

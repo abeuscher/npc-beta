@@ -33,5 +33,5 @@
     <button type="submit" class="btn btn--primary">Log in</button>
 </form>
 
-<p class="text-muted text-sm" style="margin-top: 1rem;"><a href="{{ route('portal.password.request') }}">Forgot your password?</a></p>
+<p class="text-muted text-sm portal-alt-link"><a href="{{ route('portal.password.request') }}">Forgot your password?</a></p>
 <p class="text-muted text-sm"><a href="{{ route('portal.signup') }}">Don't have an account? Sign up</a></p>

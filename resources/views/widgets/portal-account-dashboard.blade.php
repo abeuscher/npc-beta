@@ -4,7 +4,7 @@
 @endphp
 
 @if ($portalUser && $contact)
-    <p class="text-muted" style="margin-bottom: 1rem;">Welcome back, {{ $contact->first_name }}.</p>
+    <p class="text-muted portal-description">Welcome back, {{ $contact->first_name }}.</p>
 
     <dl class="portal-dl">
         <div class="portal-dl__row">
