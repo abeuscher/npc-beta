@@ -223,7 +223,7 @@
         @php $numCols = isset($block['config']['num_columns']) && $block['config']['num_columns'] !== '' ? (int) $block['config']['num_columns'] : 2; @endphp
 
         {{-- Column slot panels --}}
-        <div class="flex gap-3 overflow-x-auto">
+        <div class="flex gap-3">
             @for ($colIdx = 0; $colIdx < $numCols; $colIdx++)
             <div class="flex-1 min-w-0 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                 <div class="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700">
