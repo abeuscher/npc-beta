@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Page;
+use App\Models\PageWidget;
+use App\Models\Template;
+use App\Services\PageContext;
+use App\Services\WidgetRenderer;
+use Illuminate\Support\Facades\View;
+
+class PagePreviewController extends Controller
+{
+    public function show(Page $page)
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $pageContext = new PageContext($page);
+        View::share('pageContext', $pageContext);
+
+        $template = $page->template_id
+            ? Template::find($page->template_id)
+            : null;
+
+        if (! $template) {
+            $template = Template::query()->default()->first();
+        }
+
+        View::share('__template', $template);
+
+        $pageWidgets = $page->pageWidgets()
+            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->where('is_active', true)
+            ->whereNull('parent_widget_id')
+            ->orderBy('sort_order')
+            ->get();
+
+        $blocks         = [];
+        $inlineStyles   = '';
+        $inlineScripts  = '';
+        $widgetAssets   = ['css' => [], 'js' => [], 'scss' => []];
+
+        foreach ($pageWidgets as $pw) {
+            $blockData = $this->renderWidgetBlock($pw);
+            if ($blockData) {
+                $blocks[] = $blockData['block'];
+                $inlineStyles  .= $blockData['styles'];
+                $inlineScripts .= $blockData['scripts'];
+            }
+            WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
+        }
+
+        // Hero nav overlap
+        $firstPw = $pageWidgets->first();
+        $navOverlap = $firstPw
+            && $firstPw->widgetType?->handle === 'hero'
+            && (($firstPw->config['overlap_nav'] ?? false) == true);
+        View::share('__navOverlap', $navOverlap);
+        View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
+        View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
+
+        return view('admin.page-preview', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
+    }
+
+    private function renderWidgetBlock(PageWidget $pw): ?array
+    {
+        $widgetType = $pw->widgetType;
+
+        if (! $widgetType) {
+            return null;
+        }
+
+        $columnChildren = [];
+        if ($widgetType->handle === 'column_widget') {
+            $columnChildren = $this->renderColumnChildren($pw);
+        }
+
+        $result = WidgetRenderer::render($pw, $columnChildren);
+
+        if ($result['html'] === null) {
+            return null;
+        }
+
+        $configFullWidth = $pw->config['full_width'] ?? null;
+        $fullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
+
+        $block = [
+            'handle'       => $widgetType->handle,
+            'instance_id'  => $pw->id,
+            'html'         => $result['html'],
+            'css'          => $widgetType->css ?? '',
+            'js'           => $widgetType->js ?? '',
+            'style_config' => $pw->style_config ?? [],
+            'full_width'   => $fullWidth,
+            'label'        => $pw->label ?? $widgetType->label,
+        ];
+
+        return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
+    }
+
+    private function renderColumnChildren(PageWidget $pw): array
+    {
+        $children = [];
+
+        foreach ($pw->children as $child) {
+            if (! $child->is_active) {
+                continue;
+            }
+
+            $blockData = $this->renderWidgetBlock($child);
+
+            if ($blockData === null) {
+                continue;
+            }
+
+            $idx = $child->column_index ?? 0;
+            $children[$idx][] = $blockData['block'];
+        }
+
+        return $children;
+    }
+}

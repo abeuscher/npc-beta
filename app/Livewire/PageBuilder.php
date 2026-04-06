@@ -33,6 +33,9 @@ class PageBuilder extends Component
 
     public string $selectedBlockId = '';
 
+    /** Page builder mode: 'edit' (block list + focused widget) or 'preview' (full-page iframe). */
+    public string $mode = 'edit';
+
     // Add block modal
     public bool $showAddModal = false;
     public ?int $insertPosition = null;
@@ -412,6 +415,26 @@ class PageBuilder extends Component
             ->title("Template saved: {$name}")
             ->success()
             ->send();
+    }
+
+    // -------------------------------------------------------------------------
+    // Edit / Preview mode toggle
+    // -------------------------------------------------------------------------
+
+    public function switchToPreview(): void
+    {
+        $this->selectedBlockId = '';
+        $this->dispatch('block-selected', blockId: '', parentBlockId: '');
+        $this->mode = 'preview';
+    }
+
+    public function switchToEdit(string $blockId = ''): void
+    {
+        $this->mode = 'edit';
+
+        if ($blockId !== '') {
+            $this->selectBlock($blockId);
+        }
     }
 
     public function render(): \Illuminate\View\View

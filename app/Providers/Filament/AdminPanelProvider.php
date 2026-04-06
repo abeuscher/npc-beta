@@ -68,6 +68,11 @@ class AdminPanelProvider extends PanelProvider
                     ->name('quickbooks.disconnect')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
 
+                // Page preview for the page builder (renders full page with public layout)
+                \Illuminate\Support\Facades\Route::get('/preview/{page}', [\App\Http\Controllers\Admin\PagePreviewController::class, 'show'])
+                    ->name('page-preview')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
                 // Content width toggle
                 \Illuminate\Support\Facades\Route::post('/toggle-full-width', \App\Http\Controllers\Admin\ToggleFullWidthController::class)
                     ->name('toggle-full-width')

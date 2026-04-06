@@ -1,7 +1,18 @@
 <div
     class="page-builder"
-    x-data
-    x-on:keydown.escape.window="$wire.selectBlock('')"
+    x-data="{
+        handlePreviewMessage(e) {
+            if (e.data?.type === 'preview-widget-clicked' && e.data.widgetId) {
+                $wire.switchToEdit(e.data.widgetId);
+            }
+        }
+    }"
+    x-init="window.addEventListener('message', (e) => handlePreviewMessage(e))"
+    x-on:keydown.escape.window="
+        if ($wire.mode === 'edit' && $wire.selectedBlockId !== '') {
+            $wire.selectBlock('');
+        }
+    "
 >
 
     {{-- Public CSS is loaded via AdminPanelProvider render hook (build server bundle).
@@ -11,53 +22,93 @@
             min-height: auto;
             display: block;
         }
+        .page-builder-preview-iframe {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            min-height: 600px;
+            background: white;
+        }
     </style>
 
     {{-- ------------------------------------------------------------------ --}}
-    {{-- Two-column layout: block list (left ~55%) + inspector (right ~45%) --}}
+    {{-- Toolbar --}}
     {{-- ------------------------------------------------------------------ --}}
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <p class="text-sm text-gray-500">
+                {{ count($blocks) }} block(s) on this page.
+            </p>
+
+            {{-- Edit / Preview mode toggle --}}
+            <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                <button
+                    type="button"
+                    wire:click="switchToEdit"
+                    class="px-3 py-1.5 text-xs font-medium transition-colors {{ $mode === 'edit' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300' }}"
+                >Edit</button>
+                <button
+                    type="button"
+                    wire:click="switchToPreview"
+                    class="px-3 py-1.5 text-xs font-medium transition-colors {{ $mode === 'preview' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300' }}"
+                >Preview</button>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            @if ($mode === 'edit')
+                <button
+                    type="button"
+                    x-data
+                    x-show="$wire.selectedBlockId !== ''"
+                    x-cloak
+                    wire:click="selectBlock('')"
+                    class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Deselect
+                </button>
+            @endif
+            @if (count($blocks) > 0)
+                <button
+                    type="button"
+                    wire:click="openSaveTemplateModal()"
+                    class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    Save as Template
+                </button>
+            @endif
+            <button
+                type="button"
+                wire:click="openAddModal()"
+                class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none"
+            >
+                + Add Block
+            </button>
+        </div>
+    </div>
+
+    {{-- ------------------------------------------------------------------ --}}
+    {{-- Preview mode: full-page iframe --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @if ($mode === 'preview')
+        <iframe
+            src="{{ route('filament.admin.page-preview', ['page' => $pageId]) }}"
+            class="page-builder-preview-iframe"
+            style="height: 80vh;"
+        ></iframe>
+    @endif
+
+    {{-- ------------------------------------------------------------------ --}}
+    {{-- Edit mode: block list + inspector --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @if ($mode === 'edit')
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
 
         {{-- ── Left column: structural block list (8/12) ───────────────── --}}
         <div class="min-w-0 space-y-4">
-
-            {{-- Header --}}
-            <div class="flex items-center justify-between">
-                <p class="text-sm text-gray-500">
-                    {{ count($blocks) }} block(s) on this page.
-                </p>
-                <div class="flex items-center gap-2">
-                    <button
-                        type="button"
-                        x-data
-                        x-show="$wire.selectedBlockId !== ''"
-                        x-cloak
-                        wire:click="selectBlock('')"
-                        class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        Return to Preview
-                    </button>
-                    @if (count($blocks) > 0)
-                        <button
-                            type="button"
-                            wire:click="openSaveTemplateModal()"
-                            class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                            Save as Template
-                        </button>
-                    @endif
-                    <button
-                        type="button"
-                        wire:click="openAddModal()"
-                        class="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none"
-                    >
-                        + Add Block
-                    </button>
-                </div>
-            </div>
 
             {{-- Block list                                                      --}}
             {{-- @alpinejs/sort is loaded via AdminPanelProvider and enables     --}}
@@ -96,6 +147,7 @@
         </div>
 
     </div>
+    @endif {{-- end edit mode --}}
 
     {{-- ------------------------------------------------------------------ --}}
     {{-- Add Block Modal                                                      --}}
