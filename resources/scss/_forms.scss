@@ -1,65 +1,66 @@
 @use "variables" as *;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Form element defaults
+// Form element defaults — scoped under .np-site
 // ─────────────────────────────────────────────────────────────────────────────
-// These style the elements directly so templates don't need a class on every
-// input. The public SCSS is only loaded on public pages (admin uses Filament's
-// own pipeline), so there is no collision risk.
+// Bare element selectors are namespaced under .np-site to prevent collisions
+// with the admin panel. See _base.scss for the rationale.
 
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="tel"],
-input[type="number"],
-input[type="url"],
-input[type="search"],
-input[type="date"],
-select,
-textarea {
-    display: block;
-    width: 100%;
-    border-radius: $input-radius;
-    border: 1px solid $color-border-input;
-    padding: $input-padding-y $input-padding-x;
-    font-size: 1rem;
-    line-height: 1.5;
-    background: $input-bg;
-    color: inherit;
+.np-site {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    select,
+    textarea {
+        display: block;
+        width: 100%;
+        border-radius: $input-radius;
+        border: 1px solid $color-border-input;
+        padding: $input-padding-y $input-padding-x;
+        font-size: 1rem;
+        line-height: 1.5;
+        background: $input-bg;
+        color: inherit;
 
-    .dark & {
-        border-color: $color-border-input-dk;
-        background: $input-bg-dark;
-        color: $input-text-dark;
+        .dark & {
+            border-color: $color-border-input-dk;
+            background: $input-bg-dark;
+            color: $input-text-dark;
+        }
+
+        &:focus {
+            border-color: $color-primary;
+            outline: 2px solid $color-primary;
+            outline-offset: -1px;
+        }
     }
 
-    &:focus {
-        border-color: $color-primary;
-        outline: 2px solid $color-primary;
-        outline-offset: -1px;
+    textarea {
+        min-height: 6rem;
+        resize: vertical;
     }
-}
 
-textarea {
-    min-height: 6rem;
-    resize: vertical;
-}
+    select {
+        appearance: auto;
+    }
 
-select {
-    appearance: auto;
-}
+    input[type="checkbox"],
+    input[type="radio"] {
+        accent-color: var(--color-primary, #0172ad);
+    }
 
-input[type="checkbox"],
-input[type="radio"] {
-    accent-color: var(--color-primary, #0172ad);
-}
+    fieldset {
+        border: 1px solid $color-border;
+        border-radius: $radius;
+        padding: 1rem;
 
-fieldset {
-    border: 1px solid $color-border;
-    border-radius: $radius;
-    padding: 1rem;
-
-    .dark & { border-color: $color-border-dark; }
+        .dark & { border-color: $color-border-dark; }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

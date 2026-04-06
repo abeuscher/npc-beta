@@ -242,7 +242,7 @@
         @if ($previewHtml)
             {{-- Inner container: fixed pixel width matching viewport, zoom shrinks to fit panel --}}
             <div
-                class="widget-preview-scope"
+                class="widget-preview-scope np-site"
                 x-bind:style="'width: ' + viewportW + 'px; zoom: ' + zoomFactor + ';'"
             >
                 {!! $previewHtml !!}

@@ -14,7 +14,7 @@
 
     @stack('styles')
 </head>
-<body class="portal {{ $bodyClass ?? '' }}">
+<body class="np-site portal {{ $bodyClass ?? '' }}">
 
     @php
         $portalMenu  = \App\Models\NavigationMenu::where('handle', 'portal')->first();

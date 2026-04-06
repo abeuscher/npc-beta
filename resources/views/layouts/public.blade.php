@@ -206,7 +206,7 @@
         {!! $page->head_snippet !!}
     @endif
 </head>
-<body class="{{ $bodyClass ?? 'page-unknown' }}">
+<body class="np-site {{ $bodyClass ?? 'page-unknown' }}">
 
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}

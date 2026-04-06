@@ -124,41 +124,18 @@ class AdminPanelProvider extends PanelProvider
                 )
             )
             // Public site CSS for widget preview in the page builder.
-            // Uses CSS @layer so public styles have lower specificity than Filament.
+            // The build server bundle includes ALL public styles (base + widgets).
+            // Base element selectors are namespaced under .np-site in the SCSS source,
+            // so they only apply inside the preview container (which carries .np-site).
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
-                    $tags = '<style>@layer public-preview;</style>';
-
-                    // Vite-compiled public SCSS (typography, buttons, grid, layout)
-                    // Wrapped in .widget-preview-scope so element selectors (body, button, h1)
-                    // only apply inside the preview, not to Filament UI.
-                    $viteManifest = json_decode(@file_get_contents(public_path('build/manifest.json')) ?: '{}', true);
-                    $publicCss = $viteManifest['resources/scss/public.scss']['file'] ?? null;
-                    if ($publicCss) {
-                        $css = @file_get_contents(public_path('build/' . $publicCss));
-                        if ($css) {
-                            // The body {} rules become .widget-preview-scope body {} which won't match,
-                            // so we replicate the key body styles directly on the scope element.
-                            $tags .= '<style>@layer public-preview {
-                                .widget-preview-scope {
-                                    font-family: var(--font-family-body, system-ui, sans-serif);
-                                    line-height: 1.5;
-                                    color: #1f2937;
-                                }
-                                .widget-preview-scope { ' . $css . ' }
-                            }</style>';
-                        }
-                    }
-
-                    // Widget CSS bundle from build server (class-namespaced, safe to load directly)
                     $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
                     $widgetCss = $widgetManifest['css'] ?? null;
-                    if ($widgetCss) {
-                        $tags .= '<link rel="stylesheet" href="/build/widgets/' . $widgetCss . '">';
-                    }
 
-                    return new HtmlString($tags);
+                    return $widgetCss
+                        ? new HtmlString('<link rel="stylesheet" href="/build/widgets/' . $widgetCss . '">')
+                        : new HtmlString('');
                 }
             )
             // Full-width content toggle — removes max-width cap on main content area.

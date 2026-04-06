@@ -1,10 +1,25 @@
 @use "variables" as *;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Base element styles
+// .np-site — public site style namespace
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// ALL bare element selectors (body, h1, a, button, etc.) live inside the
+// .np-site wrapper. This prevents public styles from leaking into the admin
+// panel, which matters because the page builder renders live widget previews
+// inline alongside Filament components.
+//
+// On the public site, <body> carries the .np-site class so everything works
+// unchanged. In the admin page builder, the preview container carries .np-site
+// so widget previews get the correct base styles without contaminating the
+// surrounding Filament UI.
+//
+// Rule: never add bare element selectors outside .np-site. Widget-specific
+// classes (.widget--hero, .btn, .site-container, etc.) are already namespaced
+// and can live at root level.
 // ─────────────────────────────────────────────────────────────────────────────
 
-body {
+.np-site {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -16,38 +31,38 @@ body {
         color: $color-text-dark;
         background-color: $color-bg-dark;
     }
-}
 
-main { flex: 1; }
+    main { flex: 1; }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-family-heading, system-ui, sans-serif);
-    font-weight: 700;
-    line-height: 1.2;
-}
+    h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-family-heading, system-ui, sans-serif);
+        font-weight: 700;
+        line-height: 1.2;
+    }
 
-h1 { font-size: 2.25rem; }
-h2 { font-size: 1.875rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
-h5 { font-size: 1.125rem; }
-h6 { font-size: 1rem; }
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.875rem; }
+    h3 { font-size: 1.5rem; }
+    h4 { font-size: 1.25rem; }
+    h5 { font-size: 1.125rem; }
+    h6 { font-size: 1rem; }
 
-button {
-    appearance: none;
-    border: none;
-    background: none;
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-    padding: 0;
-}
+    button {
+        appearance: none;
+        border: none;
+        background: none;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        padding: 0;
+    }
 
-a {
-    color: $color-primary;
-    text-decoration: underline;
+    a {
+        color: $color-primary;
+        text-decoration: underline;
 
-    &:hover { opacity: 0.8; }
+        &:hover { opacity: 0.8; }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
