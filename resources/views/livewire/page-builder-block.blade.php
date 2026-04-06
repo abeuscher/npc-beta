@@ -23,14 +23,18 @@
     x-bind:style="selected
         ? 'zoom: 1.1; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
         : (anySelected && !childIsSelected
-            ? 'filter: blur(4px); opacity: 0.45; pointer-events: none; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
+            ? 'filter: blur(4px); opacity: 0.45; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease; cursor: pointer;'
             : 'transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
         )
     "
+    x-on:click="if (anySelected && !selected && !childIsSelected) { $event.stopPropagation(); $wire.selectSelf(); }"
     class="rounded-lg border shadow-sm {{ $block['widget_type_handle'] === 'column_widget' ? 'border-gray-300 bg-[#cccccc] dark:bg-gray-700' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}"
 >
-    {{-- Block header --}}
-    <div class="flex items-center gap-2 px-3 py-2">
+    {{-- Block header — pointer-events disabled when a sibling is focused --}}
+    <div
+        class="flex items-center gap-2 px-3 py-2"
+        x-bind:style="(anySelected && !selected && !childIsSelected) ? 'pointer-events: none;' : ''"
+    >
 
         {{-- Drag handle --}}
         <div
