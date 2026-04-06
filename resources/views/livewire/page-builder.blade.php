@@ -289,7 +289,7 @@
                  the preview on selection changes. Content updates are pushed via
                  the preview-content-changed event and applied manually. --}}
             <div
-                class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
+                class="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
                 x-bind:style="presetViewport < 1920
                     ? 'height: calc(100vh - 16rem); overflow-y: auto; display: flex; justify-content: center; background: #f3f4f6;'
                     : 'min-height: 400px; overflow: hidden;'"

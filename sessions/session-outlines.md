@@ -146,6 +146,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 137 | Inline Text Editing |
 | 138 | Widget JS Dependencies & Interactive Preview |
 | 139 | Unified Preview & Edit Layout |
+| 140 | Properties Panel & Config Split |
 
 ---
 
@@ -175,9 +176,14 @@ Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit
 - Block controls overlay (hover bar with label/drag handle, ellipsis menu on selected widget) — rely on Handles mode for reordering until this is built.
 - Inline text editing in the Edit pane (session 137's contenteditable system) — works in Handles mode; wiring into the unified preview deferred to avoid fine-tuning complexity before beta.
 
-### Properties Panel & Config Split
+### Session 141 — Code Review & Cleanup
 
-Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+Post-builder-overhaul code review following sessions 101 and 116 procedures. Stale references, dead code, widget copy/serialization consistency, permission/security audit, duplicated logic findings, framework alignment findings. Scoped to sessions 135–140 artifacts.
+
+### Session 142 — Inline JS/CSS Extraction & Migration Squash
+
+Extract large inline Alpine.js blocks from page builder blades into registered `Alpine.data()` components in `resources/js/page-builder/`. Targets: preview manager (~130 lines), spacing controls (~38 lines), widget filter modal (duplicated), buttons list manager, edit-in-place label. Audit and relocate inline CSS. Migration squash per session 062 procedure.
+
 
 ### Builder Chrome & Layer Explorer
 

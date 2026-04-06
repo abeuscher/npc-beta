@@ -13,3 +13,5 @@ Branches use the convention `session-NNN/N` where NNN is the session number and 
 - **Next iteration:** After the user merges and reports back, start from main: `git checkout main && git pull && git checkout -b session-NNN/2`. Repeat as needed.
 - **Session close documents** (log, outlines update, next-session prompt) go on the final iteration branch for the session.
 - **Never push or merge** — the user handles both.
+- **Never commit directly to main.** All commits go on session branches.
+- **Only branch from main.** Never create a branch off another branch.
