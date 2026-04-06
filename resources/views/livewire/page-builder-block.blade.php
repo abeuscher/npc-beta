@@ -220,10 +220,28 @@
     <div
         x-show="selected"
         x-cloak
-        class="widget-preview-scope border-t border-gray-100 dark:border-gray-700"
+        x-data="{
+            zoomFactor: 1,
+            computeZoom() {
+                const panel = this.$el;
+                const panelWidth = panel.offsetWidth;
+                const viewportWidth = window.innerWidth;
+                this.zoomFactor = panelWidth > 0 ? panelWidth / viewportWidth : 0.5;
+            },
+        }"
+        x-init="computeZoom()"
+        x-on:resize.window.debounce.150ms="computeZoom()"
+        class="widget-preview-frame border-t border-gray-100 dark:border-gray-700"
+        style="overflow: hidden; position: relative;"
     >
         @if ($previewHtml)
-            {!! $previewHtml !!}
+            {{-- Inner container renders at full viewport width, then zoom scales it down --}}
+            <div
+                class="widget-preview-scope"
+                x-bind:style="'width: ' + (100 / zoomFactor) + '%; zoom: ' + zoomFactor + '; transform-origin: top left;'"
+            >
+                {!! $previewHtml !!}
+            </div>
         @elseif ($isSelected)
             <div class="p-4 text-center text-sm text-gray-400">
                 No preview available for this widget.
