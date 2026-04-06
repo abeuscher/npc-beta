@@ -72,7 +72,9 @@ it('generates blog posts with page widgets', function () {
     WidgetType::create([
         'handle'        => 'text_block',
         'label'         => 'Text Block',
-        'config_schema' => [],
+        'config_schema' => [
+            ['key' => 'content', 'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
+        ],
     ]);
     WidgetType::create([
         'handle'        => 'blog_pager',

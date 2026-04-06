@@ -12,6 +12,7 @@ use App\Models\PortalAccount;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\WidgetType;
+use App\Services\DemoDataService;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Artisan;
@@ -190,16 +191,13 @@ class DashboardDebugGeneratorWidget extends Widget
             ]);
 
             if ($textBlockType) {
-                $paragraphs = rand(2, 4);
-                $html       = '';
-                for ($p = 0; $p < $paragraphs; $p++) {
-                    $html .= '<p>' . fake()->paragraph() . '</p>';
-                }
+                $demoService = app(DemoDataService::class);
+                $demoConfig  = $demoService->generateForWidget($textBlockType);
 
                 PageWidget::create([
                     'page_id'        => $page->id,
                     'widget_type_id' => $textBlockType->id,
-                    'config'         => ['content' => $html],
+                    'config'         => $demoConfig,
                     'sort_order'     => 0,
                 ]);
             }

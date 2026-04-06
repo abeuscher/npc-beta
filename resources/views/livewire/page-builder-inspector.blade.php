@@ -72,21 +72,26 @@
                 <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 space-y-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Config</p>
 
-                    @php $__groupOpen = null; @endphp
+                    @php
+                        $__groupOpen = null;
+                        // Semantic groups used for data contract — not for layout
+                        $__semanticGroups = ['content', 'appearance'];
+                    @endphp
                     @foreach ($primaryFields as $field)
                         @php $__fieldGroup = $field['group'] ?? null; @endphp
-                        @if ($__groupOpen && $__groupOpen !== $__fieldGroup)
+                        @php $__isLayoutGroup = $__fieldGroup && ! in_array($__fieldGroup, $__semanticGroups); @endphp
+                        @if ($__groupOpen && ($__isLayoutGroup ? $__groupOpen !== $__fieldGroup : true))
                             </div>
                             @php $__groupOpen = null; @endphp
                         @endif
-                        @if ($__fieldGroup && $__groupOpen !== $__fieldGroup)
+                        @if ($__isLayoutGroup && $__groupOpen !== $__fieldGroup)
                             @php
                                 $__shownWhen = $field['shown_when'] ?? null;
                             @endphp
                             <div class="grid grid-cols-2 gap-3" @if ($__shownWhen) x-show="$wire.block.config.{{ $__shownWhen }}" @endif>
                             @php $__groupOpen = $__fieldGroup; @endphp
                         @endif
-                        @include('livewire.partials.inspector-field', ['field' => $field, 'inGroup' => (bool) $__fieldGroup])
+                        @include('livewire.partials.inspector-field', ['field' => $field, 'inGroup' => (bool) $__groupOpen])
                     @endforeach
                     @if ($__groupOpen)
                         </div>

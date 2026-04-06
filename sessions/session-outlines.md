@@ -141,6 +141,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 132 | Widget Audit |
 | 133 | Admin Layout & Chrome |
 | 134 | Design System Editor: Buttons |
+| 135 | Widget Data Contract & Demo Data |
 
 ---
 
@@ -148,13 +149,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 The page builder evolves from a form-based editor into a constrained design tool. The user edits content inline and controls appearance via a right-hand properties panel (Adobe-style). The system owns the design; the user owns the content and arrangement. Widgets self-describe their data shape and carry demo payloads so they always render meaningfully — even before real content is bound.
 
-### Session 135 — Widget Data Contract & Demo Data
+### Session 136 — Widget Edit & Preview Modes
 
-Each widget type becomes a complete, self-describing contract. Add a `demo_data` key (or `getDemoData()` method) to `WidgetType` that returns sample payloads matching the shape `WidgetDataResolver` produces for that widget's collection type. For system collection types (events, posts, products), wire the existing debug data generator to produce ephemeral in-memory sample records — not persisted, just the right-shaped arrays. For custom collections, generate plausible sample values from the collection's field schema (text → lorem, image → placeholder, date → recent date, etc.). Add a `group` key to `config_schema` field definitions: `content`, `appearance`, or `layout` — backfill all existing widgets. This is the foundation everything else builds on.
-
-### Session 136 — Widget Preview Iframe
-
-Build a preview route (admin-authenticated) that renders a single widget using `WidgetRenderer::render()` inside a lightweight shell: public CSS bundle + modern-normalize, no Filament styles. The shell loads in an iframe within the page builder. Implement a `postMessage` protocol to push updated config into the iframe, triggering server-side re-render via a Livewire endpoint with debounce (~300ms). When no real collection is bound, the preview falls back to `DemoDataService::generateForWidget()`. The widget picker also benefits — it can render live thumbnails from real widget output instead of static screenshots.
+Two-mode editing experience: an edit mode where a single widget gets focus (zoomed, siblings blurred) and renders live via `WidgetRenderer` with public CSS, and a preview mode that shows the full saved page in a read-only admin-authenticated iframe with widget selection handles. Exiting edit mode triggers a save; preview always shows persisted state. Update `DemoDataService` to return LoremFlickr placeholder URLs for image fields. CSS `zoom` for focus scaling (reflows correctly, unlike `transform: scale()`). Phase 1 is a proof-of-concept for the zoom/focus approach before committing to the full build.
 
 ### Session 137 — Properties Panel & Config Split
 

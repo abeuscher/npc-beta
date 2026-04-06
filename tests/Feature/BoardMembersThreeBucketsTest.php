@@ -44,8 +44,16 @@ it('seeder creates board_members widget with correct config schema', function ()
         ->toContain('border_color')
         ->toContain('border_radius');
 
-    $colorFields = collect($wt->config_schema)->filter(fn ($f) => ($f['group'] ?? null) === 'colors');
-    expect($colorFields)->toHaveCount(3);
+    $appearanceFields = collect($wt->config_schema)->filter(fn ($f) => ($f['group'] ?? null) === 'appearance');
+    $contentFields    = collect($wt->config_schema)->filter(fn ($f) => ($f['group'] ?? null) === 'content');
+    // Color fields (background_color, pane_color, border_color) are now in 'appearance'
+    expect($appearanceFields->pluck('key'))
+        ->toContain('background_color')
+        ->toContain('pane_color')
+        ->toContain('border_color');
+    expect($contentFields->pluck('key'))
+        ->toContain('heading')
+        ->toContain('collection_handle');
 });
 
 it('seeder creates three_buckets widget with correct config schema', function () {
