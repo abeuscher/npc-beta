@@ -123,19 +123,43 @@ class AdminPanelProvider extends PanelProvider
                     '<link rel="stylesheet" href="/css/admin.css">'
                 )
             )
-            // Public site CSS for widget preview in the page builder.
+            // Public site CSS + JS for widget preview in the page builder.
             // The build server bundle includes ALL public styles (base + widgets).
             // Base element selectors are namespaced under .np-site in the SCSS source,
             // so they only apply inside the preview container (which carries .np-site).
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
+                    $tags = '';
                     $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
-                    $widgetCss = $widgetManifest['css'] ?? null;
 
-                    return $widgetCss
-                        ? new HtmlString('<link rel="stylesheet" href="/build/widgets/' . $widgetCss . '">')
-                        : new HtmlString('');
+                    $widgetCss = $widgetManifest['css'] ?? null;
+                    if ($widgetCss) {
+                        $tags .= '<link rel="stylesheet" href="/build/widgets/' . $widgetCss . '">';
+                    }
+
+                    $widgetJs = $widgetManifest['js'] ?? null;
+                    if ($widgetJs) {
+                        $tags .= '<script src="/build/widgets/' . $widgetJs . '" defer></script>';
+                    }
+
+                    // Swiper for carousel widget previews. The bundle version includes
+                    // all modules built-in, so we just need to provide the SwiperModules
+                    // global that widget templates reference (they push modules into an
+                    // array, but the bundle ignores them and uses everything anyway).
+                    $tags .= '
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+                    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+                    <script>
+                        if (window.Swiper && !window.SwiperModules) {
+                            window.SwiperModules = {
+                                Navigation: true, Pagination: true, Autoplay: true,
+                                EffectFade: true, EffectCoverflow: true, FreeMode: true
+                            };
+                        }
+                    </script>';
+
+                    return new HtmlString($tags);
                 }
             )
             // Full-width content toggle — removes max-width cap on main content area.
