@@ -106,6 +106,11 @@ COPY . .
 COPY --from=node-builder /app/public/build/manifest.json ./public/build/manifest.json
 COPY --from=node-builder /app/public/build/assets ./public/build/assets
 
+# Copy node_modules from the node-builder stage so that build:public can
+# read library source files (Swiper CSS, Chart.js UMD, jCalendar CSS) when
+# producing per-library bundles for the admin page builder preview.
+COPY --from=node-builder /app/node_modules ./node_modules
+
 # Generate the optimised autoloader now that all files are present
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
         composer dump-autoload --optimize; \
