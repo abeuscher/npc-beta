@@ -12,7 +12,7 @@ Definitions of available widget types for pages (server-rendered or client-rende
 | allowed_page_types | jsonb | yes | Array of page type strings (default, post, member, system), or null for "all" |
 | render_mode | enum | no | default: 'server'; values: server, client |
 | collections | jsonb | no | default: [] |
-| assets | jsonb | no | default: {}; keys: css (string[]), js (string[]), scss (string[]) — external file paths loaded by the layout |
+| assets | jsonb | no | default: {}; keys: css (string[]), js (string[]), scss (string[]) — external file paths loaded by the layout; libs (string[]) — JS library identifiers for admin preview loading (e.g. "swiper", "chart.js", "jcalendar") |
 | default_open | boolean | no | default: false |
 | full_width | boolean | no | default: false; when true, widget renders without the page content container |
 | config_schema | jsonb | no | default: [] |

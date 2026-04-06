@@ -25,6 +25,14 @@ class BuildPublicAssets extends Command
 
         $this->info("CSS: {$result->cssFilename} ({$this->formatBytes($result->cssSize)})");
         $this->info("JS:  {$result->jsFilename} ({$this->formatBytes($result->jsSize)})");
+
+        // Report library bundles from manifest
+        $manifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
+        $libs = $manifest['libs'] ?? [];
+        if ($libs) {
+            $this->info('Library bundles: ' . implode(', ', array_keys($libs)));
+        }
+
         $this->info("Built in {$result->buildTimeMs}ms");
 
         return self::SUCCESS;

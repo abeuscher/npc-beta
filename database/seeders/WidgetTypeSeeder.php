@@ -83,7 +83,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'        => 'server',
                 'full_width'         => true,
                 'collections'        => [],
-                'assets'             => ['scss' => ['resources/scss/widgets/_events-listing.scss', 'resources/scss/widgets/_pager.scss']],
+                'assets'             => ['scss' => ['resources/scss/widgets/_events-listing.scss', 'resources/scss/widgets/_pager.scss'], 'libs' => ['swiper']],
                 'config_schema'      => [
                     ['key' => 'heading',          'type' => 'text',     'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
                     ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{image}}</p><h3><a href="{{url}}">{{title}}</a></h3><h4>{{date}}</h4><p>Ends: {{ends_at}}</p><p>{{location}}</p><p>{{price_badge}}</p><p>{{slug}}</p><p>{{date_iso}}</p>', 'group' => 'content'],
@@ -109,7 +109,7 @@ class WidgetTypeSeeder extends Seeder
                 'render_mode'        => 'server',
                 'full_width'         => true,
                 'collections'        => [],
-                'assets'             => ['scss' => ['resources/scss/widgets/_blog-listing.scss', 'resources/scss/widgets/_pager.scss']],
+                'assets'             => ['scss' => ['resources/scss/widgets/_blog-listing.scss', 'resources/scss/widgets/_pager.scss'], 'libs' => ['swiper']],
                 'config_schema'      => [
                     ['key' => 'heading',          'type' => 'text',     'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
                     ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{image}}</p><h3><a href="{{url}}">{{title}}</a></h3><h4>{{date}}</h4><p>{{excerpt}}</p><p>{{slug}}</p><p>{{date_iso}}</p>', 'group' => 'content'],
@@ -305,7 +305,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'success_page',     'type' => 'select', 'label' => 'Thank-you page',           'options_from' => 'pages', 'group' => 'content'],
                     ['key' => 'full_width',       'type' => 'toggle', 'label' => 'Full width',               'default' => true, 'group' => 'appearance'],
                 ],
-                'assets'             => ['scss' => ['resources/scss/widgets/_product-carousel.scss']],
+                'assets'             => ['scss' => ['resources/scss/widgets/_product-carousel.scss'], 'libs' => ['swiper']],
                 'template'           => "@include('widgets.product-carousel')",
             ]
         );
@@ -433,7 +433,7 @@ class WidgetTypeSeeder extends Seeder
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => ['data'],
-                'assets'             => [],
+                'assets'             => ['libs' => ['chart.js']],
                 'config_schema'      => [
                     ['key' => 'heading',           'type' => 'text',   'label' => 'Chart title', 'helper' => 'Chart title', 'group' => 'content', 'subtype' => 'title'],
                     ['key' => 'collection_handle', 'type' => 'select', 'label' => 'Collection',  'options_from' => 'collections', 'helper' => 'Data source collection', 'group' => 'content'],
@@ -458,6 +458,7 @@ class WidgetTypeSeeder extends Seeder
                 'collections'        => [],
                 'assets'             => [
                     'scss' => ['resources/scss/widgets/_event-calendar.scss'],
+                    'libs' => ['jcalendar'],
                 ],
                 'config_schema' => [
                     ['key' => 'heading',      'type' => 'text',   'label' => 'Heading', 'helper' => 'Heading displayed above the calendar', 'group' => 'content', 'subtype' => 'title'],
@@ -493,6 +494,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'link_color',        'type' => 'color',   'label' => 'Link color',                                'advanced' => true, 'group' => 'appearance'],
                     ['key' => 'text_color',        'type' => 'color',   'label' => 'Text color',                                'advanced' => true, 'group' => 'appearance'],
                 ],
+                'assets'        => ['libs' => ['swiper']],
                 'template'      => "@include('widgets.carousel')",
             ]
         );
@@ -508,6 +510,7 @@ class WidgetTypeSeeder extends Seeder
                 'collections'        => ['logos'],
                 'assets'             => [
                     'scss' => ['resources/scss/widgets/_logo-garden.scss'],
+                    'libs' => ['swiper'],
                 ],
                 'config_schema'      => [
                     ['key' => 'collection_handle', 'type' => 'select',  'label' => 'Collection',        'options_from' => 'collections', 'group' => 'content'],

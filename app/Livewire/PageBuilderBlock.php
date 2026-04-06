@@ -82,6 +82,7 @@ class PageBuilderBlock extends Component
             'widget_type_label'           => $pw->widgetType?->label ?? 'Unknown',
             'widget_type_collections'     => $pw->widgetType?->collections ?? [],
             'widget_type_config_schema'   => $pw->widgetType?->config_schema ?? [],
+            'widget_type_assets'          => $pw->widgetType?->assets ?? [],
             'widget_type_default_open'    => $pw->widgetType?->default_open ?? false,
             'label'                       => $pw->label ?? '',
             'config'                      => $pw->config ?? [],

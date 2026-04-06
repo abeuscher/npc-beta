@@ -128,6 +128,20 @@ class AdminPanelProvider extends PanelProvider
                     '<link rel="stylesheet" href="/css/admin.css">'
                 )
             )
+            // Library bundle manifest for admin preview JS loading.
+            // Injected as a global JS object so the page builder can load
+            // per-library bundles on demand when a widget preview renders.
+            ->renderHook(
+                'panels::head.end',
+                function (): HtmlString {
+                    $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
+                    $libs = $widgetManifest['libs'] ?? [];
+
+                    return new HtmlString(
+                        '<script>window.__widgetLibs = ' . json_encode($libs, JSON_FORCE_OBJECT) . ';</script>'
+                    );
+                }
+            )
             // Public site CSS for widget preview in the page builder.
             // The build server bundle includes ALL public styles (base + widgets).
             // Base element selectors are namespaced under .np-site in the SCSS source,

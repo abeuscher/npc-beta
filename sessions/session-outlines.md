@@ -144,6 +144,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 135 | Widget Data Contract & Demo Data |
 | 136 | Widget Edit & Preview Modes |
 | 137 | Inline Text Editing |
+| 138 | Widget JS Dependencies & Interactive Preview |
 
 ---
 
@@ -163,29 +164,33 @@ In-place text editing within the widget edit mode. Widget templates annotated wi
 
 ### Session 138 — Widget JS Dependencies & Interactive Preview
 
-Load widget JS dependencies in the admin page builder so widgets with client-side behavior (Swiper carousels, Chart.js charts, jCalendar) render interactively in edit mode. Per-widget `libs` key in the `assets` JSONB declares dependencies. Build server produces per-library bundles (no Alpine.start() conflict). Dynamic loader in admin loads libraries on demand when a widget is selected. Add responsive preview toggle (desktop/tablet/mobile viewport widths). Undo/redo deferred to post-beta.
+Load widget JS dependencies in the admin page builder so widgets with client-side behavior (Swiper carousels, Chart.js charts, jCalendar) render interactively in edit mode. Per-widget `libs` key in the `assets` JSONB declares dependencies. Build server produces per-library bundles with JS and CSS (no Alpine.start() conflict). Dynamic loader in admin loads libraries on demand. Responsive preview toggle (desktop/tablet/mobile viewport widths). Undo/redo deferred to post-beta.
 
-### Session 139 — Properties Panel & Config Split
+### Session 139 — Unified Preview & Edit Layout
 
-Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit mode: persistent stacked widget preview on the left (all widgets rendered with public CSS, always visible) with a persistent inspector panel on the right. Clicking a widget selects it and populates the inspector — no mode switch, no re-render. Libraries load once at page level. Block management controls overlay each widget region. Handles mode: retains the existing block card list with drag handles and reorder (needed until drag-to-reorder is built into the preview). Preview iframe removed. Inline text editing works directly in the Edit pane.
 
-### Session 140 — Builder Layout Overhaul
+### Properties Panel & Config Split
 
-Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
+Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+
+### Builder Chrome & Layer Explorer
+
+Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots.
 
 ---
 
 ## Admin UI & CMS — Beta 1 Scope (post-builder overhaul)
 
-### Session 141 — Column Widget UI Improvements
+### Column Widget UI Improvements
 
 UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system. Column widgets present a unique challenge in the edit/preview paradigm because they are containers, not content widgets — the preview needs to show the rendered column grid with children, and edit mode needs to let you focus individual children within slots.
 
-### Session 142 — Page Copy with Guardrails
+### Page Copy with Guardrails
 
 Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
 
-### Session 143 — Site Chrome Widgets & Navigation
+### Site Chrome Widgets & Navigation
 
 Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
 

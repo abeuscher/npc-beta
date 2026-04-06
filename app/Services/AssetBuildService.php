@@ -11,11 +11,47 @@ use Illuminate\Support\Facades\Log;
 class AssetBuildService
 {
     protected string $outputDir;
+    protected string $libsDir;
     protected string $manifestPath;
+
+    /**
+     * JS source for each library bundle. Each entry produces a self-contained
+     * script that registers the expected globals without importing Alpine.
+     */
+    protected const LIBRARY_SOURCES = [
+        'swiper' => [
+            'js' => <<<'JS'
+import Swiper from 'swiper';
+import { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode } from 'swiper/modules';
+window.Swiper = Swiper;
+window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode };
+JS,
+            'scss' => [
+                'node_modules/swiper/swiper.scss',
+                'node_modules/swiper/modules/navigation.scss',
+                'node_modules/swiper/modules/pagination.scss',
+                'node_modules/swiper/modules/effect-fade.scss',
+            ],
+        ],
+        'chart.js' => [
+            'js' => <<<'JS'
+import Chart from 'chart.js/auto';
+window.Chart = Chart;
+JS,
+        ],
+        'jcalendar' => [
+            'js' => <<<'JS'
+import { calendarJs } from 'jcalendar.js/dist/calendar.export.js';
+window.calendarJs = calendarJs;
+JS,
+            'css' => ['node_modules/jcalendar.js/dist/calendar.js.min.css'],
+        ],
+    ];
 
     public function __construct()
     {
         $this->outputDir = public_path('build/widgets');
+        $this->libsDir = public_path('build/libs');
         $this->manifestPath = $this->outputDir . '/manifest.json';
     }
 
@@ -126,10 +162,14 @@ class AssetBuildService
             $jsSize = strlen($jsContent);
         }
 
+        // Build per-library bundles for admin preview
+        $libs = $this->buildLibraryBundles($url, $apiKey, $debug);
+
         // Write manifest
         $manifest = [
             'css' => $cssSize > 0 ? $cssFilename : null,
             'js' => $jsSize > 0 ? $jsFilename : null,
+            'libs' => $libs,
             'built_at' => now()->toIso8601String(),
         ];
         File::put($this->manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
@@ -148,6 +188,119 @@ class AssetBuildService
         ]);
 
         return BuildResult::success($cssFilename, $jsFilename, $cssSize, $jsSize, $elapsed);
+    }
+
+    /**
+     * Build a self-contained JS (and optionally CSS) bundle for each library.
+     *
+     * @return array<string, array{js?: string, css?: string}>  lib identifier → asset paths
+     */
+    protected function buildLibraryBundles(string $url, string $apiKey, bool $debug): array
+    {
+        if (! File::isDirectory($this->libsDir)) {
+            File::makeDirectory($this->libsDir, 0755, true);
+        }
+
+        $libs = [];
+
+        foreach (self::LIBRARY_SOURCES as $name => $libDef) {
+            $baseName = str_replace('.', '', $name); // chart.js → chartjs
+            $jsFilename = $baseName . '.js';
+            $cssFilename = $baseName . '.css';
+
+            // Collect SCSS sources from node_modules
+            $scssSources = [];
+            foreach ($libDef['scss'] ?? [] as $scssPath) {
+                $fullPath = base_path($scssPath);
+                if (file_exists($fullPath)) {
+                    $scssSources[] = [
+                        'path' => "libs/{$name}/" . basename($scssPath),
+                        'content' => file_get_contents($fullPath),
+                    ];
+                }
+            }
+
+            // Collect CSS sources from node_modules
+            $cssSources = [];
+            foreach ($libDef['css'] ?? [] as $cssPath) {
+                $fullPath = base_path($cssPath);
+                if (file_exists($fullPath)) {
+                    $cssSources[] = [
+                        'path' => "libs/{$name}/" . basename($cssPath),
+                        'content' => file_get_contents($fullPath),
+                    ];
+                }
+            }
+
+            $payload = [
+                'output' => [
+                    'css_filename' => $cssFilename,
+                    'js_filename' => $jsFilename,
+                ],
+                'sources' => [
+                    'scss' => $scssSources,
+                    'css' => $cssSources,
+                    'js' => [
+                        ['path' => "libs/{$name}/index.js", 'content' => $libDef['js']],
+                    ],
+                ],
+                'options' => [
+                    'minify' => true,
+                    'source_maps' => false,
+                ],
+            ];
+
+            try {
+                $response = Http::timeout(30)
+                    ->withToken($apiKey)
+                    ->post(rtrim($url, '/') . '/build', $payload);
+            } catch (\Throwable $e) {
+                Log::warning("Library bundle build failed for {$name}", ['error' => $e->getMessage()]);
+                continue;
+            }
+
+            if (! $response->successful()) {
+                Log::warning("Library bundle build returned HTTP {$response->status()} for {$name}");
+                continue;
+            }
+
+            $body = $response->json();
+
+            if (empty($body['success'])) {
+                if ($debug && ! empty($body['errors'])) {
+                    Log::warning("Library bundle build errors for {$name}", ['errors' => $body['errors']]);
+                }
+                continue;
+            }
+
+            $libEntry = [];
+
+            // Write JS bundle
+            if (! empty($body['files']['js']['content'])) {
+                $jsContent = base64_decode($body['files']['js']['content']);
+                if ($jsContent !== false && strlen($jsContent) > 0) {
+                    File::put($this->libsDir . '/' . $jsFilename, $jsContent);
+                    $libEntry['js'] = '/build/libs/' . $jsFilename;
+                    Log::info("Library JS built: {$name}", ['size' => strlen($jsContent)]);
+                }
+            }
+
+            // Write CSS bundle
+            if (! empty($body['files']['css']['content'])) {
+                $cssContent = base64_decode($body['files']['css']['content']);
+                if ($cssContent !== false && strlen($cssContent) > 0) {
+                    File::put($this->libsDir . '/' . $cssFilename, $cssContent);
+                    $libEntry['css'] = '/build/libs/' . $cssFilename;
+                    Log::info("Library CSS built: {$name}", ['size' => strlen($cssContent)]);
+                }
+            }
+
+            if (! empty($libEntry)) {
+                $libs[$name] = $libEntry;
+            }
+        }
+
+        return $libs;
     }
 
     protected function collectSources(): array
