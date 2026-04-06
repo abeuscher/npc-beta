@@ -21,11 +21,11 @@
 
         <div class="three-buckets__bucket">
             @if ($heading)
-                <h3 class="three-buckets__heading">{{ $heading }}</h3>
+                <h3 class="three-buckets__heading" data-config-key="heading_{{ $i }}" data-config-type="text">{{ $heading }}</h3>
             @endif
 
             @if ($body)
-                <div class="three-buckets__body">{!! $body !!}</div>
+                <div class="three-buckets__body" data-config-key="body_{{ $i }}" data-config-type="richtext">{!! $body !!}</div>
             @endif
 
             @if (!empty($ctas))

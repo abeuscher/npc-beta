@@ -6,6 +6,7 @@ use App\Models\Collection;
 use App\Models\PageWidget;
 use App\Models\Tag;
 use App\Services\PageBuilderDataSources;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -295,6 +296,19 @@ class PageBuilderInspector extends Component
         return PageWidget::where('id', $this->blockId)
             ->where('page_id', $this->block['page_id'])
             ->exists();
+    }
+
+    #[On('inline-config-updated')]
+    public function onInlineConfigUpdated(string $blockId, string $key, mixed $value): void
+    {
+        if ($blockId !== $this->blockId) {
+            return;
+        }
+
+        $this->block['config'][$key] = $value;
+
+        // Notify the browser so wire:ignore'd Quill editors can update their content.
+        $this->dispatch('inspector-field-updated', key: $key, value: $value);
     }
 
     public function render(): \Illuminate\View\View

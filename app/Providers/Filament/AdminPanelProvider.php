@@ -192,6 +192,23 @@ class AdminPanelProvider extends PanelProvider
                     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
                 ')
             )
+            // Inline text editing styles for the page builder preview.
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => new HtmlString('
+                    <style>
+                        /* Editable region affordance */
+                        .inline-editable { outline: 2px dashed transparent; outline-offset: 2px; transition: outline-color 0.15s ease; cursor: text; border-radius: 2px; }
+                        .inline-editable:hover { outline-color: rgba(99,102,241,0.4); }
+                        .inline-editable:focus,
+                        .inline-editable:focus-within { outline-color: rgb(99,102,241); outline-style: solid; }
+                        .inline-editable--text { min-width: 2rem; }
+
+                        /* Plain-text inline editable: minimum clickable width */
+                        .inline-editable--text { min-width: 2rem; }
+                    </style>
+                ')
+            )
             // Site-wide Livewire loading bar — fixed top bar that appears on any
             // server round-trip after a 200 ms delay (so instant clicks don't flash).
             ->renderHook(

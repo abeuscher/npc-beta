@@ -75,7 +75,7 @@
 >
     <div class="site-container">
         @if ($heading)
-            <h2 class="widget-events-listing__heading">{{ $heading }}</h2>
+            <h2 class="widget-events-listing__heading" data-config-key="heading" data-config-type="text">{{ $heading }}</h2>
         @endif
 
         @if ($showSearch)

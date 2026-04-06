@@ -67,6 +67,17 @@
             quill.on('text-change', () => {
                 $wire.updateConfig('{{ $field['key'] }}', quill.root.innerHTML);
             });
+
+            // Sync from inline edits: update this Quill when the same field
+            // is edited directly in the widget preview.
+            Livewire.on('inspector-field-updated', (params) => {
+                const data = Array.isArray(params) ? params[0] : params;
+                if (data.key !== '{{ $field['key'] }}') return;
+                const current = quill.root.innerHTML;
+                if (current !== data.value) {
+                    quill.root.innerHTML = data.value;
+                }
+            });
         }
     }"
 >

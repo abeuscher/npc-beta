@@ -518,6 +518,38 @@ class PageBuilderBlock extends Component
         return $fallback;
     }
 
+    // -------------------------------------------------------------------------
+    // Inline text editing — save config without re-rendering the preview
+    // -------------------------------------------------------------------------
+
+    /**
+     * Persist an inline text edit from the contenteditable preview.
+     *
+     * Unlike the inspector's updateConfig, this does NOT re-render the
+     * preview HTML — the user is editing live in the DOM.
+     */
+    public function updateInlineConfig(string $key, mixed $value): void
+    {
+        $this->assertCanEdit();
+
+        $pw = PageWidget::where('id', $this->blockId)
+            ->where('page_id', PageWidget::where('id', $this->blockId)->value('page_id'))
+            ->first();
+
+        if (! $pw) {
+            return;
+        }
+
+        $config = $pw->config ?? [];
+        $config[$key] = $value;
+        $pw->update(['config' => $config]);
+
+        $this->block['config'] = $config;
+
+        // Notify the inspector to refresh its fields (but skip preview re-render).
+        $this->dispatch('inline-config-updated', blockId: $this->blockId, key: $key, value: $value);
+    }
+
     public function render(): \Illuminate\View\View
     {
         return view('livewire.page-builder-block');

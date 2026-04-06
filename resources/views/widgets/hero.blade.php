@@ -51,7 +51,7 @@
         <div class="site-container">
             <div class="hero-inner">
             @if ($content)
-                <div class="hero-content {{ $hasBg ? 'hero-content--on-image' : '' }}">
+                <div class="hero-content {{ $hasBg ? 'hero-content--on-image' : '' }}" data-config-key="content" data-config-type="richtext">
                     {!! $content !!}
                 </div>
             @endif

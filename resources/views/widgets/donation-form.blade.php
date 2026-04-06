@@ -83,7 +83,7 @@
 }">
 
     @if ($heading)
-        <h2>{{ $heading }}</h2>
+        <h2 data-config-key="heading" data-config-type="text">{{ $heading }}</h2>
     @endif
 
     @if ($donationStatus === 'success')

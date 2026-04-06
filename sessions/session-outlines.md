@@ -143,6 +143,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 134 | Design System Editor: Buttons |
 | 135 | Widget Data Contract & Demo Data |
 | 136 | Widget Edit & Preview Modes |
+| 137 | Inline Text Editing |
 
 ---
 
@@ -156,44 +157,13 @@ The page builder evolves from a form-based editor into a constrained design tool
 
 Two-mode editing experience: an edit mode where a single widget gets focus (zoomed, siblings blurred) and renders live via `WidgetRenderer` with public CSS, and a preview mode that shows the full saved page in a read-only admin-authenticated iframe with widget selection handles. Exiting edit mode triggers a save; preview always shows persisted state. Update `DemoDataService` to return LoremFlickr placeholder URLs for image fields. CSS `zoom` for focus scaling (reflows correctly, unlike `transform: scale()`). Phase 1 is a proof-of-concept for the zoom/focus approach before committing to the full build.
 
-### Session 137 — Inline Text Editing
+### Session 137 — Inline Text Editing *(completed)*
 
-Enable in-place text editing within the widget edit mode. When a widget is focused in edit mode, its richtext and plain-text config fields become `contenteditable` regions inside the rendered preview. The user edits text directly in the widget's visual output rather than in a separate form. Changes persist to the widget's `config` via Livewire on blur or a debounced interval.
-
-**Scope:**
-- Richtext fields (`type: richtext`): render as `contenteditable` divs with basic formatting toolbar (bold, italic, link, headings, lists — matching Quill's current capabilities)
-- Plain-text fields (`type: text`): render as `contenteditable` spans, single-line, no formatting
-- Structured fields (dropdowns, toggles, images, colors, buttons) remain in the inspector panel — not editable inline
-- On focus: the widget's text regions become editable; on blur/deselect: changes are saved and the widget returns to read-only rendered state
-- The inspector panel stays visible and reflects the current text content (two-way sync)
-
-**Key technical considerations:**
-- The widget preview is rendered server-side via `WidgetRenderer::render()`. The output HTML needs to be annotated with `data-config-key` attributes so the JS knows which `contenteditable` region maps to which config field
-- Widget templates will need a convention: text output regions wrapped in an identifiable element (e.g. `<h1 data-config-key="heading">{{ $config['heading'] }}</h1>`)
-- Richtext HTML must be sanitized before persisting to prevent XSS — reuse the same sanitization as Quill's save path
-- The zoom-down container from session 136 means `contenteditable` operates at the zoomed scale — verify cursor positioning and selection work correctly with CSS `zoom`
-
-**Out of scope:**
-- Editing inside an iframe (session 136 established inline rendering, not iframe, for edit mode)
-- Image/media inline editing (drag-to-replace, crop) — future session
-- Column widget child inline editing — deferred to column widget session
+In-place text editing within the widget edit mode. Widget templates annotated with `data-config-key` / `data-config-type` attributes. Richtext fields use native `contenteditable="true"`, plain-text fields use `contenteditable="plaintext-only"` with Enter suppressed. Two-way sync between inline edits and the inspector panel via `updateInlineConfig` / `inline-config-updated` events. Quill formatting toolbar explored and removed — plain contenteditable provides cleaner UX; formatting stays in the inspector's Quill editor.
 
 ### Session 138 — Widget JS Dependencies & Interactive Preview
 
-Load widget JS dependencies in the inline editor pane so widgets with client-side behavior (Swiper carousels, Alpine.js chart widgets, map embeds) render correctly in edit mode.
-
-**Core problem discovered in session 136:** `public.js` bundles all widget JS libraries (Swiper, Chart.js, jCalendar) and registers them as globals (`window.Swiper`, `window.SwiperModules`, `window.Chart`, `window.calendarJs`). It also calls `Alpine.start()`, which conflicts with Filament's Alpine instance — so we can't load `public.js` in the admin. Loading individual libraries from CDN partially works but the module registration pattern (`window.SwiperModules.Navigation` etc.) expects the ESM imports from the Vite bundle, not the CDN bundle version.
-
-**Proposed architecture — per-widget JS dependency declaration:**
-- Each widget type declares its JS library dependencies in the `assets` column (new `libs` key or extend existing `js` array), e.g. `{"libs": ["swiper", "chart.js"]}`
-- A widget JS loader in the admin reads the focused widget's declared dependencies and loads only what's needed
-- Libraries are registered as globals matching the pattern `public.js` uses (`window.Swiper`, `window.SwiperModules`, etc.)
-- The build server could produce a self-contained JS bundle per library (or a combined bundle that doesn't call `Alpine.start()`) — this avoids CDN dependencies and version drift
-- Alpine re-initializes widget `x-data` on Livewire morph, so Swiper `init()` etc. fire automatically when the preview renders — no manual re-initialization needed
-
-**Additional scope:**
-- Add responsive preview toggle (desktop/tablet/mobile viewport simulation via zoom factor)
-- Address edge cases: undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget)
+Load widget JS dependencies in the admin page builder so widgets with client-side behavior (Swiper carousels, Chart.js charts, jCalendar) render interactively in edit mode. Per-widget `libs` key in the `assets` JSONB declares dependencies. Build server produces per-library bundles (no Alpine.start() conflict). Dynamic loader in admin loads libraries on demand when a widget is selected. Add responsive preview toggle (desktop/tablet/mobile viewport widths). Undo/redo deferred to post-beta.
 
 ### Session 139 — Properties Panel & Config Split
 

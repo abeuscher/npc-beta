@@ -11,10 +11,12 @@
         childIsSelected: false,
     }"
     x-on:block-selected.window="
+        const wasSelected = selected;
         selected = ($event.detail.blockId === '{{ $block['id'] }}');
         anySelected = ($event.detail.blockId !== '');
         childIsSelected = ($event.detail.parentBlockId === '{{ $block['id'] }}');
         if (childIsSelected) open = true;
+        if (wasSelected && !selected) $dispatch('inline-editing-cleanup');
     "
     x-bind:class="{
         'ring-2 ring-primary-500 widget-block--focused': selected,
@@ -224,23 +226,94 @@
         x-data="{
             zoomFactor: 0.5,
             viewportW: 1920,
+            debounceTimers: {},
+
             computeZoom() {
                 this.viewportW = window.innerWidth;
-                // Measure the parent block element (always visible) instead of this
-                // hidden x-show div which has 0 width until displayed.
                 const block = this.$refs.previewFrame.closest('[data-block-id]');
                 const panelWidth = block ? block.offsetWidth : 0;
                 this.zoomFactor = panelWidth > 0 ? panelWidth / this.viewportW : 0.5;
             },
+
+            initInlineEditing() {
+                const scope = this.$refs.previewScope;
+                if (!scope) return;
+                scope.querySelectorAll('[data-config-key]').forEach(el => this.wireEditable(el));
+            },
+
+            wireEditable(el) {
+                if (el._inlineWired) return;
+                el._inlineWired = true;
+
+                const key = el.dataset.configKey;
+                const type = el.dataset.configType || 'text';
+                const self = this;
+
+                el.classList.add('inline-editable');
+
+                if (type === 'richtext') {
+                    el.classList.add('inline-editable--richtext');
+                    el.setAttribute('contenteditable', 'true');
+
+                    el.addEventListener('input', () => {
+                        self.debounceSave(key, el.innerHTML, 600);
+                    });
+
+                    el.addEventListener('blur', () => {
+                        self.saveSingle(key, el.innerHTML);
+                    });
+                } else {
+                    el.classList.add('inline-editable--text');
+                    el.setAttribute('contenteditable', 'plaintext-only');
+
+                    el.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                    });
+
+                    el.addEventListener('input', () => {
+                        self.debounceSave(key, el.innerText.trim(), 600);
+                    });
+
+                    el.addEventListener('blur', () => {
+                        self.saveSingle(key, el.innerText.trim());
+                    });
+                }
+            },
+
+            debounceSave(key, value, delay) {
+                clearTimeout(this.debounceTimers[key]);
+                this.debounceTimers[key] = setTimeout(() => {
+                    this.saveSingle(key, value);
+                }, delay);
+            },
+
+            saveSingle(key, value) {
+                clearTimeout(this.debounceTimers[key]);
+                $wire.updateInlineConfig(key, value);
+            },
+
+            cleanup() {
+                Object.values(this.debounceTimers).forEach(t => clearTimeout(t));
+                this.debounceTimers = {};
+            },
         }"
-        x-init="$nextTick(() => computeZoom())"
+        x-init="
+            $nextTick(() => { computeZoom(); initInlineEditing(); });
+            Livewire.hook('morph.updated', ({ el }) => {
+                if (el === $refs.previewScope || $refs.previewScope?.contains(el)) {
+                    $nextTick(() => initInlineEditing());
+                }
+            });
+        "
         x-on:resize.window.debounce.150ms="computeZoom()"
+        x-on:inline-editing-cleanup.window="cleanup()"
         class="widget-preview-frame border-t border-gray-100 dark:border-gray-700"
         style="overflow: hidden; position: relative;"
     >
         @if ($previewHtml)
             {{-- Inner container: fixed pixel width matching viewport, zoom shrinks to fit panel --}}
             <div
+                x-ref="previewScope"
                 class="widget-preview-scope np-site"
                 x-bind:style="'width: ' + viewportW + 'px; zoom: ' + zoomFactor + ';'"
             >
@@ -423,5 +496,6 @@
         </div>
     @endteleport
     @endif
+
 
 </div>

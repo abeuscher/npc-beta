@@ -37,7 +37,7 @@ class WidgetTypeSeeder extends Seeder
                 'config_schema'      => [
                     ['key' => 'content', 'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
                 ],
-                'template'           => '{!! $config[\'content\'] ?? \'\' !!}',
+                'template'           => '<div data-config-key="content" data-config-type="richtext">{!! $config[\'content\'] ?? \'\' !!}</div>',
             ]
         );
 
