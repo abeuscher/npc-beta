@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     postgresql-client \
+    gosu \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -116,12 +117,14 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/resources/scss /var/www/html/public/build
 
-# Production: run as www-data for security. Local dev overrides this via
-# docker-compose.yml user: directive to match the host UID.
-USER www-data
+# Entrypoint script: fix ownership on mounted volumes before dropping to www-data.
+# Named volumes are mounted after build, so the Dockerfile chown doesn't persist.
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
 
 # ─────────────────────────────────────────
