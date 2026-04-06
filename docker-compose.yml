@@ -10,6 +10,7 @@ services:
       target: app
     container_name: nonprofitcrm_app
     restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - .:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
@@ -65,6 +66,7 @@ services:
       target: app
     container_name: nonprofitcrm_worker
     restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     volumes:
       - .:/var/www/html

@@ -114,7 +114,11 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
     fi
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/resources/scss
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/resources/scss /var/www/html/public/build
+
+# Production: run as www-data for security. Local dev overrides this via
+# docker-compose.yml user: directive to match the host UID.
+USER www-data
 
 EXPOSE 9000
 
