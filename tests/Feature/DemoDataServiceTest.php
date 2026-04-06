@@ -34,7 +34,7 @@ it('generates correct types for each field type', function () {
     expect($service->generateFieldValue('number', 'currency'))->toBeFloat();
     expect($service->generateFieldValue('color'))->toMatch('/^#[0-9a-f]{6}$/');
     expect($service->generateFieldValue('toggle'))->toBeTrue();
-    expect($service->generateFieldValue('image'))->toBeNull();
+    expect($service->generateFieldValue('image'))->toBeString()->toStartWith('https://loremflickr.com/');
     expect($service->generateFieldValue('video'))->toBeNull();
     expect($service->generateFieldValue('url'))->toBe('https://example.com');
     expect($service->generateFieldValue('buttons'))->toBeArray()->toHaveCount(2);
@@ -82,7 +82,7 @@ it('generates config for the hero widget with correct keys', function () {
     expect($config['content'])->toBeString()->toContain('<p>');
     expect($config['ctas'])->toBeArray();
     expect($config['fullscreen'])->toBeTrue();
-    expect($config['background_image'])->toBeNull();
+    expect($config['background_image'])->toBeString()->toStartWith('https://loremflickr.com/');
 });
 
 it('generates config for the text_block widget', function () {
@@ -128,7 +128,7 @@ it('generates event-shaped collection data', function () {
 
     expect($items)->toHaveCount(3);
     expect($items[0])->toHaveKeys(['id', 'title', 'slug', 'starts_at', 'ends_at', 'is_virtual', 'is_free', 'url', 'thumbnail_url']);
-    expect($items[0]['thumbnail_url'])->toBeNull();
+    expect($items[0]['thumbnail_url'])->toBeString()->toStartWith('https://loremflickr.com/');
 });
 
 it('generates blog-post-shaped collection data', function () {
@@ -165,7 +165,7 @@ it('generates custom collection data from field schema', function () {
     expect($items[0])->toHaveKeys(['title', 'description', 'photo']);
     expect($items[0]['title'])->toBeString()->not->toBeEmpty();
     expect($items[0]['description'])->toBeString()->not->toBeEmpty();
-    expect($items[0]['photo'])->toBeNull();
+    expect($items[0]['photo'])->toBeString()->toStartWith('https://loremflickr.com/');
 });
 
 it('returns empty array for custom collection without a collection instance', function () {

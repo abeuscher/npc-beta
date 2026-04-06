@@ -61,7 +61,7 @@ class DemoDataService
             'color'      => $this->generateColor(),
             'select'     => $this->generateSelect($fieldDef),
             'toggle'     => true,
-            'image'      => null,
+            'image'      => $this->generateImageUrl($fieldDef),
             'video'      => null,
             'url'        => 'https://example.com',
             'buttons'    => $this->generateButtons(),
@@ -179,6 +179,29 @@ class DemoDataService
         return [];
     }
 
+    private function generateImageUrl(array $fieldDef = []): string
+    {
+        $key = $fieldDef['key'] ?? '';
+
+        // Derive keyword and dimensions from the field key or context
+        [$width, $height, $keyword] = match (true) {
+            str_contains($key, 'background') || str_contains($key, 'hero')
+                => [800, 600, 'nature'],
+            str_contains($key, 'portrait') || str_contains($key, 'headshot') || str_contains($key, 'photo') || str_contains($key, 'member')
+                => [400, 400, 'portrait'],
+            str_contains($key, 'logo')
+                => [300, 200, 'logo'],
+            str_contains($key, 'thumbnail') || str_contains($key, 'thumb')
+                => [400, 300, 'city'],
+            str_contains($key, 'icon')
+                => [200, 200, 'abstract'],
+            default
+                => [600, 400, 'nature'],
+        };
+
+        return "https://loremflickr.com/{$width}/{$height}/{$keyword}";
+    }
+
     // ── Collection data generators ──────────────────────────────────────
 
     private function generateEventItems(int $count): array
@@ -201,7 +224,7 @@ class DemoDataService
                 'is_virtual'    => $i % 3 === 0,
                 'is_free'       => $isFree,
                 'url'           => 'https://example.com/events',
-                'thumbnail_url' => null,
+                'thumbnail_url' => 'https://loremflickr.com/600/400/event',
             ];
         }
 
@@ -218,7 +241,7 @@ class DemoDataService
                 'title'         => fake()->sentence(rand(4, 8)),
                 'slug'          => fake()->slug(3),
                 'published_at'  => now()->subDays(rand(1, 365))->toIso8601String(),
-                'thumbnail_url' => null,
+                'thumbnail_url' => 'https://loremflickr.com/600/400/city',
             ];
         }
 
@@ -240,7 +263,7 @@ class DemoDataService
                 'description' => fake()->sentence(),
                 'capacity'    => $capacity,
                 'available'   => $available,
-                'image_url'   => null,
+                'image_url'   => 'https://loremflickr.com/600/400/product',
                 'prices'      => [
                     [
                         'id'              => fake()->uuid(),
