@@ -155,19 +155,29 @@ The page builder evolves from a form-based editor into a constrained design tool
 
 Two-mode editing experience: an edit mode where a single widget gets focus (zoomed, siblings blurred) and renders live via `WidgetRenderer` with public CSS, and a preview mode that shows the full saved page in a read-only admin-authenticated iframe with widget selection handles. Exiting edit mode triggers a save; preview always shows persisted state. Update `DemoDataService` to return LoremFlickr placeholder URLs for image fields. CSS `zoom` for focus scaling (reflows correctly, unlike `transform: scale()`). Phase 1 is a proof-of-concept for the zoom/focus approach before committing to the full build.
 
-### Session 137 — Properties Panel & Config Split
+### Session 137 — Inline Text Editing
 
-Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+Enable in-place text editing within the widget edit mode. When a widget is focused in edit mode, its richtext and plain-text config fields become `contenteditable` regions inside the rendered preview. The user edits text directly in the widget's visual output rather than in a separate form. Changes persist to the widget's `config` via Livewire on blur or a debounced interval.
 
-### Session 138 — Builder Layout Overhaul
+**Scope:**
+- Richtext fields (`type: richtext`): render as `contenteditable` divs with basic formatting toolbar (bold, italic, link, headings, lists — matching Quill's current capabilities)
+- Plain-text fields (`type: text`): render as `contenteditable` spans, single-line, no formatting
+- Structured fields (dropdowns, toggles, images, colors, buttons) remain in the inspector panel — not editable inline
+- On focus: the widget's text regions become editable; on blur/deselect: changes are saved and the widget returns to read-only rendered state
+- The inspector panel stays visible and reflects the current text content (two-way sync)
 
-Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
+**Key technical considerations:**
+- The widget preview is rendered server-side via `WidgetRenderer::render()`. The output HTML needs to be annotated with `data-config-key` attributes so the JS knows which `contenteditable` region maps to which config field
+- Widget templates will need a convention: text output regions wrapped in an identifiable element (e.g. `<h1 data-config-key="heading">{{ $config['heading'] }}</h1>`)
+- Richtext HTML must be sanitized before persisting to prevent XSS — reuse the same sanitization as Quill's save path
+- The zoom-down container from session 136 means `contenteditable` operates at the zoomed scale — verify cursor positioning and selection work correctly with CSS `zoom`
 
-### Session 139 — Inline Text Editing
+**Out of scope:**
+- Editing inside an iframe (session 136 established inline rendering, not iframe, for edit mode)
+- Image/media inline editing (drag-to-replace, crop) — future session
+- Column widget child inline editing — deferred to column widget session
 
-Map `contenteditable` regions in the preview iframe to richtext `config_schema` fields. When the user clicks a text region in the preview, it becomes editable in-place. Changes sync bidirectionally: edits in the iframe update Livewire state, edits in the content form update the iframe. Handle selection/focus management across the iframe boundary. Scope to richtext and plain-text fields only — structured fields (dropdowns, toggles, images) stay in the properties panel. This is the hardest session in the sequence and may need outside help or may split into two sessions.
-
-### Session 140 — Widget JS Dependencies & Interactive Preview
+### Session 138 — Widget JS Dependencies & Interactive Preview
 
 Load widget JS dependencies in the inline editor pane so widgets with client-side behavior (Swiper carousels, Alpine.js chart widgets, map embeds) render correctly in edit mode.
 
@@ -182,7 +192,15 @@ Load widget JS dependencies in the inline editor pane so widgets with client-sid
 
 **Additional scope:**
 - Add responsive preview toggle (desktop/tablet/mobile viewport simulation via zoom factor)
-- Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget)
+- Address edge cases: undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget)
+
+### Session 139 — Properties Panel & Config Split
+
+Add a right-side properties panel to the page builder. The panel reads each widget's `config_schema` grouped by the `group` key added in session 135: Content fields stay in the main editing area (or a "Content" tab), Appearance and Layout fields render in the right panel — organised into collapsible sections. Changes in the properties panel drive the preview iframe via Livewire. This is the Adobe-style toolbar: constrained controls for spacing presets, layout variants (A/B/C), color-from-palette pickers, toggle switches — not freeform CSS.
+
+### Session 140 — Builder Layout Overhaul
+
+Rework the page builder page into the target two-panel layout: widget list / content on the left, properties panel on the right. Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. This session replaces the separate "Page Builder — Layer Explorer" post-beta stub.
 
 ---
 
@@ -190,7 +208,7 @@ Load widget JS dependencies in the inline editor pane so widgets with client-sid
 
 ### Session 141 — Column Widget UI Improvements
 
-UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Fix ellipsis menu overflow / z-index issue for nested columns. Benefits from the builder overhaul — rework to use the new properties panel and preview iframe.
+UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system. Column widgets present a unique challenge in the edit/preview paradigm because they are containers, not content widgets — the preview needs to show the rendered column grid with children, and edit mode needs to let you focus individual children within slots.
 
 ### Session 142 — Page Copy with Guardrails
 
