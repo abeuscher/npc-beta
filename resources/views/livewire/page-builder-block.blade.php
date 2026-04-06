@@ -7,36 +7,17 @@
         menuOpen: false,
         confirmDelete: false,
         selected: false,
-        anySelected: false,
-        childIsSelected: false,
     }"
     x-on:block-selected.window="
-        const wasSelected = selected;
         selected = ($event.detail.blockId === '{{ $block['id'] }}');
-        anySelected = ($event.detail.blockId !== '');
-        childIsSelected = ($event.detail.parentBlockId === '{{ $block['id'] }}');
-        if (childIsSelected) open = true;
-        if (wasSelected && !selected) $dispatch('inline-editing-cleanup');
     "
     x-bind:class="{
-        'ring-2 ring-primary-500 widget-block--focused': selected,
-        'widget-block--blurred': anySelected && !selected && !childIsSelected,
+        'ring-2 ring-primary-500': selected,
     }"
-    x-bind:style="selected
-        ? 'zoom: 1.1; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
-        : (anySelected && !childIsSelected
-            ? 'filter: blur(4px); opacity: 0.45; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease; cursor: pointer;'
-            : 'transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
-        )
-    "
-    x-on:click="if (anySelected && !selected && !childIsSelected) { $event.stopPropagation(); $wire.selectSelf(); }"
     class="rounded-lg border shadow-sm {{ $block['widget_type_handle'] === 'column_widget' ? 'border-gray-300 bg-[#cccccc] dark:bg-gray-700' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}"
 >
-    {{-- Block header — pointer-events disabled when a sibling is focused --}}
-    <div
-        class="flex items-center gap-2 px-3 py-2"
-        x-bind:style="(anySelected && !selected && !childIsSelected) ? 'pointer-events: none;' : ''"
-    >
+    {{-- Block header --}}
+    <div class="flex items-center gap-2 px-3 py-2">
 
         {{-- Drag handle --}}
         <div
@@ -217,213 +198,7 @@
         </div>
     </div>
 
-    {{-- Live widget preview — shown when block is focused (selected) --}}
-    @if ($block['widget_type_handle'] !== 'column_widget')
-    <div
-        x-show="selected"
-        x-cloak
-        x-ref="previewFrame"
-        x-data="{
-            zoomFactor: 0.5,
-            viewportW: 1920,
-            libsLoaded: false,
-            debounceTimers: {},
-
-            presetViewport: 1920,
-
-            computeZoom() {
-                this.viewportW = this.presetViewport;
-                const block = this.$refs.previewFrame.closest('[data-block-id]');
-                const panelWidth = block ? block.offsetWidth : 0;
-                this.zoomFactor = panelWidth > 0 ? panelWidth / this.viewportW : 0.5;
-            },
-
-            setViewport(w) {
-                this.presetViewport = w;
-                this.computeZoom();
-                requestAnimationFrame(() => this.reinitWidgetAlpine());
-            },
-
-            async loadLibs() {
-                const libs = @js($block['widget_type_assets']['libs'] ?? []);
-                const manifest = window.__widgetLibs || {};
-                const globalChecks = {
-                    'swiper': () => !!window.Swiper,
-                    'chart.js': () => !!window.Chart,
-                    'jcalendar': () => !!window.calendarJs,
-                };
-
-                const promises = [];
-
-                for (const lib of libs) {
-                    const entry = manifest[lib];
-                    if (!entry) continue;
-
-                    // Load CSS if not already present
-                    if (entry.css && !document.querySelector(`link[data-widget-lib='${lib}']`)) {
-                        const link = document.createElement('link');
-                        link.rel = 'stylesheet';
-                        link.href = entry.css;
-                        link.dataset.widgetLib = lib;
-                        document.head.appendChild(link);
-                    }
-
-                    // Load JS if global not yet available
-                    const check = globalChecks[lib];
-                    const alreadyLoaded = check ? check() : document.querySelector(`script[data-widget-lib='${lib}']`);
-                    if (!alreadyLoaded && entry.js) {
-                        promises.push(new Promise((resolve) => {
-                            const script = document.createElement('script');
-                            script.src = entry.js;
-                            script.dataset.widgetLib = lib;
-                            script.onload = resolve;
-                            script.onerror = () => { console.warn('Failed to load widget lib:', lib); resolve(); };
-                            document.head.appendChild(script);
-                        }));
-                    }
-                }
-
-                await Promise.all(promises);
-                this.libsLoaded = true;
-            },
-
-            initInlineEditing() {
-                const scope = this.$refs.previewScope;
-                if (!scope) return;
-                scope.querySelectorAll('[data-config-key]').forEach(el => this.wireEditable(el));
-            },
-
-            wireEditable(el) {
-                if (el._inlineWired) return;
-                el._inlineWired = true;
-
-                const key = el.dataset.configKey;
-                const type = el.dataset.configType || 'text';
-                const self = this;
-
-                el.classList.add('inline-editable');
-
-                if (type === 'richtext') {
-                    el.classList.add('inline-editable--richtext');
-                    el.setAttribute('contenteditable', 'true');
-
-                    el.addEventListener('input', () => {
-                        self.debounceSave(key, el.innerHTML, 600);
-                    });
-
-                    el.addEventListener('blur', () => {
-                        self.saveSingle(key, el.innerHTML);
-                    });
-                } else {
-                    el.classList.add('inline-editable--text');
-                    el.setAttribute('contenteditable', 'plaintext-only');
-
-                    el.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') e.preventDefault();
-                    });
-
-                    el.addEventListener('input', () => {
-                        self.debounceSave(key, el.innerText.trim(), 600);
-                    });
-
-                    el.addEventListener('blur', () => {
-                        self.saveSingle(key, el.innerText.trim());
-                    });
-                }
-            },
-
-            debounceSave(key, value, delay) {
-                clearTimeout(this.debounceTimers[key]);
-                this.debounceTimers[key] = setTimeout(() => {
-                    this.saveSingle(key, value);
-                }, delay);
-            },
-
-            saveSingle(key, value) {
-                clearTimeout(this.debounceTimers[key]);
-                $wire.updateInlineConfig(key, value);
-            },
-
-            reinitWidgetAlpine() {
-                const scope = this.$refs.previewScope;
-                if (!scope) return;
-                // Destroy existing Swiper instances so they re-init cleanly
-                scope.querySelectorAll('.swiper').forEach(el => {
-                    if (el.swiper) el.swiper.destroy(true, true);
-                });
-                // Initialize Alpine trees inside the x-ignore wrapper.
-                // Calling initTree directly on each [x-data] element bypasses
-                // the x-ignore boundary (which only blocks auto-init walks).
-                scope.querySelectorAll('[x-data]').forEach(el => {
-                    if (el._x_dataStack) {
-                        Alpine.destroyTree(el);
-                    }
-                    Alpine.initTree(el);
-                });
-            },
-
-            cleanup() {
-                Object.values(this.debounceTimers).forEach(t => clearTimeout(t));
-                this.debounceTimers = {};
-            },
-        }"
-        x-init="
-            const comp = $data;
-            $nextTick(async () => {
-                comp.computeZoom();
-                await comp.loadLibs();
-                requestAnimationFrame(() => { comp.reinitWidgetAlpine(); comp.initInlineEditing(); });
-            });
-            Livewire.hook('morph.updated', ({ el }) => {
-                if (el === $refs.previewScope || $refs.previewScope?.contains(el)) {
-                    $nextTick(() => {
-                        requestAnimationFrame(() => { comp.reinitWidgetAlpine(); comp.initInlineEditing(); });
-                    });
-                }
-            });
-        "
-        x-on:resize.window.debounce.150ms="computeZoom()"
-        x-on:inline-editing-cleanup.window="cleanup()"
-        class="widget-preview-frame border-t border-gray-100 dark:border-gray-700"
-        style="overflow: hidden; position: relative;"
-    >
-        {{-- Responsive viewport toggle --}}
-        <div class="flex items-center justify-end gap-1 px-3 py-1.5 border-b border-gray-100 dark:border-gray-700">
-            <span class="mr-1 text-xs text-gray-400">Preview:</span>
-            <template x-for="vp in [{w: 1920, label: 'Desktop', icon: 'M4 5h16a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM7 18h10'}, {w: 1024, label: 'Tablet', icon: 'M7 4h10a1 1 0 011 1v14a1 1 0 01-1 1H7a1 1 0 01-1-1V5a1 1 0 011-1zm5 16v.01'}, {w: 375, label: 'Mobile', icon: 'M9 3h6a1 1 0 011 1v16a1 1 0 01-1 1H9a1 1 0 01-1-1V4a1 1 0 011-1zm3 18v.01'}]">
-                <button
-                    type="button"
-                    x-on:click="setViewport(vp.w)"
-                    x-bind:class="presetViewport === vp.w ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700'"
-                    x-bind:title="vp.label + ' (' + vp.w + 'px)'"
-                    class="rounded p-1 transition-colors"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" x-bind:d="vp.icon"/>
-                    </svg>
-                </button>
-            </template>
-            <span class="ml-1 text-xs text-gray-300 dark:text-gray-600 tabular-nums" x-text="presetViewport + 'px'"></span>
-        </div>
-
-        @if ($previewHtml)
-            {{-- Inner container: fixed pixel width matching viewport, zoom shrinks to fit panel --}}
-            <div
-                x-ref="previewScope"
-                class="widget-preview-scope np-site"
-                x-bind:style="'width: ' + viewportW + 'px; zoom: ' + zoomFactor + ';'"
-            >
-                <div x-ignore>{!! $previewHtml !!}</div>
-            </div>
-        @elseif ($isSelected)
-            <div class="p-4 text-center text-sm text-gray-400">
-                No preview available for this widget.
-            </div>
-        @endif
-    </div>
-    @endif
-
-    {{-- Column widget slot panels — the only body content for block components --}}
+    {{-- Column widget slot panels --}}
     @if ($block['widget_type_handle'] === 'column_widget')
     <div x-show="open" x-cloak class="border-t border-gray-100 p-4 dark:border-gray-700">
 

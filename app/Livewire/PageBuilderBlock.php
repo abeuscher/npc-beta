@@ -2,11 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\Collection;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
-use App\Services\DemoDataService;
-use App\Services\WidgetRenderer;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Reactive;
 use Livewire\Component;
@@ -37,12 +34,6 @@ class PageBuilderBlock extends Component
 
     /** @var array<string, mixed> */
     public array $block = [];
-
-    /** Whether this block is currently selected/focused for live preview. */
-    public bool $isSelected = false;
-
-    /** Cached rendered widget HTML for the live preview. */
-    public string $previewHtml = '';
 
     public function mount(
         string $blockId,
@@ -332,21 +323,8 @@ class PageBuilderBlock extends Component
     }
 
     // -------------------------------------------------------------------------
-    // React to selection and inspector config changes
+    // React to inspector config changes
     // -------------------------------------------------------------------------
-
-    #[On('block-selected')]
-    public function onBlockSelected(string $blockId, string $parentBlockId = ''): void
-    {
-        $wasSelected = $this->isSelected;
-        $this->isSelected = ($blockId === $this->blockId);
-
-        if ($this->isSelected && ! $wasSelected) {
-            $this->refreshPreviewHtml();
-        } elseif (! $this->isSelected) {
-            $this->previewHtml = '';
-        }
-    }
 
     #[On('widget-config-updated')]
     public function onWidgetConfigUpdated(string $blockId): void
@@ -357,166 +335,9 @@ class PageBuilderBlock extends Component
 
         $this->loadBlock();
 
-        if ($this->isSelected) {
-            $this->refreshPreviewHtml();
+        if ($this->block['widget_type_handle'] === 'column_widget') {
+            $this->loadChildSlots();
         }
-    }
-
-    private function refreshPreviewHtml(): void
-    {
-        try {
-            $this->previewHtml = $this->getRenderedWidgetHtml() ?? '';
-        } catch (\Throwable $e) {
-            $this->previewHtml = '<div style="padding: 1rem; color: #dc2626; font-size: 0.875rem;">Preview error: ' . e($e->getMessage()) . '</div>';
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Live widget preview rendering
-    // -------------------------------------------------------------------------
-
-    /**
-     * Render the widget HTML for the live preview in edit mode.
-     *
-     * Returns the rendered HTML string, or null if the widget can't be rendered.
-     */
-    public function getRenderedWidgetHtml(): ?string
-    {
-        $pw = PageWidget::with(['widgetType', 'children.widgetType', 'children.children.widgetType'])->find($this->blockId);
-
-        if (! $pw || ! $pw->widgetType) {
-            return null;
-        }
-
-        // For column widgets, render children recursively
-        $columnChildren = [];
-        if ($pw->widgetType->handle === 'column_widget') {
-            $columnChildren = $this->renderColumnChildren($pw);
-        }
-
-        // Generate demo collection data as fallback for unbound widgets
-        $fallbackData = $this->buildDemoCollectionData($pw);
-
-        $result = WidgetRenderer::render($pw, $columnChildren, $fallbackData);
-
-        if ($result['html'] === null) {
-            return null;
-        }
-
-        // Wrap in the same structure as the public site
-        $handle = $pw->widgetType->handle;
-        $sc = $pw->style_config ?? [];
-        $styleProps = [];
-        $spacingKeys = [
-            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-        ];
-        foreach ($spacingKeys as $key => $cssProp) {
-            $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
-            if ($val !== null) {
-                $styleProps[] = $cssProp . ':' . $val . 'px';
-            }
-        }
-        $inlineStyle = implode(';', $styleProps);
-
-        $configFullWidth = $pw->config['full_width'] ?? null;
-        $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($pw->widgetType->full_width ?? false);
-
-        $innerHtml = $isFullWidth
-            ? $result['html']
-            : '<div class="site-container">' . $result['html'] . '</div>';
-
-        $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
-
-        return $styles
-            . '<div class="widget widget--' . e($handle) . '"'
-            . ' id="widget-' . e($pw->id) . '"'
-            . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
-            . '>' . $innerHtml . '</div>';
-    }
-
-    private function renderColumnChildren(PageWidget $pw): array
-    {
-        $children = [];
-
-        foreach ($pw->children as $child) {
-            if (! $child->is_active) {
-                continue;
-            }
-
-            $childColumnChildren = [];
-            if ($child->widgetType?->handle === 'column_widget') {
-                $childColumnChildren = $this->renderColumnChildren($child);
-            }
-
-            $childFallback = $this->buildDemoCollectionData($child);
-            $result = WidgetRenderer::render($child, $childColumnChildren, $childFallback);
-
-            if ($result['html'] === null) {
-                continue;
-            }
-
-            $childHandle = $child->widgetType->handle;
-            $sc = $child->style_config ?? [];
-            $styleProps = [];
-            $spacingKeys = [
-                'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-                'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-                'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-                'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-            ];
-            foreach ($spacingKeys as $key => $cssProp) {
-                $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
-                if ($val !== null) {
-                    $styleProps[] = $cssProp . ':' . $val . 'px';
-                }
-            }
-            $childInlineStyle = implode(';', $styleProps);
-
-            $configFullWidth = $child->config['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($child->widgetType->full_width ?? false);
-
-            $idx = $child->column_index ?? 0;
-            $children[$idx][] = [
-                'handle'       => $childHandle,
-                'instance_id'  => $child->id,
-                'html'         => $result['html'],
-                'css'          => $child->widgetType->css ?? '',
-                'js'           => $child->widgetType->js ?? '',
-                'style_config' => $sc,
-                'full_width'   => $isFullWidth,
-            ];
-        }
-
-        return $children;
-    }
-
-    /**
-     * Build demo collection data keyed by slot name, for widgets with
-     * collection slots that may have no real data.
-     *
-     * @return array<string, array>
-     */
-    private function buildDemoCollectionData(PageWidget $pw): array
-    {
-        $widgetType = $pw->widgetType;
-        if (! $widgetType || empty($widgetType->collections)) {
-            return [];
-        }
-
-        $demoService = app(DemoDataService::class);
-        $fallback = [];
-
-        foreach ($widgetType->collections as $collSlot) {
-            $collHandle = $pw->config['collection_handle'] ?? $collSlot;
-            $collection = Collection::where('handle', $collHandle)->first();
-            $sourceType = $collection?->source_type ?? $collSlot;
-            $fallback[$collSlot] = $demoService->generateCollectionData($sourceType, 3, $collection);
-        }
-
-        return $fallback;
     }
 
     // -------------------------------------------------------------------------

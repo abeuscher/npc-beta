@@ -311,6 +311,11 @@ class PageBuilderInspector extends Component
         $this->dispatch('inspector-field-updated', key: $key, value: $value);
     }
 
+    public function applyChanges(): void
+    {
+        $this->dispatch('preview-refresh-requested', blockId: $this->blockId);
+    }
+
     public function render(): \Illuminate\View\View
     {
         return view('livewire.page-builder-inspector');

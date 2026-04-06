@@ -145,6 +145,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 136 | Widget Edit & Preview Modes |
 | 137 | Inline Text Editing |
 | 138 | Widget JS Dependencies & Interactive Preview |
+| 139 | Unified Preview & Edit Layout |
 
 ---
 
@@ -168,7 +169,11 @@ Load widget JS dependencies in the admin page builder so widgets with client-sid
 
 ### Session 139 — Unified Preview & Edit Layout
 
-Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit mode: persistent stacked widget preview on the left (all widgets rendered with public CSS, always visible) with a persistent inspector panel on the right. Clicking a widget selects it and populates the inspector — no mode switch, no re-render. Libraries load once at page level. Block management controls overlay each widget region. Handles mode: retains the existing block card list with drag handles and reorder (needed until drag-to-reorder is built into the preview). Preview iframe removed. Inline text editing works directly in the Edit pane.
+Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit mode: persistent stacked widget preview on the left (all widgets rendered with public CSS, always visible) with a persistent inspector panel on the right. Clicking a widget selects it and populates the inspector — no mode switch, no re-render. Libraries load once at page level. Handles mode: retains the existing block card list with drag handles and reorder (needed until drag-to-reorder is built into the preview). Preview iframe removed.
+
+**Deferred to post-Beta 1:**
+- Block controls overlay (hover bar with label/drag handle, ellipsis menu on selected widget) — rely on Handles mode for reordering until this is built.
+- Inline text editing in the Edit pane (session 137's contenteditable system) — works in Handles mode; wiring into the unified preview deferred to avoid fine-tuning complexity before beta.
 
 ### Properties Panel & Config Split
 

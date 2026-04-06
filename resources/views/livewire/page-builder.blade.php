@@ -1,15 +1,11 @@
 <div
     class="page-builder"
     x-data="{
-        handlePreviewMessage(e) {
-            if (e.data?.type === 'preview-widget-clicked' && e.data.widgetId) {
-                $wire.switchToEdit(e.data.widgetId);
-            }
-        }
+        selectedBlockId: @js($selectedBlockId),
     }"
-    x-init="window.addEventListener('message', (e) => handlePreviewMessage(e))"
+    x-on:block-selected.window="selectedBlockId = $event.detail.blockId"
     x-on:keydown.escape.window="
-        if ($wire.mode === 'edit' && $wire.selectedBlockId !== '') {
+        if ($wire.mode === 'edit' && selectedBlockId !== '') {
             $wire.selectBlock('');
         }
     "
@@ -22,12 +18,18 @@
             min-height: auto;
             display: block;
         }
-        .page-builder-preview-iframe {
-            width: 100%;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            min-height: 600px;
-            background: white;
+        .widget-preview-region {
+            position: relative;
+            cursor: pointer;
+            padding: 10px 0;
+            border: 2px solid transparent;
+            transition: border-color 0.15s ease;
+        }
+        .widget-preview-region:hover {
+            border-color: rgba(99,102,241,0.3);
+        }
+        .widget-preview-region--selected {
+            border-color: rgb(99,102,241) !important;
         }
     </style>
 
@@ -40,7 +42,7 @@
                 {{ count($blocks) }} block(s) on this page.
             </p>
 
-            {{-- Edit / Preview mode toggle --}}
+            {{-- Edit / Handles mode toggle --}}
             <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                 <button
                     type="button"
@@ -49,9 +51,9 @@
                 >Edit</button>
                 <button
                     type="button"
-                    wire:click="switchToPreview"
-                    class="px-3 py-1.5 text-xs font-medium transition-colors {{ $mode === 'preview' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300' }}"
-                >Preview</button>
+                    wire:click="switchToHandles"
+                    class="px-3 py-1.5 text-xs font-medium transition-colors {{ $mode === 'handles' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300' }}"
+                >Handles</button>
             </div>
         </div>
 
@@ -76,28 +78,277 @@
     </div>
 
     {{-- ------------------------------------------------------------------ --}}
-    {{-- Preview mode: full-page iframe --}}
-    {{-- ------------------------------------------------------------------ --}}
-    @if ($mode === 'preview')
-        <iframe
-            src="{{ route('filament.admin.page-preview', ['page' => $pageId]) }}"
-            class="page-builder-preview-iframe"
-            style="height: 80vh;"
-        ></iframe>
-    @endif
-
-    {{-- ------------------------------------------------------------------ --}}
-    {{-- Edit mode: block list + inspector --}}
+    {{-- Edit mode: unified preview + inspector --}}
     {{-- ------------------------------------------------------------------ --}}
     @if ($mode === 'edit')
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
 
-        {{-- ── Left column: structural block list (8/12) ───────────────── --}}
-        <div class="min-w-0 space-y-4">
+        {{-- ── Left pane: stacked widget preview ─────────────────────── --}}
+        <div
+            class="min-w-0"
+            x-data="{
+                presetViewport: 1920,
+                zoomFactor: 1,
+                libsReady: false,
 
-            {{-- Block list                                                      --}}
-            {{-- @alpinejs/sort is loaded via AdminPanelProvider and enables     --}}
-            {{-- drag-to-reorder via x-sort / x-sort:item / x-sort:handle.      --}}
+                computeZoom() {
+                    const pane = $el;
+                    const paneWidth = pane.offsetWidth;
+                    this.zoomFactor = paneWidth > 0 ? Math.min(1, paneWidth / this.presetViewport) : 1;
+                },
+
+                setViewport(w) {
+                    this.presetViewport = w;
+                    this.computeZoom();
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => this.reinitWidgetAlpine());
+                    });
+                },
+
+                pinHeights() {
+                    const scope = this.$refs.previewScope;
+                    if (!scope) return;
+                    scope.querySelectorAll('.widget-preview-region').forEach(el => {
+                        el.style.minHeight = el.offsetHeight + 'px';
+                    });
+                },
+
+                unpinHeights() {
+                    const scope = this.$refs.previewScope;
+                    if (!scope) return;
+                    scope.querySelectorAll('.widget-preview-region').forEach(el => {
+                        el.style.minHeight = '';
+                    });
+                },
+
+                async loadLibs() {
+                    const libs = @js($requiredLibs);
+                    const manifest = window.__widgetLibs || {};
+                    const globalChecks = {
+                        'swiper': () => !!window.Swiper,
+                        'chart.js': () => !!window.Chart,
+                        'jcalendar': () => !!window.calendarJs,
+                    };
+
+                    const promises = [];
+
+                    for (const lib of libs) {
+                        const entry = manifest[lib];
+                        if (!entry) continue;
+
+                        // Load CSS — awaited so styles are parsed before Swiper measures containers
+                        if (entry.css && !document.querySelector(`link[data-widget-lib='${lib}']`)) {
+                            promises.push(new Promise((resolve) => {
+                                const link = document.createElement('link');
+                                link.rel = 'stylesheet';
+                                link.href = entry.css;
+                                link.dataset.widgetLib = lib;
+                                link.onload = resolve;
+                                link.onerror = () => { console.warn('Failed to load widget lib CSS:', lib); resolve(); };
+                                document.head.appendChild(link);
+                            }));
+                        }
+
+                        // Load JS if global not yet available
+                        const check = globalChecks[lib];
+                        const alreadyLoaded = check ? check() : document.querySelector(`script[data-widget-lib='${lib}']`);
+                        if (!alreadyLoaded && entry.js) {
+                            promises.push(new Promise((resolve) => {
+                                const script = document.createElement('script');
+                                script.src = entry.js;
+                                script.dataset.widgetLib = lib;
+                                script.onload = resolve;
+                                script.onerror = () => { console.warn('Failed to load widget lib JS:', lib); resolve(); };
+                                document.head.appendChild(script);
+                            }));
+                        }
+                    }
+
+                    await Promise.all(promises);
+                    this.libsReady = true;
+                },
+
+                reinitWidgetAlpine() {
+                    const scope = this.$refs.previewScope;
+                    if (!scope) return;
+
+                    // Destroy existing Swiper instances so they re-init cleanly
+                    scope.querySelectorAll('.swiper').forEach(el => {
+                        if (el.swiper) el.swiper.destroy(true, true);
+                    });
+
+                    // Destroy existing Chart.js instances
+                    scope.querySelectorAll('canvas').forEach(el => {
+                        const chartInstance = window.Chart?.getChart?.(el);
+                        if (chartInstance) chartInstance.destroy();
+                    });
+
+                    // Lift x-ignore — both the HTML attribute AND Alpine's internal
+                    // _x_ignore JS property, which persists even after attribute removal.
+                    const ignoreEls = scope.querySelectorAll('[x-ignore]');
+                    ignoreEls.forEach(el => {
+                        el.removeAttribute('x-ignore');
+                        delete el._x_ignore;
+                        delete el._x_ignoreSelf;
+                        el.setAttribute('data-x-ignore-lifted', '');
+                    });
+
+                    // Initialize Alpine trees
+                    scope.querySelectorAll('[x-data]').forEach(el => {
+                        if (el._x_dataStack) {
+                            Alpine.destroyTree(el);
+                        }
+                        Alpine.initTree(el);
+                    });
+
+                    // Restore x-ignore (attribute + internal property)
+                    scope.querySelectorAll('[data-x-ignore-lifted]').forEach(el => {
+                        el.removeAttribute('data-x-ignore-lifted');
+                        el.setAttribute('x-ignore', '');
+                        el._x_ignore = true;
+                    });
+
+                    // Force Swiper instances to recalculate and unpin heights after layout settles
+                    requestAnimationFrame(() => {
+                        scope.querySelectorAll('.swiper').forEach(el => {
+                            if (el.swiper) el.swiper.update();
+                        });
+                        this.unpinHeights();
+                    });
+                },
+            }"
+            x-init="
+                computeZoom();
+                await loadLibs();
+                // Double rAF: first ensures zoom styles are applied, second ensures layout is complete
+                requestAnimationFrame(() => {
+                    computeZoom();
+                    requestAnimationFrame(() => reinitWidgetAlpine());
+                });
+
+                // No morph hook needed — preview uses wire:ignore and updates
+                // are pushed via preview-content-changed event.
+            "
+            x-on:resize.window.debounce.150ms="computeZoom()"
+            x-on:preview-content-changed.window="
+                const blocks = $event.detail.blocks || $event.detail[0]?.blocks || [];
+                const scope = $refs.previewScope;
+                if (!scope || !blocks.length) return;
+
+                pinHeights();
+
+                // Replace preview HTML
+                let html = '';
+                for (const b of blocks) {
+                    html += `<div class='widget-preview-region' data-widget-id='${b.id}'><div x-ignore>${b.html}</div></div>`;
+                }
+                scope.innerHTML = html;
+
+                // Re-attach click handlers and selection classes
+                scope.querySelectorAll('.widget-preview-region').forEach(el => {
+                    const wid = el.dataset.widgetId;
+                    el.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectedBlockId = wid;
+                        $wire.selectBlock(wid);
+                    });
+                    if (selectedBlockId === wid) {
+                        el.classList.add('widget-preview-region--selected');
+                    }
+                });
+
+                // Init Alpine trees in new content
+                await loadLibs();
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        reinitWidgetAlpine();
+                    });
+                });
+            "
+        >
+            {{-- Viewport width toggle --}}
+            <div class="flex items-center justify-end gap-1 mb-2 px-1">
+                <span class="mr-1 text-xs text-gray-400">Viewport:</span>
+                <template x-for="vp in [{w: 1920, label: 'Desktop', icon: 'M4 5h16a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM7 18h10'}, {w: 1024, label: 'Tablet', icon: 'M7 4h10a1 1 0 011 1v14a1 1 0 01-1 1H7a1 1 0 01-1-1V5a1 1 0 011-1zm5 16v.01'}, {w: 375, label: 'Mobile', icon: 'M9 3h6a1 1 0 011 1v16a1 1 0 01-1 1H9a1 1 0 01-1-1V4a1 1 0 011-1zm3 18v.01'}]">
+                    <button
+                        type="button"
+                        x-on:click="setViewport(vp.w)"
+                        x-bind:class="presetViewport === vp.w ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700'"
+                        x-bind:title="vp.label + ' (' + vp.w + 'px)'"
+                        class="rounded p-1 transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" x-bind:d="vp.icon"/>
+                        </svg>
+                    </button>
+                </template>
+                <span class="ml-1 text-xs text-gray-300 dark:text-gray-600 tabular-nums" x-text="presetViewport + 'px'"></span>
+            </div>
+
+            {{-- Preview container — wire:ignore prevents Livewire from morphing
+                 the preview on selection changes. Content updates are pushed via
+                 the preview-content-changed event and applied manually. --}}
+            <div
+                class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
+                style="position: relative;"
+                x-bind:style="presetViewport < 1920
+                    ? 'height: calc(100vh - 16rem); overflow-y: auto; display: flex; justify-content: center; background: #f3f4f6;'
+                    : 'min-height: 400px; overflow: hidden;'"
+                wire:ignore
+            >
+                {{-- Apply Changes — sticky top-right inside preview --}}
+                <button
+                    type="button"
+                    wire:click="$dispatch('preview-refresh-requested', { blockId: '' })"
+                    class="rounded bg-primary-600 px-2.5 py-1 text-xs font-medium text-white shadow hover:bg-primary-500 focus:outline-none"
+                    style="position: sticky; top: 0.5rem; float: right; margin-right: 0.5rem; z-index: 10;"
+                >Apply</button>
+
+                <div
+                    x-ref="previewScope"
+                    class="widget-preview-scope np-site"
+                    x-bind:style="'width: ' + presetViewport + 'px; zoom: ' + zoomFactor + '; transform-origin: top left;'
+                        + (presetViewport < 1920 ? ' flex-shrink: 0;' : '')"
+                    x-on:click="if ($event.target.closest('a')) $event.preventDefault()"
+                    x-on:submit.prevent
+                >
+                    @forelse ($previewBlocks as $pBlock)
+                        <div
+                            class="widget-preview-region"
+                            data-widget-id="{{ $pBlock['id'] }}"
+                            x-on:click.stop="selectedBlockId = '{{ $pBlock['id'] }}'; $wire.selectBlock('{{ $pBlock['id'] }}')"
+                            x-bind:class="{ 'widget-preview-region--selected': selectedBlockId === '{{ $pBlock['id'] }}' }"
+                        >
+                            <div x-ignore>{!! $pBlock['html'] !!}</div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-sm text-gray-400">
+                            No blocks yet. Click <strong>+ Add Block</strong> to get started.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Right pane: inspector panel ───────────────────────────── --}}
+        <div
+            class="min-w-0"
+            style="position: sticky; top: 1rem; max-height: calc(100vh - 6rem); overflow-y: auto; align-self: flex-start;"
+        >
+            @livewire('page-builder-inspector', ['blockId' => $selectedBlockId], key('inspector-' . $selectedBlockId))
+        </div>
+
+    </div>
+    @endif {{-- end edit mode --}}
+
+    {{-- ------------------------------------------------------------------ --}}
+    {{-- Handles mode: block card list + inspector --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @if ($mode === 'handles')
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+
+        {{-- ── Left column: structural block list ───────────────────── --}}
+        <div class="min-w-0 space-y-4">
             <div
                 x-data
                 x-sort="() => {
@@ -120,19 +371,18 @@
                     </div>
                 @endforelse
             </div>
-
         </div>
 
-        {{-- ── Right column: inspector panel (4/12) ──────────────────── --}}
+        {{-- ── Right column: inspector panel ─────────────────────────── --}}
         <div
             class="min-w-0"
             style="position: sticky; top: 1rem; max-height: calc(100vh - 6rem); overflow-y: auto; align-self: flex-start;"
         >
-            @livewire('page-builder-inspector', ['blockId' => $selectedBlockId], key('inspector-' . $selectedBlockId))
+            @livewire('page-builder-inspector', ['blockId' => $selectedBlockId], key('inspector-handles-' . $selectedBlockId))
         </div>
 
     </div>
-    @endif {{-- end edit mode --}}
+    @endif {{-- end handles mode --}}
 
     {{-- ------------------------------------------------------------------ --}}
     {{-- Add Block Modal                                                      --}}

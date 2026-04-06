@@ -26,18 +26,16 @@ import { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode
 window.Swiper = Swiper;
 window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode };
 JS,
-            'scss' => [
-                'node_modules/swiper/swiper.scss',
-                'node_modules/swiper/modules/navigation.scss',
-                'node_modules/swiper/modules/pagination.scss',
-                'node_modules/swiper/modules/effect-fade.scss',
+            'css' => [
+                'node_modules/swiper/swiper.css',
+                'node_modules/swiper/modules/navigation.css',
+                'node_modules/swiper/modules/pagination.css',
+                'node_modules/swiper/modules/effect-fade.css',
+                'node_modules/swiper/modules/effect-coverflow.css',
             ],
         ],
         'chart.js' => [
-            'js' => <<<'JS'
-import Chart from 'chart.js/auto';
-window.Chart = Chart;
-JS,
+            'umd_js' => 'node_modules/chart.js/dist/chart.umd.min.js',
         ],
         'jcalendar' => [
             'js' => <<<'JS'
@@ -207,6 +205,37 @@ JS,
             $baseName = str_replace('.', '', $name); // chart.js → chartjs
             $jsFilename = $baseName . '.js';
             $cssFilename = $baseName . '.css';
+
+            // Pre-built UMD bundle — copy directly, skip the build server.
+            if (! empty($libDef['umd_js'])) {
+                $umdPath = base_path($libDef['umd_js']);
+                if (file_exists($umdPath)) {
+                    File::copy($umdPath, $this->libsDir . '/' . $jsFilename);
+                    $libEntry = ['js' => '/build/libs/' . $jsFilename];
+
+                    // Also copy CSS if specified
+                    $umdCssPaths = $libDef['umd_css'] ?? [];
+                    if (! empty($umdCssPaths)) {
+                        $cssContent = '';
+                        foreach ((array) $umdCssPaths as $cssPath) {
+                            $fullCssPath = base_path($cssPath);
+                            if (file_exists($fullCssPath)) {
+                                $cssContent .= file_get_contents($fullCssPath) . "\n";
+                            }
+                        }
+                        if ($cssContent !== '') {
+                            File::put($this->libsDir . '/' . $cssFilename, $cssContent);
+                            $libEntry['css'] = '/build/libs/' . $cssFilename;
+                        }
+                    }
+
+                    $libs[$name] = $libEntry;
+                    Log::info("Library UMD copied: {$name}", ['size' => filesize($umdPath)]);
+                } else {
+                    Log::warning("Library UMD file not found: {$umdPath}");
+                }
+                continue;
+            }
 
             // Collect SCSS sources from node_modules
             $scssSources = [];

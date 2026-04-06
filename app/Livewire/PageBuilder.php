@@ -7,6 +7,9 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
+use App\Services\DemoDataService;
+use App\Services\WidgetRenderer;
+use App\Models\Collection;
 use Filament\Notifications\Notification;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -33,8 +36,14 @@ class PageBuilder extends Component
 
     public string $selectedBlockId = '';
 
-    /** Page builder mode: 'edit' (block list + focused widget) or 'preview' (full-page iframe). */
-    public string $mode = 'preview';
+    /** Page builder mode: 'edit' (unified preview) or 'handles' (block card list with drag handles). */
+    public string $mode = 'edit';
+
+    /** @var array<int, array<string, mixed>> Rendered widget HTML for the unified preview pane. */
+    public array $previewBlocks = [];
+
+    /** @var string[] Union of all library identifiers required by widgets on this page. */
+    public array $requiredLibs = [];
 
     // Add block modal
     public bool $showAddModal = false;
@@ -79,6 +88,7 @@ class PageBuilder extends Component
             ->toArray();
 
         $this->loadBlocks();
+        $this->refreshAllPreviews();
     }
 
     private function computeBareSlug(Page $page): string
@@ -177,6 +187,7 @@ class PageBuilder extends Component
         $this->insertPosition = null;
         $this->addModalLabel  = '';
         $this->loadBlocks();
+        $this->refreshAllPreviews();
         $this->selectBlock($newBlock->id);
     }
 
@@ -198,10 +209,11 @@ class PageBuilder extends Component
 
         if ($this->selectedBlockId === $blockId) {
             $this->selectedBlockId = '';
-            $this->dispatch('block-selected', blockId: '');
+            $this->dispatch('block-selected', blockId: '', parentBlockId: '');
         }
 
         $this->loadBlocks();
+        $this->refreshAllPreviews();
     }
 
     // -------------------------------------------------------------------------
@@ -241,6 +253,7 @@ class PageBuilder extends Component
         ]);
 
         $this->loadBlocks();
+        $this->refreshAllPreviews();
     }
 
     // -------------------------------------------------------------------------
@@ -256,6 +269,7 @@ class PageBuilder extends Component
         }
 
         $this->loadBlocks();
+        $this->refreshAllPreviews();
     }
 
     // -------------------------------------------------------------------------
@@ -296,6 +310,8 @@ class PageBuilder extends Component
             PageWidget::where('id', $block['id'])->update(['sort_order' => $i]);
             $this->blocks[$i]['sort_order'] = $i;
         }
+
+        $this->refreshAllPreviews();
     }
 
     // -------------------------------------------------------------------------
@@ -372,11 +388,6 @@ class PageBuilder extends Component
 
         // Dispatch a browser event so each block component can update its selected highlight.
         $this->dispatch('block-selected', blockId: $blockId, parentBlockId: $parentId);
-
-        // Deselecting in edit mode returns to preview mode.
-        if ($blockId === '' && $this->mode === 'edit') {
-            $this->mode = 'preview';
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -423,23 +434,207 @@ class PageBuilder extends Component
     }
 
     // -------------------------------------------------------------------------
-    // Edit / Preview mode toggle
+    // Edit / Handles mode toggle
     // -------------------------------------------------------------------------
 
-    public function switchToPreview(): void
+    public function switchToHandles(): void
     {
-        $this->selectedBlockId = '';
-        $this->dispatch('block-selected', blockId: '', parentBlockId: '');
-        $this->mode = 'preview';
+        $this->mode = 'handles';
     }
 
-    public function switchToEdit(string $blockId = ''): void
+    public function switchToEdit(): void
     {
         $this->mode = 'edit';
+    }
 
-        if ($blockId !== '') {
-            $this->selectBlock($blockId);
+    // -------------------------------------------------------------------------
+    // Unified preview rendering
+    // -------------------------------------------------------------------------
+
+    public function refreshAllPreviews(): void
+    {
+        $this->previewBlocks = [];
+
+        $widgets = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->where('is_active', true)
+            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        $allLibs = [];
+
+        foreach ($widgets as $pw) {
+            if (! $pw->widgetType) {
+                continue;
+            }
+
+            $this->previewBlocks[] = $this->renderWidgetForPreview($pw);
+            $this->collectLibs($pw, $allLibs);
         }
+
+        $this->requiredLibs = array_values(array_unique($allLibs));
+
+        // Push the new preview HTML to the browser since the preview container
+        // uses wire:ignore and won't be morphed by Livewire.
+        $this->dispatch('preview-content-changed', blocks: $this->previewBlocks);
+    }
+
+    private function collectLibs(PageWidget $pw, array &$libs): void
+    {
+        $assets = $pw->widgetType?->assets ?? [];
+        foreach ($assets['libs'] ?? [] as $lib) {
+            $libs[] = $lib;
+        }
+
+        foreach ($pw->children as $child) {
+            if ($child->is_active) {
+                $this->collectLibs($child, $libs);
+            }
+        }
+    }
+
+    private function renderWidgetForPreview(PageWidget $pw): array
+    {
+        $widgetType = $pw->widgetType;
+
+        try {
+            $columnChildren = [];
+            if ($widgetType->handle === 'column_widget') {
+                $columnChildren = $this->renderColumnChildren($pw);
+            }
+
+            $fallbackData = $this->buildDemoCollectionData($pw);
+            $result = WidgetRenderer::render($pw, $columnChildren, $fallbackData);
+
+            if ($result['html'] === null) {
+                $html = '<div style="padding: 1rem; color: #9ca3af; font-size: 0.875rem; text-align: center;">No preview available</div>';
+            } else {
+                $handle = $widgetType->handle;
+                $sc = $pw->style_config ?? [];
+                $styleProps = [];
+                $spacingKeys = [
+                    'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
+                    'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
+                    'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
+                    'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+                ];
+                foreach ($spacingKeys as $key => $cssProp) {
+                    $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
+                    if ($val !== null) {
+                        $styleProps[] = $cssProp . ':' . $val . 'px';
+                    }
+                }
+                $inlineStyle = implode(';', $styleProps);
+
+                $configFullWidth = $pw->config['full_width'] ?? null;
+                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
+
+                $innerHtml = $isFullWidth
+                    ? $result['html']
+                    : '<div class="site-container">' . $result['html'] . '</div>';
+
+                $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
+
+                $html = $styles
+                    . '<div class="widget widget--' . e($handle) . '"'
+                    . ' id="widget-' . e($pw->id) . '"'
+                    . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
+                    . '>' . $innerHtml . '</div>';
+            }
+        } catch (\Throwable $e) {
+            $html = '<div style="padding: 1rem; color: #dc2626; font-size: 0.875rem;">Preview error: ' . e($e->getMessage()) . '</div>';
+        }
+
+        return [
+            'id'               => $pw->id,
+            'handle'           => $widgetType->handle,
+            'label'            => $pw->label ?? '',
+            'widget_type_label' => $widgetType->label,
+            'html'             => $html,
+        ];
+    }
+
+    private function renderColumnChildren(PageWidget $pw): array
+    {
+        $children = [];
+
+        foreach ($pw->children as $child) {
+            if (! $child->is_active) {
+                continue;
+            }
+
+            $childColumnChildren = [];
+            if ($child->widgetType?->handle === 'column_widget') {
+                $childColumnChildren = $this->renderColumnChildren($child);
+            }
+
+            $childFallback = $this->buildDemoCollectionData($child);
+            $result = WidgetRenderer::render($child, $childColumnChildren, $childFallback);
+
+            if ($result['html'] === null) {
+                continue;
+            }
+
+            $childHandle = $child->widgetType->handle;
+            $sc = $child->style_config ?? [];
+            $styleProps = [];
+            $spacingKeys = [
+                'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
+                'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
+                'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
+                'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+            ];
+            foreach ($spacingKeys as $key => $cssProp) {
+                $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
+                if ($val !== null) {
+                    $styleProps[] = $cssProp . ':' . $val . 'px';
+                }
+            }
+            $childInlineStyle = implode(';', $styleProps);
+
+            $configFullWidth = $child->config['full_width'] ?? null;
+            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($child->widgetType->full_width ?? false);
+
+            $idx = $child->column_index ?? 0;
+            $children[$idx][] = [
+                'handle'       => $childHandle,
+                'instance_id'  => $child->id,
+                'html'         => $result['html'],
+                'css'          => $child->widgetType->css ?? '',
+                'js'           => $child->widgetType->js ?? '',
+                'style_config' => $sc,
+                'full_width'   => $isFullWidth,
+            ];
+        }
+
+        return $children;
+    }
+
+    private function buildDemoCollectionData(PageWidget $pw): array
+    {
+        $widgetType = $pw->widgetType;
+        if (! $widgetType || empty($widgetType->collections)) {
+            return [];
+        }
+
+        $demoService = app(DemoDataService::class);
+        $fallback = [];
+
+        foreach ($widgetType->collections as $collSlot) {
+            $collHandle = $pw->config['collection_handle'] ?? $collSlot;
+            $collection = Collection::where('handle', $collHandle)->first();
+            $sourceType = $collection?->source_type ?? $collSlot;
+            $fallback[$collSlot] = $demoService->generateCollectionData($sourceType, 3, $collection);
+        }
+
+        return $fallback;
+    }
+
+    #[On('preview-refresh-requested')]
+    public function onPreviewRefreshRequested(string $blockId = ''): void
+    {
+        $this->refreshAllPreviews();
     }
 
     public function render(): \Illuminate\View\View
