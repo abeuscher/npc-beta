@@ -95,5 +95,7 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
             docker compose -f docker-compose.prod.yml exec -T app php artisan storage:link
+            docker compose -f docker-compose.prod.yml exec -T app php artisan view:clear
+            docker compose -f docker-compose.prod.yml exec -T app php artisan config:clear
             docker compose -f docker-compose.prod.yml exec -T app php artisan build:public || true
             docker image prune -af
