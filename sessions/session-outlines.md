@@ -142,6 +142,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 133 | Admin Layout & Chrome |
 | 134 | Design System Editor: Buttons |
 | 135 | Widget Data Contract & Demo Data |
+| 136 | Widget Edit & Preview Modes |
 
 ---
 
