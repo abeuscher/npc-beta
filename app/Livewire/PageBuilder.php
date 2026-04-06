@@ -536,6 +536,10 @@ class PageBuilder extends Component
 
                 $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
 
+                // Strip <script> tags — preview uses x-ignore + Alpine initTree,
+                // and raw scripts in the Livewire render can corrupt the output.
+                $innerHtml = preg_replace('#<script\b[^>]*>.*?</script>#si', '', $innerHtml);
+
                 $html = $styles
                     . '<div class="widget widget--' . e($handle) . '"'
                     . ' id="widget-' . e($pw->id) . '"'
