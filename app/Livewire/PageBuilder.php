@@ -34,7 +34,7 @@ class PageBuilder extends Component
     public string $selectedBlockId = '';
 
     /** Page builder mode: 'edit' (block list + focused widget) or 'preview' (full-page iframe). */
-    public string $mode = 'edit';
+    public string $mode = 'preview';
 
     // Add block modal
     public bool $showAddModal = false;
@@ -372,6 +372,11 @@ class PageBuilder extends Component
 
         // Dispatch a browser event so each block component can update its selected highlight.
         $this->dispatch('block-selected', blockId: $blockId, parentBlockId: $parentId);
+
+        // Deselecting in edit mode returns to preview mode.
+        if ($blockId === '' && $this->mode === 'edit') {
+            $this->mode = 'preview';
+        }
     }
 
     // -------------------------------------------------------------------------
