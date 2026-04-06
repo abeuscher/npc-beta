@@ -165,9 +165,22 @@ Rework the page builder page into the target two-panel layout: widget list / con
 
 Map `contenteditable` regions in the preview iframe to richtext `config_schema` fields. When the user clicks a text region in the preview, it becomes editable in-place. Changes sync bidirectionally: edits in the iframe update Livewire state, edits in the content form update the iframe. Handle selection/focus management across the iframe boundary. Scope to richtext and plain-text fields only — structured fields (dropdowns, toggles, images) stay in the properties panel. This is the hardest session in the sequence and may need outside help or may split into two sessions.
 
-### Session 140 — Interactive Preview & Polish
+### Session 140 — Widget JS Dependencies & Interactive Preview
 
-Load the public JS bundle inside the preview iframe so widgets with client-side behavior (Swiper carousels, Alpine.js interactions, map embeds) render correctly. Handle JS re-initialization after each re-render cycle. Add responsive preview toggle (desktop/tablet/mobile viewport simulation). Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget).
+Load widget JS dependencies in the inline editor pane so widgets with client-side behavior (Swiper carousels, Alpine.js chart widgets, map embeds) render correctly in edit mode.
+
+**Core problem discovered in session 136:** `public.js` bundles all widget JS libraries (Swiper, Chart.js, jCalendar) and registers them as globals (`window.Swiper`, `window.SwiperModules`, `window.Chart`, `window.calendarJs`). It also calls `Alpine.start()`, which conflicts with Filament's Alpine instance — so we can't load `public.js` in the admin. Loading individual libraries from CDN partially works but the module registration pattern (`window.SwiperModules.Navigation` etc.) expects the ESM imports from the Vite bundle, not the CDN bundle version.
+
+**Proposed architecture — per-widget JS dependency declaration:**
+- Each widget type declares its JS library dependencies in the `assets` column (new `libs` key or extend existing `js` array), e.g. `{"libs": ["swiper", "chart.js"]}`
+- A widget JS loader in the admin reads the focused widget's declared dependencies and loads only what's needed
+- Libraries are registered as globals matching the pattern `public.js` uses (`window.Swiper`, `window.SwiperModules`, etc.)
+- The build server could produce a self-contained JS bundle per library (or a combined bundle that doesn't call `Alpine.start()`) — this avoids CDN dependencies and version drift
+- Alpine re-initializes widget `x-data` on Livewire morph, so Swiper `init()` etc. fire automatically when the preview renders — no manual re-initialization needed
+
+**Additional scope:**
+- Add responsive preview toggle (desktop/tablet/mobile viewport simulation via zoom factor)
+- Address edge cases: column widget children in the new paradigm, undo/redo for config changes, keyboard shortcuts for common actions (save, add widget, delete widget)
 
 ---
 
