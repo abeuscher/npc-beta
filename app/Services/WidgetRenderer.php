@@ -11,9 +11,10 @@ class WidgetRenderer
     /**
      * Render a single widget to HTML + inline styles + inline scripts.
      *
+     * @param  array<string, array>  $fallbackCollectionData  Optional pre-resolved collection data (e.g. demo data for admin preview). Keyed by collection slot name.
      * @return array{html: string|null, styles: string, scripts: string}
      */
-    public static function render(PageWidget $pw, array $columnChildren = []): array
+    public static function render(PageWidget $pw, array $columnChildren = [], array $fallbackCollectionData = []): array
     {
         $widgetType = $pw->widgetType;
 
@@ -33,12 +34,13 @@ class WidgetRenderer
             }
         }
 
-        // Resolve collection data
+        // Resolve collection data (use fallback if real data is empty)
         $collectionData = [];
         foreach ($widgetType->collections ?? [] as $collSlot) {
             $collHandle  = $config['collection_handle'] ?? $collSlot;
             $queryConfig = $pw->query_config[$collSlot] ?? [];
-            $collectionData[$collSlot] = WidgetDataResolver::resolve($collHandle, $queryConfig);
+            $resolved = WidgetDataResolver::resolve($collHandle, $queryConfig);
+            $collectionData[$collSlot] = ! empty($resolved) ? $resolved : ($fallbackCollectionData[$collSlot] ?? []);
         }
 
         // Process inline images in richtext fields

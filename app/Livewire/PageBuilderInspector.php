@@ -124,6 +124,7 @@ class PageBuilderInspector extends Component
 
         $this->block['config'][$key] = $media?->id;
         PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+        $this->dispatch('widget-config-updated', blockId: $this->blockId);
 
         $this->imageUploads[$key] = null;
     }
@@ -146,6 +147,7 @@ class PageBuilderInspector extends Component
 
         $this->block['config'][$key] = null;
         PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+        $this->dispatch('widget-config-updated', blockId: $this->blockId);
     }
 
     private function resolveSelectOptions(): void
@@ -210,6 +212,7 @@ class PageBuilderInspector extends Component
 
         $this->block['config'][$key] = $value;
         PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+        $this->dispatch('widget-config-updated', blockId: $this->blockId);
     }
 
     /**
@@ -236,6 +239,7 @@ class PageBuilderInspector extends Component
 
         $this->block['config'][$key] = $current;
         PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
+        $this->dispatch('widget-config-updated', blockId: $this->blockId);
     }
 
     /**
@@ -255,22 +259,26 @@ class PageBuilderInspector extends Component
 
         if ($name === 'block.label') {
             PageWidget::where('id', $this->blockId)->update(['label' => $this->block['label']]);
+            $this->dispatch('widget-config-updated', blockId: $this->blockId);
             return;
         }
 
         if (str_starts_with($name, 'block.config')) {
             PageWidget::where('id', $this->blockId)->update(['config' => $this->block['config']]);
             $this->resolveSelectOptions();
+            $this->dispatch('widget-config-updated', blockId: $this->blockId);
             return;
         }
 
         if (str_starts_with($name, 'block.query_config')) {
             PageWidget::where('id', $this->blockId)->update(['query_config' => $this->block['query_config']]);
+            $this->dispatch('widget-config-updated', blockId: $this->blockId);
             return;
         }
 
         if (str_starts_with($name, 'block.style_config')) {
             PageWidget::where('id', $this->blockId)->update(['style_config' => $this->block['style_config']]);
+            $this->dispatch('widget-config-updated', blockId: $this->blockId);
         }
     }
 

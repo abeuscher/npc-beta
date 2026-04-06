@@ -1,3 +1,54 @@
+{{-- Load public widget CSS bundle for live preview rendering --}}
+@php
+    $__pbManifest = null;
+    $__pbManifestPath = public_path('build/widgets/manifest.json');
+    if (file_exists($__pbManifestPath)) {
+        $__pbManifest = json_decode(file_get_contents($__pbManifestPath), true);
+    }
+@endphp
+@once
+@if ($__pbManifest && ! empty($__pbManifest['css']))
+    <link rel="stylesheet" href="/build/widgets/{{ $__pbManifest['css'] }}">
+@endif
+<style>
+    /* Minimal public layout classes for widget preview inside the admin */
+    .widget-preview-scope .site-container {
+        width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 1140px;
+    }
+    .widget-preview-scope .widget {
+        overflow: hidden;
+    }
+    /* Reset Filament's inherited text styles inside widget preview */
+    .widget-preview-scope {
+        font-family: var(--font-family-body, system-ui, -apple-system, sans-serif);
+        line-height: 1.6;
+        color: #1f2937;
+    }
+    .widget-preview-scope h1,
+    .widget-preview-scope h2,
+    .widget-preview-scope h3,
+    .widget-preview-scope h4,
+    .widget-preview-scope h5,
+    .widget-preview-scope h6 {
+        font-family: var(--font-family-heading, var(--font-family-body, system-ui, -apple-system, sans-serif));
+        line-height: 1.2;
+        margin-top: 0;
+    }
+    .widget-preview-scope a {
+        color: var(--color-primary, #0172ad);
+    }
+    .widget-preview-scope img {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+@endonce
+
 <div
     class="page-builder"
     x-data

@@ -215,6 +215,32 @@
         </div>
     </div>
 
+    {{-- Live widget preview — shown when block is focused (selected) --}}
+    <div
+        x-show="selected"
+        x-cloak
+        class="widget-preview-scope border-t border-gray-100 dark:border-gray-700"
+    >
+        @php
+            $__previewHtml = null;
+            if ($this->blockId && $block['widget_type_handle'] !== 'column_widget') {
+                // Only render non-column widgets inline; column widgets show their structural editor
+                try {
+                    $__previewHtml = $this->getRenderedWidgetHtml();
+                } catch (\Throwable $e) {
+                    $__previewHtml = '<div style="padding: 1rem; color: #dc2626; font-size: 0.875rem;">Preview error: ' . e($e->getMessage()) . '</div>';
+                }
+            }
+        @endphp
+        @if ($__previewHtml)
+            {!! $__previewHtml !!}
+        @elseif ($block['widget_type_handle'] !== 'column_widget')
+            <div class="p-4 text-center text-sm text-gray-400">
+                No preview available for this widget.
+            </div>
+        @endif
+    </div>
+
     {{-- Column widget slot panels — the only body content for block components --}}
     @if ($block['widget_type_handle'] === 'column_widget')
     <div x-show="open" x-cloak class="border-t border-gray-100 p-4 dark:border-gray-700">
