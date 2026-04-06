@@ -58,6 +58,7 @@ class WidgetRenderer
                 'config'         => $config,
                 'configMedia'    => $configMedia,
                 'collectionData' => $collectionData,
+                'pageContext'    => app(PageContext::class),
             ];
 
             if (! empty($columnChildren)) {
