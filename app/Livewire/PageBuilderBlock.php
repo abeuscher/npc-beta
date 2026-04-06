@@ -38,6 +38,12 @@ class PageBuilderBlock extends Component
     /** @var array<string, mixed> */
     public array $block = [];
 
+    /** Whether this block is currently selected/focused for live preview. */
+    public bool $isSelected = false;
+
+    /** Cached rendered widget HTML for the live preview. */
+    public string $previewHtml = '';
+
     public function mount(
         string $blockId,
         bool $isFirst = false,
@@ -325,8 +331,21 @@ class PageBuilderBlock extends Component
     }
 
     // -------------------------------------------------------------------------
-    // React to inspector config changes — reload block data for re-render
+    // React to selection and inspector config changes
     // -------------------------------------------------------------------------
+
+    #[On('block-selected')]
+    public function onBlockSelected(string $blockId, string $parentBlockId = ''): void
+    {
+        $wasSelected = $this->isSelected;
+        $this->isSelected = ($blockId === $this->blockId);
+
+        if ($this->isSelected && ! $wasSelected) {
+            $this->refreshPreviewHtml();
+        } elseif (! $this->isSelected) {
+            $this->previewHtml = '';
+        }
+    }
 
     #[On('widget-config-updated')]
     public function onWidgetConfigUpdated(string $blockId): void
@@ -336,6 +355,19 @@ class PageBuilderBlock extends Component
         }
 
         $this->loadBlock();
+
+        if ($this->isSelected) {
+            $this->refreshPreviewHtml();
+        }
+    }
+
+    private function refreshPreviewHtml(): void
+    {
+        try {
+            $this->previewHtml = $this->getRenderedWidgetHtml() ?? '';
+        } catch (\Throwable $e) {
+            $this->previewHtml = '<div style="padding: 1rem; color: #dc2626; font-size: 0.875rem;">Preview error: ' . e($e->getMessage()) . '</div>';
+        }
     }
 
     // -------------------------------------------------------------------------
