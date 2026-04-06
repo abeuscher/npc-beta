@@ -4,7 +4,14 @@
     x-on:keydown.escape.window="$wire.selectBlock('')"
 >
 
-    {{-- Public CSS is loaded via AdminPanelProvider render hook (Vite bundle + widget bundle) --}}
+    {{-- Public CSS is loaded via AdminPanelProvider render hook (build server bundle).
+         Override body-level .np-site rules that don't apply to inline previews. --}}
+    <style>
+        .widget-preview-scope.np-site {
+            min-height: auto;
+            display: block;
+        }
+    </style>
 
     {{-- ------------------------------------------------------------------ --}}
     {{-- Two-column layout: block list (left ~55%) + inspector (right ~45%) --}}
