@@ -11,6 +11,15 @@
 
         <div class="space-y-4">
 
+            {{-- Apply Changes button --}}
+            <button
+                type="button"
+                wire:click="applyChanges"
+                class="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus:outline-none"
+            >
+                Apply Changes
+            </button>
+
             {{-- Block label (edit-in-place) --}}
             <div
                 x-data="{ editing: false, draft: @js($block['label']) }"

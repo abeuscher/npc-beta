@@ -290,20 +290,11 @@
                  the preview-content-changed event and applied manually. --}}
             <div
                 class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
-                style="position: relative;"
                 x-bind:style="presetViewport < 1920
                     ? 'height: calc(100vh - 16rem); overflow-y: auto; display: flex; justify-content: center; background: #f3f4f6;'
                     : 'min-height: 400px; overflow: hidden;'"
                 wire:ignore
             >
-                {{-- Apply Changes — sticky top-right inside preview --}}
-                <button
-                    type="button"
-                    wire:click="$dispatch('preview-refresh-requested', { blockId: '' })"
-                    class="rounded bg-primary-600 px-2.5 py-1 text-xs font-medium text-white shadow hover:bg-primary-500 focus:outline-none"
-                    style="position: sticky; top: 0.5rem; float: right; margin-right: 0.5rem; z-index: 10;"
-                >Apply</button>
-
                 <div
                     x-ref="previewScope"
                     class="widget-preview-scope np-site"
