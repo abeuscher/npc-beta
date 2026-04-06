@@ -220,25 +220,29 @@
     <div
         x-show="selected"
         x-cloak
+        x-ref="previewFrame"
         x-data="{
-            zoomFactor: 1,
+            zoomFactor: 0.5,
+            viewportW: 1920,
             computeZoom() {
-                const panel = this.$el;
-                const panelWidth = panel.offsetWidth;
-                const viewportWidth = window.innerWidth;
-                this.zoomFactor = panelWidth > 0 ? panelWidth / viewportWidth : 0.5;
+                const frame = this.$refs.previewFrame;
+                if (!frame) return;
+                this.viewportW = window.innerWidth;
+                const panelWidth = frame.offsetWidth;
+                this.zoomFactor = panelWidth > 0 ? panelWidth / this.viewportW : 0.5;
+                console.log('preview zoom:', { panelWidth, viewportW: this.viewportW, zoomFactor: this.zoomFactor });
             },
         }"
-        x-init="computeZoom()"
+        x-init="$nextTick(() => computeZoom())"
         x-on:resize.window.debounce.150ms="computeZoom()"
         class="widget-preview-frame border-t border-gray-100 dark:border-gray-700"
         style="overflow: hidden; position: relative;"
     >
         @if ($previewHtml)
-            {{-- Inner container renders at full viewport width, then zoom scales it down --}}
+            {{-- Inner container: fixed pixel width matching viewport, zoom shrinks to fit panel --}}
             <div
                 class="widget-preview-scope"
-                x-bind:style="'width: ' + (100 / zoomFactor) + '%; zoom: ' + zoomFactor + '; transform-origin: top left;'"
+                x-bind:style="'width: ' + viewportW + 'px; zoom: ' + zoomFactor + ';'"
             >
                 {!! $previewHtml !!}
             </div>
