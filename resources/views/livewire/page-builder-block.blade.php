@@ -225,10 +225,11 @@
             zoomFactor: 0.5,
             viewportW: 1920,
             computeZoom() {
-                const frame = this.$refs.previewFrame;
-                if (!frame) return;
                 this.viewportW = window.innerWidth;
-                const panelWidth = frame.offsetWidth;
+                // Measure the parent block element (always visible) instead of this
+                // hidden x-show div which has 0 width until displayed.
+                const block = this.$refs.previewFrame.closest('[data-block-id]');
+                const panelWidth = block ? block.offsetWidth : 0;
                 this.zoomFactor = panelWidth > 0 ? panelWidth / this.viewportW : 0.5;
                 console.log('preview zoom:', { panelWidth, viewportW: this.viewportW, zoomFactor: this.zoomFactor });
             },
