@@ -51,23 +51,111 @@
     // Group cards into pages for initial server render
     $pages = array_chunk($renderedCards, $perPage);
 
-    $widgetId = 'blog-listing-' . uniqid();
+    $listingData = json_encode([
+        'cards' => $renderedCards,
+        'items' => $items,
+        'columns' => $columns,
+        'perPage' => $perPage,
+        'sortDefault' => $sortDefault,
+        'effect' => $effect,
+    ]);
 @endphp
 
 <div
-    id="{{ $widgetId }}"
     class="widget-blog-listing"
     @if ($bgColor || $textColor)
     style="{{ $bgColor ? 'background-color:' . e($bgColor) . ';' : '' }}{{ $textColor ? 'color:' . e($textColor) . ';' : '' }}"
     @endif
+    x-data="{
+        swiper: null,
+        search: '',
+        cfg: null,
+        init() {
+            this.cfg = JSON.parse(this.$refs.listingData.textContent);
+            let swiperEl = this.$refs.swiperEl;
+            if (!swiperEl || !window.Swiper) return;
+
+            let modules = [window.SwiperModules.Navigation, window.SwiperModules.Pagination];
+            if (this.cfg.effect === 'fade') modules.push(window.SwiperModules.EffectFade);
+
+            this.swiper = new window.Swiper(swiperEl, this.buildOpts(modules));
+        },
+        buildOpts(modules) {
+            return {
+                modules: modules,
+                slidesPerView: 1,
+                slidesPerGroup: 1,
+                spaceBetween: 24,
+                effect: this.cfg.effect,
+                fadeEffect: this.cfg.effect === 'fade' ? { crossFade: true } : undefined,
+                navigation: { nextEl: this.$refs.btnNext, prevEl: this.$refs.btnPrev },
+                pagination: {
+                    el: this.$refs.pagination,
+                    clickable: true,
+                    renderBullet: (index, className) => '<span class=&quot;' + className + '&quot;>' + (index + 1) + '</span>',
+                },
+            };
+        },
+        rebuildSlides() {
+            let indices = this.getFilteredIndices(this.search, this.cfg.sortDefault);
+            let swiperEl = this.$refs.swiperEl;
+            if (this.swiper) this.swiper.destroy(true, true);
+
+            let wrapper = swiperEl.querySelector('.swiper-wrapper');
+            wrapper.innerHTML = '';
+
+            if (indices.length) {
+                for (let i = 0; i < indices.length; i += this.cfg.perPage) {
+                    let chunk = indices.slice(i, i + this.cfg.perPage).map(idx => this.cfg.cards[idx]);
+                    wrapper.innerHTML += this.buildSlideHtml(chunk);
+                }
+                this.$refs.emptyMsg.style.display = 'none';
+            } else {
+                this.$refs.emptyMsg.style.display = '';
+            }
+
+            let modules = [window.SwiperModules.Navigation, window.SwiperModules.Pagination];
+            if (this.cfg.effect === 'fade') modules.push(window.SwiperModules.EffectFade);
+            this.swiper = new window.Swiper(swiperEl, this.buildOpts(modules));
+        },
+        buildSlideHtml(cardHtmlArray) {
+            let cards = cardHtmlArray.map(html => '<article class=&quot;content-card&quot;>' + html + '</article>').join('');
+            return '<div class=&quot;swiper-slide&quot;><div class=&quot;content-grid&quot; style=&quot;grid-template-columns:repeat(' + this.cfg.columns + ',1fr);&quot;>' + cards + '</div></div>';
+        },
+        getFilteredIndices(query, sortBy) {
+            let indices = this.cfg.items.map((_, i) => i);
+            if (query && query.trim()) {
+                let q = query.toLowerCase();
+                indices = indices.filter(i => {
+                    let item = this.cfg.items[i];
+                    return item.title.toLowerCase().includes(q)
+                        || item.excerpt.toLowerCase().includes(q)
+                        || item.date.toLowerCase().includes(q);
+                });
+            }
+            indices.sort((a, b) => {
+                let ia = this.cfg.items[a], ib = this.cfg.items[b];
+                switch (sortBy) {
+                    case 'oldest':   return (ia.date_iso || '').localeCompare(ib.date_iso || '');
+                    case 'title_az': return ia.title.localeCompare(ib.title);
+                    case 'title_za': return ib.title.localeCompare(ia.title);
+                    default:         return (ib.date_iso || '').localeCompare(ia.date_iso || '');
+                }
+            });
+            return indices;
+        },
+    }"
+    x-effect="if (cfg && search !== undefined) rebuildSlides()"
 >
+    <script x-ref="listingData" type="application/json">{!! $listingData !!}</script>
+
     <div class="site-container">
         @if ($heading)
             <h2 class="widget-blog-listing__heading">{{ $heading }}</h2>
         @endif
 
         @if ($showSearch)
-            <div class="widget-blog-listing__controls" x-data="{ search: '' }" x-effect="$dispatch('blog-search', { query: search })">
+            <div class="widget-blog-listing__controls">
                 <input
                     type="search"
                     x-model.debounce.300ms="search"
@@ -78,7 +166,7 @@
             </div>
         @endif
 
-        <div class="swiper widget-blog-listing__swiper">
+        <div x-ref="swiperEl" class="swiper widget-blog-listing__swiper">
             <div class="swiper-wrapper">
                 @foreach ($pages as $page)
                     <div class="swiper-slide">
@@ -93,110 +181,11 @@
         </div>
 
         <nav class="widget-listing__pager" aria-label="Pagination">
-            <button class="widget-listing__nav swiper-button-prev" type="button" aria-label="Previous page">&lsaquo;</button>
-            <div class="swiper-pagination"></div>
-            <button class="widget-listing__nav swiper-button-next" type="button" aria-label="Next page">&rsaquo;</button>
+            <button x-ref="btnPrev" class="widget-listing__nav swiper-button-prev" type="button" aria-label="Previous page">&lsaquo;</button>
+            <div x-ref="pagination" class="swiper-pagination"></div>
+            <button x-ref="btnNext" class="widget-listing__nav swiper-button-next" type="button" aria-label="Next page">&rsaquo;</button>
         </nav>
 
-        <p class="widget-blog-listing__empty" style="display:none;">No posts found.</p>
+        <p x-ref="emptyMsg" class="widget-blog-listing__empty" style="display:none;">No posts found.</p>
     </div>
 </div>
-
-<script>
-window.addEventListener('load', function () {
-    var el = document.getElementById('{{ $widgetId }}');
-    if (!el) return;
-
-    var allCards = @json($renderedCards);
-    var allItems = @json($items);
-    var columns = {{ $columns }};
-    var perPage = {{ $perPage }};
-    var sortDefault = '{{ $sortDefault }}';
-    var swiperEl = el.querySelector('.swiper');
-    var emptyEl = el.querySelector('.widget-blog-listing__empty');
-
-    var effect = '{{ $effect }}';
-    var modules = [window.SwiperModules.Navigation, window.SwiperModules.Pagination];
-    if (effect === 'fade') modules.push(window.SwiperModules.EffectFade);
-
-    var swiperOpts = {
-        modules: modules,
-        slidesPerView: 1,
-        slidesPerGroup: 1,
-        spaceBetween: 24,
-        effect: effect,
-        fadeEffect: effect === 'fade' ? { crossFade: true } : undefined,
-        navigation: {
-            nextEl: el.querySelector('.swiper-button-next'),
-            prevEl: el.querySelector('.swiper-button-prev')
-        },
-        pagination: {
-            el: el.querySelector('.swiper-pagination'),
-            clickable: true,
-            renderBullet: function (index, className) {
-                return '<span class="' + className + '">' + (index + 1) + '</span>';
-            }
-        }
-    };
-
-    var swiper = new window.Swiper(swiperEl, swiperOpts);
-
-    function buildSlideHtml(cardHtmlArray) {
-        var cards = cardHtmlArray.map(function (html) {
-            return '<article class="content-card">' + html + '</article>';
-        }).join('');
-        return '<div class="swiper-slide"><div class="content-grid" style="grid-template-columns:repeat(' + columns + ',1fr);">' + cards + '</div></div>';
-    }
-
-    function getFilteredIndices(query, sortBy) {
-        var indices = allItems.map(function (_, i) { return i; });
-
-        if (query && query.trim()) {
-            var q = query.toLowerCase();
-            indices = indices.filter(function (i) {
-                var item = allItems[i];
-                return item.title.toLowerCase().indexOf(q) !== -1
-                    || item.excerpt.toLowerCase().indexOf(q) !== -1
-                    || item.date.toLowerCase().indexOf(q) !== -1;
-            });
-        }
-
-        indices.sort(function (a, b) {
-            var ia = allItems[a], ib = allItems[b];
-            switch (sortBy) {
-                case 'oldest':   return (ia.date_iso || '').localeCompare(ib.date_iso || '');
-                case 'title_az': return ia.title.localeCompare(ib.title);
-                case 'title_za': return ib.title.localeCompare(ia.title);
-                default:         return (ib.date_iso || '').localeCompare(ia.date_iso || '');
-            }
-        });
-
-        return indices;
-    }
-
-    function rebuildSlides(query, sortBy) {
-        var indices = getFilteredIndices(query, sortBy);
-
-        swiper.destroy(true, true);
-
-        var wrapper = swiperEl.querySelector('.swiper-wrapper');
-        wrapper.innerHTML = '';
-
-        if (indices.length) {
-            for (var i = 0; i < indices.length; i += perPage) {
-                var chunk = indices.slice(i, i + perPage).map(function (idx) { return allCards[idx]; });
-                wrapper.innerHTML += buildSlideHtml(chunk);
-            }
-            emptyEl.style.display = 'none';
-        } else {
-            emptyEl.style.display = '';
-        }
-
-        swiper = new window.Swiper(swiperEl, swiperOpts);
-    }
-
-    el.addEventListener('blog-search', function (e) {
-        rebuildSlides(e.detail.query, sortDefault);
-    });
-});
-</script>
