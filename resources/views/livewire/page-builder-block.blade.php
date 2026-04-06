@@ -7,9 +7,26 @@
         menuOpen: false,
         confirmDelete: false,
         selected: false,
+        anySelected: false,
+        childIsSelected: false,
     }"
-    x-on:block-selected.window="selected = ($event.detail.blockId === '{{ $block['id'] }}')"
-    x-bind:class="{ 'ring-2 ring-primary-500': selected }"
+    x-on:block-selected.window="
+        selected = ($event.detail.blockId === '{{ $block['id'] }}');
+        anySelected = ($event.detail.blockId !== '');
+        childIsSelected = ($event.detail.parentBlockId === '{{ $block['id'] }}');
+        if (childIsSelected) open = true;
+    "
+    x-bind:class="{
+        'ring-2 ring-primary-500 widget-block--focused': selected,
+        'widget-block--blurred': anySelected && !selected && !childIsSelected,
+    }"
+    x-bind:style="selected
+        ? 'zoom: 1.1; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
+        : (anySelected && !childIsSelected
+            ? 'filter: blur(4px); opacity: 0.45; pointer-events: none; transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
+            : 'transition: zoom 0.25s ease, filter 0.25s ease, opacity 0.25s ease;'
+        )
+    "
     class="rounded-lg border shadow-sm {{ $block['widget_type_handle'] === 'column_widget' ? 'border-gray-300 bg-[#cccccc] dark:bg-gray-700' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800' }}"
 >
     {{-- Block header --}}

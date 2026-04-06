@@ -162,7 +162,19 @@
       "Read(//mnt/e/Clients/nonprofitcrm/resources/icons/**)",
       "Bash(git stash:*)",
       "Read(//mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits/**)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(//mnt/e/Clients/nonprofitcrm/resources/sample-images/products/**)",
+      "Bash(ls -la /home/al/nonprofitcrm/tests/Feature/*Widget*Test.php)",
+      "Bash(grep -h \"it\\('.*seeder\" /home/al/nonprofitcrm/tests/Feature/*Widget*Test.php)",
+      "Bash(npm ls:*)",
+      "Bash(curl -s http://localhost/home)",
+      "Bash(curl -s \"http://localhost/news/quia-dolores-nam-consequatur-quod-hic-57\")",
+      "Bash(grep -l \"x-data\\\\|Alpine\" /home/al/nonprofitcrm/resources/views/widgets/*.blade.php)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(git config:*)",
+      "Bash(gh auth:*)",
+      "Bash(GIT_TRACE=1 git push origin session-134/1)",
+      "Read(//home/al/**)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",
@@ -173,7 +185,9 @@
       "/home/al/nonprofitcrm/app/Filament/Resources/PageResource/RelationManagers",
       "/tmp",
       "/home/al/nonprofitcrm/resources/css/filament",
-      "/mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits"
+      "/mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits",
+      "/home/al/nonprofitcrm/resources/views/widgets/partials",
+      "/home/al/.claude/projects/-home-al-nonprofitcrm"
     ]
   }
 }

@@ -1,4 +1,8 @@
-<div class="page-builder">
+<div
+    class="page-builder"
+    x-data
+    x-on:keydown.escape.window="$wire.selectBlock('')"
+>
 
     {{-- ------------------------------------------------------------------ --}}
     {{-- Two-column layout: block list (left ~55%) + inspector (right ~45%) --}}

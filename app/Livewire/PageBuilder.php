@@ -360,8 +360,15 @@ class PageBuilder extends Component
 
         $this->selectedBlockId = $blockId;
 
+        // Look up the parent widget ID so column blocks can exempt themselves from blur
+        // when one of their children is focused.
+        $parentId = '';
+        if ($blockId !== '') {
+            $parentId = \App\Models\PageWidget::where('id', $blockId)->value('parent_widget_id') ?? '';
+        }
+
         // Dispatch a browser event so each block component can update its selected highlight.
-        $this->dispatch('block-selected', blockId: $blockId);
+        $this->dispatch('block-selected', blockId: $blockId, parentBlockId: $parentId);
     }
 
     // -------------------------------------------------------------------------
