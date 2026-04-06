@@ -231,7 +231,6 @@
                 const block = this.$refs.previewFrame.closest('[data-block-id]');
                 const panelWidth = block ? block.offsetWidth : 0;
                 this.zoomFactor = panelWidth > 0 ? panelWidth / this.viewportW : 0.5;
-                console.log('preview zoom:', { panelWidth, viewportW: this.viewportW, zoomFactor: this.zoomFactor });
             },
         }"
         x-init="$nextTick(() => computeZoom())"
