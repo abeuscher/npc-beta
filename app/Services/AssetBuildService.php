@@ -398,6 +398,15 @@ JS,
             }
         }
 
+        // Load variables partial so it can be prepended to each widget SCSS
+        // entry. The build server compiles each SCSS source individually, so
+        // widget files need the variables inlined.
+        $variablesContent = '';
+        $variablesPath = resource_path('scss/_variables.scss');
+        if (file_exists($variablesPath)) {
+            $variablesContent = file_get_contents($variablesPath) . "\n";
+        }
+
         // Widget SCSS from asset paths
         $widgetTypesWithAssets = WidgetType::whereNotNull('assets')->get(['handle', 'assets']);
         foreach ($widgetTypesWithAssets as $wt) {
@@ -409,7 +418,7 @@ JS,
                     $content = preg_replace('/@use\s+"variables"\s+as\s+\*;\s*\n?/', '', $content);
                     $scss[] = [
                         'path' => 'widgets/' . $wt->handle . '/' . basename($scssPath),
-                        'content' => $content,
+                        'content' => $variablesContent . $content,
                     ];
                 }
             }

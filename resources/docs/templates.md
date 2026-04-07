@@ -4,6 +4,9 @@ handle: templates
 description: Manage page templates (colors, fonts, SCSS, header, footer) and content templates (widget stack presets).
 routes:
   - filament.admin.resources.templates.index
+  - filament.admin.resources.templates.create
+  - filament.admin.resources.templates.edit-content
+  - filament.admin.resources.templates.edit-page
 category: cms
 ---
 

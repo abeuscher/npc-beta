@@ -67,7 +67,13 @@ class MailChimpService
 
     public function removeTag(string $email, string $tag): void
     {
-        // TODO: remove a tag from a MailChimp member
+        $client     = $this->client();
+        $audienceId = config('services.mailchimp.audience_id');
+        $hash       = md5(strtolower(trim($email)));
+
+        $client->lists->updateListMemberTags($audienceId, $hash, [
+            'tags' => [['name' => $tag, 'status' => 'inactive']],
+        ]);
     }
 
     private function client(): ApiClient
