@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict KGbdWq0P6uKyWaqai40nHb6AKAZMU7xugOOBCw1iHwd6kP7PuW5nys1kAFrBj3l
+\restrict eqky4OAE8oXvuElb0hNWWPzgqEmwl5wcbdxMrPVfChv3ARpoCdT9K1ubFJALAS0
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -158,7 +158,7 @@ CREATE TABLE public.contact_duplicate_dismissals (
     id uuid NOT NULL,
     contact_id_a uuid NOT NULL,
     contact_id_b uuid NOT NULL,
-    dismissed_by bigint NOT NULL,
+    dismissed_by bigint,
     dismissed_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
@@ -191,7 +191,8 @@ CREATE TABLE public.contacts (
     custom_fields jsonb,
     mailing_list_opt_in boolean DEFAULT false NOT NULL,
     import_session_id uuid,
-    date_of_birth date
+    date_of_birth date,
+    quickbooks_customer_id character varying(255)
 );
 
 
@@ -353,7 +354,8 @@ CREATE TABLE public.event_registrations (
     updated_at timestamp(0) without time zone,
     event_id uuid NOT NULL,
     mailing_list_opt_in boolean DEFAULT false NOT NULL,
-    CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY[('registered'::character varying)::text, ('waitlisted'::character varying)::text, ('cancelled'::character varying)::text, ('attended'::character varying)::text])))
+    stripe_session_id character varying(255),
+    CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY['pending'::text, 'registered'::text, 'waitlisted'::text, 'cancelled'::text, 'attended'::text])))
 );
 
 
@@ -396,6 +398,7 @@ CREATE TABLE public.events (
     starts_at timestamp(0) without time zone NOT NULL,
     ends_at timestamp(0) without time zone,
     registrants_deleted_at timestamp(0) without time zone,
+    author_id bigint NOT NULL,
     CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
     CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
 );
@@ -483,7 +486,8 @@ CREATE TABLE public.forms (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    deleted_at timestamp(0) without time zone,
+    is_archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -518,7 +522,9 @@ CREATE TABLE public.funds (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    restriction_type character varying(255) DEFAULT 'unrestricted'::character varying NOT NULL
+    restriction_type character varying(255) DEFAULT 'unrestricted'::character varying NOT NULL,
+    quickbooks_account_id character varying(255),
+    is_archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -567,7 +573,8 @@ CREATE TABLE public.help_articles (
     last_updated date,
     embedding jsonb,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    category character varying(255)
 );
 
 
@@ -644,7 +651,7 @@ CREATE TABLE public.import_sessions (
     status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
     filename character varying(255),
     row_count integer,
-    imported_by bigint NOT NULL,
+    imported_by bigint,
     approved_by bigint,
     approved_at timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
@@ -807,7 +814,7 @@ CREATE TABLE public.mailing_lists (
 CREATE TABLE public.media (
     id bigint NOT NULL,
     model_type character varying(255) NOT NULL,
-    model_id bigint NOT NULL,
+    model_id character varying(36) NOT NULL,
     uuid uuid,
     collection_name character varying(255) NOT NULL,
     name character varying(255) NOT NULL,
@@ -861,7 +868,8 @@ CREATE TABLE public.membership_tiers (
     sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    CONSTRAINT membership_tiers_billing_interval_check CHECK (((billing_interval)::text = ANY ((ARRAY['monthly'::character varying, 'annual'::character varying, 'one_time'::character varying, 'lifetime'::character varying])::text[])))
+    is_archived boolean DEFAULT false NOT NULL,
+    CONSTRAINT membership_tiers_billing_interval_check CHECK (((billing_interval)::text = ANY (ARRAY[('monthly'::character varying)::text, ('annual'::character varying)::text, ('one_time'::character varying)::text, ('lifetime'::character varying)::text])))
 );
 
 
@@ -880,7 +888,9 @@ CREATE TABLE public.memberships (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     deleted_at timestamp(0) without time zone,
-    tier_id uuid
+    tier_id uuid,
+    stripe_session_id character varying(255),
+    stripe_subscription_id character varying(255)
 );
 
 
@@ -1023,7 +1033,10 @@ CREATE TABLE public.page_widgets (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     widget_type_id uuid NOT NULL,
-    query_config jsonb DEFAULT '{}'::jsonb NOT NULL
+    query_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    parent_widget_id uuid,
+    column_index smallint,
+    style_config jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -1037,13 +1050,19 @@ CREATE TABLE public.pages (
     slug character varying(255) NOT NULL,
     meta_title character varying(255),
     meta_description text,
-    is_published boolean DEFAULT false NOT NULL,
     published_at timestamp(0) without time zone,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     deleted_at timestamp(0) without time zone,
     type character varying(255) DEFAULT 'default'::character varying NOT NULL,
     custom_fields jsonb,
+    author_id bigint NOT NULL,
+    status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
+    og_image_path character varying(255),
+    noindex boolean DEFAULT false NOT NULL,
+    head_snippet text,
+    body_snippet text,
+    template_id uuid,
     CONSTRAINT pages_type_check CHECK (((type)::text = ANY (ARRAY[('default'::character varying)::text, ('post'::character varying)::text, ('event'::character varying)::text, ('member'::character varying)::text, ('system'::character varying)::text])))
 );
 
@@ -1189,7 +1208,8 @@ CREATE TABLE public.products (
     status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
     sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    is_archived boolean DEFAULT false NOT NULL
 );
 
 
@@ -1328,6 +1348,34 @@ CREATE TABLE public.tags (
 
 
 --
+-- Name: templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.templates (
+    id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    type character varying(255) NOT NULL,
+    description text,
+    is_default boolean DEFAULT false NOT NULL,
+    definition jsonb DEFAULT '{}'::jsonb NOT NULL,
+    primary_color character varying(255),
+    heading_font character varying(255),
+    body_font character varying(255),
+    header_bg_color character varying(255),
+    footer_bg_color character varying(255),
+    nav_link_color character varying(255),
+    nav_hover_color character varying(255),
+    nav_active_color character varying(255),
+    custom_scss text,
+    header_page_id uuid,
+    footer_page_id uuid,
+    created_by bigint,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
 -- Name: transactions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1344,7 +1392,9 @@ CREATE TABLE public.transactions (
     updated_at timestamp(0) without time zone,
     subject_type character varying(255),
     subject_id character varying(255),
-    contact_id uuid
+    contact_id uuid,
+    qb_sync_error text,
+    qb_synced_at timestamp(0) without time zone
 );
 
 
@@ -1416,6 +1466,12 @@ CREATE TABLE public.widget_types (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     config_schema jsonb DEFAULT '[]'::jsonb NOT NULL,
+    default_open boolean DEFAULT false NOT NULL,
+    assets jsonb DEFAULT '{}'::jsonb NOT NULL,
+    category jsonb DEFAULT '["content"]'::jsonb NOT NULL,
+    allowed_page_types jsonb,
+    description text,
+    full_width boolean DEFAULT false NOT NULL,
     CONSTRAINT widget_types_render_mode_check CHECK (((render_mode)::text = ANY (ARRAY[('server'::character varying)::text, ('client'::character varying)::text])))
 );
 
@@ -2195,6 +2251,14 @@ ALTER TABLE ONLY public.tags
 
 
 --
+-- Name: templates templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.templates
+    ADD CONSTRAINT templates_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2584,7 +2648,7 @@ ALTER TABLE ONLY public.allocations
 --
 
 ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
+    ADD CONSTRAINT allocations_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE RESTRICT;
 
 
 --
@@ -2592,7 +2656,7 @@ ALTER TABLE ONLY public.allocations
 --
 
 ALTER TABLE ONLY public.allocations
-    ADD CONSTRAINT allocations_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id);
+    ADD CONSTRAINT allocations_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id) ON DELETE RESTRICT;
 
 
 --
@@ -2624,7 +2688,7 @@ ALTER TABLE ONLY public.contact_duplicate_dismissals
 --
 
 ALTER TABLE ONLY public.contact_duplicate_dismissals
-    ADD CONSTRAINT contact_duplicate_dismissals_dismissed_by_foreign FOREIGN KEY (dismissed_by) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT contact_duplicate_dismissals_dismissed_by_foreign FOREIGN KEY (dismissed_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -2656,7 +2720,7 @@ ALTER TABLE ONLY public.contacts
 --
 
 ALTER TABLE ONLY public.donation_receipts
-    ADD CONSTRAINT donation_receipts_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+    ADD CONSTRAINT donation_receipts_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE RESTRICT;
 
 
 --
@@ -2689,6 +2753,14 @@ ALTER TABLE ONLY public.event_registrations
 
 ALTER TABLE ONLY public.event_registrations
     ADD CONSTRAINT event_registrations_event_id_foreign FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: events events_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_author_id_foreign FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -2760,7 +2832,7 @@ ALTER TABLE ONLY public.import_sessions
 --
 
 ALTER TABLE ONLY public.import_sessions
-    ADD CONSTRAINT import_sessions_imported_by_foreign FOREIGN KEY (imported_by) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT import_sessions_imported_by_foreign FOREIGN KEY (imported_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -2800,7 +2872,7 @@ ALTER TABLE ONLY public.mailing_list_filters
 --
 
 ALTER TABLE ONLY public.memberships
-    ADD CONSTRAINT memberships_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+    ADD CONSTRAINT memberships_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE RESTRICT;
 
 
 --
@@ -2868,11 +2940,35 @@ ALTER TABLE ONLY public.page_widgets
 
 
 --
+-- Name: page_widgets page_widgets_parent_widget_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_widgets
+    ADD CONSTRAINT page_widgets_parent_widget_id_foreign FOREIGN KEY (parent_widget_id) REFERENCES public.page_widgets(id) ON DELETE SET NULL;
+
+
+--
 -- Name: page_widgets page_widgets_widget_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.page_widgets
-    ADD CONSTRAINT page_widgets_widget_type_id_foreign FOREIGN KEY (widget_type_id) REFERENCES public.widget_types(id) ON DELETE CASCADE;
+    ADD CONSTRAINT page_widgets_widget_type_id_foreign FOREIGN KEY (widget_type_id) REFERENCES public.widget_types(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pages pages_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pages
+    ADD CONSTRAINT pages_author_id_foreign FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: pages pages_template_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pages
+    ADD CONSTRAINT pages_template_id_foreign FOREIGN KEY (template_id) REFERENCES public.templates(id) ON DELETE SET NULL;
 
 
 --
@@ -2912,7 +3008,7 @@ ALTER TABLE ONLY public.purchases
 --
 
 ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
+    ADD CONSTRAINT purchases_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE RESTRICT;
 
 
 --
@@ -2920,7 +3016,7 @@ ALTER TABLE ONLY public.purchases
 --
 
 ALTER TABLE ONLY public.purchases
-    ADD CONSTRAINT purchases_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id);
+    ADD CONSTRAINT purchases_product_price_id_foreign FOREIGN KEY (product_price_id) REFERENCES public.product_prices(id) ON DELETE RESTRICT;
 
 
 --
@@ -2948,6 +3044,30 @@ ALTER TABLE ONLY public.taggables
 
 
 --
+-- Name: templates templates_created_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.templates
+    ADD CONSTRAINT templates_created_by_foreign FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: templates templates_footer_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.templates
+    ADD CONSTRAINT templates_footer_page_id_foreign FOREIGN KEY (footer_page_id) REFERENCES public.pages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: templates templates_header_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.templates
+    ADD CONSTRAINT templates_header_page_id_foreign FOREIGN KEY (header_page_id) REFERENCES public.pages(id) ON DELETE SET NULL;
+
+
+--
 -- Name: transactions transactions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2968,20 +3088,20 @@ ALTER TABLE ONLY public.waitlist_entries
 --
 
 ALTER TABLE ONLY public.waitlist_entries
-    ADD CONSTRAINT waitlist_entries_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id);
+    ADD CONSTRAINT waitlist_entries_product_id_foreign FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict KGbdWq0P6uKyWaqai40nHb6AKAZMU7xugOOBCw1iHwd6kP7PuW5nys1kAFrBj3l
+\unrestrict eqky4OAE8oXvuElb0hNWWPzgqEmwl5wcbdxMrPVfChv3ARpoCdT9K1ubFJALAS0
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict aFkcezGQgfEiD7y94RXtGwmsQ6vKOSMADHFj02Ws0mPxyK9ipiNmQMPQCOMRE2u
+\restrict kmlz6ePzodX4ERnyYy4spu6jhyOxw8m8ZaRw3TrKa4sACNAbSHMipbB3BAaRrKX
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3024,6 +3144,32 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 19	2026_03_26_200002_create_donation_receipts_table	7
 20	2026_03_26_300001_add_contact_id_to_transactions	8
 21	2026_03_28_082001_add_missing_fk_indexes	9
+22	2026_03_28_194912_add_author_id_to_pages_table	10
+23	2026_03_28_204405_make_pages_author_id_not_nullable	10
+24	2026_03_28_204408_add_author_id_to_events_table	10
+25	2026_03_29_005427_add_default_open_to_widget_types_table	10
+26	2026_03_29_033425_add_parent_and_style_to_page_widgets_table	10
+27	2026_03_29_074954_add_status_to_pages_and_drop_is_published	10
+28	2026_03_29_092938_alter_media_model_id_to_string	10
+29	2026_03_30_010000_add_seo_and_snippet_columns_to_pages_table	10
+30	2026_03_30_202450_add_assets_to_widget_types_table	10
+31	2026_03_30_220000_create_templates_table	10
+32	2026_03_30_220100_add_template_id_to_pages_table	10
+33	2026_03_31_034826_remove_theme_keys_from_site_settings	10
+34	2026_03_31_120000_add_qb_sync_columns_to_transactions_table	10
+35	2026_03_31_140000_add_quickbooks_customer_id_to_contacts_table	10
+36	2026_03_31_160000_add_quickbooks_account_id_to_funds_table	10
+37	2026_04_01_010000_add_stripe_session_id_and_pending_status_to_event_registrations	10
+38	2026_04_01_020000_add_stripe_session_id_to_memberships	10
+39	2026_04_01_100000_add_is_archived_to_archivable_tables	10
+40	2026_04_01_200000_fix_foreign_key_cascade_rules	10
+41	2026_04_02_010000_add_category_to_help_articles_table	10
+42	2026_04_03_010000_add_category_and_allowed_page_types_to_widget_types	10
+43	2026_04_03_020000_change_category_to_jsonb_on_widget_types	10
+44	2026_04_03_030000_add_description_to_widget_types	10
+45	2026_04_03_161823_add_full_width_to_widget_types_table	10
+46	2026_04_05_224551_add_group_and_subtype_to_widget_config_schemas	11
+47	2026_04_06_074630_add_libs_to_widget_type_assets	12
 \.
 
 
@@ -3031,12 +3177,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 21, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 47, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aFkcezGQgfEiD7y94RXtGwmsQ6vKOSMADHFj02Ws0mPxyK9ipiNmQMPQCOMRE2u
+\unrestrict kmlz6ePzodX4ERnyYy4spu6jhyOxw8m8ZaRw3TrKa4sACNAbSHMipbB3BAaRrKX
 
