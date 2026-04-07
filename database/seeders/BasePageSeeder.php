@@ -38,7 +38,8 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'About',
                 'type'         => 'default',
-                'status' => 'draft',
+                'status' => 'published',
+                'published_at' => now(),
             ]
         );
 
@@ -49,7 +50,8 @@ class BasePageSeeder extends Seeder
                 'author_id'    => $authorId,
                 'title'        => 'Contact',
                 'type'         => 'default',
-                'status' => 'draft',
+                'status' => 'published',
+                'published_at' => now(),
             ]
         );
 
