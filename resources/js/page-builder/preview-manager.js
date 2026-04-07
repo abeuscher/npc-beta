@@ -1,21 +1,19 @@
 export function previewManager(requiredLibs) {
     return {
+        _pane: null,
         presetViewport: 1920,
         zoomFactor: 1,
         libsReady: false,
 
         computeZoom() {
-            const paneWidth = this.$el.getBoundingClientRect().width
+            const paneWidth = this._pane.getBoundingClientRect().width
             this.zoomFactor = paneWidth > 0 ? Math.min(1, paneWidth / this.presetViewport) : 1
         },
 
         setViewport(w) {
             this.presetViewport = w
-            // Defer zoom calculation — the previous zoom value affects descendant
-            // layout, so we need a frame for the new viewport width to settle
-            // before measuring the pane.
+            this.computeZoom()
             requestAnimationFrame(() => {
-                this.computeZoom()
                 requestAnimationFrame(() => this.reinitWidgetAlpine())
             })
         },
@@ -106,7 +104,11 @@ export function previewManager(requiredLibs) {
                 if (el._x_dataStack) {
                     Alpine.destroyTree(el)
                 }
-                Alpine.initTree(el)
+                try {
+                    Alpine.initTree(el)
+                } catch (e) {
+                    console.warn('[previewManager] widget Alpine init error:', e.message)
+                }
             })
 
             scope.querySelectorAll('[data-x-ignore-lifted]').forEach(el => {
@@ -124,6 +126,7 @@ export function previewManager(requiredLibs) {
         },
 
         async init() {
+            this._pane = this.$el
             this.computeZoom()
             await this.loadLibs()
             requestAnimationFrame(() => {
