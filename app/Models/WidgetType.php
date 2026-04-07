@@ -112,4 +112,30 @@ class WidgetType extends Model implements HasMedia
     {
         return $this->hasMany(PageWidget::class);
     }
+
+    /**
+     * Return widget types formatted for the picker modal, filtered by page type.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function forPicker(string $pageType = 'default'): array
+    {
+        return static::orderBy('label')
+            ->with('media')
+            ->get()
+            ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
+            ->map(fn ($wt) => [
+                'id'              => $wt->id,
+                'handle'          => $wt->handle,
+                'label'           => $wt->label,
+                'description'     => $wt->description,
+                'category'        => $wt->category ?? ['content'],
+                'collections'     => $wt->collections,
+                'config_schema'   => $wt->config_schema,
+                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
+                'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
+            ])
+            ->values()
+            ->toArray();
+    }
 }

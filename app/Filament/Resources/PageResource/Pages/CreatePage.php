@@ -95,7 +95,7 @@ class CreatePage extends CreateRecord
                 'query_config'     => $def['query_config'] ?? [],
                 'style_config'     => $def['style_config'] ?? [],
                 'sort_order'       => $def['sort_order'] ?? 0,
-                'is_active'        => true,
+                'is_active'        => $def['is_active'] ?? true,
             ]);
 
             // Recursively create nested children (for column widgets)

@@ -147,6 +147,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 138 | Widget JS Dependencies & Interactive Preview |
 | 139 | Unified Preview & Edit Layout |
 | 140 | Properties Panel & Config Split |
+| 141 | Code Review & Cleanup |
 
 ---
 
@@ -184,6 +185,9 @@ Post-builder-overhaul code review following sessions 101 and 116 procedures. Sta
 
 Extract large inline Alpine.js blocks from page builder blades into registered `Alpine.data()` components in `resources/js/page-builder/`. Targets: preview manager (~130 lines), spacing controls (~38 lines), widget filter modal (duplicated), buttons list manager, edit-in-place label. Audit and relocate inline CSS. Migration squash per session 062 procedure.
 
+### Session 143 — Codebase Hygiene Audit
+
+Codebase-wide hygiene pass covering areas not scoped to the builder overhaul. Five workstreams: Docker security review (findings table, no changes), help system completeness (help page for every admin view), TODO/FIXME/HACK comment sweep (catalogue for triage), dependency footprint audit (unused Composer/NPM packages, dead routes/config), and debug output cleanup (console.log, dd, dump removal). Scheduled after 142 so the JS extraction and migration squash are complete before the sweep.
 
 ### Builder Chrome & Layer Explorer
 

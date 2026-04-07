@@ -23,7 +23,7 @@ The Posts index shows all posts with their title, publication date, and status. 
 
 - **Title** (required) — the post's headline.
 - **Slug** — auto-generated from the title. Appears in the post's URL.
-- **Content** — the body of the post, written in the rich text editor.
+- **Content** — the body of the post, assembled using the page builder block editor (same system as Pages).
 - **Excerpt** — a short summary used in post listings and social previews. If left blank, the system uses the first paragraph.
 - **Featured image** — an image displayed at the top of the post and in listing cards.
 - **Published** — toggle to publish. Draft posts are not visible to the public.

@@ -121,23 +121,7 @@ class PageBuilderBlock extends Component
     public function openChildAddModal(int $columnIndex): void
     {
         if (empty($this->widgetTypes)) {
-            $this->widgetTypes = WidgetType::orderBy('label')
-                ->with('media')
-                ->get()
-                ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($this->pageType, $wt->allowed_page_types, true))
-                ->map(fn ($wt) => [
-                    'id'              => $wt->id,
-                    'handle'          => $wt->handle,
-                    'label'           => $wt->label,
-                    'description'     => $wt->description,
-                    'category'        => $wt->category ?? ['content'],
-                    'collections'     => $wt->collections,
-                    'config_schema'   => $wt->config_schema,
-                    'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
-                    'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
-                ])
-                ->values()
-                ->toArray();
+            $this->widgetTypes = WidgetType::forPicker($this->pageType);
         }
 
         $this->childAddColumn = $columnIndex;

@@ -83,6 +83,7 @@ class PageWidget extends Model implements HasMedia
             'query_config' => $pw->query_config ?? [],
             'style_config' => $pw->style_config ?? [],
             'sort_order'   => $pw->sort_order,
+            'is_active'    => $pw->is_active,
         ];
 
         if ($pw->column_index !== null) {

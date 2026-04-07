@@ -69,23 +69,7 @@ class PageBuilder extends Component
             }
         }
 
-        $this->widgetTypes = WidgetType::orderBy('label')
-            ->with('media')
-            ->get()
-            ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($this->pageType, $wt->allowed_page_types, true))
-            ->map(fn ($wt) => [
-                'id'              => $wt->id,
-                'handle'          => $wt->handle,
-                'label'           => $wt->label,
-                'description'     => $wt->description,
-                'category'        => $wt->category ?? ['content'],
-                'collections'     => $wt->collections,
-                'config_schema'   => $wt->config_schema,
-                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
-                'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
-            ])
-            ->values()
-            ->toArray();
+        $this->widgetTypes = WidgetType::forPicker($this->pageType);
 
         $this->loadBlocks();
         $this->refreshAllPreviews();
@@ -242,15 +226,26 @@ class PageBuilder extends Component
             ->where('sort_order', '>=', $newPosition)
             ->increment('sort_order');
 
-        PageWidget::create([
+        $copy = PageWidget::create([
             'page_id'        => $this->pageId,
             'widget_type_id' => $source->widget_type_id,
             'label'          => $source->label,
             'config'         => $source->config ?? [],
             'query_config'   => $source->query_config ?? [],
+            'style_config'   => $source->style_config ?? [],
             'sort_order'     => $newPosition,
             'is_active'      => $source->is_active,
         ]);
+
+        // Recursively copy children (for column widgets)
+        if ($source->children()->exists()) {
+            PageWidget::copyBetweenPages(
+                $this->pageId,
+                $this->pageId,
+                $source->id,
+                $copy->id,
+            );
+        }
 
         $this->loadBlocks();
         $this->refreshAllPreviews();
@@ -512,20 +507,7 @@ class PageBuilder extends Component
             } else {
                 $handle = $widgetType->handle;
                 $sc = $pw->style_config ?? [];
-                $styleProps = [];
-                $spacingKeys = [
-                    'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-                    'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-                    'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-                    'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-                ];
-                foreach ($spacingKeys as $key => $cssProp) {
-                    $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
-                    if ($val !== null) {
-                        $styleProps[] = $cssProp . ':' . $val . 'px';
-                    }
-                }
-                $inlineStyle = implode(';', $styleProps);
+                $inlineStyle = self::buildInlineStyles($sc);
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
                 $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
@@ -582,20 +564,7 @@ class PageBuilder extends Component
 
             $childHandle = $child->widgetType->handle;
             $sc = $child->style_config ?? [];
-            $styleProps = [];
-            $spacingKeys = [
-                'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-                'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-                'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-                'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-            ];
-            foreach ($spacingKeys as $key => $cssProp) {
-                $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
-                if ($val !== null) {
-                    $styleProps[] = $cssProp . ':' . $val . 'px';
-                }
-            }
-            $childInlineStyle = implode(';', $styleProps);
+            $childInlineStyle = self::buildInlineStyles($sc);
 
             $configFullWidth = $child->config['full_width'] ?? null;
             $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($child->widgetType->full_width ?? false);
@@ -613,6 +582,25 @@ class PageBuilder extends Component
         }
 
         return $children;
+    }
+
+    private static function buildInlineStyles(array $styleConfig): string
+    {
+        $styleProps = [];
+        $spacingKeys = [
+            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
+            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
+            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
+            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+        ];
+        foreach ($spacingKeys as $key => $cssProp) {
+            $val = isset($styleConfig[$key]) && $styleConfig[$key] !== '' ? (int) $styleConfig[$key] : null;
+            if ($val !== null) {
+                $styleProps[] = $cssProp . ':' . $val . 'px';
+            }
+        }
+
+        return implode(';', $styleProps);
     }
 
     private function buildDemoCollectionData(PageWidget $pw): array

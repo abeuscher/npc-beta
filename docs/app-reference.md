@@ -140,6 +140,10 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 | Widget templates | `resources/views/widgets/*.blade.php` |
 | Page context service (data for widget templates) | `App\Services\PageContext` — `app/Services/PageContext.php` |
 | Widget data resolver | `App\Services\WidgetDataResolver` — `app/Services/WidgetDataResolver.php` |
+| Inspector panel (admin UI) | `App\Livewire\PageBuilderInspector` — `app/Livewire/PageBuilderInspector.php` |
+| Inspector blade | `resources/views/livewire/page-builder-inspector.blade.php` |
+| Demo data service (preview fallback data) | `App\Services\DemoDataService` — `app/Services/DemoDataService.php` |
+| Widget renderer | `App\Services\WidgetRenderer` — `app/Services/WidgetRenderer.php` |
 
 ---
 

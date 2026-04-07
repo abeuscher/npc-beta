@@ -98,59 +98,11 @@
                         $contentAdvanced = array_filter($contentFields, fn ($f) => !empty($f['advanced']));
                     @endphp
 
-                    @if (count($contentPrimary) > 0 || count($contentAdvanced) > 0)
-                        @php
-                            $__groupOpen = null;
-                            $__semanticGroups = ['content', 'appearance'];
-                        @endphp
-                        @foreach ($contentPrimary as $field)
-                            @php $__fieldGroup = $field['group'] ?? null; @endphp
-                            @php $__isLayoutGroup = $__fieldGroup && ! in_array($__fieldGroup, $__semanticGroups); @endphp
-                            @if ($__groupOpen && ($__isLayoutGroup ? $__groupOpen !== $__fieldGroup : true))
-                                </div>
-                                @php $__groupOpen = null; @endphp
-                            @endif
-                            @if ($__isLayoutGroup && $__groupOpen !== $__fieldGroup)
-                                @php
-                                    $__shownWhen = $field['shown_when'] ?? null;
-                                @endphp
-                                <div class="grid grid-cols-2 gap-3" @if ($__shownWhen) x-show="$wire.block.config.{{ $__shownWhen }}" @endif>
-                                @php $__groupOpen = $__fieldGroup; @endphp
-                            @endif
-                            @include('livewire.partials.inspector-field', ['field' => $field, 'inGroup' => (bool) $__groupOpen])
-                        @endforeach
-                        @if ($__groupOpen)
-                            </div>
-                        @endif
-
-                        @if (count($contentAdvanced) > 0)
-                            <div x-data="{ cfgAdvOpen: false }">
-                                <button
-                                    type="button"
-                                    x-on:click="cfgAdvOpen = !cfgAdvOpen"
-                                    class="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-3.5 w-3.5 transition-transform duration-150"
-                                        x-bind:class="{ 'rotate-90': cfgAdvOpen }"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
-                                    >
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                                    </svg>
-                                    Carousel Settings
-                                </button>
-
-                                <div x-show="cfgAdvOpen" x-cloak class="mt-3 space-y-4">
-                                    @foreach ($contentAdvanced as $field)
-                                        @include('livewire.partials.inspector-field', ['field' => $field])
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    @else
-                        <p class="text-sm text-gray-400 dark:text-gray-500 italic">No content settings for this widget.</p>
-                    @endif
+                    @include('livewire.partials.inspector-field-group', [
+                        'primaryFields'  => $contentPrimary,
+                        'advancedFields' => $contentAdvanced,
+                        'emptyMessage'   => 'No content settings for this widget.',
+                    ])
                 </div>
 
                 {{-- ── Appearance tab ─────────────────────────────────── --}}
@@ -161,57 +113,10 @@
                         $appearanceAdvanced = array_filter($appearanceFields, fn ($f) => !empty($f['advanced']));
                     @endphp
 
-                    @if (count($appearancePrimary) > 0)
-                        @php
-                            $__groupOpen = null;
-                            $__semanticGroups = ['content', 'appearance'];
-                        @endphp
-                        @foreach ($appearancePrimary as $field)
-                            @php $__fieldGroup = $field['group'] ?? null; @endphp
-                            @php $__isLayoutGroup = $__fieldGroup && ! in_array($__fieldGroup, $__semanticGroups); @endphp
-                            @if ($__groupOpen && ($__isLayoutGroup ? $__groupOpen !== $__fieldGroup : true))
-                                </div>
-                                @php $__groupOpen = null; @endphp
-                            @endif
-                            @if ($__isLayoutGroup && $__groupOpen !== $__fieldGroup)
-                                @php
-                                    $__shownWhen = $field['shown_when'] ?? null;
-                                @endphp
-                                <div class="grid grid-cols-2 gap-3" @if ($__shownWhen) x-show="$wire.block.config.{{ $__shownWhen }}" @endif>
-                                @php $__groupOpen = $__fieldGroup; @endphp
-                            @endif
-                            @include('livewire.partials.inspector-field', ['field' => $field, 'inGroup' => (bool) $__groupOpen])
-                        @endforeach
-                        @if ($__groupOpen)
-                            </div>
-                        @endif
-                    @endif
-
-                    @if (count($appearanceAdvanced) > 0)
-                        <div x-data="{ cfgAdvOpen: false }">
-                            <button
-                                type="button"
-                                x-on:click="cfgAdvOpen = !cfgAdvOpen"
-                                class="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-3.5 w-3.5 transition-transform duration-150"
-                                    x-bind:class="{ 'rotate-90': cfgAdvOpen }"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
-                                >
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                                </svg>
-                                Carousel Settings
-                            </button>
-
-                            <div x-show="cfgAdvOpen" x-cloak class="mt-3 space-y-4">
-                                @foreach ($appearanceAdvanced as $field)
-                                    @include('livewire.partials.inspector-field', ['field' => $field])
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
+                    @include('livewire.partials.inspector-field-group', [
+                        'primaryFields'  => $appearancePrimary,
+                        'advancedFields' => $appearanceAdvanced,
+                    ])
 
                     {{-- Query Settings --}}
                     @if (! empty($block['widget_type_collections']))
