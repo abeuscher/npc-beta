@@ -148,6 +148,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 139 | Unified Preview & Edit Layout |
 | 140 | Properties Panel & Config Split |
 | 141 | Code Review & Cleanup |
+| 142 | Inline JS/CSS Extraction & Migration Squash |
 
 ---
 
@@ -180,10 +181,6 @@ Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit
 ### Session 141 — Code Review & Cleanup
 
 Post-builder-overhaul code review following sessions 101 and 116 procedures. Stale references, dead code, widget copy/serialization consistency, permission/security audit, duplicated logic findings, framework alignment findings. Scoped to sessions 135–140 artifacts.
-
-### Session 142 — Inline JS/CSS Extraction & Migration Squash
-
-Extract large inline Alpine.js blocks from page builder blades into registered `Alpine.data()` components in `resources/js/page-builder/`. Targets: preview manager (~130 lines), spacing controls (~38 lines), widget filter modal (duplicated), buttons list manager, edit-in-place label. Audit and relocate inline CSS. Migration squash per session 062 procedure.
 
 ### Session 143 — Codebase Hygiene Audit
 
