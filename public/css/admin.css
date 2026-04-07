@@ -489,3 +489,62 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 .fi-sidebar-nav {
     scroll-behavior: smooth;
 }
+
+/* ── Page builder preview ───────────────────────────────────────────────────*/
+
+.widget-preview-scope.np-site {
+    min-height: auto;
+    display: block;
+}
+.widget-preview-region {
+    position: relative;
+    cursor: pointer;
+    padding: 10px 0;
+    border: 2px solid transparent;
+    transition: border-color 0.15s ease;
+}
+.widget-preview-region:hover {
+    border-color: rgba(99,102,241,0.3);
+}
+.widget-preview-region--selected {
+    border-color: rgb(99,102,241) !important;
+}
+
+/* ── Inline text editing affordance ─────────────────────────────────────────*/
+
+.inline-editable {
+    outline: 2px dashed transparent;
+    outline-offset: 2px;
+    transition: outline-color 0.15s ease;
+    cursor: text;
+    border-radius: 2px;
+}
+.inline-editable:hover { outline-color: rgba(99,102,241,0.4); }
+.inline-editable:focus,
+.inline-editable:focus-within {
+    outline-color: rgb(99,102,241);
+    outline-style: solid;
+}
+.inline-editable--text { min-width: 2rem; }
+
+/* ── Quill editor dark mode ─────────────────────────────────────────────────*/
+
+.dark .ql-toolbar.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
+.dark .ql-container.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
+.dark .ql-editor { color: rgb(229 231 235); }
+.dark .ql-snow .ql-stroke { stroke: rgb(209 213 219); }
+.dark .ql-snow .ql-fill { fill: rgb(209 213 219); }
+.dark .ql-snow .ql-picker { color: rgb(209 213 219); }
+.dark .ql-snow .ql-picker-options { background: rgb(31 41 55); border-color: rgb(55 65 81); }
+.dark .ql-snow .ql-picker-label:hover,
+.dark .ql-snow .ql-picker-label.ql-active,
+.dark .ql-snow .ql-picker-item:hover,
+.dark .ql-snow .ql-picker-item.ql-selected { color: rgb(165 180 252); }
+.dark .ql-snow button:hover .ql-stroke,
+.dark .ql-snow .ql-picker-label:hover .ql-stroke,
+.dark .ql-snow button.ql-active .ql-stroke { stroke: rgb(165 180 252); }
+.dark .ql-snow button:hover .ql-fill,
+.dark .ql-snow button.ql-active .ql-fill { fill: rgb(165 180 252); }
+.dark .ql-editor.ql-blank::before { color: rgb(107 114 128); }
+.dark .ql-snow .ql-tooltip { background: rgb(31 41 55); border-color: rgb(55 65 81); color: rgb(209 213 219); box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.dark .ql-snow .ql-tooltip input[type=text] { background: rgb(17 24 39); border-color: rgb(55 65 81); color: rgb(229 231 235); }

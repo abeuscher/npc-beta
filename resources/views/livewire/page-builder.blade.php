@@ -11,28 +11,6 @@
     "
 >
 
-    {{-- Public CSS is loaded via AdminPanelProvider render hook (build server bundle).
-         Override body-level .np-site rules that don't apply to inline previews. --}}
-    <style>
-        .widget-preview-scope.np-site {
-            min-height: auto;
-            display: block;
-        }
-        .widget-preview-region {
-            position: relative;
-            cursor: pointer;
-            padding: 10px 0;
-            border: 2px solid transparent;
-            transition: border-color 0.15s ease;
-        }
-        .widget-preview-region:hover {
-            border-color: rgba(99,102,241,0.3);
-        }
-        .widget-preview-region--selected {
-            border-color: rgb(99,102,241) !important;
-        }
-    </style>
-
     {{-- ------------------------------------------------------------------ --}}
     {{-- Toolbar --}}
     {{-- ------------------------------------------------------------------ --}}

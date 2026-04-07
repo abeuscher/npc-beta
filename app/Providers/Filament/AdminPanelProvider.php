@@ -184,50 +184,13 @@ class AdminPanelProvider extends PanelProvider
             )
             // Load Quill v2 on all admin pages — used by the page builder and any
             // QuillEditor form fields (e.g. event description, meeting details).
+            // Quill dark mode + inline editable styles live in public/css/admin.css.
             ->renderHook(
                 'panels::head.end',
                 fn (): HtmlString => new HtmlString('
                     <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
-                    <style>
-                        .ql-editor { min-height: 16rem; }
-                        .dark .ql-toolbar.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
-                        .dark .ql-container.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
-                        .dark .ql-editor { color: rgb(229 231 235); }
-                        .dark .ql-snow .ql-stroke { stroke: rgb(209 213 219); }
-                        .dark .ql-snow .ql-fill { fill: rgb(209 213 219); }
-                        .dark .ql-snow .ql-picker { color: rgb(209 213 219); }
-                        .dark .ql-snow .ql-picker-options { background: rgb(31 41 55); border-color: rgb(55 65 81); }
-                        .dark .ql-snow .ql-picker-label:hover,
-                        .dark .ql-snow .ql-picker-label.ql-active,
-                        .dark .ql-snow .ql-picker-item:hover,
-                        .dark .ql-snow .ql-picker-item.ql-selected { color: rgb(165 180 252); }
-                        .dark .ql-snow button:hover .ql-stroke,
-                        .dark .ql-snow .ql-picker-label:hover .ql-stroke,
-                        .dark .ql-snow button.ql-active .ql-stroke { stroke: rgb(165 180 252); }
-                        .dark .ql-snow button:hover .ql-fill,
-                        .dark .ql-snow button.ql-active .ql-fill { fill: rgb(165 180 252); }
-                        .dark .ql-editor.ql-blank::before { color: rgb(107 114 128); }
-                        .dark .ql-snow .ql-tooltip { background: rgb(31 41 55); border-color: rgb(55 65 81); color: rgb(209 213 219); box-shadow: 0 1px 3px rgba(0,0,0,.4); }
-                        .dark .ql-snow .ql-tooltip input[type=text] { background: rgb(17 24 39); border-color: rgb(55 65 81); color: rgb(229 231 235); }
-                    </style>
+                    <style>.ql-editor { min-height: 16rem; }</style>
                     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
-                ')
-            )
-            // Inline text editing styles for the page builder preview.
-            ->renderHook(
-                'panels::head.end',
-                fn (): HtmlString => new HtmlString('
-                    <style>
-                        /* Editable region affordance */
-                        .inline-editable { outline: 2px dashed transparent; outline-offset: 2px; transition: outline-color 0.15s ease; cursor: text; border-radius: 2px; }
-                        .inline-editable:hover { outline-color: rgba(99,102,241,0.4); }
-                        .inline-editable:focus,
-                        .inline-editable:focus-within { outline-color: rgb(99,102,241); outline-style: solid; }
-                        .inline-editable--text { min-width: 2rem; }
-
-                        /* Plain-text inline editable: minimum clickable width */
-                        .inline-editable--text { min-width: 2rem; }
-                    </style>
                 ')
             )
             // Site-wide Livewire loading bar — fixed top bar that appears on any
