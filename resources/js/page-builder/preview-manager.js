@@ -5,15 +5,17 @@ export function previewManager(requiredLibs) {
         libsReady: false,
 
         computeZoom() {
-            const pane = this.$el
-            const paneWidth = pane.offsetWidth
+            const paneWidth = this.$el.getBoundingClientRect().width
             this.zoomFactor = paneWidth > 0 ? Math.min(1, paneWidth / this.presetViewport) : 1
         },
 
         setViewport(w) {
             this.presetViewport = w
-            this.computeZoom()
+            // Defer zoom calculation — the previous zoom value affects descendant
+            // layout, so we need a frame for the new viewport width to settle
+            // before measuring the pane.
             requestAnimationFrame(() => {
+                this.computeZoom()
                 requestAnimationFrame(() => this.reinitWidgetAlpine())
             })
         },
