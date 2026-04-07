@@ -149,62 +149,8 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 140 | Properties Panel & Config Split |
 | 141 | Code Review & Cleanup |
 | 142 | Inline JS/CSS Extraction & Migration Squash |
-
----
-
-## Page Builder Overhaul — Beta 1 Scope
-
-The page builder evolves from a form-based editor into a constrained design tool. The user edits content inline and controls appearance via a right-hand properties panel (Adobe-style). The system owns the design; the user owns the content and arrangement. Widgets self-describe their data shape and carry demo payloads so they always render meaningfully — even before real content is bound.
-
-**Target interaction model (clarified session 136):** Preview and edit are not separate screens — they share the same left-column space with the inspector always visible on the right. The preview iframe occupies the left column at the same size as the edit pane. Clicking a widget in the preview transitions that widget region into an editable state (zoomed, inspector populated) while the rest of the page remains visible as context. Clicking away deselects → returns to preview. Clicking a different widget transfers focus directly. The user never leaves the page context — the editing surface is the page itself with one region "popped" into edit mode at a time.
-
-### Session 136 — Widget Edit & Preview Modes
-
-Two-mode editing experience: an edit mode where a single widget gets focus (zoomed, siblings blurred) and renders live via `WidgetRenderer` with public CSS, and a preview mode that shows the full saved page in a read-only admin-authenticated iframe with widget selection handles. Exiting edit mode triggers a save; preview always shows persisted state. Update `DemoDataService` to return LoremFlickr placeholder URLs for image fields. CSS `zoom` for focus scaling (reflows correctly, unlike `transform: scale()`). Phase 1 is a proof-of-concept for the zoom/focus approach before committing to the full build.
-
-### Session 137 — Inline Text Editing *(completed)*
-
-In-place text editing within the widget edit mode. Widget templates annotated with `data-config-key` / `data-config-type` attributes. Richtext fields use native `contenteditable="true"`, plain-text fields use `contenteditable="plaintext-only"` with Enter suppressed. Two-way sync between inline edits and the inspector panel via `updateInlineConfig` / `inline-config-updated` events. Quill formatting toolbar explored and removed — plain contenteditable provides cleaner UX; formatting stays in the inspector's Quill editor.
-
-### Session 138 — Widget JS Dependencies & Interactive Preview
-
-Load widget JS dependencies in the admin page builder so widgets with client-side behavior (Swiper carousels, Chart.js charts, jCalendar) render interactively in edit mode. Per-widget `libs` key in the `assets` JSONB declares dependencies. Build server produces per-library bundles with JS and CSS (no Alpine.start() conflict). Dynamic loader in admin loads libraries on demand. Responsive preview toggle (desktop/tablet/mobile viewport widths). Undo/redo deferred to post-beta.
-
-### Session 139 — Unified Preview & Edit Layout
-
-Replace the page builder's edit/preview toggle with an Edit/Handles toggle. Edit mode: persistent stacked widget preview on the left (all widgets rendered with public CSS, always visible) with a persistent inspector panel on the right. Clicking a widget selects it and populates the inspector — no mode switch, no re-render. Libraries load once at page level. Handles mode: retains the existing block card list with drag handles and reorder (needed until drag-to-reorder is built into the preview). Preview iframe removed.
-
-**Deferred to post-Beta 1:**
-- Block controls overlay (hover bar with label/drag handle, ellipsis menu on selected widget) — rely on Handles mode for reordering until this is built.
-- Inline text editing in the Edit pane (session 137's contenteditable system) — works in Handles mode; wiring into the unified preview deferred to avoid fine-tuning complexity before beta.
-
-### Session 141 — Code Review & Cleanup
-
-Post-builder-overhaul code review following sessions 101 and 116 procedures. Stale references, dead code, widget copy/serialization consistency, permission/security audit, duplicated logic findings, framework alignment findings. Scoped to sessions 135–140 artifacts.
-
-### Session 143 — Codebase Hygiene Audit
-
-Codebase-wide hygiene pass covering areas not scoped to the builder overhaul. Five workstreams: Docker security review (findings table, no changes), help system completeness (help page for every admin view), TODO/FIXME/HACK comment sweep (catalogue for triage), dependency footprint audit (unused Composer/NPM packages, dead routes/config), and debug output cleanup (console.log, dd, dump removal). Scheduled after 142 so the JS extraction and migration squash are complete before the sweep.
-
-### Builder Chrome & Layer Explorer
-
-Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots.
-
----
-
-## Admin UI & CMS — Beta 1 Scope (post-builder overhaul)
-
-### Column Widget UI Improvements
-
-UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system. Column widgets present a unique challenge in the edit/preview paradigm because they are containers, not content widgets — the preview needs to show the rendered column grid with children, and edit mode needs to let you focus individual children within slots.
-
-### Page Copy with Guardrails
-
-Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
-
-### Site Chrome Widgets & Navigation
-
-Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
+| 143 | Codebase Hygiene Audit |
+| 144 | Column Widget — Drag-and-Drop Reorder |
 
 ---
 
@@ -295,6 +241,22 @@ Core household model built in session 071 (self-referential `contacts.household_
 ---
 
 ## CMS & Page Builder — Post-Beta 1
+
+### Builder Chrome & Layer Explorer
+
+Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots.
+
+### Column Widget UI Improvements
+
+UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system.
+
+### Page Copy with Guardrails
+
+Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
+
+### Site Chrome Widgets & Navigation
+
+Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
 
 ### SEO — Advanced
 

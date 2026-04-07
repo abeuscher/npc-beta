@@ -22,6 +22,10 @@ class PageBuilderBlock extends Component
     /** Set when this block is a child inside a column slot. */
     public string $parentBlockId = '';
     public int $parentColumnIndex = 0;
+    public int $parentNumColumns = 2;
+
+    /** @var array<int, array<string, mixed>> Available column widget targets for root blocks. */
+    public array $columnTargets = [];
 
     #[Reactive]
     public bool $isFirst = false;
@@ -42,7 +46,9 @@ class PageBuilderBlock extends Component
         bool $isRequired = false,
         string $parentBlockId = '',
         int $parentColumnIndex = 0,
+        int $parentNumColumns = 2,
         string $pageType = 'default',
+        array $columnTargets = [],
     ): void {
         $this->blockId            = $blockId;
         $this->isFirst            = $isFirst;
@@ -50,7 +56,9 @@ class PageBuilderBlock extends Component
         $this->isRequired         = $isRequired;
         $this->parentBlockId      = $parentBlockId;
         $this->parentColumnIndex  = $parentColumnIndex;
+        $this->parentNumColumns   = $parentNumColumns;
         $this->pageType           = $pageType;
+        $this->columnTargets      = $columnTargets;
 
         $this->loadBlock();
 
@@ -225,6 +233,36 @@ class PageBuilderBlock extends Component
         $this->loadChildSlots();
     }
 
+    #[On('child-move-to-column-requested')]
+    public function onChildMoveToColumn(string $childId, string $parentId, int $columnIndex): void
+    {
+        $this->assertCanEdit();
+
+        if ($parentId !== $this->blockId) {
+            return;
+        }
+
+        $child = PageWidget::where('id', $childId)
+            ->where('parent_widget_id', $this->blockId)
+            ->first();
+
+        if (! $child) {
+            return;
+        }
+
+        $maxSort = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', $columnIndex)
+            ->max('sort_order') ?? -1;
+
+        $child->update([
+            'column_index' => $columnIndex,
+            'sort_order'   => $maxSort + 1,
+        ]);
+
+        $this->loadChildSlots();
+        $this->dispatch('preview-refresh-requested');
+    }
+
     #[On('child-move-down-requested')]
     public function onChildMoveDown(string $childId, string $parentId, int $columnIndex): void
     {
@@ -306,6 +344,33 @@ class PageBuilderBlock extends Component
         $this->dispatch('block-add-modal-requested', blockId: $this->blockId, below: true);
     }
 
+    public function requestMoveToColumn(int $columnIndex): void
+    {
+        $this->dispatch('child-move-to-column-requested', childId: $this->blockId, parentId: $this->parentBlockId, columnIndex: $columnIndex);
+    }
+
+    public function requestMoveToMainList(): void
+    {
+        $this->dispatch('block-move-to-main-requested', blockId: $this->blockId);
+    }
+
+    public function requestMoveToColumnWidget(string $columnWidgetId, int $columnIndex): void
+    {
+        $this->dispatch('block-move-to-column-requested', blockId: $this->blockId, columnWidgetId: $columnWidgetId, columnIndex: $columnIndex);
+    }
+
+    // -------------------------------------------------------------------------
+    // React to reorder events from the parent PageBuilder
+    // -------------------------------------------------------------------------
+
+    #[On('blocks-reordered')]
+    public function onBlocksReordered(): void
+    {
+        if (($this->block['widget_type_handle'] ?? '') === 'column_widget') {
+            $this->loadChildSlots();
+        }
+    }
+
     // -------------------------------------------------------------------------
     // React to inspector config changes
     // -------------------------------------------------------------------------
@@ -320,7 +385,46 @@ class PageBuilderBlock extends Component
         $this->loadBlock();
 
         if ($this->block['widget_type_handle'] === 'column_widget') {
+            $this->relocateExcessChildren();
             $this->loadChildSlots();
+        }
+    }
+
+    /**
+     * When column count decreases, move children from removed slots to the last remaining slot.
+     */
+    private function relocateExcessChildren(): void
+    {
+        $numColumns = isset($this->block['config']['num_columns']) && $this->block['config']['num_columns'] !== ''
+            ? (int) $this->block['config']['num_columns']
+            : 2;
+
+        if ($numColumns < 1) {
+            $numColumns = 1;
+        }
+
+        $lastColumn = $numColumns - 1;
+
+        $excessChildren = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', '>=', $numColumns)
+            ->orderBy('column_index')
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($excessChildren->isEmpty()) {
+            return;
+        }
+
+        $maxSort = PageWidget::where('parent_widget_id', $this->blockId)
+            ->where('column_index', $lastColumn)
+            ->max('sort_order') ?? -1;
+
+        foreach ($excessChildren as $child) {
+            $maxSort++;
+            $child->update([
+                'column_index' => $lastColumn,
+                'sort_order'   => $maxSort,
+            ]);
         }
     }
 

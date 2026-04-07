@@ -72,10 +72,14 @@ class BoardMembersDemoSeeder extends Seeder
             );
 
             if (isset($portraits[$i]) && file_exists($portraits[$i])) {
-                $item->clearMediaCollection('photo');
-                $item->addMedia($portraits[$i])
-                    ->preservingOriginal()
-                    ->toMediaCollection('photo');
+                try {
+                    $item->clearMediaCollection('photo');
+                    $item->addMedia($portraits[$i])
+                        ->preservingOriginal()
+                        ->toMediaCollection('photo');
+                } catch (\Throwable $e) {
+                    $this->command?->warn("Could not attach portrait: {$e->getMessage()}");
+                }
             }
         }
     }

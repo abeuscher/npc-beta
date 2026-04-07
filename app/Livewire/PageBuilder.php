@@ -252,19 +252,61 @@ class PageBuilder extends Component
     }
 
     // -------------------------------------------------------------------------
-    // Reorder — drag-to-drop via @alpinejs/sort
+    // Reorder — drag-to-drop via @alpinejs/sort with connected groups
     // -------------------------------------------------------------------------
 
-    public function updateOrder(array $orderedIds): void
+    /**
+     * Accept a full placement payload from the drag-and-drop UI.
+     *
+     * Each item: { id, parent_id, column_index, sort_order }
+     */
+    public function updateOrder(array $items): void
     {
         $this->assertCanEdit();
 
-        foreach ($orderedIds as $i => $id) {
-            PageWidget::where('id', $id)->update(['sort_order' => $i]);
+        if (empty($items)) {
+            return;
+        }
+
+        $itemIds = collect($items)->pluck('id')->all();
+
+        // All widget IDs must belong to this page
+        $validIds = PageWidget::where('page_id', $this->pageId)
+            ->whereIn('id', $itemIds)
+            ->pluck('id')
+            ->all();
+
+        if (count($validIds) !== count(array_unique($itemIds))) {
+            return;
+        }
+
+        // Prevent column widget nesting — column widgets cannot be children
+        $columnWidgetIds = PageWidget::where('page_id', $this->pageId)
+            ->whereIn('id', $itemIds)
+            ->whereHas('widgetType', fn ($q) => $q->where('handle', 'column_widget'))
+            ->pluck('id')
+            ->all();
+
+        foreach ($items as $item) {
+            if (in_array($item['id'], $columnWidgetIds) && ! empty($item['parent_id'])) {
+                return;
+            }
+        }
+
+        // Persist all placements
+        foreach ($items as $item) {
+            PageWidget::where('id', $item['id'])
+                ->where('page_id', $this->pageId)
+                ->update([
+                    'parent_widget_id' => ! empty($item['parent_id']) ? $item['parent_id'] : null,
+                    'column_index'     => $item['column_index'] ?? null,
+                    'sort_order'       => (int) ($item['sort_order'] ?? 0),
+                ]);
         }
 
         $this->loadBlocks();
         $this->refreshAllPreviews();
+        $this->dispatch('blocks-reordered');
     }
 
     // -------------------------------------------------------------------------
@@ -344,6 +386,80 @@ class PageBuilder extends Component
         if ($index !== false) {
             $this->moveDown($index);
         }
+    }
+
+    #[On('block-move-to-main-requested')]
+    public function onMoveToMain(string $blockId): void
+    {
+        $this->assertCanEdit();
+
+        $widget = PageWidget::where('id', $blockId)
+            ->where('page_id', $this->pageId)
+            ->whereNotNull('parent_widget_id')
+            ->first();
+
+        if (! $widget) {
+            return;
+        }
+
+        $maxSort = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->max('sort_order') ?? -1;
+
+        $widget->update([
+            'parent_widget_id' => null,
+            'column_index'     => null,
+            'sort_order'       => $maxSort + 1,
+        ]);
+
+        $this->loadBlocks();
+        $this->refreshAllPreviews();
+        $this->dispatch('blocks-reordered');
+    }
+
+    #[On('block-move-to-column-requested')]
+    public function onMoveToColumn(string $blockId, string $columnWidgetId, int $columnIndex): void
+    {
+        $this->assertCanEdit();
+
+        $widget = PageWidget::where('id', $blockId)
+            ->where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->first();
+
+        if (! $widget) {
+            return;
+        }
+
+        // Prevent nesting column widgets
+        $isColumn = $widget->widgetType?->handle === 'column_widget';
+        if ($isColumn) {
+            return;
+        }
+
+        // Verify the target column widget exists on this page
+        $columnWidget = PageWidget::where('id', $columnWidgetId)
+            ->where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->first();
+
+        if (! $columnWidget) {
+            return;
+        }
+
+        $maxSort = PageWidget::where('parent_widget_id', $columnWidgetId)
+            ->where('column_index', $columnIndex)
+            ->max('sort_order') ?? -1;
+
+        $widget->update([
+            'parent_widget_id' => $columnWidgetId,
+            'column_index'     => $columnIndex,
+            'sort_order'       => $maxSort + 1,
+        ]);
+
+        $this->loadBlocks();
+        $this->refreshAllPreviews();
+        $this->dispatch('blocks-reordered');
     }
 
     #[On('block-add-modal-requested')]

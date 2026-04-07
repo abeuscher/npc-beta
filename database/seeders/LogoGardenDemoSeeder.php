@@ -54,9 +54,13 @@ class LogoGardenDemoSeeder extends Seeder
             // Attach sample image if available and not already attached
             $filePath = $sampleDir . '/' . $data['file'];
             if (file_exists($filePath) && $item->getFirstMedia('logo') === null) {
-                $item->addMedia($filePath)
-                    ->preservingOriginal()
-                    ->toMediaCollection('logo');
+                try {
+                    $item->addMedia($filePath)
+                        ->preservingOriginal()
+                        ->toMediaCollection('logo');
+                } catch (\Throwable $e) {
+                    $this->command?->warn("Could not attach {$data['file']}: {$e->getMessage()}");
+                }
             }
         }
     }

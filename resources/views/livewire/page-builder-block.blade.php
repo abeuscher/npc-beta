@@ -165,6 +165,42 @@
                             @if($isLast) disabled @endif
                         >Move Down</button>
 
+                        {{-- Move-to options for child blocks inside column slots --}}
+                        @if ($parentBlockId !== '')
+                        <hr class="my-1 border-gray-100 dark:border-gray-700">
+                        @for ($col = 0; $col < $parentNumColumns; $col++)
+                            @if ($col !== $parentColumnIndex)
+                            <button
+                                type="button"
+                                wire:click="requestMoveToColumn({{ $col }})"
+                                x-on:click="menuOpen = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >Move to Column {{ $col + 1 }}</button>
+                            @endif
+                        @endfor
+                        <button
+                            type="button"
+                            wire:click="requestMoveToMainList"
+                            x-on:click="menuOpen = false"
+                            class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >Move to Main List</button>
+                        @endif
+
+                        {{-- Move-to-column options for root blocks --}}
+                        @if ($parentBlockId === '' && ! empty($columnTargets) && $block['widget_type_handle'] !== 'column_widget')
+                        <hr class="my-1 border-gray-100 dark:border-gray-700">
+                        @foreach ($columnTargets as $target)
+                            @for ($col = 0; $col < $target['num_columns']; $col++)
+                            <button
+                                type="button"
+                                wire:click="requestMoveToColumnWidget('{{ $target['id'] }}', {{ $col }})"
+                                x-on:click="menuOpen = false"
+                                class="flex w-full items-center gap-2 px-3 py-1.5 text-xs whitespace-nowrap text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >{{ $target['label'] }} → Col {{ $col + 1 }}</button>
+                            @endfor
+                        @endforeach
+                        @endif
+
                         @if (! $isRequired)
                         <hr class="my-1 border-gray-100 dark:border-gray-700">
 
@@ -226,10 +262,11 @@
                             'isRequired' => false,
                             'parentBlockId' => $block['id'],
                             'parentColumnIndex' => $colIdx,
+                            'parentNumColumns' => $numCols,
                             'pageType'   => $pageType,
                         ], key('child-block-' . $child['id']))
                     @empty
-                        <p class="py-3 text-center text-xs text-gray-400">No blocks in this column.</p>
+                        <p class="py-3 text-center text-xs text-gray-400" data-empty-slot>No blocks in this column.</p>
                     @endforelse
                 </div>
             </div>

@@ -143,13 +143,20 @@
         {{-- ── Left column: structural block list ───────────────────── --}}
         <div class="min-w-0 space-y-4">
             <div
-                x-data
                 x-sort="() => {
-                    const ids = [...$el.querySelectorAll('[data-block-id]')].map(e => e.getAttribute('data-block-id'));
-                    $wire.updateOrder(ids);
+                    const payload = [...$el.querySelectorAll(':scope > [data-block-id]')].map((el, i) => ({
+                        id: el.dataset.blockId, parent_id: null, column_index: null, sort_order: i
+                    }));
+                    $wire.updateOrder(payload);
                 }"
                 class="space-y-2"
             >
+                @php
+                    $columnTargets = collect($blocks)
+                        ->filter(fn ($b) => $b['widget_type_handle'] === 'column_widget')
+                        ->map(fn ($b) => ['id' => $b['id'], 'label' => $b['label'], 'num_columns' => (int) ($b['config']['num_columns'] ?? 2)])
+                        ->values()->toArray();
+                @endphp
                 @forelse ($blocks as $index => $block)
                     @livewire('page-builder-block', [
                         'blockId'    => $block['id'],
@@ -157,6 +164,7 @@
                         'isLast'     => $loop->last,
                         'isRequired' => $block['is_required'],
                         'pageType'   => $pageType,
+                        'columnTargets' => $block['widget_type_handle'] !== 'column_widget' ? $columnTargets : [],
                     ], key('block-' . $block['id']))
                 @empty
                     <div class="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center text-sm text-gray-400 dark:border-gray-700">

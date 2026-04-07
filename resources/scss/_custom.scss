@@ -629,6 +629,14 @@
 .widget-columns {
     display: grid;
     gap: 1.5rem;
+
+    > * {
+        min-width: 0;
+    }
+
+    @media (max-width: $bp-md) {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

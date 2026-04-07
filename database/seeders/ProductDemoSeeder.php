@@ -93,10 +93,14 @@ class ProductDemoSeeder extends Seeder
             }
 
             if (isset($images[$i]) && file_exists($images[$i])) {
-                $product->clearMediaCollection('product_image');
-                $product->addMedia($images[$i])
-                    ->preservingOriginal()
-                    ->toMediaCollection('product_image');
+                try {
+                    $product->clearMediaCollection('product_image');
+                    $product->addMedia($images[$i])
+                        ->preservingOriginal()
+                        ->toMediaCollection('product_image');
+                } catch (\Throwable $e) {
+                    $this->command?->warn("Could not attach image: {$e->getMessage()}");
+                }
             }
         }
     }
