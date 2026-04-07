@@ -8,32 +8,7 @@
 
 <div
     wire:ignore
-    x-data="{
-        buttons: Array.isArray(@js($block['config'][$field['key']] ?? [])) ? @js($block['config'][$field['key']] ?? []) : [],
-        add() {
-            this.buttons.push({ text: '', url: '', style: 'primary' });
-            this.save();
-        },
-        remove(index) {
-            this.buttons.splice(index, 1);
-            this.save();
-        },
-        moveUp(index) {
-            if (index === 0) return;
-            const item = this.buttons.splice(index, 1)[0];
-            this.buttons.splice(index - 1, 0, item);
-            this.save();
-        },
-        moveDown(index) {
-            if (index >= this.buttons.length - 1) return;
-            const item = this.buttons.splice(index, 1)[0];
-            this.buttons.splice(index + 1, 0, item);
-            this.save();
-        },
-        save() {
-            $wire.updateConfig('{{ $field['key'] }}', JSON.parse(JSON.stringify(this.buttons)));
-        },
-    }"
+    x-data="buttonListManager(@js($block['config'][$field['key']] ?? []), @js($field['key']))"
 >
     <template x-for="(btn, index) in buttons" :key="index">
         <div class="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
