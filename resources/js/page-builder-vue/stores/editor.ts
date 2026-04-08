@@ -165,6 +165,20 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  function replaceTree(data: { widgets: Widget[]; required_libs: string[] }): void {
+    populateWidgets(data.widgets)
+    requiredLibs.value = data.required_libs
+  }
+
+  async function reloadTree(): Promise<void> {
+    try {
+      const res = await api.getWidgets(pageId.value)
+      replaceTree(res)
+    } catch (e) {
+      console.error('Failed to reload widget tree:', e)
+    }
+  }
+
   async function refreshPreview(id: string): Promise<void> {
     try {
       const res = await api.getPreview(id)
@@ -232,6 +246,8 @@ export const useEditorStore = defineStore('editor', () => {
 
     // Actions
     loadTree,
+    replaceTree,
+    reloadTree,
     selectBlock,
     setMode,
     createWidget,

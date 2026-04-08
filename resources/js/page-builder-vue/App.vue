@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import type { BootstrapData } from './types'
+import { onMounted, onUnmounted } from 'vue'
 import { configure } from './api'
+import type { BootstrapData } from './types'
 import { useEditorStore } from './stores/editor'
+import EditorToolbar from './components/EditorToolbar.vue'
+import PreviewCanvas from './components/PreviewCanvas.vue'
 import BlockListPoc from './components/BlockListPoc.vue'
 
 const store = useEditorStore()
+
+function handleTreeUpdated() {
+  store.reloadTree()
+}
+
+function handleTemplateSaved() {
+  // no-op for now — could show a notification in the future
+}
 
 onMounted(() => {
   const el = document.getElementById('page-builder-app')
@@ -18,51 +28,33 @@ onMounted(() => {
 
   configure(data.csrf_token, data.api_base_url)
   store.loadTree(data)
+
+  // Event bridge: listen for Livewire mutations
+  window.addEventListener('widget-tree-updated', handleTreeUpdated)
+  window.addEventListener('template-saved', handleTemplateSaved)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('widget-tree-updated', handleTreeUpdated)
+  window.removeEventListener('template-saved', handleTemplateSaved)
 })
 </script>
 
 <template>
-  <div class="vue-poc">
-    <div class="vue-poc__header">
-      <span class="vue-poc__badge">Vue PoC</span>
-      <span class="vue-poc__info">
-        {{ store.rootWidgets.length }} block(s) loaded from API
-      </span>
-    </div>
-    <BlockListPoc />
+  <div class="vue-editor">
+    <EditorToolbar />
+
+    <PreviewCanvas v-if="store.editorMode === 'edit'" />
+    <BlockListPoc v-if="store.editorMode === 'handles'" />
   </div>
 </template>
 
 <style scoped>
-.vue-poc {
+.vue-editor {
   margin-top: 1.5rem;
-  border: 2px dashed #6366f1;
+  border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1rem;
-  background: #f5f3ff;
-}
-
-.vue-poc__header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.vue-poc__badge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  background: #6366f1;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.vue-poc__info {
-  font-size: 0.875rem;
-  color: #6b7280;
+  background: #fff;
 }
 </style>

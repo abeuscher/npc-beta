@@ -173,6 +173,7 @@ class PageBuilder extends Component
         $this->loadBlocks();
         $this->refreshAllPreviews();
         $this->selectBlock($newBlock->id);
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     // -------------------------------------------------------------------------
@@ -198,6 +199,7 @@ class PageBuilder extends Component
 
         $this->loadBlocks();
         $this->refreshAllPreviews();
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     // -------------------------------------------------------------------------
@@ -249,6 +251,7 @@ class PageBuilder extends Component
 
         $this->loadBlocks();
         $this->refreshAllPreviews();
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     // -------------------------------------------------------------------------
@@ -307,6 +310,7 @@ class PageBuilder extends Component
         $this->loadBlocks();
         $this->refreshAllPreviews();
         $this->dispatch('blocks-reordered');
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     // -------------------------------------------------------------------------
@@ -415,6 +419,7 @@ class PageBuilder extends Component
         $this->loadBlocks();
         $this->refreshAllPreviews();
         $this->dispatch('blocks-reordered');
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     #[On('block-move-to-column-requested')]
@@ -460,6 +465,7 @@ class PageBuilder extends Component
         $this->loadBlocks();
         $this->refreshAllPreviews();
         $this->dispatch('blocks-reordered');
+        $this->js("window.dispatchEvent(new CustomEvent('widget-tree-updated'))");
     }
 
     #[On('block-add-modal-requested')]
@@ -542,6 +548,8 @@ class PageBuilder extends Component
             ->title("Template saved: {$name}")
             ->success()
             ->send();
+
+        $this->js("window.dispatchEvent(new CustomEvent('template-saved'))");
     }
 
     // -------------------------------------------------------------------------

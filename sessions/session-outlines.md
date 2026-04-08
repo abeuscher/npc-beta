@@ -154,6 +154,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 145 | Editor Vue Migration — Decision & Planning |
 | 146 | Editor Architecture Review |
 | 147 | Editor API & Vue Scaffold |
+| 148 | Editor Canvas in Vue |
 
 ---
 
