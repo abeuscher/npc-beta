@@ -155,6 +155,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 146 | Editor Architecture Review |
 | 147 | Editor API & Vue Scaffold |
 | 148 | Editor Canvas in Vue |
+| 149 | Editor Inspector in Vue — Part 1 |
 
 ---
 
@@ -178,19 +179,23 @@ Rebuild the inspector panel as Vue components. Core form fields: text inputs, se
 
 ### 150. Editor Inspector in Vue — Part 2
 
-Complex inspector features: dual stacked tab layout (Appearance / Layout on top, Content / Data Mapping below). Spacing controls as Vue components. Color picker with theme palette colours plus a freeform colour wheel — every widget gets full-width toggle, background colour, and background text colour. Colour saving approach (saved swatches or extended theme palette — decide during session). Image upload fields. Button list manager. Left-side icon toolbar placeholder (history, etc.). Data mapping interface with auto-match: fields whose names match labels get pre-selected automatically. Drag-and-drop reordering in handles mode via the Vue ecosystem (vuedraggable or equivalent) — block list with BlockCard, ColumnSlot, ellipsis menu (move up/down, move to column, copy, delete).
+Remaining inspector field types and appearance controls. Color picker with theme palette presets, freeform colour wheel, and saved swatches. Image and video upload fields. Button list manager (add/remove/reorder/edit). Spacing controls as Vue components (padding/margin with "All" shortcut). Query settings panel for collection-backed widgets (limit, order by, tag include/exclude). Universal widget appearance controls added to every widget's Appearance tab: full-width toggle, background colour, and background text colour.
 
-### 151. Editor Livewire Teardown
+### 151. Editor Block List & Drag-and-Drop
+
+Handles mode block list as Vue components. BlockList, BlockCard, ColumnSlot components. Drag-and-drop reordering via vuedraggable or equivalent. Ellipsis menu with all actions: add above/below, copy, move up/down, move to column, delete with confirm. Column widget cards show child slots with per-column add/reorder/delete. Event bridge to Livewire widget picker modal from handles mode.
+
+### 152. Editor Livewire Teardown
 
 Remove PageBuilderBlock and PageBuilderInspector Livewire components. Remove the Alpine.js modules they depended on (preview-manager, spacingControls, richtextEditor, buttonListManager). PageBuilder.php becomes a thin mount-point that boots the Vue app and passes initial data. Clean up orphaned event listeners, blade partials, and any remaining `$wire` calls. Verify all editor flows work end-to-end on the Vue stack.
 
-### 152. Nav Widget & Footer
+### 153. Nav Widget & Footer
 
 Extract the logo/company-name piece from the existing header widget into its own block. Build a standalone nav widget that supports: header mode, footer mode, stacked static, dropdown, hamburger collapse, and stack collapse. Build a footer widget — nav element stacked on a text widget with a current-year copyright line by default.
 
-### 153. Template & Page Import/Export
+### 154. Template & Page Import/Export
 
-Content template import/export (may already be built but not surfaced — verify before building). Full page import/export so the marketing site can be moved in and out of the system across upgrades. Widget data mapping auto-match for import: fields whose names match their labels exactly should be pre-selected automatically in the mapping UI, saving manual work.
+Content template import/export (may already be built but not surfaced — verify before building). Full page import/export so the marketing site can be moved in and out of the system across upgrades. Widget data mapping interface with auto-match: fields whose names match their labels exactly should be pre-selected automatically in the mapping UI, saving manual work.
 
 ---
 

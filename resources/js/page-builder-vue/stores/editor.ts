@@ -37,8 +37,15 @@ export const useEditorStore = defineStore('editor', () => {
   const pages = ref<PageRef[]>([])
   const events = ref<EventRef[]>([])
 
+  // Inline image upload URL (from bootstrap data, used by RichTextField)
+  const inlineImageUploadUrl = ref('')
+
   // UI state
   const saving = ref(false)
+
+  // Debounced save state
+  let debounceSaveTimer: ReturnType<typeof setTimeout> | null = null
+  const pendingConfigChanges = ref<Record<string, Record<string, any>>>({})
 
   // ── Getters ────────────────────────────────────────────────────────────
 
@@ -74,6 +81,7 @@ export const useEditorStore = defineStore('editor', () => {
     tags.value = data.tags
     pages.value = data.pages
     events.value = data.events
+    inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
 
     populateWidgets(data.widgets)
     requiredLibs.value = data.required_libs
@@ -191,6 +199,52 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  /**
+   * Update a widget's config locally (instant UI update) and queue a debounced API save.
+   * If `label` is provided (and key is null), saves a label change instead.
+   */
+  function updateLocalConfig(
+    widgetId: string,
+    key: string | null,
+    value?: any,
+    label?: string
+  ): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    if (label !== undefined && key === null) {
+      // Label change
+      w.label = label
+      flushDebouncedSave(widgetId, { label })
+      return
+    }
+
+    if (key !== null) {
+      w.config = { ...w.config, [key]: value }
+      dirtyWidgets.value.add(widgetId)
+      flushDebouncedSave(widgetId, { config: { ...w.config } })
+    }
+  }
+
+  function flushDebouncedSave(widgetId: string, changes: UpdateWidgetPayload): void {
+    // Merge pending changes for this widget
+    const pending = pendingConfigChanges.value[widgetId] ?? {}
+    pendingConfigChanges.value[widgetId] = { ...pending, ...changes }
+
+    if (debounceSaveTimer) clearTimeout(debounceSaveTimer)
+    debounceSaveTimer = setTimeout(() => {
+      const toSave = { ...pendingConfigChanges.value }
+      pendingConfigChanges.value = {}
+      debounceSaveTimer = null
+
+      for (const [id, payload] of Object.entries(toSave)) {
+        updateWidget(id, payload).catch((e) =>
+          console.error('Debounced save failed:', e)
+        )
+      }
+    }, 500)
+  }
+
   async function uploadImage(widgetId: string, key: string, file: File): Promise<void> {
     saving.value = true
     try {
@@ -236,6 +290,7 @@ export const useEditorStore = defineStore('editor', () => {
     pages,
     events,
     saving,
+    inlineImageUploadUrl,
 
     // Getters
     rootWidgets,
@@ -252,6 +307,7 @@ export const useEditorStore = defineStore('editor', () => {
     setMode,
     createWidget,
     updateWidget,
+    updateLocalConfig,
     deleteWidget,
     copyWidget,
     reorderWidgets,

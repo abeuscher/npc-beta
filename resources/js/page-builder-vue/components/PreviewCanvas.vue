@@ -11,6 +11,33 @@ const { presetViewport, zoomFactor, computeZoom, setViewport } = useViewport()
 const paneEl = ref<HTMLElement | null>(null)
 const scopeEl = ref<HTMLElement | null>(null)
 
+// Add block dropdown
+const addMenuOpen = ref(false)
+
+function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
+  addMenuOpen.value = false
+
+  let insertPosition: number | null = null
+  if (position === 'bottom') {
+    const maxSort = store.rootWidgets.reduce((max, w) => Math.max(max, w.sort_order), -1)
+    insertPosition = maxSort + 1
+  } else if (position === 'above' && store.selectedWidget) {
+    insertPosition = store.selectedWidget.sort_order
+  } else if (position === 'below' && store.selectedWidget) {
+    insertPosition = store.selectedWidget.sort_order + 1
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('open-widget-picker', { detail: { insertPosition } })
+  )
+}
+
+function closeAddMenu(e: Event) {
+  if (!(e.target as Element)?.closest('.add-block-dropdown')) {
+    addMenuOpen.value = false
+  }
+}
+
 const isNarrowViewport = computed(() => presetViewport.value < 1920)
 
 function measurePane() {
@@ -46,6 +73,7 @@ const presetIcons: Record<number, string> = {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(async () => {
+  document.addEventListener('click', closeAddMenu)
   measurePane()
 
   if (paneEl.value) {
@@ -64,6 +92,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', closeAddMenu)
   resizeObserver?.disconnect()
 })
 
@@ -84,9 +113,47 @@ watch(
 </script>
 
 <template>
-  <div ref="paneEl" class="preview-canvas">
-    <!-- Viewport width toggle -->
+  <div ref="paneEl" class="preview-canvas" style="min-width: 0">
+    <!-- Toolbar: add block + viewport toggle -->
     <div class="preview-canvas__viewport-bar">
+      <!-- Add Block dropdown (left) -->
+      <div class="add-block-dropdown">
+        <button
+          type="button"
+          class="add-block-dropdown__trigger"
+          @click.stop="addMenuOpen = !addMenuOpen"
+        >
+          + Add Block
+        </button>
+        <div v-show="addMenuOpen" class="add-block-dropdown__menu">
+          <button
+            type="button"
+            class="add-block-dropdown__item"
+            @click="openWidgetPicker('bottom')"
+          >
+            Insert at bottom
+          </button>
+          <button
+            type="button"
+            class="add-block-dropdown__item"
+            :class="{ 'add-block-dropdown__item--disabled': !store.selectedWidget }"
+            :disabled="!store.selectedWidget"
+            @click="openWidgetPicker('above')"
+          >
+            Insert above selected
+          </button>
+          <button
+            type="button"
+            class="add-block-dropdown__item"
+            :class="{ 'add-block-dropdown__item--disabled': !store.selectedWidget }"
+            :disabled="!store.selectedWidget"
+            @click="openWidgetPicker('below')"
+          >
+            Insert below selected
+          </button>
+        </div>
+      </div>
+
       <span class="preview-canvas__viewport-label">Viewport:</span>
       <button
         v-for="vp in viewportPresets"
@@ -165,6 +232,66 @@ watch(
   padding: 0 0.25rem;
 }
 
+/* Add Block dropdown */
+.add-block-dropdown {
+  position: relative;
+  margin-right: auto;
+}
+
+.add-block-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  border: none;
+  background: var(--c-primary-600, #4f46e5);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.add-block-dropdown__trigger:hover {
+  background: var(--c-primary-500, #6366f1);
+}
+
+.add-block-dropdown__menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 0.25rem;
+  min-width: 12rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.add-block-dropdown__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  text-align: left;
+  border: none;
+  background: none;
+  color: #374151;
+  cursor: pointer;
+}
+
+.add-block-dropdown__item:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.add-block-dropdown__item--disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
 .preview-canvas__viewport-label {
   margin-right: 0.25rem;
   font-size: 0.75rem;
@@ -202,6 +329,7 @@ watch(
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
   background: #fff;
+  overflow: hidden;
 }
 
 .preview-canvas__empty {

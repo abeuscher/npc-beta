@@ -3,10 +3,6 @@ import { useEditorStore } from '../stores/editor'
 
 const store = useEditorStore()
 
-function openWidgetPicker() {
-  window.dispatchEvent(new CustomEvent('open-widget-picker', { detail: {} }))
-}
-
 function openSaveTemplateModal() {
   window.dispatchEvent(new CustomEvent('open-save-template-modal', { detail: {} }))
 }
@@ -47,13 +43,6 @@ function openSaveTemplateModal() {
         @click="openSaveTemplateModal"
       >
         Save as Template
-      </button>
-      <button
-        type="button"
-        class="editor-toolbar__btn editor-toolbar__btn--primary"
-        @click="openWidgetPicker"
-      >
-        + Add Block
       </button>
     </div>
   </div>
