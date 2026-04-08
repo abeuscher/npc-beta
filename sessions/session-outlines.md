@@ -151,6 +151,8 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 142 | Inline JS/CSS Extraction & Migration Squash |
 | 143 | Codebase Hygiene Audit |
 | 144 | Column Widget — Drag-and-Drop Reorder |
+| 145 | Editor Vue Migration — Decision & Planning |
+| 146 | Editor Architecture Review |
 
 ---
 
@@ -163,10 +165,6 @@ Architecture decision session. Evaluated the page builder editor's Livewire arch
 ### Vue Editor Migration (sessions 147–151)
 
 The page builder editor is moving from Livewire to Vue.js. The preview canvas and inspector panel become a Vue application with a Pinia store for client-side state management. Widget templates remain Blade (server-rendered HTML injected into the Vue canvas). The Filament page shell, widget picker modal, and page-level settings stay on Livewire. Communication between the Vue editor and Laravel is via REST API endpoints — the first internal consumers of the API surface planned for post-beta.
-
-### 146. Editor Architecture Review
-
-Audit every file involved in the current editor. Document state, server round-trips, and dependencies for each Livewire component, Blade view, Alpine module, and service class. Design REST API endpoints (widget CRUD, preview rendering, lookup data for inspector dropdowns). Design the Vue component tree and Pinia store shape. Write a phased migration plan mapping to sessions 147–151. Output: `docs/editor-migration-plan.md`.
 
 ### 147. Editor API & Vue Scaffold
 
