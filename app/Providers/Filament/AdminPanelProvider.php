@@ -77,6 +77,11 @@ class AdminPanelProvider extends PanelProvider
                 \Illuminate\Support\Facades\Route::post('/toggle-full-width', \App\Http\Controllers\Admin\ToggleFullWidthController::class)
                     ->name('toggle-full-width')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
+                // Page builder API (Vue editor)
+                \Illuminate\Support\Facades\Route::prefix('api/page-builder')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->group(base_path('routes/admin-api.php'));
             })
             ->colors([
                 'primary' => Color::hex($primaryColor),

@@ -186,6 +186,12 @@
     @endif {{-- end handles mode --}}
 
     {{-- ------------------------------------------------------------------ --}}
+    {{-- Vue proof-of-concept (temporary — removed in session 151)            --}}
+    {{-- ------------------------------------------------------------------ --}}
+    <div id="page-builder-app" data-bootstrap='@json($bootstrapData)' wire:ignore></div>
+    @vite('resources/js/page-builder-vue/main.ts')
+
+    {{-- ------------------------------------------------------------------ --}}
     {{-- Add Block Modal                                                      --}}
     {{-- ------------------------------------------------------------------ --}}
     @if ($showAddModal)

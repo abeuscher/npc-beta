@@ -153,6 +153,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 144 | Column Widget — Drag-and-Drop Reorder |
 | 145 | Editor Vue Migration — Decision & Planning |
 | 146 | Editor Architecture Review |
+| 147 | Editor API & Vue Scaffold |
 
 ---
 
@@ -162,13 +163,9 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 Architecture decision session. Evaluated the page builder editor's Livewire architecture against the needs of a stateful, interactive editor UI. Decision: migrate the preview canvas and inspector panel to Vue 3 with Pinia state management. Widget templates remain Blade (server-rendered). Filament shell, widget picker, and save-as-template modal stay on Livewire. Communication via REST API endpoints with session auth. Preview refresh is user-initiated (on selection change, mode switch, or explicit action), not reactive to every field change. This session produces session outlines and design decisions; session 146 produces the detailed migration plan document.
 
-### Vue Editor Migration (sessions 147–151)
+### Vue Editor Migration (sessions 148–151)
 
-The page builder editor is moving from Livewire to Vue.js. The preview canvas and inspector panel become a Vue application with a Pinia store for client-side state management. Widget templates remain Blade (server-rendered HTML injected into the Vue canvas). The Filament page shell, widget picker modal, and page-level settings stay on Livewire. Communication between the Vue editor and Laravel is via REST API endpoints — the first internal consumers of the API surface planned for post-beta.
-
-### 147. Editor API & Vue Scaffold
-
-Build REST endpoints for widget CRUD: load widget tree for a page, create/delete/copy/reorder widgets, update widget config. Mount a Vue application inside the Filament EditPage shell. Set up Pinia store holding the widget tree, selection state, and editor mode. Prove the pattern: load the tree from the API, render the existing block list, select a block, save a config change — all client-side with API persistence. Vite config for Vue compilation alongside the existing Filament theme build.
+The page builder editor is moving from Livewire to Vue.js. The preview canvas and inspector panel become a Vue application with a Pinia store for client-side state management. Widget templates remain Blade (server-rendered HTML injected into the Vue canvas). The Filament page shell, widget picker modal, and page-level settings stay on Livewire. Communication between the Vue editor and Laravel is via REST API endpoints — the first internal consumers of the API surface planned for post-beta. Session 147 laid the foundation: REST API, Pinia store, API client, TypeScript types, and Vue app mount inside Filament.
 
 ### 148. Editor Canvas in Vue
 
@@ -180,7 +177,7 @@ Rebuild the inspector panel as Vue components. Core form fields: text inputs, se
 
 ### 150. Editor Inspector in Vue — Part 2
 
-Complex inspector features: dual stacked tab layout (Appearance / Layout on top, Content / Data Mapping below). Spacing controls as Vue components. Color picker with theme palette colours plus a freeform colour wheel — every widget gets full-width toggle, background colour, and background text colour. Colour saving approach (saved swatches or extended theme palette — decide during session). Image upload fields. Button list manager. Left-side icon toolbar placeholder (history, etc.). Data mapping interface with auto-match: fields whose names match labels get pre-selected automatically.
+Complex inspector features: dual stacked tab layout (Appearance / Layout on top, Content / Data Mapping below). Spacing controls as Vue components. Color picker with theme palette colours plus a freeform colour wheel — every widget gets full-width toggle, background colour, and background text colour. Colour saving approach (saved swatches or extended theme palette — decide during session). Image upload fields. Button list manager. Left-side icon toolbar placeholder (history, etc.). Data mapping interface with auto-match: fields whose names match labels get pre-selected automatically. Drag-and-drop reordering in handles mode via the Vue ecosystem (vuedraggable or equivalent) — block list with BlockCard, ColumnSlot, ellipsis menu (move up/down, move to column, copy, delete).
 
 ### 151. Editor Livewire Teardown
 

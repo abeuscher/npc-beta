@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import laravel from 'laravel-vite-plugin'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   build: {
@@ -14,9 +15,18 @@ export default defineConfig({
         'resources/scss/public.scss',
         'resources/js/public.js',
         'resources/js/page-builder/index.js',
+        'resources/js/page-builder-vue/main.ts',
         'resources/css/filament/admin/theme.css',
       ],
       refresh: true,
+    }),
+    vue({
+      template: {
+        transformAssetUrls: {
+          base: null,
+          includeAbsolute: false,
+        },
+      },
     }),
   ],
   css: {

@@ -745,8 +745,129 @@ class PageBuilder extends Component
         $this->refreshAllPreviews();
     }
 
+    public function getBootstrapData(): array
+    {
+        $page = Page::find($this->pageId);
+
+        // Build the widget tree with preview HTML (same shape as the API response)
+        $requiredHandlesForPage = $this->requiredHandles;
+        $widgets = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('parent_widget_id')
+            ->where('is_active', true)
+            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        $allLibs = [];
+        $formattedWidgets = [];
+
+        foreach ($widgets as $pw) {
+            if (! $pw->widgetType) {
+                continue;
+            }
+
+            $preview = $this->renderWidgetForPreview($pw);
+            $this->collectLibs($pw, $allLibs);
+
+            $children = [];
+            foreach ($pw->children as $child) {
+                if (! $child->is_active || ! $child->widgetType) {
+                    continue;
+                }
+                $idx = $child->column_index ?? 0;
+                $children[$idx][] = [
+                    'id'                        => $child->id,
+                    'widget_type_id'            => $child->widget_type_id,
+                    'widget_type_handle'        => $child->widgetType?->handle ?? '',
+                    'widget_type_label'         => $child->widgetType?->label ?? 'Unknown',
+                    'widget_type_collections'   => $child->widgetType?->collections ?? [],
+                    'widget_type_config_schema' => $child->widgetType?->config_schema ?? [],
+                    'widget_type_assets'        => $child->widgetType?->assets ?? [],
+                    'widget_type_default_open'  => $child->widgetType?->default_open ?? false,
+                    'parent_widget_id'          => $child->parent_widget_id,
+                    'column_index'              => $child->column_index,
+                    'label'                     => $child->label ?? '',
+                    'config'                    => $child->config ?? [],
+                    'query_config'              => $child->query_config ?? [],
+                    'style_config'              => $child->style_config ?? [],
+                    'sort_order'                => $child->sort_order ?? 0,
+                    'is_active'                 => $child->is_active,
+                    'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
+                ];
+            }
+
+            $formattedWidgets[] = [
+                'id'                        => $pw->id,
+                'widget_type_id'            => $pw->widget_type_id,
+                'widget_type_handle'        => $pw->widgetType?->handle ?? '',
+                'widget_type_label'         => $pw->widgetType?->label ?? 'Unknown',
+                'widget_type_collections'   => $pw->widgetType?->collections ?? [],
+                'widget_type_config_schema' => $pw->widgetType?->config_schema ?? [],
+                'widget_type_assets'        => $pw->widgetType?->assets ?? [],
+                'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
+                'parent_widget_id'          => $pw->parent_widget_id,
+                'column_index'              => $pw->column_index,
+                'label'                     => $pw->label ?? '',
+                'config'                    => $pw->config ?? [],
+                'query_config'              => $pw->query_config ?? [],
+                'style_config'              => $pw->style_config ?? [],
+                'sort_order'                => $pw->sort_order ?? 0,
+                'is_active'                 => $pw->is_active,
+                'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
+                'preview_html'              => $preview['html'],
+                'children'                  => $children,
+            ];
+        }
+
+        $collections = Collection::where('is_active', true)
+            ->orderBy('name')
+            ->get(['handle', 'name', 'source_type'])
+            ->map(fn ($c) => ['handle' => $c->handle, 'name' => $c->name, 'source_type' => $c->source_type])
+            ->values()
+            ->toArray();
+
+        $tags = \App\Models\Tag::where('type', 'collection')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug'])
+            ->toArray();
+
+        $pages = Page::published()
+            ->where('type', 'default')
+            ->orderBy('title')
+            ->get(['slug', 'title'])
+            ->map(fn ($p) => ['slug' => $p->slug, 'title' => $p->title])
+            ->toArray();
+
+        $events = \App\Models\Event::published()
+            ->orderBy('starts_at')
+            ->get(['slug', 'title'])
+            ->map(fn ($e) => ['slug' => $e->slug, 'title' => $e->title])
+            ->toArray();
+
+        $adminPath = config('filament.path', env('ADMIN_PATH', 'admin'));
+
+        return [
+            'page_id'                 => $this->pageId,
+            'page_type'               => $this->pageType,
+            'widgets'                 => $formattedWidgets,
+            'required_libs'           => array_values(array_unique($allLibs)),
+            'widget_types'            => $this->widgetTypes,
+            'required_handles'        => $this->requiredHandles,
+            'collections'             => $collections,
+            'tags'                    => $tags,
+            'pages'                   => $pages,
+            'events'                  => $events,
+            'csrf_token'              => csrf_token(),
+            'api_base_url'            => '/' . $adminPath . '/api/page-builder',
+            'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
+        ];
+    }
+
     public function render(): \Illuminate\View\View
     {
-        return view('livewire.page-builder', ['selectedBlockId' => $this->selectedBlockId]);
+        return view('livewire.page-builder', [
+            'selectedBlockId' => $this->selectedBlockId,
+            'bootstrapData'   => $this->getBootstrapData(),
+        ]);
     }
 }
