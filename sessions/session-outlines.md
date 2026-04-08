@@ -154,6 +154,50 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 ---
 
+## CMS & Editor — Beta 1 Scope
+
+### 145. Editor Vue Migration — Decision & Planning
+
+Architecture decision session. Evaluated the page builder editor's Livewire architecture against the needs of a stateful, interactive editor UI. Decision: migrate the preview canvas and inspector panel to Vue 3 with Pinia state management. Widget templates remain Blade (server-rendered). Filament shell, widget picker, and save-as-template modal stay on Livewire. Communication via REST API endpoints with session auth. Preview refresh is user-initiated (on selection change, mode switch, or explicit action), not reactive to every field change. This session produces session outlines and design decisions; session 146 produces the detailed migration plan document.
+
+### Vue Editor Migration (sessions 147–151)
+
+The page builder editor is moving from Livewire to Vue.js. The preview canvas and inspector panel become a Vue application with a Pinia store for client-side state management. Widget templates remain Blade (server-rendered HTML injected into the Vue canvas). The Filament page shell, widget picker modal, and page-level settings stay on Livewire. Communication between the Vue editor and Laravel is via REST API endpoints — the first internal consumers of the API surface planned for post-beta.
+
+### 146. Editor Architecture Review
+
+Audit every file involved in the current editor. Document state, server round-trips, and dependencies for each Livewire component, Blade view, Alpine module, and service class. Design REST API endpoints (widget CRUD, preview rendering, lookup data for inspector dropdowns). Design the Vue component tree and Pinia store shape. Write a phased migration plan mapping to sessions 147–151. Output: `docs/editor-migration-plan.md`.
+
+### 147. Editor API & Vue Scaffold
+
+Build REST endpoints for widget CRUD: load widget tree for a page, create/delete/copy/reorder widgets, update widget config. Mount a Vue application inside the Filament EditPage shell. Set up Pinia store holding the widget tree, selection state, and editor mode. Prove the pattern: load the tree from the API, render the existing block list, select a block, save a config change — all client-side with API persistence. Vite config for Vue compilation alongside the existing Filament theme build.
+
+### 148. Editor Canvas in Vue
+
+Rebuild the preview panel as a Vue component. Transparent overlay div in front of each widget section — serves as click target and disables in-page interactions (links, forms, carousels) while editing. Triangular selection handle in the upper-right corner of each column/section. Drag-and-drop reordering via the Vue ecosystem (vue-draggable or equivalent). Widget preview HTML is still server-rendered and injected — the Vue canvas manages the chrome around it, not the widget content. Selection state, mode switching, and viewport controls all move to the Pinia store.
+
+### 149. Editor Inspector in Vue — Part 1
+
+Rebuild the inspector panel as Vue components. Core form fields: text inputs, selects, checkboxes, toggles, textareas, rich text (Quill integration). Tabbed layout. Fix every default value to be explicit and correct — eliminate placeholder values that appear unset when they are active. Wire config changes to the Pinia store with debounced API saves. Preview refresh triggered reactively from store changes.
+
+### 150. Editor Inspector in Vue — Part 2
+
+Complex inspector features: dual stacked tab layout (Appearance / Layout on top, Content / Data Mapping below). Spacing controls as Vue components. Color picker with theme palette colours plus a freeform colour wheel — every widget gets full-width toggle, background colour, and background text colour. Colour saving approach (saved swatches or extended theme palette — decide during session). Image upload fields. Button list manager. Left-side icon toolbar placeholder (history, etc.). Data mapping interface with auto-match: fields whose names match labels get pre-selected automatically.
+
+### 151. Editor Livewire Teardown
+
+Remove PageBuilderBlock and PageBuilderInspector Livewire components. Remove the Alpine.js modules they depended on (preview-manager, spacingControls, richtextEditor, buttonListManager). PageBuilder.php becomes a thin mount-point that boots the Vue app and passes initial data. Clean up orphaned event listeners, blade partials, and any remaining `$wire` calls. Verify all editor flows work end-to-end on the Vue stack.
+
+### 152. Nav Widget & Footer
+
+Extract the logo/company-name piece from the existing header widget into its own block. Build a standalone nav widget that supports: header mode, footer mode, stacked static, dropdown, hamburger collapse, and stack collapse. Build a footer widget — nav element stacked on a text widget with a current-year copyright line by default.
+
+### 153. Template & Page Import/Export
+
+Content template import/export (may already be built but not surfaced — verify before building). Full page import/export so the marketing site can be moved in and out of the system across upgrades. Widget data mapping auto-match for import: fields whose names match their labels exactly should be pre-selected automatically in the mapping UI, saving manual work.
+
+---
+
 ## Infrastructure & Ops — Beta 1 Scope
 
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
