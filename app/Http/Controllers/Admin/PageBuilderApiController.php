@@ -95,7 +95,10 @@ class PageBuilderApiController extends Controller
             'label'            => $label,
             'config'           => $widgetType->getDefaultConfig(),
             'query_config'     => [],
-            'style_config'     => [],
+            'style_config'     => [
+                'background_color' => '#ffffff',
+                'text_color'       => '#000000',
+            ],
             'sort_order'       => $position,
             'is_active'        => true,
         ]);
@@ -407,7 +410,7 @@ class PageBuilderApiController extends Controller
 
         $request->validate([
             'key'  => 'required|string|max:255',
-            'file' => 'required|file|mimes:png,jpg,jpeg,gif,webp,svg|max:10240',
+            'file' => 'required|file|mimes:png,jpg,jpeg,gif,webp,svg,mp4,webm|max:51200',
         ]);
 
         $key = $request->input('key');
@@ -500,6 +503,7 @@ class PageBuilderApiController extends Controller
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
+            'image_urls'                => $this->resolveImageUrls($pw),
         ];
     }
 
@@ -523,6 +527,7 @@ class PageBuilderApiController extends Controller
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
+            'image_urls'                => $this->resolveImageUrls($pw),
             'preview_html'              => $this->renderWidgetForPreview($pw)['html'],
             'children'                  => $this->formatChildren($pw, $requiredHandles),
         ];
@@ -558,6 +563,7 @@ class PageBuilderApiController extends Controller
                 'sort_order'                => $child->sort_order ?? 0,
                 'is_active'                 => $child->is_active,
                 'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandles, true),
+                'image_urls'                => $this->resolveImageUrls($child),
             ];
         }
 
@@ -585,7 +591,9 @@ class PageBuilderApiController extends Controller
                 $inlineStyle = self::buildInlineStyles($sc);
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
+                $styleFullWidth = $sc['full_width'] ?? null;
+                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
+                    : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($widgetType->full_width ?? false));
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -634,7 +642,9 @@ class PageBuilderApiController extends Controller
             $sc = $child->style_config ?? [];
 
             $configFullWidth = $child->config['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($child->widgetType->full_width ?? false);
+            $styleFullWidth = $sc['full_width'] ?? null;
+            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
+                : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($child->widgetType->full_width ?? false));
 
             $idx = $child->column_index ?? 0;
             $children[$idx][] = [
@@ -654,6 +664,14 @@ class PageBuilderApiController extends Controller
     private static function buildInlineStyles(array $styleConfig): string
     {
         $styleProps = [];
+
+        if (! empty($styleConfig['background_color'])) {
+            $styleProps[] = 'background-color:' . $styleConfig['background_color'];
+        }
+        if (! empty($styleConfig['text_color'])) {
+            $styleProps[] = 'color:' . $styleConfig['text_color'];
+        }
+
         $spacingKeys = [
             'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
             'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
@@ -702,6 +720,39 @@ class PageBuilderApiController extends Controller
                 $this->collectLibs($child, $libs);
             }
         }
+    }
+
+    // ── Color Swatches ────────────────────────────────────────────────────
+
+    public function updateColorSwatches(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $validated = $request->validate([
+            'swatches'   => 'required|array',
+            'swatches.*' => 'string|max:30',
+        ]);
+
+        SiteSetting::set('editor_color_swatches', json_encode($validated['swatches']));
+
+        return response()->json(['swatches' => $validated['swatches']]);
+    }
+
+    // ── Private helpers ─────────────────────────────────────────────────
+
+    private function resolveImageUrls(PageWidget $pw): array
+    {
+        $urls = [];
+        $schema = $pw->widgetType?->config_schema ?? [];
+
+        foreach ($schema as $field) {
+            if (in_array($field['type'] ?? '', ['image', 'video'])) {
+                $media = $pw->getFirstMedia("config_{$field['key']}");
+                $urls[$field['key']] = $media?->getUrl();
+            }
+        }
+
+        return $urls;
     }
 
     private function computeBareSlug(Page $page): string

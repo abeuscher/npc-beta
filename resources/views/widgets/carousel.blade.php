@@ -11,8 +11,8 @@
     $slidesPerView = (int) ($config['slides_per_view'] ?? 1);
     $effect = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
     $speed = (int) ($config['speed'] ?? 300);
-    $textColor = $config['text_color'] ?? '';
-    $linkColor = $config['link_color'] ?? '';
+    $textColor = $config['slide_text_color'] ?? '';
+    $linkColor = $config['slide_link_color'] ?? '';
 
     // Fade only works with 1 slide per view
     if ($effect === 'fade') {
@@ -107,4 +107,6 @@
             @endif
         </div>
     </div>
+@else
+    @include('widgets.components.widget-placeholder', ['title' => 'Carousel', 'message' => 'Select a collection and map its image field to display slides.'])
 @endif

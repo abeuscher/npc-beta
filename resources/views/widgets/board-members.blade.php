@@ -117,4 +117,6 @@
             @endforeach
         </div>
     </div>
+@else
+    @include('widgets.components.widget-placeholder', ['title' => 'Board Members', 'message' => 'Select a collection and map its fields to display team members.'])
 @endif

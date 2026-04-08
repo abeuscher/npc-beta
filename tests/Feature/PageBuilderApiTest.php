@@ -350,3 +350,50 @@ it('returns data sources', function () {
     $response->assertOk()
         ->assertJsonStructure(['options']);
 });
+
+// ── Color swatches ──────────────────────────────────────────────────────
+
+it('saves and returns color swatches', function () {
+    $swatches = ['#ff0000', '#00ff00', '#0000ff'];
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . '/color-swatches', ['swatches' => $swatches]);
+
+    $response->assertOk()
+        ->assertJson(['swatches' => $swatches]);
+
+    // Verify persisted
+    $stored = json_decode(\App\Models\SiteSetting::get('editor_color_swatches', '[]'), true);
+    expect($stored)->toBe($swatches);
+});
+
+it('replaces swatches on subsequent save', function () {
+    \App\Models\SiteSetting::set('editor_color_swatches', json_encode(['#111111']));
+
+    $newSwatches = ['#222222', '#333333'];
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . '/color-swatches', ['swatches' => $newSwatches]);
+
+    $response->assertOk()
+        ->assertJson(['swatches' => $newSwatches]);
+
+    $stored = json_decode(\App\Models\SiteSetting::get('editor_color_swatches', '[]'), true);
+    expect($stored)->toBe($newSwatches);
+});
+
+it('rejects color swatches without update_page permission', function () {
+    $user = apiUser(['view_page']);
+
+    $response = $this->actingAs($user)
+        ->putJson(apiPrefix() . '/color-swatches', ['swatches' => ['#ff0000']]);
+
+    $response->assertForbidden();
+});
+
+it('validates swatches is an array of strings', function () {
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . '/color-swatches', ['swatches' => 'not-an-array']);
+
+    $response->assertUnprocessable();
+});

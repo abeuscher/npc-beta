@@ -92,8 +92,6 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
                     ['key' => 'sort_default',     'type' => 'select',   'label' => 'Default sort', 'options' => ['soonest' => 'Soonest first', 'furthest' => 'Furthest first', 'title_az' => 'Title A–Z', 'title_za' => 'Title Z–A'], 'default' => 'soonest', 'group' => 'content'],
                     ['key' => 'effect',           'type' => 'select',   'label' => 'Transition', 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'default' => 'slide', 'group' => 'appearance'],
-                    ['key' => 'background_color', 'type' => 'color',    'label' => 'Background color', 'advanced' => true, 'group' => 'appearance'],
-                    ['key' => 'text_color',       'type' => 'color',    'label' => 'Text color', 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.events-listing')",
             ]
@@ -118,8 +116,6 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
                     ['key' => 'sort_default',     'type' => 'select',   'label' => 'Default sort', 'options' => ['newest' => 'Newest first', 'oldest' => 'Oldest first', 'title_az' => 'Title A–Z', 'title_za' => 'Title Z–A'], 'default' => 'newest', 'group' => 'content'],
                     ['key' => 'effect',           'type' => 'select',   'label' => 'Transition', 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'default' => 'slide', 'group' => 'appearance'],
-                    ['key' => 'background_color', 'type' => 'color',    'label' => 'Background color', 'advanced' => true, 'group' => 'appearance'],
-                    ['key' => 'text_color',       'type' => 'color',    'label' => 'Text color', 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.blog-listing')",
             ]
@@ -441,7 +437,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'y_field',           'type' => 'select', 'label' => 'Y axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for Y axis values (numeric)', 'group' => 'content'],
                     ['key' => 'x_label',           'type' => 'text',   'label' => 'X axis label', 'helper' => 'X axis label', 'group' => 'content'],
                     ['key' => 'y_label',           'type' => 'text',   'label' => 'Y axis label', 'helper' => 'Y axis label', 'group' => 'content'],
-                    ['key' => 'bar_color',         'type' => 'color',  'label' => 'Bar colour',   'helper' => '#0172ad', 'group' => 'appearance'],
+                    ['key' => 'bar_color',         'type' => 'color',  'label' => 'Bar colour',   'default' => '#0172ad', 'group' => 'appearance'],
                 ],
                 'template'      => "@include('widgets.bar-chart')",
             ]
@@ -491,8 +487,8 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'slides_per_view',   'type' => 'number',  'label' => 'Slides per view',    'default' => 1,       'advanced' => true, 'group' => 'appearance'],
                     ['key' => 'effect',            'type' => 'select',  'label' => 'Transition effect',  'default' => 'slide', 'advanced' => true, 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'group' => 'appearance'],
                     ['key' => 'speed',             'type' => 'number',  'label' => 'Speed (ms)',          'default' => 300,     'advanced' => true, 'group' => 'appearance'],
-                    ['key' => 'link_color',        'type' => 'color',   'label' => 'Link color',                                'advanced' => true, 'group' => 'appearance'],
-                    ['key' => 'text_color',        'type' => 'color',   'label' => 'Text color',                                'advanced' => true, 'group' => 'appearance'],
+                    ['key' => 'slide_link_color',  'type' => 'color',   'label' => 'Slide Link Colour',  'default' => '#ffffff', 'advanced' => true, 'group' => 'appearance'],
+                    ['key' => 'slide_text_color',  'type' => 'color',   'label' => 'Slide Text Colour',  'default' => '#ffffff', 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'assets'        => ['libs' => ['swiper']],
                 'template'      => "@include('widgets.carousel')",
@@ -633,8 +629,8 @@ class WidgetTypeSeeder extends Seeder
                 'full_width'         => true,
                 'config_schema'      => [
                     ['key' => 'content',          'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
-                    ['key' => 'background_color', 'type' => 'color',   'label' => 'Background Color', 'group' => 'appearance'],
-                    ['key' => 'text_color',       'type' => 'color',   'label' => 'Text Color',       'group' => 'appearance'],
+                    ['key' => 'background_color', 'type' => 'color',   'label' => 'Background Color', 'default' => '#ffffff', 'group' => 'appearance'],
+                    ['key' => 'text_color',       'type' => 'color',   'label' => 'Text Color',       'default' => '#000000', 'group' => 'appearance'],
                     ['key' => 'background_image', 'type' => 'image',   'label' => 'Background Image', 'group' => 'content'],
                     ['key' => 'background_video', 'type' => 'video',   'label' => 'Background Video', 'helper' => 'MP4 or WebM — plays on loop, overrides background image', 'group' => 'content'],
                     ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
@@ -692,7 +688,6 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'aspect_ratio', 'type' => 'select',   'label' => 'Aspect Ratio', 'default' => '16/9', 'options' => ['16/9' => '16:9', '4/3' => '4:3', '1/1' => '1:1', '21/9' => '21:9'], 'group' => 'appearance'],
                     ['key' => 'min_height',   'type' => 'number',   'label' => 'Minimum height (px)', 'default' => 300, 'advanced' => true, 'group' => 'appearance'],
                     ['key' => 'max_height',   'type' => 'number',   'label' => 'Maximum height (px)', 'default' => 600, 'advanced' => true, 'group' => 'appearance'],
-                    ['key' => 'full_width',   'type' => 'toggle',   'label' => 'Full width',          'default' => false, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.map-embed')",
             ]
@@ -719,9 +714,6 @@ class WidgetTypeSeeder extends Seeder
                     ], 'group' => 'content'],
                     ['key' => 'alignment',         'type' => 'select',     'label' => 'Alignment',    'default' => 'center', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'group' => 'appearance'],
                     ['key' => 'icon_size',          'type' => 'select',     'label' => 'Icon size',    'default' => 'small',  'options' => ['small' => 'Small (20px)', 'medium' => 'Medium (28px)'], 'group' => 'appearance'],
-                    ['key' => 'background_color',   'type' => 'color',      'label' => 'Background color', 'group' => 'appearance'],
-                    ['key' => 'text_color',         'type' => 'color',      'label' => 'Text color', 'group' => 'appearance'],
-                    ['key' => 'full_width',         'type' => 'toggle',     'label' => 'Full width',   'default' => false, 'group' => 'appearance'],
                     ['key' => 'mastodon_instance',  'type' => 'text',       'label' => 'Mastodon instance domain', 'default' => 'mastodon.social', 'advanced' => true, 'group' => 'content', 'subtype' => 'url'],
                 ],
                 'assets'             => ['scss' => ['resources/scss/widgets/_social-sharing.scss']],

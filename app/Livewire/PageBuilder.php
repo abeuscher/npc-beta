@@ -163,6 +163,10 @@ class PageBuilder extends Component
             'label'          => $this->addModalLabel,
             'config'         => $defaultConfig,
             'query_config'   => [],
+            'style_config'   => [
+                'background_color' => '#ffffff',
+                'text_color'       => '#000000',
+            ],
             'sort_order'     => $position,
             'is_active'      => true,
         ]);
@@ -599,6 +603,21 @@ class PageBuilder extends Component
         $this->dispatch('preview-content-changed', blocks: $this->previewBlocks);
     }
 
+    private function resolveWidgetImageUrls(PageWidget $pw): array
+    {
+        $urls = [];
+        $schema = $pw->widgetType?->config_schema ?? [];
+
+        foreach ($schema as $field) {
+            if (in_array($field['type'] ?? '', ['image', 'video'])) {
+                $media = $pw->getFirstMedia("config_{$field['key']}");
+                $urls[$field['key']] = $media?->getUrl();
+            }
+        }
+
+        return $urls;
+    }
+
     private function collectLibs(PageWidget $pw, array &$libs): void
     {
         $assets = $pw->widgetType?->assets ?? [];
@@ -634,7 +653,9 @@ class PageBuilder extends Component
                 $inlineStyle = self::buildInlineStyles($sc);
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
+                $styleFullWidth = $sc['full_width'] ?? null;
+                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
+                    : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($widgetType->full_width ?? false));
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -691,7 +712,9 @@ class PageBuilder extends Component
             $childInlineStyle = self::buildInlineStyles($sc);
 
             $configFullWidth = $child->config['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($child->widgetType->full_width ?? false);
+            $styleFullWidth = $sc['full_width'] ?? null;
+            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
+                : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($child->widgetType->full_width ?? false));
 
             $idx = $child->column_index ?? 0;
             $children[$idx][] = [
@@ -711,6 +734,14 @@ class PageBuilder extends Component
     private static function buildInlineStyles(array $styleConfig): string
     {
         $styleProps = [];
+
+        if (! empty($styleConfig['background_color'])) {
+            $styleProps[] = 'background-color:' . $styleConfig['background_color'];
+        }
+        if (! empty($styleConfig['text_color'])) {
+            $styleProps[] = 'color:' . $styleConfig['text_color'];
+        }
+
         $spacingKeys = [
             'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
             'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
@@ -801,6 +832,7 @@ class PageBuilder extends Component
                     'sort_order'                => $child->sort_order ?? 0,
                     'is_active'                 => $child->is_active,
                     'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
+                    'image_urls'                => $this->resolveWidgetImageUrls($child),
                 ];
             }
 
@@ -822,6 +854,7 @@ class PageBuilder extends Component
                 'sort_order'                => $pw->sort_order ?? 0,
                 'is_active'                 => $pw->is_active,
                 'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
+                'image_urls'                => $this->resolveWidgetImageUrls($pw),
                 'preview_html'              => $preview['html'],
                 'children'                  => $children,
             ];
@@ -854,6 +887,8 @@ class PageBuilder extends Component
 
         $adminPath = config('filament.path', env('ADMIN_PATH', 'admin'));
 
+        $colorSwatches = json_decode(SiteSetting::get('editor_color_swatches', '[]'), true) ?: [];
+
         return [
             'page_id'                 => $this->pageId,
             'page_type'               => $this->pageType,
@@ -868,6 +903,7 @@ class PageBuilder extends Component
             'csrf_token'              => csrf_token(),
             'api_base_url'            => '/' . $adminPath . '/api/page-builder',
             'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
+            'color_swatches'          => $colorSwatches,
         ];
     }
 

@@ -6,6 +6,9 @@ import InspectorHeader from './InspectorHeader.vue'
 import InspectorTabs from './InspectorTabs.vue'
 import InspectorFieldGroup from './InspectorFieldGroup.vue'
 import ApplyChangesButton from './ApplyChangesButton.vue'
+import WidgetAppearanceControls from './WidgetAppearanceControls.vue'
+import SpacingControl from './SpacingControl.vue'
+import QuerySettings from './QuerySettings.vue'
 import { ref } from 'vue'
 
 const store = useEditorStore()
@@ -47,7 +50,10 @@ const appearanceFields = computed(() => {
         </div>
 
         <div v-show="activeTab === 'appearance'" class="inspector-panel__tab-content">
+          <WidgetAppearanceControls :widget="widget" />
           <InspectorFieldGroup :fields="appearanceFields" :widget="widget" />
+          <QuerySettings :widget="widget" />
+          <SpacingControl :widget="widget" />
         </div>
       </div>
 

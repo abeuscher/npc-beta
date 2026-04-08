@@ -156,6 +156,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 147 | Editor API & Vue Scaffold |
 | 148 | Editor Canvas in Vue |
 | 149 | Editor Inspector in Vue — Part 1 |
+| 150 | Editor Inspector in Vue — Part 2 |
 
 ---
 
@@ -177,23 +178,23 @@ Rebuild the preview panel as a Vue component. Transparent overlay div in front o
 
 Rebuild the inspector panel as Vue components. Core form fields: text inputs, selects, checkboxes, toggles, textareas, rich text (Quill integration). Tabbed layout. Fix every default value to be explicit and correct — eliminate placeholder values that appear unset when they are active. Wire config changes to the Pinia store with debounced API saves. Preview refresh triggered reactively from store changes.
 
-### 150. Editor Inspector in Vue — Part 2
+### 151. Widget Delete & Livewire Inspector Removal
 
-Remaining inspector field types and appearance controls. Color picker with theme palette presets, freeform colour wheel, and saved swatches. Image and video upload fields. Button list manager (add/remove/reorder/edit). Spacing controls as Vue components (padding/margin with "All" shortcut). Query settings panel for collection-backed widgets (limit, order by, tag include/exclude). Universal widget appearance controls added to every widget's Appearance tab: full-width toggle, background colour, and background text colour.
+Delete button to the right of the widget title in the inspector panel header. Confirmation modal: "Are you sure you want to delete this widget: [Widget Label]?" Hide the Livewire inspector panel. Livewire teardown: remove PageBuilderBlock, PageBuilderInspector, all inspector blade partials, and the Alpine.js modules (preview-manager, spacingControls, richtextEditor, buttonListManager). PageBuilder.php becomes a thin mount-point. Verify all editor flows work end-to-end on the Vue stack.
 
-### 151. Editor Block List & Drag-and-Drop
+### 152. Preview Inline Controls & Drag-and-Drop
 
-Handles mode block list as Vue components. BlockList, BlockCard, ColumnSlot components. Drag-and-drop reordering via vuedraggable or equivalent. Ellipsis menu with all actions: add above/below, copy, move up/down, move to column, delete with confirm. Column widget cards show child slots with per-column add/reorder/delete. Event bridge to Livewire widget picker modal from handles mode.
+Add overlay controls to each PreviewRegion in the preview canvas: drag handle and ellipsis menu. Ellipsis menu actions: add above/below, copy, move up/down, delete. Drag-and-drop reordering of widgets via the preview regions. Remove the edit/handles mode toggle — single unified editor view. Column widget children are out of scope (session 153).
 
-### 152. Editor Livewire Teardown
+### 153. Column Widget Preview Solution
 
-Remove PageBuilderBlock and PageBuilderInspector Livewire components. Remove the Alpine.js modules they depended on (preview-manager, spacingControls, richtextEditor, buttonListManager). PageBuilder.php becomes a thin mount-point that boots the Vue app and passes initial data. Clean up orphaned event listeners, blade partials, and any remaining `$wire` calls. Verify all editor flows work end-to-end on the Vue stack.
+Design and implement the column widget experience in the unified preview mode. Visual treatment for column slots, adding/removing/reordering children within columns, and moving widgets between columns and the main list. Design to be discussed at session start.
 
-### 153. Nav Widget & Footer
+### 154. Nav Widget & Footer
 
 Extract the logo/company-name piece from the existing header widget into its own block. Build a standalone nav widget that supports: header mode, footer mode, stacked static, dropdown, hamburger collapse, and stack collapse. Build a footer widget — nav element stacked on a text widget with a current-year copyright line by default.
 
-### 154. Template & Page Import/Export
+### 155. Template & Page Import/Export
 
 Content template import/export (may already be built but not surfaced — verify before building). Full page import/export so the marketing site can be moved in and out of the system across upgrades. Widget data mapping interface with auto-match: fields whose names match their labels exactly should be pre-selected automatically in the mapping UI, saving manual work.
 

@@ -37,3 +37,6 @@ Route::get('data-sources/{source}', [PageBuilderApiController::class, 'dataSourc
 // Image upload
 Route::post('widgets/{widget}/image', [PageBuilderApiController::class, 'uploadImage']);
 Route::delete('widgets/{widget}/image/{key}', [PageBuilderApiController::class, 'removeImage']);
+
+// Color swatches
+Route::put('color-swatches', [PageBuilderApiController::class, 'updateColorSwatches']);

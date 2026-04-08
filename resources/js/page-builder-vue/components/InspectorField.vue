@@ -10,6 +10,9 @@ import ToggleField from './fields/ToggleField.vue'
 import CheckboxesField from './fields/CheckboxesField.vue'
 import NoticeField from './fields/NoticeField.vue'
 import RichTextField from './fields/RichTextField.vue'
+import ColorPickerField from './fields/ColorPickerField.vue'
+import ImageUploadField from './fields/ImageUploadField.vue'
+import ButtonListField from './fields/ButtonListField.vue'
 
 const props = defineProps<{
   field: FieldDef
@@ -56,14 +59,6 @@ const isVisible = computed(() => {
   return true
 })
 
-// Fallback field types
-const fallbackTypes: Record<string, string> = {
-  image: 'Image fields available in next update.',
-  video: 'Video fields available in next update.',
-  color: 'Color fields available in next update.',
-  buttons: 'Button fields available in next update.',
-}
-
 const componentMap: Record<string, any> = {
   text: TextField,
   url: TextField,
@@ -74,21 +69,19 @@ const componentMap: Record<string, any> = {
   checkboxes: CheckboxesField,
   notice: NoticeField,
   richtext: RichTextField,
+  color: ColorPickerField,
+  image: ImageUploadField,
+  video: ImageUploadField,
+  buttons: ButtonListField,
 }
 
 const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
-const fallbackMessage = computed(() => fallbackTypes[props.field.type] ?? null)
 </script>
 
 <template>
   <div v-show="isVisible" class="inspector-field">
     <template v-if="field.type === 'notice'">
       <NoticeField :field="field" />
-    </template>
-
-    <template v-else-if="fallbackMessage">
-      <label class="inspector-field__label">{{ field.label }}</label>
-      <p class="inspector-field__fallback">{{ fallbackMessage }}</p>
     </template>
 
     <template v-else-if="fieldComponent">

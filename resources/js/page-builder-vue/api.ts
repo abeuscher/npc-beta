@@ -159,3 +159,10 @@ export async function removeImage(
 ): Promise<{ removed: boolean }> {
   return request('DELETE', `widgets/${widgetId}/image/${encodeURIComponent(key)}`)
 }
+
+// Color swatches
+export function saveColorSwatches(
+  swatches: string[]
+): Promise<{ swatches: string[] }> {
+  return request('PUT', 'color-swatches', { swatches })
+}

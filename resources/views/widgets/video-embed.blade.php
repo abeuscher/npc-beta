@@ -43,4 +43,6 @@
     </div>
 @elseif ($videoUrl)
     <p class="text-muted">Unsupported video URL</p>
+@else
+    @include('widgets.components.widget-placeholder', ['title' => 'Video Embed', 'message' => 'Enter a YouTube or Vimeo URL.'])
 @endif

@@ -3,9 +3,6 @@
     $platforms        = $config['platforms'] ?? [];
     $alignment        = $config['alignment'] ?? 'center';
     $iconSize         = $config['icon_size'] ?? 'small';
-    $backgroundColor  = $config['background_color'] ?? '';
-    $textColor        = $config['text_color'] ?? '';
-    $fullWidth        = $config['full_width'] ?? false;
     $mastodonInstance = $config['mastodon_instance'] ?? 'mastodon.social';
 
     $iconPx = $iconSize === 'medium' ? '28px' : '20px';
@@ -35,18 +32,11 @@
     $platformOrder = ['bluesky', 'mastodon', 'email', 'copy_link', 'linkedin', 'facebook'];
     $enabledPlatforms = array_intersect($platformOrder, $platforms);
 
-    $containerStyle = '';
-    if ($backgroundColor) {
-        $containerStyle .= 'background-color:' . e($backgroundColor) . ';';
-    }
-    if ($textColor) {
-        $containerStyle .= 'color:' . e($textColor) . ';';
-    }
 @endphp
 
 @if (count($enabledPlatforms) > 0)
-    <div class="widget-social-sharing" @if ($containerStyle) style="{{ $containerStyle }}" @endif>
-        <div class="{{ $fullWidth ? 'site-container' : '' }}">
+    <div class="widget-social-sharing">
+        <div>
             @if ($heading)
                 <h2 class="social-sharing__heading">{{ $heading }}</h2>
             @endif

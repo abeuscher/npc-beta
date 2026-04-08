@@ -92,8 +92,7 @@ it('seeder creates map_embed widget with correct config schema', function () {
         ->toContain('map_input')
         ->toContain('aspect_ratio')
         ->toContain('min_height')
-        ->toContain('max_height')
-        ->toContain('full_width');
+        ->toContain('max_height');
 
     // Notice field has no key
     $notice = collect($wt->config_schema)->first(fn ($f) => ($f['type'] ?? '') === 'notice');

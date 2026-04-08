@@ -6,6 +6,7 @@ use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -84,6 +85,7 @@ it('seedWidgetCollections runs all three demo seeders', function () {
 // ── Logo garden blade template rendering ────────────────────────────────────
 
 it('logo garden renders static grid with collection data', function () {
+    Storage::fake('public');
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $collection = Collection::create([
@@ -137,6 +139,7 @@ it('logo garden renders static grid with collection data', function () {
 });
 
 it('logo garden renders carousel mode markup', function () {
+    Storage::fake('public');
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $collection = Collection::create([
@@ -185,6 +188,7 @@ it('logo garden renders carousel mode markup', function () {
 });
 
 it('logo garden renders flipper mode markup', function () {
+    Storage::fake('public');
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $collection = Collection::create([

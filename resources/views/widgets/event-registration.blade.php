@@ -1,5 +1,5 @@
 @php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
-@isset($event)
+@if (isset($event))
     @php
         $isCancelled  = $event->status === 'cancelled';
         $isAtCapacity = $event->isAtCapacity();
@@ -158,4 +158,6 @@
             </form>
         @endif
     @endif
-@endisset
+@else
+    @include('widgets.components.widget-placeholder', ['title' => 'Event Registration', 'message' => 'Select an event to display its registration form.'])
+@endif

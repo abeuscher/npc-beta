@@ -16,6 +16,7 @@ export interface Widget {
   sort_order: number
   is_active: boolean
   is_required: boolean
+  image_urls: Record<string, string | null>
   preview_html: string
   children: Record<number, Widget[]>
 }
@@ -84,6 +85,7 @@ export interface BootstrapData {
   csrf_token: string
   api_base_url: string
   inline_image_upload_url: string
+  color_swatches: string[]
 }
 
 export interface TreeResponse {

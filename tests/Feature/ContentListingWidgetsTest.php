@@ -48,9 +48,7 @@ it('blog_listing seeder has correct config schema keys', function () {
         ->toContain('columns')
         ->toContain('items_per_page')
         ->toContain('show_search')
-        ->toContain('sort_default')
-        ->toContain('background_color')
-        ->toContain('text_color');
+        ->toContain('sort_default');
 });
 
 it('events_listing seeder has correct config schema keys', function () {
@@ -67,9 +65,7 @@ it('events_listing seeder has correct config schema keys', function () {
         ->toContain('columns')
         ->toContain('items_per_page')
         ->toContain('show_search')
-        ->toContain('sort_default')
-        ->toContain('background_color')
-        ->toContain('text_color');
+        ->toContain('sort_default');
 });
 
 // ── Blog listing rendering ───────────────────────────────────────────────────

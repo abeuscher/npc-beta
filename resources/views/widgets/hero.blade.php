@@ -23,7 +23,8 @@
         $videoUrl = $configMedia['background_video']->getUrl();
     }
 
-    $hasBg = $videoUrl || $bgUrl || $backgroundColor;
+    $hasMedia = $videoUrl || $bgUrl;
+    $hasBg = $hasMedia || $backgroundColor;
 
     $classes = ['widget--hero'];
     if ($fullscreen)  $classes[] = 'hero--fullscreen';
@@ -43,7 +44,7 @@
         <div class="hero-bg"></div>
     @endif
 
-    @if ($hasBg)
+    @if ($hasMedia)
         <div class="hero-overlay"></div>
     @endif
 
@@ -51,7 +52,7 @@
         <div class="site-container">
             <div class="hero-inner">
             @if ($content)
-                <div class="hero-content {{ $hasBg ? 'hero-content--on-image' : '' }}" data-config-key="content" data-config-type="richtext">
+                <div class="hero-content" data-config-key="content" data-config-type="richtext">
                     {!! $content !!}
                 </div>
             @endif

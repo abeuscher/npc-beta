@@ -1,5 +1,5 @@
 @php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
-@isset($event)
+@if (isset($event))
     <h1>{{ $event->title }}</h1>
 
     @if ($event->starts_at)
@@ -45,4 +45,6 @@
             {!! \App\Services\Media\InlineImageRenderer::process($event->description) !!}
         </div>
     @endif
-@endisset
+@else
+    @include('widgets.components.widget-placeholder', ['title' => 'Event Description', 'message' => 'Select an event to display its details.'])
+@endif

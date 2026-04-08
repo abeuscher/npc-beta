@@ -40,6 +40,9 @@ export const useEditorStore = defineStore('editor', () => {
   // Inline image upload URL (from bootstrap data, used by RichTextField)
   const inlineImageUploadUrl = ref('')
 
+  // Color swatches (shared across all color picker fields)
+  const colorSwatches = ref<string[]>([])
+
   // UI state
   const saving = ref(false)
 
@@ -82,6 +85,7 @@ export const useEditorStore = defineStore('editor', () => {
     pages.value = data.pages
     events.value = data.events
     inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
+    colorSwatches.value = data.color_swatches ?? []
 
     populateWidgets(data.widgets)
     requiredLibs.value = data.required_libs
@@ -188,6 +192,24 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   async function refreshPreview(id: string): Promise<void> {
+    // Flush any pending debounced saves so the server has the latest config
+    if (debounceSaveTimer) {
+      clearTimeout(debounceSaveTimer)
+      debounceSaveTimer = null
+    }
+    const pending = { ...pendingConfigChanges.value }
+    pendingConfigChanges.value = {}
+
+    // Wait for all pending saves to complete before fetching preview
+    const savePromises = Object.entries(pending).map(([widgetId, payload]) =>
+      updateWidget(widgetId, payload).catch((e) =>
+        console.error('Pre-preview save failed:', e)
+      )
+    )
+    if (savePromises.length > 0) {
+      await Promise.all(savePromises)
+    }
+
     try {
       const res = await api.getPreview(id)
       if (widgets.value[id]) {
@@ -245,15 +267,17 @@ export const useEditorStore = defineStore('editor', () => {
     }, 500)
   }
 
-  async function uploadImage(widgetId: string, key: string, file: File): Promise<void> {
+  async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
     saving.value = true
     try {
       const res = await api.uploadImage(widgetId, key, file)
       if (widgets.value[widgetId]) {
         const w = widgets.value[widgetId]
         w.config = { ...w.config, [key]: res.media_id }
+        w.image_urls = { ...w.image_urls, [key]: res.url }
       }
       dirtyWidgets.value.add(widgetId)
+      return res.url
     } finally {
       saving.value = false
     }
@@ -266,10 +290,45 @@ export const useEditorStore = defineStore('editor', () => {
       if (widgets.value[widgetId]) {
         const w = widgets.value[widgetId]
         w.config = { ...w.config, [key]: null }
+        w.image_urls = { ...w.image_urls, [key]: null }
       }
       dirtyWidgets.value.add(widgetId)
     } finally {
       saving.value = false
+    }
+  }
+
+  function updateLocalStyleConfig(widgetId: string, key: string, value: any): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    w.style_config = { ...w.style_config, [key]: value }
+    dirtyWidgets.value.add(widgetId)
+    flushDebouncedSave(widgetId, { style_config: { ...w.style_config } })
+  }
+
+  function updateLocalQueryConfig(
+    widgetId: string,
+    collHandle: string,
+    key: string,
+    value: any
+  ): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    const collConfig = { ...(w.query_config[collHandle] ?? {}), [key]: value }
+    w.query_config = { ...w.query_config, [collHandle]: collConfig }
+    dirtyWidgets.value.add(widgetId)
+    flushDebouncedSave(widgetId, { query_config: { ...w.query_config } })
+  }
+
+  async function saveColorSwatchesAction(swatches: string[]): Promise<void> {
+    colorSwatches.value = swatches
+    try {
+      const res = await api.saveColorSwatches(swatches)
+      colorSwatches.value = res.swatches
+    } catch (e) {
+      console.error('Failed to save color swatches:', e)
     }
   }
 
@@ -291,6 +350,7 @@ export const useEditorStore = defineStore('editor', () => {
     events,
     saving,
     inlineImageUploadUrl,
+    colorSwatches,
 
     // Getters
     rootWidgets,
@@ -314,5 +374,8 @@ export const useEditorStore = defineStore('editor', () => {
     refreshPreview,
     uploadImage,
     removeImage,
+    updateLocalStyleConfig,
+    updateLocalQueryConfig,
+    saveColorSwatches: saveColorSwatchesAction,
   }
 })
