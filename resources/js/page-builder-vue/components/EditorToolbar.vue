@@ -18,25 +18,6 @@ function openSaveTemplateModal() {
       <p class="editor-toolbar__count">
         {{ store.rootWidgets.length }} block(s) on this page.
       </p>
-
-      <div class="editor-toolbar__mode-toggle">
-        <button
-          type="button"
-          class="editor-toolbar__mode-btn"
-          :class="{ 'editor-toolbar__mode-btn--active': store.editorMode === 'edit' }"
-          @click="store.setMode('edit')"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          class="editor-toolbar__mode-btn"
-          :class="{ 'editor-toolbar__mode-btn--active': store.editorMode === 'handles' }"
-          @click="store.setMode('handles')"
-        >
-          Handles
-        </button>
-      </div>
     </div>
 
     <div class="editor-toolbar__right">
@@ -58,6 +39,7 @@ function openSaveTemplateModal() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  border:none;
 }
 
 .editor-toolbar__left {
@@ -70,37 +52,6 @@ function openSaveTemplateModal() {
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
-}
-
-.editor-toolbar__mode-toggle {
-  display: inline-flex;
-  border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  overflow: hidden;
-}
-
-.editor-toolbar__mode-btn {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
-  background: #fff;
-  color: #374151;
-}
-
-.editor-toolbar__mode-btn:hover {
-  background-color: #f9fafb;
-}
-
-.editor-toolbar__mode-btn--active {
-  background-color: var(--c-primary-600, #4f46e5);
-  color: #fff;
-}
-
-.editor-toolbar__mode-btn--active:hover {
-  background-color: var(--c-primary-600, #4f46e5);
 }
 
 .editor-toolbar__right {

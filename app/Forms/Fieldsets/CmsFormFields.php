@@ -2,7 +2,6 @@
 
 namespace App\Forms\Fieldsets;
 
-use App\Forms\Components\TagSelect;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\SiteSetting;
@@ -11,88 +10,56 @@ use Illuminate\Database\Eloquent\Model;
 
 class CmsFormFields
 {
-    /**
-     * Page Name fieldset: Title + Slug.
-     * 4 columns wide internally, both fields span full width.
-     *
-     * @param  string  $type  'page', 'post', or 'event'
-     */
-    public static function pageName(string $type): Forms\Components\Section
+    public static function titleField(): Forms\Components\TextInput
     {
-        return Forms\Components\Section::make('Page Name')
-            ->schema([
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->maxLength(255)
-                    ->columnSpanFull(),
+        return Forms\Components\TextInput::make('title')
+            ->label('Page Name')
+            ->required()
+            ->maxLength(255);
+    }
 
-                static::slugField($type)->columnSpanFull(),
-            ])
-            ->columns(4);
+    public static function authorField(): Forms\Components\Select
+    {
+        return Forms\Components\Select::make('author_id')
+            ->label('Author')
+            ->relationship('author', 'name')
+            ->searchable()
+            ->required()
+            ->default(fn () => auth()->id());
     }
 
     /**
-     * Settings fieldset: Author + Status + Publish Date.
-     * Row 1: Author (3 cols) | Status (1 col)
-     * Row 2: Publish Date (full width)
-     *
      * @param  string  $type  'page', 'post', or 'event'
      */
-    public static function settings(string $type): Forms\Components\Section
+    public static function statusField(string $type): Forms\Components\Select
     {
         $statusOptions = $type === 'event'
             ? ['draft' => 'Draft', 'published' => 'Published', 'cancelled' => 'Cancelled']
             : ['draft' => 'Draft', 'published' => 'Published'];
 
-        return Forms\Components\Section::make('Settings')
-            ->schema([
-                Forms\Components\Select::make('author_id')
-                    ->label('Author')
-                    ->relationship('author', 'name')
-                    ->searchable()
-                    ->required()
-                    ->default(fn () => auth()->id())
-                    ->columnSpan(2),
-
-                Forms\Components\Select::make('status')
-                    ->options($statusOptions)
-                    ->default('draft')
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (string $state, Forms\Set $set, Forms\Get $get) {
-                        if ($state === 'published' && ! $get('published_at')) {
-                            $set('published_at', now());
-                        }
-                    })
-                    ->columnSpan(2),
-
-                Forms\Components\DateTimePicker::make('published_at')
-                    ->label('Publish Date')
-                    ->visible(fn (Forms\Get $get) => $get('status') === 'published')
-                    ->columnSpanFull(),
-            ])
-            ->columns(4);
+        return Forms\Components\Select::make('status')
+            ->options($statusOptions)
+            ->default('draft')
+            ->required()
+            ->live()
+            ->afterStateUpdated(function (string $state, Forms\Set $set, Forms\Get $get) {
+                if ($state === 'published' && ! $get('published_at')) {
+                    $set('published_at', now());
+                }
+            });
     }
 
-    /**
-     * Tags fieldset: tag selector + create tag, stacked.
-     * 4 columns wide internally, both fields span full width.
-     *
-     * @param  string  $tagType  Tag type key (page, post, event)
-     */
-    public static function tags(string $tagType): Forms\Components\Section
+    public static function publishedAtField(): Forms\Components\DateTimePicker
     {
-        return Forms\Components\Section::make('Tags')
-            ->schema([
-                TagSelect::make($tagType),
-            ])
-            ->columns(4);
+        return Forms\Components\DateTimePicker::make('published_at')
+            ->label('Publish Date')
+            ->visible(fn (Forms\Get $get) => $get('status') === 'published');
     }
 
     /**
      * Build the slug TextInput for the given content type.
      */
-    private static function slugField(string $type): Forms\Components\TextInput
+    public static function slugField(string $type): Forms\Components\TextInput
     {
         if ($type === 'event') {
             return Forms\Components\TextInput::make('slug')

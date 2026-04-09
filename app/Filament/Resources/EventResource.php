@@ -348,6 +348,37 @@ class EventResource extends Resource
                             ]),
                     ]),
                 ],
+                imageFields: [
+                    SpatieMediaLibraryFileUpload::make('event_thumbnail')
+                        ->label('Thumbnail image')
+                        ->helperText('Used in event listing widgets and social sharing.')
+                        ->collection('event_thumbnail')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
+                    SpatieMediaLibraryFileUpload::make('event_header')
+                        ->label('Header image')
+                        ->helperText('Optional banner image displayed at the top of the event page.')
+                        ->collection('event_header')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
+                    SpatieMediaLibraryFileUpload::make('event_og_image')
+                        ->label('Open Graph image')
+                        ->helperText('Used for social sharing previews.')
+                        ->collection('event_og_image')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+                ],
                 withSeo: false,
                 pageBuilderProps: null,
             )

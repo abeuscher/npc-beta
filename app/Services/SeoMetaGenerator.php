@@ -22,9 +22,7 @@ class SeoMetaGenerator
 
         $title       = $page->meta_title ?: $page->title;
         $description = $page->meta_description ?: static::extractDescription($page);
-        $ogImage     = $page->og_image_path
-            ? Storage::disk('public')->url($page->og_image_path)
-            : static::extractFirstImage($page);
+        $ogImage     = static::resolveOgImage($page);
         $ogType      = $page->type === 'post' ? 'article' : 'website';
 
         $jsonLd = static::generateJsonLd($page, $title, $description, $ogImage, $canonical, $siteName);
@@ -37,6 +35,33 @@ class SeoMetaGenerator
             'og_type'     => $ogType,
             'json_ld'     => $jsonLd ? json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
         ];
+    }
+
+    /**
+     * Resolve the OG image URL for a page using the chain:
+     * 1. The page's own `og_image` media collection.
+     * 2. The first image found in widget config (extractFirstImage).
+     * 3. The site-wide `site_default_og_image` setting.
+     * 4. Empty string.
+     */
+    public static function resolveOgImage(Page $page): string
+    {
+        $media = $page->getFirstMedia('og_image');
+        if ($media) {
+            return $media->getUrl();
+        }
+
+        $fromWidgets = static::extractFirstImage($page);
+        if ($fromWidgets) {
+            return $fromWidgets;
+        }
+
+        $siteDefault = SiteSetting::get('site_default_og_image', '');
+        if ($siteDefault) {
+            return Storage::disk('public')->url($siteDefault);
+        }
+
+        return '';
     }
 
     /**

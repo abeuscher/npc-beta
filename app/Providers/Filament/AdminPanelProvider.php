@@ -7,7 +7,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
@@ -73,11 +72,6 @@ class AdminPanelProvider extends PanelProvider
                     ->name('page-preview')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
 
-                // Content width toggle
-                \Illuminate\Support\Facades\Route::post('/toggle-full-width', \App\Http\Controllers\Admin\ToggleFullWidthController::class)
-                    ->name('toggle-full-width')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-
                 // Page builder API (Vue editor)
                 \Illuminate\Support\Facades\Route::prefix('api/page-builder')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class)
@@ -94,12 +88,6 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Settings')->collapsed(),
             ])
             ->sidebarCollapsibleOnDesktop()
-            ->userMenuItems([
-                'layout-toggle' => MenuItem::make()
-                    ->label(fn (): string => session('admin_full_width') ? 'Restricted width' : 'Full width')
-                    ->icon(fn (): string => session('admin_full_width') ? 'heroicon-m-arrows-pointing-in' : 'heroicon-m-arrows-pointing-out')
-                    ->postAction(fn (): string => route('filament.admin.toggle-full-width')),
-            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -164,12 +152,14 @@ class AdminPanelProvider extends PanelProvider
                         : new HtmlString('');
                 }
             )
-            // Full-width content toggle — removes max-width cap on main content area.
+            // Fullscreen mode bootstrap — set the html class from localStorage before
+            // first paint so the layout doesn't flash. The topbar toggle button keeps
+            // this in sync with the sidebar collapse state at runtime.
             ->renderHook(
                 'panels::head.end',
-                fn (): HtmlString => session('admin_full_width')
-                    ? new HtmlString('<style>.fi-main { max-width: 100% !important; }</style>')
-                    : new HtmlString('')
+                fn (): HtmlString => new HtmlString(
+                    "<script>(function(){try{if(localStorage.getItem('np-fullscreen')==='1'){document.documentElement.classList.add('np-fullscreen');}}catch(e){}})();</script>"
+                )
             )
             // Load Quill v2 on all admin pages — used by the page builder and any
             // QuillEditor form fields (e.g. event description, meeting details).
@@ -196,6 +186,11 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(
                     \Livewire\Livewire::mount('help-search')
                 )
+            )
+            // Fullscreen toggle button — left of the user menu in the topbar.
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_BEFORE,
+                fn (): \Illuminate\Contracts\View\View => view('components.admin-fullscreen-toggle')
             )
             // "View public site" link on the left side of the topbar.
             ->renderHook(

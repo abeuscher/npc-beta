@@ -133,6 +133,8 @@ class Event extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('event_thumbnail')->singleFile();
+        $this->addMediaCollection('event_header')->singleFile();
+        $this->addMediaCollection('event_og_image')->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void

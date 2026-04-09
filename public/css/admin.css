@@ -4,6 +4,180 @@
  * Plain CSS — no build step required.
  */
 
+/* ── Fullscreen mode ────────────────────────────────────────────────────────
+ *
+ * Driven by the topbar fullscreen toggle button. The .np-fullscreen class is
+ * placed on <html> and removes the content max-width cap. Sidebar collapse is
+ * handled separately via Filament's $store.sidebar API.
+ *
+ * -------------------------------------------------------------------------*/
+
+html.np-fullscreen .fi-main {
+    max-width: 100% !important;
+}
+
+
+/* ── Page builder dark mode (editor chrome only) ────────────────────────────
+ *
+ * The Vue page builder lives in `.vue-editor`. Its scoped component styles
+ * are written for light mode only. These rules override the editor chrome
+ * (toolbar, inspector, dropdowns, form fields) when Filament is in dark mode.
+ *
+ * The preview content is `.widget-preview-scope.np-site` and is deliberately
+ * NOT touched here — the rendered preview always shows the public site styles
+ * regardless of the admin theme, so editors see the live result.
+ *
+ * Specificity: `html.dark .foo` (0,2,1) beats Vue's scoped `.foo[data-v-x]`
+ * (0,2,0) by tag specificity, so no `!important` is needed.
+ *
+ * -------------------------------------------------------------------------*/
+
+/* Tokens — kept inline for grep-ability */
+/* bg          rgb(17 24 39)  / gray-900  */
+/* bg-subtle   rgb(31 41 55)  / gray-800  */
+/* bg-hover    rgb(55 65 81)  / gray-700  */
+/* fg          rgb(229 231 235) / gray-200 */
+/* fg-muted    rgb(156 163 175) / gray-400 */
+/* border      rgb(55 65 81)  / gray-700  */
+
+html.dark .vue-editor {
+    background: rgb(17 24 39);
+    border-color: rgb(55 65 81);
+    color: rgb(229 231 235);
+}
+
+/* Editor toolbar */
+html.dark .editor-toolbar__count                        { color: rgb(156 163 175); }
+html.dark .editor-toolbar__btn--secondary               { background: rgb(31 41 55); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .editor-toolbar__btn--secondary:hover         { background-color: rgb(55 65 81); }
+
+/* Preview canvas chrome (everything outside .widget-preview-scope) */
+html.dark .preview-canvas__viewport-label               { color: rgb(156 163 175); }
+html.dark .preview-canvas__viewport-btn                 { color: rgb(156 163 175); }
+html.dark .preview-canvas__viewport-btn:hover           { color: rgb(229 231 235); background-color: rgb(55 65 81); }
+html.dark .preview-canvas__viewport-size                { color: rgb(107 114 128); }
+html.dark .preview-canvas__container                    { background: rgb(31 41 55); border-color: rgb(55 65 81); }
+html.dark .preview-canvas__empty                        { color: rgb(156 163 175); }
+html.dark .preview-canvas__add-bottom                   { background: rgb(31 41 55); color: rgb(165 180 252); border-color: rgb(75 85 99); }
+html.dark .preview-canvas__add-bottom:hover             { background: rgb(55 65 81); border-color: rgb(129 140 248); }
+
+/* Add-block dropdown */
+html.dark .add-block-dropdown__menu                     { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .add-block-dropdown__item                     { color: rgb(229 231 235); }
+html.dark .add-block-dropdown__item:hover:not(:disabled){ background: rgb(55 65 81); }
+html.dark .add-block-dropdown__item--disabled           { color: rgb(75 85 99); }
+html.dark .add-block-dropdown__divider                  { background: rgb(75 85 99); }
+html.dark .add-block-dropdown__heading                  { color: rgb(156 163 175); }
+
+/* Inspector panel */
+html.dark .inspector-panel__placeholder                 { border-color: rgb(75 85 99); color: rgb(107 114 128); }
+html.dark .inspector-panel__body                        { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+
+/* Inspector header */
+html.dark .inspector-header                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+html.dark .inspector-header__type-badge                 { background: rgb(55 65 81); color: rgb(165 180 252); }
+html.dark .inspector-header__icon                       { color: rgb(156 163 175); }
+html.dark .inspector-header__label                      { color: rgb(229 231 235); }
+html.dark .inspector-header__display                    { color: rgb(229 231 235); }
+html.dark .inspector-header__input                      { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .inspector-header__edit-btn,
+html.dark .inspector-header__ok-btn,
+html.dark .inspector-header__cancel-btn,
+html.dark .inspector-header__delete-btn                 { color: rgb(156 163 175); }
+html.dark .inspector-header__edit-btn:hover,
+html.dark .inspector-header__ok-btn:hover,
+html.dark .inspector-header__cancel-btn:hover           { color: rgb(229 231 235); }
+html.dark .inspector-header__delete-btn:hover           { color: rgb(248 113 113); }
+
+/* Inspector tabs */
+html.dark .inspector-tabs                               { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .inspector-tabs__btn                          { color: rgb(156 163 175); }
+html.dark .inspector-tabs__btn:hover, html.dark .inspector-tabs__btn--active                    { color: rgb(229 231 235); background-color: rgb(55 65 81); }
+
+/* Inspector field labels */
+html.dark .inspector-field__label                       { color: rgb(209 213 219); }
+html.dark .inspector-field__fallback                    { color: rgb(107 114 128); }
+
+/* Form field inputs (used by TextField, SelectField, TextareaField, NumberField) */
+html.dark .inspector-input,
+html.dark .inspector-select,
+html.dark .inspector-textarea {
+    background: rgb(17 24 39);
+    color: rgb(229 231 235);
+    border-color: rgb(75 85 99);
+}
+html.dark .inspector-input::placeholder,
+html.dark .inspector-textarea::placeholder              { color: rgb(107 114 128); }
+
+/* Checkboxes */
+html.dark .inspector-checkboxes__label                  { color: rgb(229 231 235); }
+
+/* Notice field */
+html.dark .inspector-notice                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+
+/* Color picker */
+html.dark .color-picker__hex                            { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .color-picker__swatch                         { border-color: rgb(75 85 99); }
+html.dark .color-picker__empty-indicator                { color: rgb(107 114 128); }
+html.dark .color-picker__clear,
+html.dark .color-picker__swatch-remove                  { color: rgb(156 163 175); }
+html.dark .color-picker__swatch-remove:hover            { color: rgb(248 113 113); }
+
+/* Image upload */
+html.dark .image-upload                                 { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .image-upload__preview                        { border-color: rgb(75 85 99); }
+html.dark .image-upload__status                         { color: rgb(156 163 175); }
+html.dark .image-upload__remove                         { color: rgb(248 113 113); }
+
+/* Button list field */
+html.dark .button-list                                  { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .button-list__item                            { background: rgb(17 24 39); border-color: rgb(75 85 99); }
+html.dark .button-list__header                          { color: rgb(209 213 219); }
+html.dark .button-list__index                           { color: rgb(156 163 175); }
+html.dark .button-list__input                           { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .button-list__action                          { color: rgb(156 163 175); }
+html.dark .button-list__action--remove:hover            { color: rgb(248 113 113); }
+html.dark .button-list__add                             { background: rgb(31 41 55); color: rgb(165 180 252); border-color: rgb(75 85 99); }
+
+/* Spacing control / query settings / appearance controls */
+html.dark .spacing-control,
+html.dark .query-settings,
+html.dark .widget-appearance {
+    background: rgb(31 41 55);
+    border-color: rgb(75 85 99);
+    color: rgb(229 231 235);
+}
+html.dark .spacing-control input,
+html.dark .query-settings input,
+html.dark .query-settings select,
+html.dark .widget-appearance input,
+html.dark .widget-appearance select {
+    background: rgb(17 24 39);
+    color: rgb(229 231 235);
+    border-color: rgb(75 85 99);
+}
+
+/* Layout inspector */
+html.dark .layout-inspector                             { color: rgb(229 231 235); }
+html.dark .layout-inspector input,
+html.dark .layout-inspector select                      { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+
+/* Block list (handles mode) */
+html.dark .block-list                                   { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+html.dark .block-list__item                             { background: rgb(17 24 39); border-color: rgb(75 85 99); }
+
+/* Apply changes button (sticky bar at bottom of inspector) */
+html.dark .apply-changes                                { background: rgba(17, 24, 39, 0.95); border-top-color: rgb(75 85 99); }
+
+/* Confirm delete modal — teleported to body, so .vue-editor scope doesn't apply */
+html.dark .confirm-delete-overlay                       { background: rgba(0, 0, 0, 0.7); }
+html.dark .confirm-delete-modal                         { background: rgb(31 41 55); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .confirm-delete-modal__title                  { color: rgb(229 231 235); }
+html.dark .confirm-delete-modal__message                { color: rgb(209 213 219); }
+html.dark .confirm-delete-modal__cancel                 { background: rgb(55 65 81); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .confirm-delete-modal__confirm                { background: rgb(220 38 38); color: rgb(255 255 255); }
+
+
 /* ── Light-theme border visibility ──────────────────────────────────────────
  *
  * Filament's default rings/borders use 5–10% opacity near-black, which is

@@ -31,7 +31,6 @@ class Page extends Model implements HasMedia
         'author_id', // required; set to auth user on creation
         'meta_title',
         'meta_description',
-        'og_image_path',
         'noindex',
         'head_snippet',
         'body_snippet',
@@ -98,6 +97,7 @@ class Page extends Model implements HasMedia
     {
         $this->addMediaCollection('post_thumbnail')->singleFile();
         $this->addMediaCollection('post_header')->singleFile();
+        $this->addMediaCollection('og_image')->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void

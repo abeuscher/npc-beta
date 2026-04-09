@@ -204,7 +204,6 @@ class ContentImporter
             'status'           => $data['status'] ?? 'draft',
             'meta_title'       => $data['meta_title'] ?? null,
             'meta_description' => $data['meta_description'] ?? null,
-            'og_image_path'    => $data['og_image_path'] ?? null,
             'noindex'          => $data['noindex'] ?? false,
             'head_snippet'     => $data['head_snippet'] ?? null,
             'body_snippet'     => $data['body_snippet'] ?? null,
@@ -234,7 +233,51 @@ class ContentImporter
             $page = Page::create($attributes);
         }
 
+        $this->rewirePageMedia($page, $data['media'] ?? [], $log);
         $this->hydrateWidgets($page, $data['widgets'] ?? [], $log);
+    }
+
+    /**
+     * Reattach page-level media collections (post_thumbnail, post_header, og_image)
+     * from the bundle's media descriptors. Mirrors `rewireWidgetMedia()`.
+     *
+     * @param  array<int, array<string, mixed>>  $descriptors
+     */
+    protected function rewirePageMedia(Page $page, array $descriptors, ImportLog $log): void
+    {
+        if (empty($descriptors)) {
+            return;
+        }
+
+        foreach ($descriptors as $desc) {
+            $collectionName = $desc['collection_name'] ?? null;
+            $disk           = $desc['disk'] ?? 'public';
+            $path           = $desc['path'] ?? null;
+
+            if (! $collectionName || ! $path) {
+                $log->warning("Page \"{$page->slug}\": media descriptor missing collection/path, skipped.");
+
+                continue;
+            }
+
+            // Defence in depth: refuse path traversal even though the descriptor came from our own exporter.
+            if (str_contains($path, '..') || str_starts_with($path, '/')) {
+                $log->warning("Page \"{$page->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
+
+                continue;
+            }
+
+            if (! Storage::disk($disk)->exists($path)) {
+                $log->warning("Page \"{$page->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
+
+                continue;
+            }
+
+            $page
+                ->addMediaFromDisk($path, $disk)
+                ->preservingOriginal()
+                ->toMediaCollection($collectionName, $disk);
+        }
     }
 
     /**

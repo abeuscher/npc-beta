@@ -40,20 +40,17 @@ function handleUpdate(value: any) {
   store.updateLocalConfig(props.widget.id, props.field.key, value)
 }
 
-// Conditional visibility
+// Conditional visibility — `shown_when`/`hidden_when` are config keys; the
+// field is visible/hidden when that key is truthy in the widget's config.
 const isVisible = computed(() => {
   const config = props.widget.config
 
-  if (props.field.hidden_when) {
-    for (const [key, expected] of Object.entries(props.field.hidden_when)) {
-      if (config[key] === expected) return false
-    }
+  if (typeof props.field.hidden_when === 'string' && config[props.field.hidden_when]) {
+    return false
   }
 
-  if (props.field.shown_when) {
-    for (const [key, expected] of Object.entries(props.field.shown_when)) {
-      if (config[key] !== expected) return false
-    }
+  if (typeof props.field.shown_when === 'string' && ! config[props.field.shown_when]) {
+    return false
   }
 
   return true

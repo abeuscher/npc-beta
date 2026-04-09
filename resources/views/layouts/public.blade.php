@@ -35,14 +35,8 @@
         $resolvedDescription = $description
             ?? ($seo['description'] ?? SiteSetting::get('site_description', ''));
 
-        // OG image: per-page → first widget image → site default
+        // OG image: SeoMetaGenerator owns the per-page → first widget image → site default chain.
         $resolvedOgImage = $seo['og_image'] ?? '';
-        if (! $resolvedOgImage) {
-            $defaultOgPath = SiteSetting::get('site_default_og_image', '');
-            $resolvedOgImage = $defaultOgPath
-                ? \Illuminate\Support\Facades\Storage::disk('public')->url($defaultOgPath)
-                : '';
-        }
 
         // Canonical URL
         $canonicalUrl = $seo['canonical'] ?? $baseUrl;

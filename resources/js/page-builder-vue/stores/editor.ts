@@ -28,7 +28,6 @@ export const useEditorStore = defineStore('editor', () => {
   const rootOrder = ref<string[]>([]) // root widget IDs only — kept for backward compat with PreviewCanvas drag-end
   const selectedItemId = ref<string | null>(null)
   const selectedItemType = ref<'widget' | 'layout' | null>(null)
-  const editorMode = ref<'edit' | 'handles'>('edit')
 
   // Preview state
   const dirtyWidgets = ref<Set<string>>(new Set())
@@ -180,10 +179,6 @@ export const useEditorStore = defineStore('editor', () => {
   // Backward-compat: select a widget by ID
   function selectBlock(id: string | null): void {
     selectItem(id, id === null ? null : 'widget')
-  }
-
-  function setMode(mode: 'edit' | 'handles'): void {
-    editorMode.value = mode
   }
 
   // ── Widget CRUD ────────────────────────────────────────────────────────
@@ -518,7 +513,6 @@ export const useEditorStore = defineStore('editor', () => {
     rootOrder,
     selectedItemId,
     selectedItemType,
-    editorMode,
     dirtyWidgets,
     requiredLibs,
     widgetTypes,
@@ -547,7 +541,6 @@ export const useEditorStore = defineStore('editor', () => {
     reloadTree,
     selectItem,
     selectBlock,
-    setMode,
     createWidget,
     updateWidget,
     updateLocalConfig,

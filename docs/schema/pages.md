@@ -13,7 +13,6 @@ Static pages and landing pages. Posts are stored here with `type = 'post'`; memb
 | status | string | no | default: 'draft'; values: draft, published |
 | meta_title | string | yes | |
 | meta_description | text | yes | |
-| og_image_path | string | yes | URL or path for Open Graph image |
 | noindex | boolean | no | default: false; adds noindex meta tag when true |
 | head_snippet | text | yes | Per-page code injected before </head> |
 | body_snippet | text | yes | Per-page code injected before </body> |

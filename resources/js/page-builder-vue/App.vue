@@ -5,7 +5,6 @@ import type { BootstrapData } from './types'
 import { useEditorStore } from './stores/editor'
 import EditorToolbar from './components/EditorToolbar.vue'
 import PreviewCanvas from './components/PreviewCanvas.vue'
-import BlockListPoc from './components/BlockListPoc.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 
 const props = defineProps<{
@@ -51,8 +50,7 @@ onUnmounted(() => {
 
     <div class="vue-editor__layout">
       <div class="vue-editor__main" style="min-width: 0">
-        <PreviewCanvas v-if="store.editorMode === 'edit'" />
-        <BlockListPoc v-if="store.editorMode === 'handles'" />
+        <PreviewCanvas />
       </div>
       <div class="vue-editor__inspector">
         <InspectorPanel />
@@ -72,7 +70,7 @@ onUnmounted(() => {
 
 .vue-editor__layout {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 1fr) min(32rem, 33%);
   gap: 1rem;
   align-items: start;
 }
@@ -82,5 +80,11 @@ onUnmounted(() => {
   top: 1rem;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .vue-editor__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

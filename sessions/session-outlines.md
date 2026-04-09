@@ -162,6 +162,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 153 | Column Layout System |
 | 154 | Nav Widget & Footer |
 | 155 | Template & Page Import-Export |
+| 156 | Form Polish, Image Fields & Chrome Toggle |
 
 ---
 
@@ -186,14 +187,6 @@ Rebuild the inspector panel as Vue components. Core form fields: text inputs, se
 ### 152. Config Requirements & Drag-and-Drop
 
 Config requirements system: new `required_config` JSONB column on `widget_types` with `keys` array and `message`; PreviewRegion shows a configuration notice for unconfigured widgets instead of preview HTML. Remove all `@include('widgets.components.widget-placeholder')` calls from widget Blade templates — public site renders nothing for unconfigured widgets. Drag-and-drop reordering of root widgets via vuedraggable (full region drag — quadrant-based interaction model deferred to session 153).
-
-### 152b. Remove Edit/Handles Mode Toggle
-
-Remove the edit/handles mode toggle from the editor toolbar. Delete `BlockListPoc.vue` and the handles mode branch in `App.vue`. Single unified editor view — all interaction through the preview canvas and inspector panel.
-
-### 156. Form Polish, Image Fields & Chrome Toggle
-
-A grab-bag session combining two real bug fixes with form layout cleanup and image storage work. Restores the Hero widget's `nav_link_color` / `nav_hover_color` override fields for full-bleed mode. Fixes the OG image fallback bug in `SeoMetaGenerator` — the existing `site_default_og_image` CMS setting is currently never read. Drops the legacy `pages.og_image_path` string column in favour of a Spatie media collection on `Page`, with the new `og_image` storage chained through SeoMetaGenerator. Reshuffles Edit Page / Edit Event / Edit Post forms into a single unified header fieldset with two rows of fields (Page Name / Template / Author / Status / Publish date row, then Slug / Tags / Create tag row). Adds a new collapsed "Images" section above SEO on all three resources, with thumbnail + OG Image fields on Page, the existing fields plus a new OG Image on Post, and three new fields (thumbnail, header, OG image) on Event — storage only, display surfaces deferred. Caps the inspector panel width so extra horizontal space flows to the preview pane. Adds an eye-icon full-screen toggle button to the admin topbar (left of user menu) that collapses the left nav and expands content to full width in one click — supersedes the existing user-menu full-width toggle. **Out of scope:** theme palette UX (deferred to post-beta after design review), bulk image uploader, wiring the new image fields into widgets/templates, builder-mode auto-collapse sidebar.
 
 ---
 
@@ -285,9 +278,9 @@ Core household model built in session 071 (self-referential `contacts.household_
 
 ## CMS & Page Builder — Post-Beta 1
 
-### Builder Chrome & Layer Explorer
+### Layer Explorer
 
-Integrate with the collapsible sidebar from session 133 — when in builder mode, auto-collapse the sidebar for maximum canvas space. Add a full-width toggle for the builder view. Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots.
+Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. (Builder-mode auto-collapse and the full-width toggle were delivered admin-wide in session 156's topbar fullscreen button — no longer needs a builder-specific implementation.)
 
 ### Column Widget UI Improvements
 

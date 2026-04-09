@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 
 class ContentExporter
 {
-    public const FORMAT_VERSION = '1.0.0';
+    public const FORMAT_VERSION = '1.1.0';
 
     /**
      * Export one or more pages (by id) into a bundle envelope.
@@ -111,6 +111,7 @@ class ContentExporter
         }
 
         return Page::whereIn('id', $pageIds)
+            ->with('media')
             ->get()
             ->map(fn (Page $page) => $this->serializePage($page))
             ->all();
@@ -132,14 +133,43 @@ class ContentExporter
             'status'           => $page->status,
             'meta_title'       => $page->meta_title,
             'meta_description' => $page->meta_description,
-            'og_image_path'    => $page->og_image_path,
             'noindex'          => $page->noindex,
             'head_snippet'     => $page->head_snippet,
             'body_snippet'     => $page->body_snippet,
             'custom_fields'    => $page->custom_fields ?? [],
             'published_at'     => $page->published_at?->toIso8601String(),
+            'media'            => $this->serializePageMedia($page),
             'widgets'          => $this->serializeWidgetTree($page->id),
         ];
+    }
+
+    /**
+     * Build media descriptors for any single-file collection registered on the
+     * Page model that has an attached file.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializePageMedia(Page $page): array
+    {
+        $descriptors = [];
+
+        foreach (['post_thumbnail', 'post_header', 'og_image'] as $collection) {
+            $media = $page->getFirstMedia($collection);
+            if (! $media) {
+                continue;
+            }
+
+            $descriptors[] = [
+                'collection_name' => $collection,
+                'file_name'       => $media->file_name,
+                'disk'            => $media->disk,
+                'path'            => $media->id . '/' . $media->file_name,
+                'mime_type'       => $media->mime_type,
+                'size'            => $media->size,
+            ];
+        }
+
+        return $descriptors;
     }
 
     /**

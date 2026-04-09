@@ -8,6 +8,7 @@ use App\Models\Template;
 use App\Services\ImportExport\ContentExporter;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -68,26 +69,42 @@ class PageResource extends Resource
                         ->visibleOn('edit')
                         ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system')
                         ->columnSpanFull(),
-                ],
-                templateSection: Forms\Components\Section::make('Templates')
-                    ->schema([
-                        // Page template — selectable on create and edit.
-                        Forms\Components\Select::make('template_id')
-                            ->label('Page Template')
-                            ->options(fn () => Template::page()->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id'))
-                            ->default(fn () => Template::page()->where('is_default', true)->value('id'))
-                            ->helperText('Header, footer, and styling.')
-                            ->columnSpanFull(),
 
-                        // Content template — create only, used to prepopulate widgets.
-                        Forms\Components\Select::make('content_template_id')
-                            ->label('Content Template')
-                            ->options(fn () => collect(['' => 'Blank'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
-                            ->default('')
-                            ->helperText('Widget preset — applied once at creation.')
-                            ->hiddenOn('edit')
-                            ->columnSpanFull(),
-                    ]),
+                    // Content template — create only, used to prepopulate widgets.
+                    Forms\Components\Select::make('content_template_id')
+                        ->label('Content Template')
+                        ->options(fn () => collect(['' => 'Blank'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                        ->default('')
+                        ->helperText('Widget preset — applied once at creation.')
+                        ->hiddenOn('edit')
+                        ->columnSpanFull(),
+                ],
+                templateField: Forms\Components\Select::make('template_id')
+                    ->label('Page Template')
+                    ->options(fn () => Template::page()->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id'))
+                    ->default(fn () => Template::page()->where('is_default', true)->value('id'))
+                    ->helperText('Header, footer, and styling.'),
+                imageFields: [
+                    SpatieMediaLibraryFileUpload::make('post_thumbnail')
+                        ->label('Thumbnail image')
+                        ->helperText('Used in listing widgets and social sharing.')
+                        ->collection('post_thumbnail')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
+                    SpatieMediaLibraryFileUpload::make('og_image')
+                        ->label('Open Graph image')
+                        ->helperText('Used for social sharing previews.')
+                        ->collection('og_image')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+                ],
                 withSeo: true,
                 pageBuilderProps: fn ($record) => ['pageId' => $record->id],
             )

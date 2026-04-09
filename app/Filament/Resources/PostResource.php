@@ -53,7 +53,8 @@ class PostResource extends Resource
                 extraTitleFields: [
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
-
+                ],
+                imageFields: [
                     SpatieMediaLibraryFileUpload::make('post_thumbnail')
                         ->label('Thumbnail image')
                         ->helperText('Used in blog listing widgets and social sharing.')
@@ -68,6 +69,16 @@ class PostResource extends Resource
                         ->label('Header image')
                         ->helperText('Optional banner image displayed at the top of the post.')
                         ->collection('post_header')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
+                    SpatieMediaLibraryFileUpload::make('og_image')
+                        ->label('Open Graph image')
+                        ->helperText('Used for social sharing previews.')
+                        ->collection('og_image')
                         ->disk('public')
                         ->visibility('public')
                         ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
