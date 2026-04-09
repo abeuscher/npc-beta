@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, nextTick } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { configure } from './api'
 import type { BootstrapData } from './types'
 import { useEditorStore } from './stores/editor'
@@ -10,19 +10,11 @@ import InspectorPanel from './components/InspectorPanel.vue'
 
 const store = useEditorStore()
 
-function handleTreeUpdated() {
-  store.reloadTree()
-}
-
-function handleBlockSelected(e: Event) {
-  const blockId = (e as CustomEvent).detail?.blockId ?? ''
-  store.selectBlock(blockId || null)
-
-  if (blockId) {
-    nextTick(() => {
-      const el = document.querySelector(`[data-widget-id="${blockId}"]`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    })
+async function handleWidgetCreated(e: Event) {
+  const widgetId = (e as CustomEvent).detail?.widgetId ?? null
+  await store.reloadTree()
+  if (widgetId) {
+    store.selectBlock(widgetId)
   }
 }
 
@@ -43,14 +35,12 @@ onMounted(() => {
   store.loadTree(data)
 
   // Event bridge: listen for Livewire mutations
-  window.addEventListener('widget-tree-updated', handleTreeUpdated)
-  window.addEventListener('block-selected', handleBlockSelected)
+  window.addEventListener('widget-created', handleWidgetCreated)
   window.addEventListener('template-saved', handleTemplateSaved)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('widget-tree-updated', handleTreeUpdated)
-  window.removeEventListener('block-selected', handleBlockSelected)
+  window.removeEventListener('widget-created', handleWidgetCreated)
   window.removeEventListener('template-saved', handleTemplateSaved)
 })
 </script>

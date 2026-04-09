@@ -584,7 +584,7 @@ class PageBuilderApiController extends Controller
             $result = WidgetRenderer::render($pw, $columnChildren, $fallbackData);
 
             if ($result['html'] === null) {
-                $html = '<div style="padding: 1rem; color: #9ca3af; font-size: 0.875rem; text-align: center;">No preview available</div>';
+                $html = '<div class="widget-preview-notice">No preview available</div>';
             } else {
                 $handle = $widgetType->handle;
                 $sc = $pw->style_config ?? [];
@@ -600,7 +600,7 @@ class PageBuilderApiController extends Controller
                     : '<div class="site-container">' . $result['html'] . '</div>';
 
                 $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
-                $innerHtml = preg_replace('#<script\b[^>]*>.*?</script>#si', '', $innerHtml);
+                $innerHtml = preg_replace('#<script\b(?![^>]*type=["\']application/json["\'])[^>]*>.*?</script>#si', '', $innerHtml);
 
                 $html = $styles
                     . '<div class="widget widget--' . e($handle) . '"'
@@ -609,7 +609,7 @@ class PageBuilderApiController extends Controller
                     . '>' . $innerHtml . '</div>';
             }
         } catch (\Throwable $e) {
-            $html = '<div style="padding: 1rem; color: #dc2626; font-size: 0.875rem;">Preview error: ' . e($e->getMessage()) . '</div>';
+            $html = '<div class="widget-preview-notice widget-preview-notice--error">Preview error: ' . e($e->getMessage()) . '</div>';
         }
 
         return [

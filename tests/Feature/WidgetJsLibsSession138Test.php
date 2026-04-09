@@ -1,6 +1,5 @@
 <?php
 
-use App\Livewire\PageBuilderBlock;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\User;
@@ -9,7 +8,6 @@ use App\Services\AssetBuildService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -124,32 +122,3 @@ it('manifest includes libs key after a successful build', function () {
     File::deleteDirectory(public_path('build/widgets'));
 });
 
-// ── Phase 3: block data includes widget_type_assets ─────────────────
-
-it('loadBlock includes widget_type_assets in block array', function () {
-    $user = User::factory()->create();
-    $user->assignRole('super_admin');
-    $this->actingAs($user);
-
-    $wt = WidgetType::where('handle', 'carousel')->firstOrFail();
-    $page = Page::factory()->create(['title' => 'Test', 'slug' => 'test-' . uniqid(), 'status' => 'published']);
-
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
-        'widget_type_id' => $wt->id,
-        'label'          => 'Test Carousel',
-        'config'         => $wt->getDefaultConfig(),
-        'query_config'   => [],
-        'style_config'   => [],
-        'sort_order'     => 0,
-        'is_active'      => true,
-    ]);
-
-    $component = Livewire::test(PageBuilderBlock::class, [
-        'blockId' => $pw->id,
-    ]);
-
-    $block = $component->get('block');
-    expect($block)->toHaveKey('widget_type_assets');
-    expect($block['widget_type_assets']['libs'] ?? [])->toContain('swiper');
-});

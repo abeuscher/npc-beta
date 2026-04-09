@@ -171,22 +171,6 @@ class AdminPanelProvider extends PanelProvider
                     ? new HtmlString('<style>.fi-main { max-width: 100% !important; }</style>')
                     : new HtmlString('')
             )
-            // Page builder Alpine.data() components (extracted inline JS).
-            ->renderHook(
-                'panels::head.end',
-                fn (): HtmlString => new HtmlString(
-                    app(\Illuminate\Foundation\Vite::class)('resources/js/page-builder/index.js')
-                )
-            )
-            // @alpinejs/sort enables drag-to-reorder in the page builder.
-            // If CSP blocks this (eval() error), the Up/Down fallback in the
-            // block ellipsis menu still works — see page-builder.blade.php.
-            ->renderHook(
-                'panels::head.end',
-                fn (): HtmlString => new HtmlString(
-                    '<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/sort@3.14.3/dist/cdn.min.js"></script>'
-                )
-            )
             // Load Quill v2 on all admin pages — used by the page builder and any
             // QuillEditor form fields (e.g. event description, meeting details).
             // Quill dark mode + inline editable styles live in public/css/admin.css.

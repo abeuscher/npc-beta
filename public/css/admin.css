@@ -510,6 +510,46 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     border-color: rgb(99,102,241) !important;
 }
 
+/* ── Widget preview notices & placeholders ─────────────────────────────────*/
+
+.widget-preview-notice {
+    padding: 5rem 1rem 3rem;
+    width: 100%;
+    color: #9ca3af;
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.widget-preview-notice--error {
+    color: #dc2626;
+}
+
+.widget-preview-scope .widget-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 12rem;
+    padding: 2rem;
+    text-align: center;
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+}
+
+.widget-preview-scope .widget-placeholder__title {
+    margin: 0 0 0.25rem;
+    font-size: 5rem;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.widget-preview-scope .widget-placeholder__message {
+    margin: 0;
+    font-size: 3rem;
+    color: #9ca3af;
+}
+
 /* ── Inline text editing affordance ─────────────────────────────────────────*/
 
 .inline-editable {

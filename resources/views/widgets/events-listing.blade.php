@@ -193,9 +193,9 @@
         </div>
 
         <nav class="widget-listing__pager" aria-label="Pagination">
-            <button x-ref="btnPrev" class="widget-listing__nav swiper-button-prev" type="button" aria-label="Previous page">&lsaquo;</button>
-            <div x-ref="pagination" class="swiper-pagination"></div>
-            <button x-ref="btnNext" class="widget-listing__nav swiper-button-next" type="button" aria-label="Next page">&rsaquo;</button>
+            <button x-ref="btnPrev" class="widget-listing__nav" type="button" aria-label="Previous page">&lsaquo;</button>
+            <div x-ref="pagination" class="widget-listing__bullets"></div>
+            <button x-ref="btnNext" class="widget-listing__nav" type="button" aria-label="Next page">&rsaquo;</button>
         </nav>
 
         <p x-ref="emptyMsg" class="widget-events-listing__empty" style="display:none;">No upcoming events. Check back soon.</p>

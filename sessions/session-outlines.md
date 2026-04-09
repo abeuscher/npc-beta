@@ -157,6 +157,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 148 | Editor Canvas in Vue |
 | 149 | Editor Inspector in Vue — Part 1 |
 | 150 | Editor Inspector in Vue — Part 2 |
+| 151 | Widget Delete & Livewire Inspector Removal |
 
 ---
 
@@ -178,17 +179,17 @@ Rebuild the preview panel as a Vue component. Transparent overlay div in front o
 
 Rebuild the inspector panel as Vue components. Core form fields: text inputs, selects, checkboxes, toggles, textareas, rich text (Quill integration). Tabbed layout. Fix every default value to be explicit and correct — eliminate placeholder values that appear unset when they are active. Wire config changes to the Pinia store with debounced API saves. Preview refresh triggered reactively from store changes.
 
-### 151. Widget Delete & Livewire Inspector Removal
+### 152. Config Requirements & Drag-and-Drop
 
-Delete button to the right of the widget title in the inspector panel header. Confirmation modal: "Are you sure you want to delete this widget: [Widget Label]?" Hide the Livewire inspector panel. Livewire teardown: remove PageBuilderBlock, PageBuilderInspector, all inspector blade partials, and the Alpine.js modules (preview-manager, spacingControls, richtextEditor, buttonListManager). PageBuilder.php becomes a thin mount-point. Verify all editor flows work end-to-end on the Vue stack.
+Config requirements system: new `required_config` JSONB column on `widget_types` with `keys` array and `message`; PreviewRegion shows a configuration notice for unconfigured widgets instead of preview HTML. Remove all `@include('widgets.components.widget-placeholder')` calls from widget Blade templates — public site renders nothing for unconfigured widgets. Drag-and-drop reordering of root widgets via vuedraggable (full region drag — quadrant-based interaction model deferred to session 153).
 
-### 152. Preview Inline Controls & Drag-and-Drop
+### 152b. Remove Edit/Handles Mode Toggle
 
-Add overlay controls to each PreviewRegion in the preview canvas: drag handle and ellipsis menu. Ellipsis menu actions: add above/below, copy, move up/down, delete. Drag-and-drop reordering of widgets via the preview regions. Remove the edit/handles mode toggle — single unified editor view. Column widget children are out of scope (session 153).
+Remove the edit/handles mode toggle from the editor toolbar. Delete `BlockListPoc.vue` and the handles mode branch in `App.vue`. Single unified editor view — all interaction through the preview canvas and inspector panel.
 
-### 153. Column Widget Preview Solution
+### 153. Column Layout System
 
-Design and implement the column widget experience in the unified preview mode. Visual treatment for column slots, adding/removing/reordering children within columns, and moving widgets between columns and the main list. Design to be discussed at session start.
+Replace column widgets with a first-class layout primitive. New `page_layouts` table; migrate existing column widget data; remove `column_widget` widget type. Quadrant-based widget interaction model: upper-left grab handle, upper-right action menu, body click-to-select. Column handle: 50–100px toolbar bar above layout content, visible on hover. Drag-and-drop across boundaries (root ↔ column slots, between columns). CSS layout inspector: flex/grid toggle with direct CSS property controls (`grid-template-columns`, `gap`, `justify-content`, `align-items`, per-column `flex-basis`, etc.). Column deletion cascade-deletes contained widgets.
 
 ### 154. Nav Widget & Footer
 

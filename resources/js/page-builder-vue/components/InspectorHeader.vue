@@ -2,6 +2,7 @@
 import { ref, nextTick } from 'vue'
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
+import ConfirmDeleteModal from './ConfirmDeleteModal.vue'
 
 const props = defineProps<{
   widget: Widget
@@ -11,6 +12,7 @@ const store = useEditorStore()
 const editing = ref(false)
 const draft = ref('')
 const labelInput = ref<HTMLInputElement | null>(null)
+const showDeleteModal = ref(false)
 
 function startEditing() {
   draft.value = props.widget.label
@@ -27,6 +29,11 @@ function saveLabel() {
 
 function cancelEditing() {
   editing.value = false
+}
+
+async function confirmDelete() {
+  showDeleteModal.value = false
+  await store.deleteWidget(props.widget.id)
 }
 </script>
 
@@ -46,6 +53,17 @@ function cancelEditing() {
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="inspector-header__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.364-6.364a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2.414a2 2 0 01.586-1.414z"/>
+        </svg>
+      </button>
+      <button
+        v-if="!widget.is_required"
+        type="button"
+        title="Delete block"
+        class="inspector-header__delete-btn"
+        @click="showDeleteModal = true"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="inspector-header__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
         </svg>
       </button>
     </div>
@@ -70,6 +88,13 @@ function cancelEditing() {
         @click="cancelEditing"
       >Cancel</button>
     </div>
+
+    <ConfirmDeleteModal
+      :visible="showDeleteModal"
+      :widget-label="widget.label"
+      @confirm="confirmDelete"
+      @cancel="showDeleteModal = false"
+    />
   </div>
 </template>
 
@@ -109,13 +134,48 @@ function cancelEditing() {
   border-radius: 0.25rem;
   border: none;
   background: none;
-  color: #d1d5db;
+  color: #1f2937;
   cursor: pointer;
 }
 
 .inspector-header__edit-btn:hover {
   background: #f3f4f6;
-  color: #4b5563;
+  color: #111827;
+}
+
+.inspector-header__delete-btn {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: none;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.inspector-header__delete-btn:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .inspector-header__edit-btn {
+    color: #fff;
+  }
+
+  .inspector-header__edit-btn:hover {
+    background: #374151;
+    color: #fff;
+  }
+
+  .inspector-header__delete-btn {
+    color: #f87171;
+  }
+
+  .inspector-header__delete-btn:hover {
+    background: #451a1a;
+    color: #fca5a5;
+  }
 }
 
 .inspector-header__icon {
