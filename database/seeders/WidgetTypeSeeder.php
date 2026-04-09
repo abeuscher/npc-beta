@@ -54,6 +54,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'event_slug', 'type' => 'select', 'label' => 'Event', 'options_from' => 'events', 'group' => 'content'],
                 ],
                 'template'           => "@include('widgets.event-description')",
+                'required_config'    => ['keys' => ['event_slug'], 'message' => 'Select an event to display its details.'],
             ]
         );
 
@@ -70,6 +71,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'event_slug', 'type' => 'select', 'label' => 'Event', 'options_from' => 'events', 'group' => 'content'],
                 ],
                 'template'           => "@include('widgets.event-registration')",
+                'required_config'    => ['keys' => ['event_slug'], 'message' => 'Select an event to display its registration form.'],
             ]
         );
 
@@ -148,6 +150,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'form_handle', 'type' => 'select', 'label' => 'Form', 'options_from' => 'forms', 'group' => 'content'],
                 ],
                 'template'           => "@include('widgets.web-form')",
+                'required_config'    => ['keys' => ['form_handle'], 'message' => 'Select a form to embed.'],
             ]
         );
 
@@ -417,6 +420,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'show_controls',   'type' => 'toggle', 'label' => 'Show controls',      'default' => true,  'helper' => 'Show player controls', 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.video-embed')",
+                'required_config'    => ['keys' => ['video_url'], 'message' => 'Enter a YouTube or Vimeo URL.'],
             ]
         );
 
@@ -492,6 +496,7 @@ class WidgetTypeSeeder extends Seeder
                 ],
                 'assets'        => ['libs' => ['swiper']],
                 'template'      => "@include('widgets.carousel')",
+                'required_config' => ['keys' => ['collection_handle', 'image_field'], 'message' => 'Select a collection and map its image field to display slides.'],
             ]
         );
 
@@ -521,6 +526,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'flip_duration',     'type' => 'number',  'label' => 'Flip interval (ms)',     'default' => 4000, 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'template'      => "@include('widgets.logo-garden')",
+                'required_config' => ['keys' => ['collection_handle', 'image_field'], 'message' => 'Select a collection and map its image field to display logos.'],
             ]
         );
 
@@ -558,6 +564,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'border_radius',        'type' => 'number', 'label' => 'Card border radius (px)', 'default' => 5, 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.board-members')",
+                'required_config'    => ['keys' => ['collection_handle'], 'message' => 'Select a collection and map its fields to display team members.'],
             ]
         );
 
@@ -690,6 +697,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'max_height',   'type' => 'number',   'label' => 'Maximum height (px)', 'default' => 600, 'advanced' => true, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.map-embed')",
+                'required_config'    => ['keys' => ['map_input'], 'message' => 'Paste a Google Maps share link or embed code.'],
             ]
         );
 

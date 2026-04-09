@@ -513,12 +513,30 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 /* ── Widget preview notices & placeholders ─────────────────────────────────*/
 
 .widget-preview-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 5rem 1rem 3rem;
     width: 100%;
+    min-height: 8rem;
     color: #9ca3af;
     font-size: 2rem;
     font-weight: 600;
     text-align: center;
+}
+
+.widget-preview-notice__label {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #6b7280;
+}
+
+.widget-preview-notice__message {
+    font-size: 1.75rem;
+    font-weight: 400;
+    color: #9ca3af;
 }
 
 .widget-preview-notice--error {

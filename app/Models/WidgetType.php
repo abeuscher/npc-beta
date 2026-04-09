@@ -62,6 +62,7 @@ class WidgetType extends Model implements HasMedia
         'js',
         'variable_name',
         'code',
+        'required_config',
     ];
 
     protected $casts = [
@@ -72,6 +73,7 @@ class WidgetType extends Model implements HasMedia
         'default_open'       => 'boolean',
         'full_width'         => 'boolean',
         'allowed_page_types' => 'array',
+        'required_config'    => 'array',
     ];
 
     public function getDefaultConfig(): array
@@ -132,6 +134,7 @@ class WidgetType extends Model implements HasMedia
                 'category'        => $wt->category ?? ['content'],
                 'collections'     => $wt->collections,
                 'config_schema'   => $wt->config_schema,
+                'required_config' => $wt->required_config,
                 'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])

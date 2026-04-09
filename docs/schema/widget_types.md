@@ -19,6 +19,7 @@ Definitions of available widget types for pages (server-rendered or client-rende
 | template | text | yes | |
 | css | text | yes | |
 | js | text | yes | |
+| required_config | jsonb | yes | default: null; shape: { "keys": ["field_key", ...], "message": "..." }; when keys are present and any listed config key is empty/null on a widget instance, the editor shows a setup notice |
 | variable_name | string | yes | |
 | code | text | yes | |
 | created_at | timestamp | no | |

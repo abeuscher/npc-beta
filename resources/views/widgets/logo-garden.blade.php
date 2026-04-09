@@ -182,6 +182,4 @@
             @endforeach
         </div>
     @endif
-@else
-    @include('widgets.components.widget-placeholder', ['title' => 'Logo Garden', 'message' => 'Select a collection and map its image field to display logos.'])
 @endif

@@ -4,6 +4,8 @@ import { useEditorStore } from '../stores/editor'
 import { useViewport, viewportPresets } from '../composables/useViewport'
 import { loadLibs, reinitAlpine } from '../composables/useLibraryLoader'
 import PreviewRegion from './PreviewRegion.vue'
+import draggable from 'vuedraggable'
+import type { ReorderItem } from '../types'
 
 const store = useEditorStore()
 const { presetViewport, zoomFactor, computeZoom, setViewport } = useViewport()
@@ -36,6 +38,25 @@ function closeAddMenu(e: Event) {
   if (!(e.target as Element)?.closest('.add-block-dropdown')) {
     addMenuOpen.value = false
   }
+}
+
+// Draggable list for root widgets
+const dragList = computed({
+  get: () => store.rootWidgets,
+  set: (newList) => {
+    // Update rootOrder immediately so the drop sticks visually
+    store.rootOrder = newList.map((w) => w.id)
+  },
+})
+
+function onDragEnd() {
+  const items: ReorderItem[] = dragList.value.map((w, i) => ({
+    id: w.id,
+    parent_widget_id: null,
+    column_index: null,
+    sort_order: i,
+  }))
+  store.reorderWidgets(items)
 }
 
 const isNarrowViewport = computed(() => presetViewport.value < 1920)
@@ -205,11 +226,17 @@ watch(
         @click="preventNavigation"
         @submit.prevent
       >
-        <PreviewRegion
-          v-for="widget in store.rootWidgets"
-          :key="widget.id"
-          :widget="widget"
-        />
+        <draggable
+          v-model="dragList"
+          item-key="id"
+          :animation="200"
+          ghost-class="preview-region--ghost"
+          @end="onDragEnd"
+        >
+          <template #item="{ element }">
+            <PreviewRegion :widget="element" />
+          </template>
+        </draggable>
 
         <div
           v-if="store.rootWidgets.length === 0"

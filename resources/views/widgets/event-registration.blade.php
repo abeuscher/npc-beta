@@ -158,6 +158,4 @@
             </form>
         @endif
     @endif
-@else
-    @include('widgets.components.widget-placeholder', ['title' => 'Event Registration', 'message' => 'Select an event to display its registration form.'])
 @endif

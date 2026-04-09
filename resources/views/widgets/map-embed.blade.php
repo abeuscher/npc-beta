@@ -39,6 +39,4 @@
             </div>
         </div>
     </div>
-@else
-    @include('widgets.components.widget-placeholder', ['title' => 'Map Embed', 'message' => 'Paste a Google Maps share link or embed code.'])
 @endif

@@ -45,6 +45,4 @@
             {!! \App\Services\Media\InlineImageRenderer::process($event->description) !!}
         </div>
     @endif
-@else
-    @include('widgets.components.widget-placeholder', ['title' => 'Event Description', 'message' => 'Select an event to display its details.'])
 @endif

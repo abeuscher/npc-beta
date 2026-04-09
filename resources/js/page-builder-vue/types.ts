@@ -7,6 +7,7 @@ export interface Widget {
   widget_type_config_schema: FieldDef[]
   widget_type_assets: Record<string, any>
   widget_type_default_open: boolean
+  widget_type_required_config: { keys: string[]; message: string } | null
   parent_widget_id: string | null
   column_index: number | null
   label: string
@@ -32,6 +33,7 @@ export interface WidgetType {
   assets: Record<string, any>
   full_width: boolean
   default_open: boolean
+  required_config: { keys: string[]; message: string } | null
   thumbnail: string | null
   thumbnail_hover: string | null
 }

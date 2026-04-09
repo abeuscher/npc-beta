@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
   widget: Widget
@@ -10,6 +10,21 @@ const props = defineProps<{
 const store = useEditorStore()
 
 const isSelected = computed(() => store.selectedBlockId === props.widget.id)
+
+const needsConfig = computed(() => {
+  const req = props.widget.widget_type_required_config
+  if (!req?.keys?.length) return false
+  return req.keys.some(key => {
+    const val = props.widget.config[key]
+    return val === null || val === undefined || val === ''
+  })
+})
+
+watch(needsConfig, (now, was) => {
+  if (was && !now) {
+    store.refreshPreview(props.widget.id)
+  }
+})
 
 function handleClick() {
   store.selectBlock(props.widget.id)
@@ -22,7 +37,15 @@ function handleClick() {
     :class="{ 'preview-region--selected': isSelected }"
     :data-widget-id="widget.id"
   >
-    <div class="preview-region__html" v-html="widget.preview_html"></div>
+    <template v-if="needsConfig">
+      <div class="widget-preview-notice">
+        <strong class="widget-preview-notice__label">{{ widget.widget_type_label }}</strong>
+        <span class="widget-preview-notice__message">{{ widget.widget_type_required_config!.message }}</span>
+      </div>
+    </template>
+    <template v-else>
+      <div class="preview-region__html" v-html="widget.preview_html"></div>
+    </template>
     <div class="preview-region__overlay" @click.stop="handleClick"></div>
   </div>
 </template>
@@ -50,5 +73,12 @@ function handleClick() {
 
 .preview-region--selected > .preview-region__overlay {
   box-shadow: inset 0 0 0 2px #6366f1;
+}
+
+</style>
+
+<style>
+.preview-region--ghost {
+  opacity: 0.4;
 }
 </style>

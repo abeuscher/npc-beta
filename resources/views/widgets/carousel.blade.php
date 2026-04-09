@@ -107,6 +107,4 @@
             @endif
         </div>
     </div>
-@else
-    @include('widgets.components.widget-placeholder', ['title' => 'Carousel', 'message' => 'Select a collection and map its image field to display slides.'])
 @endif

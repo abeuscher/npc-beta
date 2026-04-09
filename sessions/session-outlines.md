@@ -158,6 +158,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 149 | Editor Inspector in Vue — Part 1 |
 | 150 | Editor Inspector in Vue — Part 2 |
 | 151 | Widget Delete & Livewire Inspector Removal |
+| 152 | Preview Inline Controls & Drag-and-Drop |
 
 ---
 
