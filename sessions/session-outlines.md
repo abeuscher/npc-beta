@@ -159,6 +159,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 150 | Editor Inspector in Vue — Part 2 |
 | 151 | Widget Delete & Livewire Inspector Removal |
 | 152 | Preview Inline Controls & Drag-and-Drop |
+| 153 | Column Layout System |
 
 ---
 
@@ -188,13 +189,9 @@ Config requirements system: new `required_config` JSONB column on `widget_types`
 
 Remove the edit/handles mode toggle from the editor toolbar. Delete `BlockListPoc.vue` and the handles mode branch in `App.vue`. Single unified editor view — all interaction through the preview canvas and inspector panel.
 
-### 153. Column Layout System
-
-Replace column widgets with a first-class layout primitive. New `page_layouts` table; migrate existing column widget data; remove `column_widget` widget type. Quadrant-based widget interaction model: upper-left grab handle, upper-right action menu, body click-to-select. Column handle: 50–100px toolbar bar above layout content, visible on hover. Drag-and-drop across boundaries (root ↔ column slots, between columns). CSS layout inspector: flex/grid toggle with direct CSS property controls (`grid-template-columns`, `gap`, `justify-content`, `align-items`, per-column `flex-basis`, etc.). Column deletion cascade-deletes contained widgets.
-
 ### 154. Nav Widget & Footer
 
-Extract the logo/company-name piece from the existing header widget into its own block. Build a standalone nav widget that supports: header mode, footer mode, stacked static, dropdown, hamburger collapse, and stack collapse. Build a footer widget — nav element stacked on a text widget with a current-year copyright line by default.
+Split the existing `site_header` and `site_footer` widgets into smaller pieces — a standalone `logo` widget and a standalone `nav` widget — and re-seed the header/footer system pages to use the column layout system from session 153. The page editor's column tooling already applies to header/footer (they are system pages edited via the standard page builder); the only remaining work is on the widget side and the renderer side. **Includes the deferred fix from session 153:** `ChromeRenderer::renderPage()` must be extended to load and render `PageLayout` records, mirroring the work done for `PageController` in 153. Nav widget is a minimal extraction — no redesign, no new modes — leaving the full nav rebuild for a dedicated future session. Footer copyright is a static value in a user-editable rich text field. Destructive migration: deletes `site_header`/`site_footer` widget types and re-seeds the `_header`/`_footer` pages with default column layouts (logo + nav for header; text_block with copyright + nav for footer).
 
 ### 155. Template & Page Import/Export
 
