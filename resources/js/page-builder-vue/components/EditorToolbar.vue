@@ -4,7 +4,11 @@ import { useEditorStore } from '../stores/editor'
 const store = useEditorStore()
 
 function openSaveTemplateModal() {
-  window.dispatchEvent(new CustomEvent('open-save-template-modal', { detail: {} }))
+  window.dispatchEvent(
+    new CustomEvent('open-save-template-modal', {
+      detail: { pageId: store.pageId },
+    })
+  )
 }
 </script>
 

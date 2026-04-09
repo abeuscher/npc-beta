@@ -8,31 +8,31 @@ import PreviewCanvas from './components/PreviewCanvas.vue'
 import BlockListPoc from './components/BlockListPoc.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 
+const props = defineProps<{
+  bootstrap: BootstrapData
+}>()
+
 const store = useEditorStore()
 
 async function handleWidgetCreated(e: Event) {
-  const widgetId = (e as CustomEvent).detail?.widgetId ?? null
+  const detail = (e as CustomEvent).detail ?? {}
+  if (detail.pageId !== store.pageId) return
+  const widgetId = detail.widgetId ?? null
   await store.reloadTree()
   if (widgetId) {
     store.selectBlock(widgetId)
   }
 }
 
-function handleTemplateSaved() {
+function handleTemplateSaved(e: Event) {
+  const detail = (e as CustomEvent).detail ?? {}
+  if (detail.pageId !== store.pageId) return
   // no-op for now — could show a notification in the future
 }
 
 onMounted(() => {
-  const el = document.getElementById('page-builder-app')
-  if (!el) return
-
-  const raw = el.getAttribute('data-bootstrap')
-  if (!raw) return
-
-  const data: BootstrapData = JSON.parse(raw)
-
-  configure(data.csrf_token, data.api_base_url)
-  store.loadTree(data)
+  configure(props.bootstrap.csrf_token, props.bootstrap.api_base_url)
+  store.loadTree(props.bootstrap)
 
   // Event bridge: listen for Livewire mutations
   window.addEventListener('widget-created', handleWidgetCreated)

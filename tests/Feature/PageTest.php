@@ -141,3 +141,91 @@ it('renders a page layout with grid CSS and child widgets', function () {
     $response->assertSee('Left content', false);
     $response->assertSee('Right content', false);
 });
+
+it('contains a layout in .site-container by default and emits new style fields', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create([
+        'title'        => 'Contained Layout',
+        'slug'         => 'contained-layout',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $layout = PageLayout::create([
+        'page_id'       => $page->id,
+        'display'       => 'grid',
+        'columns'       => 1,
+        'layout_config' => [
+            'grid_template_columns' => '1fr',
+            'background_color'      => '#abcdef',
+            'padding_top'           => '12',
+            'margin_left'           => '8',
+        ],
+        'sort_order'    => 0,
+    ]);
+
+    $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'layout_id'      => $layout->id,
+        'column_index'   => 0,
+        'widget_type_id' => $wt->id,
+        'config'         => ['content' => 'Inside contained'],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $response = $this->get('/contained-layout');
+
+    $response->assertOk();
+    $response->assertSee('site-container', false);
+    $response->assertSee('background-color:#abcdef', false);
+    $response->assertSee('padding-top:12px', false);
+    $response->assertSee('margin-left:8px', false);
+    $response->assertSee('Inside contained', false);
+});
+
+it('renders a layout edge-to-edge when full_width is true', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create([
+        'title'        => 'Full Width Layout',
+        'slug'         => 'fw-layout',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $layout = PageLayout::create([
+        'page_id'       => $page->id,
+        'display'       => 'grid',
+        'columns'       => 1,
+        'layout_config' => [
+            'grid_template_columns' => '1fr',
+            'full_width'            => true,
+        ],
+        'sort_order'    => 0,
+    ]);
+
+    $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'layout_id'      => $layout->id,
+        'column_index'   => 0,
+        'widget_type_id' => $wt->id,
+        'config'         => ['content' => 'Edge to edge'],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $response = $this->get('/fw-layout');
+
+    $response->assertOk();
+    $response->assertSee('Edge to edge', false);
+    // The layout block itself should NOT be wrapped in .site-container by page-widgets.blade
+    // when full_width is true. We can't easily assert "no site-container" globally because
+    // the widget shell still renders, but we can confirm the block-level full_width path
+    // by checking that the page-layout div is a direct child of the widget--page_layout div.
+    $body = $response->getContent();
+    expect($body)->toMatch('/widget--page_layout[^>]*>\s*<div class="page-layout"/');
+});

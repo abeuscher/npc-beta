@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useEditorStore } from '../stores/editor'
+import ColorPickerField from './fields/ColorPickerField.vue'
 
 const store = useEditorStore()
 
@@ -105,7 +106,7 @@ function setGridTemplate(value: string) {
 
 const gapPresets = ['0', '0.5rem', '1rem', '1.5rem', '2rem', '3rem']
 
-function setLayoutConfigKey(key: string, value: string) {
+function setLayoutConfigKey(key: string, value: any) {
   if (!layout.value) return
   store.updateLocalLayout(layout.value.id, {
     layout_config: { [key]: value },
@@ -131,6 +132,84 @@ function getFlexBasis(slotIdx: number): string {
   return arr[slotIdx] ?? 'auto'
 }
 
+// ── Container appearance ───────────────────────────────────────────────
+
+const fullWidth = computed(() => !!layout.value?.layout_config?.full_width)
+const backgroundColor = computed(() => layout.value?.layout_config?.background_color ?? '')
+const bgField = { key: 'background_color', label: 'Background Colour', type: 'color', helper: '#ffffff' }
+
+const paddingKeys = [
+  { key: 'padding_left', label: 'Left' },
+  { key: 'padding_top', label: 'Top' },
+  { key: 'padding_right', label: 'Right' },
+  { key: 'padding_bottom', label: 'Bottom' },
+]
+
+const marginKeys = [
+  { key: 'margin_left', label: 'Left' },
+  { key: 'margin_top', label: 'Top' },
+  { key: 'margin_right', label: 'Right' },
+  { key: 'margin_bottom', label: 'Bottom' },
+]
+
+const lc = computed(() => layout.value?.layout_config ?? {})
+
+const paddingAll = computed(() => {
+  const t = lc.value.padding_top ?? ''
+  const r = lc.value.padding_right ?? ''
+  const b = lc.value.padding_bottom ?? ''
+  const l = lc.value.padding_left ?? ''
+  return (t === r && r === b && b === l && t !== '') ? t : ''
+})
+
+const paddingAllPlaceholder = computed(() => {
+  const t = lc.value.padding_top ?? ''
+  const r = lc.value.padding_right ?? ''
+  const b = lc.value.padding_bottom ?? ''
+  const l = lc.value.padding_left ?? ''
+  return (t === r && r === b && b === l) ? '' : 'mixed'
+})
+
+const marginAll = computed(() => {
+  const t = lc.value.margin_top ?? ''
+  const r = lc.value.margin_right ?? ''
+  const b = lc.value.margin_bottom ?? ''
+  const l = lc.value.margin_left ?? ''
+  return (t === r && r === b && b === l && t !== '') ? t : ''
+})
+
+const marginAllPlaceholder = computed(() => {
+  const t = lc.value.margin_top ?? ''
+  const r = lc.value.margin_right ?? ''
+  const b = lc.value.margin_bottom ?? ''
+  const l = lc.value.margin_left ?? ''
+  return (t === r && r === b && b === l) ? '' : 'mixed'
+})
+
+function setPaddingAll(value: string) {
+  if (!layout.value) return
+  store.updateLocalLayout(layout.value.id, {
+    layout_config: {
+      padding_top: value,
+      padding_right: value,
+      padding_bottom: value,
+      padding_left: value,
+    },
+  })
+}
+
+function setMarginAll(value: string) {
+  if (!layout.value) return
+  store.updateLocalLayout(layout.value.id, {
+    layout_config: {
+      margin_top: value,
+      margin_right: value,
+      margin_bottom: value,
+      margin_left: value,
+    },
+  })
+}
+
 // ── Delete ─────────────────────────────────────────────────────────────
 
 function confirmDelete() {
@@ -146,15 +225,35 @@ function confirmDelete() {
 
 <template>
   <div v-if="layout" class="layout-inspector">
+    <!-- Header chrome to match widget inspector -->
     <div class="layout-inspector__header">
-      <div class="layout-inspector__type">Column Layout</div>
-      <input
-        v-model="label"
-        type="text"
-        class="layout-inspector__label"
-        placeholder="Layout label"
-        @input="onLabelInput"
-      />
+      <p class="layout-inspector__type-badge">Column Layout</p>
+      <div class="layout-inspector__header-row">
+        <input
+          v-model="label"
+          type="text"
+          class="layout-inspector__label-input"
+          placeholder="Layout label"
+          @input="onLabelInput"
+        />
+        <button
+          type="button"
+          title="Delete layout"
+          class="layout-inspector__delete-btn"
+          @click="confirmDelete"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="layout-inspector__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Single tab to mirror the widget inspector tab strip -->
+    <div class="layout-inspector__tabs">
+      <button type="button" class="layout-inspector__tab-btn layout-inspector__tab-btn--active">
+        Appearance
+      </button>
     </div>
 
     <div class="layout-inspector__body">
@@ -443,12 +542,85 @@ function confirmDelete() {
           <p class="layout-inspector__hint">Base width of each column before flex grow/shrink.</p>
         </div>
       </template>
-    </div>
 
-    <div class="layout-inspector__footer">
-      <button type="button" class="layout-inspector__delete" @click="confirmDelete">
-        Delete Layout
-      </button>
+      <!-- ── Container appearance ──────────────────────────────────── -->
+      <div class="layout-inspector__section-divider">Container</div>
+
+      <div class="layout-inspector__field">
+        <label class="layout-inspector__checkbox-row">
+          <input
+            type="checkbox"
+            :checked="fullWidth"
+            class="layout-inspector__checkbox"
+            @change="setLayoutConfigKey('full_width', ($event.target as HTMLInputElement).checked)"
+          >
+          <span>Full width</span>
+        </label>
+        <p class="layout-inspector__hint">When off, the layout is constrained to the site content container.</p>
+      </div>
+
+      <div class="layout-inspector__field">
+        <label class="layout-inspector__label-row">Background Colour</label>
+        <ColorPickerField
+          :field="bgField"
+          :model-value="backgroundColor"
+          @update:model-value="setLayoutConfigKey('background_color', $event)"
+        />
+      </div>
+
+      <div class="layout-inspector__field">
+        <p class="layout-inspector__label-row">Padding (px)</p>
+        <div class="layout-inspector__spacing-grid">
+          <div class="layout-inspector__spacing-cell">
+            <label class="layout-inspector__spacing-cell-label">All</label>
+            <input
+              type="number"
+              min="0"
+              :value="paddingAll"
+              :placeholder="paddingAllPlaceholder"
+              class="layout-inspector__spacing-input"
+              @input="setPaddingAll(($event.target as HTMLInputElement).value)"
+            >
+          </div>
+          <div v-for="item in paddingKeys" :key="item.key" class="layout-inspector__spacing-cell">
+            <label class="layout-inspector__spacing-cell-label">{{ item.label }}</label>
+            <input
+              type="number"
+              min="0"
+              :value="lc[item.key] ?? ''"
+              class="layout-inspector__spacing-input"
+              @input="setLayoutConfigKey(item.key, ($event.target as HTMLInputElement).value)"
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="layout-inspector__field">
+        <p class="layout-inspector__label-row">Margin (px)</p>
+        <div class="layout-inspector__spacing-grid">
+          <div class="layout-inspector__spacing-cell">
+            <label class="layout-inspector__spacing-cell-label">All</label>
+            <input
+              type="number"
+              min="0"
+              :value="marginAll"
+              :placeholder="marginAllPlaceholder"
+              class="layout-inspector__spacing-input"
+              @input="setMarginAll(($event.target as HTMLInputElement).value)"
+            >
+          </div>
+          <div v-for="item in marginKeys" :key="item.key" class="layout-inspector__spacing-cell">
+            <label class="layout-inspector__spacing-cell-label">{{ item.label }}</label>
+            <input
+              type="number"
+              min="0"
+              :value="lc[item.key] ?? ''"
+              class="layout-inspector__spacing-input"
+              @input="setLayoutConfigKey(item.key, ($event.target as HTMLInputElement).value)"
+            >
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -458,41 +630,101 @@ function confirmDelete() {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background: #fff;
 }
 
 .layout-inspector__header {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: #fff;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
 }
 
-.layout-inspector__type {
-  font-size: 0.6875rem;
+.layout-inspector__type-badge {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6366f1;
-  margin-bottom: 0.25rem;
+  color: #6b7280;
 }
 
-.layout-inspector__label {
-  width: 100%;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: #111827;
+.layout-inspector__header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.layout-inspector__label-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
   border: none;
   background: transparent;
   padding: 0;
   outline: none;
 }
 
+.layout-inspector__delete-btn {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: none;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.layout-inspector__delete-btn:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.layout-inspector__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.layout-inspector__tabs {
+  display: flex;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0.25rem 0 0 0.25rem;
+}
+
+.layout-inspector__tab-btn {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem 0.375rem 0 0;
+  margin-bottom: -1px;
+  margin-left: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+  background: transparent;
+  opacity: 0.6;
+  cursor: default;
+}
+
+.layout-inspector__tab-btn--active {
+  background: #fff;
+  opacity: 1;
+  border-bottom-color: #fff;
+}
+
 .layout-inspector__body {
+  border: 1px solid #e5e7eb;
+  border-top: 0;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: #fff;
   flex: 1;
-  padding: 1rem;
   overflow-y: auto;
+  padding: 1rem;
 }
 
 .layout-inspector__field {
@@ -629,25 +861,50 @@ function confirmDelete() {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.layout-inspector__footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.layout-inspector__delete {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: #dc2626;
-  background: #fff;
-  border: 1px solid #fecaca;
-  border-radius: 0.375rem;
+.layout-inspector__checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
 }
 
-.layout-inspector__delete:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
+.layout-inspector__checkbox {
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  color: var(--c-primary-600, #4f46e5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.layout-inspector__spacing-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.layout-inspector__spacing-cell-label {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.layout-inspector__spacing-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: #1f2937;
+  background: #fff;
+}
+
+.layout-inspector__spacing-input:focus {
+  outline: none;
+  border-color: var(--c-primary-400, #818cf8);
+  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
 </style>

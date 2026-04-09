@@ -68,11 +68,13 @@ function handleClick() {
 }
 
 .preview-region__overlay:hover {
-  box-shadow: inset 0 0 0 2px rgba(99, 102, 241, 0.3);
+  outline: 2px solid #282cfc;
+  outline-offset: -8px;
 }
 
 .preview-region--selected > .preview-region__overlay {
-  box-shadow: inset 0 0 0 2px #6366f1;
+  outline: 2px solid #6366f1;
+  outline-offset: -8px;
 }
 
 </style>

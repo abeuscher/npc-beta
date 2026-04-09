@@ -52,6 +52,10 @@ export const useEditorStore = defineStore('editor', () => {
 
   // UI state
   const saving = ref(false)
+  // True while a drag is in progress anywhere in the editor (root canvas or column slot).
+  // Consumed by LayoutRegion to disable "+ Add widget" pointer events so the button
+  // doesn't intercept drops when an empty slot is the target.
+  const dragging = ref(false)
 
   // Debounced save state
   let debounceSaveTimer: ReturnType<typeof setTimeout> | null = null
@@ -524,6 +528,7 @@ export const useEditorStore = defineStore('editor', () => {
     pages,
     events,
     saving,
+    dragging,
     inlineImageUploadUrl,
     colorSwatches,
 

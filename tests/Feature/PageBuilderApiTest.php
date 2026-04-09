@@ -376,6 +376,48 @@ it('sanitizes unknown layout_config keys', function () {
     expect($layout->layout_config)->not->toHaveKey('evil_property');
 });
 
+it('merges partial layout_config updates with existing keys', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    // apiLayout starts with grid_template_columns + gap
+    expect($layout->layout_config)->toHaveKey('grid_template_columns');
+    expect($layout->layout_config)->toHaveKey('gap');
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'layout_config' => ['gap' => '2rem'],
+        ])
+        ->assertOk();
+
+    $layout->refresh();
+    expect($layout->layout_config['gap'])->toBe('2rem');
+    expect($layout->layout_config)->toHaveKey('grid_template_columns');
+    expect($layout->layout_config['grid_template_columns'])->toBe('1fr 1fr');
+});
+
+it('accepts new container appearance keys on layout_config', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'layout_config' => [
+                'full_width'       => true,
+                'background_color' => '#ff0000',
+                'padding_top'      => '20',
+                'margin_left'      => '10',
+            ],
+        ])
+        ->assertOk();
+
+    $layout->refresh();
+    expect($layout->layout_config['full_width'])->toBe(true);
+    expect($layout->layout_config['background_color'])->toBe('#ff0000');
+    expect($layout->layout_config['padding_top'])->toBe('20');
+    expect($layout->layout_config['margin_left'])->toBe('10');
+});
+
 it('deletes a layout and cascades to its widgets', function () {
     $page = apiPage();
     $layout = apiLayout($page);

@@ -40,8 +40,31 @@ const containerStyle = computed(() => {
   if (config.gap) styles.gap = config.gap
   if (config.align_items) styles.alignItems = config.align_items
 
+  // New container style fields (mirrors PageController + ChromeRenderer renderLayoutBlock)
+  const spacingMap: Record<string, string> = {
+    padding_top: 'paddingTop',
+    padding_right: 'paddingRight',
+    padding_bottom: 'paddingBottom',
+    padding_left: 'paddingLeft',
+    margin_top: 'marginTop',
+    margin_right: 'marginRight',
+    margin_bottom: 'marginBottom',
+    margin_left: 'marginLeft',
+  }
+  for (const [key, cssProp] of Object.entries(spacingMap)) {
+    const v = config[key]
+    if (v !== undefined && v !== null && v !== '') {
+      styles[cssProp] = `${parseInt(v, 10)}px`
+    }
+  }
+  if (config.background_color) styles.backgroundColor = config.background_color
+
   return styles
 })
+
+const isFullWidth = computed(
+  () => !!props.layout.layout_config?.full_width
+)
 
 function getSlot(slotIdx: number): Widget[] {
   // After populateFromItems normalization, every column 0..columns-1 has an array.
@@ -54,6 +77,7 @@ function openSlotPicker(slotIdx: number) {
       detail: {
         layoutId: props.layout.id,
         columnIndex: slotIdx,
+        pageId: store.pageId,
       },
     })
   )
@@ -70,7 +94,12 @@ function selectLayout() {
   store.selectItem(props.layout.id, 'layout')
 }
 
+function onSlotDragStart() {
+  store.dragging = true
+}
+
 function onSlotDragEnd() {
+  store.dragging = false
   emit('drag-end')
 }
 
@@ -118,7 +147,14 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
     </div>
 
     <!-- Layout container with column slots -->
-    <div class="layout-region__container" :style="containerStyle">
+    <div
+      class="layout-region__container"
+      :class="{
+        'layout-region__container--contained': !isFullWidth,
+        'layout-region__container--dragging': store.dragging,
+      }"
+      :style="containerStyle"
+    >
       <div
         v-for="i in layout.columns"
         :key="i - 1"
@@ -134,6 +170,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
           :swap-threshold="0.65"
           ghost-class="preview-region--ghost"
           class="layout-region__slot-list"
+          @start="onSlotDragStart"
           @end="onSlotDragEnd"
         >
           <template #item="{ element }">
@@ -161,9 +198,14 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   margin: 0.5rem 0;
 }
 
+.layout-region--selected > .layout-region__container:hover {
+  outline: 2px solid #282cfc;
+  outline-offset: -8px;
+}
+
 .layout-region--selected > .layout-region__container {
   outline: 2px solid #6366f1;
-  outline-offset: 4px;
+  outline-offset: -8px;
 }
 
 .layout-region--selected > .layout-region__selector {
@@ -246,6 +288,16 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   padding: 0.5rem;
 }
 
+/* Mirrors .site-container behaviour: 90% width up to a viewport-derived max-width.
+   The max-width comes from a CSS variable set on .widget-preview-scope by
+   PreviewCanvas, so it tracks the active viewport preset (1920 → 1320, 1024 → 960, etc.). */
+.layout-region__container--contained {
+  width: 90%;
+  max-width: var(--np-preview-container-max-width, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .layout-region__slot {
   min-height: 9rem;
 }
@@ -271,6 +323,13 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   border-radius: 0.375rem;
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
+}
+
+/* While any drag is in progress, take the add button out of the hit-test path so
+   the entire empty slot is one clean drop target for vue-draggable. The button
+   is still painted, just unable to intercept pointer events. */
+.layout-region__container--dragging .layout-region__add-widget {
+  pointer-events: none;
 }
 
 .layout-region__add-widget:hover {

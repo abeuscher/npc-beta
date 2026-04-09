@@ -543,11 +543,16 @@ class PageBuilderApiController extends Controller
             $allowed = [
                 'grid_template_columns', 'gap', 'align_items', 'justify_items',
                 'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
+                'full_width', 'background_color',
+                'padding_top', 'padding_right', 'padding_bottom', 'padding_left',
+                'margin_top', 'margin_right', 'margin_bottom', 'margin_left',
             ];
-            $updates['layout_config'] = array_intersect_key(
+            $sanitized = array_intersect_key(
                 $validated['layout_config'],
                 array_flip($allowed)
             );
+            // Merge with existing layout_config so partial updates don't wipe other keys
+            $updates['layout_config'] = array_merge($layout->layout_config ?? [], $sanitized);
         }
 
         if (! empty($updates)) {

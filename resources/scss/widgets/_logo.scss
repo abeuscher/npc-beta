@@ -1,0 +1,22 @@
+.widget-logo {
+    width: fit-content;
+}
+
+.widget-logo__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.widget-logo__img {
+    height: 2.5rem;
+    width: auto;
+    display: block;
+}
+
+.widget-logo__text {
+    font-weight: 600;
+    white-space: nowrap;
+}

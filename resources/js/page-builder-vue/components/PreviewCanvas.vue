@@ -34,7 +34,9 @@ function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
   }
 
   window.dispatchEvent(
-    new CustomEvent('open-widget-picker', { detail: { insertPosition } })
+    new CustomEvent('open-widget-picker', {
+      detail: { insertPosition, pageId: store.pageId },
+    })
   )
 }
 
@@ -99,7 +101,12 @@ function buildReorderPayload(): ReorderItem[] {
   return items
 }
 
+function onDragStart() {
+  store.dragging = true
+}
+
 function onDragEnd() {
+  store.dragging = false
   const items = buildReorderPayload()
   store.reorderWidgets(items)
 }
@@ -108,6 +115,20 @@ function onDragEnd() {
 const rootPutFilter = (_to: any, _from: any, _dragEl: HTMLElement) => true
 
 const isNarrowViewport = computed(() => presetViewport.value < 1920)
+
+// CSS max-width for "contained" layouts inside the preview, mirroring the public
+// .site-container breakpoints (which are keyed off real browser width). The preview
+// uses a fixed pixel viewport, so we resolve the breakpoint up-front and pass it as
+// a CSS variable for any contained block (e.g. a column layout with full_width: false).
+const previewContainerMaxWidth = computed(() => {
+  const w = presetViewport.value
+  if (w >= 1400) return '1320px'
+  if (w >= 1200) return '1140px'
+  if (w >= 992) return '960px'
+  if (w >= 768) return '720px'
+  if (w >= 576) return '540px'
+  return '100%'
+})
 
 function measurePane() {
   if (paneEl.value) {
@@ -293,6 +314,7 @@ watch(
           zoom: zoomFactor,
           transformOrigin: 'top left',
           flexShrink: isNarrowViewport ? 0 : undefined,
+          '--np-preview-container-max-width': previewContainerMaxWidth,
         }"
         @click="preventNavigation"
         @submit.prevent
@@ -306,6 +328,7 @@ watch(
           :swap-threshold="0.65"
           ghost-class="preview-region--ghost"
           handle=".preview-region__overlay, .layout-region__handle"
+          @start="onDragStart"
           @end="onDragEnd"
         >
           <template #item="{ element }">
@@ -461,6 +484,7 @@ watch(
   border: 1px solid #e5e7eb;
   background: #fff;
   overflow: hidden;
+  padding-top: 5rem;
 }
 
 .preview-canvas__empty {

@@ -160,6 +160,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 151 | Widget Delete & Livewire Inspector Removal |
 | 152 | Preview Inline Controls & Drag-and-Drop |
 | 153 | Column Layout System |
+| 154 | Nav Widget & Footer |
 
 ---
 
@@ -189,13 +190,9 @@ Config requirements system: new `required_config` JSONB column on `widget_types`
 
 Remove the edit/handles mode toggle from the editor toolbar. Delete `BlockListPoc.vue` and the handles mode branch in `App.vue`. Single unified editor view — all interaction through the preview canvas and inspector panel.
 
-### 154. Nav Widget & Footer
+### 155. Template & Page Import-Export
 
-Split the existing `site_header` and `site_footer` widgets into smaller pieces — a standalone `logo` widget and a standalone `nav` widget — and re-seed the header/footer system pages to use the column layout system from session 153. The page editor's column tooling already applies to header/footer (they are system pages edited via the standard page builder); the only remaining work is on the widget side and the renderer side. **Includes the deferred fix from session 153:** `ChromeRenderer::renderPage()` must be extended to load and render `PageLayout` records, mirroring the work done for `PageController` in 153. Nav widget is a minimal extraction — no redesign, no new modes — leaving the full nav rebuild for a dedicated future session. Footer copyright is a static value in a user-editable rich text field. Destructive migration: deletes `site_header`/`site_footer` widget types and re-seeds the `_header`/`_footer` pages with default column layouts (logo + nav for header; text_block with copyright + nav for footer).
-
-### 155. Template & Page Import/Export
-
-Content template import/export (may already be built but not surfaced — verify before building). Full page import/export so the marketing site can be moved in and out of the system across upgrades. Widget data mapping interface with auto-match: fields whose names match their labels exactly should be pre-selected automatically in the mapping UI, saving manual work.
+Backup/restore mechanism for the marketing site so the user can export pages, blog posts, content templates, and the active page template to a JSON file, then re-import after `migrate:fresh --seed` and keep working without losing content. Single JSON envelope (semver `format_version`, current `1.0.0`); same shape used for single-record and bulk export. Bulk actions on Pages and Posts list pages; single-record actions on Edit pages. Slug collisions overwrite the existing record (the deliberate happy path for round-trip). Page templates include their `_header`/`_footer` system pages so chrome customisations survive a wipe. Tier 1 media handling: media references record disk path only, importer rewires Spatie media rows by looking up files on disk after re-seed (no file bundling). Missing collections, templates, and media fall back gracefully into unset state with warnings logged — no on-screen errors, no widget data mapping UI (deferred). Server-side `storage/app/exports/` directory plus a Saved Exports management UI to make the round-trip frictionless. **Out of scope:** widget data mapping UI with auto-match, file bundling (Tier 2), nav linking, cross-version migration, server-to-server sync.
 
 ---
 

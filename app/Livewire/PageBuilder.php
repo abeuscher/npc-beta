@@ -166,7 +166,7 @@ class PageBuilder extends Component
         $this->insertLayoutId    = null;
         $this->insertColumnIndex = null;
         $this->addModalLabel     = '';
-        $this->js("window.dispatchEvent(new CustomEvent('widget-created', { detail: { widgetId: '" . $newBlock->id . "' } }))");
+        $this->js("window.dispatchEvent(new CustomEvent('widget-created', { detail: { widgetId: '" . $newBlock->id . "', pageId: '" . $this->pageId . "' } }))");
     }
 
     // -------------------------------------------------------------------------
@@ -211,7 +211,7 @@ class PageBuilder extends Component
             ->success()
             ->send();
 
-        $this->js("window.dispatchEvent(new CustomEvent('template-saved'))");
+        $this->js("window.dispatchEvent(new CustomEvent('template-saved', { detail: { pageId: '" . $this->pageId . "' } }))");
     }
 
     // -------------------------------------------------------------------------

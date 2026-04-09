@@ -24,6 +24,15 @@ class WidgetTypeSeeder extends Seeder
             $heroFullsize->delete();
         }
 
+        // Remove site_header and site_footer — split into logo + nav widgets in session 154.
+        foreach (['site_header', 'site_footer'] as $oldHandle) {
+            $oldType = WidgetType::where('handle', $oldHandle)->first();
+            if ($oldType) {
+                PageWidget::where('widget_type_id', $oldType->id)->delete();
+                $oldType->delete();
+            }
+        }
+
         WidgetType::updateOrCreate(
             ['handle' => 'text_block'],
             [
@@ -349,40 +358,41 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
-            ['handle' => 'site_header'],
+            ['handle' => 'logo'],
             [
-                'label'              => 'Site Header',
-                'description'        => 'Top-of-page header with logo, navigation menu, and optional content.',
+                'label'              => 'Logo',
+                'description'        => 'Site logo image with optional text and link target.',
                 'category'           => ['layout'],
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => [],
-                'full_width'         => true,
+                'full_width'         => false,
+                'assets'             => ['scss' => ['resources/scss/widgets/_logo.scss']],
                 'config_schema'      => [
-                    ['key' => 'logo',           'type' => 'image',    'label' => 'Logo', 'group' => 'content'],
-                    ['key' => 'nav_handle',     'type' => 'text',     'label' => 'Navigation menu handle', 'default' => 'primary', 'group' => 'content'],
-                    ['key' => 'header_content', 'type' => 'richtext', 'label' => 'Content beside logo', 'group' => 'content'],
+                    ['key' => 'logo',     'type' => 'image', 'label' => 'Logo image',       'group' => 'content'],
+                    ['key' => 'text',     'type' => 'text',  'label' => 'Text beside logo', 'group' => 'content'],
+                    ['key' => 'link_url', 'type' => 'text',  'label' => 'Link URL',          'default' => '/', 'group' => 'content', 'subtype' => 'url'],
                 ],
-                'template'           => "@include('widgets.site-header')",
+                'template'           => "@include('widgets.logo')",
             ]
         );
 
         WidgetType::updateOrCreate(
-            ['handle' => 'site_footer'],
+            ['handle' => 'nav'],
             [
-                'label'              => 'Site Footer',
-                'description'        => 'Bottom-of-page footer with navigation, copyright, and theme toggle.',
+                'label'              => 'Navigation',
+                'description'        => 'Navigation menu rendered from a NavigationMenu by handle.',
                 'category'           => ['layout'],
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => [],
-                'full_width'         => true,
+                'full_width'         => false,
+                'assets'             => ['libs' => []],
                 'config_schema'      => [
-                    ['key' => 'nav_handle',         'type' => 'text',   'label' => 'Navigation menu handle', 'default' => 'footer', 'group' => 'content'],
-                    ['key' => 'show_theme_toggle',  'type' => 'toggle', 'label' => 'Show light/dark mode toggle', 'default' => true, 'group' => 'appearance'],
-                    ['key' => 'copyright_text',     'type' => 'text',   'label' => 'Copyright text', 'group' => 'content'],
+                    ['key' => 'nav_handle', 'type' => 'text', 'label' => 'Navigation menu handle', 'default' => 'primary', 'group' => 'content'],
                 ],
-                'template'           => "@include('widgets.site-footer')",
+                'template'           => "@include('widgets.nav')",
+                'required_config'    => ['keys' => ['nav_handle'], 'message' => 'Enter a navigation menu handle (e.g. primary).'],
             ]
         );
 

@@ -78,13 +78,16 @@ class SystemPageSeeder extends Seeder
         }
 
         // ── Chrome system pages (header & footer) ───────────────────────────
+        // The default header/footer content (logo + nav + text_block layouts) is
+        // populated by the rebuild_chrome_pages_with_logo_and_nav migration. The
+        // seeder only ensures the system pages themselves exist.
         $chromePages = [
-            ['title' => 'Header', 'slug' => '_header', 'widget_handle' => 'site_header'],
-            ['title' => 'Footer', 'slug' => '_footer', 'widget_handle' => 'site_footer'],
+            ['title' => 'Header', 'slug' => '_header'],
+            ['title' => 'Footer', 'slug' => '_footer'],
         ];
 
         foreach ($chromePages as $def) {
-            $page = Page::firstOrCreate(
+            Page::firstOrCreate(
                 ['slug' => $def['slug']],
                 [
                     'author_id'    => $authorId,
@@ -94,25 +97,6 @@ class SystemPageSeeder extends Seeder
                     'published_at' => now(),
                 ]
             );
-
-            $widgetType = WidgetType::where('handle', $def['widget_handle'])->first();
-
-            if ($widgetType) {
-                $exists = PageWidget::where('page_id', $page->id)
-                    ->where('widget_type_id', $widgetType->id)
-                    ->exists();
-
-                if (! $exists) {
-                    PageWidget::create([
-                        'page_id'        => $page->id,
-                        'widget_type_id' => $widgetType->id,
-                        'label'          => $def['title'],
-                        'config'         => $widgetType->getDefaultConfig(),
-                        'sort_order'     => 1,
-                        'is_active'      => true,
-                    ]);
-                }
-            }
         }
     }
 }
