@@ -18,7 +18,7 @@ class PageWidget extends Model implements HasMedia
 
     protected $fillable = [
         'page_id',
-        'parent_widget_id',
+        'layout_id',
         'column_index',
         'widget_type_id',
         'label',
@@ -46,16 +46,9 @@ class PageWidget extends Model implements HasMedia
         return $this->belongsTo(WidgetType::class);
     }
 
-    public function parent(): BelongsTo
+    public function layout(): BelongsTo
     {
-        return $this->belongsTo(PageWidget::class, 'parent_widget_id');
-    }
-
-    public function children(): HasMany
-    {
-        return $this->hasMany(PageWidget::class, 'parent_widget_id')
-            ->orderBy('column_index')
-            ->orderBy('sort_order');
+        return $this->belongsTo(PageLayout::class, 'layout_id');
     }
 
     // ── Static helpers — serialization & copying ─────────────────────────
@@ -66,17 +59,35 @@ class PageWidget extends Model implements HasMedia
     public static function serializeStack(string $pageId): array
     {
         $roots = static::where('page_id', $pageId)
-            ->whereNull('parent_widget_id')
-            ->with(['widgetType', 'children.widgetType'])
+            ->whereNull('layout_id')
+            ->with('widgetType')
             ->orderBy('sort_order')
             ->get();
 
-        return $roots->map(fn ($pw) => static::serializeOne($pw))->toArray();
+        $layouts = PageLayout::where('page_id', $pageId)
+            ->with(['widgets.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        $items = [];
+
+        foreach ($roots as $pw) {
+            $items[] = ['sort' => $pw->sort_order, 'data' => static::serializeOne($pw)];
+        }
+
+        foreach ($layouts as $layout) {
+            $items[] = ['sort' => $layout->sort_order, 'data' => static::serializeLayout($layout)];
+        }
+
+        usort($items, fn ($a, $b) => $a['sort'] <=> $b['sort']);
+
+        return array_column($items, 'data');
     }
 
     private static function serializeOne(self $pw): array
     {
         $entry = [
+            'type'         => 'widget',
             'handle'       => $pw->widgetType?->handle,
             'label'        => $pw->label,
             'config'       => $pw->config ?? [],
@@ -90,11 +101,26 @@ class PageWidget extends Model implements HasMedia
             $entry['column_index'] = $pw->column_index;
         }
 
-        if ($pw->children->isNotEmpty()) {
-            $entry['children'] = $pw->children->map(fn ($child) => static::serializeOne($child))->toArray();
+        return $entry;
+    }
+
+    private static function serializeLayout(PageLayout $layout): array
+    {
+        $slots = [];
+        foreach ($layout->widgets as $widget) {
+            $idx = $widget->column_index ?? 0;
+            $slots[$idx][] = static::serializeOne($widget);
         }
 
-        return $entry;
+        return [
+            'type'          => 'layout',
+            'label'         => $layout->label,
+            'display'       => $layout->display,
+            'columns'       => $layout->columns,
+            'layout_config' => $layout->layout_config ?? [],
+            'sort_order'    => $layout->sort_order,
+            'slots'         => $slots,
+        ];
     }
 
     /**
@@ -103,29 +129,58 @@ class PageWidget extends Model implements HasMedia
     public static function copyBetweenPages(
         string $sourcePageId,
         string $targetPageId,
-        ?string $sourceParentId = null,
-        ?string $targetParentId = null,
     ): void {
-        $widgets = static::where('page_id', $sourcePageId)
-            ->where('parent_widget_id', $sourceParentId)
+        // Copy root widgets
+        $rootWidgets = static::where('page_id', $sourcePageId)
+            ->whereNull('layout_id')
             ->orderBy('sort_order')
             ->get();
 
-        foreach ($widgets as $widget) {
-            $new = static::create([
-                'page_id'          => $targetPageId,
-                'parent_widget_id' => $targetParentId,
-                'column_index'     => $widget->column_index,
-                'widget_type_id'   => $widget->widget_type_id,
-                'label'            => $widget->label,
-                'config'           => $widget->config,
-                'query_config'     => $widget->query_config,
-                'style_config'     => $widget->style_config,
-                'sort_order'       => $widget->sort_order,
-                'is_active'        => $widget->is_active,
+        foreach ($rootWidgets as $widget) {
+            static::create([
+                'page_id'        => $targetPageId,
+                'layout_id'      => null,
+                'column_index'   => null,
+                'widget_type_id' => $widget->widget_type_id,
+                'label'          => $widget->label,
+                'config'         => $widget->config,
+                'query_config'   => $widget->query_config,
+                'style_config'   => $widget->style_config,
+                'sort_order'     => $widget->sort_order,
+                'is_active'      => $widget->is_active,
+            ]);
+        }
+
+        // Copy layouts with their child widgets
+        $layouts = PageLayout::where('page_id', $sourcePageId)
+            ->with('widgets')
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($layouts as $layout) {
+            $newLayout = PageLayout::create([
+                'page_id'       => $targetPageId,
+                'label'         => $layout->label,
+                'display'       => $layout->display,
+                'columns'       => $layout->columns,
+                'layout_config' => $layout->layout_config,
+                'sort_order'    => $layout->sort_order,
             ]);
 
-            static::copyBetweenPages($sourcePageId, $targetPageId, $widget->id, $new->id);
+            foreach ($layout->widgets as $widget) {
+                static::create([
+                    'page_id'        => $targetPageId,
+                    'layout_id'      => $newLayout->id,
+                    'column_index'   => $widget->column_index,
+                    'widget_type_id' => $widget->widget_type_id,
+                    'label'          => $widget->label,
+                    'config'         => $widget->config,
+                    'query_config'   => $widget->query_config,
+                    'style_config'   => $widget->style_config,
+                    'sort_order'     => $widget->sort_order,
+                    'is_active'      => $widget->is_active,
+                ]);
+            }
         }
     }
 

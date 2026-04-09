@@ -1,7 +1,7 @@
 <div
     class="page-builder"
     x-data
-    x-on:open-widget-picker.window="$wire.openAddModal($event.detail?.insertPosition ?? null)"
+    x-on:open-widget-picker.window="$wire.openAddModal($event.detail?.insertPosition ?? null, $event.detail?.layoutId ?? null, $event.detail?.columnIndex ?? null)"
     x-on:open-save-template-modal.window="$wire.openSaveTemplateModal()"
 >
 

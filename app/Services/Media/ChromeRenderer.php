@@ -45,9 +45,9 @@ class ChromeRenderer
         }
 
         $widgets = $page->pageWidgets()
-            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->with('widgetType')
             ->where('is_active', true)
-            ->whereNull('parent_widget_id')
+            ->whereNull('layout_id')
             ->orderBy('sort_order')
             ->get();
 

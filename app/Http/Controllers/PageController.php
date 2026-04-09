@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\Template;
 use App\Services\PageContext;
@@ -59,30 +60,59 @@ class PageController extends Controller
 
         View::share('__template', $template);
 
-        $pageWidgets = $page->pageWidgets()
-            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+        // Load root widgets and layouts, merge into page flow by sort_order
+        $rootWidgets = $page->pageWidgets()
+            ->with('widgetType')
             ->where('is_active', true)
-            ->whereNull('parent_widget_id')
+            ->whereNull('layout_id')
             ->orderBy('sort_order')
             ->get();
+
+        $layouts = PageLayout::where('page_id', $page->id)
+            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'), 'widgets.widgetType'])
+            ->orderBy('sort_order')
+            ->get();
+
+        // Merge into ordered page flow
+        $pageItems = collect();
+
+        foreach ($rootWidgets as $pw) {
+            $pageItems->push(['type' => 'widget', 'sort_order' => $pw->sort_order, 'data' => $pw]);
+        }
+
+        foreach ($layouts as $layout) {
+            $pageItems->push(['type' => 'layout', 'sort_order' => $layout->sort_order, 'data' => $layout]);
+        }
+
+        $pageItems = $pageItems->sortBy('sort_order')->values();
 
         $blocks         = [];
         $inlineStyles   = '';
         $inlineScripts  = '';
         $widgetAssets    = ['css' => [], 'js' => [], 'scss' => []];
 
-        foreach ($pageWidgets as $pw) {
-            $blockData = $this->renderWidgetBlock($pw);
-            if ($blockData) {
-                $blocks[] = $blockData['block'];
-                $inlineStyles  .= $blockData['styles'];
-                $inlineScripts .= $blockData['scripts'];
+        foreach ($pageItems as $item) {
+            if ($item['type'] === 'widget') {
+                $pw = $item['data'];
+                $blockData = $this->renderWidgetBlock($pw);
+                if ($blockData) {
+                    $blocks[] = $blockData['block'];
+                    $inlineStyles  .= $blockData['styles'];
+                    $inlineScripts .= $blockData['scripts'];
+                }
+                WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
+            } else {
+                $layout = $item['data'];
+                $layoutBlock = $this->renderLayoutBlock($layout, $inlineStyles, $inlineScripts, $widgetAssets);
+                if ($layoutBlock) {
+                    $blocks[] = $layoutBlock;
+                }
             }
-            WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
         }
 
         // Check if the first widget is a hero with overlap_nav enabled
-        $firstPw = $pageWidgets->first();
+        $firstItem = $pageItems->first();
+        $firstPw = ($firstItem && $firstItem['type'] === 'widget') ? $firstItem['data'] : null;
         $navOverlap = $firstPw
             && $firstPw->widgetType?->handle === 'hero'
             && (($firstPw->config['overlap_nav'] ?? false) == true);
@@ -101,13 +131,7 @@ class PageController extends Controller
             return null;
         }
 
-        // For column widgets, render children first
-        $columnChildren = [];
-        if ($widgetType->handle === 'column_widget') {
-            $columnChildren = $this->renderColumnChildren($pw);
-        }
-
-        $result = WidgetRenderer::render($pw, $columnChildren);
+        $result = WidgetRenderer::render($pw);
 
         if ($result['html'] === null) {
             return null;
@@ -130,25 +154,93 @@ class PageController extends Controller
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
     }
 
-    private function renderColumnChildren(PageWidget $pw): array
+    private function renderLayoutBlock(PageLayout $layout, string &$inlineStyles, string &$inlineScripts, array &$widgetAssets): ?array
     {
-        $children = [];
+        $config = $layout->layout_config ?? [];
+        $display = $layout->display ?? 'grid';
 
-        foreach ($pw->children as $child) {
-            if (! $child->is_active) {
-                continue;
-            }
+        // Build CSS for the layout container
+        $containerStyle = 'display:' . $display . ';';
 
-            $blockData = $this->renderWidgetBlock($child);
-
-            if ($blockData === null) {
-                continue;
-            }
-
-            $idx = $child->column_index ?? 0;
-            $children[$idx][] = $blockData['block'];
+        if ($display === 'grid') {
+            $containerStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
         }
 
-        return $children;
+        if (! empty($config['gap'])) {
+            $containerStyle .= 'gap:' . $config['gap'] . ';';
+        }
+        if (! empty($config['align_items'])) {
+            $containerStyle .= 'align-items:' . $config['align_items'] . ';';
+        }
+        if (! empty($config['justify_items'])) {
+            $containerStyle .= 'justify-items:' . $config['justify_items'] . ';';
+        }
+        if (! empty($config['justify_content'])) {
+            $containerStyle .= 'justify-content:' . $config['justify_content'] . ';';
+        }
+        if (! empty($config['grid_auto_rows'])) {
+            $containerStyle .= 'grid-auto-rows:' . $config['grid_auto_rows'] . ';';
+        }
+        if (! empty($config['flex_wrap'])) {
+            $containerStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
+        }
+
+        // Group children by column_index
+        $slots = [];
+        foreach ($layout->widgets as $widget) {
+            $idx = $widget->column_index ?? 0;
+            $slots[$idx][] = $widget;
+        }
+
+        // Render each column slot
+        $columnHtml = '';
+        for ($i = 0; $i < $layout->columns; $i++) {
+            $slotWidgets = $slots[$i] ?? [];
+            $slotHtml = '';
+
+            foreach ($slotWidgets as $pw) {
+                $blockData = $this->renderWidgetBlock($pw);
+                if ($blockData) {
+                    $sc = $pw->style_config ?? [];
+                    $styleProps = [];
+                    $spacingKeys = [
+                        'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
+                        'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
+                        'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
+                        'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+                    ];
+                    foreach ($spacingKeys as $key => $cssProp) {
+                        $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
+                        if ($val !== null) {
+                            $styleProps[] = $cssProp . ':' . $val . 'px';
+                        }
+                    }
+                    $inlineStyle = implode(';', $styleProps);
+
+                    $slotHtml .= '<div class="widget widget--' . e($pw->widgetType->handle) . '"'
+                        . ' id="widget-' . e($pw->id) . '"'
+                        . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
+                        . '>' . $blockData['block']['html'] . '</div>';
+
+                    $inlineStyles  .= $blockData['styles'];
+                    $inlineScripts .= $blockData['scripts'];
+                    WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
+                }
+            }
+
+            $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
+        }
+
+        $html = '<div class="page-layout" style="' . e($containerStyle) . '">' . $columnHtml . '</div>';
+
+        return [
+            'handle'       => 'page_layout',
+            'instance_id'  => $layout->id,
+            'html'         => $html,
+            'css'          => '',
+            'js'           => '',
+            'style_config' => [],
+            'full_width'   => false,
+        ];
     }
 }

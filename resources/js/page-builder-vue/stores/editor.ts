@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type {
   Widget,
+  PageLayout,
+  PageItem,
   WidgetType,
   Collection,
   Tag,
@@ -10,17 +12,22 @@ import type {
   BootstrapData,
   CreateWidgetPayload,
   UpdateWidgetPayload,
+  CreateLayoutPayload,
+  UpdateLayoutPayload,
   ReorderItem,
 } from '../types'
 import * as api from '../api'
 
 export const useEditorStore = defineStore('editor', () => {
-  // Core widget data
+  // Core data
   const pageId = ref('')
   const pageType = ref('default')
-  const widgets = ref<Record<string, Widget>>({})
-  const rootOrder = ref<string[]>([])
-  const selectedBlockId = ref<string | null>(null)
+  const widgets = ref<Record<string, Widget>>({}) // flat map of all widgets (root + inside layouts)
+  const layouts = ref<Record<string, PageLayout>>({}) // flat map of layouts
+  const pageItems = ref<PageItem[]>([]) // ordered merged page flow
+  const rootOrder = ref<string[]>([]) // root widget IDs only — kept for backward compat with PreviewCanvas drag-end
+  const selectedItemId = ref<string | null>(null)
+  const selectedItemType = ref<'widget' | 'layout' | null>(null)
   const editorMode = ref<'edit' | 'handles'>('edit')
 
   // Preview state
@@ -50,28 +57,51 @@ export const useEditorStore = defineStore('editor', () => {
   let debounceSaveTimer: ReturnType<typeof setTimeout> | null = null
   const pendingConfigChanges = ref<Record<string, Record<string, any>>>({})
 
+  // Debounced layout save state
+  let debounceLayoutTimer: ReturnType<typeof setTimeout> | null = null
+  const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
+
   // ── Getters ────────────────────────────────────────────────────────────
 
   const rootWidgets = computed(() =>
     rootOrder.value.map((id) => widgets.value[id]).filter(Boolean)
   )
 
-  const selectedWidget = computed(() =>
-    selectedBlockId.value ? widgets.value[selectedBlockId.value] ?? null : null
-  )
+  const selectedWidget = computed(() => {
+    if (selectedItemType.value !== 'widget' || !selectedItemId.value) return null
+    return widgets.value[selectedItemId.value] ?? null
+  })
 
-  function childrenOf(parentId: string): Record<number, Widget[]> {
-    const parent = widgets.value[parentId]
-    return parent?.children ?? {}
+  const selectedLayout = computed(() => {
+    if (selectedItemType.value !== 'layout' || !selectedItemId.value) return null
+    return layouts.value[selectedItemId.value] ?? null
+  })
+
+  // Backward-compat alias for components that still read selectedBlockId
+  const selectedBlockId = computed({
+    get: () => (selectedItemType.value === 'widget' ? selectedItemId.value : null),
+    set: (id: string | null) => {
+      if (id === null) {
+        selectedItemId.value = null
+        selectedItemType.value = null
+      } else {
+        selectedItemId.value = id
+        selectedItemType.value = 'widget'
+      }
+    },
+  })
+
+  function childrenOf(_parentId: string): Record<number, Widget[]> {
+    // Legacy helper — widgets no longer have children. Layouts hold widgets in slots.
+    return {}
   }
 
   function isWidgetDirty(id: string): boolean {
     return dirtyWidgets.value.has(id)
   }
 
-  const columnTargets = computed(() =>
-    rootWidgets.value.filter((w) => w.widget_type_handle === 'column_widget')
-  )
+  // No more column widgets — kept for backward compat with any stale references.
+  const columnTargets = computed(() => [] as Widget[])
 
   // ── Actions ────────────────────────────────────────────────────────────
 
@@ -87,37 +117,78 @@ export const useEditorStore = defineStore('editor', () => {
     inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
     colorSwatches.value = data.color_swatches ?? []
 
-    populateWidgets(data.widgets)
+    populateFromItems(data.items ?? [])
     requiredLibs.value = data.required_libs
   }
 
-  function populateWidgets(tree: Widget[]): void {
-    const flat: Record<string, Widget> = {}
-    const order: string[] = []
+  function populateFromItems(items: PageItem[]): void {
+    const widgetMap: Record<string, Widget> = {}
+    const layoutMap: Record<string, PageLayout> = {}
+    const rootIds: string[] = []
+    const orderedItems: PageItem[] = []
 
-    for (const w of tree) {
-      flat[w.id] = w
-      order.push(w.id)
+    for (const item of items) {
+      if (item.type === 'widget') {
+        const w = item as Widget & { type: 'widget' }
+        widgetMap[w.id] = w
+        rootIds.push(w.id)
+        orderedItems.push(w as PageItem)
+      } else {
+        const layout = item as PageLayout & { type: 'layout' }
+
+        // Normalize slots: ensure every column index 0..columns-1 has a real array.
+        // This guarantees vuedraggable always has a stable mutable reference per slot,
+        // even for empty columns.
+        const rawSlots = (layout.slots ?? {}) as Record<string | number, Widget[]>
+        const normalized: Record<number, Widget[]> = {}
+        for (let i = 0; i < layout.columns; i++) {
+          const slot = rawSlots[i] ?? rawSlots[String(i)] ?? []
+          normalized[i] = slot
+          for (const sw of slot) {
+            widgetMap[sw.id] = sw
+          }
+        }
+        layout.slots = normalized as any
+
+        // Use the SAME object reference in both maps so mutations propagate.
+        layoutMap[layout.id] = layout
+        orderedItems.push(layout as PageItem)
+      }
     }
 
-    widgets.value = flat
-    rootOrder.value = order
+    widgets.value = widgetMap
+    layouts.value = layoutMap
+    pageItems.value = orderedItems
+    rootOrder.value = rootIds
     dirtyWidgets.value = new Set()
   }
 
+  function selectItem(id: string | null, type: 'widget' | 'layout' | null = null): void {
+    if (id === null) {
+      selectedItemId.value = null
+      selectedItemType.value = null
+      return
+    }
+    selectedItemId.value = id
+    selectedItemType.value = type ?? 'widget'
+  }
+
+  // Backward-compat: select a widget by ID
   function selectBlock(id: string | null): void {
-    selectedBlockId.value = id
+    selectItem(id, id === null ? null : 'widget')
   }
 
   function setMode(mode: 'edit' | 'handles'): void {
     editorMode.value = mode
   }
 
+  // ── Widget CRUD ────────────────────────────────────────────────────────
+
   async function createWidget(payload: CreateWidgetPayload): Promise<Widget | null> {
     saving.value = true
     try {
       const res = await api.createWidget(pageId.value, payload)
-      populateWidgets(res.tree)
+      populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       return res.widget
     } finally {
@@ -144,10 +215,11 @@ export const useEditorStore = defineStore('editor', () => {
     saving.value = true
     try {
       const res = await api.deleteWidget(id)
-      populateWidgets(res.tree)
+      populateFromItems(res.items)
       requiredLibs.value = res.required_libs
-      if (selectedBlockId.value === id) {
-        selectedBlockId.value = null
+      if (selectedItemId.value === id) {
+        selectedItemId.value = null
+        selectedItemType.value = null
       }
     } finally {
       saving.value = false
@@ -158,7 +230,7 @@ export const useEditorStore = defineStore('editor', () => {
     saving.value = true
     try {
       const res = await api.copyWidget(id)
-      populateWidgets(res.tree)
+      populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       return res.widget
     } finally {
@@ -170,15 +242,63 @@ export const useEditorStore = defineStore('editor', () => {
     saving.value = true
     try {
       const res = await api.reorderWidgets(pageId.value, items)
-      populateWidgets(res.tree)
+      populateFromItems(res.items)
       requiredLibs.value = res.required_libs
     } finally {
       saving.value = false
     }
   }
 
-  function replaceTree(data: { widgets: Widget[]; required_libs: string[] }): void {
-    populateWidgets(data.widgets)
+  // ── Layout CRUD ────────────────────────────────────────────────────────
+
+  async function createLayout(payload: CreateLayoutPayload = {}): Promise<PageLayout | null> {
+    saving.value = true
+    try {
+      const res = await api.createLayout(pageId.value, payload)
+      populateFromItems(res.items)
+      requiredLibs.value = res.required_libs
+      return res.layout
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function updateLayout(id: string, changes: UpdateLayoutPayload): Promise<PageLayout | null> {
+    saving.value = true
+    try {
+      const res = await api.updateLayout(id, changes)
+      const updated = res.layout
+      if (layouts.value[id]) {
+        layouts.value[id] = { ...layouts.value[id], ...updated }
+      }
+      // Also update the layout entry inside pageItems so the UI re-renders
+      const idx = pageItems.value.findIndex((it) => it.id === id && it.type === 'layout')
+      if (idx >= 0) {
+        pageItems.value[idx] = { ...pageItems.value[idx], ...updated, type: 'layout' } as PageItem
+      }
+      return updated
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function deleteLayout(id: string): Promise<void> {
+    saving.value = true
+    try {
+      const res = await api.deleteLayout(id)
+      populateFromItems(res.items)
+      requiredLibs.value = res.required_libs
+      if (selectedItemId.value === id) {
+        selectedItemId.value = null
+        selectedItemType.value = null
+      }
+    } finally {
+      saving.value = false
+    }
+  }
+
+  function replaceTree(data: { items: PageItem[]; required_libs: string[] }): void {
+    populateFromItems(data.items)
     requiredLibs.value = data.required_libs
   }
 
@@ -267,6 +387,58 @@ export const useEditorStore = defineStore('editor', () => {
     }, 500)
   }
 
+  /**
+   * Mutate a layout's local state immediately and queue a debounced API save.
+   * Pass a partial UpdateLayoutPayload with any combination of label/display/columns/layout_config.
+   */
+  function updateLocalLayout(layoutId: string, changes: UpdateLayoutPayload): void {
+    const l = layouts.value[layoutId]
+    if (!l) return
+
+    // Merge changes into the local layout object
+    if (changes.label !== undefined) l.label = changes.label
+    if (changes.display !== undefined) l.display = changes.display
+    if (changes.columns !== undefined) l.columns = changes.columns
+    if (changes.layout_config !== undefined) {
+      l.layout_config = { ...l.layout_config, ...changes.layout_config }
+    }
+
+    // Also update the entry inside pageItems so the UI re-renders
+    const idx = pageItems.value.findIndex(
+      (it) => it.id === layoutId && it.type === 'layout'
+    )
+    if (idx >= 0) {
+      pageItems.value[idx] = { ...pageItems.value[idx], ...l, type: 'layout' } as PageItem
+    }
+
+    // Merge pending changes for this layout
+    const pending = pendingLayoutChanges.value[layoutId] ?? {}
+    const merged: UpdateLayoutPayload = { ...pending }
+    if (changes.label !== undefined) merged.label = changes.label
+    if (changes.display !== undefined) merged.display = changes.display
+    if (changes.columns !== undefined) merged.columns = changes.columns
+    if (changes.layout_config !== undefined) {
+      merged.layout_config = {
+        ...(pending.layout_config ?? {}),
+        ...changes.layout_config,
+      }
+    }
+    pendingLayoutChanges.value[layoutId] = merged
+
+    if (debounceLayoutTimer) clearTimeout(debounceLayoutTimer)
+    debounceLayoutTimer = setTimeout(() => {
+      const toSave = { ...pendingLayoutChanges.value }
+      pendingLayoutChanges.value = {}
+      debounceLayoutTimer = null
+
+      for (const [id, payload] of Object.entries(toSave)) {
+        api.updateLayout(id, payload).catch((e) =>
+          console.error('Debounced layout save failed:', e)
+        )
+      }
+    }, 500)
+  }
+
   async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
     saving.value = true
     try {
@@ -337,8 +509,11 @@ export const useEditorStore = defineStore('editor', () => {
     pageId,
     pageType,
     widgets,
+    layouts,
+    pageItems,
     rootOrder,
-    selectedBlockId,
+    selectedItemId,
+    selectedItemType,
     editorMode,
     dirtyWidgets,
     requiredLibs,
@@ -355,6 +530,8 @@ export const useEditorStore = defineStore('editor', () => {
     // Getters
     rootWidgets,
     selectedWidget,
+    selectedLayout,
+    selectedBlockId,
     childrenOf,
     isWidgetDirty,
     columnTargets,
@@ -363,6 +540,7 @@ export const useEditorStore = defineStore('editor', () => {
     loadTree,
     replaceTree,
     reloadTree,
+    selectItem,
     selectBlock,
     setMode,
     createWidget,
@@ -371,6 +549,10 @@ export const useEditorStore = defineStore('editor', () => {
     deleteWidget,
     copyWidget,
     reorderWidgets,
+    createLayout,
+    updateLayout,
+    updateLocalLayout,
+    deleteLayout,
     refreshPreview,
     uploadImage,
     removeImage,

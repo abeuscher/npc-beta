@@ -350,8 +350,8 @@ it('blog listing renders Swiper container with slides', function () {
     expect($html)
         ->toContain('swiper-wrapper')
         ->toContain('swiper-slide')
-        ->toContain('swiper-button-prev')
-        ->toContain('swiper-button-next')
-        ->toContain('swiper-pagination')
+        ->toContain('x-ref="btnPrev"')
+        ->toContain('x-ref="btnNext"')
+        ->toContain('x-ref="pagination"')
         ->toContain('Swiper Post');
 });

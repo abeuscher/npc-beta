@@ -1,9 +1,13 @@
 import type {
   CreateWidgetPayload,
   UpdateWidgetPayload,
+  CreateLayoutPayload,
+  UpdateLayoutPayload,
   ReorderItem,
   TreeResponse,
   Widget,
+  PageLayout,
+  PageItem,
   WidgetType,
   Collection,
   Tag,
@@ -52,7 +56,7 @@ export function getWidgets(pageId: string): Promise<TreeResponse> {
 export function createWidget(
   pageId: string,
   payload: CreateWidgetPayload
-): Promise<{ widget: Widget; tree: Widget[]; required_libs: string[] }> {
+): Promise<{ widget: Widget; items: PageItem[]; required_libs: string[] }> {
   return request('POST', `${pageId}/widgets`, payload)
 }
 
@@ -65,21 +69,42 @@ export function updateWidget(
 
 export function deleteWidget(
   widgetId: string
-): Promise<{ deleted: boolean; tree: Widget[]; required_libs: string[] }> {
+): Promise<{ deleted: boolean; items: PageItem[]; required_libs: string[] }> {
   return request('DELETE', `widgets/${widgetId}`)
 }
 
 export function copyWidget(
   widgetId: string
-): Promise<{ widget: Widget; tree: Widget[]; required_libs: string[] }> {
+): Promise<{ widget: Widget; items: PageItem[]; required_libs: string[] }> {
   return request('POST', `widgets/${widgetId}/copy`)
 }
 
 export function reorderWidgets(
   pageId: string,
   items: ReorderItem[]
-): Promise<{ tree: Widget[]; required_libs: string[] }> {
+): Promise<{ items: PageItem[]; required_libs: string[] }> {
   return request('PUT', `${pageId}/widgets/reorder`, { items })
+}
+
+// Layout CRUD
+export function createLayout(
+  pageId: string,
+  payload: CreateLayoutPayload
+): Promise<{ layout: PageLayout; items: PageItem[]; required_libs: string[] }> {
+  return request('POST', `${pageId}/layouts`, payload)
+}
+
+export function updateLayout(
+  layoutId: string,
+  payload: UpdateLayoutPayload
+): Promise<{ layout: PageLayout }> {
+  return request('PUT', `layouts/${layoutId}`, payload)
+}
+
+export function deleteLayout(
+  layoutId: string
+): Promise<{ deleted: boolean; items: PageItem[]; required_libs: string[] }> {
+  return request('DELETE', `layouts/${layoutId}`)
 }
 
 // Preview

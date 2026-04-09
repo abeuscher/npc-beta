@@ -33,6 +33,8 @@ class PageBuilder extends Component
     // Add block modal
     public bool $showAddModal = false;
     public ?int $insertPosition = null;
+    public ?string $insertLayoutId = null;
+    public ?int $insertColumnIndex = null;
     public string $addModalLabel = '';
 
     // Save as template modal
@@ -76,11 +78,13 @@ class PageBuilder extends Component
     // Add block — called by the widget picker modal
     // -------------------------------------------------------------------------
 
-    public function openAddModal(?int $position = null): void
+    public function openAddModal(?int $position = null, ?string $layoutId = null, ?int $columnIndex = null): void
     {
-        $this->insertPosition = $position;
-        $this->addModalLabel  = '';
-        $this->showAddModal   = true;
+        $this->insertPosition    = $position;
+        $this->insertLayoutId    = $layoutId;
+        $this->insertColumnIndex = $columnIndex;
+        $this->addModalLabel     = '';
+        $this->showAddModal      = true;
     }
 
     public function createBlock(string $widgetTypeId): void
@@ -107,33 +111,61 @@ class PageBuilder extends Component
 
         $defaultConfig = $widgetType->getDefaultConfig();
 
-        $rootCount = PageWidget::where('page_id', $this->pageId)
-            ->whereNull('parent_widget_id')
-            ->count();
-        $position = $this->insertPosition ?? $rootCount;
+        if ($this->insertLayoutId) {
+            // Insert into a column slot
+            $columnIndex = $this->insertColumnIndex ?? 0;
+            $position = (PageWidget::where('layout_id', $this->insertLayoutId)
+                ->where('column_index', $columnIndex)
+                ->max('sort_order') ?? -1) + 1;
 
-        // Shift sort_order for blocks at or after the insert position
-        PageWidget::where('page_id', $this->pageId)
-            ->where('sort_order', '>=', $position)
-            ->increment('sort_order');
+            $newBlock = PageWidget::create([
+                'page_id'        => $this->pageId,
+                'layout_id'      => $this->insertLayoutId,
+                'column_index'   => $columnIndex,
+                'widget_type_id' => $widgetType->id,
+                'label'          => $this->addModalLabel,
+                'config'         => $defaultConfig,
+                'query_config'   => [],
+                'style_config'   => [
+                    'background_color' => '#ffffff',
+                    'text_color'       => '#000000',
+                ],
+                'sort_order'     => $position,
+                'is_active'      => true,
+            ]);
+        } else {
+            // Insert at root level
+            $rootCount = PageWidget::where('page_id', $this->pageId)
+                ->whereNull('layout_id')
+                ->count();
+            $position = $this->insertPosition ?? $rootCount;
 
-        $newBlock = PageWidget::create([
-            'page_id'        => $this->pageId,
-            'widget_type_id' => $widgetType->id,
-            'label'          => $this->addModalLabel,
-            'config'         => $defaultConfig,
-            'query_config'   => [],
-            'style_config'   => [
-                'background_color' => '#ffffff',
-                'text_color'       => '#000000',
-            ],
-            'sort_order'     => $position,
-            'is_active'      => true,
-        ]);
+            // Shift sort_order for blocks at or after the insert position
+            PageWidget::where('page_id', $this->pageId)
+                ->whereNull('layout_id')
+                ->where('sort_order', '>=', $position)
+                ->increment('sort_order');
 
-        $this->showAddModal   = false;
-        $this->insertPosition = null;
-        $this->addModalLabel  = '';
+            $newBlock = PageWidget::create([
+                'page_id'        => $this->pageId,
+                'widget_type_id' => $widgetType->id,
+                'label'          => $this->addModalLabel,
+                'config'         => $defaultConfig,
+                'query_config'   => [],
+                'style_config'   => [
+                    'background_color' => '#ffffff',
+                    'text_color'       => '#000000',
+                ],
+                'sort_order'     => $position,
+                'is_active'      => true,
+            ]);
+        }
+
+        $this->showAddModal      = false;
+        $this->insertPosition    = null;
+        $this->insertLayoutId    = null;
+        $this->insertColumnIndex = null;
+        $this->addModalLabel     = '';
         $this->js("window.dispatchEvent(new CustomEvent('widget-created', { detail: { widgetId: '" . $newBlock->id . "' } }))");
     }
 
@@ -190,19 +222,25 @@ class PageBuilder extends Component
     {
         $page = Page::find($this->pageId);
 
-        // Build the widget tree with preview HTML (same shape as the API response)
+        // Build the merged page flow (root widgets + layouts) with preview HTML
         $requiredHandlesForPage = $this->requiredHandles;
-        $widgets = PageWidget::where('page_id', $this->pageId)
-            ->whereNull('parent_widget_id')
+
+        $rootWidgets = PageWidget::where('page_id', $this->pageId)
+            ->whereNull('layout_id')
             ->where('is_active', true)
-            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->with('widgetType')
+            ->orderBy('sort_order')
+            ->get();
+
+        $layouts = \App\Models\PageLayout::where('page_id', $this->pageId)
+            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
         $allLibs = [];
-        $formattedWidgets = [];
+        $items = [];
 
-        foreach ($widgets as $pw) {
+        foreach ($rootWidgets as $pw) {
             if (! $pw->widgetType) {
                 continue;
             }
@@ -210,36 +248,8 @@ class PageBuilder extends Component
             $preview = $this->renderWidgetForPreview($pw);
             $this->collectLibs($pw, $allLibs);
 
-            $children = [];
-            foreach ($pw->children as $child) {
-                if (! $child->is_active || ! $child->widgetType) {
-                    continue;
-                }
-                $idx = $child->column_index ?? 0;
-                $children[$idx][] = [
-                    'id'                        => $child->id,
-                    'widget_type_id'            => $child->widget_type_id,
-                    'widget_type_handle'        => $child->widgetType?->handle ?? '',
-                    'widget_type_label'         => $child->widgetType?->label ?? 'Unknown',
-                    'widget_type_collections'   => $child->widgetType?->collections ?? [],
-                    'widget_type_config_schema' => $child->widgetType?->config_schema ?? [],
-                    'widget_type_assets'        => $child->widgetType?->assets ?? [],
-                    'widget_type_default_open'  => $child->widgetType?->default_open ?? false,
-                    'widget_type_required_config' => $child->widgetType?->required_config,
-                    'parent_widget_id'          => $child->parent_widget_id,
-                    'column_index'              => $child->column_index,
-                    'label'                     => $child->label ?? '',
-                    'config'                    => $child->config ?? [],
-                    'query_config'              => $child->query_config ?? [],
-                    'style_config'              => $child->style_config ?? [],
-                    'sort_order'                => $child->sort_order ?? 0,
-                    'is_active'                 => $child->is_active,
-                    'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
-                    'image_urls'                => $this->resolveWidgetImageUrls($child),
-                ];
-            }
-
-            $formattedWidgets[] = [
+            $items[] = [
+                'type'                      => 'widget',
                 'id'                        => $pw->id,
                 'widget_type_id'            => $pw->widget_type_id,
                 'widget_type_handle'        => $pw->widgetType?->handle ?? '',
@@ -249,7 +259,7 @@ class PageBuilder extends Component
                 'widget_type_assets'        => $pw->widgetType?->assets ?? [],
                 'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
                 'widget_type_required_config' => $pw->widgetType?->required_config,
-                'parent_widget_id'          => $pw->parent_widget_id,
+                'layout_id'                 => $pw->layout_id,
                 'column_index'              => $pw->column_index,
                 'label'                     => $pw->label ?? '',
                 'config'                    => $pw->config ?? [],
@@ -260,9 +270,58 @@ class PageBuilder extends Component
                 'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
                 'image_urls'                => $this->resolveWidgetImageUrls($pw),
                 'preview_html'              => $preview['html'],
-                'children'                  => $children,
             ];
         }
+
+        foreach ($layouts as $layout) {
+            $slots = [];
+            foreach ($layout->widgets as $child) {
+                if (! $child->widgetType) {
+                    continue;
+                }
+                $idx = $child->column_index ?? 0;
+                $childPreview = $this->renderWidgetForPreview($child);
+                $this->collectLibs($child, $allLibs);
+
+                $slots[$idx][] = [
+                    'type'                      => 'widget',
+                    'id'                        => $child->id,
+                    'widget_type_id'            => $child->widget_type_id,
+                    'widget_type_handle'        => $child->widgetType?->handle ?? '',
+                    'widget_type_label'         => $child->widgetType?->label ?? 'Unknown',
+                    'widget_type_collections'   => $child->widgetType?->collections ?? [],
+                    'widget_type_config_schema' => $child->widgetType?->config_schema ?? [],
+                    'widget_type_assets'        => $child->widgetType?->assets ?? [],
+                    'widget_type_default_open'  => $child->widgetType?->default_open ?? false,
+                    'widget_type_required_config' => $child->widgetType?->required_config,
+                    'layout_id'                 => $child->layout_id,
+                    'column_index'              => $child->column_index,
+                    'label'                     => $child->label ?? '',
+                    'config'                    => $child->config ?? [],
+                    'query_config'              => $child->query_config ?? [],
+                    'style_config'              => $child->style_config ?? [],
+                    'sort_order'                => $child->sort_order ?? 0,
+                    'is_active'                 => $child->is_active,
+                    'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
+                    'image_urls'                => $this->resolveWidgetImageUrls($child),
+                    'preview_html'              => $childPreview['html'],
+                ];
+            }
+
+            $items[] = [
+                'type'          => 'layout',
+                'id'            => $layout->id,
+                'page_id'       => $layout->page_id,
+                'label'         => $layout->label ?? '',
+                'display'       => $layout->display,
+                'columns'       => $layout->columns,
+                'layout_config' => $layout->layout_config ?? [],
+                'sort_order'    => $layout->sort_order ?? 0,
+                'slots'         => (object) $slots,
+            ];
+        }
+
+        usort($items, fn ($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
 
         $collections = Collection::where('is_active', true)
             ->orderBy('name')
@@ -293,10 +352,15 @@ class PageBuilder extends Component
 
         $colorSwatches = json_decode(SiteSetting::get('editor_color_swatches', '[]'), true) ?: [];
 
+        // Legacy 'widgets' key: root widgets only, kept for current Vue store compatibility
+        // until Phase 3 migrates the store to use 'items'.
+        $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
+
         return [
             'page_id'                 => $this->pageId,
             'page_type'               => $this->pageType,
-            'widgets'                 => $formattedWidgets,
+            'widgets'                 => $legacyWidgets,
+            'items'                   => $items,
             'required_libs'           => array_values(array_unique($allLibs)),
             'widget_types'            => $this->widgetTypes,
             'required_handles'        => $this->requiredHandles,
@@ -336,12 +400,6 @@ class PageBuilder extends Component
         foreach ($assets['libs'] ?? [] as $lib) {
             $libs[] = $lib;
         }
-
-        foreach ($pw->children as $child) {
-            if ($child->is_active) {
-                $this->collectLibs($child, $libs);
-            }
-        }
     }
 
     private function renderWidgetForPreview(PageWidget $pw): array
@@ -349,13 +407,8 @@ class PageBuilder extends Component
         $widgetType = $pw->widgetType;
 
         try {
-            $columnChildren = [];
-            if ($widgetType->handle === 'column_widget') {
-                $columnChildren = $this->renderColumnChildren($pw);
-            }
-
             $fallbackData = $this->buildDemoCollectionData($pw);
-            $result = WidgetRenderer::render($pw, $columnChildren, $fallbackData);
+            $result = WidgetRenderer::render($pw, [], $fallbackData);
 
             if ($result['html'] === null) {
                 $html = '<div class="widget-preview-notice">No preview available</div>';
@@ -394,51 +447,6 @@ class PageBuilder extends Component
             'widget_type_label' => $widgetType->label,
             'html'             => $html,
         ];
-    }
-
-    private function renderColumnChildren(PageWidget $pw): array
-    {
-        $children = [];
-
-        foreach ($pw->children as $child) {
-            if (! $child->is_active) {
-                continue;
-            }
-
-            $childColumnChildren = [];
-            if ($child->widgetType?->handle === 'column_widget') {
-                $childColumnChildren = $this->renderColumnChildren($child);
-            }
-
-            $childFallback = $this->buildDemoCollectionData($child);
-            $result = WidgetRenderer::render($child, $childColumnChildren, $childFallback);
-
-            if ($result['html'] === null) {
-                continue;
-            }
-
-            $childHandle = $child->widgetType->handle;
-            $sc = $child->style_config ?? [];
-            $childInlineStyle = self::buildInlineStyles($sc);
-
-            $configFullWidth = $child->config['full_width'] ?? null;
-            $styleFullWidth = $sc['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($child->widgetType->full_width ?? false));
-
-            $idx = $child->column_index ?? 0;
-            $children[$idx][] = [
-                'handle'       => $childHandle,
-                'instance_id'  => $child->id,
-                'html'         => $result['html'],
-                'css'          => $child->widgetType->css ?? '',
-                'js'           => $child->widgetType->js ?? '',
-                'style_config' => $sc,
-                'full_width'   => $isFullWidth,
-            ];
-        }
-
-        return $children;
     }
 
     private static function buildInlineStyles(array $styleConfig): string

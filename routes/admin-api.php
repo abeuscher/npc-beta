@@ -22,6 +22,11 @@ Route::delete('widgets/{widget}', [PageBuilderApiController::class, 'destroy']);
 Route::post('widgets/{widget}/copy', [PageBuilderApiController::class, 'copy']);
 Route::put('{page}/widgets/reorder', [PageBuilderApiController::class, 'reorder']);
 
+// Layout CRUD
+Route::post('{page}/layouts', [PageBuilderApiController::class, 'storeLayout']);
+Route::put('layouts/{layout}', [PageBuilderApiController::class, 'updateLayout']);
+Route::delete('layouts/{layout}', [PageBuilderApiController::class, 'destroyLayout']);
+
 // Preview
 Route::get('widgets/{widget}/preview', [PageBuilderApiController::class, 'preview']);
 

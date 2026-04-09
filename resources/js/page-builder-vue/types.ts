@@ -8,7 +8,7 @@ export interface Widget {
   widget_type_assets: Record<string, any>
   widget_type_default_open: boolean
   widget_type_required_config: { keys: string[]; message: string } | null
-  parent_widget_id: string | null
+  layout_id: string | null
   column_index: number | null
   label: string
   config: Record<string, any>
@@ -19,8 +19,22 @@ export interface Widget {
   is_required: boolean
   image_urls: Record<string, string | null>
   preview_html: string
-  children: Record<number, Widget[]>
 }
+
+export interface PageLayout {
+  id: string
+  page_id: string
+  label: string
+  display: 'flex' | 'grid'
+  columns: number
+  layout_config: Record<string, any>
+  sort_order: number
+  slots: Record<number, Widget[]>
+}
+
+export type WidgetItem = Widget & { type: 'widget' }
+export type LayoutItem = PageLayout & { type: 'layout' }
+export type PageItem = WidgetItem | LayoutItem
 
 export interface WidgetType {
   id: string
@@ -76,7 +90,7 @@ export interface EventRef {
 export interface BootstrapData {
   page_id: string
   page_type: string
-  widgets: Widget[]
+  items: PageItem[]
   required_libs: string[]
   widget_types: WidgetType[]
   required_handles: string[]
@@ -91,14 +105,14 @@ export interface BootstrapData {
 }
 
 export interface TreeResponse {
-  widgets: Widget[]
+  items: PageItem[]
   required_libs: string[]
 }
 
 export interface CreateWidgetPayload {
   widget_type_id: string
   label?: string
-  parent_widget_id?: string | null
+  layout_id?: string | null
   column_index?: number | null
   insert_position?: number | null
 }
@@ -110,9 +124,29 @@ export interface UpdateWidgetPayload {
   query_config?: Record<string, any>
 }
 
-export interface ReorderItem {
-  id: string
-  parent_widget_id: string | null
-  column_index: number | null
-  sort_order: number
+export interface CreateLayoutPayload {
+  label?: string
+  display?: 'flex' | 'grid'
+  columns?: number
 }
+
+export interface UpdateLayoutPayload {
+  label?: string
+  display?: 'flex' | 'grid'
+  columns?: number
+  layout_config?: Record<string, any>
+}
+
+export type ReorderItem =
+  | {
+      id: string
+      type: 'widget'
+      layout_id: string | null
+      column_index: number | null
+      sort_order: number
+    }
+  | {
+      id: string
+      type: 'layout'
+      sort_order: number
+    }

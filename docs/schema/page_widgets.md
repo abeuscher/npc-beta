@@ -1,13 +1,13 @@
 ## page_widgets
 
-Widgets embedded on a page, ordered by sort_order. Supports unlimited nesting via `parent_widget_id` (used by column layout widgets).
+Widgets embedded on a page, ordered by sort_order. Root widgets have `layout_id IS NULL`. Widgets inside a column layout reference the layout via `layout_id` and indicate their column slot via `column_index`.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
 | page_id | uuid | no | FK→pages, cascade |
-| parent_widget_id | uuid | yes | FK→page_widgets.id, set null on parent delete |
-| column_index | smallint unsigned | yes | Slot index within parent column widget; null for root widgets |
+| layout_id | uuid | yes | FK→page_layouts.id, cascade on delete; null for root widgets |
+| column_index | smallint unsigned | yes | Slot index within layout; null for root widgets |
 | widget_type_id | uuid | no | FK→widget_types, restrictOnDelete |
 | label | string | yes | |
 | config | jsonb | no | default: {} |

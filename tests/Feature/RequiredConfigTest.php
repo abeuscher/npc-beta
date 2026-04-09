@@ -45,7 +45,7 @@ it('populates required_config for widgets that need it', function () {
 });
 
 it('does not set required_config for widgets that do not need it', function () {
-    $noRequiredConfig = ['text_block', 'hero', 'column_widget', 'site_header', 'site_footer', 'image'];
+    $noRequiredConfig = ['text_block', 'hero', 'site_header', 'site_footer', 'image'];
 
     foreach ($noRequiredConfig as $handle) {
         $wt = WidgetType::where('handle', $handle)->first();

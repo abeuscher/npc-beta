@@ -330,24 +330,6 @@ class WidgetTypeSeeder extends Seeder
         );
 
         WidgetType::updateOrCreate(
-            ['handle' => 'column_widget'],
-            [
-                'label'              => 'Column Layout',
-                'description'        => 'Multi-column grid that holds other widgets side by side.',
-                'category'           => ['layout'],
-                'allowed_page_types' => null,
-                'render_mode'        => 'server',
-                'collections'        => [],
-                'default_open'       => true,
-                'config_schema'      => [
-                    ['key' => 'num_columns',           'type' => 'number', 'label' => 'Number of columns', 'default' => 2, 'group' => 'content'],
-                    ['key' => 'grid_template_columns', 'type' => 'text',   'label' => 'Column widths (e.g. 1fr 1fr)', 'default' => '1fr 1fr', 'group' => 'appearance'],
-                ],
-                'template'           => "@include('widgets.column-widget')",
-            ]
-        );
-
-        WidgetType::updateOrCreate(
             ['handle' => 'image'],
             [
                 'label'              => 'Image',

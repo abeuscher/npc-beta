@@ -9,12 +9,14 @@ import ApplyChangesButton from './ApplyChangesButton.vue'
 import WidgetAppearanceControls from './WidgetAppearanceControls.vue'
 import SpacingControl from './SpacingControl.vue'
 import QuerySettings from './QuerySettings.vue'
+import LayoutInspectorPanel from './LayoutInspectorPanel.vue'
 import { ref } from 'vue'
 
 const store = useEditorStore()
 const activeTab = ref<'content' | 'appearance'>('content')
 
 const widget = computed(() => store.selectedWidget)
+const layout = computed(() => store.selectedLayout)
 
 const contentFields = computed(() => {
   if (!widget.value) return [] as FieldDef[]
@@ -33,14 +35,9 @@ const appearanceFields = computed(() => {
 
 <template>
   <div class="inspector-panel">
-    <div
-      v-if="!widget"
-      class="inspector-panel__placeholder"
-    >
-      Select a block to edit its settings.
-    </div>
+    <LayoutInspectorPanel v-if="layout" />
 
-    <template v-else>
+    <template v-else-if="widget">
       <InspectorHeader :widget="widget" />
       <InspectorTabs v-model:active-tab="activeTab" />
 
@@ -59,6 +56,10 @@ const appearanceFields = computed(() => {
 
       <ApplyChangesButton />
     </template>
+
+    <div v-else class="inspector-panel__placeholder">
+      Select a block to edit its settings.
+    </div>
   </div>
 </template>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Page;
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\User;
 use App\Models\WidgetType;
@@ -47,21 +48,33 @@ function apiWidget(Page $page, ?string $handle = null, int $sortOrder = 0): Page
     ]);
 }
 
-function apiChildWidget(Page $page, PageWidget $parent, int $columnIndex, int $sortOrder = 0): PageWidget
+function apiLayout(Page $page, int $sortOrder = 0): PageLayout
+{
+    return PageLayout::create([
+        'page_id'       => $page->id,
+        'label'         => 'Test Layout',
+        'display'       => 'grid',
+        'columns'       => 2,
+        'layout_config' => ['grid_template_columns' => '1fr 1fr', 'gap' => '1rem'],
+        'sort_order'    => $sortOrder,
+    ]);
+}
+
+function apiChildWidget(Page $page, PageLayout $layout, int $columnIndex, int $sortOrder = 0): PageWidget
 {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     return PageWidget::create([
-        'page_id'          => $page->id,
-        'parent_widget_id' => $parent->id,
-        'column_index'     => $columnIndex,
-        'widget_type_id'   => $wt->id,
-        'label'            => 'Child ' . ($sortOrder + 1),
-        'config'           => $wt->getDefaultConfig(),
-        'query_config'     => [],
-        'style_config'     => [],
-        'sort_order'       => $sortOrder,
-        'is_active'        => true,
+        'page_id'        => $page->id,
+        'layout_id'      => $layout->id,
+        'column_index'   => $columnIndex,
+        'widget_type_id' => $wt->id,
+        'label'          => 'Child ' . ($sortOrder + 1),
+        'config'         => $wt->getDefaultConfig(),
+        'query_config'   => [],
+        'style_config'   => [],
+        'sort_order'     => $sortOrder,
+        'is_active'      => true,
     ]);
 }
 
@@ -89,7 +102,7 @@ it('returns the widget tree for a page', function () {
                 '*' => [
                     'id', 'widget_type_id', 'widget_type_handle', 'widget_type_label',
                     'label', 'config', 'query_config', 'style_config', 'sort_order',
-                    'is_active', 'is_required', 'preview_html', 'children',
+                    'is_active', 'is_required', 'preview_html',
                 ],
             ],
             'required_libs',
@@ -173,40 +186,34 @@ it('updates a widget label and config', function () {
 
 // ── DELETE widgets ───────────────────────────────────────────────────────
 
-it('deletes a widget and its children', function () {
+it('deletes a widget', function () {
     $page = apiPage();
-    $column = apiWidget($page, 'column_widget', 0);
-    $child = apiChildWidget($page, $column, 0);
+    $widget = apiWidget($page, 'text_block', 0);
 
     $response = $this->actingAs(apiUser())
-        ->deleteJson(apiPrefix() . "/widgets/{$column->id}");
+        ->deleteJson(apiPrefix() . "/widgets/{$widget->id}");
 
     $response->assertOk()
         ->assertJsonPath('deleted', true)
         ->assertJsonStructure(['tree', 'required_libs']);
 
-    $this->assertDatabaseMissing('page_widgets', ['id' => $column->id]);
-    $this->assertDatabaseMissing('page_widgets', ['id' => $child->id]);
+    $this->assertDatabaseMissing('page_widgets', ['id' => $widget->id]);
 });
 
 // ── POST copy ────────────────────────────────────────────────────────────
 
-it('copies a widget and its children', function () {
+it('copies a widget', function () {
     $page = apiPage();
-    $column = apiWidget($page, 'column_widget', 0);
-    $child = apiChildWidget($page, $column, 0);
+    $widget = apiWidget($page, 'text_block', 0);
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/widgets/{$column->id}/copy");
+        ->postJson(apiPrefix() . "/widgets/{$widget->id}/copy");
 
     $response->assertCreated()
         ->assertJsonStructure(['widget', 'tree', 'required_libs']);
 
     // Original + copy = 2 root widgets
-    expect(PageWidget::where('page_id', $page->id)->whereNull('parent_widget_id')->count())->toBe(2);
-    // Original child + copied child = 2 children total
-    $copyId = $response->json('widget.id');
-    expect(PageWidget::where('parent_widget_id', $copyId)->count())->toBe(1);
+    expect(PageWidget::where('page_id', $page->id)->whereNull('layout_id')->count())->toBe(2);
 });
 
 // ── PUT reorder ──────────────────────────────────────────────────────────
@@ -219,8 +226,8 @@ it('reorders widgets', function () {
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
             'items' => [
-                ['id' => $w2->id, 'parent_widget_id' => null, 'column_index' => null, 'sort_order' => 0],
-                ['id' => $w1->id, 'parent_widget_id' => null, 'column_index' => null, 'sort_order' => 1],
+                ['id' => $w2->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
+                ['id' => $w1->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 1],
             ],
         ]);
 
@@ -237,7 +244,7 @@ it('rejects reorder with invalid widget IDs', function () {
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
             'items' => [
-                ['id' => $widget->id, 'parent_widget_id' => null, 'column_index' => null, 'sort_order' => 0],
+                ['id' => $widget->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
             ],
         ]);
 
@@ -290,21 +297,191 @@ it('returns 403 for users without update_page on write endpoints', function () {
 
 // ── Widget ownership ─────────────────────────────────────────────────────
 
-it('cannot update a widget from a different page context', function () {
+it('cannot create a widget referencing a layout from a different page', function () {
     $page1 = apiPage();
     $page2 = apiPage();
-    $widget = apiWidget($page2);
+    $layout = apiLayout($page2);
+    $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    // The widget belongs to page2, but route model binding doesn't scope to page
-    // — this is OK because the update endpoint uses widget ID directly.
-    // What we DO test is that the parent_widget_id validation works for create:
     $response = $this->actingAs(apiUser())
         ->postJson(apiPrefix() . "/{$page1->id}/widgets", [
-            'widget_type_id'   => $widget->widget_type_id,
-            'parent_widget_id' => $widget->id, // widget from page2
+            'widget_type_id' => $wt->id,
+            'layout_id'      => $layout->id, // layout from page2
         ]);
 
     $response->assertStatus(422);
+});
+
+// ── Layout CRUD ──────────────────────────────────────────────────────────
+
+it('creates a layout on a page', function () {
+    $page = apiPage();
+
+    $response = $this->actingAs(apiUser())
+        ->postJson(apiPrefix() . "/{$page->id}/layouts", [
+            'label'   => 'Two Column',
+            'display' => 'grid',
+            'columns' => 2,
+        ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('layout.label', 'Two Column')
+        ->assertJsonPath('layout.display', 'grid')
+        ->assertJsonPath('layout.columns', 2)
+        ->assertJsonStructure(['layout', 'items', 'required_libs']);
+
+    $this->assertDatabaseHas('page_layouts', [
+        'page_id' => $page->id,
+        'label'   => 'Two Column',
+    ]);
+});
+
+it('updates layout config', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'label'         => 'Updated Layout',
+            'display'       => 'flex',
+            'columns'       => 3,
+            'layout_config' => [
+                'gap' => '2rem',
+                'justify_content' => 'space-between',
+            ],
+        ]);
+
+    $response->assertOk()
+        ->assertJsonPath('layout.label', 'Updated Layout')
+        ->assertJsonPath('layout.display', 'flex')
+        ->assertJsonPath('layout.columns', 3)
+        ->assertJsonPath('layout.layout_config.gap', '2rem');
+});
+
+it('sanitizes unknown layout_config keys', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'layout_config' => [
+                'gap'           => '1rem',
+                'evil_property' => '<script>alert(1)</script>',
+            ],
+        ])
+        ->assertOk();
+
+    $layout->refresh();
+    expect($layout->layout_config)->toHaveKey('gap');
+    expect($layout->layout_config)->not->toHaveKey('evil_property');
+});
+
+it('deletes a layout and cascades to its widgets', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+    $child1 = apiChildWidget($page, $layout, 0, 0);
+    $child2 = apiChildWidget($page, $layout, 1, 0);
+
+    $response = $this->actingAs(apiUser())
+        ->deleteJson(apiPrefix() . "/layouts/{$layout->id}");
+
+    $response->assertOk()
+        ->assertJsonPath('deleted', true)
+        ->assertJsonStructure(['items', 'required_libs']);
+
+    $this->assertDatabaseMissing('page_layouts', ['id' => $layout->id]);
+    $this->assertDatabaseMissing('page_widgets', ['id' => $child1->id]);
+    $this->assertDatabaseMissing('page_widgets', ['id' => $child2->id]);
+});
+
+it('layout endpoints require update_page permission', function () {
+    $page = apiPage();
+    $user = apiUser(['view_page']);
+
+    $this->actingAs($user)
+        ->postJson(apiPrefix() . "/{$page->id}/layouts", ['label' => 'X'])
+        ->assertForbidden();
+});
+
+it('returns merged page flow with widgets and layouts interleaved', function () {
+    $page = apiPage();
+
+    $w1 = apiWidget($page, 'text_block', 0);
+    $layout = apiLayout($page, 1);
+    $w2 = apiWidget($page, 'text_block', 2);
+
+    $response = $this->actingAs(apiUser())
+        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+
+    $response->assertOk();
+
+    $items = $response->json('items');
+    expect($items)->toHaveCount(3);
+    expect($items[0]['type'])->toBe('widget');
+    expect($items[0]['id'])->toBe($w1->id);
+    expect($items[1]['type'])->toBe('layout');
+    expect($items[1]['id'])->toBe($layout->id);
+    expect($items[2]['type'])->toBe('widget');
+    expect($items[2]['id'])->toBe($w2->id);
+});
+
+it('reorders widgets and layouts together (mixed reorder)', function () {
+    $page = apiPage();
+    $w1 = apiWidget($page, 'text_block', 0);
+    $layout = apiLayout($page, 1);
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+            'items' => [
+                ['id' => $layout->id, 'type' => 'layout', 'sort_order' => 0],
+                ['id' => $w1->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 1],
+            ],
+        ]);
+
+    $response->assertOk();
+
+    $layout->refresh();
+    $w1->refresh();
+    expect($layout->sort_order)->toBe(0);
+    expect($w1->sort_order)->toBe(1);
+});
+
+it('moves a widget into a layout via reorder', function () {
+    $page = apiPage();
+    $widget = apiWidget($page, 'text_block', 0);
+    $layout = apiLayout($page, 1);
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+            'items' => [
+                ['id' => $widget->id, 'type' => 'widget', 'layout_id' => $layout->id, 'column_index' => 0, 'sort_order' => 0],
+            ],
+        ]);
+
+    $response->assertOk();
+
+    $widget->refresh();
+    expect($widget->layout_id)->toBe($layout->id);
+    expect($widget->column_index)->toBe(0);
+});
+
+it('moves a widget out of a layout via reorder', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+    $widget = apiChildWidget($page, $layout, 0, 0);
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+            'items' => [
+                ['id' => $widget->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
+            ],
+        ]);
+
+    $response->assertOk();
+
+    $widget->refresh();
+    expect($widget->layout_id)->toBeNull();
+    expect($widget->column_index)->toBeNull();
 });
 
 // ── Lookup endpoints ─────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
@@ -32,22 +33,22 @@ class PageBuilderApiController extends Controller
         abort_unless(auth()->user()?->can('update_page'), 403);
 
         $validated = $request->validate([
-            'widget_type_id'   => 'required|uuid|exists:widget_types,id',
-            'label'            => 'nullable|string|max:255',
-            'parent_widget_id' => 'nullable|uuid',
-            'column_index'     => 'nullable|integer|min:0',
-            'insert_position'  => 'nullable|integer|min:0',
+            'widget_type_id'  => 'required|uuid|exists:widget_types,id',
+            'label'           => 'nullable|string|max:255',
+            'layout_id'       => 'nullable|uuid',
+            'column_index'    => 'nullable|integer|min:0',
+            'insert_position' => 'nullable|integer|min:0',
         ]);
 
         $widgetType = WidgetType::findOrFail($validated['widget_type_id']);
 
-        // Validate parent belongs to this page
-        $parentId = $validated['parent_widget_id'] ?? null;
-        if ($parentId) {
+        // Validate layout belongs to this page
+        $layoutId = $validated['layout_id'] ?? null;
+        if ($layoutId) {
             abort_unless(
-                PageWidget::where('id', $parentId)->where('page_id', $page->id)->exists(),
+                PageLayout::where('id', $layoutId)->where('page_id', $page->id)->exists(),
                 422,
-                'Parent widget does not belong to this page.'
+                'Layout does not belong to this page.'
             );
         }
 
@@ -62,14 +63,14 @@ class PageBuilderApiController extends Controller
 
         $position = $validated['insert_position'] ?? null;
 
-        if ($parentId) {
+        if ($layoutId) {
             $columnIndex = $validated['column_index'] ?? 0;
             if ($position === null) {
-                $position = (PageWidget::where('parent_widget_id', $parentId)
+                $position = (PageWidget::where('layout_id', $layoutId)
                     ->where('column_index', $columnIndex)
                     ->max('sort_order') ?? -1) + 1;
             } else {
-                PageWidget::where('parent_widget_id', $parentId)
+                PageWidget::where('layout_id', $layoutId)
                     ->where('column_index', $columnIndex)
                     ->where('sort_order', '>=', $position)
                     ->increment('sort_order');
@@ -77,37 +78,38 @@ class PageBuilderApiController extends Controller
         } else {
             if ($position === null) {
                 $position = (PageWidget::where('page_id', $page->id)
-                    ->whereNull('parent_widget_id')
+                    ->whereNull('layout_id')
                     ->max('sort_order') ?? -1) + 1;
             } else {
                 PageWidget::where('page_id', $page->id)
-                    ->whereNull('parent_widget_id')
+                    ->whereNull('layout_id')
                     ->where('sort_order', '>=', $position)
                     ->increment('sort_order');
             }
         }
 
         $newWidget = PageWidget::create([
-            'page_id'          => $page->id,
-            'widget_type_id'   => $widgetType->id,
-            'parent_widget_id' => $parentId,
-            'column_index'     => $parentId ? ($validated['column_index'] ?? 0) : null,
-            'label'            => $label,
-            'config'           => $widgetType->getDefaultConfig(),
-            'query_config'     => [],
-            'style_config'     => [
+            'page_id'        => $page->id,
+            'widget_type_id' => $widgetType->id,
+            'layout_id'      => $layoutId,
+            'column_index'   => $layoutId ? ($validated['column_index'] ?? 0) : null,
+            'label'          => $label,
+            'config'         => $widgetType->getDefaultConfig(),
+            'query_config'   => [],
+            'style_config'   => [
                 'background_color' => '#ffffff',
                 'text_color'       => '#000000',
             ],
-            'sort_order'       => $position,
-            'is_active'        => true,
+            'sort_order'     => $position,
+            'is_active'      => true,
         ]);
 
         $tree = $this->buildTree($page);
 
         return response()->json([
-            'widget' => $this->formatWidget($newWidget->fresh(['widgetType']), $page),
-            'tree'   => $tree['widgets'],
+            'widget'        => $this->formatWidget($newWidget->fresh(['widgetType']), $page),
+            'tree'          => $tree['widgets'],
+            'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
         ], 201);
     }
@@ -161,8 +163,6 @@ class PageBuilderApiController extends Controller
             return response()->json(['error' => 'This widget is required and cannot be deleted.'], 403);
         }
 
-        // Delete children first, then the widget itself
-        PageWidget::where('parent_widget_id', $widget->id)->delete();
         $widget->delete();
 
         $tree = $this->buildTree($page);
@@ -170,6 +170,7 @@ class PageBuilderApiController extends Controller
         return response()->json([
             'deleted'       => true,
             'tree'          => $tree['widgets'],
+            'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
         ]);
     }
@@ -182,11 +183,11 @@ class PageBuilderApiController extends Controller
 
         // Insert copy after the source at the same nesting level
         $siblingQuery = PageWidget::where('page_id', $page->id);
-        if ($widget->parent_widget_id) {
-            $siblingQuery->where('parent_widget_id', $widget->parent_widget_id)
+        if ($widget->layout_id) {
+            $siblingQuery->where('layout_id', $widget->layout_id)
                 ->where('column_index', $widget->column_index);
         } else {
-            $siblingQuery->whereNull('parent_widget_id');
+            $siblingQuery->whereNull('layout_id');
         }
 
         $newPosition = $widget->sort_order + 1;
@@ -194,28 +195,24 @@ class PageBuilderApiController extends Controller
         $siblingQuery->clone()->where('sort_order', '>=', $newPosition)->increment('sort_order');
 
         $copy = PageWidget::create([
-            'page_id'          => $page->id,
-            'widget_type_id'   => $widget->widget_type_id,
-            'parent_widget_id' => $widget->parent_widget_id,
-            'column_index'     => $widget->column_index,
-            'label'            => $widget->label,
-            'config'           => $widget->config ?? [],
-            'query_config'     => $widget->query_config ?? [],
-            'style_config'     => $widget->style_config ?? [],
-            'sort_order'       => $newPosition,
-            'is_active'        => $widget->is_active,
+            'page_id'        => $page->id,
+            'widget_type_id' => $widget->widget_type_id,
+            'layout_id'      => $widget->layout_id,
+            'column_index'   => $widget->column_index,
+            'label'          => $widget->label,
+            'config'         => $widget->config ?? [],
+            'query_config'   => $widget->query_config ?? [],
+            'style_config'   => $widget->style_config ?? [],
+            'sort_order'     => $newPosition,
+            'is_active'      => $widget->is_active,
         ]);
-
-        // Recursively copy children
-        if ($widget->children()->exists()) {
-            PageWidget::copyBetweenPages($page->id, $page->id, $widget->id, $copy->id);
-        }
 
         $tree = $this->buildTree($page);
 
         return response()->json([
             'widget'        => $this->formatWidget($copy->fresh(['widgetType']), $page),
             'tree'          => $tree['widgets'],
+            'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
         ], 201);
     }
@@ -225,52 +222,87 @@ class PageBuilderApiController extends Controller
         abort_unless(auth()->user()?->can('update_page'), 403);
 
         $validated = $request->validate([
-            'items'                    => 'required|array|min:1',
-            'items.*.id'              => 'required|uuid',
-            'items.*.parent_widget_id' => 'nullable|uuid',
-            'items.*.column_index'     => 'nullable|integer|min:0',
-            'items.*.sort_order'       => 'required|integer|min:0',
+            'items'                => 'required|array|min:1',
+            'items.*.id'           => 'required|uuid',
+            'items.*.type'         => 'nullable|string|in:widget,layout',
+            'items.*.layout_id'    => 'nullable|uuid',
+            'items.*.column_index' => 'nullable|integer|min:0',
+            'items.*.sort_order'   => 'required|integer|min:0',
         ]);
 
-        $items = $validated['items'];
-        $itemIds = collect($items)->pluck('id')->all();
+        // Default type to 'widget' for backward compatibility with the Phase 2 Vue store
+        $items = array_map(function ($item) {
+            $item['type'] = $item['type'] ?? 'widget';
+            return $item;
+        }, $validated['items']);
 
-        // All widget IDs must belong to this page
-        $validCount = PageWidget::where('page_id', $page->id)
-            ->whereIn('id', $itemIds)
-            ->count();
+        $widgetIds = collect($items)->where('type', 'widget')->pluck('id')->all();
+        $layoutIds = collect($items)->where('type', 'layout')->pluck('id')->all();
 
-        if ($validCount !== count(array_unique($itemIds))) {
-            return response()->json(['error' => 'Invalid widget IDs.'], 422);
+        // Validate widget ownership
+        if (! empty($widgetIds)) {
+            $validCount = PageWidget::where('page_id', $page->id)
+                ->whereIn('id', $widgetIds)
+                ->count();
+
+            if ($validCount !== count(array_unique($widgetIds))) {
+                return response()->json(['error' => 'Invalid widget IDs.'], 422);
+            }
         }
 
-        // Prevent column widget nesting
-        $columnWidgetIds = PageWidget::where('page_id', $page->id)
-            ->whereIn('id', $itemIds)
-            ->whereHas('widgetType', fn ($q) => $q->where('handle', 'column_widget'))
-            ->pluck('id')
+        // Validate layout ownership
+        if (! empty($layoutIds)) {
+            $validCount = PageLayout::where('page_id', $page->id)
+                ->whereIn('id', $layoutIds)
+                ->count();
+
+            if ($validCount !== count(array_unique($layoutIds))) {
+                return response()->json(['error' => 'Invalid layout IDs.'], 422);
+            }
+        }
+
+        // Validate referenced layout_id values belong to this page
+        $referencedLayoutIds = collect($items)
+            ->where('type', 'widget')
+            ->pluck('layout_id')
+            ->filter()
+            ->unique()
+            ->values()
             ->all();
 
-        foreach ($items as $item) {
-            if (in_array($item['id'], $columnWidgetIds) && ! empty($item['parent_widget_id'])) {
-                return response()->json(['error' => 'Column widgets cannot be nested.'], 422);
+        if (! empty($referencedLayoutIds)) {
+            $validCount = PageLayout::where('page_id', $page->id)
+                ->whereIn('id', $referencedLayoutIds)
+                ->count();
+
+            if ($validCount !== count($referencedLayoutIds)) {
+                return response()->json(['error' => 'Invalid referenced layout IDs.'], 422);
             }
         }
 
         foreach ($items as $item) {
-            PageWidget::where('id', $item['id'])
-                ->where('page_id', $page->id)
-                ->update([
-                    'parent_widget_id' => ! empty($item['parent_widget_id']) ? $item['parent_widget_id'] : null,
-                    'column_index'     => $item['column_index'] ?? null,
-                    'sort_order'       => (int) $item['sort_order'],
-                ]);
+            if ($item['type'] === 'widget') {
+                PageWidget::where('id', $item['id'])
+                    ->where('page_id', $page->id)
+                    ->update([
+                        'layout_id'    => ! empty($item['layout_id']) ? $item['layout_id'] : null,
+                        'column_index' => $item['column_index'] ?? null,
+                        'sort_order'   => (int) $item['sort_order'],
+                    ]);
+            } else {
+                PageLayout::where('id', $item['id'])
+                    ->where('page_id', $page->id)
+                    ->update([
+                        'sort_order' => (int) $item['sort_order'],
+                    ]);
+            }
         }
 
         $tree = $this->buildTree($page);
 
         return response()->json([
             'tree'          => $tree['widgets'],
+            'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
         ]);
     }
@@ -281,17 +313,14 @@ class PageBuilderApiController extends Controller
     {
         abort_unless(auth()->user()?->can('view_page'), 403);
 
-        $widget->load(['widgetType', 'children.widgetType', 'children.children.widgetType']);
+        $widget->load('widgetType');
 
         $previewData = $this->renderWidgetForPreview($widget);
-
-        $libs = [];
-        $this->collectLibs($widget, $libs);
 
         return response()->json([
             'id'            => $widget->id,
             'html'          => $previewData['html'],
-            'required_libs' => array_values(array_unique($libs)),
+            'required_libs' => [],
         ]);
     }
 
@@ -447,6 +476,107 @@ class PageBuilderApiController extends Controller
         return response()->json(['removed' => true]);
     }
 
+    // ── Layout CRUD ─────────────────────────────────────────────────────────
+
+    public function storeLayout(Request $request, Page $page): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $validated = $request->validate([
+            'label'   => 'nullable|string|max:255',
+            'display' => 'nullable|string|in:flex,grid',
+            'columns' => 'nullable|integer|min:1|max:12',
+        ]);
+
+        $maxSort = max(
+            PageWidget::where('page_id', $page->id)->whereNull('layout_id')->max('sort_order') ?? -1,
+            PageLayout::where('page_id', $page->id)->max('sort_order') ?? -1,
+        );
+
+        $columns = $validated['columns'] ?? 2;
+        $display = $validated['display'] ?? 'grid';
+
+        $layout = PageLayout::create([
+            'page_id'       => $page->id,
+            'label'         => $validated['label'] ?? 'Column Layout',
+            'display'       => $display,
+            'columns'       => $columns,
+            'layout_config' => [
+                'grid_template_columns' => implode(' ', array_fill(0, $columns, '1fr')),
+                'gap'                   => '1.5rem',
+            ],
+            'sort_order'    => $maxSort + 1,
+        ]);
+
+        $tree = $this->buildTree($page);
+
+        return response()->json([
+            'layout'        => $this->formatLayout($layout),
+            'items'         => $tree['items'],
+            'required_libs' => $tree['required_libs'],
+        ], 201);
+    }
+
+    public function updateLayout(Request $request, PageLayout $layout): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $validated = $request->validate([
+            'label'         => 'nullable|string|max:255',
+            'display'       => 'nullable|string|in:flex,grid',
+            'columns'       => 'nullable|integer|min:1|max:12',
+            'layout_config' => 'nullable|array',
+        ]);
+
+        $updates = [];
+        if (array_key_exists('label', $validated)) {
+            $updates['label'] = $validated['label'];
+        }
+        if (array_key_exists('display', $validated)) {
+            $updates['display'] = $validated['display'];
+        }
+        if (array_key_exists('columns', $validated)) {
+            $updates['columns'] = $validated['columns'];
+        }
+        if (array_key_exists('layout_config', $validated)) {
+            // Sanitize: only allow known CSS property keys
+            $allowed = [
+                'grid_template_columns', 'gap', 'align_items', 'justify_items',
+                'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
+            ];
+            $updates['layout_config'] = array_intersect_key(
+                $validated['layout_config'],
+                array_flip($allowed)
+            );
+        }
+
+        if (! empty($updates)) {
+            $layout->update($updates);
+        }
+
+        return response()->json([
+            'layout' => $this->formatLayout($layout->fresh()),
+        ]);
+    }
+
+    public function destroyLayout(PageLayout $layout): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $page = $layout->page;
+
+        // Cascade delete is handled by FK, but we delete explicitly for clarity
+        $layout->delete();
+
+        $tree = $this->buildTree($page);
+
+        return response()->json([
+            'deleted'       => true,
+            'items'         => $tree['items'],
+            'required_libs' => $tree['required_libs'],
+        ]);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private function buildTree(Page $page): array
@@ -455,28 +585,78 @@ class PageBuilderApiController extends Controller
             $this->computeBareSlug($page)
         );
 
-        $widgets = PageWidget::where('page_id', $page->id)
-            ->whereNull('parent_widget_id')
+        // Root widgets (not in any layout)
+        $rootWidgets = PageWidget::where('page_id', $page->id)
+            ->whereNull('layout_id')
             ->where('is_active', true)
-            ->with(['widgetType', 'children.widgetType', 'children.children.widgetType'])
+            ->with('widgetType')
+            ->orderBy('sort_order')
+            ->get();
+
+        // Layouts with their child widgets
+        $layouts = PageLayout::where('page_id', $page->id)
+            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
         $allLibs = [];
-        $formatted = [];
+        $items = [];
 
-        foreach ($widgets as $pw) {
+        foreach ($rootWidgets as $pw) {
             if (! $pw->widgetType) {
                 continue;
             }
 
-            $formatted[] = $this->formatWidgetWithPreview($pw, $requiredHandles);
+            $item = $this->formatWidgetWithPreview($pw, $requiredHandles);
+            $item['type'] = 'widget';
+            $items[] = $item;
             $this->collectLibs($pw, $allLibs);
         }
 
+        foreach ($layouts as $layout) {
+            $item = $this->formatLayout($layout);
+            // Add preview HTML for each child widget in slots
+            $slots = [];
+            foreach ($layout->widgets as $child) {
+                if (! $child->widgetType) {
+                    continue;
+                }
+                $idx = $child->column_index ?? 0;
+                $childData = $this->formatWidgetWithPreview($child, $requiredHandles);
+                $childData['type'] = 'widget';
+                $slots[$idx][] = $childData;
+                $this->collectLibs($child, $allLibs);
+            }
+            $item['slots'] = (object) $slots;
+            $items[] = $item;
+        }
+
+        // Sort by sort_order
+        usort($items, fn ($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
+
+        // Legacy 'widgets' key: root widgets only, kept for current Vue store compatibility
+        // until Phase 3 migrates the store to use 'items'.
+        $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
+
         return [
-            'widgets'       => $formatted,
+            'widgets'       => $legacyWidgets,
+            'items'         => $items,
             'required_libs' => array_values(array_unique($allLibs)),
+        ];
+    }
+
+    private function formatLayout(PageLayout $layout): array
+    {
+        return [
+            'type'          => 'layout',
+            'id'            => $layout->id,
+            'page_id'       => $layout->page_id,
+            'label'         => $layout->label ?? '',
+            'display'       => $layout->display,
+            'columns'       => $layout->columns,
+            'layout_config' => $layout->layout_config ?? [],
+            'sort_order'    => $layout->sort_order ?? 0,
+            'slots'         => (object) [],
         ];
     }
 
@@ -496,7 +676,7 @@ class PageBuilderApiController extends Controller
             'widget_type_assets'        => $pw->widgetType?->assets ?? [],
             'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
             'widget_type_required_config' => $pw->widgetType?->required_config,
-            'parent_widget_id'          => $pw->parent_widget_id,
+            'layout_id'                 => $pw->layout_id,
             'column_index'              => $pw->column_index,
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
@@ -521,7 +701,7 @@ class PageBuilderApiController extends Controller
             'widget_type_assets'        => $pw->widgetType?->assets ?? [],
             'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
             'widget_type_required_config' => $pw->widgetType?->required_config,
-            'parent_widget_id'          => $pw->parent_widget_id,
+            'layout_id'                 => $pw->layout_id,
             'column_index'              => $pw->column_index,
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
@@ -532,46 +712,9 @@ class PageBuilderApiController extends Controller
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
             'image_urls'                => $this->resolveImageUrls($pw),
             'preview_html'              => $this->renderWidgetForPreview($pw)['html'],
-            'children'                  => $this->formatChildren($pw, $requiredHandles),
         ];
 
         return $data;
-    }
-
-    private function formatChildren(PageWidget $pw, array $requiredHandles): array
-    {
-        $grouped = [];
-
-        foreach ($pw->children as $child) {
-            if (! $child->is_active || ! $child->widgetType) {
-                continue;
-            }
-
-            $idx = $child->column_index ?? 0;
-            $grouped[$idx][] = [
-                'id'                        => $child->id,
-                'widget_type_id'            => $child->widget_type_id,
-                'widget_type_handle'        => $child->widgetType?->handle ?? '',
-                'widget_type_label'         => $child->widgetType?->label ?? 'Unknown',
-                'widget_type_collections'   => $child->widgetType?->collections ?? [],
-                'widget_type_config_schema' => $child->widgetType?->config_schema ?? [],
-                'widget_type_assets'        => $child->widgetType?->assets ?? [],
-                'widget_type_default_open'  => $child->widgetType?->default_open ?? false,
-                'widget_type_required_config' => $child->widgetType?->required_config,
-                'parent_widget_id'          => $child->parent_widget_id,
-                'column_index'              => $child->column_index,
-                'label'                     => $child->label ?? '',
-                'config'                    => $child->config ?? [],
-                'query_config'              => $child->query_config ?? [],
-                'style_config'              => $child->style_config ?? [],
-                'sort_order'                => $child->sort_order ?? 0,
-                'is_active'                 => $child->is_active,
-                'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandles, true),
-                'image_urls'                => $this->resolveImageUrls($child),
-            ];
-        }
-
-        return $grouped;
     }
 
     private function renderWidgetForPreview(PageWidget $pw): array
@@ -579,13 +722,8 @@ class PageBuilderApiController extends Controller
         $widgetType = $pw->widgetType;
 
         try {
-            $columnChildren = [];
-            if ($widgetType->handle === 'column_widget') {
-                $columnChildren = $this->renderColumnChildren($pw);
-            }
-
             $fallbackData = $this->buildDemoCollectionData($pw);
-            $result = WidgetRenderer::render($pw, $columnChildren, $fallbackData);
+            $result = WidgetRenderer::render($pw, [], $fallbackData);
 
             if ($result['html'] === null) {
                 $html = '<div class="widget-preview-notice">No preview available</div>';
@@ -620,49 +758,6 @@ class PageBuilderApiController extends Controller
             'id'   => $pw->id,
             'html' => $html,
         ];
-    }
-
-    private function renderColumnChildren(PageWidget $pw): array
-    {
-        $children = [];
-
-        foreach ($pw->children as $child) {
-            if (! $child->is_active) {
-                continue;
-            }
-
-            $childColumnChildren = [];
-            if ($child->widgetType?->handle === 'column_widget') {
-                $childColumnChildren = $this->renderColumnChildren($child);
-            }
-
-            $childFallback = $this->buildDemoCollectionData($child);
-            $result = WidgetRenderer::render($child, $childColumnChildren, $childFallback);
-
-            if ($result['html'] === null) {
-                continue;
-            }
-
-            $sc = $child->style_config ?? [];
-
-            $configFullWidth = $child->config['full_width'] ?? null;
-            $styleFullWidth = $sc['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($child->widgetType->full_width ?? false));
-
-            $idx = $child->column_index ?? 0;
-            $children[$idx][] = [
-                'handle'       => $child->widgetType->handle,
-                'instance_id'  => $child->id,
-                'html'         => $result['html'],
-                'css'          => $child->widgetType->css ?? '',
-                'js'           => $child->widgetType->js ?? '',
-                'style_config' => $sc,
-                'full_width'   => $isFullWidth,
-            ];
-        }
-
-        return $children;
     }
 
     private static function buildInlineStyles(array $styleConfig): string
@@ -717,12 +812,6 @@ class PageBuilderApiController extends Controller
         $assets = $pw->widgetType?->assets ?? [];
         foreach ($assets['libs'] ?? [] as $lib) {
             $libs[] = $lib;
-        }
-
-        foreach ($pw->children as $child) {
-            if ($child->is_active) {
-                $this->collectLibs($child, $libs);
-            }
         }
     }
 
