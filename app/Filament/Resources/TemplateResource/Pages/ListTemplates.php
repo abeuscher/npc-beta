@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TemplateResource\Pages;
 
+use App\Filament\Actions\ImportBundleAction;
 use App\Filament\Resources\TemplateResource;
 use App\Models\Template;
 use Filament\Actions;
@@ -82,6 +83,8 @@ class ListTemplates extends ListRecords
                 ->label('New Page Template')
                 ->button()
                 ->icon('heroicon-m-plus'),
+
+            ImportBundleAction::make(),
         ];
     }
 

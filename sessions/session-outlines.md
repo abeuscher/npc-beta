@@ -161,6 +161,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 152 | Preview Inline Controls & Drag-and-Drop |
 | 153 | Column Layout System |
 | 154 | Nav Widget & Footer |
+| 155 | Template & Page Import-Export |
 
 ---
 
@@ -190,9 +191,9 @@ Config requirements system: new `required_config` JSONB column on `widget_types`
 
 Remove the edit/handles mode toggle from the editor toolbar. Delete `BlockListPoc.vue` and the handles mode branch in `App.vue`. Single unified editor view — all interaction through the preview canvas and inspector panel.
 
-### 155. Template & Page Import-Export
+### 156. Form Polish, Image Fields & Chrome Toggle
 
-Backup/restore mechanism for the marketing site so the user can export pages, blog posts, content templates, and the active page template to a JSON file, then re-import after `migrate:fresh --seed` and keep working without losing content. Single JSON envelope (semver `format_version`, current `1.0.0`); same shape used for single-record and bulk export. Bulk actions on Pages and Posts list pages; single-record actions on Edit pages. Slug collisions overwrite the existing record (the deliberate happy path for round-trip). Page templates include their `_header`/`_footer` system pages so chrome customisations survive a wipe. Tier 1 media handling: media references record disk path only, importer rewires Spatie media rows by looking up files on disk after re-seed (no file bundling). Missing collections, templates, and media fall back gracefully into unset state with warnings logged — no on-screen errors, no widget data mapping UI (deferred). Server-side `storage/app/exports/` directory plus a Saved Exports management UI to make the round-trip frictionless. **Out of scope:** widget data mapping UI with auto-match, file bundling (Tier 2), nav linking, cross-version migration, server-to-server sync.
+A grab-bag session combining two real bug fixes with form layout cleanup and image storage work. Restores the Hero widget's `nav_link_color` / `nav_hover_color` override fields for full-bleed mode. Fixes the OG image fallback bug in `SeoMetaGenerator` — the existing `site_default_og_image` CMS setting is currently never read. Drops the legacy `pages.og_image_path` string column in favour of a Spatie media collection on `Page`, with the new `og_image` storage chained through SeoMetaGenerator. Reshuffles Edit Page / Edit Event / Edit Post forms into a single unified header fieldset with two rows of fields (Page Name / Template / Author / Status / Publish date row, then Slug / Tags / Create tag row). Adds a new collapsed "Images" section above SEO on all three resources, with thumbnail + OG Image fields on Page, the existing fields plus a new OG Image on Post, and three new fields (thumbnail, header, OG image) on Event — storage only, display surfaces deferred. Caps the inspector panel width so extra horizontal space flows to the preview pane. Adds an eye-icon full-screen toggle button to the admin topbar (left of user menu) that collapses the left nav and expands content to full width in one click — supersedes the existing user-menu full-width toggle. **Out of scope:** theme palette UX (deferred to post-beta after design review), bulk image uploader, wiring the new image fields into widgets/templates, builder-mode auto-collapse sidebar.
 
 ---
 
@@ -303,6 +304,10 @@ Build a logo block widget for the site header. Restructure the default header an
 ### SEO — Advanced
 
 Twitter card meta tags. Manual canonical URL override. SEO scoring/audit checklists. Search console integration. Alt-text validation. Builds on the JSON-LD, OG tags, snippets, sitemap, and noindex controls delivered in session 096.
+
+### Theme Palette UX — Color Token Picker
+
+User-facing UX for picking from a named theme palette anywhere a color field appears in the admin (widget config, page template, button style editor, custom SCSS variables, etc.). Requirements gathered before this session: the palette appears in a dropdown alongside the existing color picker — same control, two access modes. Layout has to be designed carefully for a small space (a tooltip/popover off the field). Adding a new color to the theme is reasonably easy; removing one is reasonably difficult, to discourage accidental palette breakage. **Discussion needed first** — sit down with the designer and audit how other products (Figma, Webflow, Tailwind UI, Penpot) solve this before committing to a UI pattern. Current behaviour (raw color picker only) stays in place until this lands.
 
 ### Site Theme & Public Theme Builder
 

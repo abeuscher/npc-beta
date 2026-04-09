@@ -5,12 +5,15 @@ namespace App\Filament\Resources\TemplateResource\Pages;
 use App\Filament\Resources\TemplateResource;
 use App\Models\Page as PageModel;
 use App\Models\Template;
+use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
+use Illuminate\Support\Str;
 use ScssPhp\ScssPhp\Compiler;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EditPageTemplate extends ReadOnlyAwareEditRecord
 {
@@ -110,6 +113,24 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('exportTemplate')
+                ->label('Export Template')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->action(function (): StreamedResponse {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    $bundle    = app(ContentExporter::class)->exportTemplates([$this->record->id]);
+                    $nameSlug  = Str::slug($this->record->name);
+                    $filename  = now()->format('Ymd-His') . '-template-' . $nameSlug . '.json';
+
+                    return response()->streamDownload(
+                        fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                        $filename,
+                        ['Content-Type' => 'application/json'],
+                    );
+                }),
+
             Actions\DeleteAction::make()
                 ->hidden(fn () => $this->record->is_default),
         ];

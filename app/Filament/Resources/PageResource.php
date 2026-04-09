@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
 use App\Models\Template;
+use App\Services\ImportExport\ContentExporter;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -12,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PageResource extends Resource
 {
@@ -194,6 +196,25 @@ class PageResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('exportSelected')
+                        ->label('Export selected')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): StreamedResponse {
+                            abort_unless(auth()->user()?->can('update_page'), 403);
+
+                            $ids      = $records->pluck('id')->all();
+                            $bundle   = app(ContentExporter::class)->exportPages($ids);
+                            $filename = now()->format('Ymd-His') . '-pages-' . count($ids) . '.json';
+
+                            return response()->streamDownload(
+                                fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                                $filename,
+                                ['Content-Type' => 'application/json'],
+                            );
+                        }),
+
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $records->each(function (Page $record) {

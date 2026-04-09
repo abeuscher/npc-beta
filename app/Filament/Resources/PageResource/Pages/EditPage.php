@@ -8,10 +8,12 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Rules\ValidHtmlSnippet;
+use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EditPage extends ReadOnlyAwareEditRecord
 {
@@ -96,6 +98,23 @@ class EditPage extends ReadOnlyAwareEditRecord
                 ->hidden(fn () => $this->record->type === 'system'),
 
             Actions\ActionGroup::make([
+                Actions\Action::make('exportPage')
+                    ->label('Export Page')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->action(function (): StreamedResponse {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        $bundle   = app(ContentExporter::class)->exportPages([$this->record->id]);
+                        $filename = now()->format('Ymd-His') . '-page-' . $this->record->slug . '.json';
+
+                        return response()->streamDownload(
+                            fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                            $filename,
+                            ['Content-Type' => 'application/json'],
+                        );
+                    }),
+
                 Actions\Action::make('saveAsContentTemplate')
                     ->label('Save Block Layout as Template')
                     ->icon('heroicon-o-clipboard-document-list')

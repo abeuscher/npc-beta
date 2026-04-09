@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PageResource\Pages;
 
+use App\Filament\Actions\ImportBundleAction;
 use App\Filament\Resources\PageResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -14,6 +15,7 @@ class ListPages extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ImportBundleAction::make(),
         ];
     }
 }

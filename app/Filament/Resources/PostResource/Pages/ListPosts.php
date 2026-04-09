@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PostResource\Pages;
 
+use App\Filament\Actions\ImportBundleAction;
 use App\Filament\Resources\PostResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
@@ -14,6 +15,7 @@ class ListPosts extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+            ImportBundleAction::make(),
         ];
     }
 }
