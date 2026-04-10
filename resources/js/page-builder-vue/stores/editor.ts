@@ -64,6 +64,18 @@ export const useEditorStore = defineStore('editor', () => {
   let debounceLayoutTimer: ReturnType<typeof setTimeout> | null = null
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
+  // Per-widget preview refresh tracking (counter, abort, indicator stages, errors)
+  const refreshCounts = ref<Record<string, number>>({})
+  const abortControllers = new Map<string, AbortController>()
+  const blurTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const spinnerTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const indicatorStage = ref<Record<string, 0 | 1 | 2>>({})
+  const previewErrors = ref<Record<string, string | null>>({})
+
+  const BLUR_DELAY_MS = 250
+  const SPINNER_DELAY_MS = 500
+  const DEBOUNCE_SAVE_MS = 350
+
   // ── Getters ────────────────────────────────────────────────────────────
 
   const rootWidgets = computed(() =>
@@ -305,6 +317,55 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  function clearIndicatorTimers(id: string): void {
+    const bt = blurTimers.get(id)
+    if (bt) {
+      clearTimeout(bt)
+      blurTimers.delete(id)
+    }
+    const st = spinnerTimers.get(id)
+    if (st) {
+      clearTimeout(st)
+      spinnerTimers.delete(id)
+    }
+  }
+
+  function incrementRefreshCount(id: string): void {
+    const next = (refreshCounts.value[id] ?? 0) + 1
+    refreshCounts.value[id] = next
+    if (next === 1) {
+      // 0 → 1 transition: arm the cascading indicator timers
+      indicatorStage.value[id] = 0
+      blurTimers.set(
+        id,
+        setTimeout(() => {
+          if ((refreshCounts.value[id] ?? 0) > 0) {
+            indicatorStage.value[id] = 1
+          }
+        }, BLUR_DELAY_MS)
+      )
+      spinnerTimers.set(
+        id,
+        setTimeout(() => {
+          if ((refreshCounts.value[id] ?? 0) > 0) {
+            indicatorStage.value[id] = 2
+          }
+        }, SPINNER_DELAY_MS)
+      )
+    }
+  }
+
+  function decrementRefreshCount(id: string): void {
+    const next = (refreshCounts.value[id] ?? 1) - 1
+    if (next <= 0) {
+      refreshCounts.value[id] = 0
+      clearIndicatorTimers(id)
+      indicatorStage.value[id] = 0
+    } else {
+      refreshCounts.value[id] = next
+    }
+  }
+
   async function refreshPreview(id: string): Promise<void> {
     // Flush any pending debounced saves so the server has the latest config
     if (debounceSaveTimer) {
@@ -324,15 +385,56 @@ export const useEditorStore = defineStore('editor', () => {
       await Promise.all(savePromises)
     }
 
+    // Abort any in-flight refresh for the same widget so a stale render
+    // can't overwrite a newer one.
+    const existing = abortControllers.get(id)
+    if (existing) {
+      existing.abort()
+      abortControllers.delete(id)
+    }
+
+    const controller = new AbortController()
+    abortControllers.set(id, controller)
+    incrementRefreshCount(id)
+
     try {
-      const res = await api.getPreview(id)
+      const res = await api.getPreview(id, controller.signal)
       if (widgets.value[id]) {
         widgets.value[id].preview_html = res.html
       }
       dirtyWidgets.value.delete(id)
-    } catch (e) {
+      previewErrors.value[id] = null
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        // Superseded by a newer refresh — silent.
+        return
+      }
+      const message =
+        e instanceof api.ApiError
+          ? e.message
+          : e?.message
+            ? e.message
+            : 'Network error'
+      previewErrors.value[id] = message
       console.error('Preview refresh failed:', e)
+    } finally {
+      if (abortControllers.get(id) === controller) {
+        abortControllers.delete(id)
+      }
+      decrementRefreshCount(id)
     }
+  }
+
+  function widgetRefreshing(id: string): boolean {
+    return (refreshCounts.value[id] ?? 0) > 0
+  }
+
+  function widgetIndicatorStage(id: string): 0 | 1 | 2 {
+    return indicatorStage.value[id] ?? 0
+  }
+
+  function widgetPreviewError(id: string): string | null {
+    return previewErrors.value[id] ?? null
   }
 
   /**
@@ -362,6 +464,15 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  function payloadAffectsPreview(payload: UpdateWidgetPayload): boolean {
+    // Label-only edits don't change rendered HTML, so skip the auto-refresh.
+    return (
+      payload.config !== undefined ||
+      payload.style_config !== undefined ||
+      payload.query_config !== undefined
+    )
+  }
+
   function flushDebouncedSave(widgetId: string, changes: UpdateWidgetPayload): void {
     // Merge pending changes for this widget
     const pending = pendingConfigChanges.value[widgetId] ?? {}
@@ -374,11 +485,15 @@ export const useEditorStore = defineStore('editor', () => {
       debounceSaveTimer = null
 
       for (const [id, payload] of Object.entries(toSave)) {
-        updateWidget(id, payload).catch((e) =>
-          console.error('Debounced save failed:', e)
-        )
+        updateWidget(id, payload)
+          .then(() => {
+            if (payloadAffectsPreview(payload)) {
+              refreshPreview(id)
+            }
+          })
+          .catch((e) => console.error('Debounced save failed:', e))
       }
-    }, 500)
+    }, DEBOUNCE_SAVE_MS)
   }
 
   /**
@@ -435,6 +550,7 @@ export const useEditorStore = defineStore('editor', () => {
         w.image_urls = { ...w.image_urls, [key]: res.url }
       }
       dirtyWidgets.value.add(widgetId)
+      refreshPreview(widgetId)
       return res.url
     } finally {
       saving.value = false
@@ -451,6 +567,7 @@ export const useEditorStore = defineStore('editor', () => {
         w.image_urls = { ...w.image_urls, [key]: null }
       }
       dirtyWidgets.value.add(widgetId)
+      refreshPreview(widgetId)
     } finally {
       saving.value = false
     }
@@ -521,6 +638,9 @@ export const useEditorStore = defineStore('editor', () => {
     childrenOf,
     isWidgetDirty,
     columnTargets,
+    widgetRefreshing,
+    widgetIndicatorStage,
+    widgetPreviewError,
 
     // Actions
     loadTree,

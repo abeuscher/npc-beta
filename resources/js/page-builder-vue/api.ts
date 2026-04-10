@@ -23,7 +23,24 @@ export function configure(token: string, url: string): void {
   baseUrl = url.replace(/\/$/, '')
 }
 
-async function request<T>(method: string, path: string, body?: any): Promise<T> {
+export class ApiError extends Error {
+  status: number
+  body: string
+
+  constructor(message: string, status: number, body: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.body = body
+  }
+}
+
+async function request<T>(
+  method: string,
+  path: string,
+  body?: any,
+  signal?: AbortSignal
+): Promise<T> {
   const url = `${baseUrl}/${path.replace(/^\//, '')}`
 
   const headers: Record<string, string> = {
@@ -38,11 +55,23 @@ async function request<T>(method: string, path: string, body?: any): Promise<T> 
     init.body = JSON.stringify(body)
   }
 
+  if (signal) {
+    init.signal = signal
+  }
+
   const res = await fetch(url, init)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`API ${method} ${path} failed (${res.status}): ${text}`)
+    let message = text
+    try {
+      const parsed = JSON.parse(text)
+      message = parsed?.error ?? parsed?.message ?? text
+    } catch {
+      // not JSON — use raw text
+    }
+    if (!message) message = `${method} ${path} failed (${res.status})`
+    throw new ApiError(message, res.status, text)
   }
 
   return res.json()
@@ -109,9 +138,10 @@ export function deleteLayout(
 
 // Preview
 export function getPreview(
-  widgetId: string
+  widgetId: string,
+  signal?: AbortSignal
 ): Promise<{ id: string; html: string; required_libs: string[] }> {
-  return request('GET', `widgets/${widgetId}/preview`)
+  return request('GET', `widgets/${widgetId}/preview`, undefined, signal)
 }
 
 // Lookups
