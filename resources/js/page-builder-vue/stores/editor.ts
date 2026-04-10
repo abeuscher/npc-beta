@@ -201,7 +201,7 @@ export const useEditorStore = defineStore('editor', () => {
       const res = await api.updateWidget(id, changes)
       const updated = res.widget
       if (widgets.value[id]) {
-        widgets.value[id] = { ...widgets.value[id], ...updated }
+        Object.assign(widgets.value[id], updated)
       }
       dirtyWidgets.value.add(id)
       return updated
@@ -268,12 +268,7 @@ export const useEditorStore = defineStore('editor', () => {
       const res = await api.updateLayout(id, changes)
       const updated = res.layout
       if (layouts.value[id]) {
-        layouts.value[id] = { ...layouts.value[id], ...updated }
-      }
-      // Also update the layout entry inside pageItems so the UI re-renders
-      const idx = pageItems.value.findIndex((it) => it.id === id && it.type === 'layout')
-      if (idx >= 0) {
-        pageItems.value[idx] = { ...pageItems.value[idx], ...updated, type: 'layout' } as PageItem
+        Object.assign(layouts.value[id], updated)
       }
       return updated
     } finally {
@@ -332,7 +327,7 @@ export const useEditorStore = defineStore('editor', () => {
     try {
       const res = await api.getPreview(id)
       if (widgets.value[id]) {
-        widgets.value[id] = { ...widgets.value[id], preview_html: res.html }
+        widgets.value[id].preview_html = res.html
       }
       dirtyWidgets.value.delete(id)
     } catch (e) {
@@ -400,14 +395,6 @@ export const useEditorStore = defineStore('editor', () => {
     if (changes.columns !== undefined) l.columns = changes.columns
     if (changes.layout_config !== undefined) {
       l.layout_config = { ...l.layout_config, ...changes.layout_config }
-    }
-
-    // Also update the entry inside pageItems so the UI re-renders
-    const idx = pageItems.value.findIndex(
-      (it) => it.id === layoutId && it.type === 'layout'
-    )
-    if (idx >= 0) {
-      pageItems.value[idx] = { ...pageItems.value[idx], ...l, type: 'layout' } as PageItem
     }
 
     // Merge pending changes for this layout

@@ -163,6 +163,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 154 | Nav Widget & Footer |
 | 155 | Template & Page Import-Export |
 | 156 | Form Polish, Image Fields & Chrome Toggle |
+| 157 | Page Builder Preview Reactivity Bug Fix |
 
 ---
 
@@ -225,6 +226,10 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 ---
 
 ## Post-Beta 1
+
+### Vue Page Builder Test Coverage
+
+Stand up a JS test runner (vitest + @vue/test-utils + @pinia/testing) for the Vue page builder under `resources/js/page-builder-vue/`. Cover the Pinia store first — reactivity invariants between `widgets`, `layouts`, and `pageItems` (mutations must propagate to the merged page flow without replacing proxy identities), debounced save flow, and the preview-refresh path. Add component-level smoke tests for InspectorPanel, PreviewCanvas, and ApplyChangesButton afterwards. Wire `npm run test:js` into the standard pre-commit / CI flow.
 
 ### Custom Field Grouping & Layout
 
