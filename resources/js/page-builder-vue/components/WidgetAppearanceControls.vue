@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue'
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
-import ColorPickerField from './fields/ColorPickerField.vue'
+import ColorPicker from './primitives/ColorPicker.vue'
 
 const props = defineProps<{
   widget: Widget
@@ -46,8 +46,8 @@ function updateStyle(key: string, value: any) {
   store.updateLocalStyleConfig(props.widget.id, key, value)
 }
 
-const bgField = { key: 'background_color', label: 'Background Colour', type: 'color', helper: '#ffffff' }
-const textField = { key: 'text_color', label: 'Text Colour', type: 'color', helper: '#000000' }
+const bgField = { key: 'background_color', label: 'Background Color', type: 'color', helper: '#ffffff' }
+const textField = { key: 'text_color', label: 'Text Color', type: 'color', helper: '#000000' }
 </script>
 
 <template>
@@ -63,19 +63,19 @@ const textField = { key: 'text_color', label: 'Text Colour', type: 'color', help
     </label>
 
     <div v-if="showBgColor" class="appearance-controls__field">
-      <label class="appearance-controls__label">Background Colour</label>
-      <ColorPickerField
-        :field="bgField"
+      <ColorPicker
         :model-value="backgroundColor"
+        label="Background Color"
+        :placeholder="bgField.helper"
         @update:model-value="updateStyle('background_color', $event)"
       />
     </div>
 
     <div v-if="showTextColor" class="appearance-controls__field">
-      <label class="appearance-controls__label">Text Colour</label>
-      <ColorPickerField
-        :field="textField"
+      <ColorPicker
         :model-value="textColor"
+        label="Text Color"
+        :placeholder="textField.helper"
         @update:model-value="updateStyle('text_color', $event)"
       />
     </div>

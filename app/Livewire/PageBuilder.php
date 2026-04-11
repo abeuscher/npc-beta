@@ -352,6 +352,10 @@ class PageBuilder extends Component
 
         $colorSwatches = json_decode(SiteSetting::get('editor_color_swatches', '[]'), true) ?: [];
 
+        // Theme palette: resolved colors from the page's active template (or the default template).
+        $activeTemplate = $page?->template ?? Template::query()->default()->first();
+        $themePalette = $activeTemplate?->resolvedPalette() ?? [];
+
         // Legacy 'widgets' key: root widgets only, kept for current Vue store compatibility
         // until Phase 3 migrates the store to use 'items'.
         $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
@@ -372,6 +376,7 @@ class PageBuilder extends Component
             'api_base_url'            => '/' . $adminPath . '/api/page-builder',
             'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
             'color_swatches'          => $colorSwatches,
+            'theme_palette'           => $themePalette,
         ];
     }
 

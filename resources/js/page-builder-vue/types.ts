@@ -87,6 +87,12 @@ export interface EventRef {
   title: string
 }
 
+export interface ThemePaletteEntry {
+  key: string
+  label: string
+  value: string | null
+}
+
 export interface BootstrapData {
   page_id: string
   page_type: string
@@ -102,6 +108,7 @@ export interface BootstrapData {
   api_base_url: string
   inline_image_upload_url: string
   color_swatches: string[]
+  theme_palette: ThemePaletteEntry[]
 }
 
 export interface TreeResponse {

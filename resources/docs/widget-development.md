@@ -1,8 +1,8 @@
 ---
 title: Widget Development Guide
-description: Technical reference for building widgets — directories, pipeline, config fields, asset bundling, image handling, collections, and demo seeders.
-version: "1.0"
-updated: 2026-04-04
+description: Technical reference for building widgets — directories, pipeline, config fields, inspector, asset bundling, image handling, collections, and demo seeders.
+version: "1.1"
+updated: 2026-04-11
 standalone: true
 tags: [developer, cms, widgets, reference]
 category: cms
@@ -21,14 +21,17 @@ Technical reference for building and maintaining page builder widgets. This docu
 | `resources/views/widgets/` | Blade templates (one per widget) |
 | `resources/scss/widgets/` | Widget-specific SCSS partials (e.g. `_product-carousel.scss`) |
 | `resources/js/public.js` | Public-facing JS — Swiper modules, Alpine, Chart.js |
-| `resources/views/livewire/partials/inspector-fields/` | Config field UI partials (one per field type) |
 | `app/Models/WidgetType.php` | Widget type definition model |
 | `app/Models/PageWidget.php` | Widget instance model (per-page placement) |
 | `app/Services/WidgetRenderer.php` | Rendering pipeline |
 | `app/Services/WidgetDataResolver.php` | Collection/data resolution |
 | `app/Services/PageBuilderDataSources.php` | Dynamic select option sources |
 | `app/Services/AssetBuildService.php` | CSS/JS/SCSS bundling for public site |
-| `app/Livewire/PageBuilderInspector.php` | Inspector panel — renders config fields |
+| `app/Livewire/PageBuilder.php` | Page builder host: bootstrap data, add-widget modal, save-as-template modal |
+| `resources/js/page-builder-vue/` | Vue inspector and editor app (Pinia store, REST persistence) |
+| `resources/js/page-builder-vue/components/InspectorField.vue` | Field-type → Vue component map for `config_schema` rendering |
+| `resources/js/page-builder-vue/components/fields/` | Vue field components (one per field type) |
+| `resources/js/page-builder-vue/stores/editor.ts` | Pinia editor store: local state, debounced REST saves |
 | `database/seeders/WidgetTypeSeeder.php` | All built-in widget type definitions |
 | `database/seeders/*DemoSeeder.php` | Demo data for widgets that use collections |
 | `resources/views/components/page-widgets.blade.php` | Outer rendering loop (spacing, full-width) |
@@ -151,7 +154,7 @@ Config fields are defined in the `config_schema` JSON array on the widget type. 
 | `richtext` | Quill editor | HTML content. Supports inline image upload. Output is trusted HTML — render with `{!! !!}`. |
 | `number` | Number input | Numeric value. |
 | `toggle` | Checkbox | Boolean. Stored as `true`/`false`. |
-| `color` | Color picker + text | Hex color string. |
+| `color` | Color picker + text | Hex color string. Rendered by the shared `ColorPicker` primitive — see **Shared Appearance Primitives** below. |
 | `select` | Dropdown | Static options via `options`, or dynamic via `options_from`. |
 | `image` | File upload | Stores to media library as `config_{key}` collection on the PageWidget. Accessible via `$configMedia['{key}']`. |
 | `video` | File upload | MP4/WebM. Same media library pattern as image. |
@@ -186,6 +189,55 @@ Config fields are defined in the `config_schema` JSON array on the widget type. 
 | `collections` | Active collections, keyed by handle. |
 | `pages` | Published default-type pages, keyed by slug. |
 | `collection_fields:{type}` | Fields from the collection selected in the `depends_on` field, filtered by field type. Example: `collection_fields:image` returns image-type fields. |
+
+---
+
+## Inspector
+
+The page builder inspector is a Vue island under `resources/js/page-builder-vue/`, mounted inside `resources/views/livewire/page-builder.blade.php`. It is **not** a Livewire component. The host Livewire class `App\Livewire\PageBuilder` is used only for: (1) generating the initial bootstrap data payload at page load, (2) the add-widget modal, and (3) the save-as-template modal. Everything else — selection, field rendering, mutation, save — is Vue + Pinia + REST.
+
+### Tab structure
+
+Each selected widget exposes a two-tab inspector:
+
+| Tab | Component | Contents |
+|---|---|---|
+| **Content** | `InspectorField.vue` (per field) | Renders the widget type's `config_schema` field by field, dispatching to the field-type → component map. |
+| **Appearance** | `WidgetAppearanceControls.vue` + `SpacingControl.vue` | Cross-cutting visual settings shared by all widgets: full-width toggle, background color, text color, padding, margin. |
+
+The active tab is controlled by `InspectorTabs.vue`.
+
+### Field-type → component map
+
+`InspectorField.vue` holds the canonical mapping from `config_schema` field `type` to the Vue component that renders it. The current map:
+
+| Field type | Vue component |
+|---|---|
+| `text`, `url` | `TextField.vue` |
+| `textarea` | `TextareaField.vue` |
+| `number` | `NumberField.vue` |
+| `select` | `SelectField.vue` |
+| `toggle` | `ToggleField.vue` |
+| `checkboxes` | `CheckboxesField.vue` *(internal — not exposed in widget config schemas)* |
+| `notice` | `NoticeField.vue` *(internal — used for setup notices, not stored on the widget)* |
+| `richtext` | `RichTextField.vue` |
+| `color` | `ColorPickerField.vue` |
+| `image`, `video` | `ImageUploadField.vue` |
+| `buttons` | `ButtonListField.vue` |
+
+Adding a new field type requires: a new Vue component under `components/fields/`, a new entry in the `componentMap` in `InspectorField.vue`, and the corresponding entry in this guide's **Config Field Types** table.
+
+### State and persistence
+
+State lives in the Pinia store at `resources/js/page-builder-vue/stores/editor.ts`. Field components mutate the local store via helpers like `updateLocalConfig(widgetId, key, value)` and `updateLocalStyleConfig(widgetId, key, value)` — these update the store immediately so the inspector and preview reflect the change without a server round-trip.
+
+Each local mutation enqueues a debounced REST save: 350 ms after the last input event, the store calls `PUT /admin/api/page-builder/widgets/{id}` with the merged config / style_config / query_config payload. Pending changes for the same widget are coalesced into a single request. After a successful config-affecting save, the store also issues a preview refresh request to re-render the widget HTML server-side.
+
+There is no `wire:model.live` binding anywhere in the inspector — Livewire is not in the data path for field edits.
+
+### Bootstrap data
+
+Initial state is generated by `App\Livewire\PageBuilder::getBootstrapData()` and rendered into the page builder blade as a JSON object. The Vue app reads it once on mount via `useEditorStore().loadTree(bootstrapData)`. The shape is mirrored in the `BootstrapData` TypeScript interface in `resources/js/page-builder-vue/types.ts`. After mount, all subsequent reads and writes go through the REST API under `/admin/api/page-builder/*`.
 
 ---
 
@@ -360,3 +412,240 @@ Sample images live in `resources/sample-images/{category}/` (e.g. `portraits/`, 
 7. Run the build: `php artisan build:public`.
 8. Write tests covering the seeder, data resolution, and template rendering.
 9. Update the widget count assertion in `WidgetPickerSession119Test`.
+
+---
+
+## Shared Appearance Primitives
+
+A small set of reusable Vue components live under `resources/js/page-builder-vue/components/primitives/`. They are the building blocks every Appearance panel composes from. Use them directly when adding a new appearance control rather than rolling a one-off input — the visual language is shared across the inspector and the value shapes are stable.
+
+This section documents what exists today. New primitives land in this section as they ship.
+
+### `theme_palette` bootstrap data
+
+The active page template's resolved color palette is exposed to the Vue editor through the bootstrap payload. It is consumed by the `ColorPicker` primitive (and any future primitive that wants theme colors).
+
+**Source.** `App\Livewire\PageBuilder::getBootstrapData()` resolves the active template via `$page?->template ?? Template::query()->default()->first()` and calls `Template::resolvedPalette()` on it. Each entry runs through `Template::resolved()` so unset fields on the page's own template fall back to the default template's value.
+
+**Shape.** An array of `{ key, label, value }` objects:
+
+```json
+[
+  { "key": "primary_color",    "label": "Primary",            "value": "#4f46e5" },
+  { "key": "header_bg_color",  "label": "Header Background",  "value": "#ffffff" },
+  { "key": "footer_bg_color",  "label": "Footer Background",  "value": "#111827" },
+  { "key": "nav_link_color",   "label": "Nav Link",           "value": null },
+  { "key": "nav_hover_color",  "label": "Nav Hover",          "value": null },
+  { "key": "nav_active_color", "label": "Nav Active",         "value": null }
+]
+```
+
+`value` may be `null` if neither the page's template nor the default template defines that field — the picker renders those entries as disabled checkered chips.
+
+**TS interface.** `ThemePaletteEntry` and the `theme_palette: ThemePaletteEntry[]` field on `BootstrapData` in `resources/js/page-builder-vue/types.ts`.
+
+**Pinia store.** Available as `useEditorStore().themePalette` (a `ref<ThemePaletteEntry[]>`). The store populates it from the bootstrap data on `loadTree()`. Consuming primitives should read it from the store directly — they should not require it as a prop.
+
+**Adding a new color to the palette.** Add the field to `Template::PALETTE_FIELDS` in `app/Models/Template.php` (key + display label). The helper iterates the constant, so the new color will appear in the bootstrap data and the picker without further wiring.
+
+---
+
+### `NinePointAlignment.vue`
+
+A 3×3 grid of selectable points for choosing one of nine alignment positions. Compact (3rem square), keyboard-navigable, and accessible.
+
+**File.** `resources/js/page-builder-vue/components/primitives/NinePointAlignment.vue`
+
+**Props.**
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `modelValue` | `string` | `'center'` | One of the nine alignment names below. |
+| `disabled` | `boolean` | `false` | Greyed out, pointer-events disabled, removed from the tab order. |
+| `label` | `string` | `''` | Optional text label rendered above the grid. |
+
+**Emits.** `update:modelValue` with the selected alignment string.
+
+**Value shape.** A string from this set:
+
+```
+top-left      top-center      top-right
+middle-left   center          middle-right
+bottom-left   bottom-center   bottom-right
+```
+
+These map cleanly to CSS `background-position` values and to flex `align-items` / `justify-content` combinations.
+
+**Keyboard.** Arrow keys move the selection one cell in the chosen direction (clamped at the edges). Enter / Space are no-op confirmations that keep focus consistent with other form controls.
+
+**Accessibility.** The wrapper is a focusable element with `role="radiogroup"` and an `aria-label` that includes the current value (e.g. `"Alignment: top-right"`). Each cell has an SVG `<title>` for tooltip + AT fallback.
+
+**Example.**
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import NinePointAlignment from '@/page-builder-vue/components/primitives/NinePointAlignment.vue'
+
+const alignment = ref<string>('center')
+</script>
+
+<template>
+  <NinePointAlignment v-model="alignment" label="Background position" />
+</template>
+```
+
+---
+
+### `ColorPicker.vue`
+
+A dropdown color picker with a theme palette row (including a "no color" swatch), user swatches, and a persistent custom-color input (native HTML5 color wheel + hex text field). Replaces the old `ColorPickerField.vue`.
+
+**File.** `resources/js/page-builder-vue/components/primitives/ColorPicker.vue`
+
+**Props.**
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `modelValue` | `string` | `''` | Hex color string, or empty for "no color". |
+| `label` | `string` | `''` | Optional text label rendered above the trigger. |
+| `placeholder` | `string` | `'No color set'` | Shown in the trigger and custom hex input when empty. |
+
+**Emits.** `update:modelValue` with the selected hex string, or `''` when the "no color" swatch is clicked.
+
+**Slots.**
+
+| Slot | Purpose |
+|---|---|
+| `icon` | Optional content rendered inside the trigger swatch. Used by the text-color variant in session 164 to overlay a "T" mark on the swatch without forking the primitive. |
+
+**Storage.** Always a hex string (`#rrggbb` or `#rgb`), or empty. Token-based storage (palette references) is post-beta and out of scope.
+
+**Theme palette flow.** The picker reads `useEditorStore().themePalette` directly — no prop wiring needed. Theme swatches at the top of the popover come from the active page template; if a palette entry has a `null` value (neither the page's template nor the default template defines it), the swatch renders as a disabled checkered chip. The "no color" swatch (white square with a diagonal red line) is the last entry in the theme row; clicking it emits `''`. See the **`theme_palette` bootstrap data** section above for the data flow.
+
+**User swatches.** The picker also reads `useEditorStore().colorSwatches`, the existing per-user "saved colors" list backed by the `editor_color_swatches` site setting. Add via the dashed `+` swatch (saves the current value), remove by hovering a swatch and clicking the `×`. These persist via the existing `saveColorSwatches` store action.
+
+**Custom color input.** A persistent native HTML5 color wheel + hex text input lives at the bottom of the popover under the "Add custom color" label. There is no toggle — both inputs are always visible. Either input writes its value through `update:modelValue` immediately; the wheel deals in `#rrggbb`, the hex input accepts whatever the user types and is the path for typing/pasting an exact value.
+
+**Popover behaviour.** Click the trigger to open. Click outside, press Escape, or click the trigger again to close. The popover positions itself absolutely below the trigger.
+
+**Example.**
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import ColorPicker from '@/page-builder-vue/components/primitives/ColorPicker.vue'
+
+const color = ref<string>('')
+</script>
+
+<template>
+  <ColorPicker
+    v-model="color"
+    label="Background color"
+    placeholder="#ffffff"
+  />
+</template>
+```
+
+**Example with the icon slot (as session 164's text-color variant will use it):**
+
+```vue
+<ColorPicker v-model="textColor" label="Text color">
+  <template #icon>
+    <span class="text-color-mark">T</span>
+  </template>
+</ColorPicker>
+```
+
+---
+
+### `GradientPicker.vue`
+
+An inline-expanding gradient editor with eight built-in presets, a structured editor, and an optional second gradient layer. Composes the new `ColorPicker` primitive for the from/to stops.
+
+**File.** `resources/js/page-builder-vue/components/primitives/GradientPicker.vue`
+
+**Props.**
+
+| Prop | Type | Default | Notes |
+|---|---|---|---|
+| `modelValue` | `GradientValue \| null` | `null` | The structured gradient value, or `null` for "no gradient". |
+| `label` | `string` | `''` | Optional text label rendered above the trigger. |
+
+**Emits.** `update:modelValue` with the new `GradientValue`, or `null` when cleared.
+
+**Value shape.**
+
+```ts
+interface GradientLayer {
+  type: 'linear' | 'radial'
+  from: string         // hex
+  to: string           // hex
+  angle?: number       // degrees, 0–360, only meaningful for `linear`
+  css_override?: string  // when non-empty, takes precedence over the structured fields
+}
+
+interface GradientValue {
+  gradients: GradientLayer[]  // 1 or 2 layers; an empty array is treated as null
+}
+```
+
+When the user clears the gradient, the picker emits `null` (not `{ gradients: [] }`) — easier for consumers to check with `if (value)`.
+
+**Layer stacking.** A two-layer value renders with the second layer painting on top. The composition helpers reverse the array order before joining, so the input order matches the editor order ("Gradient 1" sits behind "Gradient 2") while the emitted CSS string lists Gradient 2 first.
+
+**Presets.** Eight hard-coded presets live in a `const PRESETS` array at the top of the component. Edit that array to change the preset set — no schema or migration needed.
+
+**Composition helpers.** Don't write the CSS string yourself in a consumer — use the matching helper for the rendering context:
+
+| Context | Helper |
+|---|---|
+| Vue / TypeScript (editor preview, harnesses, client-side rendering) | `composeGradientCss(value)` from `resources/js/page-builder-vue/helpers/gradient.ts` |
+| PHP / Blade (public widget renderer) | `App\Services\GradientComposer::compose($value)` |
+
+Both helpers apply the same sanitization rules and produce the same CSS output for the same input. The PHP helper also has a `blank()` method that returns an explicit empty string for sites that want a named "no gradient" return.
+
+**Sanitization rules.** Both helpers apply identical validation:
+
+- **Hex colors** must match `^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`. Anything else drops the layer.
+- **Angles** must be numeric integers in `[0, 360]`. Anything else falls back to `180`.
+- **Type** must be exactly `linear` or `radial`. Anything else drops the layer entirely.
+- **CSS override path** uses a stricter allowlist: `^(?:linear|radial)-gradient\(\s*[#0-9a-fA-F,\s%.deg-]+\)$`. Anything containing `url()`, `expression()`, semicolons, quotes, or characters outside that allowlist is rejected — the override returns `''` and the layer is dropped.
+
+The override is the only freeform input the picker takes from a user, so its validator is intentionally tight. Never bypass these helpers when rendering a stored gradient value — they are the security boundary.
+
+**Example (Vue editor preview).**
+
+```vue
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import GradientPicker from '@/page-builder-vue/components/primitives/GradientPicker.vue'
+import { composeGradientCss, type GradientValue } from '@/page-builder-vue/helpers/gradient'
+
+const gradient = ref<GradientValue | null>(null)
+const previewStyle = computed(() => ({
+  backgroundImage: composeGradientCss(gradient.value),
+}))
+</script>
+
+<template>
+  <GradientPicker v-model="gradient" label="Background gradient" />
+  <div class="preview" :style="previewStyle" />
+</template>
+```
+
+**Example (Blade public renderer).**
+
+```blade
+@php
+    $gradientCss = app(\App\Services\GradientComposer::class)->compose($block['style_config']['background_gradient'] ?? null);
+@endphp
+
+<div
+    class="widget widget--{{ $block['handle'] }}"
+    @if ($gradientCss) style="background-image: {{ $gradientCss }}" @endif
+>
+    {!! $block['html'] !!}
+</div>
+```

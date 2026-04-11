@@ -167,14 +167,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 158 | Inspector Panel Reactivity |
 | 159 | Roadmap Planning — Chrome Fixes & Appearance Controls Project |
 | 160 | Page Builder & Admin Chrome Fixes |
+| 161 | Appearance Controls for Widgets — Docs Refresh & Shared Primitives |
 
 ---
 
 ## CMS & Page Builder — Beta 1 Scope
-
-### 161. Appearance Controls for Widgets — Docs Refresh & Shared Primitives
-
-Phase 1 of the Appearance Controls project. Two pieces of groundwork: (1) refresh the stale `widget-types.md` and `widget-development.md` to reflect the Vue inspector architecture (the docs still describe the deleted Livewire `PageBuilderInspector` and `wire:model.live` bindings); (2) build three shared primitive components — `NinePointAlignment`, `ColorPicker` (which replaces the existing `ColorPickerField` and reads the theme palette from the active `Template`), and `GradientPicker` (with eight presets, two color stops, type selector, CSS override, and second-gradient stacking). Adds `theme_palette` to the bootstrap data payload. Adds JS and PHP gradient composition helpers (`helpers/gradient.ts` and `App\Services\GradientComposer`) with no consumers in this session — they are placed for session 163 to plug into. Documents the primitives API at the end of the refreshed `widget-development.md`. **No Appearance panels are built and no widget config fields change in this session.** See `sessions/161. Appearance Controls for Widgets — Docs Refresh & Shared Primitives.md` for the full prompt.
 
 ### 162. Appearance Controls — Schema Rename & Widget Dedupe Sweep
 

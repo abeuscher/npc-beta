@@ -10,7 +10,7 @@ import ToggleField from './fields/ToggleField.vue'
 import CheckboxesField from './fields/CheckboxesField.vue'
 import NoticeField from './fields/NoticeField.vue'
 import RichTextField from './fields/RichTextField.vue'
-import ColorPickerField from './fields/ColorPickerField.vue'
+import ColorPicker from './primitives/ColorPicker.vue'
 import ImageUploadField from './fields/ImageUploadField.vue'
 import ButtonListField from './fields/ButtonListField.vue'
 
@@ -66,7 +66,6 @@ const componentMap: Record<string, any> = {
   checkboxes: CheckboxesField,
   notice: NoticeField,
   richtext: RichTextField,
-  color: ColorPickerField,
   image: ImageUploadField,
   video: ImageUploadField,
   buttons: ButtonListField,
@@ -79,6 +78,15 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
   <div v-show="isVisible" class="inspector-field">
     <template v-if="field.type === 'notice'">
       <NoticeField :field="field" />
+    </template>
+
+    <template v-else-if="field.type === 'color'">
+      <ColorPicker
+        :model-value="fieldValue"
+        :label="field.label"
+        :placeholder="field.helper ?? ''"
+        @update:model-value="handleUpdate"
+      />
     </template>
 
     <template v-else-if="fieldComponent">

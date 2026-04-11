@@ -1,8 +1,8 @@
 ---
 title: Widget Types
 description: Developer-managed widget type definitions — configuring server-rendered and client-rendered widgets available in the page builder.
-version: "0.87"
-updated: 2026-03-29
+version: "0.88"
+updated: 2026-04-11
 tags: [admin, cms, widgets, developer]
 routes:
   - filament.admin.resources.widget-types.index
@@ -30,7 +30,7 @@ Some built-in widget types are **pinned** — they cannot be deleted. Pinned wid
 
 Config fields are per-instance configuration options that page editors can set when placing the widget on a page. For example, a "Hero" widget might have a config field for the heading text, or an event widget might have a field for the event slug.
 
-Each field has a key, label, and type (`text`, `textarea`, `richtext`, `url`, `number`, `toggle`, `select`). In the render template, all config values are available as the `$config` associative array — for example, `$config['heading']` or `$config['event_slug']`.
+Each field has a key, label, and type. The supported types are `text`, `textarea`, `richtext`, `number`, `toggle`, `color`, `select`, `image`, `video`, `url`, and `buttons`. See the **Config Field Types** table in `widget-development.md` for the full per-type reference (props, storage shape, render notes). The `color` field type is rendered by the shared `ColorPicker` primitive — see the **Shared Appearance Primitives** section in `widget-development.md` for the full primitive API. In the render template, all config values are available as the `$config` associative array — for example, `$config['heading']` or `$config['event_slug']`.
 
 ### `select` field type
 
@@ -155,60 +155,9 @@ Note: `blog_posts` and `events` are also accessible as typed Eloquent collection
 
 ---
 
-## Column Layout Widget
+## Multi-column layouts
 
-The `column_widget` type creates a CSS grid container that can hold other widgets in named column slots. It is the primary tool for building multi-column page layouts.
-
-### Purpose and configuration
-
-A column widget instance carries two config fields:
-
-| Key | Type | Description |
-|---|---|---|
-| `num_columns` | number | How many column slot panels to display in the page builder and how many `<div>` columns to render on the front end |
-| `grid_template_columns` | text | A valid CSS `grid-template-columns` value, e.g. `1fr 1fr` or `2fr 1fr` |
-
-The template renders a `<div style="display:grid; grid-template-columns:...">` containing one `<div>` per column (0-indexed). Each column `<div>` receives the rendered HTML of any child widgets assigned to that slot.
-
-### Grid presets
-
-The page builder exposes four one-click presets that write a standard `grid_template_columns` value:
-
-| Preset label | Value written |
-|---|---|
-| Equal halves | `1fr 1fr` |
-| Equal thirds | `1fr 1fr 1fr` |
-| 2/3 + 1/3 | `2fr 1fr` |
-| 1/3 + 2/3 | `1fr 2fr` |
-
-Selecting a preset writes to the `grid_template_columns` text input. The input can always be overridden manually for custom values.
-
-### Assigning children to columns
-
-Child widgets are `page_widgets` rows with `parent_widget_id` set to the column widget's id and `column_index` set to the zero-based column number. The column widget template groups its active children by `column_index` and renders each group into the corresponding grid column.
-
-Children are ordered within their slot by `sort_order`. Up/down buttons in the page builder reorder children within the same slot (same `parent_widget_id` + `column_index`). Drag-and-drop reordering within slots is not supported.
-
-### Adding blocks to a column slot
-
-In the page builder, each column slot panel has its own **+ Add Block** button. Clicking it opens a widget picker modal scoped to that slot. Creating a block from that modal writes `parent_widget_id` and `column_index` on the new `page_widgets` row.
-
----
-
-## `parent_widget_id` / `column_index` schema and nesting model
-
-`page_widgets` supports self-referential nesting via two columns:
-
-| Column | Type | Description |
-|---|---|---|
-| `parent_widget_id` | uuid nullable | FK → `page_widgets.id`, set null on parent delete |
-| `column_index` | smallint unsigned nullable | Zero-based slot index within the parent column widget; null for root widgets |
-
-Root-level widgets have `parent_widget_id = null`. The rendering pipeline and the page builder load only root-level widgets at the top level and eager-load children from there.
-
-**Nesting depth:** unlimited. There is no depth limit in the code or the UI. A column widget inside a column slot can itself contain a column widget.
-
-**Deleting a column widget:** the `onDelete('set null')` foreign key constraint sets `parent_widget_id` to null on all direct children. Those children become orphaned root-level widgets on their page rather than being deleted. They will appear at the top of the page builder block list and can be deleted or moved manually.
+Multi-column page layouts are no longer built from a `column_widget` widget type. They are first-class `page_layouts` rows with their own schema, lifecycle, and inspector panel. A `page_widgets` row references its containing layout via `layout_id` (and slot via `column_index`); root-level widgets have `layout_id IS NULL`. See [docs/schema/page_widgets.md](../../docs/schema/page_widgets.md) and [docs/schema/page_layouts.md](../../docs/schema/page_layouts.md) for the current data model.
 
 ---
 
@@ -233,33 +182,23 @@ Values are stored as strings (numeric pixel integers). The renderer casts each v
 
 ### How the renderer applies it
 
-`resources/views/components/page-widgets.blade.php` iterates the `$blocks` array and builds an inline `style` attribute from the non-empty `style_config` values before rendering the wrapper div. The same logic is duplicated inside `resources/views/widgets/column-widget.blade.php` for child widgets rendered within column slots.
+`resources/views/components/page-widgets.blade.php` iterates the `$blocks` array and builds an inline `style` attribute from the non-empty `style_config` padding/margin values before rendering the wrapper div. Each value is cast to `int` and suffixed with `px`; raw string values are never emitted directly. The editor preview (rendered by `App\Livewire\PageBuilder::buildInlineStyles()`) follows the same casting rules.
 
 ### Availability
 
-`style_config` is available on all widget types, not just column widgets. The advanced panel is accessible on every block in the page builder.
+`style_config` is available on all widget types. Spacing controls are accessible on every block via the inspector's Appearance tab.
 
 ---
 
-## Advanced controls panel
+## Inspector — Appearance tab and spacing controls
 
-Every block has an **Advanced (Spacing)** section in the inspector panel. Click **Advanced (Spacing)** to expand it.
+The page builder inspector is a Vue island; see the **Inspector** section in `widget-development.md` for the architecture. Within the inspector, the spacing controls live on the **Appearance** tab and are rendered by the Vue component `resources/js/page-builder-vue/components/SpacingControl.vue`.
 
-The panel contains:
+The control surfaces:
 
-- **Padding (px):** an "All sides" shorthand input at the top, plus four individual Top/Right/Bottom/Left inputs.
+- **Padding (px):** an "All sides" shorthand input plus four individual Top / Right / Bottom / Left inputs.
 - **Margin (px):** same layout as padding.
 
-**Shorthand behaviour:** when all four individual values for a property (padding or margin) are equal and non-empty, the shorthand input shows that value. When they differ, the shorthand input shows an empty field with placeholder `mixed`. Writing to the shorthand input sets all four individual values at once. Individual inputs remain independently editable after that.
+**Shorthand behaviour:** when all four individual values for a property (padding or margin) are equal and non-empty, the shorthand input displays that value. When they differ, the shorthand input is empty with placeholder `mixed`. Writing to the shorthand input sets all four individual values at once. Individual inputs remain independently editable after that.
 
-Changes are persisted immediately via `wire:model.live` on the individual inputs. The shorthand inputs are Alpine-only and drive the Livewire model by proxy.
-
-The Advanced (Spacing) panel lives in the inspector (`PageBuilderInspector`) — it is no longer accessible from the block header directly.
-
----
-
-## Operational notes
-
-- **Deleting a column widget** sets `parent_widget_id` to null on its children — they become orphaned root-level widgets rather than being deleted with the parent. Remove children manually before deleting the column widget if they are no longer needed.
-- **Moving a child widget to root level via the UI** is not currently supported. To promote a child, delete the column widget (which orphans the children) or reassign `parent_widget_id` directly in the database.
-- **Root-level drag-to-reorder** continues to work on collapsed column container blocks. Drag-and-drop within column slots is not supported — use the Up/Down buttons instead.
+**Persistence:** changes mutate the local Pinia editor store immediately (so the inspector and preview update without a round-trip), then trigger a debounced `PUT /widgets/{id}` request to the page builder REST API after 350 ms of input idle time. There is no Livewire `wire:model.live` binding involved — the inspector is fully Vue/Pinia.

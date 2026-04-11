@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useEditorStore } from '../stores/editor'
-import ColorPickerField from './fields/ColorPickerField.vue'
+import ColorPicker from './primitives/ColorPicker.vue'
 
 const store = useEditorStore()
 
@@ -136,7 +136,7 @@ function getFlexBasis(slotIdx: number): string {
 
 const fullWidth = computed(() => !!layout.value?.layout_config?.full_width)
 const backgroundColor = computed(() => layout.value?.layout_config?.background_color ?? '')
-const bgField = { key: 'background_color', label: 'Background Colour', type: 'color', helper: '#ffffff' }
+const bgField = { key: 'background_color', label: 'Background Color', type: 'color', helper: '#ffffff' }
 
 const paddingKeys = [
   { key: 'padding_left', label: 'Left' },
@@ -560,10 +560,10 @@ function confirmDelete() {
       </div>
 
       <div class="layout-inspector__field">
-        <label class="layout-inspector__label-row">Background Colour</label>
-        <ColorPickerField
-          :field="bgField"
+        <ColorPicker
           :model-value="backgroundColor"
+          label="Background Color"
+          :placeholder="bgField.helper"
           @update:model-value="setLayoutConfigKey('background_color', $event)"
         />
       </div>

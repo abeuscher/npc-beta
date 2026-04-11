@@ -77,6 +77,34 @@ class Template extends Model
         return static::query()->default()->value($field);
     }
 
+    public const PALETTE_FIELDS = [
+        'primary_color'    => 'Primary',
+        'header_bg_color'  => 'Header Background',
+        'footer_bg_color'  => 'Footer Background',
+        'nav_link_color'   => 'Nav Link',
+        'nav_hover_color'  => 'Nav Hover',
+        'nav_active_color' => 'Nav Active',
+    ];
+
+    /**
+     * Return the resolved theme palette as an array of {key, label, value} entries.
+     * Each value is run through resolved() so default-template inheritance applies.
+     *
+     * @return array<int, array{key: string, label: string, value: ?string}>
+     */
+    public function resolvedPalette(): array
+    {
+        $out = [];
+        foreach (self::PALETTE_FIELDS as $key => $label) {
+            $out[] = [
+                'key'   => $key,
+                'label' => $label,
+                'value' => $this->resolved($key),
+            ];
+        }
+        return $out;
+    }
+
     /**
      * Create a system page for a custom header or footer, copying widgets from a source page.
      */

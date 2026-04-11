@@ -9,6 +9,7 @@ import type {
   Tag,
   PageRef,
   EventRef,
+  ThemePaletteEntry,
   BootstrapData,
   CreateWidgetPayload,
   UpdateWidgetPayload,
@@ -48,6 +49,9 @@ export const useEditorStore = defineStore('editor', () => {
 
   // Color swatches (shared across all color picker fields)
   const colorSwatches = ref<string[]>([])
+
+  // Theme palette (resolved colors from the active template, sourced from bootstrap data)
+  const themePalette = ref<ThemePaletteEntry[]>([])
 
   // UI state
   const saving = ref(false)
@@ -131,6 +135,7 @@ export const useEditorStore = defineStore('editor', () => {
     events.value = data.events
     inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
     colorSwatches.value = data.color_swatches ?? []
+    themePalette.value = data.theme_palette ?? []
 
     populateFromItems(data.items ?? [])
     requiredLibs.value = data.required_libs
@@ -629,6 +634,7 @@ export const useEditorStore = defineStore('editor', () => {
     dragging,
     inlineImageUploadUrl,
     colorSwatches,
+    themePalette,
 
     // Getters
     rootWidgets,
