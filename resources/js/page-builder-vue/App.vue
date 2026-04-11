@@ -70,7 +70,7 @@ onUnmounted(() => {
 
 .vue-editor__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) min(32rem, 33%);
+  grid-template-columns: minmax(0, 3fr) min(28rem, 25%);
   gap: 1rem;
   align-items: start;
 }

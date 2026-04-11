@@ -166,14 +166,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 157 | Page Builder Preview Reactivity Bug Fix |
 | 158 | Inspector Panel Reactivity |
 | 159 | Roadmap Planning — Chrome Fixes & Appearance Controls Project |
+| 160 | Page Builder & Admin Chrome Fixes |
 
 ---
 
 ## CMS & Page Builder — Beta 1 Scope
-
-### 160. Page Builder & Admin Chrome Fixes
-
-Five targeted fixes to the page builder inspector and the Filament admin chrome. (1) Vue inspector panel becomes a fixed `32rem` instead of resizing with viewport via the current `min(32rem, 33%)` rule in `App.vue`. (2) Decouple the topbar fullscreen toggle from Filament's sidebar collapse state — the session 156 toggle currently clobbers the user's manual collapse choice every time it fires. (3) Swap the topbar fullscreen icon from `eye`/`eye-slash` to `arrows-pointing-out`/`arrows-pointing-in` for clearer affordance. (4) Fix the session 120 custom theme so the collapsed Filament sidebar does not scroll. (5) Shrink and relocate the "Save as Template" button in `EditorToolbar.vue` to a less prominent position. No new features. See `sessions/160. Page Builder & Admin Chrome Fixes.md` for the full prompt.
 
 ### 161. Appearance Controls for Widgets — Docs Refresh & Shared Primitives
 

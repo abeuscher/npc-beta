@@ -16,6 +16,28 @@ html.np-fullscreen .fi-main {
     max-width: 100% !important;
 }
 
+/* Collapsed sidebar (icon-only rail) should not scroll. Filament's default
+   .fi-sidebar-nav has overflow-y: auto and scrollbar-gutter: stable applied
+   unconditionally, which produces a wheel-scrollable rail with a reserved
+   gutter even when there is no overflow content to reach. Suppress both in
+   the collapsed state — the open state is unaffected. */
+.fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-nav {
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
+}
+
+/* Pin the left sidebar header (logo + collapse control) to the top of the
+   viewport so it always sits flush with the topbar to its right. Filament's
+   .fi-sidebar uses lg:sticky h-screen on the aside, but this rule guarantees
+   the header itself stays anchored at the top of the sidebar's flex column
+   regardless of any flex-stretch or scroll-context quirks. The z-index keeps
+   it painting above the scrolling .fi-sidebar-nav below it. */
+.fi-sidebar-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
 
 /* ── Page builder dark mode (editor chrome only) ────────────────────────────
  *
