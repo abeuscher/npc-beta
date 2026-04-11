@@ -164,30 +164,154 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 155 | Template & Page Import-Export |
 | 156 | Form Polish, Image Fields & Chrome Toggle |
 | 157 | Page Builder Preview Reactivity Bug Fix |
+| 158 | Inspector Panel Reactivity |
+| 159 | Roadmap Planning — Chrome Fixes & Appearance Controls Project |
 
 ---
 
-## CMS & Editor — Beta 1 Scope
+## CMS & Page Builder — Beta 1 Scope
 
-### 145. Editor Vue Migration — Decision & Planning
+### 160. Page Builder & Admin Chrome Fixes
 
-Architecture decision session. Evaluated the page builder editor's Livewire architecture against the needs of a stateful, interactive editor UI. Decision: migrate the preview canvas and inspector panel to Vue 3 with Pinia state management. Widget templates remain Blade (server-rendered). Filament shell, widget picker, and save-as-template modal stay on Livewire. Communication via REST API endpoints with session auth. Preview refresh is user-initiated (on selection change, mode switch, or explicit action), not reactive to every field change. This session produces session outlines and design decisions; session 146 produces the detailed migration plan document.
+Five targeted fixes to the page builder inspector and the Filament admin chrome. (1) Vue inspector panel becomes a fixed `32rem` instead of resizing with viewport via the current `min(32rem, 33%)` rule in `App.vue`. (2) Decouple the topbar fullscreen toggle from Filament's sidebar collapse state — the session 156 toggle currently clobbers the user's manual collapse choice every time it fires. (3) Swap the topbar fullscreen icon from `eye`/`eye-slash` to `arrows-pointing-out`/`arrows-pointing-in` for clearer affordance. (4) Fix the session 120 custom theme so the collapsed Filament sidebar does not scroll. (5) Shrink and relocate the "Save as Template" button in `EditorToolbar.vue` to a less prominent position. No new features. See `sessions/160. Page Builder & Admin Chrome Fixes.md` for the full prompt.
 
-### Vue Editor Migration (sessions 148–151)
+### 161. Appearance Controls for Widgets — Docs Refresh & Shared Primitives
 
-The page builder editor is moving from Livewire to Vue.js. The preview canvas and inspector panel become a Vue application with a Pinia store for client-side state management. Widget templates remain Blade (server-rendered HTML injected into the Vue canvas). The Filament page shell, widget picker modal, and page-level settings stay on Livewire. Communication between the Vue editor and Laravel is via REST API endpoints — the first internal consumers of the API surface planned for post-beta. Session 147 laid the foundation: REST API, Pinia store, API client, TypeScript types, and Vue app mount inside Filament.
+Phase 1 of the Appearance Controls project. Two pieces of groundwork: (1) refresh the stale `widget-types.md` and `widget-development.md` to reflect the Vue inspector architecture (the docs still describe the deleted Livewire `PageBuilderInspector` and `wire:model.live` bindings); (2) build three shared primitive components — `NinePointAlignment`, `ColorPicker` (which replaces the existing `ColorPickerField` and reads the theme palette from the active `Template`), and `GradientPicker` (with eight presets, two color stops, type selector, CSS override, and second-gradient stacking). Adds `theme_palette` to the bootstrap data payload. Adds JS and PHP gradient composition helpers (`helpers/gradient.ts` and `App\Services\GradientComposer`) with no consumers in this session — they are placed for session 163 to plug into. Documents the primitives API at the end of the refreshed `widget-development.md`. **No Appearance panels are built and no widget config fields change in this session.** See `sessions/161. Appearance Controls for Widgets — Docs Refresh & Shared Primitives.md` for the full prompt.
 
-### 148. Editor Canvas in Vue
+### 162. Appearance Controls — Schema Rename & Widget Dedupe Sweep
 
-Rebuild the preview panel as a Vue component. Transparent overlay div in front of each widget section — serves as click target and disables in-page interactions (links, forms, carousels) while editing. Triangular selection handle in the upper-right corner of each column/section. Drag-and-drop reordering via the Vue ecosystem (vue-draggable or equivalent). Widget preview HTML is still server-rendered and injected — the Vue canvas manages the chrome around it, not the widget content. Selection state, mode switching, and viewport controls all move to the Pinia store.
+Phase 2 of the Appearance Controls project. Destructive schema change and widget config cleanup to prepare the ground for the universal Appearance panels in session 163. There is no live data — the migration is irreversible by design.
 
-### 149. Editor Inspector in Vue — Part 1
+**Schema migration:**
 
-Rebuild the inspector panel as Vue components. Core form fields: text inputs, selects, checkboxes, toggles, textareas, rich text (Quill integration). Tabbed layout. Fix every default value to be explicit and correct — eliminate placeholder values that appear unset when they are active. Wire config changes to the Pinia store with debounced API saves. Preview refresh triggered reactively from store changes.
+- Rename `page_widgets.style_config` → `page_widgets.appearance_config` (jsonb, default `{}`).
+- Adopt a nested shape:
 
-### 152. Config Requirements & Drag-and-Drop
+  ```
+  {
+    background: { color, gradient, image_id, alignment, fit, overlay: { enabled, color, opacity } },
+    text:       { color },
+    layout:     { full_width, padding: {top,right,bottom,left}, margin: {top,right,bottom,left} }
+  }
+  ```
 
-Config requirements system: new `required_config` JSONB column on `widget_types` with `keys` array and `message`; PreviewRegion shows a configuration notice for unconfigured widgets instead of preview HTML. Remove all `@include('widgets.components.widget-placeholder')` calls from widget Blade templates — public site renders nothing for unconfigured widgets. Drag-and-drop reordering of root widgets via vuedraggable (full region drag — quadrant-based interaction model deferred to session 153).
+- Update `resources/views/components/page-widgets.blade.php` to read from the new column and the new nested paths. The padding/margin render path is preserved. Full-width resolution is preserved (`appearance_config.layout.full_width` overrides the WidgetType default).
+- Update the Vue Pinia editor store, `WidgetAppearanceControls.vue`, and `SpacingControl.vue` to read/write the new nested paths. (`SpacingControl.vue` is retired in session 163; in this session it simply repoints at `appearance_config.layout.padding` / `.margin`.)
+- Update `docs/schema/page_widgets.md` to reflect the rename and new default shape.
+- Reseed demo data after the migration.
+
+**Widget dedupe sweep — REMOVE these whole-widget fields (absorbed by the universal layer in session 163):**
+
+- `product_carousel.background_color`, `product_carousel.text_color`, `product_carousel.full_width` (last is dead code)
+- `hero.background_color`, `hero.text_color`, `hero.background_image`, `hero.full_width` (last is dead code)
+- Update `resources/views/widgets/product-carousel.blade.php` and `resources/views/widgets/hero.blade.php` to remove all references to the removed keys.
+
+**Widget dedupe sweep — LEAVE alone (do not touch under any circumstances):**
+
+- `hero.nav_link_color` and `hero.nav_hover_color` — critical for hero full-bleed mode where the site nav overlays the hero. The consumer wiring may live inside `hero.blade.php` or in a partial outside it; investigate before any future touch. **Do not remove or rename in this session.**
+- `hero.background_video` — hero-only feature, not absorbed into the universal Background panel. Stays as a hero config field.
+- `board_members.pane_color`, `board_members.border_color` — already well-disambiguated by their names. No change.
+
+**Widget rename sweep — sub-region disambiguation:**
+
+| Widget | Old key | New key |
+|---|---|---|
+| `carousel` | `slide_text_color` | `caption_text_color` |
+| `carousel` | `slide_link_color` | `caption_link_color` |
+| `bar_chart` | `bar_color` | `bar_fill_color` |
+| `logo_garden` | `background_color` | `container_background_color` |
+| `board_members` | `background_color` | `grid_background_color` |
+| `hero` | `overlay_opacity` | `background_overlay_opacity` |
+
+For `bar_chart.bar_color → bar_fill_color`: **verify both the public Chart.js init and the preview-mode Chart.js init consume the new key**. Grep for `bar_color` across `resources/views/widgets/bar-chart.blade.php`, `resources/js/public.js`, the widget type's inline `js` column, and any preview shim before declaring done. The chart instantiation must work in both the public render path and the editor preview.
+
+For `logo_garden` and `board_members`: also update the corresponding CSS custom property names (`--logo-bg`, `--bm-bg`) and any SCSS partial references.
+
+**Schema bug fix — `blog_listing` and `events_listing`:**
+
+Both templates currently read `background_color` and `text_color` but neither widget's `config_schema` defines those fields. **Remove the dead template references** (do not add the missing schema fields). The universal Background and Text panels delivered in session 163 will provide the controls instead.
+
+**Testing:**
+
+- Pest test asserting the `page_widgets` schema rename — `appearance_config` exists, `style_config` does not.
+- Pest tests confirming the widget type seeders contain the renamed field keys and no longer contain the removed keys (per the lists above).
+- Render smoke tests for each affected widget — render the updated Blade template with representative config and confirm no `undefined variable` errors.
+
+**Out of scope:** the universal Appearance panels themselves (session 163). This session only prepares the storage and cleans up widgets.
+
+### 163. Appearance Controls — Universal Background, Text & Layout Sections
+
+Phase 3 of the Appearance Controls project. Build the three universal Appearance panels in the Vue inspector's Appearance tab and wire them into `appearance_config` and the public renderer. This is the heaviest UI session of the project.
+
+**Background section:**
+
+- Full-width-vs-content-width toggle. **Grayed out with a tooltip when the widget has a `parent_widget_id`** (the parent column controls width).
+- Color picker (using the session 161 `ColorPicker` primitive).
+- Gradient picker (using the session 161 `GradientPicker` primitive).
+- Background image upload — single file, stored in a Spatie media collection on `PageWidget` named `appearance_background_image`.
+- Background image 9-point alignment (using the session 161 `NinePointAlignment` primitive) — maps to CSS `background-position`.
+- Cover/contain toggle — maps to CSS `background-size`.
+- Overlay: checkbox to enable, color picker, opacity slider 0–100.
+
+**Text section:**
+
+- Text color picker using the `ColorPicker` primitive with a "T" icon variant (pass the icon slot — the primitive supports this without forking).
+- A small helper-text line under the control noting that inline color styling in rich text fields overrides this value.
+
+**Section Layout section:**
+
+- Full-width-vs-content-width toggle (same underlying store path as the Background section toggle — both bindings point at `appearance_config.layout.full_width`; the duplicate UI affordance is intentional for discoverability).
+- Margin controls: all-sides shorthand input plus four individual top/right/bottom/left inputs.
+- Padding controls: same shape as margin.
+
+**Retire `SpacingControl.vue`:** delete the file, remove its import from `InspectorPanel.vue`, and wire the new Section Layout panel in its place. The all-sides shorthand logic moves into the new component (or into a small inline helper if it ends up duplicated between padding and margin).
+
+**Renderer updates (`resources/views/components/page-widgets.blade.php`):**
+
+- Compose the inline style for the full appearance bag, not just padding and margin. Background color, background image (resolved via `getFirstMediaUrl` on the `PageWidget` for the `appearance_background_image` collection), background-position (9-point value mapped to a CSS string), background-size, overlay (rendered as a stacked layer or pseudo-element), text color, full-width, padding, margin.
+- Gradient composition uses `App\Services\GradientComposer` from session 161.
+- **Column-child widgets (`parent_widget_id` is non-null):** the full-width toggle is ignored at render time — the parent column controls width. The UI grays out the toggle but the renderer also enforces this defensively.
+- **Safety:** continue casting integer values for spacing. Never emit raw strings from the bag into style attributes. Color values must match a hex pattern before being written. All gradient output flows through `GradientComposer`, which sanitizes internally.
+
+**Background image media collection:** add `appearance_background_image` to `PageWidget::registerMediaCollections()` (single file, image MIME types only). Resolution in the renderer follows the existing pattern used for widget config images.
+
+**Testing:**
+
+- Pest tests for the renderer with representative `appearance_config` shapes: color-only background, gradient background, image background with alignment, image background with overlay, text color override, full-width true at root, full-width true ignored when inside a column, padding and margin combined.
+- Widget render smoke tests for every widget that had fields removed in session 162 — confirm the universal layer now controls their appearance without regression.
+
+**Out of scope:** documentation updates (session 164), widget spacing harmonization (session 164), any further config field consolidation, any token-based palette storage.
+
+### 164. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
+
+Phase 4 of the Appearance Controls project. Close out documentation and run a small polish session on hard-coded spacing values across three widgets.
+
+**Documentation pass:**
+
+- Update `resources/docs/widget-types.md` and `resources/docs/widget-development.md` to document:
+  - The universal Appearance layer (Background, Text, Section Layout panels) and its `appearance_config` storage shape.
+  - The three shared primitives (`NinePointAlignment`, `ColorPicker`, `GradientPicker`) — examples should show how the panels consume them.
+  - A concise per-widget "what changed" table covering the removes and renames from session 162.
+  - The column-child width override behaviour and the grayed-out tooltip state.
+- Update this session outlines document: amend the post-beta "CMS Style System — Full Widget Styling" stub to reflect that the first slab (universal padding/margin/background/text/full-width controls) has been delivered, leaving only the per-widget `style_schema` ambition and the arbitrary scoped CSS work.
+
+**Widget spacing harmonization:**
+
+Three widgets currently hard-code a Swiper `spaceBetween` value that should be user-controllable, following the pattern already in `three_buckets`:
+
+- `logo_garden` — `spaceBetween: 16` at `resources/views/widgets/logo-garden.blade.php` (~lines 40, 84). Surface as a `gap` config field.
+- `blog_listing` — `spaceBetween: 24` at `resources/views/widgets/blog-listing.blade.php` (~line 88). Surface as a `gap` config field.
+- `events_listing` — `spaceBetween: 24` at `resources/views/widgets/events-listing.blade.php` (~line 100). Surface as a `gap` config field.
+
+Add a `gap` number field (label: "Slide spacing (px)") to each widget's `config_schema` in `database/seeders/WidgetTypeSeeder.php`. Thread the value through the Swiper init in each template. Default to the current hard-coded value so existing placements render identically.
+
+**Testing:**
+
+- Pest tests asserting the three widgets' seeders expose the new `gap` field.
+- Render smoke tests confirming the templates compile with both the default and a custom `gap` value.
+
+**Out of scope:** anything involving the Appearance primitives beyond documentation, any remaining per-widget config cleanup, any test coverage for the Vue primitives (deferred to the post-beta JS test runner stub).
 
 ---
 
@@ -303,10 +427,6 @@ Build a logo block widget for the site header. Restructure the default header an
 
 Twitter card meta tags. Manual canonical URL override. SEO scoring/audit checklists. Search console integration. Alt-text validation. Builds on the JSON-LD, OG tags, snippets, sitemap, and noindex controls delivered in session 096.
 
-### Theme Palette UX — Color Token Picker
-
-User-facing UX for picking from a named theme palette anywhere a color field appears in the admin (widget config, page template, button style editor, custom SCSS variables, etc.). Requirements gathered before this session: the palette appears in a dropdown alongside the existing color picker — same control, two access modes. Layout has to be designed carefully for a small space (a tooltip/popover off the field). Adding a new color to the theme is reasonably easy; removing one is reasonably difficult, to discourage accidental palette breakage. **Discussion needed first** — sit down with the designer and audit how other products (Figma, Webflow, Tailwind UI, Penpot) solve this before committing to a UI pattern. Current behaviour (raw color picker only) stays in place until this lands.
-
 ### Site Theme & Public Theme Builder
 
 *Merges "Site Theme Enhancement" and "Public Theme Builder / Custom CSS Tool" — both extend SiteThemePage.*
@@ -319,7 +439,7 @@ A "kitchen sink" preview page for theme editing that exposes all major headings,
 
 ### CMS Style System — Full Widget Styling
 
-Full widget style surface schema: each widget type declares a `style_schema` (CSS property → control type + constraints). All widgets accept arbitrary CSS scoped to `[data-widget="{uuid}"]` at render time. Builds on the front-end pipeline and column widget infrastructure from Beta 1. The `style_config` column and universal padding/margin controls are laid in session 086 — this session extends that foundation. Planning for this system was partly in scope for Beta 1 sessions — defer the implementation until post-Beta.
+Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. Builds on the universal Appearance layer delivered in sessions 161–164 (background, text color, full-width, padding, margin, gradient, background image with alignment and overlay, all stored in `appearance_config`) — this stub now covers only the remaining ambition: per-widget styling beyond what every widget gets for free, and a way for advanced users to write custom CSS scoped to a single widget instance.
 
 ### Widget Portability & Distribution
 
