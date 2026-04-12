@@ -682,3 +682,37 @@ it('validates swatches is an array of strings', function () {
 
     $response->assertUnprocessable();
 });
+
+// ── appearance_image_url in formatWidget ─────────────────────────────────────
+
+it('includes appearance_image_url as null when no image', function () {
+    $page = apiPage();
+    $widget = apiWidget($page);
+
+    $response = $this->actingAs(apiUser())
+        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+
+    $response->assertOk();
+    $widgetData = collect($response->json('items'))->firstWhere('id', $widget->id);
+    expect($widgetData)->toHaveKey('appearance_image_url');
+    expect($widgetData['appearance_image_url'])->toBeNull();
+});
+
+it('includes appearance_image_url when image is uploaded', function () {
+    $page = apiPage();
+    $widget = apiWidget($page);
+
+    \Illuminate\Support\Facades\Storage::fake('public');
+    $file = \Illuminate\Http\UploadedFile::fake()->image('bg.jpg', 800, 600);
+
+    $this->actingAs(apiUser())
+        ->post(apiPrefix() . "/widgets/{$widget->id}/appearance-image", ['file' => $file])
+        ->assertOk();
+
+    $response = $this->actingAs(apiUser())
+        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+
+    $response->assertOk();
+    $widgetData = collect($response->json('items'))->firstWhere('id', $widget->id);
+    expect($widgetData['appearance_image_url'])->not->toBeNull();
+});

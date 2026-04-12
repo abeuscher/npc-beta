@@ -41,7 +41,7 @@ const textField = { key: 'text_color', label: 'Text Color', type: 'color', helpe
       <input
         type="checkbox"
         :checked="fullWidth"
-        class="appearance-controls__checkbox"
+        class="inspector-checkbox"
         @change="updateAppearance('layout.full_width', ($event.target as HTMLInputElement).checked)"
       >
       <span>Full width</span>
@@ -86,23 +86,8 @@ const textField = { key: 'text_color', label: 'Text Color', type: 'color', helpe
   color: #374151;
 }
 
-.appearance-controls__checkbox {
-  border-radius: 0.25rem;
-  border: 1px solid #d1d5db;
-  color: var(--c-primary-600, #4f46e5);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
 .appearance-controls__field {
   display: flex;
   flex-direction: column;
-}
-
-.appearance-controls__label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
 }
 </style>

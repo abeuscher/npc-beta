@@ -121,7 +121,7 @@ const cells = computed(() => {
 
 <template>
   <div class="nine-point" :class="{ 'nine-point--disabled': disabled }">
-    <label v-if="label" class="nine-point__label">{{ label }}</label>
+    <label v-if="label" class="inspector-label">{{ label }}</label>
     <div
       class="nine-point__control"
       role="radiogroup"
@@ -185,15 +185,9 @@ const cells = computed(() => {
   gap: 0.25rem;
 }
 
-.nine-point__label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
-}
-
 .nine-point__control {
-  width: 3rem;
-  height: 3rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 0.375rem;
   cursor: pointer;
   display: inline-block;

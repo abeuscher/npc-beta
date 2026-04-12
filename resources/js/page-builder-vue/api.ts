@@ -215,6 +215,39 @@ export async function removeImage(
   return request('DELETE', `widgets/${widgetId}/image/${encodeURIComponent(key)}`)
 }
 
+// Appearance background image
+export async function uploadAppearanceImage(
+  widgetId: string,
+  file: File
+): Promise<{ url: string }> {
+  const url = `${baseUrl}/widgets/${widgetId}/appearance-image`
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'X-CSRF-TOKEN': csrfToken,
+    },
+    credentials: 'same-origin',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Appearance image upload failed (${res.status}): ${text}`)
+  }
+
+  return res.json()
+}
+
+export async function removeAppearanceImage(
+  widgetId: string
+): Promise<{ removed: boolean }> {
+  return request('DELETE', `widgets/${widgetId}/appearance-image`)
+}
+
 // Color swatches
 export function saveColorSwatches(
   swatches: string[]

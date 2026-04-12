@@ -28,14 +28,13 @@ interface GradientPreset {
 }
 
 const PRESETS: GradientPreset[] = [
-  { label: 'Lavender Sky',  layer: { type: 'linear', from: '#e0c3fc', to: '#8ec5fc', angle: 180 } },
-  { label: 'Sunrise',       layer: { type: 'linear', from: '#ff9a9e', to: '#fad0c4', angle: 180 } },
-  { label: 'Calm Sky',      layer: { type: 'linear', from: '#a1c4fd', to: '#c2e9fb', angle: 180 } },
-  { label: 'Mint Meadow',   layer: { type: 'linear', from: '#d4fc79', to: '#96e6a1', angle: 180 } },
-  { label: 'Dusk',          layer: { type: 'linear', from: '#2c3e50', to: '#4ca1af', angle: 180 } },
-  { label: 'Sunset',        layer: { type: 'linear', from: '#ff7e5f', to: '#feb47b', angle: 180 } },
-  { label: 'Slate',         layer: { type: 'linear', from: '#232526', to: '#414345', angle: 180 } },
-  { label: 'Aurora',        layer: { type: 'linear', from: '#00c6ff', to: '#0072ff', angle: 180 } },
+  { label: 'Lavender Sky',  layer: { type: 'linear', from: '#e0c3fc', to: '#8ec5fc', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Sunrise',       layer: { type: 'linear', from: '#ff9a9e', to: '#fad0c4', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Calm Sky',      layer: { type: 'linear', from: '#a1c4fd', to: '#c2e9fb', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Mint Meadow',   layer: { type: 'linear', from: '#d4fc79', to: '#96e6a1', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Dusk',          layer: { type: 'linear', from: '#2c3e50', to: '#4ca1af', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Sunset',        layer: { type: 'linear', from: '#ff7e5f', to: '#feb47b', angle: 180, from_alpha: 100, to_alpha: 100 } },
+  { label: 'Slate',         layer: { type: 'linear', from: '#232526', to: '#414345', angle: 180, from_alpha: 100, to_alpha: 100 } },
 ]
 
 const DEFAULT_LAYER: GradientLayer = {
@@ -43,6 +42,8 @@ const DEFAULT_LAYER: GradientLayer = {
   from: '#ffffff',
   to: '#000000',
   angle: 180,
+  from_alpha: 100,
+  to_alpha: 100,
 }
 
 const isOpen = ref(false)
@@ -74,13 +75,8 @@ function emitGradients(next: GradientLayer[]): void {
   emit('update:modelValue', { gradients: next })
 }
 
-function createInitialGradient(): void {
-  emitGradients([{ ...DEFAULT_LAYER }])
-}
-
 function applyPreset(preset: GradientPreset): void {
-  // Replaces the first gradient with the preset; preserves a Gradient 2 if present.
-  const next = [...gradients.value]
+  const next = gradients.value.length > 0 ? [...gradients.value] : [{ ...DEFAULT_LAYER }]
   next[0] = { ...preset.layer }
   emitGradients(next)
 }
@@ -107,7 +103,7 @@ function clearAll(): void {
 
 <template>
   <div class="gradient-picker">
-    <label v-if="label" class="gradient-picker__label">{{ label }}</label>
+    <label v-if="label" class="inspector-label">{{ label }}</label>
 
     <button
       type="button"
@@ -128,123 +124,142 @@ function clearAll(): void {
     </button>
 
     <div v-if="isOpen" class="gradient-picker__panel">
-      <div v-if="!hasGradient" class="gradient-picker__empty">
-        <p>No gradient set.</p>
-        <button type="button" class="gradient-picker__create" @click="createInitialGradient">
-          Create gradient
-        </button>
-      </div>
+      <div class="gradient-picker__body">
+        <section class="gradient-picker__section">
+          <p class="inspector-section-title">Presets</p>
+          <div class="gradient-picker__presets">
+            <button
+              v-for="preset in PRESETS"
+              :key="preset.label"
+              type="button"
+              class="gradient-picker__preset"
+              :title="preset.label"
+              :style="{
+                backgroundImage: `linear-gradient(${preset.layer.angle}deg, ${preset.layer.from}, ${preset.layer.to})`,
+              }"
+              @click="applyPreset(preset)"
+            />
+            <button
+              type="button"
+              class="gradient-picker__preset gradient-picker__preset--none"
+              title="Remove gradient"
+              @click="clearAll"
+            >
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <line x1="4" y1="4" x2="20" y2="20" stroke="#dc2626" stroke-width="3" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+        </section>
 
-      <div v-else class="gradient-picker__body">
-        <div class="gradient-picker__controls">
-          <section class="gradient-picker__section">
-            <p class="gradient-picker__section-title">Presets</p>
-            <div class="gradient-picker__presets">
-              <button
-                v-for="preset in PRESETS"
-                :key="preset.label"
-                type="button"
-                class="gradient-picker__preset"
-                :title="preset.label"
-                :style="{
-                  backgroundImage: `linear-gradient(${preset.layer.angle}deg, ${preset.layer.from}, ${preset.layer.to})`,
-                }"
-                @click="applyPreset(preset)"
-              />
-            </div>
-          </section>
+        <section
+          v-for="(gradient, index) in gradients"
+          :key="index"
+          class="gradient-picker__section gradient-picker__section--editor"
+        >
+          <div class="gradient-picker__section-head">
+            <p class="inspector-section-title">
+              Gradient {{ index + 1 }}
+            </p>
+            <button
+              v-if="index === 1"
+              type="button"
+              class="gradient-picker__remove"
+              title="Remove second gradient"
+              @click="removeSecondGradient"
+            >&times;</button>
+          </div>
 
-          <section
-            v-for="(gradient, index) in gradients"
-            :key="index"
-            class="gradient-picker__section gradient-picker__section--editor"
-          >
-            <div class="gradient-picker__section-head">
-              <p class="gradient-picker__section-title">
-                Gradient {{ index + 1 }}
-              </p>
-              <button
-                v-if="index === 1"
-                type="button"
-                class="gradient-picker__remove"
-                title="Remove second gradient"
-                @click="removeSecondGradient"
-              >&times;</button>
-            </div>
-
-            <div class="gradient-picker__field">
+          <!-- Row 1: From color + opacity -->
+          <div class="gradient-picker__row">
+            <div class="gradient-picker__row-color">
               <ColorPicker
                 :model-value="gradient.from"
                 label="From"
                 @update:model-value="updateLayer(index, { from: $event })"
               />
             </div>
-            <div class="gradient-picker__field">
+            <div class="gradient-picker__row-opacity">
+              <label class="inspector-label">Opacity ({{ gradient.from_alpha ?? 100 }}%)</label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                :value="gradient.from_alpha ?? 100"
+                class="inspector-range"
+                @input="updateLayer(index, { from_alpha: parseInt(($event.target as HTMLInputElement).value, 10) })"
+              >
+            </div>
+          </div>
+
+          <!-- Row 2: To color + opacity -->
+          <div class="gradient-picker__row">
+            <div class="gradient-picker__row-color">
               <ColorPicker
                 :model-value="gradient.to"
                 label="To"
                 @update:model-value="updateLayer(index, { to: $event })"
               />
             </div>
+            <div class="gradient-picker__row-opacity">
+              <label class="inspector-label">Opacity ({{ gradient.to_alpha ?? 100 }}%)</label>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                :value="gradient.to_alpha ?? 100"
+                class="inspector-range"
+                @input="updateLayer(index, { to_alpha: parseInt(($event.target as HTMLInputElement).value, 10) })"
+              >
+            </div>
+          </div>
 
-            <div class="gradient-picker__field">
-              <label class="gradient-picker__inline-label">Type</label>
+          <!-- Row 3: Type + Angle -->
+          <div class="gradient-picker__row">
+            <div class="gradient-picker__row-half">
+              <label class="inspector-label">Type</label>
               <select
                 :value="gradient.type"
-                class="gradient-picker__select"
+                class="inspector-control inspector-control--sm"
                 @change="updateLayer(index, { type: ($event.target as HTMLSelectElement).value as GradientLayer['type'] })"
               >
                 <option value="linear">Linear</option>
                 <option value="radial">Radial</option>
               </select>
             </div>
-
-            <div v-if="gradient.type === 'linear'" class="gradient-picker__field">
-              <label class="gradient-picker__inline-label">Angle (deg)</label>
+            <div v-if="gradient.type === 'linear'" class="gradient-picker__row-half">
+              <label class="inspector-label">Angle (deg)</label>
               <input
                 type="number"
                 min="0"
                 max="360"
                 :value="gradient.angle ?? 180"
-                class="gradient-picker__number"
+                class="inspector-control inspector-control--sm"
                 @input="updateLayer(index, { angle: parseInt(($event.target as HTMLInputElement).value, 10) || 0 })"
               >
             </div>
-
-            <div class="gradient-picker__field">
-              <label class="gradient-picker__inline-label">CSS override</label>
-              <input
-                type="text"
-                :value="gradient.css_override ?? ''"
-                placeholder="linear-gradient(...)"
-                class="gradient-picker__text"
-                @input="updateLayer(index, { css_override: ($event.target as HTMLInputElement).value })"
-              >
-            </div>
-          </section>
-
-          <div class="gradient-picker__actions">
-            <button
-              v-if="gradients.length === 1"
-              type="button"
-              class="gradient-picker__add"
-              @click="addSecondGradient"
-            >+ Add second gradient</button>
-            <button
-              type="button"
-              class="gradient-picker__clear"
-              @click="clearAll"
-            >Clear gradient</button>
           </div>
-        </div>
 
-        <div class="gradient-picker__preview">
-          <p class="gradient-picker__section-title">Preview</p>
-          <div
-            class="gradient-picker__preview-swatch"
-            :style="previewCss ? { backgroundImage: previewCss } : undefined"
-          />
-          <code class="gradient-picker__preview-css">{{ previewCss || '(empty)' }}</code>
+          <!-- Row 4: CSS override (full width) -->
+          <div class="gradient-picker__field">
+            <label class="inspector-label">CSS override</label>
+            <input
+              type="text"
+              :value="gradient.css_override ?? ''"
+              placeholder="linear-gradient(...)"
+              class="inspector-control inspector-control--sm inspector-control--mono"
+              @input="updateLayer(index, { css_override: ($event.target as HTMLInputElement).value })"
+            >
+          </div>
+        </section>
+
+        <div class="gradient-picker__actions">
+          <button
+            v-if="gradients.length === 1"
+            type="button"
+            class="gradient-picker__add"
+            @click="addSecondGradient"
+          >+ Add second gradient</button>
         </div>
       </div>
     </div>
@@ -256,12 +271,6 @@ function clearAll(): void {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.gradient-picker__label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
 }
 
 .gradient-picker__trigger {
@@ -328,40 +337,10 @@ function clearAll(): void {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-.gradient-picker__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.gradient-picker__empty p {
-  margin: 0;
-}
-
-.gradient-picker__create {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid var(--c-primary-400, #818cf8);
-  border-radius: 0.25rem;
-  background: #fff;
-  font-size: 0.75rem;
-  color: var(--c-primary-600, #4f46e5);
-  cursor: pointer;
-}
-
 .gradient-picker__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 7rem;
-  gap: 0.75rem;
-}
-
-.gradient-picker__controls {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-width: 0;
 }
 
 .gradient-picker__section {
@@ -381,15 +360,6 @@ function clearAll(): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.gradient-picker__section-title {
-  margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
 }
 
 .gradient-picker__remove {
@@ -430,40 +400,58 @@ function clearAll(): void {
   box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
 
+.gradient-picker__preset--none {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gradient-picker__preset--none svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gradient-picker__preset--none:hover {
+  border-color: #9ca3af;
+}
+
+/* Row layout for paired controls */
+.gradient-picker__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.gradient-picker__row-color {
+  min-width: 0;
+}
+
+.gradient-picker__row-color :deep(.color-picker__popover) {
+  right: auto;
+  width: calc(200% + 0.5rem);
+}
+
+.gradient-picker__row-opacity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.gradient-picker__row-half {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .gradient-picker__field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.gradient-picker__inline-label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: #4b5563;
-}
-
-.gradient-picker__select,
-.gradient-picker__number,
-.gradient-picker__text {
-  width: 100%;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  background: #fff;
-  font-size: 0.75rem;
-  color: #1f2937;
-}
-
-.gradient-picker__text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.gradient-picker__select:focus,
-.gradient-picker__number:focus,
-.gradient-picker__text:focus {
-  outline: none;
-  border-color: var(--c-primary-400, #818cf8);
-  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
 
 .gradient-picker__actions {
@@ -472,8 +460,7 @@ function clearAll(): void {
   gap: 0.375rem;
 }
 
-.gradient-picker__add,
-.gradient-picker__clear {
+.gradient-picker__add {
   padding: 0.375rem 0.5rem;
   border: 1px dashed #d1d5db;
   border-radius: 0.25rem;
@@ -486,38 +473,5 @@ function clearAll(): void {
 .gradient-picker__add:hover {
   border-color: var(--c-primary-400, #818cf8);
   color: var(--c-primary-600, #4f46e5);
-}
-
-.gradient-picker__clear:hover {
-  border-color: #ef4444;
-  color: #ef4444;
-}
-
-.gradient-picker__preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.gradient-picker__preview-swatch {
-  width: 100%;
-  height: 6rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  background: repeating-linear-gradient(
-    45deg,
-    #f3f4f6,
-    #f3f4f6 4px,
-    #e5e7eb 4px,
-    #e5e7eb 8px
-  );
-}
-
-.gradient-picker__preview-css {
-  font-size: 0.625rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: #6b7280;
-  word-break: break-all;
-  line-height: 1.3;
 }
 </style>

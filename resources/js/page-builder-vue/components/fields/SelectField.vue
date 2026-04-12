@@ -77,7 +77,7 @@ if (props.field.options_from?.startsWith('collection_fields:')) {
 <template>
   <select
     :value="modelValue ?? ''"
-    class="inspector-select"
+    class="inspector-control"
     @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
   >
     <option value="">&mdash; Select &mdash;</option>
@@ -91,20 +91,3 @@ if (props.field.options_from?.startsWith('collection_fields:')) {
   </select>
 </template>
 
-<style scoped>
-.inspector-select {
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-  color: #1f2937;
-  background: #fff;
-}
-
-.inspector-select:focus {
-  outline: none;
-  border-color: var(--c-primary-400, #818cf8);
-  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
-}
-</style>

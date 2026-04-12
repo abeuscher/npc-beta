@@ -93,7 +93,7 @@ html.dark .add-block-dropdown__heading                  { color: rgb(156 163 175
 
 /* Inspector panel */
 html.dark .inspector-panel__placeholder                 { border-color: rgb(75 85 99); color: rgb(107 114 128); }
-html.dark .inspector-panel__body                        { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .inspector-panel__body                        { background: rgb(55 65 81); border-color: rgb(75 85 99); }
 
 /* Inspector header */
 html.dark .inspector-header                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
@@ -114,36 +114,81 @@ html.dark .inspector-header__delete-btn:hover           { color: rgb(248 113 113
 /* Inspector tabs */
 html.dark .inspector-tabs                               { background: rgb(31 41 55); border-color: rgb(75 85 99); }
 html.dark .inspector-tabs__btn                          { color: rgb(156 163 175); }
-html.dark .inspector-tabs__btn:hover, html.dark .inspector-tabs__btn--active                    { color: rgb(229 231 235); background-color: rgb(55 65 81); }
+html.dark .inspector-tabs__btn:hover, html.dark .inspector-tabs__btn--active                    { color: rgb(229 231 235); background-color: rgb(55 65 81); border-bottom-color:rgb(55 65 81);}
 
-/* Inspector field labels */
-html.dark .inspector-field__label                       { color: rgb(209 213 219); }
-html.dark .inspector-field__fallback                    { color: rgb(107 114 128); }
-
-/* Form field inputs (used by TextField, SelectField, TextareaField, NumberField) */
-html.dark .inspector-input,
-html.dark .inspector-select,
-html.dark .inspector-textarea {
+/* Shared inspector classes (inspector.css) */
+html.dark .inspector-label                              { color: rgb(209 213 219); }
+html.dark .inspector-section-title                      { color: rgb(156 163 175); }
+html.dark .inspector-control {
     background: rgb(17 24 39);
     color: rgb(229 231 235);
     border-color: rgb(75 85 99);
 }
-html.dark .inspector-input::placeholder,
-html.dark .inspector-textarea::placeholder              { color: rgb(107 114 128); }
+html.dark .inspector-control::placeholder               { color: rgb(107 114 128); }
+html.dark .inspector-hint                               { color: rgb(107 114 128); }
+html.dark .inspector-toggle-label                       { color: rgb(229 231 235); }
+html.dark .inspector-checkbox                           { border-color: rgb(75 85 99); }
 
-/* Checkboxes */
-html.dark .inspector-checkboxes__label                  { color: rgb(229 231 235); }
+/* Background panel heading */
+html.dark .bg-panel__heading                            { color: rgb(229 231 235); }
 
 /* Notice field */
 html.dark .inspector-notice                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
 
-/* Color picker */
-html.dark .color-picker__hex                            { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+/* Color picker — trigger */
+html.dark .color-picker__trigger                        { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+html.dark .color-picker__trigger:hover                  { border-color: rgb(107 114 128); }
+html.dark .color-picker__trigger--open                  { border-color: var(--c-primary-400, #818cf8); }
+html.dark .color-picker__trigger-swatch                 { border-color: rgb(75 85 99); }
+html.dark .color-picker__trigger-swatch--empty          { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 4px, rgb(75 85 99) 4px, rgb(75 85 99) 8px); }
+html.dark .color-picker__trigger-text                   { color: rgb(209 213 219); }
+html.dark .color-picker__trigger-empty                  { color: rgb(107 114 128); }
+html.dark .color-picker__trigger-caret                  { color: rgb(107 114 128); }
+
+/* Color picker — popover */
+html.dark .color-picker__popover                        { background: rgb(31 41 55); border-color: rgb(75 85 99); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
 html.dark .color-picker__swatch                         { border-color: rgb(75 85 99); }
-html.dark .color-picker__empty-indicator                { color: rgb(107 114 128); }
-html.dark .color-picker__clear,
-html.dark .color-picker__swatch-remove                  { color: rgb(156 163 175); }
-html.dark .color-picker__swatch-remove:hover            { color: rgb(248 113 113); }
+html.dark .color-picker__swatch--add                    { border-color: rgb(75 85 99); color: rgb(107 114 128); }
+html.dark .color-picker__swatch--add:hover:not(:disabled) { border-color: var(--c-primary-400, #818cf8); color: var(--c-primary-400, #818cf8); }
+html.dark .color-picker__swatch--unset                  { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 3px, rgb(75 85 99) 3px, rgb(75 85 99) 6px); }
+html.dark .color-picker__swatch--no-color               { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .color-picker__swatch--no-color:hover         { border-color: rgb(107 114 128); }
+html.dark .color-picker__swatch-remove                  { background: rgb(220 38 38); }
+html.dark .color-picker__swatch-remove:hover            { background: rgb(248 113 113); }
+html.dark .color-picker__divider                        { border-top-color: rgb(75 85 99); }
+html.dark .color-picker__wheel                          { border-color: rgb(75 85 99); }
+
+/* Gradient picker — trigger */
+html.dark .gradient-picker__trigger                     { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .gradient-picker__trigger:hover               { border-color: rgb(107 114 128); }
+html.dark .gradient-picker__trigger--open               { border-color: var(--c-primary-400, #818cf8); }
+html.dark .gradient-picker__trigger-swatch              { border-color: rgb(75 85 99); }
+html.dark .gradient-picker__trigger-swatch--empty       { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 4px, rgb(75 85 99) 4px, rgb(75 85 99) 8px); }
+html.dark .gradient-picker__trigger-empty               { color: rgb(107 114 128); }
+html.dark .gradient-picker__trigger-caret               { color: rgb(107 114 128); }
+
+/* Gradient picker — panel */
+html.dark .gradient-picker__panel                       { background: rgb(31 41 55); border-color: rgb(75 85 99); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+html.dark .gradient-picker__section--editor             { background: rgb(17 24 39); border-color: rgb(75 85 99); }
+html.dark .gradient-picker__preset                      { border-color: rgb(75 85 99); }
+html.dark .gradient-picker__preset:hover                { border-color: var(--c-primary-400, #818cf8); }
+html.dark .gradient-picker__preset--none                { background: rgb(31 41 55); }
+html.dark .gradient-picker__preset--none:hover          { border-color: rgb(107 114 128); }
+html.dark .gradient-picker__remove                      { background: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .gradient-picker__remove:hover                { background: rgb(220 38 38); color: #fff; }
+html.dark .gradient-picker__add                         { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .gradient-picker__add:hover                   { border-color: var(--c-primary-400, #818cf8); color: var(--c-primary-400, #818cf8); }
+
+/* Background panel */
+html.dark .bg-panel__replace-btn                        { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .bg-panel__replace-btn:hover                  { border-color: var(--c-primary-400, #818cf8); color: var(--c-primary-400, #818cf8); }
+
+/* Nine-point alignment */
+html.dark .nine-point__bg                               { fill: rgb(31 41 55); stroke: rgb(75 85 99); }
+html.dark .nine-point__grid-line                        { stroke: rgb(55 65 81); }
+html.dark .nine-point__dot                              { fill: rgb(107 114 128); }
+html.dark .nine-point__cell:hover .nine-point__dot      { fill: rgb(156 163 175); }
+html.dark .nine-point__cell--selected .nine-point__dot  { fill: var(--c-primary-400, #818cf8); }
 
 /* Image upload */
 html.dark .image-upload                                 { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }

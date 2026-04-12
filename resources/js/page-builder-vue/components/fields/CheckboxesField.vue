@@ -42,10 +42,10 @@ function toggle(value: string) {
       <input
         type="checkbox"
         :checked="selected.includes(String(value))"
-        class="inspector-checkboxes__input"
+        class="inspector-checkbox"
         @change="toggle(String(value))"
       >
-      <span class="inspector-checkboxes__label">{{ label }}</span>
+      <span class="inspector-toggle-label">{{ label }}</span>
     </label>
   </div>
 </template>
@@ -63,13 +63,4 @@ function toggle(value: string) {
   cursor: pointer;
 }
 
-.inspector-checkboxes__input {
-  border-radius: 0.25rem;
-  border: 1px solid #d1d5db;
-}
-
-.inspector-checkboxes__label {
-  font-size: 0.875rem;
-  color: #374151;
-}
 </style>

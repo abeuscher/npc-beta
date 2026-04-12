@@ -11,6 +11,7 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\WidgetType;
+use App\Services\AppearanceStyleComposer;
 use App\Services\DemoDataService;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetRenderer;
@@ -476,6 +477,36 @@ class PageBuilderApiController extends Controller
         return response()->json(['removed' => true]);
     }
 
+    // ── Appearance background image ────────────────────────────────────────
+
+    public function uploadAppearanceImage(Request $request, PageWidget $widget): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $request->validate([
+            'file' => 'required|file|mimes:png,jpg,jpeg,gif,webp,svg|max:51200',
+        ]);
+
+        $widget->clearMediaCollection('appearance_background_image');
+
+        $media = $widget->addMedia($request->file('file'))
+            ->usingFileName($request->file('file')->hashName())
+            ->toMediaCollection('appearance_background_image', 'public');
+
+        return response()->json([
+            'url' => $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl(),
+        ]);
+    }
+
+    public function removeAppearanceImage(PageWidget $widget): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $widget->clearMediaCollection('appearance_background_image');
+
+        return response()->json(['removed' => true]);
+    }
+
     // ── Layout CRUD ─────────────────────────────────────────────────────────
 
     public function storeLayout(Request $request, Page $page): JsonResponse
@@ -691,6 +722,7 @@ class PageBuilderApiController extends Controller
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
             'image_urls'                => $this->resolveImageUrls($pw),
+            'appearance_image_url'      => $this->resolveAppearanceImageUrl($pw),
         ];
     }
 
@@ -716,6 +748,7 @@ class PageBuilderApiController extends Controller
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
             'image_urls'                => $this->resolveImageUrls($pw),
+            'appearance_image_url'      => $this->resolveAppearanceImageUrl($pw),
             'preview_html'              => $this->renderWidgetForPreview($pw)['html'],
         ];
 
@@ -734,13 +767,11 @@ class PageBuilderApiController extends Controller
                 $html = '<div class="widget-preview-notice">No preview available</div>';
             } else {
                 $handle = $widgetType->handle;
-                $ac = $pw->appearance_config ?? [];
-                $inlineStyle = self::buildInlineStyles($ac);
+                $composed = app(AppearanceStyleComposer::class)->compose($pw);
+                $inlineStyle = $composed['inline_style'];
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $appearanceFullWidth = $ac['layout']['full_width'] ?? null;
-                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                    : ($appearanceFullWidth !== null ? (bool) $appearanceFullWidth : ($widgetType->full_width ?? false));
+                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -763,39 +794,6 @@ class PageBuilderApiController extends Controller
             'id'   => $pw->id,
             'html' => $html,
         ];
-    }
-
-    private static function buildInlineStyles(array $appearanceConfig): string
-    {
-        $styleProps = [];
-
-        $bgColor = $appearanceConfig['background']['color'] ?? null;
-        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
-            $styleProps[] = 'background-color:' . $bgColor;
-        }
-        $textColor = $appearanceConfig['text']['color'] ?? null;
-        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
-            $styleProps[] = 'color:' . $textColor;
-        }
-
-        $padding = $appearanceConfig['layout']['padding'] ?? [];
-        $margin  = $appearanceConfig['layout']['margin'] ?? [];
-        $sides = ['top', 'right', 'bottom', 'left'];
-
-        foreach ($sides as $side) {
-            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
-            if ($val !== null) {
-                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
-            }
-        }
-        foreach ($sides as $side) {
-            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
-            if ($val !== null) {
-                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
-            }
-        }
-
-        return implode(';', $styleProps);
     }
 
     private function buildDemoCollectionData(PageWidget $pw): array
@@ -843,6 +841,16 @@ class PageBuilderApiController extends Controller
     }
 
     // ── Private helpers ─────────────────────────────────────────────────
+
+    private function resolveAppearanceImageUrl(PageWidget $pw): ?string
+    {
+        $media = $pw->getFirstMedia('appearance_background_image');
+        if (! $media) {
+            return null;
+        }
+
+        return $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
+    }
 
     private function resolveImageUrls(PageWidget $pw): array
     {

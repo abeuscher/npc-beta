@@ -5,6 +5,8 @@ export interface GradientLayer {
   from: string
   to: string
   angle?: number
+  from_alpha?: number
+  to_alpha?: number
   css_override?: string
 }
 
@@ -35,6 +37,33 @@ function sanitizeAngle(value: unknown): number {
   return int
 }
 
+function clampAlpha(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    if (typeof value === 'string' && value !== '') {
+      const parsed = parseInt(value, 10)
+      if (Number.isFinite(parsed)) return Math.max(0, Math.min(100, parsed))
+    }
+    return 100
+  }
+  return Math.max(0, Math.min(100, Math.trunc(value)))
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '')
+  let r: number, g: number, b: number
+  if (h.length === 3) {
+    r = parseInt(h[0] + h[0], 16)
+    g = parseInt(h[1] + h[1], 16)
+    b = parseInt(h[2] + h[2], 16)
+  } else {
+    r = parseInt(h.substring(0, 2), 16)
+    g = parseInt(h.substring(2, 4), 16)
+    b = parseInt(h.substring(4, 6), 16)
+  }
+  const a = Math.round(alpha) / 100
+  return `rgba(${r}, ${g}, ${b}, ${a})`
+}
+
 function sanitizeOverride(override: string): string {
   const trimmed = override.trim()
   if (!CSS_OVERRIDE_PATTERN.test(trimmed)) return ''
@@ -54,12 +83,18 @@ function composeOne(gradient: GradientLayer): string {
   const to = sanitizeHex(gradient.to)
   if (from === null || to === null) return ''
 
+  const fromAlpha = clampAlpha(gradient.from_alpha ?? 100)
+  const toAlpha = clampAlpha(gradient.to_alpha ?? 100)
+
+  const fromColor = fromAlpha < 100 ? hexToRgba(from, fromAlpha) : from
+  const toColor = toAlpha < 100 ? hexToRgba(to, toAlpha) : to
+
   if (type === 'radial') {
-    return `radial-gradient(${from}, ${to})`
+    return `radial-gradient(${fromColor}, ${toColor})`
   }
 
   const angle = sanitizeAngle(gradient.angle ?? 180)
-  return `linear-gradient(${angle}deg, ${from}, ${to})`
+  return `linear-gradient(${angle}deg, ${fromColor}, ${toColor})`
 }
 
 /**

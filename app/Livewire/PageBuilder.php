@@ -419,13 +419,11 @@ class PageBuilder extends Component
                 $html = '<div class="widget-preview-notice">No preview available</div>';
             } else {
                 $handle = $widgetType->handle;
-                $ac = $pw->appearance_config ?? [];
-                $inlineStyle = self::buildInlineStyles($ac);
+                $composed = app(\App\Services\AppearanceStyleComposer::class)->compose($pw);
+                $inlineStyle = $composed['inline_style'];
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $appearanceFullWidth = $ac['layout']['full_width'] ?? null;
-                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                    : ($appearanceFullWidth !== null ? (bool) $appearanceFullWidth : ($widgetType->full_width ?? false));
+                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -452,39 +450,6 @@ class PageBuilder extends Component
             'widget_type_label' => $widgetType->label,
             'html'             => $html,
         ];
-    }
-
-    private static function buildInlineStyles(array $appearanceConfig): string
-    {
-        $styleProps = [];
-
-        $bgColor = $appearanceConfig['background']['color'] ?? null;
-        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
-            $styleProps[] = 'background-color:' . $bgColor;
-        }
-        $textColor = $appearanceConfig['text']['color'] ?? null;
-        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
-            $styleProps[] = 'color:' . $textColor;
-        }
-
-        $padding = $appearanceConfig['layout']['padding'] ?? [];
-        $margin  = $appearanceConfig['layout']['margin'] ?? [];
-        $sides = ['top', 'right', 'bottom', 'left'];
-
-        foreach ($sides as $side) {
-            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
-            if ($val !== null) {
-                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
-            }
-        }
-        foreach ($sides as $side) {
-            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
-            if ($val !== null) {
-                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
-            }
-        }
-
-        return implode(';', $styleProps);
     }
 
     private function buildDemoCollectionData(PageWidget $pw): array

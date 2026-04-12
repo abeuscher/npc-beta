@@ -78,12 +78,18 @@ class GradientComposer
             return '';
         }
 
+        $fromAlpha = $this->clampAlpha($gradient['from_alpha'] ?? 100);
+        $toAlpha = $this->clampAlpha($gradient['to_alpha'] ?? 100);
+
+        $fromColor = $fromAlpha < 100 ? $this->hexToRgba($from, $fromAlpha) : $from;
+        $toColor = $toAlpha < 100 ? $this->hexToRgba($to, $toAlpha) : $to;
+
         if ($type === 'radial') {
-            return "radial-gradient({$from}, {$to})";
+            return "radial-gradient({$fromColor}, {$toColor})";
         }
 
         $angle = $this->sanitizeAngle($gradient['angle'] ?? 180);
-        return "linear-gradient({$angle}deg, {$from}, {$to})";
+        return "linear-gradient({$angle}deg, {$fromColor}, {$toColor})";
     }
 
     private function sanitizeHex(mixed $value): ?string
@@ -112,6 +118,34 @@ class GradientComposer
         }
 
         return $int;
+    }
+
+    private function clampAlpha(mixed $value): int
+    {
+        if (! is_numeric($value)) {
+            return 100;
+        }
+
+        return max(0, min(100, (int) $value));
+    }
+
+    private function hexToRgba(string $hex, int $alpha): string
+    {
+        $hex = ltrim($hex, '#');
+
+        if (strlen($hex) === 3) {
+            $r = hexdec($hex[0] . $hex[0]);
+            $g = hexdec($hex[1] . $hex[1]);
+            $b = hexdec($hex[2] . $hex[2]);
+        } else {
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+        }
+
+        $a = round($alpha / 100, 2);
+
+        return "rgba({$r}, {$g}, {$b}, {$a})";
     }
 
     private function sanitizeOverride(string $override): string

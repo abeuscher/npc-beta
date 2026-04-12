@@ -245,3 +245,120 @@ it('skips non-array entries in the gradients array', function () {
 
     expect($css)->toBe('linear-gradient(180deg, #ffffff, #000000)');
 });
+
+// ── Per-stop alpha ──────────────────────────────────────────────────────────
+
+it('emits hex when alpha is 100', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#ff0000', 'to' => '#00ff00', 'from_alpha' => 100, 'to_alpha' => 100],
+        ],
+    ]);
+
+    expect($css)->toBe('linear-gradient(180deg, #ff0000, #00ff00)');
+});
+
+it('emits rgba when alpha is 0', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#ff0000', 'to' => '#00ff00', 'from_alpha' => 0, 'to_alpha' => 0],
+        ],
+    ]);
+
+    expect($css)->toBe('linear-gradient(180deg, rgba(255, 0, 0, 0), rgba(0, 255, 0, 0))');
+});
+
+it('emits rgba when alpha is 50', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#000000', 'to' => '#ffffff', 'from_alpha' => 50, 'to_alpha' => 50],
+        ],
+    ]);
+
+    expect($css)->toBe('linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.5))');
+});
+
+it('defaults missing alpha to 100', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#ff0000', 'to' => '#00ff00'],
+        ],
+    ]);
+
+    // No alpha fields → defaults to 100 → hex output (same as before alpha support)
+    expect($css)->toBe('linear-gradient(180deg, #ff0000, #00ff00)');
+});
+
+it('clamps alpha below 0 to 0', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#000000', 'to' => '#ffffff', 'from_alpha' => -50, 'to_alpha' => 100],
+        ],
+    ]);
+
+    expect($css)->toContain('rgba(0, 0, 0, 0)');
+    expect($css)->toContain('#ffffff');
+});
+
+it('clamps alpha above 100 to 100', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#000000', 'to' => '#ffffff', 'from_alpha' => 200, 'to_alpha' => 100],
+        ],
+    ]);
+
+    // 200 → clamped to 100 → emits hex
+    expect($css)->toBe('linear-gradient(180deg, #000000, #ffffff)');
+});
+
+it('still rejects malformed hex with alpha', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => 'red', 'to' => '#000000', 'from_alpha' => 50, 'to_alpha' => 50],
+        ],
+    ]);
+
+    expect($css)->toBe('');
+});
+
+it('handles multi-layer stack with mixed alpha values', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#111111', 'to' => '#222222', 'from_alpha' => 100, 'to_alpha' => 100, 'angle' => 0],
+            ['type' => 'linear', 'from' => '#000000', 'to' => '#ffffff', 'from_alpha' => 50, 'to_alpha' => 0, 'angle' => 90],
+        ],
+    ]);
+
+    // Second layer paints on top (reversed in CSS)
+    expect($css)->toBe(
+        'linear-gradient(90deg, rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0)), linear-gradient(0deg, #111111, #222222)'
+    );
+});
+
+it('does not apply alpha to css_override layers', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            [
+                'type'         => 'linear',
+                'from'         => '#000000',
+                'to'           => '#ffffff',
+                'from_alpha'   => 50,
+                'to_alpha'     => 50,
+                'css_override' => 'linear-gradient(45deg, #ff0000, #00ff00)',
+            ],
+        ],
+    ]);
+
+    // Override takes precedence, alpha fields are ignored
+    expect($css)->toBe('linear-gradient(45deg, #ff0000, #00ff00)');
+});
+
+it('handles 3-digit hex with alpha', function () {
+    $css = $this->composer->compose([
+        'gradients' => [
+            ['type' => 'linear', 'from' => '#fff', 'to' => '#000', 'from_alpha' => 50, 'to_alpha' => 50],
+        ],
+    ]);
+
+    expect($css)->toBe('linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.5))');
+});

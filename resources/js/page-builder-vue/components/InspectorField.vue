@@ -80,7 +80,7 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
     </template>
 
     <template v-else-if="fieldComponent">
-      <label class="inspector-field__label">{{ field.label }}</label>
+      <label class="inspector-label">{{ field.label }}</label>
       <component
         :is="fieldComponent"
         :field="field"
@@ -91,25 +91,9 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
     </template>
 
     <template v-else>
-      <label class="inspector-field__label">{{ field.label }}</label>
-      <p class="inspector-field__fallback">Unsupported field type: {{ field.type }}</p>
+      <label class="inspector-label">{{ field.label }}</label>
+      <p class="inspector-hint inspector-hint--italic">Unsupported field type: {{ field.type }}</p>
     </template>
   </div>
 </template>
 
-<style scoped>
-.inspector-field__label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
-}
-
-.inspector-field__fallback {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #9ca3af;
-  font-style: italic;
-}
-</style>

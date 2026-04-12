@@ -170,6 +170,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 161 | Appearance Controls for Widgets — Docs Refresh & Shared Primitives |
 | 162 | Appearance Controls — Schema Rename & Widget Dedupe Sweep |
 | 163 | Page Builder Bug Fixes |
+| 164 | Appearance Controls — Background Panel |
 
 ---
 
@@ -214,32 +215,6 @@ Architectural lift, sequenced between session 162 and session 164. Surfaced duri
 - Updated `tests/Feature/HeroWidgetTest.php`: drop the `overlap_nav`, `nav_link_color`, `nav_hover_color` assertions from the hero schema key list, add new assertions for the wrapper-level full-bleed behaviour.
 - Render smoke test: a non-hero widget with the new full-bleed flag set renders with the same overlap-nav class on its wrapper.
 - `PageControllerTest` (or equivalent): asserts that the `__navOverlap` / `__navOverlayLinkColor` view shares are populated based on the new field location, not on the hero handle.
-
-### 164. Appearance Controls — Background Panel
-
-Phase 3a of the Appearance Controls project. Builds the Background panel of the universal Appearance tab in the Vue inspector, extracts a shared `AppearanceStyleComposer` service so the public and admin renderers stay in lockstep, and extends `GradientPicker` / `GradientComposer` to support per-stop alpha so that gradients can act as image tints.
-
-This session is the first of a two-iteration split of the original 164 outline. Session 165 picks up the Text panel, the Section Layout panel, the retirement of `WidgetAppearanceControls.vue` and `SpacingControl.vue`, and the regression smoke tests.
-
-**Storage shape:** `appearance_config.background` gains `color`, `gradient` (with new `from_alpha`/`to_alpha` per stop), `alignment` (9-point), and `fit` (cover|contain). No `image_id` is stored — the background image lives exclusively in the new `appearance_background_image` Spatie collection on `PageWidget` (Option B). No `background.overlay` key — gradients with rgba alpha *are* the overlay.
-
-**Layer order — single CSS shorthand:** the renderer emits `background-image: GRADIENT_CSS, url(IMAGE_URL)` so the gradient paints over the image and the image paints over `background-color`. Single inline style on the existing widget outer div — no markup change, no layer divs, no SCSS partial.
-
-**Service extraction — `App\Services\AppearanceStyleComposer`:** consolidates the inline-style emission that today lives in two places (`page-widgets.blade.php` and `PageBuilderApiController::buildInlineStyles`). The composer owns all hex/int/alpha safety; both renderers become thin wrappers. Returns `['inline_style' => string, 'is_full_width' => bool]`. Resolves `is_full_width` with the column-child override (forced false when `widget.layout_id !== null`).
-
-**Gradient alpha:** `GradientComposer` and the TS `composeGradientCss` helper learn to read `from_alpha`/`to_alpha` (integer 0..100, default 100), clamp them, and emit `rgba(...)` when alpha < 100 (preserving `#hex` output for the opaque case). `GradientPicker.vue` gains two opacity sliders per layer. The 8 built-in presets stay opaque.
-
-**`BackgroundPanel.vue`:** Color & Gradient subsection (ColorPicker + GradientPicker), Image subsection (upload tile + thumbnail + remove link, NinePointAlignment, fit select). Image controls disabled when no image is present. Mounts at the top of the Appearance tab, above the temporary `WidgetAppearanceControls` (which retires in 165).
-
-**New endpoints:** `POST` and `DELETE widgets/{widget}/appearance-image`, mirroring the existing config-image endpoints but writing to the `appearance_background_image` collection and **not** mutating `appearance_config`.
-
-**`formatWidget` change:** add a top-level `appearance_image_url` field (sibling to the existing `image_urls` map) that resolves the appearance background image's webp URL. Server-authoritative — in the session 163 selective-merge "always merge" set.
-
-**Phase split:** Phase 1 is the pure refactor (composer extraction + both renderers delegating), gated by the full Pest suite. Phase 2 adds the gradient alpha extension, the Background panel, the upload endpoints, and the new tests.
-
-**Testing:** new `AppearanceStyleComposerTest` (unit), extension to `GradientComposerTest` for alpha cases, new `AppearanceImageUploadTest` (feature), append to `PageBuilderApiTest` for the new `appearance_image_url` field, append to a renderer integration test for the inline-style integration with representative bag shapes including the tint-over-image case.
-
-**Out of scope:** Text panel and Section Layout panel (165), retiring `WidgetAppearanceControls.vue` and `SpacingControl.vue` (165), regression smoke tests for widgets that lost fields in 162 (165), full docs pass (166), responsive `srcset` for the background image, per-widget `style_schema`.
 
 ### 165. Appearance Controls — Text & Section Layout Panels
 

@@ -592,6 +592,35 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  async function uploadAppearanceImage(widgetId: string, file: File): Promise<string | null> {
+    saving.value = true
+    try {
+      const res = await api.uploadAppearanceImage(widgetId, file)
+      if (widgets.value[widgetId]) {
+        widgets.value[widgetId].appearance_image_url = res.url
+      }
+      dirtyWidgets.value.add(widgetId)
+      refreshPreview(widgetId)
+      return res.url
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function removeAppearanceImage(widgetId: string): Promise<void> {
+    saving.value = true
+    try {
+      await api.removeAppearanceImage(widgetId)
+      if (widgets.value[widgetId]) {
+        widgets.value[widgetId].appearance_image_url = null
+      }
+      dirtyWidgets.value.add(widgetId)
+      refreshPreview(widgetId)
+    } finally {
+      saving.value = false
+    }
+  }
+
   /**
    * Update a single nested path inside the widget's appearance_config and queue a debounced save.
    * The path is a dot-separated string, e.g. 'background.color', 'layout.full_width', 'layout.padding.top'.
@@ -697,6 +726,8 @@ export const useEditorStore = defineStore('editor', () => {
     refreshPreview,
     uploadImage,
     removeImage,
+    uploadAppearanceImage,
+    removeAppearanceImage,
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
     saveColorSwatches: saveColorSwatchesAction,

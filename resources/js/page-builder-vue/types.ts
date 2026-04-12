@@ -41,6 +41,7 @@ export interface Widget {
   is_active: boolean
   is_required: boolean
   image_urls: Record<string, string | null>
+  appearance_image_url: string | null
   preview_html: string
 }
 

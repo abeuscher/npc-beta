@@ -108,26 +108,26 @@ const marginKeys = [
     <div v-show="open" class="spacing-control__body">
       <!-- Padding -->
       <div>
-        <p class="spacing-control__section-label">Padding (px)</p>
+        <p class="inspector-section-title spacing-control__section-label">Padding (px)</p>
         <div class="spacing-control__grid">
           <div class="spacing-control__field">
-            <label class="spacing-control__field-label">All</label>
+            <label class="inspector-label spacing-control__field-label">All</label>
             <input
               type="number"
               min="0"
               :value="paddingAll"
               :placeholder="paddingAllPlaceholder"
-              class="spacing-control__input"
+              class="inspector-control spacing-control__input"
               @input="setPaddingAll(($event.target as HTMLInputElement).value)"
             >
           </div>
           <div v-for="item in paddingKeys" :key="item.key" class="spacing-control__field">
-            <label class="spacing-control__field-label">{{ item.label }}</label>
+            <label class="inspector-label spacing-control__field-label">{{ item.label }}</label>
             <input
               type="number"
               min="0"
               :value="padding[item.key] ?? ''"
-              class="spacing-control__input"
+              class="inspector-control spacing-control__input"
               @input="updateAppearance('layout.padding.' + item.key, ($event.target as HTMLInputElement).value)"
             >
           </div>
@@ -136,26 +136,26 @@ const marginKeys = [
 
       <!-- Margin -->
       <div>
-        <p class="spacing-control__section-label">Margin (px)</p>
+        <p class="inspector-section-title spacing-control__section-label">Margin (px)</p>
         <div class="spacing-control__grid">
           <div class="spacing-control__field">
-            <label class="spacing-control__field-label">All</label>
+            <label class="inspector-label spacing-control__field-label">All</label>
             <input
               type="number"
               min="0"
               :value="marginAll"
               :placeholder="marginAllPlaceholder"
-              class="spacing-control__input"
+              class="inspector-control spacing-control__input"
               @input="setMarginAll(($event.target as HTMLInputElement).value)"
             >
           </div>
           <div v-for="item in marginKeys" :key="item.key" class="spacing-control__field">
-            <label class="spacing-control__field-label">{{ item.label }}</label>
+            <label class="inspector-label spacing-control__field-label">{{ item.label }}</label>
             <input
               type="number"
               min="0"
               :value="margin[item.key] ?? ''"
-              class="spacing-control__input"
+              class="inspector-control spacing-control__input"
               @input="updateAppearance('layout.margin.' + item.key, ($event.target as HTMLInputElement).value)"
             >
           </div>
@@ -199,12 +199,7 @@ const marginKeys = [
 }
 
 .spacing-control__section-label {
-  margin: 0 0 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
+  margin-bottom: 0.5rem;
 }
 
 .spacing-control__grid {
@@ -214,27 +209,12 @@ const marginKeys = [
 }
 
 .spacing-control__field-label {
-  display: block;
   text-align: center;
-  font-size: 0.75rem;
   color: #9ca3af;
-  margin-bottom: 0.25rem;
 }
 
 .spacing-control__input {
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
   padding: 0.25rem 0.375rem;
-  font-size: 0.875rem;
   text-align: center;
-  color: #1f2937;
-  background: #fff;
-}
-
-.spacing-control__input:focus {
-  outline: none;
-  border-color: var(--c-primary-400, #818cf8);
-  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
 </style>

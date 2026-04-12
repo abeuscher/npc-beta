@@ -11,7 +11,7 @@ const props = withDefaults(
   {
     modelValue: '',
     label: '',
-    placeholder: 'No color set',
+    placeholder: 'Transparent',
   }
 )
 
@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rootEl" class="color-picker">
-    <label v-if="label" class="color-picker__label">{{ label }}</label>
+    <label v-if="label" class="inspector-label">{{ label }}</label>
     <button
       type="button"
       class="color-picker__trigger"
@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 
     <div v-if="isOpen" class="color-picker__popover" role="dialog" aria-label="Color picker">
       <div v-if="store.themePalette.length > 0" class="color-picker__group">
-        <p class="color-picker__group-label">Theme colors</p>
+        <p class="inspector-section-title">Theme colors</p>
         <div class="color-picker__swatches">
           <button
             v-for="entry in store.themePalette"
@@ -151,7 +151,7 @@ onBeforeUnmount(() => {
       <hr v-if="store.themePalette.length > 0" class="color-picker__divider" />
 
       <div class="color-picker__group">
-        <p class="color-picker__group-label">My swatches</p>
+        <p class="inspector-section-title">My swatches</p>
         <div class="color-picker__swatches">
           <button
             v-for="(swatch, index) in store.colorSwatches"
@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
       <hr class="color-picker__divider" />
 
       <div class="color-picker__group">
-        <p class="color-picker__group-label">Add custom color</p>
+        <p class="inspector-section-title">Add custom color</p>
         <div class="color-picker__freeform">
           <input
             type="color"
@@ -193,7 +193,7 @@ onBeforeUnmount(() => {
             type="text"
             :value="modelValue ?? ''"
             :placeholder="placeholder"
-            class="color-picker__hex"
+            class="inspector-control inspector-control--mono color-picker__hex"
             @input="onHexInput"
           >
         </div>
@@ -208,12 +208,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-}
-
-.color-picker__label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4b5563;
 }
 
 .color-picker__trigger {
@@ -271,13 +265,14 @@ onBeforeUnmount(() => {
   flex: 1;
   text-align: left;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
 }
 
 .color-picker__trigger-caret {
   flex-shrink: 0;
   color: #9ca3af;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
+  margin-left: -8px;
 }
 
 .color-picker__popover {
@@ -295,15 +290,6 @@ onBeforeUnmount(() => {
 
 .color-picker__group + .color-picker__group {
   margin-top: 0.5rem;
-}
-
-.color-picker__group-label {
-  margin: 0 0 0.375rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
 }
 
 .color-picker__swatches {
@@ -420,8 +406,9 @@ onBeforeUnmount(() => {
 }
 
 .color-picker__wheel {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
   padding: 0;
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
@@ -429,20 +416,21 @@ onBeforeUnmount(() => {
   background: none;
 }
 
-.color-picker__hex {
-  flex: 1;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: #1f2937;
-  background: #fff;
+.color-picker__wheel::-webkit-color-swatch-wrapper {
+  padding: 0;
 }
 
-.color-picker__hex:focus {
-  outline: none;
-  border-color: var(--c-primary-400, #818cf8);
-  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
+.color-picker__wheel::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.175rem;
+}
+
+.color-picker__wheel::-moz-color-swatch {
+  border: none;
+  border-radius: 0.175rem;
+}
+
+.color-picker__hex {
+  flex: 1;
 }
 </style>

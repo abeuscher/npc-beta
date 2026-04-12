@@ -184,6 +184,11 @@ class PageWidget extends Model implements HasMedia
         }
     }
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('appearance_background_image')->singleFile();
+    }
+
     public function registerMediaConversions(?Media $media = null): void
     {
         if ($media && str_contains($media->mime_type, 'svg')) {

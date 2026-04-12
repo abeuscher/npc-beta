@@ -64,18 +64,21 @@ class PostController extends Controller
                 }
             }
 
+            $composed = app(\App\Services\AppearanceStyleComposer::class)->compose($pw);
+
             if ($widgetType->render_mode === 'server') {
                 $html = $widgetType->template
                     ? Blade::render($widgetType->template, ['config' => $config])
                     : '';
 
                 $blocks[] = [
-                    'handle'      => $widgetType->handle,
-                    'instance_id' => $pw->id,
-                    'html'        => $html,
-                    'css'         => $widgetType->css ?? '',
-                    'js'          => $widgetType->js ?? '',
-                    'full_width'  => $widgetType->full_width ?? false,
+                    'handle'       => $widgetType->handle,
+                    'instance_id'  => $pw->id,
+                    'html'         => $html,
+                    'css'          => $widgetType->css ?? '',
+                    'js'           => $widgetType->js ?? '',
+                    'inline_style' => $composed['inline_style'],
+                    'full_width'   => $composed['is_full_width'],
                 ];
 
                 if ($widgetType->css) {
@@ -91,12 +94,13 @@ class PostController extends Controller
                     : '';
 
                 $blocks[] = [
-                    'handle'      => $widgetType->handle,
-                    'instance_id' => $pw->id,
-                    'html'        => $clientHtml,
-                    'css'         => $widgetType->css ?? '',
-                    'js'          => '',
-                    'full_width'  => $widgetType->full_width ?? false,
+                    'handle'       => $widgetType->handle,
+                    'instance_id'  => $pw->id,
+                    'html'         => $clientHtml,
+                    'css'          => $widgetType->css ?? '',
+                    'js'           => '',
+                    'inline_style' => $composed['inline_style'],
+                    'full_width'   => $composed['is_full_width'],
                 ];
 
                 if ($widgetType->css) {
