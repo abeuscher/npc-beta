@@ -175,6 +175,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 166 | Appearance Controls — Docs Finalization & Widget Spacing Harmonization |
 | 167 | Page Builder as Main Edit View |
 | 168 | Most Used Widgets & Text Drop Shadow |
+| 169 | Navigation Widget |
 
 ---
 
@@ -199,6 +200,34 @@ Two small cosmetic fixes:
 - `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
 
 ### Code Housekeeping Notes
+
+- **Widget toolset tightening (session 169).** Session 169 expanded the config field type system with `alignment` (9-point picker), `gradient`, and `color` (the full ColorPicker primitive with swatches and theme palette). Every existing widget needs a pass to replace legacy `color`-as-text-input fields with the proper ColorPicker, and to add gradient/alignment controls where appropriate. This is per-widget work — tedious but necessary to get each widget's inspector into shape.
+
+- **Font control primitive (planned).** Build a comprehensive font control for the inspector — a small icon/swatch trigger that opens a panel with font family, weight, size, line height, letter spacing, and case transform. Same visual pattern as the gradient and color pickers (compact trigger, popover with full editor). Needed as a new `font` field type before any widget-level typography controls can be added. User to provide visual model at session start.
+
+---
+
+## Sovereign Widget System — Multi-Session Arc
+
+**Goal:** Each widget becomes a self-contained, installable package — its own directory with definition class, template, styles, assets, and metadata. The long-term destination is a widget registry / browser / installer that users can browse and pull from. The near-term destination is a per-widget code model that replaces the monolithic `WidgetTypeSeeder` and scattered `resources/views/widgets/` + `resources/scss/widgets/` files.
+
+This is phased over several sessions. Each stage leaves the app shippable.
+
+- **Stage 1 — Widget Definition Class & Registry.** Introduce `App\Widgets\Contracts\WidgetDefinition` base class and `WidgetRegistry` service. Seeder becomes a sync step (registry → `widget_types` table). Convert the nav widget as proof-of-concept; other widgets stay seeder-driven via a coexistence path. Additive — no destruction of existing UI, renderer, or tests.
+
+- **Stage 2 — Defaults Binding & Sovereign Rendering.** The defaults-binding session discussed in session 169. `WidgetDefinition::defaults()` is the source of truth for defaults. A `WidgetConfigResolver` composes `widget.defaults() → theme overrides (stub) → instance config → resolved config`. Blade templates stop using `$config['x'] ?? ''` and receive a fully-resolved config. Instance configs become sparse — only overrides get stored. Inspector shows resolved-vs-override state.
+
+- **Stage 3 — Per-Widget File Colocation.** Move each widget's template and scss next to its definition (`app/Widgets/Nav/template.blade.php`, `app/Widgets/Nav/styles.scss`). Blade loader gets a new namespace; build server's SCSS collector reads from `app/Widgets/*/styles.scss`. Mechanical mass migration. Old `resources/views/widgets/` and `resources/scss/widgets/` directories disappear.
+
+- **Stage 4 — Widget Manifest & Metadata.** Each widget declares human-facing metadata (description, category, version, author, license, screenshots, required capabilities, min app version) via the definition class. Not runtime-critical — used by the browser/installer. Manifest schema defined, validation in CI.
+
+- **Stage 4.5 — Widget Thumbnail Generation.** Implement the automated thumbnail workflow from `sessions/thumb-creation-workflow.md` — but built into the new widget structure rather than as a parallel central manifest. Each widget declares its own `thumbnailMetadata()` (viewport, interaction key, duration) and ships a `demo.blade.php` inside its directory. The Playwright script iterates the registry. Deferred until after the structural work lands so we don't author demo data against a directory layout that's about to change.
+
+- **Stage 5 — Widget Browser UI (admin).** Admin page that lists all registered widgets in a browsable grid — search, filter by category, preview thumbnails. "Installed" is implicit. Prepares the UI surface for later external-registry installs.
+
+- **Stage 6 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
+
+- **Stage 7 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from. Likely deferred to post-Beta 1 — this is a product of its own.
 
 ---
 

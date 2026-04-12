@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\NavigationMenu;
 use App\Models\Page;
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -98,5 +100,113 @@ class SystemPageSeeder extends Seeder
                 ]
             );
         }
+
+        // Populate default header and footer widgets if chrome pages are empty
+        $this->seedHeaderWidgets();
+        $this->seedFooterWidgets();
+    }
+
+    private function seedHeaderWidgets(): void
+    {
+        $headerPage = Page::where('slug', '_header')->where('type', 'system')->first();
+        if (! $headerPage) {
+            return;
+        }
+
+        // Skip if the header already has any widgets or layouts
+        if ($headerPage->pageWidgets()->exists() || PageLayout::where('page_id', $headerPage->id)->exists()) {
+            return;
+        }
+
+        $logoType = WidgetType::where('handle', 'logo')->first();
+        $navType  = WidgetType::where('handle', 'nav')->first();
+
+        if (! $logoType || ! $navType) {
+            return;
+        }
+
+        // Create a two-column layout: logo | nav
+        $layout = PageLayout::create([
+            'page_id'       => $headerPage->id,
+            'label'         => 'Header',
+            'display'       => 'grid',
+            'columns'       => 2,
+            'layout_config' => [
+                'grid_template_columns' => 'auto 1fr',
+                'gap'                   => '1rem',
+                'align_items'           => 'center',
+                'full_width'            => true,
+                'padding_top'           => '12',
+                'padding_bottom'        => '12',
+                'padding_left'          => '24',
+                'padding_right'         => '24',
+            ],
+            'sort_order'    => 0,
+        ]);
+
+        // Logo in column 0
+        $logoConfig = $logoType->getDefaultConfig();
+        $logoConfig['text'] = SiteSetting::get('site_name', config('app.name'));
+        $logoConfig['link_url'] = '/';
+
+        PageWidget::create([
+            'page_id'        => $headerPage->id,
+            'layout_id'      => $layout->id,
+            'column_index'   => 0,
+            'widget_type_id' => $logoType->id,
+            'label'          => 'Logo',
+            'config'         => $logoConfig,
+            'sort_order'     => 0,
+            'is_active'      => true,
+        ]);
+
+        // Nav in column 1 — use first available NavigationMenu
+        $navConfig = $navType->getDefaultConfig();
+        $menu = NavigationMenu::first();
+        if ($menu) {
+            $navConfig['navigation_menu_id'] = $menu->id;
+        }
+
+        PageWidget::create([
+            'page_id'        => $headerPage->id,
+            'layout_id'      => $layout->id,
+            'column_index'   => 1,
+            'widget_type_id' => $navType->id,
+            'label'          => 'Navigation',
+            'config'         => $navConfig,
+            'sort_order'     => 0,
+            'is_active'      => true,
+        ]);
+    }
+
+    private function seedFooterWidgets(): void
+    {
+        $footerPage = Page::where('slug', '_footer')->where('type', 'system')->first();
+        if (! $footerPage) {
+            return;
+        }
+
+        // Skip if the footer already has any widgets or layouts
+        if ($footerPage->pageWidgets()->exists() || PageLayout::where('page_id', $footerPage->id)->exists()) {
+            return;
+        }
+
+        $textType = WidgetType::where('handle', 'text_block')->first();
+        if (! $textType) {
+            return;
+        }
+
+        $siteName = SiteSetting::get('site_name', config('app.name'));
+
+        PageWidget::create([
+            'page_id'        => $footerPage->id,
+            'widget_type_id' => $textType->id,
+            'label'          => 'Footer',
+            'config'         => [
+                'content' => '<p style="text-align:center">&copy; ' . date('Y') . ' ' . e($siteName) . '</p>',
+            ],
+            'sort_order'     => 0,
+            'is_active'      => true,
+        ]);
     }
 }

@@ -185,7 +185,7 @@ it('has group key on all config schema fields after seeding', function () {
             }
             expect(array_key_exists('group', $field))
                 ->toBeTrue("Field '{$field['key']}' on '{$wt->handle}' missing group");
-            expect($field['group'])->toBeIn(['content', 'appearance']);
+            expect($field['group'])->toBeString("Field '{$field['key']}' on '{$wt->handle}' group must be a string");
         }
     }
 });

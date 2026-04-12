@@ -1,5 +1,8 @@
 .widget-logo {
     width: fit-content;
+    min-height: 5rem;
+    display: flex;
+    align-items: center;
 }
 
 .widget-logo__link {

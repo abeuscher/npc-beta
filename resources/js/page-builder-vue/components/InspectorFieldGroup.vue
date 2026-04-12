@@ -57,7 +57,11 @@ const primaryGrouped = computed(() => groupedFields(primaryFields.value))
     </template>
 
     <template v-for="(chunk, i) in primaryGrouped" :key="i">
-      <div v-if="chunk.layout" class="inspector-field-group__grid">
+      <div
+        v-if="chunk.layout"
+        class="inspector-field-group__grid"
+        :class="{ 'inspector-field-group__grid--dense': chunk.items.length > 2 }"
+      >
         <InspectorField
           v-for="field in chunk.items"
           :key="field.key"
@@ -124,6 +128,17 @@ const primaryGrouped = computed(() => groupedFields(primaryFields.value))
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+
+.inspector-field-group__grid--dense {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.inspector-field-group__grid--dense :deep(.color-picker__popover) {
+  min-width: 14rem;
 }
 
 .inspector-field-group__accordion {

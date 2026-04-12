@@ -180,7 +180,6 @@ const cells = computed(() => {
 
 <style scoped>
 .nine-point {
-  display: inline-flex;
   flex-direction: column;
   gap: 0.25rem;
 }

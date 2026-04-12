@@ -11,6 +11,8 @@ import CheckboxesField from './fields/CheckboxesField.vue'
 import NoticeField from './fields/NoticeField.vue'
 import RichTextField from './fields/RichTextField.vue'
 import ColorPicker from './primitives/ColorPicker.vue'
+import GradientPicker from './primitives/GradientPicker.vue'
+import NinePointAlignment from './primitives/NinePointAlignment.vue'
 import ImageUploadField from './fields/ImageUploadField.vue'
 import ButtonListField from './fields/ButtonListField.vue'
 
@@ -70,11 +72,31 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
       <NoticeField :field="field" />
     </template>
 
+    <template v-else-if="field.type === 'heading'">
+      <p class="inspector-field__heading">{{ field.label }}</p>
+    </template>
+
     <template v-else-if="field.type === 'color'">
+      <label class="inspector-label">{{ field.label }}</label>
       <ColorPicker
         :model-value="fieldValue"
+        compact
+        @update:model-value="handleUpdate"
+      />
+    </template>
+
+    <template v-else-if="field.type === 'gradient'">
+      <GradientPicker
+        :model-value="fieldValue"
         :label="field.label"
-        :placeholder="field.helper ?? ''"
+        @update:model-value="handleUpdate"
+      />
+    </template>
+
+    <template v-else-if="field.type === 'alignment'">
+      <NinePointAlignment
+        :model-value="fieldValue ?? 'center'"
+        :label="field.label"
         @update:model-value="handleUpdate"
       />
     </template>
@@ -96,4 +118,13 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
     </template>
   </div>
 </template>
+
+<style scoped>
+.inspector-field__heading {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+</style>
 

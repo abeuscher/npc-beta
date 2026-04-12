@@ -380,18 +380,43 @@ class WidgetTypeSeeder extends Seeder
             ['handle' => 'nav'],
             [
                 'label'              => 'Navigation',
-                'description'        => 'Navigation menu rendered from a NavigationMenu by handle.',
+                'description'        => 'Full-featured navigation bar with dropdowns, mobile hamburger, and branding slot.',
                 'category'           => ['layout'],
                 'allowed_page_types' => null,
                 'render_mode'        => 'server',
                 'collections'        => [],
-                'full_width'         => false,
-                'assets'             => ['libs' => []],
+                'full_width'         => true,
+                'assets'             => ['scss' => ['resources/scss/widgets/_navigation.scss']],
                 'config_schema'      => [
-                    ['key' => 'nav_handle', 'type' => 'text', 'label' => 'Navigation menu handle', 'default' => 'primary', 'group' => 'content'],
+                    // Content
+                    ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus', 'group' => 'content'],
+                    ['key' => 'branding_type',      'type' => 'select', 'label' => 'Branding', 'default' => 'none', 'options' => ['none' => 'None', 'logo' => 'Logo Image', 'icon' => 'Icon Image', 'text' => 'Text'], 'group' => 'content'],
+                    ['key' => 'branding_image',     'type' => 'image',  'label' => 'Branding Image', 'group' => 'content', 'helper' => 'Used when branding is Logo or Icon'],
+                    ['key' => 'branding_text',      'type' => 'text',   'label' => 'Branding Text',  'group' => 'content', 'helper' => 'Used when branding is Text'],
+                    // Item templates
+                    ['key' => 'parent_template',    'type' => 'richtext', 'label' => 'Parent Item Template', 'default' => '<a href="{{url}}" class="widget-nav__link {{active_class}}">{{label}}</a>', 'group' => 'content', 'helper' => 'Tokens: {{label}}, {{url}}, {{active_class}}'],
+                    ['key' => 'child_template',     'type' => 'richtext', 'label' => 'Child Item Template',  'default' => '<a href="{{url}}" class="widget-nav__drop-link {{active_class}}">{{label}}</a>', 'group' => 'content', 'helper' => 'Tokens: {{label}}, {{url}}, {{active_class}}'],
+                    // Appearance — Row 1: link colors + nav alignment
+                    ['key' => 'link_color',         'type' => 'color',     'label' => 'Link',      'default' => '#1d4ed8', 'group' => 'nav-colors'],
+                    ['key' => 'hover_color',        'type' => 'color',     'label' => 'Hover',     'default' => '#60a5fa', 'group' => 'nav-colors'],
+                    ['key' => 'drop_link_color',    'type' => 'color',     'label' => 'Drop Link',       'default' => '#1d4ed8', 'group' => 'nav-colors'],
+                    ['key' => 'drop_hover_color',   'type' => 'color',     'label' => 'Drop Hover',      'default' => '#60a5fa', 'group' => 'nav-colors'],
+                    ['key' => 'alignment',          'type' => 'alignment', 'label' => 'Nav Alignment',   'default' => 'middle-left', 'group' => 'nav-colors'],
+                    // Drop Menu Settings section label
+                    ['key' => '_drop_label',        'type' => 'heading', 'label' => 'Drop Menu Settings', 'group' => 'appearance'],
+                    // Row 2: Fill, Gradient, Border Color, Border Width
+                    ['key' => 'drop_fill_color',    'type' => 'color',    'label' => 'Fill',         'default' => '#ffffff', 'group' => 'drop-fill'],
+                    ['key' => 'drop_fill_gradient', 'type' => 'gradient', 'label' => 'Gradient',     'default' => null,      'group' => 'drop-fill'],
+                    ['key' => 'drop_border_color',  'type' => 'color',    'label' => 'Border',       'default' => '',        'group' => 'drop-fill'],
+                    ['key' => 'drop_border_width',  'type' => 'number',   'label' => 'Width',        'default' => 0,         'group' => 'drop-fill', 'helper' => 'px'],
+                    // Row 3: Animation, Alignment
+                    ['key' => 'drop_animation',     'type' => 'select', 'label' => 'Animation',     'default' => 'fade', 'options' => ['fade' => 'Fade', 'slide' => 'Slide'], 'group' => 'drop-settings'],
+                    ['key' => 'drop_align',         'type' => 'select', 'label' => 'Alignment',     'default' => 'left', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'group' => 'drop-settings'],
+                    // Row 4: Mobile
+                    ['key' => 'mobile_animation',   'type' => 'select', 'label' => 'Mobile Menu Animation', 'default' => 'slide', 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.nav')",
-                'required_config'    => ['keys' => ['nav_handle'], 'message' => 'Enter a navigation menu handle (e.g. primary).'],
+                'required_config'    => ['keys' => ['navigation_menu_id'], 'message' => 'Select a navigation menu.'],
             ]
         );
 

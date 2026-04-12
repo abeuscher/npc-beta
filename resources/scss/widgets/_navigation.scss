@@ -1,0 +1,338 @@
+// ── Navigation widget ────────────────────────────────────────────────────────
+// Responsive nav bar with dropdowns, branding slot, and mobile hamburger.
+// Colors are driven by CSS custom properties set as inline style on .widget-nav:
+//   --nav-link-color, --nav-hover-color, --nav-drop-link-color, --nav-drop-hover-color
+
+.widget-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: var(--nav-align, center);
+    justify-content: var(--nav-justify, flex-start);
+    gap: 0;
+    position: relative;
+    min-height: 5rem;
+}
+
+// ── Link colors ──────────────────────────────────────────────────────────────
+
+.widget-nav__link,
+.widget-nav__brand-link {
+    color: var(--nav-link-color, inherit);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.widget-nav__link:hover {
+    color: var(--nav-hover-color, var(--nav-link-color, inherit));
+}
+
+.widget-nav__drop-link {
+    color: var(--nav-drop-link-color, #1f2937);
+    text-decoration: none;
+}
+
+.widget-nav__drop-link:hover {
+    color: var(--nav-drop-hover-color, var(--nav-drop-link-color, #1f2937));
+}
+
+// ── Branding ─────────────────────────────────────────────────────────────────
+
+.widget-nav__brand {
+    display: flex;
+    align-items: center;
+    margin-right: 1.5rem;
+    flex-shrink: 0;
+}
+
+.widget-nav__brand-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+}
+
+.widget-nav__brand-logo {
+    height: 2.5rem;
+    width: auto;
+    display: block;
+}
+
+.widget-nav__brand-icon {
+    height: 2rem;
+    width: 2rem;
+    display: block;
+    object-fit: contain;
+}
+
+.widget-nav__brand-text {
+    font-weight: 600;
+    font-size: 1.25rem;
+    white-space: nowrap;
+}
+
+// ── Desktop menu ─────────────────────────────────────────────────────────────
+
+.widget-nav__menu {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 1rem;
+}
+
+.widget-nav__item {
+    position: relative;
+}
+
+.widget-nav__item-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+// ── Caret (dropdown indicator) ───────────────────────────────────────────────
+
+.widget-nav__caret {
+    display: inline-block;
+    width: 0.4em;
+    height: 0.4em;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    margin-bottom: 0.1em;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.widget-nav__caret--sub {
+    transform: rotate(-45deg);
+    margin-left: 0.25em;
+}
+
+// ── Dropdown panels ──────────────────────────────────────────────────────────
+
+.widget-nav__dropdown,
+.widget-nav__subdrop {
+    position: absolute;
+    top: 100%;
+    z-index: 100;
+    min-width: 12rem;
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+}
+
+.widget-nav__dropdown--left,
+.widget-nav__subdrop--left {
+    left: 0;
+}
+
+.widget-nav__dropdown--center,
+.widget-nav__subdrop--center {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.widget-nav__dropdown--right,
+.widget-nav__subdrop--right {
+    right: 0;
+}
+
+// Level 3: offset to the side
+.widget-nav__subdrop {
+    top: 0;
+    left: 100%;
+}
+
+.widget-nav__subdrop--right {
+    left: auto;
+    right: 100%;
+}
+
+.widget-nav__drop-item {
+    position: relative;
+}
+
+.widget-nav__drop-item-wrap,
+.widget-nav__subdrop-item-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+// ── Dropdown animations ──────────────────────────────────────────────────────
+
+// Fade
+.widget-nav--drop-fade {
+    .widget-nav__dropdown,
+    .widget-nav__subdrop {
+        transition: opacity 0.2s ease;
+    }
+
+    .widget-nav__dropdown[x-cloak],
+    .widget-nav__subdrop[x-cloak] {
+        opacity: 0;
+    }
+}
+
+// Slide
+.widget-nav--drop-slide {
+    .widget-nav__dropdown {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        transform-origin: top center;
+    }
+
+    .widget-nav__subdrop {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        transform-origin: top left;
+    }
+
+    .widget-nav__dropdown[x-cloak],
+    .widget-nav__subdrop[x-cloak] {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+// ── Hamburger button ─────────────────────────────────────────────────────────
+
+.widget-nav__hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    margin-left: auto;
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+}
+
+.widget-nav__hamburger-bar,
+.widget-nav__hamburger-bar::before,
+.widget-nav__hamburger-bar::after {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    position: absolute;
+    left: 0;
+}
+
+.widget-nav__hamburger-bar {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.widget-nav__hamburger-bar::before {
+    content: '';
+    top: -7px;
+}
+
+.widget-nav__hamburger-bar::after {
+    content: '';
+    top: 7px;
+}
+
+// Hamburger → X transition
+.widget-nav__hamburger-bar.is-active {
+    background-color: transparent;
+}
+
+.widget-nav__hamburger-bar.is-active::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+
+.widget-nav__hamburger-bar.is-active::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+
+// ── Mobile menu ──────────────────────────────────────────────────────────────
+
+.widget-nav__mobile {
+    display: none;
+    width: 100%;
+    order: 10;
+}
+
+.widget-nav__mobile-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+.widget-nav__mobile-item-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.widget-nav__mobile-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+}
+
+.widget-nav__mobile-chevron {
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.widget-nav__mobile-chevron.is-open {
+    transform: rotate(-135deg);
+}
+
+.widget-nav__mobile-sub {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    padding-left: 1rem;
+}
+
+.widget-nav__mobile-sub--l3 {
+    padding-left: 1rem;
+}
+
+.widget-nav__mobile-item--child {
+    font-size: 0.95em;
+}
+
+.widget-nav__mobile-item--grandchild {
+    font-size: 0.9em;
+}
+
+// ── Mobile animation variants ────────────────────────────────────────────────
+
+.widget-nav--mobile-slide .widget-nav__mobile {
+    overflow: hidden;
+}
+
+.widget-nav--mobile-fade .widget-nav__mobile {
+    transition: opacity 0.25s ease;
+}
+
+.widget-nav--mobile-fade .widget-nav__mobile[x-cloak] {
+    opacity: 0;
+}
+
+// Responsive breakpoint is handled via an inline <style> block in the widget
+// template, which generates media queries using the configured pixel value.
+// No hardcoded breakpoint here — the template emits the rules per instance.

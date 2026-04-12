@@ -456,7 +456,7 @@ it('nav widget renders links from a NavigationMenu by handle', function () {
         'page_id'        => $page->id,
         'widget_type_id' => $navType->id,
         'label'          => 'Nav',
-        'config'         => ['nav_handle' => 'primary'],
+        'config'         => ['navigation_menu_id' => $menu->id],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);

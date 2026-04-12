@@ -241,8 +241,8 @@ watch(
       class="preview-canvas__container"
       :style="
         isNarrowViewport
-          ? 'height: calc(100vh - 16rem); overflow-y: auto; display: flex; justify-content: center; background: #f3f4f6;'
-          : 'min-height: 400px; overflow: hidden;'
+          ? 'display: flex; justify-content: center; background: #f3f4f6;'
+          : ''
       "
     >
       <div
@@ -368,7 +368,6 @@ watch(
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
   background: #fff;
-  overflow: hidden;
   padding-top: 1.5rem;
 }
 

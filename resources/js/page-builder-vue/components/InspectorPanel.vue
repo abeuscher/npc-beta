@@ -27,7 +27,7 @@ const contentFields = computed(() => {
 const appearanceFields = computed(() => {
   if (!widget.value) return [] as FieldDef[]
   return widget.value.widget_type_config_schema.filter(
-    (f: FieldDef) => (f.group ?? 'content') === 'appearance'
+    (f: FieldDef) => (f.group ?? 'content') !== 'content'
   )
 })
 </script>
@@ -46,11 +46,11 @@ const appearanceFields = computed(() => {
         </div>
 
         <div v-show="activeTab === 'appearance'" class="inspector-panel__tab-content">
+          <InspectorFieldGroup :fields="appearanceFields" :widget="widget" />
+          <QuerySettings :widget="widget" />
           <BackgroundPanel :widget="widget" />
           <TextPanel :widget="widget" />
           <SectionLayoutPanel :widget="widget" />
-          <InspectorFieldGroup :fields="appearanceFields" :widget="widget" />
-          <QuerySettings :widget="widget" />
         </div>
       </div>
 

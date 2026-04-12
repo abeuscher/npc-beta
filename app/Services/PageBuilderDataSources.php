@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\Product;
 
@@ -17,12 +18,13 @@ class PageBuilderDataSources
     public static function resolve(string $source): array
     {
         return match ($source) {
-            'events'      => static::events(),
-            'products'    => static::products(),
-            'forms'       => static::forms(),
-            'collections' => static::collections(),
-            'pages'       => static::pages(),
-            default       => [],
+            'events'           => static::events(),
+            'products'         => static::products(),
+            'forms'            => static::forms(),
+            'collections'      => static::collections(),
+            'pages'            => static::pages(),
+            'navigation_menus' => static::navigationMenus(),
+            default            => [],
         };
     }
 
@@ -69,6 +71,14 @@ class PageBuilderDataSources
             ->orderBy('title')
             ->get(['slug', 'title'])
             ->pluck('title', 'slug')
+            ->all();
+    }
+
+    private static function navigationMenus(): array
+    {
+        return NavigationMenu::orderBy('label')
+            ->get(['id', 'label'])
+            ->pluck('label', 'id')
             ->all();
     }
 }
