@@ -176,6 +176,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 167 | Page Builder as Main Edit View |
 | 168 | Most Used Widgets & Text Drop Shadow |
 | 169 | Navigation Widget |
+| 170 | Widget Definition Class & Registry |
 
 ---
 
@@ -213,7 +214,7 @@ Two small cosmetic fixes:
 
 This is phased over several sessions. Each stage leaves the app shippable.
 
-- **Stage 1 — Widget Definition Class & Registry.** Introduce `App\Widgets\Contracts\WidgetDefinition` base class and `WidgetRegistry` service. Seeder becomes a sync step (registry → `widget_types` table). Convert the nav widget as proof-of-concept; other widgets stay seeder-driven via a coexistence path. Additive — no destruction of existing UI, renderer, or tests.
+- **Stage 1 — Widget Definition Class & Registry.** *(Completed session 170.)* Introduced `App\Widgets\Contracts\WidgetDefinition` base class and `App\Services\WidgetRegistry` service bound by `WidgetServiceProvider`. Seeder now calls `WidgetRegistry::sync()` at the end of `run()`. Nav widget converted as proof-of-concept (`App\Widgets\Nav\NavDefinition`); other widgets stay seeder-driven via the coexistence path.
 
 - **Stage 2 — Defaults Binding & Sovereign Rendering.** The defaults-binding session discussed in session 169. `WidgetDefinition::defaults()` is the source of truth for defaults. A `WidgetConfigResolver` composes `widget.defaults() → theme overrides (stub) → instance config → resolved config`. Blade templates stop using `$config['x'] ?? ''` and receive a fully-resolved config. Instance configs become sparse — only overrides get stored. Inspector shows resolved-vs-override state.
 
