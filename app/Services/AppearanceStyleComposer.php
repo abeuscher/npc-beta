@@ -47,6 +47,11 @@ class AppearanceStyleComposer
             $styleProps[] = 'color:' . $textColor;
         }
 
+        // Text drop shadow
+        if (! empty($ac['text']['shadow'])) {
+            $styleProps[] = 'text-shadow:0 1px 3px rgba(0,0,0,0.6)';
+        }
+
         // Padding
         $padding = $ac['layout']['padding'] ?? [];
         foreach (['top', 'right', 'bottom', 'left'] as $side) {

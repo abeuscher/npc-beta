@@ -12,6 +12,7 @@
         ->flatMap(fn ($wt) => $wt['category'] ?? ['content'])
         ->unique()
         ->values();
+    $hasMostUsed = $activeCategories->contains('most_used');
 @endphp
 
 @teleport('body')
@@ -19,7 +20,7 @@
         x-data="{
             picked: false,
             filter: '',
-            activeCategory: '',
+            activeCategory: '{{ $hasMostUsed ? 'most_used' : '' }}',
             matchesFilter(label, desc) {
                 if (this.filter === '') return true;
                 const q = this.filter.toLowerCase();
@@ -33,7 +34,7 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         x-on:keydown.escape.window="if (filter !== '') { filter = ''; activeCategory = ''; } else { $wire.set('{{ $showProperty }}', false); }"
     >
-        <div class="container mx-auto rounded-xl bg-white shadow-xl dark:bg-gray-900 flex flex-col" style="max-height: 90vh;">
+        <div class="container mx-auto rounded-xl bg-white shadow-xl dark:bg-gray-900 flex flex-col" style="height: 90vh;">
             {{-- Header with close button --}}
             <div class="flex items-center justify-between px-6 pt-5">
                 <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ $title }}</h3>

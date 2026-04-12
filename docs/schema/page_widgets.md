@@ -36,7 +36,8 @@ Widgets embedded on a page, ordered by sort_order. Root widgets have `layout_id 
     fit
   },
   text: {
-    color
+    color,
+    shadow
   },
   layout: {
     full_width,
@@ -46,7 +47,7 @@ Widgets embedded on a page, ordered by sort_order. Root widgets have `layout_id 
 }
 ```
 
-Session 162 wrote the keys actually in use: `background.color`, `text.color`, `layout.full_width`, `layout.padding.{top,right,bottom,left}`, `layout.margin.{top,right,bottom,left}`. Session 164 added `background.gradient` (with per-stop `from_alpha` / `to_alpha` integer fields, range `[0, 100]`, default `100`), `background.alignment` (9-point string: `top-left`, `top-center`, `top-right`, `middle-left`, `center`, `middle-right`, `bottom-left`, `bottom-center`, `bottom-right`), and `background.fit` (`cover` or `contain`).
+Session 162 wrote the keys actually in use: `background.color`, `text.color`, `text.shadow`, `layout.full_width`, `layout.padding.{top,right,bottom,left}`, `layout.margin.{top,right,bottom,left}`. Session 168 added `text.shadow` (boolean, default absent/falsy; when true the renderer emits `text-shadow: 0 1px 3px rgba(0,0,0,0.6)`). Session 164 added `background.gradient` (with per-stop `from_alpha` / `to_alpha` integer fields, range `[0, 100]`, default `100`), `background.alignment` (9-point string: `top-left`, `top-center`, `top-right`, `middle-left`, `center`, `middle-right`, `bottom-left`, `bottom-center`, `bottom-right`), and `background.fit` (`cover` or `contain`).
 
 **Background image:** The background image is **not** stored in the jsonb bag — there is no `background.image_id` key. Image presence is owned exclusively by the `appearance_background_image` Spatie media collection on `PageWidget` (single-file, Option B). The renderer detects an image via `$pw->getFirstMedia('appearance_background_image')`, and the Vue inspector detects it via the `appearance_image_url` field in the `formatWidget` API response.
 

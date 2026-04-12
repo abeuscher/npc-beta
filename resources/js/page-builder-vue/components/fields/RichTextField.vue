@@ -131,7 +131,7 @@ function handleImageUpload() {
 .inspector-richtext {
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
-  overflow: hidden;
+  position: relative;
 }
 
 .inspector-richtext :deep(.ql-toolbar) {

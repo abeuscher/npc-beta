@@ -11,6 +11,7 @@ const props = defineProps<{
 const store = useEditorStore()
 
 const textColor = computed(() => props.widget.appearance_config?.text?.color ?? '')
+const textShadow = computed(() => props.widget.appearance_config?.text?.shadow ?? false)
 
 function updateAppearance(path: string, value: any) {
   store.updateLocalAppearanceConfig(props.widget.id, path, value)
@@ -34,6 +35,18 @@ function updateAppearance(path: string, value: any) {
         </template>
       </ColorPicker>
       <p class="inspector-hint">Inline color styling inside rich text fields overrides this value.</p>
+    </div>
+
+    <div class="text-panel__section">
+      <label class="text-panel__toggle">
+        <input
+          type="checkbox"
+          :checked="textShadow"
+          class="inspector-checkbox"
+          @change="updateAppearance('text.shadow', ($event.target as HTMLInputElement).checked)"
+        >
+        <span>Drop Shadow</span>
+      </label>
     </div>
   </div>
 </template>
@@ -60,5 +73,14 @@ function updateAppearance(path: string, value: any) {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+}
+
+.text-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
 }
 </style>

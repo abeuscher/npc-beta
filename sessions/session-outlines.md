@@ -174,6 +174,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 165 | Appearance Controls — Text & Section Layout Panels |
 | 166 | Appearance Controls — Docs Finalization & Widget Spacing Harmonization |
 | 167 | Page Builder as Main Edit View |
+| 168 | Most Used Widgets & Text Drop Shadow |
 
 ---
 
@@ -297,7 +298,7 @@ Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-gener
 
 ### Site Chrome Widgets & Navigation
 
-Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Build a full-featured navigation widget with dropdowns, mobile hamburger, and responsive behaviour. May span two sessions if the nav widget scope requires it.
+Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Navigation widget is being built in session 169 — this stub covers the remaining chrome restructuring work.
 
 ### SEO — Advanced
 
@@ -331,17 +332,9 @@ UX improvement to the Section Layout panel's padding and margin controls. Two fe
 
 This is a self-contained session focused on the inspector UI layer. No new `appearance_config` keys — the underlying four-side padding/margin store paths are unchanged. The axis locks are local UI state (not persisted), and the presets are a lookup from a new site-settings or template-level configuration.
 
-### "Most Used" Widget Category
-
-Add a "Most Used" category to the widget picker, selected as the default view. Track widget placement frequency per install and surface the most-placed widget types at the top. "View all" remains available. Lightweight — a counter column or site setting, plus a picker UI tweak.
-
 ### Image Widget — Border Controls
 
 Add border config fields (width, color, radius) to the image widget's `config_schema`. Pure config + CSS, no architectural changes.
-
-### Text Drop Shadow Controls
-
-A mechanism for drop shadows on text when overlaying images. Could live in the Appearance Text panel as a shadow toggle/controls, or as a per-widget config. Needs design on where it lives and how much control to expose (simple on/off vs. full shadow editor with offset/blur/color).
 
 ### Background Image Opacity
 

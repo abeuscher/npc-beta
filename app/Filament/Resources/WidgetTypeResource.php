@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 class WidgetTypeResource extends Resource
 {
     public const CATEGORY_OPTIONS = [
+        'most_used'        => 'Most Used',
         'content'          => 'Content',
         'layout'           => 'Layout',
         'media'            => 'Media',
