@@ -184,6 +184,72 @@ it('updates a widget label and config', function () {
     expect($widget->config['heading'])->toBe('New Heading');
 });
 
+it('update endpoint contract that the JS selective merge depends on', function () {
+    // Locks in the response shape that Fix 1.2 (session 163) relies on. The
+    // editor store skips merging the user-mutable fields (config,
+    // appearance_config, query_config, label) when the widget is dirty, so the
+    // server response must:
+    //   - return those user-mutable fields exactly as the client sent them
+    //     (no server-side merging),
+    //   - omit preview_html (the preview is fetched separately by
+    //     refreshPreview, not piggybacked onto the update response),
+    //   - include the server-authoritative metadata fields that the client
+    //     unconditionally merges.
+    $page = apiPage();
+    $widget = apiWidget($page);
+
+    $sentConfig = ['heading' => 'Echo', 'body' => 'Lorem ipsum'];
+    $sentAppearance = ['background' => ['color' => '#abcdef']];
+    $sentQuery = ['posts' => ['limit' => 5]];
+
+    $response = $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
+            'label'             => 'Echo Label',
+            'config'            => $sentConfig,
+            'appearance_config' => $sentAppearance,
+            'query_config'      => $sentQuery,
+        ]);
+
+    $response->assertOk();
+
+    // User-mutable fields are echoed back exactly as sent.
+    $response->assertJsonPath('widget.label', 'Echo Label');
+    $response->assertJsonPath('widget.config.heading', 'Echo');
+    $response->assertJsonPath('widget.config.body', 'Lorem ipsum');
+    $response->assertJsonPath('widget.appearance_config.background.color', '#abcdef');
+    $response->assertJsonPath('widget.query_config.posts.limit', 5);
+
+    // Confirm no server-side merging — the returned config has exactly the
+    // keys we sent (no leftover defaults from the original create).
+    $returnedConfig = $response->json('widget.config');
+    expect(array_keys($returnedConfig))->toEqualCanonicalizing(array_keys($sentConfig));
+
+    // Server-authoritative fields the JS always merges.
+    $response->assertJsonStructure([
+        'widget' => [
+            'id',
+            'widget_type_id',
+            'widget_type_handle',
+            'widget_type_label',
+            'widget_type_collections',
+            'widget_type_config_schema',
+            'widget_type_assets',
+            'widget_type_default_open',
+            'widget_type_required_config',
+            'layout_id',
+            'column_index',
+            'sort_order',
+            'is_active',
+            'is_required',
+            'image_urls',
+        ],
+    ]);
+
+    // preview_html is intentionally NOT in the update response — the JS fetches
+    // it via refreshPreview, and that round trip is what clears the dirty bit.
+    expect($response->json('widget'))->not->toHaveKey('preview_html');
+});
+
 // ── DELETE widgets ───────────────────────────────────────────────────────
 
 it('deletes a widget', function () {

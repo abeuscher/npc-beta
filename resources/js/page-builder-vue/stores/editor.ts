@@ -217,8 +217,22 @@ export const useEditorStore = defineStore('editor', () => {
     try {
       const res = await api.updateWidget(id, changes)
       const updated = res.widget
-      if (widgets.value[id]) {
-        Object.assign(widgets.value[id], updated)
+      const local = widgets.value[id]
+      if (local) {
+        // Server-authoritative fields are always merged. The user-mutable
+        // fields (config, appearance_config, query_config, label) are skipped
+        // when the widget is currently dirty, because the local copy is by
+        // definition newer than the response — the server is just confirming
+        // "I received what you sent." If the widget is not dirty, the
+        // response is authoritative and a normal merge happens.
+        const isDirty = dirtyWidgets.value.has(id)
+        const skipKeys = isDirty
+          ? new Set(['config', 'appearance_config', 'query_config', 'label'])
+          : new Set<string>()
+        for (const [key, value] of Object.entries(updated)) {
+          if (skipKeys.has(key)) continue
+          ;(local as any)[key] = value
+        }
       }
       dirtyWidgets.value.add(id)
       return updated

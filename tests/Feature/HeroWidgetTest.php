@@ -236,6 +236,36 @@ it('hides scroll indicator when disabled', function () {
     expect($result['html'])->not->toContain('hero-scroll-indicator');
 });
 
+it('renders schema defaults when widget config is empty', function () {
+    // Locks in the contract Fix 1.1 (session 163) relies on: a widget with no
+    // persisted config still renders with the schema defaults applied at the
+    // template level. This is what makes the inspector's on-mount default-write
+    // unnecessary — the renderer (and the Blade fallback `??` operators) cover
+    // every default that previously had to be written into the store on first
+    // widget click.
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Empty', 'slug' => 'hero-empty', 'status' => 'published']);
+
+    $pw = PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $hero->id,
+        'config'         => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])
+        ->toContain('widget--hero')
+        ->toContain('hero--pos-center-center')   // text_position default
+        ->toContain('hero--height-24')           // min_height default '24rem'
+        ->toContain('--hero-overlay: 0.5')       // background_overlay_opacity default 50
+        ->not->toContain('hero--fullscreen')     // fullscreen default false
+        ->not->toContain('hero--overlap-nav')    // overlap_nav default false
+        ->not->toContain('hero-scroll-indicator'); // scroll_indicator default false
+});
+
 it('adds overlap-nav class when full bleed is enabled', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Bleed Hero', 'slug' => 'bleed-hero', 'status' => 'published']);

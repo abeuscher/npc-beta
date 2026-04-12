@@ -16,7 +16,6 @@ const emit = defineEmits<{
 const store = useEditorStore()
 const editorEl = ref<HTMLElement | null>(null)
 let quillInstance: any = null
-let emitTimeout: ReturnType<typeof setTimeout> | null = null
 let suppressChange = false
 
 onMounted(() => {
@@ -56,23 +55,24 @@ onMounted(() => {
 
   quillInstance.on('text-change', () => {
     if (suppressChange) return
-    if (emitTimeout) clearTimeout(emitTimeout)
-    emitTimeout = setTimeout(() => {
-      emit('update:modelValue', quillInstance.root.innerHTML)
-    }, 300)
+    emit('update:modelValue', quillInstance.root.innerHTML)
   })
 })
 
 onUnmounted(() => {
-  if (emitTimeout) clearTimeout(emitTimeout)
   quillInstance = null
 })
 
-// Sync external value changes into Quill (guard against echo loops)
+// Sync external value changes into Quill (guard against echo loops).
+// When the widget is dirty, the local Quill state is by definition newer
+// than any modelValue arriving from the store, so skip the assignment
+// entirely — this prevents the editor from being wiped back to a stale
+// server snapshot mid-typing.
 watch(
   () => props.modelValue,
   (newVal) => {
     if (!quillInstance) return
+    if (store.isWidgetDirty(props.widget.id)) return
     const current = quillInstance.root.innerHTML
     if (current !== newVal) {
       suppressChange = true

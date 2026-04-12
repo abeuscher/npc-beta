@@ -169,6 +169,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 160 | Page Builder & Admin Chrome Fixes |
 | 161 | Appearance Controls for Widgets — Docs Refresh & Shared Primitives |
 | 162 | Appearance Controls — Schema Rename & Widget Dedupe Sweep |
+| 163 | Page Builder Bug Fixes |
 
 ---
 
@@ -214,85 +215,53 @@ Architectural lift, sequenced between session 162 and session 164. Surfaced duri
 - Render smoke test: a non-hero widget with the new full-bleed flag set renders with the same overlap-nav class on its wrapper.
 - `PageControllerTest` (or equivalent): asserts that the `__navOverlap` / `__navOverlayLinkColor` view shares are populated based on the new field location, not on the hero handle.
 
-### 163. Page Builder Bug Fixes
+### 164. Appearance Controls — Background Panel
 
-Bug-fixing session covering issues surfaced during session 162 manual testing and any other page builder rough edges that have accumulated. Sequenced ahead of session 164's universal Appearance panels because the inspector/RTE bugs below actively block productive testing of the existing inspector, and 164 lands a large new inspector surface on top.
+Phase 3a of the Appearance Controls project. Builds the Background panel of the universal Appearance tab in the Vue inspector, extracts a shared `AppearanceStyleComposer` service so the public and admin renderers stay in lockstep, and extends `GradientPicker` / `GradientComposer` to support per-stop alpha so that gradients can act as image tints.
 
-**Bug 1 — RTE typing race on page builder inspector.**
+This session is the first of a two-iteration split of the original 164 outline. Session 165 picks up the Text panel, the Section Layout panel, the retirement of `WidgetAppearanceControls.vue` and `SpacingControl.vue`, and the regression smoke tests.
 
-Symptoms: typing into a Quill-backed `richtext` field (e.g. hero `content`, text_block `content`) at moderate speed (~60–80 WPM) causes characters to be dropped or the editor to be wiped back to a stale state. Easiest to reproduce on a fresh page load — clicking a widget for the first time and typing immediately. Becomes harder to reproduce after the first widget interaction.
+**Storage shape:** `appearance_config.background` gains `color`, `gradient` (with new `from_alpha`/`to_alpha` per stop), `alignment` (9-point), and `fit` (cover|contain). No `image_id` is stored — the background image lives exclusively in the new `appearance_background_image` Spatie collection on `PageWidget` (Option B). No `background.overlay` key — gradients with rgba alpha *are* the overlay.
 
-Mechanism (full trace in session 162's chat log):
+**Layer order — single CSS shorthand:** the renderer emits `background-image: GRADIENT_CSS, url(IMAGE_URL)` so the gradient paints over the image and the image paints over `background-color`. Single inline style on the existing widget outer div — no markup change, no layer divs, no SCSS partial.
 
-1. **Bulk default-write on first widget click.** [InspectorField.vue:29-37](resources/js/page-builder-vue/components/InspectorField.vue#L29-L37) writes default config values into the store on mount whenever `widget.config[field.key] === undefined`. On a freshly-loaded page (or after `migrate:fresh --seed`), most config keys are missing because the seeders only populate required values. Clicking a widget mounts the inspector, every `InspectorField` fires its `onMounted`, and a stack of `updateLocalConfig` calls land in the same global 350 ms `debounceSaveTimer` bucket *before the user has typed anything*. The user's first keystroke arrives inside that already-armed window; the timer fires before the field-level Quill debounce has flushed.
-2. **Save response overwrites in-flight typing.** [editor.ts:215-228](resources/js/page-builder-vue/stores/editor.ts#L215-L228) does `Object.assign(widgets.value[id], updated)` after every save, copying the *whole* server response (including `config`) onto the local widget. Anything the user typed between the moment the save fired and the moment the response arrived is silently overwritten by the older server snapshot.
-3. **Quill watch wipes the editor on stale config.** [RichTextField.vue:72-83](resources/js/page-builder-vue/components/fields/RichTextField.vue#L72-L83) watches `props.modelValue` and, on any change where `quillInstance.root.innerHTML !== newVal`, directly assigns the new value to Quill's root. Combined with #2, this is the visible "garble": the editor contents jump back to whatever the server returned. The string-equality check is also fragile — Quill normalizes whitespace and attribute order, so even a "no-op" round trip can trip the watch.
-4. **Redundant 300 ms field-level Quill debounce.** [RichTextField.vue:57-63](resources/js/page-builder-vue/components/fields/RichTextField.vue#L57-L63) buffers `text-change` events for 300 ms before emitting `update:modelValue`. The store's [editor.ts:481-502](resources/js/page-builder-vue/stores/editor.ts#L481-L502) `flushDebouncedSave` already provides the 350 ms debounce that this is supposed to provide; the field-level layer is duplicate work and widens the race window.
+**Service extraction — `App\Services\AppearanceStyleComposer`:** consolidates the inline-style emission that today lives in two places (`page-widgets.blade.php` and `PageBuilderApiController::buildInlineStyles`). The composer owns all hex/int/alpha safety; both renderers become thin wrappers. Returns `['inline_style' => string, 'is_full_width' => bool]`. Resolves `is_full_width` with the column-child override (forced false when `widget.layout_id !== null`).
 
-**Fixes (do all three; ordered by impact):**
+**Gradient alpha:** `GradientComposer` and the TS `composeGradientCss` helper learn to read `from_alpha`/`to_alpha` (integer 0..100, default 100), clamp them, and emit `rgba(...)` when alpha < 100 (preserving `#hex` output for the opaque case). `GradientPicker.vue` gains two opacity sliders per layer. The 8 built-in presets stay opaque.
 
-1. **Delete the `InspectorField.vue` onMounted defaults block** ([InspectorField.vue:29-37](resources/js/page-builder-vue/components/InspectorField.vue#L29-L37)). The render-time `fieldValue` computed at [InspectorField.vue:24-27](resources/js/page-builder-vue/components/InspectorField.vue#L24-L27) already falls back to `field.default` when the config value is undefined, so the visible behaviour is unchanged. The renderer also treats missing values as "no inline style emitted." Mirrors the surgical fix already applied to `WidgetAppearanceControls.vue` in session 162. This is the highest-impact fix because it eliminates the bulk-defaults-on-mount race entirely.
-2. **Make `updateWidget`'s response merge skip `config`, `appearance_config`, and `query_config` when the widget is in `dirtyWidgets`.** [editor.ts:215-228](resources/js/page-builder-vue/stores/editor.ts#L215-L228). The local copy is by definition newer than the server's response — the server is just confirming "I received what you sent." Selectively merging non-content fields (`id`, `sort_order`, `is_required`, `image_urls`, `preview_html`, etc.) preserves any in-flight typing that arrived after the save fired. This is the structural fix that closes the race window even in the rarer "user types faster than the round trip" case. Be careful to keep `dirtyWidgets` in sync — `dirtyWidgets.delete(id)` should happen only when the local and server copies are known to match (which is after a clean preview refresh, not after the save).
-3. **Remove the 300 ms field-level Quill debounce** in [RichTextField.vue:57-63](resources/js/page-builder-vue/components/fields/RichTextField.vue#L57-L63). Have `text-change` emit `update:modelValue` synchronously. The store's 350 ms debounce is the single source of truth for save batching. This removes one buffering layer where keystrokes can sit invisibly during a save, and it makes the timing easier to reason about.
+**`BackgroundPanel.vue`:** Color & Gradient subsection (ColorPicker + GradientPicker), Image subsection (upload tile + thumbnail + remove link, NinePointAlignment, fit select). Image controls disabled when no image is present. Mounts at the top of the Appearance tab, above the temporary `WidgetAppearanceControls` (which retires in 165).
 
-**Optional polish (only if time):** the `RichTextField.vue:76` string-equality check on innerHTML is fragile. Consider comparing a normalized form (or skipping the watch entirely when the widget is in `dirtyWidgets`, which would be the cleaner pattern given fix #2).
+**New endpoints:** `POST` and `DELETE widgets/{widget}/appearance-image`, mirroring the existing config-image endpoints but writing to the `appearance_background_image` collection and **not** mutating `appearance_config`.
 
-**Testing:**
+**`formatWidget` change:** add a top-level `appearance_image_url` field (sibling to the existing `image_urls` map) that resolves the appearance background image's webp URL. Server-authoritative — in the session 163 selective-merge "always merge" set.
 
-- Pest tests are not the primary verification surface for this — the bug is a Vue/timing issue. Manual verification: hard-refresh, click a widget, immediately type a paragraph at speed into the RTE, confirm no characters dropped or content wiped. Repeat across hero, text_block, and any column-child rich text widget.
-- Add a test asserting that `updateWidget`'s response merge does not overwrite local `config` when the widget is in `dirtyWidgets`. Construct a `PageWidget` factory, simulate a local mutation that adds the widget to `dirtyWidgets`, then call the API and assert the local copy still has the local-only value.
-- Run the full fast suite to make sure none of the fixes regress existing API/contract tests.
+**Phase split:** Phase 1 is the pure refactor (composer extraction + both renderers delegating), gated by the full Pest suite. Phase 2 adds the gradient alpha extension, the Background panel, the upload endpoints, and the new tests.
 
-**Out of scope:**
+**Testing:** new `AppearanceStyleComposerTest` (unit), extension to `GradientComposerTest` for alpha cases, new `AppearanceImageUploadTest` (feature), append to `PageBuilderApiTest` for the new `appearance_image_url` field, append to a renderer integration test for the inline-style integration with representative bag shapes including the tint-over-image case.
 
-- Replacing Quill with another RTE.
-- Refactoring the inspector field architecture beyond the surgical fixes above.
-- Any work on the universal Appearance panels (session 164).
+**Out of scope:** Text panel and Section Layout panel (165), retiring `WidgetAppearanceControls.vue` and `SpacingControl.vue` (165), regression smoke tests for widgets that lost fields in 162 (165), full docs pass (166), responsive `srcset` for the background image, per-widget `style_schema`.
 
-### 164. Appearance Controls — Universal Background, Text & Layout Sections
+### 165. Appearance Controls — Text & Section Layout Panels
 
-Phase 3 of the Appearance Controls project. Build the three universal Appearance panels in the Vue inspector's Appearance tab and wire them into `appearance_config` and the public renderer. This is the heaviest UI session of the project.
+Phase 3b of the Appearance Controls project. Builds the remaining two universal Appearance panels (Text and Section Layout) in the Vue inspector, retires the temporary `WidgetAppearanceControls.vue` and `SpacingControl.vue` components, and lands regression smoke tests for every widget that lost or renamed config fields in session 162. This session completes the universal Appearance layer for Beta 1.
 
-**Background section:**
+**`TextPanel.vue`:** single section, single control. `ColorPicker` bound to `appearance_config.text.color`, using the existing primitive's `icon` slot to pass an inline "T" SVG. Helper-text line under the control noting that inline RTE color styling overrides this value. No new appearance keys — `text.color` is already wired in the renderer via `AppearanceStyleComposer` from session 164.
 
-- Full-width-vs-content-width toggle. **Grayed out with a tooltip when the widget has a `parent_widget_id`** (the parent column controls width).
-- Color picker (using the session 161 `ColorPicker` primitive).
-- Gradient picker (using the session 161 `GradientPicker` primitive).
-- Background image upload — single file, stored in a Spatie media collection on `PageWidget` named `appearance_background_image`.
-- Background image 9-point alignment (using the session 161 `NinePointAlignment` primitive) — maps to CSS `background-position`.
-- Cover/contain toggle — maps to CSS `background-size`.
-- Overlay: checkbox to enable, color picker, opacity slider 0–100.
+**`SectionLayoutPanel.vue`:** Width subsection (full-width toggle, disabled and tooltipped when `widget.layout_id !== null`), Padding subsection (all-sides shorthand input + four per-side inputs), Margin subsection (same shape). The all-sides shorthand logic moves verbatim from the retired `SpacingControl.vue`. Both the Background panel's full-width toggle (from 164) and this panel's full-width toggle bind to the same store path — duplicate UI is intentional for discoverability.
 
-**Text section:**
+**Retire `WidgetAppearanceControls.vue`:** delete the file, remove the import from `InspectorPanel.vue`, remove the element from the appearance tab template. After session 162's dedupe sweep, no widget has its own `background_color`, `text_color`, or `full_width` config field — every widget routes through the universal Appearance layer. No backwards-compat shim.
 
-- Text color picker using the `ColorPicker` primitive with a "T" icon variant (pass the icon slot — the primitive supports this without forking).
-- A small helper-text line under the control noting that inline color styling in rich text fields overrides this value.
+**Retire `SpacingControl.vue`:** delete the file, remove the import, remove the element. `SectionLayoutPanel`'s Padding and Margin sections supersede it.
 
-**Section Layout section:**
+**Inspector tab structure after retirements:** `<BackgroundPanel>`, `<TextPanel>`, `<SectionLayoutPanel>`, `<InspectorFieldGroup :fields="appearanceFields">`, `<QuerySettings>`. `InspectorFieldGroup` continues to render any per-widget appearance-group fields that survived the universal layer (e.g., `hero.nav_link_color`, `hero.nav_hover_color`).
 
-- Full-width-vs-content-width toggle (same underlying store path as the Background section toggle — both bindings point at `appearance_config.layout.full_width`; the duplicate UI affordance is intentional for discoverability).
-- Margin controls: all-sides shorthand input plus four individual top/right/bottom/left inputs.
-- Padding controls: same shape as margin.
+**Regression smoke tests** for every widget that lost or renamed config fields in session 162 (`hero`, `product_carousel`, `carousel`, `bar_chart`, `logo_garden`, `board_members`, `blog_listing`, `events_listing`). Each widget gets a pair of cases: a surviving-keys-only smoke test (no PHP notices on render) and a universal-appearance-layer integration test (set `background.color` and `text.color` via `appearance_config`, render through the public renderer, assert the outer wrapper's inline style carries the values).
 
-**Retire `SpacingControl.vue`:** delete the file, remove its import from `InspectorPanel.vue`, and wire the new Section Layout panel in its place. The all-sides shorthand logic moves into the new component (or into a small inline helper if it ends up duplicated between padding and margin).
+**No new appearance keys.** The schema-doc shape and `AppearanceStyleComposer` are unchanged from session 164. Every change is UI plumbing or test coverage.
 
-**Renderer updates (`resources/views/components/page-widgets.blade.php`):**
+**Out of scope:** documentation pass on `widget-types.md` and `widget-development.md` (session 166), widget spacing harmonization (session 166), any inspector tab structure changes beyond mounting the two new panels and removing the two retired components.
 
-- Compose the inline style for the full appearance bag, not just padding and margin. Background color, background image (resolved via `getFirstMediaUrl` on the `PageWidget` for the `appearance_background_image` collection), background-position (9-point value mapped to a CSS string), background-size, overlay (rendered as a stacked layer or pseudo-element), text color, full-width, padding, margin.
-- Gradient composition uses `App\Services\GradientComposer` from session 161.
-- **Column-child widgets (`parent_widget_id` is non-null):** the full-width toggle is ignored at render time — the parent column controls width. The UI grays out the toggle but the renderer also enforces this defensively.
-- **Safety:** continue casting integer values for spacing. Never emit raw strings from the bag into style attributes. Color values must match a hex pattern before being written. All gradient output flows through `GradientComposer`, which sanitizes internally.
-
-**Background image media collection:** add `appearance_background_image` to `PageWidget::registerMediaCollections()` (single file, image MIME types only). Resolution in the renderer follows the existing pattern used for widget config images.
-
-**Testing:**
-
-- Pest tests for the renderer with representative `appearance_config` shapes: color-only background, gradient background, image background with alignment, image background with overlay, text color override, full-width true at root, full-width true ignored when inside a column, padding and margin combined.
-- Widget render smoke tests for every widget that had fields removed in session 162 — confirm the universal layer now controls their appearance without regression.
-
-**Out of scope:** documentation updates (session 165), widget spacing harmonization (session 165), any further config field consolidation, any token-based palette storage.
-
-### 165. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
+### 166. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
 
 Phase 4 of the Appearance Controls project. Close out documentation and run a small polish session on hard-coded spacing values across three widgets.
 
@@ -300,9 +269,10 @@ Phase 4 of the Appearance Controls project. Close out documentation and run a sm
 
 - Update `resources/docs/widget-types.md` and `resources/docs/widget-development.md` to document:
   - The universal Appearance layer (Background, Text, Section Layout panels) and its `appearance_config` storage shape.
-  - The three shared primitives (`NinePointAlignment`, `ColorPicker`, `GradientPicker`) — examples should show how the panels consume them.
+  - The three shared primitives (`NinePointAlignment`, `ColorPicker`, `GradientPicker`) — examples should show how the panels consume them, including the `GradientPicker` per-stop alpha sliders added in session 164.
   - A concise per-widget "what changed" table covering the removes and renames from session 162.
   - The column-child width override behaviour and the grayed-out tooltip state.
+  - The `AppearanceStyleComposer` service and the layered rendering rule (gradient over image over background color via single CSS shorthand).
 - Update this session outlines document: amend the post-beta "CMS Style System — Full Widget Styling" stub to reflect that the first slab (universal padding/margin/background/text/full-width controls) has been delivered, leaving only the per-widget `style_schema` ambition and the arbitrary scoped CSS work.
 
 **Widget spacing harmonization:**

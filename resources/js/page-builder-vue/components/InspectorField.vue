@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import type { FieldDef, Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
 import TextField from './fields/TextField.vue'
@@ -24,16 +24,6 @@ const store = useEditorStore()
 const fieldValue = computed(() => {
   const val = props.widget.config[props.field.key]
   return val !== undefined ? val : props.field.default
-})
-
-// Populate default value on mount if config has no value
-onMounted(() => {
-  if (
-    props.widget.config[props.field.key] === undefined &&
-    props.field.default !== undefined
-  ) {
-    store.updateLocalConfig(props.widget.id, props.field.key, props.field.default)
-  }
 })
 
 function handleUpdate(value: any) {
