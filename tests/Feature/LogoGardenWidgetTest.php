@@ -34,7 +34,13 @@ it('seeder creates logo_garden widget type with correct config and collections',
         ->toContain('logos_per_row')
         ->toContain('logo_max_height')
         ->toContain('carousel_duration')
-        ->toContain('flip_duration');
+        ->toContain('flip_duration')
+        ->toContain('gap');
+
+    $gapField = collect($wt->config_schema)->firstWhere('key', 'gap');
+    expect($gapField['type'])->toBe('number')
+        ->and($gapField['default'])->toBe(16)
+        ->and($gapField['group'])->toBe('appearance');
 });
 
 // ── LogoGardenDemoSeeder ────────────────────────────────────────────────────
@@ -245,4 +251,101 @@ it('logo garden renders flipper mode markup', function () {
     $response->assertSee('widget-logo-garden--flipper', false);
     $response->assertSee('logo-garden__flip-container', false);
     $response->assertSee('logo-garden__flipper', false);
+});
+
+// ── Gap config field — logo garden ─────────────────────────────────────────
+
+it('logo garden carousel renders default spaceBetween when gap is not set', function () {
+    Storage::fake('public');
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $collection = Collection::create([
+        'name'        => 'Gap Default Logos',
+        'handle'      => 'gap-default-logos',
+        'source_type' => 'custom',
+        'is_public'   => true,
+        'is_active'   => true,
+        'fields'      => [
+            ['key' => 'name', 'type' => 'text',  'label' => 'Name'],
+            ['key' => 'logo', 'type' => 'image', 'label' => 'Logo'],
+        ],
+    ]);
+
+    $item = CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['name' => 'Default Gap Co'],
+        'sort_order'    => 0,
+        'is_published'  => true,
+    ]);
+    $item->addMedia(resource_path('sample-images/logos/logo-adidas.png'))
+        ->preservingOriginal()
+        ->toMediaCollection('logo');
+
+    $page = Page::factory()->create(['slug' => 'logo-gap-default', 'status' => 'published']);
+    $wt = WidgetType::where('handle', 'logo_garden')->first();
+
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $wt->id,
+        'config'         => [
+            'collection_handle' => 'gap-default-logos',
+            'image_field'       => 'logo',
+            'display_mode'      => 'carousel',
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $response = $this->get('/logo-gap-default');
+
+    $response->assertOk();
+    $response->assertSee('spaceBetween: 16', false);
+});
+
+it('logo garden carousel renders custom spaceBetween from gap config', function () {
+    Storage::fake('public');
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $collection = Collection::create([
+        'name'        => 'Gap Custom Logos',
+        'handle'      => 'gap-custom-logos',
+        'source_type' => 'custom',
+        'is_public'   => true,
+        'is_active'   => true,
+        'fields'      => [
+            ['key' => 'name', 'type' => 'text',  'label' => 'Name'],
+            ['key' => 'logo', 'type' => 'image', 'label' => 'Logo'],
+        ],
+    ]);
+
+    $item = CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['name' => 'Custom Gap Co'],
+        'sort_order'    => 0,
+        'is_published'  => true,
+    ]);
+    $item->addMedia(resource_path('sample-images/logos/logo-google.png'))
+        ->preservingOriginal()
+        ->toMediaCollection('logo');
+
+    $page = Page::factory()->create(['slug' => 'logo-gap-custom', 'status' => 'published']);
+    $wt = WidgetType::where('handle', 'logo_garden')->first();
+
+    PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $wt->id,
+        'config'         => [
+            'collection_handle' => 'gap-custom-logos',
+            'image_field'       => 'logo',
+            'display_mode'      => 'carousel',
+            'gap'               => 48,
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $response = $this->get('/logo-gap-custom');
+
+    $response->assertOk();
+    $response->assertSee('spaceBetween: 48', false);
 });

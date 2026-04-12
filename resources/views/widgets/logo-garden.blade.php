@@ -37,7 +37,7 @@
                     this.swiper = new window.Swiper(this.$refs.container, {
                         modules: [window.SwiperModules.Autoplay],
                         slidesPerView: {{ $logosPerRow }},
-                        spaceBetween: 16,
+                        spaceBetween: {{ (int) ($config['gap'] ?? 16) }},
                         loop: true,
                         autoplay: { delay: {{ $carouselDuration }}, disableOnInteraction: false },
                         allowTouchMove: false,
@@ -81,7 +81,7 @@
                     this.swiper = new window.Swiper(this.$refs.container, {
                         modules: [window.SwiperModules.Autoplay, window.SwiperModules.FreeMode],
                         slidesPerView: {{ $logosPerRow }},
-                        spaceBetween: 16,
+                        spaceBetween: {{ (int) ($config['gap'] ?? 16) }},
                         loop: true,
                         freeMode: true,
                         speed: {{ $carouselDuration }},

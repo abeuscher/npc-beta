@@ -1,8 +1,8 @@
 ---
 title: Widget Types
 description: Developer-managed widget type definitions — configuring server-rendered and client-rendered widgets available in the page builder.
-version: "0.88"
-updated: 2026-04-11
+version: "0.89"
+updated: 2026-04-12
 tags: [admin, cms, widgets, developer]
 routes:
   - filament.admin.resources.widget-types.index
@@ -161,43 +161,70 @@ Multi-column page layouts are no longer built from a `column_widget` widget type
 
 ---
 
-## `style_config` — universal spacing layer
+## `appearance_config` — universal Appearance layer
 
-Every `page_widgets` row has a `style_config` jsonb column (default `{}`). It holds per-instance padding and margin values applied as inline CSS on the widget's wrapper `<div>` by the front-end renderer.
+Every `page_widgets` row has an `appearance_config` jsonb column (default `{}`). It holds per-instance visual settings applied as inline CSS on the widget's wrapper `<div>` by `App\Services\AppearanceStyleComposer`. All widgets share this layer — no per-widget opt-in is needed.
 
-### Fields
+### What it controls
 
-| Key | CSS property applied |
-|---|---|
-| `padding_top` | `padding-top` |
-| `padding_right` | `padding-right` |
-| `padding_bottom` | `padding-bottom` |
-| `padding_left` | `padding-left` |
-| `margin_top` | `margin-top` |
-| `margin_right` | `margin-right` |
-| `margin_bottom` | `margin-bottom` |
-| `margin_left` | `margin-left` |
+| Area | Keys | Effect |
+|---|---|---|
+| Background color | `background.color` | `background-color` (hex) |
+| Background gradient | `background.gradient` | `background-image` gradient layer(s) — see `GradientPicker` in `widget-development.md` |
+| Background image | *(Spatie media collection `appearance_background_image`)* | `background-image: url(…)` layer beneath the gradient |
+| Image alignment | `background.alignment` | `background-position` — one of nine positions (e.g. `top-left`, `center`, `bottom-right`) |
+| Image fit | `background.fit` | `background-size` — `cover` or `contain` |
+| Text color | `text.color` | `color` (hex) |
+| Full width | `layout.full_width` | Overrides the widget type's `full_width` default per instance |
+| Padding | `layout.padding.{top,right,bottom,left}` | `padding-{side}` in pixels |
+| Margin | `layout.margin.{top,right,bottom,left}` | `margin-{side}` in pixels |
 
-Values are stored as strings (numeric pixel integers). The renderer casts each value to `int` before appending `px` — non-numeric or empty values are silently skipped. Raw string values from `style_config` are never emitted directly into the style attribute, preventing injection.
+### Storage shape
 
-### How the renderer applies it
+```json
+{
+  "background": {
+    "color": "#ffffff",
+    "gradient": { "gradients": [{ "type": "linear", "from": "#000", "to": "#fff", "angle": 180 }] },
+    "alignment": "center",
+    "fit": "cover"
+  },
+  "text": { "color": "#1f2937" },
+  "layout": {
+    "full_width": true,
+    "padding": { "top": "24", "right": "16", "bottom": "24", "left": "16" },
+    "margin":  { "top": "0",  "right": "",  "bottom": "0",  "left": "" }
+  }
+}
+```
 
-`resources/views/components/page-widgets.blade.php` iterates the `$blocks` array and builds an inline `style` attribute from the non-empty `style_config` padding/margin values before rendering the wrapper div. Each value is cast to `int` and suffixed with `px`; raw string values are never emitted directly. The editor preview (rendered by `App\Livewire\PageBuilder::buildInlineStyles()`) follows the same casting rules.
+Keys are written sparsely — the renderer only emits inline style for keys that are present and non-empty. See [docs/schema/page_widgets.md](../../docs/schema/page_widgets.md) for the full shape reference including gradient alpha fields.
 
-### Availability
+### Rendering rules
 
-`style_config` is available on all widget types. Spacing controls are accessible on every block via the inspector's Appearance tab.
+`AppearanceStyleComposer::compose()` builds the inline style string:
+
+1. **Background color** — hex-validated, emitted as `background-color`.
+2. **Background image** — gradient and image are composed into a single `background-image` shorthand. The gradient layer paints **over** the image layer, which paints **over** the background color. This means a semi-transparent gradient acts as a tint on the image.
+3. **Text color** — hex-validated, emitted as `color`.
+4. **Padding / Margin** — each side is cast to `int` and suffixed with `px`. Non-numeric or empty values are silently skipped. Raw string values are never emitted directly, preventing injection.
+5. **Full width** — resolved as: instance override if set, otherwise the widget type's `full_width` default. Column-child widgets (`layout_id IS NOT NULL`) are forced to non-full-width regardless.
+
+### Column-child width override
+
+Widgets placed inside a multi-column layout cannot be full-width — the parent column controls width. The `layout.full_width` toggle is disabled in the inspector (grayed out with a tooltip) for column-child widgets, and `AppearanceStyleComposer` enforces this server-side by checking `$pw->layout_id !== null`.
 
 ---
 
-## Inspector — Appearance tab and spacing controls
+## Inspector — Appearance tab
 
-The page builder inspector is a Vue island; see the **Inspector** section in `widget-development.md` for the architecture. Within the inspector, the spacing controls live on the **Appearance** tab and are rendered by the Vue component `resources/js/page-builder-vue/components/SpacingControl.vue`.
+The page builder inspector is a Vue island; see the **Inspector** section in `widget-development.md` for the architecture. The Appearance tab is composed of three panels rendered in order:
 
-The control surfaces:
+1. **Background** — color picker, gradient picker with swatch toggle, image upload/remove with alignment grid and fit selector.
+2. **Text** — text color picker with an "A" icon overlay.
+3. **Section Layout** — full-width toggle (disabled for column children), padding and margin controls with "All sides" shorthand and four individual side inputs.
 
-- **Padding (px):** an "All sides" shorthand input plus four individual Top / Right / Bottom / Left inputs.
-- **Margin (px):** same layout as padding.
+Below the panels, any per-widget config fields with `group: 'appearance'` are rendered by the standard field-type components.
 
 **Shorthand behaviour:** when all four individual values for a property (padding or margin) are equal and non-empty, the shorthand input displays that value. When they differ, the shorthand input is empty with placeholder `mixed`. Writing to the shorthand input sets all four individual values at once. Individual inputs remain independently editable after that.
 

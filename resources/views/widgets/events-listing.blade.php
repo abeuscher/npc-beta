@@ -92,7 +92,7 @@
                 modules: modules,
                 slidesPerView: 1,
                 slidesPerGroup: 1,
-                spaceBetween: 24,
+                spaceBetween: {{ (int) ($config['gap'] ?? 24) }},
                 effect: this.cfg.effect,
                 fadeEffect: this.cfg.effect === 'fade' ? { crossFade: true } : undefined,
                 navigation: { nextEl: this.$refs.btnNext, prevEl: this.$refs.btnPrev },

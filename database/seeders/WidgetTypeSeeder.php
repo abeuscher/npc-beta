@@ -103,6 +103,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
                     ['key' => 'sort_default',     'type' => 'select',   'label' => 'Default sort', 'options' => ['soonest' => 'Soonest first', 'furthest' => 'Furthest first', 'title_az' => 'Title A–Z', 'title_za' => 'Title Z–A'], 'default' => 'soonest', 'group' => 'content'],
                     ['key' => 'effect',           'type' => 'select',   'label' => 'Transition', 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'default' => 'slide', 'group' => 'appearance'],
+                    ['key' => 'gap',              'type' => 'number',   'label' => 'Slide spacing (px)', 'default' => 24, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.events-listing')",
             ]
@@ -127,6 +128,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
                     ['key' => 'sort_default',     'type' => 'select',   'label' => 'Default sort', 'options' => ['newest' => 'Newest first', 'oldest' => 'Oldest first', 'title_az' => 'Title A–Z', 'title_za' => 'Title Z–A'], 'default' => 'newest', 'group' => 'content'],
                     ['key' => 'effect',           'type' => 'select',   'label' => 'Transition', 'options' => ['slide' => 'Slide', 'fade' => 'Fade'], 'default' => 'slide', 'group' => 'appearance'],
+                    ['key' => 'gap',              'type' => 'number',   'label' => 'Slide spacing (px)', 'default' => 24, 'group' => 'appearance'],
                 ],
                 'template'           => "@include('widgets.blog-listing')",
             ]
@@ -513,6 +515,7 @@ class WidgetTypeSeeder extends Seeder
                     ['key' => 'logo_max_height',   'type' => 'number',  'label' => 'Logo max size (px)',   'default' => 150, 'advanced' => true, 'group' => 'appearance'],
                     ['key' => 'carousel_duration', 'type' => 'number',  'label' => 'Carousel interval (ms)', 'default' => 3000, 'advanced' => true, 'group' => 'appearance'],
                     ['key' => 'flip_duration',     'type' => 'number',  'label' => 'Flip interval (ms)',     'default' => 4000, 'advanced' => true, 'group' => 'appearance'],
+                    ['key' => 'gap',               'type' => 'number',  'label' => 'Slide spacing (px)',     'default' => 16, 'group' => 'appearance'],
                 ],
                 'template'      => "@include('widgets.logo-garden')",
                 'required_config' => ['keys' => ['collection_handle', 'image_field'], 'message' => 'Select a collection and map its image field to display logos.'],

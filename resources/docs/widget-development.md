@@ -1,8 +1,8 @@
 ---
 title: Widget Development Guide
 description: Technical reference for building widgets — directories, pipeline, config fields, inspector, asset bundling, image handling, collections, and demo seeders.
-version: "1.1"
-updated: 2026-04-11
+version: "1.2"
+updated: 2026-04-12
 standalone: true
 tags: [developer, cms, widgets, reference]
 category: cms
@@ -639,7 +639,7 @@ const previewStyle = computed(() => ({
 
 ```blade
 @php
-    $gradientCss = app(\App\Services\GradientComposer::class)->compose($block['style_config']['background_gradient'] ?? null);
+    $gradientCss = app(\App\Services\GradientComposer::class)->compose($block['appearance_config']['background']['gradient'] ?? null);
 @endphp
 
 <div
@@ -649,3 +649,83 @@ const previewStyle = computed(() => ({
     {!! $block['html'] !!}
 </div>
 ```
+
+---
+
+## `AppearanceStyleComposer` — Server-Side Rendering
+
+`App\Services\AppearanceStyleComposer` translates a widget's `appearance_config` jsonb into an inline style string and a full-width flag. It is called by the public renderer (`page-widgets.blade.php`) for every widget on the page.
+
+**File.** `app/Services/AppearanceStyleComposer.php`
+
+**Method.** `compose(PageWidget $pw): array` — returns `['inline_style' => string, 'is_full_width' => bool]`.
+
+### Rendering pipeline
+
+1. **Background color** — validates hex against `^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`, emits `background-color:{hex}`.
+2. **Background image layers** — composes gradient and image into a single `background-image` shorthand. Gradient paints **over** image (gradient first in the comma-separated list). Delegates gradient CSS generation to `GradientComposer::compose()`. Image URL comes from the `appearance_background_image` Spatie media collection on the `PageWidget` model.
+3. **Image position and fit** — alignment string (e.g. `center`, `top-left`) is mapped to CSS `background-position` via a constant map. Fit (`cover` or `contain`) is emitted as `background-size`. Both emit only when an image is present.
+4. **Text color** — same hex validation, emits `color:{hex}`.
+5. **Padding and margin** — each of the four sides is cast to `int` and emitted as `{property}-{side}:{n}px`. Empty or non-numeric values are silently skipped — raw strings never reach the style attribute.
+6. **Full-width resolution** — checks `layout.full_width` in `appearance_config`; if `null`, falls back to the widget type's `full_width` column. Column-child widgets (`layout_id IS NOT NULL`) are forced to `false` regardless.
+
+### Security boundary
+
+All values are validated or cast before reaching the inline style string. Hex colors are regex-checked. Numeric values are cast to `int`. Gradients go through `GradientComposer` which applies its own sanitization (see the **Sanitization rules** under `GradientPicker` above). No raw user input is ever emitted directly.
+
+---
+
+## Appearance Panels — Inspector Components
+
+The Appearance tab in the inspector is composed of three panel components under `resources/js/page-builder-vue/components/appearance/`. Each panel receives the selected `Widget` as a prop and writes to the Pinia store via `store.updateLocalAppearanceConfig(widgetId, path, value)`.
+
+### `BackgroundPanel.vue`
+
+Controls: color picker, gradient swatch (toggles inline `GradientPicker` expansion), image upload/remove with thumbnail, nine-point alignment grid (disabled when no image), and a cover/contain fit selector (disabled when no image).
+
+**Store interactions:**
+- `updateLocalAppearanceConfig(id, 'background.color', hex)`
+- `updateLocalAppearanceConfig(id, 'background.gradient', gradientValue)`
+- `updateLocalAppearanceConfig(id, 'background.alignment', alignmentString)`
+- `updateLocalAppearanceConfig(id, 'background.fit', 'cover' | 'contain')`
+- `store.uploadAppearanceImage(id, file)` / `store.removeAppearanceImage(id)`
+
+### `TextPanel.vue`
+
+Controls: a single color picker with an "A" icon overlay (via the `#icon` slot on `ColorPicker`), plus a hint that inline rich text color overrides this value.
+
+**Store interaction:** `updateLocalAppearanceConfig(id, 'text.color', hex)`
+
+### `SectionLayoutPanel.vue`
+
+Controls: full-width checkbox (disabled with tooltip for column-child widgets where `layout_id !== null`), padding group (All + Top/Right/Bottom/Left), margin group (same layout).
+
+**Store interactions:**
+- `updateLocalAppearanceConfig(id, 'layout.full_width', bool)`
+- `updateLocalAppearanceConfig(id, 'layout.padding.{side}', value)`
+- `updateLocalAppearanceConfig(id, 'layout.margin.{side}', value)`
+
+The "All" shorthand displays the shared value when all four sides match, or `mixed` when they differ. Writing to it sets all four sides at once.
+
+### Composition in `InspectorPanel.vue`
+
+The three panels render in order on the Appearance tab: Background → Text → Section Layout. Below them, any per-widget `config_schema` fields with `group: 'appearance'` are rendered by the standard `InspectorFieldGroup` component.
+
+---
+
+## Session 162 — Per-Widget Config Key Changes
+
+Session 162 renamed the `style_config` column to `appearance_config` and restructured the storage from flat keys to a nested shape. It also swept all built-in widgets to remove config keys that duplicated the universal Appearance layer. This table documents what changed per widget:
+
+| Widget | Removed keys | Renamed keys | Notes |
+|---|---|---|---|
+| `hero` | `background_color`, `text_color`, `background_image`, `full_width` | `overlay_opacity` → `background_overlay_opacity` | `background_video`, `overlap_nav`, `nav_link_color`, `nav_hover_color` left alone (hero-specific) |
+| `product_carousel` | `background_color`, `text_color`, `full_width` | — | |
+| `bar_chart` | — | `bar_color` → `bar_fill_color` | Disambiguated from universal `text.color` |
+| `carousel` | — | `slide_text_color` → `caption_text_color`, `slide_link_color` → `caption_link_color` | Disambiguated from universal `text.color` |
+| `logo_garden` | — | `background_color` → `container_background_color` | CSS var: `--logo-bg` → `--logo-container-bg` |
+| `board_members` | — | `background_color` → `grid_background_color` | CSS var: `--bm-bg` → `--bm-grid-bg`; `pane_color`, `border_color` left alone |
+| `blog_listing` | — | — | Removed dead template reads of `background_color` / `text_color` (never in schema) |
+| `events_listing` | — | — | Same dead-reference cleanup as `blog_listing` |
+
+Removed keys are now provided by the universal Appearance layer (`appearance_config`). Renamed keys were disambiguated to avoid collision with the universal layer's similarly-named controls.

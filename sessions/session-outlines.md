@@ -172,81 +172,53 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 163 | Page Builder Bug Fixes |
 | 164 | Appearance Controls — Background Panel |
 | 165 | Appearance Controls — Text & Section Layout Panels |
+| 166 | Appearance Controls — Docs Finalization & Widget Spacing Harmonization |
 
 ---
 
 ## CMS & Page Builder — Beta 1 Scope
 
-### 162a. Hero Full-Bleed Promotion to Universal Layer
+### Bug Fixes — Hero Text Alignment & Admin Nav Header
 
-Architectural lift, sequenced between session 162 and session 164. Surfaced during the session 162 audit when the existing `hero.overlap_nav` / `hero.nav_link_color` / `hero.nav_hover_color` config fields were flagged as a leave-alone in 162's spec — they encode a "hero extends vertically behind the navigation bar" feature that is hero-specific today but conceptually belongs at the universal Appearance layer alongside `appearance_config.layout.full_width`. Doing this lift before session 164 means the universal Appearance panels can include full-bleed and nav contrast as first-class controls instead of having to special-case hero forever.
+Two small cosmetic fixes:
 
-**Why this is its own session:**
+1. **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
 
-- It is an architectural change, not cleanup. Session 162's "no new UI, plumbing only" guardrail explicitly excludes work like this.
-- The data model decision (where in `appearance_config` does full-bleed live, where do nav contrast fields live, what does "first widget overlaps the nav" mean once any widget can be full-bleed) needs deliberate design rather than ad-hoc placement during a cleanup pass.
-- Today the feature is coupled to the literal string `'hero'` in [PageController.php:114-121](app/Http/Controllers/PageController.php#L114-L121) and [PagePreviewController.php:82-90](app/Http/Controllers/Admin/PagePreviewController.php#L82-L90) (both check `widgetType?->handle === 'hero'`). Genericizing the check is part of this session's work.
+2. **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
 
-**Design decisions to resolve before starting:**
+**Testing:** Visual verification only. No new tests expected.
 
-- Where in `appearance_config` does the full-bleed flag live? Candidate: `appearance_config.layout.full_bleed` (sibling of `layout.full_width`, since both are layout concerns). Alternative: a top-level `appearance_config.full_bleed.{enabled, nav_link_color, nav_hover_color}` if we want a clean namespace for the related contrast fields.
-- Where do nav contrast fields live? They are only meaningful when full-bleed is on. Options: nest them under the full-bleed object, or live in a sibling `appearance_config.nav_contrast.{link, hover}` group. Decide based on whichever the universal Appearance panel design in 164 wants to surface.
-- What does "first widget is full-bleed" mean once any widget can be full-bleed? Today the controllers literally check position 0. After this session, the rule becomes "the root-level widget at sort_order 0 with `appearance_config.layout.full_bleed === true`". Column-child widgets cannot be full-bleed (the parent column controls width and nav overlap is meaningless mid-page).
-- Migration: walk every existing `page_widgets` row whose widget type handle is `hero` and copy `config.overlap_nav`, `config.nav_link_color`, `config.nav_hover_color` into the new `appearance_config` location. Then remove those keys from the hero `config_schema`.
+### Page Builder as Main Edit View
 
-**Scope:**
+Restructure the page edit experience so the page builder is the primary view and page metadata lives on a separate details sub-page.
 
-- New `appearance_config` keys per the design decision above.
-- Move the controller logic in `PageController::renderPage()` and `PagePreviewController::show()` to look at the new location, not at the hero handle.
-- Move the `.hero--overlap-nav` SCSS rules from `resources/scss/widgets/_hero.scss` to a wrapper-level rule on `resources/scss/...` (likely a new layout-level partial) that applies to any widget with full-bleed enabled.
-- Data migration: walk all hero instances, copy `overlap_nav`, `nav_link_color`, `nav_hover_color` from `config` into `appearance_config` at the new location. Beta system, no live data, single irreversible migration.
-- Remove `overlap_nav`, `nav_link_color`, `nav_hover_color` from hero's `config_schema` in `database/seeders/WidgetTypeSeeder.php`.
-- Update `resources/views/widgets/hero.blade.php` to drop any references to those config keys (the actual style emission moves to the wrapper level).
-- Update the `View::share('__navOverlap', …)` / `__navOverlayLinkColor` / `__navOverlayHoverColor` plumbing to read from the new location.
+**Builder header — new layout:**
 
-**Out of scope:**
+Remove the "Page Builder" heading, "Add and arrange blocks on this page" subtext, block count from header, and "Add block" button from header. Replace with:
 
-- Building the universal Appearance panel UI controls for full-bleed and nav contrast — that lives in session 164 once the data model exists.
-- Touching any widget other than hero.
-- Building a "first widget vs not first widget" inspector indicator — same UI concern, deferred to 164.
+- **Row 1:** `[Page Name bold] by [Author plain] [Status italic]`
+- **Row 2:** `[Page URL linked] [Tags listed horizontally]`
+- **Right side:** "Edit Page Details" button linking to the new details sub-page.
 
-**Testing:**
+**Below the preview canvas:**
 
-- Pest test for the data migration: hero instances with `overlap_nav=true` end up with the new `appearance_config` key set after the migration runs.
-- Updated `tests/Feature/HeroWidgetTest.php`: drop the `overlap_nav`, `nav_link_color`, `nav_hover_color` assertions from the hero schema key list, add new assertions for the wrapper-level full-bleed behaviour.
-- Render smoke test: a non-hero widget with the new full-bleed flag set renders with the same overlap-nav class on its wrapper.
-- `PageControllerTest` (or equivalent): asserts that the `__navOverlap` / `__navOverlayLinkColor` view shares are populated based on the new field location, not on the hero handle.
+- Move the block count ("N blocks on this page") to below the preview window, left-aligned.
+- Add a `+ Columns` button with a dropdown for column options next to the existing `+ Widget` button. These become the only way to add widgets and columns — no header button.
 
-### 166. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
+**Footer area (where Save/Cancel currently live):**
 
-Phase 4 of the Appearance Controls project. Close out documentation and run a small polish session on hard-coded spacing values across three widgets.
+- Remove the "Save changes" and "Cancel" buttons (the builder already auto-saves via REST).
+- Replace with a "Save as Template" button in the same location.
 
-**Documentation pass:**
+**New Filament sub-page — Edit Page Details:**
 
-- Update `resources/docs/widget-types.md` and `resources/docs/widget-development.md` to document:
-  - The universal Appearance layer (Background, Text, Section Layout panels) and its `appearance_config` storage shape.
-  - The three shared primitives (`NinePointAlignment`, `ColorPicker`, `GradientPicker`) — examples should show how the panels consume them, including the `GradientPicker` per-stop alpha sliders added in session 164.
-  - A concise per-widget "what changed" table covering the removes and renames from session 162.
-  - The column-child width override behaviour and the grayed-out tooltip state.
-  - The `AppearanceStyleComposer` service and the layered rendering rule (gradient over image over background color via single CSS shorthand).
-- Update this session outlines document: amend the post-beta "CMS Style System — Full Widget Styling" stub to reflect that the first slab (universal padding/margin/background/text/full-width controls) has been delivered, leaving only the per-widget `style_schema` ambition and the arbitrary scoped CSS work.
+A new `PageResource/Pages/EditPageDetails.php` containing the form fields currently on `EditPage`: title, slug, status, template, page type, images, SEO fields, and any other page metadata. Standard Filament save button for the metadata form. Breadcrumb: Pages > Edit Page > Page Details.
 
-**Widget spacing harmonization:**
+Status is read-only in the builder header (italic text). To change status, the user navigates to Edit Page Details.
 
-Three widgets currently hard-code a Swiper `spaceBetween` value that should be user-controllable, following the pattern already in `three_buckets`:
+Same pattern applies to `EditPost`.
 
-- `logo_garden` — `spaceBetween: 16` at `resources/views/widgets/logo-garden.blade.php` (~lines 40, 84). Surface as a `gap` config field.
-- `blog_listing` — `spaceBetween: 24` at `resources/views/widgets/blog-listing.blade.php` (~line 88). Surface as a `gap` config field.
-- `events_listing` — `spaceBetween: 24` at `resources/views/widgets/events-listing.blade.php` (~line 100). Surface as a `gap` config field.
-
-Add a `gap` number field (label: "Slide spacing (px)") to each widget's `config_schema` in `database/seeders/WidgetTypeSeeder.php`. Thread the value through the Swiper init in each template. Default to the current hard-coded value so existing placements render identically.
-
-**Testing:**
-
-- Pest tests asserting the three widgets' seeders expose the new `gap` field.
-- Render smoke tests confirming the templates compile with both the default and a custom `gap` value.
-
-**Out of scope:** anything involving the Appearance primitives beyond documentation, any remaining per-widget config cleanup, any test coverage for the Vue primitives (deferred to the post-beta JS test runner stub).
+**Testing:** Existing page builder and page edit tests updated to reflect the new route structure. New test asserting the details sub-page loads and saves correctly.
 
 ---
 
@@ -374,7 +346,11 @@ A "kitchen sink" preview page for theme editing that exposes all major headings,
 
 ### CMS Style System — Full Widget Styling
 
-Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. Builds on the universal Appearance layer delivered in sessions 161, 162, 162a, 164, and 165 (background, text color, full-width, padding, margin, gradient, background image with alignment and overlay, all stored in `appearance_config`) — this stub now covers only the remaining ambition: per-widget styling beyond what every widget gets for free, and a way for advanced users to write custom CSS scoped to a single widget instance.
+Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. The universal Appearance layer is fully delivered (sessions 161–166): background color, gradient, image with alignment/fit, text color, full-width, padding, and margin — all stored in `appearance_config` and rendered by `AppearanceStyleComposer`. This stub covers only the remaining ambition: per-widget `style_schema` for widget-specific CSS properties beyond what every widget gets for free, and a freeform scoped CSS editor for advanced users.
+
+### Hero Full-Bleed Promotion to Universal Layer
+
+Promote the hero-specific `overlap_nav` / `nav_link_color` / `nav_hover_color` config fields into the universal `appearance_config` layer so any widget can go full-bleed behind the navigation bar. Today the feature is coupled to the literal string `'hero'` in `PageController` and `PagePreviewController`. This session genericizes the check, migrates existing hero instances, and moves the SCSS rules from `_hero.scss` to a wrapper-level partial. Originally scoped as session 162a during the Appearance Controls project; deferred because it is an architectural change rather than a Beta 1 requirement.
 
 ### Spacing Controls — Axis Locking & Presets
 
@@ -385,6 +361,34 @@ UX improvement to the Section Layout panel's padding and margin controls. Two fe
 2. **Spacing presets:** A preset picker (similar to the gradient/color swatch pickers) that lets users save and recall named spacing configurations. Presets write predefined pixel values to all four sides; the user can then unlock and tweak individual sides. May involve adding default spacing values to the template/theme settings, or allowing widgets to declare their own defaults. A small visual cue in the preset menu should help users understand what each preset applies.
 
 This is a self-contained session focused on the inspector UI layer. No new `appearance_config` keys — the underlying four-side padding/margin store paths are unchanged. The axis locks are local UI state (not persisted), and the presets are a lookup from a new site-settings or template-level configuration.
+
+### "Most Used" Widget Category
+
+Add a "Most Used" category to the widget picker, selected as the default view. Track widget placement frequency per install and surface the most-placed widget types at the top. "View all" remains available. Lightweight — a counter column or site setting, plus a picker UI tweak.
+
+### Image Widget — Border Controls
+
+Add border config fields (width, color, radius) to the image widget's `config_schema`. Pure config + CSS, no architectural changes.
+
+### Text Drop Shadow Controls
+
+A mechanism for drop shadows on text when overlaying images. Could live in the Appearance Text panel as a shadow toggle/controls, or as a per-widget config. Needs design on where it lives and how much control to expose (simple on/off vs. full shadow editor with offset/blur/color).
+
+### Background Image Opacity
+
+Allow the background image in the universal Appearance layer to have a user-controlled opacity, so the background color shows through. CSS does not support per-layer opacity on `background-image`, so this requires either a pseudo-element approach or rendering the image as a positioned `<img>` element inside the widget wrapper. Deferred because it touches the rendering pipeline in `page-widgets.blade.php` and `AppearanceStyleComposer`.
+
+### Page-Level Style Settings
+
+Page-level settings for background color, content width, and chrome outside the widget space on sides. Header and footer should be affected by these styles. Needs design on where these live (page record, template, or a new config column) and how they interact with the existing template system.
+
+### Design System Editor — Typography & Buttons
+
+Move the design system editor inside the page editor as a separate view accessible from within it. Typography controls for H1–H6, P, UL/OL with per-element settings: font family, font variant, font size, line height, case transform (all-caps, small-caps, lowercase), letter spacing, margin (top/bottom only), padding (top/bottom only), border, outline, and bullet type/position where relevant. Button controls already built (session 134). Relationship to templates and themes needs defining. Start with text and buttons, expand to context-specific styles (captions, form labels, etc.) later.
+
+### Widget Presets Pane
+
+Third pane in the inspector allowing users to pick from pre-saved presets or save the current widget as a preset. A preset is a widget with default settings and no content. Could leverage the existing "save as template" feature. Needs design on how to define "settings without content" in the system.
 
 ### Widget Portability & Distribution
 
