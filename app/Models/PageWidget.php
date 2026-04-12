@@ -24,16 +24,16 @@ class PageWidget extends Model implements HasMedia
         'label',
         'config',
         'query_config',
-        'style_config',
+        'appearance_config',
         'sort_order',
         'is_active',
     ];
 
     protected $casts = [
-        'config'       => 'array',
-        'query_config' => 'array',
-        'style_config' => 'array',
-        'is_active'    => 'boolean',
+        'config'            => 'array',
+        'query_config'      => 'array',
+        'appearance_config' => 'array',
+        'is_active'         => 'boolean',
     ];
 
     public function page(): BelongsTo
@@ -87,14 +87,14 @@ class PageWidget extends Model implements HasMedia
     private static function serializeOne(self $pw): array
     {
         $entry = [
-            'type'         => 'widget',
-            'handle'       => $pw->widgetType?->handle,
-            'label'        => $pw->label,
-            'config'       => $pw->config ?? [],
-            'query_config' => $pw->query_config ?? [],
-            'style_config' => $pw->style_config ?? [],
-            'sort_order'   => $pw->sort_order,
-            'is_active'    => $pw->is_active,
+            'type'              => 'widget',
+            'handle'            => $pw->widgetType?->handle,
+            'label'             => $pw->label,
+            'config'            => $pw->config ?? [],
+            'query_config'      => $pw->query_config ?? [],
+            'appearance_config' => $pw->appearance_config ?? [],
+            'sort_order'        => $pw->sort_order,
+            'is_active'         => $pw->is_active,
         ];
 
         if ($pw->column_index !== null) {
@@ -138,16 +138,16 @@ class PageWidget extends Model implements HasMedia
 
         foreach ($rootWidgets as $widget) {
             static::create([
-                'page_id'        => $targetPageId,
-                'layout_id'      => null,
-                'column_index'   => null,
-                'widget_type_id' => $widget->widget_type_id,
-                'label'          => $widget->label,
-                'config'         => $widget->config,
-                'query_config'   => $widget->query_config,
-                'style_config'   => $widget->style_config,
-                'sort_order'     => $widget->sort_order,
-                'is_active'      => $widget->is_active,
+                'page_id'           => $targetPageId,
+                'layout_id'         => null,
+                'column_index'      => null,
+                'widget_type_id'    => $widget->widget_type_id,
+                'label'             => $widget->label,
+                'config'            => $widget->config,
+                'query_config'      => $widget->query_config,
+                'appearance_config' => $widget->appearance_config,
+                'sort_order'        => $widget->sort_order,
+                'is_active'         => $widget->is_active,
             ]);
         }
 
@@ -169,16 +169,16 @@ class PageWidget extends Model implements HasMedia
 
             foreach ($layout->widgets as $widget) {
                 static::create([
-                    'page_id'        => $targetPageId,
-                    'layout_id'      => $newLayout->id,
-                    'column_index'   => $widget->column_index,
-                    'widget_type_id' => $widget->widget_type_id,
-                    'label'          => $widget->label,
-                    'config'         => $widget->config,
-                    'query_config'   => $widget->query_config,
-                    'style_config'   => $widget->style_config,
-                    'sort_order'     => $widget->sort_order,
-                    'is_active'      => $widget->is_active,
+                    'page_id'           => $targetPageId,
+                    'layout_id'         => $newLayout->id,
+                    'column_index'      => $widget->column_index,
+                    'widget_type_id'    => $widget->widget_type_id,
+                    'label'             => $widget->label,
+                    'config'            => $widget->config,
+                    'query_config'      => $widget->query_config,
+                    'appearance_config' => $widget->appearance_config,
+                    'sort_order'        => $widget->sort_order,
+                    'is_active'         => $widget->is_active,
                 ]);
             }
         }

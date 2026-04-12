@@ -101,7 +101,7 @@ it('widget tree response includes widget_type_required_config', function () {
         'label'          => 'Test Carousel',
         'config'         => $wt->getDefaultConfig(),
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);

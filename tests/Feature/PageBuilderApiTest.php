@@ -42,7 +42,7 @@ function apiWidget(Page $page, ?string $handle = null, int $sortOrder = 0): Page
         'label'          => $wt->label . ' ' . ($sortOrder + 1),
         'config'         => $wt->getDefaultConfig(),
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => $sortOrder,
         'is_active'      => true,
     ]);
@@ -72,7 +72,7 @@ function apiChildWidget(Page $page, PageLayout $layout, int $columnIndex, int $s
         'label'          => 'Child ' . ($sortOrder + 1),
         'config'         => $wt->getDefaultConfig(),
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => $sortOrder,
         'is_active'      => true,
     ]);
@@ -101,7 +101,7 @@ it('returns the widget tree for a page', function () {
             'widgets' => [
                 '*' => [
                     'id', 'widget_type_id', 'widget_type_handle', 'widget_type_label',
-                    'label', 'config', 'query_config', 'style_config', 'sort_order',
+                    'label', 'config', 'query_config', 'appearance_config', 'sort_order',
                     'is_active', 'is_required', 'preview_html',
                 ],
             ],

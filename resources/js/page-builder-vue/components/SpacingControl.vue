@@ -10,74 +10,75 @@ const props = defineProps<{
 const store = useEditorStore()
 const open = ref(false)
 
-const sc = computed(() => props.widget.style_config ?? {})
+const padding = computed(() => props.widget.appearance_config?.layout?.padding ?? {})
+const margin  = computed(() => props.widget.appearance_config?.layout?.margin ?? {})
 
 // Padding "All" computed
 const paddingAll = computed(() => {
-  const t = sc.value.padding_top ?? ''
-  const r = sc.value.padding_right ?? ''
-  const b = sc.value.padding_bottom ?? ''
-  const l = sc.value.padding_left ?? ''
+  const t = padding.value.top ?? ''
+  const r = padding.value.right ?? ''
+  const b = padding.value.bottom ?? ''
+  const l = padding.value.left ?? ''
   return (t === r && r === b && b === l && t !== '') ? t : ''
 })
 
 const paddingAllPlaceholder = computed(() => {
-  const t = sc.value.padding_top ?? ''
-  const r = sc.value.padding_right ?? ''
-  const b = sc.value.padding_bottom ?? ''
-  const l = sc.value.padding_left ?? ''
+  const t = padding.value.top ?? ''
+  const r = padding.value.right ?? ''
+  const b = padding.value.bottom ?? ''
+  const l = padding.value.left ?? ''
   return (t === r && r === b && b === l) ? '' : 'mixed'
 })
 
 // Margin "All" computed
 const marginAll = computed(() => {
-  const t = sc.value.margin_top ?? ''
-  const r = sc.value.margin_right ?? ''
-  const b = sc.value.margin_bottom ?? ''
-  const l = sc.value.margin_left ?? ''
+  const t = margin.value.top ?? ''
+  const r = margin.value.right ?? ''
+  const b = margin.value.bottom ?? ''
+  const l = margin.value.left ?? ''
   return (t === r && r === b && b === l && t !== '') ? t : ''
 })
 
 const marginAllPlaceholder = computed(() => {
-  const t = sc.value.margin_top ?? ''
-  const r = sc.value.margin_right ?? ''
-  const b = sc.value.margin_bottom ?? ''
-  const l = sc.value.margin_left ?? ''
+  const t = margin.value.top ?? ''
+  const r = margin.value.right ?? ''
+  const b = margin.value.bottom ?? ''
+  const l = margin.value.left ?? ''
   return (t === r && r === b && b === l) ? '' : 'mixed'
 })
 
-function updateStyle(key: string, value: any) {
-  store.updateLocalStyleConfig(props.widget.id, key, value)
+function updateAppearance(path: string, value: any) {
+  store.updateLocalAppearanceConfig(props.widget.id, path, value)
 }
 
 function setPaddingAll(value: string) {
   const v = value === '' ? '' : value
-  updateStyle('padding_top', v)
-  updateStyle('padding_right', v)
-  updateStyle('padding_bottom', v)
-  updateStyle('padding_left', v)
+  updateAppearance('layout.padding.top', v)
+  updateAppearance('layout.padding.right', v)
+  updateAppearance('layout.padding.bottom', v)
+  updateAppearance('layout.padding.left', v)
 }
 
 function setMarginAll(value: string) {
   const v = value === '' ? '' : value
-  updateStyle('margin_top', v)
-  updateStyle('margin_right', v)
-  updateStyle('margin_bottom', v)
-  updateStyle('margin_left', v)
+  updateAppearance('layout.margin.top', v)
+  updateAppearance('layout.margin.right', v)
+  updateAppearance('layout.margin.bottom', v)
+  updateAppearance('layout.margin.left', v)
 }
 
 const paddingKeys = [
-  { key: 'padding_left', label: 'Left' },
-  { key: 'padding_top', label: 'Top' },
-  { key: 'padding_right', label: 'Right' },
-  { key: 'padding_bottom', label: 'Bottom' },
+  { key: 'left', label: 'Left' },
+  { key: 'top', label: 'Top' },
+  { key: 'right', label: 'Right' },
+  { key: 'bottom', label: 'Bottom' },
 ]
 
 const marginKeys = [
-  { key: 'margin_left', label: 'Left' },
-  { key: 'margin_top', label: 'Top' },
-  { key: 'margin_right', label: 'Right' },
-  { key: 'margin_bottom', label: 'Bottom' },
+  { key: 'left', label: 'Left' },
+  { key: 'top', label: 'Top' },
+  { key: 'right', label: 'Right' },
+  { key: 'bottom', label: 'Bottom' },
 ]
 </script>
 
@@ -125,9 +126,9 @@ const marginKeys = [
             <input
               type="number"
               min="0"
-              :value="sc[item.key] ?? ''"
+              :value="padding[item.key] ?? ''"
               class="spacing-control__input"
-              @input="updateStyle(item.key, ($event.target as HTMLInputElement).value)"
+              @input="updateAppearance('layout.padding.' + item.key, ($event.target as HTMLInputElement).value)"
             >
           </div>
         </div>
@@ -153,9 +154,9 @@ const marginKeys = [
             <input
               type="number"
               min="0"
-              :value="sc[item.key] ?? ''"
+              :value="margin[item.key] ?? ''"
               class="spacing-control__input"
-              @input="updateStyle(item.key, ($event.target as HTMLInputElement).value)"
+              @input="updateAppearance('layout.margin.' + item.key, ($event.target as HTMLInputElement).value)"
             >
           </div>
         </div>

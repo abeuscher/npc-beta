@@ -4,7 +4,7 @@
     $nameField = $config['name_field'] ?? '';
     $displayMode = in_array($config['display_mode'] ?? '', ['static', 'carousel', 'smooth', 'flipper']) ? $config['display_mode'] : 'static';
     $showName = $config['show_name'] ?? false;
-    $bgColor = $config['background_color'] ?? '#ffffff';
+    $bgColor = $config['container_background_color'] ?? '#ffffff';
     $logosPerRow = max(1, (int) ($config['logos_per_row'] ?? 5));
     $logoMaxHeight = max(20, (int) ($config['logo_max_height'] ?? 150));
     $carouselDuration = (int) ($config['carousel_duration'] ?? 3000);
@@ -50,7 +50,7 @@
                 }
             }"
             class="widget-logo-garden widget-logo-garden--carousel"
-            style="--logo-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             <div x-ref="container" class="swiper">
                 <div class="swiper-wrapper">
@@ -96,7 +96,7 @@
                 }
             }"
             class="widget-logo-garden widget-logo-garden--carousel"
-            style="--logo-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             <div x-ref="container" class="swiper">
                 <div class="swiper-wrapper">
@@ -122,7 +122,7 @@
         {{-- Flipper mode — CSS 3D flip with Alpine.js --}}
         <div
             class="widget-logo-garden widget-logo-garden--flipper"
-            style="--logo-columns: {{ $logosPerRow }}; --logo-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-columns: {{ $logosPerRow }}; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             @foreach ($resolvedLogos as $i => $logo)
                 @php
@@ -165,7 +165,7 @@
         {{-- Static grid mode --}}
         <div
             class="widget-logo-garden widget-logo-garden--static"
-            style="--logo-columns: {{ $logosPerRow }}; --logo-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-columns: {{ $logosPerRow }}; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             @foreach ($resolvedLogos as $logo)
                 <div class="logo-garden__cell">

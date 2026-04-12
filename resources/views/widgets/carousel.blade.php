@@ -11,8 +11,8 @@
     $slidesPerView = (int) ($config['slides_per_view'] ?? 1);
     $effect = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
     $speed = (int) ($config['speed'] ?? 300);
-    $textColor = $config['slide_text_color'] ?? '';
-    $linkColor = $config['slide_link_color'] ?? '';
+    $textColor = $config['caption_text_color'] ?? '';
+    $linkColor = $config['caption_link_color'] ?? '';
 
     // Fade only works with 1 slide per view
     if ($effect === 'fade') {

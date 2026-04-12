@@ -84,14 +84,14 @@ class ChromeRenderer
                 $pw = $item['data'];
                 $result = WidgetRenderer::render($pw);
                 if ($result['html'] !== null) {
-                    $styleConfig = $pw->style_config ?? [];
-                    $inlineStyle = static::buildInlineStyle($styleConfig);
+                    $appearanceConfig = $pw->appearance_config ?? [];
+                    $inlineStyle = static::buildInlineStyle($appearanceConfig);
                     $inner = $inlineStyle
                         ? "<div style=\"{$inlineStyle}\">{$result['html']}</div>"
                         : $result['html'];
 
                     $widgetType  = $pw->widgetType;
-                    $instanceFw  = $styleConfig['full_width'] ?? null;
+                    $instanceFw  = $appearanceConfig['layout']['full_width'] ?? null;
                     $isFullWidth = $instanceFw !== null
                         ? (bool) $instanceFw
                         : (bool) ($widgetType?->full_width ?? false);
@@ -180,21 +180,7 @@ class ChromeRenderer
                     continue;
                 }
 
-                $sc = $pw->style_config ?? [];
-                $styleProps = [];
-                $spacingKeys = [
-                    'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-                    'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-                    'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-                    'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-                ];
-                foreach ($spacingKeys as $key => $cssProp) {
-                    $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
-                    if ($val !== null) {
-                        $styleProps[] = $cssProp . ':' . $val . 'px';
-                    }
-                }
-                $inlineStyle = implode(';', $styleProps);
+                $inlineStyle = static::buildInlineStyle($pw->appearance_config ?? []);
 
                 $slotHtml .= '<div class="widget widget--' . e($pw->widgetType->handle) . '"'
                     . ' id="widget-' . e($pw->id) . '"'
@@ -212,15 +198,35 @@ class ChromeRenderer
         return '<div class="page-layout" style="' . e($containerStyle) . '">' . $columnHtml . '</div>';
     }
 
-    private static function buildInlineStyle(array $styleConfig): string
+    private static function buildInlineStyle(array $appearanceConfig): string
     {
-        $parts = [];
-        foreach (['padding', 'margin'] as $prop) {
-            if (! empty($styleConfig[$prop])) {
-                $parts[] = "{$prop}: {$styleConfig[$prop]}";
+        $styleProps = [];
+
+        $bgColor = $appearanceConfig['background']['color'] ?? null;
+        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
+            $styleProps[] = 'background-color:' . $bgColor;
+        }
+        $textColor = $appearanceConfig['text']['color'] ?? null;
+        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
+            $styleProps[] = 'color:' . $textColor;
+        }
+
+        $padding = $appearanceConfig['layout']['padding'] ?? [];
+        $margin  = $appearanceConfig['layout']['margin'] ?? [];
+
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
+            if ($val !== null) {
+                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
+            }
+        }
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
+            if ($val !== null) {
+                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
         }
 
-        return implode('; ', $parts);
+        return implode(';', $styleProps);
     }
 }

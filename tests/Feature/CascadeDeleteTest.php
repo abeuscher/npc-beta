@@ -160,7 +160,7 @@ it('blocks widget type delete when page widgets reference it', function () {
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
@@ -203,7 +203,7 @@ it('cascades page widget delete when page is force-deleted', function () {
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);

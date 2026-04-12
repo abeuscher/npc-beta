@@ -212,15 +212,15 @@ class ContentExporter
     protected function serializeWidget(PageWidget $pw): array
     {
         $entry = [
-            'type'         => 'widget',
-            'handle'       => $pw->widgetType?->handle,
-            'label'        => $pw->label,
-            'config'       => $pw->config ?? [],
-            'query_config' => $pw->query_config ?? [],
-            'style_config' => $pw->style_config ?? [],
-            'sort_order'   => $pw->sort_order,
-            'is_active'    => $pw->is_active,
-            'media'        => $this->serializeWidgetMedia($pw),
+            'type'              => 'widget',
+            'handle'            => $pw->widgetType?->handle,
+            'label'             => $pw->label,
+            'config'            => $pw->config ?? [],
+            'query_config'      => $pw->query_config ?? [],
+            'appearance_config' => $pw->appearance_config ?? [],
+            'sort_order'        => $pw->sort_order,
+            'is_active'         => $pw->is_active,
+            'media'             => $this->serializeWidgetMedia($pw),
         ];
 
         if ($pw->column_index !== null) {

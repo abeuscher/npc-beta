@@ -7,8 +7,6 @@
     $showPagination = $config['pagination'] ?? false;
     $autoplay = $config['autoplay'] ?? false;
     $interval = (int) ($config['interval'] ?? 5000);
-    $bgColor = $config['background_color'] ?? '#000000';
-    $textColor = $config['text_color'] ?? '#ffffff';
     $successPage = $config['success_page'] ?? '';
 @endphp
 
@@ -48,7 +46,6 @@
             }
         }"
         class="widget-product-carousel"
-        style="background-color: {{ e($bgColor) }}; color: {{ e($textColor) }}; --carousel-bg: {{ e($bgColor) }};"
     >
         <div class="widget-product-carousel__fade-left" aria-hidden="true"></div>
         <div class="widget-product-carousel__fade-right" aria-hidden="true"></div>

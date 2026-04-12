@@ -99,16 +99,16 @@ class CreatePage extends CreateRecord
                             continue;
                         }
                         PageWidget::create([
-                            'page_id'        => $page->id,
-                            'layout_id'      => $layout->id,
-                            'column_index'   => (int) $columnIndex,
-                            'widget_type_id' => $wt->id,
-                            'label'          => $slotDef['label'] ?? null,
-                            'config'         => $slotDef['config'] ?? [],
-                            'query_config'   => $slotDef['query_config'] ?? [],
-                            'style_config'   => $slotDef['style_config'] ?? [],
-                            'sort_order'     => $slotDef['sort_order'] ?? 0,
-                            'is_active'      => $slotDef['is_active'] ?? true,
+                            'page_id'           => $page->id,
+                            'layout_id'         => $layout->id,
+                            'column_index'      => (int) $columnIndex,
+                            'widget_type_id'    => $wt->id,
+                            'label'             => $slotDef['label'] ?? null,
+                            'config'            => $slotDef['config'] ?? [],
+                            'query_config'      => $slotDef['query_config'] ?? [],
+                            'appearance_config' => $slotDef['appearance_config'] ?? [],
+                            'sort_order'        => $slotDef['sort_order'] ?? 0,
+                            'is_active'         => $slotDef['is_active'] ?? true,
                         ]);
                     }
                 }
@@ -123,15 +123,15 @@ class CreatePage extends CreateRecord
             }
 
             PageWidget::create([
-                'page_id'        => $page->id,
-                'column_index'   => $def['column_index'] ?? null,
-                'widget_type_id' => $widgetType->id,
-                'label'          => $def['label'] ?? null,
-                'config'         => $def['config'] ?? [],
-                'query_config'   => $def['query_config'] ?? [],
-                'style_config'   => $def['style_config'] ?? [],
-                'sort_order'     => $def['sort_order'] ?? 0,
-                'is_active'      => $def['is_active'] ?? true,
+                'page_id'           => $page->id,
+                'column_index'      => $def['column_index'] ?? null,
+                'widget_type_id'    => $widgetType->id,
+                'label'             => $def['label'] ?? null,
+                'config'            => $def['config'] ?? [],
+                'query_config'      => $def['query_config'] ?? [],
+                'appearance_config' => $def['appearance_config'] ?? [],
+                'sort_order'        => $def['sort_order'] ?? 0,
+                'is_active'         => $def['is_active'] ?? true,
             ]);
         }
     }

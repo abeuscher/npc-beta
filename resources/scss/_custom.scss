@@ -22,12 +22,6 @@
     &.hero--fullscreen { min-height: 100vh; }
 }
 
-.hero-bg {
-    position: absolute;
-    inset: 0;
-    background: var(--hero-bg);
-}
-
 .hero-video {
     position: absolute;
     inset: 0;

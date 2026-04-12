@@ -11,8 +11,6 @@
     $showSearch      = $config['show_search'] ?? false;
     $sortDefault     = $config['sort_default'] ?? 'newest';
     $effect          = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
-    $bgColor         = $config['background_color'] ?? '';
-    $textColor       = $config['text_color'] ?? '';
 
     // Serialize posts for Alpine
     $items = $posts->map(function ($post) use ($blogPrefix) {
@@ -63,9 +61,6 @@
 
 <div
     class="widget-blog-listing"
-    @if ($bgColor || $textColor)
-    style="{{ $bgColor ? 'background-color:' . e($bgColor) . ';' : '' }}{{ $textColor ? 'color:' . e($textColor) . ';' : '' }}"
-    @endif
     x-data="{
         swiper: null,
         search: '',

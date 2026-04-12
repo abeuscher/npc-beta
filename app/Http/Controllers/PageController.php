@@ -142,13 +142,13 @@ class PageController extends Controller
         $fullWidth = $configFullWidth !== null ? (bool) $configFullWidth : ($widgetType->full_width ?? false);
 
         $block = [
-            'handle'       => $widgetType->handle,
-            'instance_id'  => $pw->id,
-            'html'         => $result['html'],
-            'css'          => $widgetType->css ?? '',
-            'js'           => $widgetType->js ?? '',
-            'style_config' => $pw->style_config ?? [],
-            'full_width'   => $fullWidth,
+            'handle'            => $widgetType->handle,
+            'instance_id'       => $pw->id,
+            'html'              => $result['html'],
+            'css'               => $widgetType->css ?? '',
+            'js'                => $widgetType->js ?? '',
+            'appearance_config' => $pw->appearance_config ?? [],
+            'full_width'        => $fullWidth,
         ];
 
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
@@ -217,20 +217,33 @@ class PageController extends Controller
             foreach ($slotWidgets as $pw) {
                 $blockData = $this->renderWidgetBlock($pw);
                 if ($blockData) {
-                    $sc = $pw->style_config ?? [];
+                    $ac = $pw->appearance_config ?? [];
                     $styleProps = [];
-                    $spacingKeys = [
-                        'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-                        'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-                        'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-                        'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-                    ];
-                    foreach ($spacingKeys as $key => $cssProp) {
-                        $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
+
+                    $bgColor = $ac['background']['color'] ?? null;
+                    if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
+                        $styleProps[] = 'background-color:' . $bgColor;
+                    }
+                    $textColor = $ac['text']['color'] ?? null;
+                    if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
+                        $styleProps[] = 'color:' . $textColor;
+                    }
+
+                    $padding = $ac['layout']['padding'] ?? [];
+                    $margin  = $ac['layout']['margin'] ?? [];
+                    foreach (['top', 'right', 'bottom', 'left'] as $side) {
+                        $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
                         if ($val !== null) {
-                            $styleProps[] = $cssProp . ':' . $val . 'px';
+                            $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
                         }
                     }
+                    foreach (['top', 'right', 'bottom', 'left'] as $side) {
+                        $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
+                        if ($val !== null) {
+                            $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
+                        }
+                    }
+
                     $inlineStyle = implode(';', $styleProps);
 
                     $slotHtml .= '<div class="widget widget--' . e($pw->widgetType->handle) . '"'
@@ -250,13 +263,13 @@ class PageController extends Controller
         $html = '<div class="page-layout" style="' . e($containerStyle) . '">' . $columnHtml . '</div>';
 
         return [
-            'handle'       => 'page_layout',
-            'instance_id'  => $layout->id,
-            'html'         => $html,
-            'css'          => '',
-            'js'           => '',
-            'style_config' => [],
-            'full_width'   => (bool) ($config['full_width'] ?? false),
+            'handle'            => 'page_layout',
+            'instance_id'       => $layout->id,
+            'html'              => $html,
+            'css'               => '',
+            'js'                => '',
+            'appearance_config' => [],
+            'full_width'        => (bool) ($config['full_width'] ?? false),
         ];
     }
 }

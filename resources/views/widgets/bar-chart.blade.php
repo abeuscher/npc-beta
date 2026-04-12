@@ -4,7 +4,7 @@
     $yField   = $config['y_field'] ?? '';
     $xLabel   = $config['x_label'] ?? '';
     $yLabel   = $config['y_label'] ?? '';
-    $barColor = $config['bar_color'] ?? '';
+    $barColor = $config['bar_fill_color'] ?? '';
 
     $items  = $collectionData['data'] ?? [];
     $labels = [];

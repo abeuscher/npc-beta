@@ -91,8 +91,6 @@ it('blog listing widget renders with default content template', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'newest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -124,8 +122,6 @@ it('blog listing widget applies token replacement correctly', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'newest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -150,8 +146,6 @@ it('blog listing renders empty state when no posts exist', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'newest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -172,8 +166,6 @@ it('blog listing renders search input when show_search is enabled', function () 
                 'items_per_page'   => 10,
                 'show_search'      => true,
                 'sort_default'     => 'newest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -207,8 +199,6 @@ it('events listing widget renders with default content template', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -243,8 +233,6 @@ it('events listing widget applies token replacement correctly', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -270,8 +258,6 @@ it('events listing renders empty state when no upcoming events', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -292,8 +278,6 @@ it('events listing renders search input when show_search is enabled', function (
                 'items_per_page'   => 10,
                 'show_search'      => true,
                 'sort_default'     => 'soonest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]
@@ -340,8 +324,6 @@ it('blog listing renders Swiper container with slides', function () {
                 'items_per_page'   => 10,
                 'show_search'      => false,
                 'sort_default'     => 'newest',
-                'background_color' => '',
-                'text_color'       => '',
             ],
             'pageContext' => new PageContext(),
         ]

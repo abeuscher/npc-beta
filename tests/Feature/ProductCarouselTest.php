@@ -138,10 +138,10 @@ it('seeder creates product_carousel with correct config schema', function () {
         ->toContain('pagination')
         ->toContain('autoplay')
         ->toContain('interval')
-        ->toContain('background_color')
-        ->toContain('text_color')
         ->toContain('success_page')
-        ->toContain('full_width');
+        ->not->toContain('background_color')
+        ->not->toContain('text_color')
+        ->not->toContain('full_width');
 });
 
 // ── ProductDemoSeeder ───────────────────────────────────────────────────────

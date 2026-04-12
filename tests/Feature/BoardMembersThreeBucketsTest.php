@@ -39,16 +39,17 @@ it('seeder creates board_members widget with correct config schema', function ()
         ->toContain('row_alignment')
         ->toContain('image_shape')
         ->toContain('image_aspect_ratio')
-        ->toContain('background_color')
+        ->toContain('grid_background_color')
+        ->not->toContain('background_color')
         ->toContain('pane_color')
         ->toContain('border_color')
         ->toContain('border_radius');
 
     $appearanceFields = collect($wt->config_schema)->filter(fn ($f) => ($f['group'] ?? null) === 'appearance');
     $contentFields    = collect($wt->config_schema)->filter(fn ($f) => ($f['group'] ?? null) === 'content');
-    // Color fields (background_color, pane_color, border_color) are now in 'appearance'
+    // Color fields are in 'appearance'
     expect($appearanceFields->pluck('key'))
-        ->toContain('background_color')
+        ->toContain('grid_background_color')
         ->toContain('pane_color')
         ->toContain('border_color');
     expect($contentFields->pluck('key'))

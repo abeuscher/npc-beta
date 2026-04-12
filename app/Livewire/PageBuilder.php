@@ -119,19 +119,19 @@ class PageBuilder extends Component
                 ->max('sort_order') ?? -1) + 1;
 
             $newBlock = PageWidget::create([
-                'page_id'        => $this->pageId,
-                'layout_id'      => $this->insertLayoutId,
-                'column_index'   => $columnIndex,
-                'widget_type_id' => $widgetType->id,
-                'label'          => $this->addModalLabel,
-                'config'         => $defaultConfig,
-                'query_config'   => [],
-                'style_config'   => [
-                    'background_color' => '#ffffff',
-                    'text_color'       => '#000000',
+                'page_id'           => $this->pageId,
+                'layout_id'         => $this->insertLayoutId,
+                'column_index'      => $columnIndex,
+                'widget_type_id'    => $widgetType->id,
+                'label'             => $this->addModalLabel,
+                'config'            => $defaultConfig,
+                'query_config'      => [],
+                'appearance_config' => [
+                    'background' => ['color' => '#ffffff'],
+                    'text'       => ['color' => '#000000'],
                 ],
-                'sort_order'     => $position,
-                'is_active'      => true,
+                'sort_order'        => $position,
+                'is_active'         => true,
             ]);
         } else {
             // Insert at root level
@@ -147,17 +147,17 @@ class PageBuilder extends Component
                 ->increment('sort_order');
 
             $newBlock = PageWidget::create([
-                'page_id'        => $this->pageId,
-                'widget_type_id' => $widgetType->id,
-                'label'          => $this->addModalLabel,
-                'config'         => $defaultConfig,
-                'query_config'   => [],
-                'style_config'   => [
-                    'background_color' => '#ffffff',
-                    'text_color'       => '#000000',
+                'page_id'           => $this->pageId,
+                'widget_type_id'    => $widgetType->id,
+                'label'             => $this->addModalLabel,
+                'config'            => $defaultConfig,
+                'query_config'      => [],
+                'appearance_config' => [
+                    'background' => ['color' => '#ffffff'],
+                    'text'       => ['color' => '#000000'],
                 ],
-                'sort_order'     => $position,
-                'is_active'      => true,
+                'sort_order'        => $position,
+                'is_active'         => true,
             ]);
         }
 
@@ -264,7 +264,7 @@ class PageBuilder extends Component
                 'label'                     => $pw->label ?? '',
                 'config'                    => $pw->config ?? [],
                 'query_config'              => $pw->query_config ?? [],
-                'style_config'              => $pw->style_config ?? [],
+                'appearance_config'         => $pw->appearance_config ?? [],
                 'sort_order'                => $pw->sort_order ?? 0,
                 'is_active'                 => $pw->is_active,
                 'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
@@ -299,7 +299,7 @@ class PageBuilder extends Component
                     'label'                     => $child->label ?? '',
                     'config'                    => $child->config ?? [],
                     'query_config'              => $child->query_config ?? [],
-                    'style_config'              => $child->style_config ?? [],
+                    'appearance_config'         => $child->appearance_config ?? [],
                     'sort_order'                => $child->sort_order ?? 0,
                     'is_active'                 => $child->is_active,
                     'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
@@ -419,13 +419,13 @@ class PageBuilder extends Component
                 $html = '<div class="widget-preview-notice">No preview available</div>';
             } else {
                 $handle = $widgetType->handle;
-                $sc = $pw->style_config ?? [];
-                $inlineStyle = self::buildInlineStyles($sc);
+                $ac = $pw->appearance_config ?? [];
+                $inlineStyle = self::buildInlineStyles($ac);
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $styleFullWidth = $sc['full_width'] ?? null;
+                $appearanceFullWidth = $ac['layout']['full_width'] ?? null;
                 $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                    : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($widgetType->full_width ?? false));
+                    : ($appearanceFullWidth !== null ? (bool) $appearanceFullWidth : ($widgetType->full_width ?? false));
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -454,27 +454,33 @@ class PageBuilder extends Component
         ];
     }
 
-    private static function buildInlineStyles(array $styleConfig): string
+    private static function buildInlineStyles(array $appearanceConfig): string
     {
         $styleProps = [];
 
-        if (! empty($styleConfig['background_color'])) {
-            $styleProps[] = 'background-color:' . $styleConfig['background_color'];
+        $bgColor = $appearanceConfig['background']['color'] ?? null;
+        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
+            $styleProps[] = 'background-color:' . $bgColor;
         }
-        if (! empty($styleConfig['text_color'])) {
-            $styleProps[] = 'color:' . $styleConfig['text_color'];
+        $textColor = $appearanceConfig['text']['color'] ?? null;
+        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
+            $styleProps[] = 'color:' . $textColor;
         }
 
-        $spacingKeys = [
-            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-        ];
-        foreach ($spacingKeys as $key => $cssProp) {
-            $val = isset($styleConfig[$key]) && $styleConfig[$key] !== '' ? (int) $styleConfig[$key] : null;
+        $padding = $appearanceConfig['layout']['padding'] ?? [];
+        $margin  = $appearanceConfig['layout']['margin'] ?? [];
+        $sides = ['top', 'right', 'bottom', 'left'];
+
+        foreach ($sides as $side) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
             if ($val !== null) {
-                $styleProps[] = $cssProp . ':' . $val . 'px';
+                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
+            }
+        }
+        foreach ($sides as $side) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
+            if ($val !== null) {
+                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
         }
 

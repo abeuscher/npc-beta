@@ -168,73 +168,88 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 159 | Roadmap Planning — Chrome Fixes & Appearance Controls Project |
 | 160 | Page Builder & Admin Chrome Fixes |
 | 161 | Appearance Controls for Widgets — Docs Refresh & Shared Primitives |
+| 162 | Appearance Controls — Schema Rename & Widget Dedupe Sweep |
 
 ---
 
 ## CMS & Page Builder — Beta 1 Scope
 
-### 162. Appearance Controls — Schema Rename & Widget Dedupe Sweep
+### 162a. Hero Full-Bleed Promotion to Universal Layer
 
-Phase 2 of the Appearance Controls project. Destructive schema change and widget config cleanup to prepare the ground for the universal Appearance panels in session 163. There is no live data — the migration is irreversible by design.
+Architectural lift, sequenced between session 162 and session 164. Surfaced during the session 162 audit when the existing `hero.overlap_nav` / `hero.nav_link_color` / `hero.nav_hover_color` config fields were flagged as a leave-alone in 162's spec — they encode a "hero extends vertically behind the navigation bar" feature that is hero-specific today but conceptually belongs at the universal Appearance layer alongside `appearance_config.layout.full_width`. Doing this lift before session 164 means the universal Appearance panels can include full-bleed and nav contrast as first-class controls instead of having to special-case hero forever.
 
-**Schema migration:**
+**Why this is its own session:**
 
-- Rename `page_widgets.style_config` → `page_widgets.appearance_config` (jsonb, default `{}`).
-- Adopt a nested shape:
+- It is an architectural change, not cleanup. Session 162's "no new UI, plumbing only" guardrail explicitly excludes work like this.
+- The data model decision (where in `appearance_config` does full-bleed live, where do nav contrast fields live, what does "first widget overlaps the nav" mean once any widget can be full-bleed) needs deliberate design rather than ad-hoc placement during a cleanup pass.
+- Today the feature is coupled to the literal string `'hero'` in [PageController.php:114-121](app/Http/Controllers/PageController.php#L114-L121) and [PagePreviewController.php:82-90](app/Http/Controllers/Admin/PagePreviewController.php#L82-L90) (both check `widgetType?->handle === 'hero'`). Genericizing the check is part of this session's work.
 
-  ```
-  {
-    background: { color, gradient, image_id, alignment, fit, overlay: { enabled, color, opacity } },
-    text:       { color },
-    layout:     { full_width, padding: {top,right,bottom,left}, margin: {top,right,bottom,left} }
-  }
-  ```
+**Design decisions to resolve before starting:**
 
-- Update `resources/views/components/page-widgets.blade.php` to read from the new column and the new nested paths. The padding/margin render path is preserved. Full-width resolution is preserved (`appearance_config.layout.full_width` overrides the WidgetType default).
-- Update the Vue Pinia editor store, `WidgetAppearanceControls.vue`, and `SpacingControl.vue` to read/write the new nested paths. (`SpacingControl.vue` is retired in session 163; in this session it simply repoints at `appearance_config.layout.padding` / `.margin`.)
-- Update `docs/schema/page_widgets.md` to reflect the rename and new default shape.
-- Reseed demo data after the migration.
+- Where in `appearance_config` does the full-bleed flag live? Candidate: `appearance_config.layout.full_bleed` (sibling of `layout.full_width`, since both are layout concerns). Alternative: a top-level `appearance_config.full_bleed.{enabled, nav_link_color, nav_hover_color}` if we want a clean namespace for the related contrast fields.
+- Where do nav contrast fields live? They are only meaningful when full-bleed is on. Options: nest them under the full-bleed object, or live in a sibling `appearance_config.nav_contrast.{link, hover}` group. Decide based on whichever the universal Appearance panel design in 164 wants to surface.
+- What does "first widget is full-bleed" mean once any widget can be full-bleed? Today the controllers literally check position 0. After this session, the rule becomes "the root-level widget at sort_order 0 with `appearance_config.layout.full_bleed === true`". Column-child widgets cannot be full-bleed (the parent column controls width and nav overlap is meaningless mid-page).
+- Migration: walk every existing `page_widgets` row whose widget type handle is `hero` and copy `config.overlap_nav`, `config.nav_link_color`, `config.nav_hover_color` into the new `appearance_config` location. Then remove those keys from the hero `config_schema`.
 
-**Widget dedupe sweep — REMOVE these whole-widget fields (absorbed by the universal layer in session 163):**
+**Scope:**
 
-- `product_carousel.background_color`, `product_carousel.text_color`, `product_carousel.full_width` (last is dead code)
-- `hero.background_color`, `hero.text_color`, `hero.background_image`, `hero.full_width` (last is dead code)
-- Update `resources/views/widgets/product-carousel.blade.php` and `resources/views/widgets/hero.blade.php` to remove all references to the removed keys.
+- New `appearance_config` keys per the design decision above.
+- Move the controller logic in `PageController::renderPage()` and `PagePreviewController::show()` to look at the new location, not at the hero handle.
+- Move the `.hero--overlap-nav` SCSS rules from `resources/scss/widgets/_hero.scss` to a wrapper-level rule on `resources/scss/...` (likely a new layout-level partial) that applies to any widget with full-bleed enabled.
+- Data migration: walk all hero instances, copy `overlap_nav`, `nav_link_color`, `nav_hover_color` from `config` into `appearance_config` at the new location. Beta system, no live data, single irreversible migration.
+- Remove `overlap_nav`, `nav_link_color`, `nav_hover_color` from hero's `config_schema` in `database/seeders/WidgetTypeSeeder.php`.
+- Update `resources/views/widgets/hero.blade.php` to drop any references to those config keys (the actual style emission moves to the wrapper level).
+- Update the `View::share('__navOverlap', …)` / `__navOverlayLinkColor` / `__navOverlayHoverColor` plumbing to read from the new location.
 
-**Widget dedupe sweep — LEAVE alone (do not touch under any circumstances):**
+**Out of scope:**
 
-- `hero.nav_link_color` and `hero.nav_hover_color` — critical for hero full-bleed mode where the site nav overlays the hero. The consumer wiring may live inside `hero.blade.php` or in a partial outside it; investigate before any future touch. **Do not remove or rename in this session.**
-- `hero.background_video` — hero-only feature, not absorbed into the universal Background panel. Stays as a hero config field.
-- `board_members.pane_color`, `board_members.border_color` — already well-disambiguated by their names. No change.
-
-**Widget rename sweep — sub-region disambiguation:**
-
-| Widget | Old key | New key |
-|---|---|---|
-| `carousel` | `slide_text_color` | `caption_text_color` |
-| `carousel` | `slide_link_color` | `caption_link_color` |
-| `bar_chart` | `bar_color` | `bar_fill_color` |
-| `logo_garden` | `background_color` | `container_background_color` |
-| `board_members` | `background_color` | `grid_background_color` |
-| `hero` | `overlay_opacity` | `background_overlay_opacity` |
-
-For `bar_chart.bar_color → bar_fill_color`: **verify both the public Chart.js init and the preview-mode Chart.js init consume the new key**. Grep for `bar_color` across `resources/views/widgets/bar-chart.blade.php`, `resources/js/public.js`, the widget type's inline `js` column, and any preview shim before declaring done. The chart instantiation must work in both the public render path and the editor preview.
-
-For `logo_garden` and `board_members`: also update the corresponding CSS custom property names (`--logo-bg`, `--bm-bg`) and any SCSS partial references.
-
-**Schema bug fix — `blog_listing` and `events_listing`:**
-
-Both templates currently read `background_color` and `text_color` but neither widget's `config_schema` defines those fields. **Remove the dead template references** (do not add the missing schema fields). The universal Background and Text panels delivered in session 163 will provide the controls instead.
+- Building the universal Appearance panel UI controls for full-bleed and nav contrast — that lives in session 164 once the data model exists.
+- Touching any widget other than hero.
+- Building a "first widget vs not first widget" inspector indicator — same UI concern, deferred to 164.
 
 **Testing:**
 
-- Pest test asserting the `page_widgets` schema rename — `appearance_config` exists, `style_config` does not.
-- Pest tests confirming the widget type seeders contain the renamed field keys and no longer contain the removed keys (per the lists above).
-- Render smoke tests for each affected widget — render the updated Blade template with representative config and confirm no `undefined variable` errors.
+- Pest test for the data migration: hero instances with `overlap_nav=true` end up with the new `appearance_config` key set after the migration runs.
+- Updated `tests/Feature/HeroWidgetTest.php`: drop the `overlap_nav`, `nav_link_color`, `nav_hover_color` assertions from the hero schema key list, add new assertions for the wrapper-level full-bleed behaviour.
+- Render smoke test: a non-hero widget with the new full-bleed flag set renders with the same overlap-nav class on its wrapper.
+- `PageControllerTest` (or equivalent): asserts that the `__navOverlap` / `__navOverlayLinkColor` view shares are populated based on the new field location, not on the hero handle.
 
-**Out of scope:** the universal Appearance panels themselves (session 163). This session only prepares the storage and cleans up widgets.
+### 163. Page Builder Bug Fixes
 
-### 163. Appearance Controls — Universal Background, Text & Layout Sections
+Bug-fixing session covering issues surfaced during session 162 manual testing and any other page builder rough edges that have accumulated. Sequenced ahead of session 164's universal Appearance panels because the inspector/RTE bugs below actively block productive testing of the existing inspector, and 164 lands a large new inspector surface on top.
+
+**Bug 1 — RTE typing race on page builder inspector.**
+
+Symptoms: typing into a Quill-backed `richtext` field (e.g. hero `content`, text_block `content`) at moderate speed (~60–80 WPM) causes characters to be dropped or the editor to be wiped back to a stale state. Easiest to reproduce on a fresh page load — clicking a widget for the first time and typing immediately. Becomes harder to reproduce after the first widget interaction.
+
+Mechanism (full trace in session 162's chat log):
+
+1. **Bulk default-write on first widget click.** [InspectorField.vue:29-37](resources/js/page-builder-vue/components/InspectorField.vue#L29-L37) writes default config values into the store on mount whenever `widget.config[field.key] === undefined`. On a freshly-loaded page (or after `migrate:fresh --seed`), most config keys are missing because the seeders only populate required values. Clicking a widget mounts the inspector, every `InspectorField` fires its `onMounted`, and a stack of `updateLocalConfig` calls land in the same global 350 ms `debounceSaveTimer` bucket *before the user has typed anything*. The user's first keystroke arrives inside that already-armed window; the timer fires before the field-level Quill debounce has flushed.
+2. **Save response overwrites in-flight typing.** [editor.ts:215-228](resources/js/page-builder-vue/stores/editor.ts#L215-L228) does `Object.assign(widgets.value[id], updated)` after every save, copying the *whole* server response (including `config`) onto the local widget. Anything the user typed between the moment the save fired and the moment the response arrived is silently overwritten by the older server snapshot.
+3. **Quill watch wipes the editor on stale config.** [RichTextField.vue:72-83](resources/js/page-builder-vue/components/fields/RichTextField.vue#L72-L83) watches `props.modelValue` and, on any change where `quillInstance.root.innerHTML !== newVal`, directly assigns the new value to Quill's root. Combined with #2, this is the visible "garble": the editor contents jump back to whatever the server returned. The string-equality check is also fragile — Quill normalizes whitespace and attribute order, so even a "no-op" round trip can trip the watch.
+4. **Redundant 300 ms field-level Quill debounce.** [RichTextField.vue:57-63](resources/js/page-builder-vue/components/fields/RichTextField.vue#L57-L63) buffers `text-change` events for 300 ms before emitting `update:modelValue`. The store's [editor.ts:481-502](resources/js/page-builder-vue/stores/editor.ts#L481-L502) `flushDebouncedSave` already provides the 350 ms debounce that this is supposed to provide; the field-level layer is duplicate work and widens the race window.
+
+**Fixes (do all three; ordered by impact):**
+
+1. **Delete the `InspectorField.vue` onMounted defaults block** ([InspectorField.vue:29-37](resources/js/page-builder-vue/components/InspectorField.vue#L29-L37)). The render-time `fieldValue` computed at [InspectorField.vue:24-27](resources/js/page-builder-vue/components/InspectorField.vue#L24-L27) already falls back to `field.default` when the config value is undefined, so the visible behaviour is unchanged. The renderer also treats missing values as "no inline style emitted." Mirrors the surgical fix already applied to `WidgetAppearanceControls.vue` in session 162. This is the highest-impact fix because it eliminates the bulk-defaults-on-mount race entirely.
+2. **Make `updateWidget`'s response merge skip `config`, `appearance_config`, and `query_config` when the widget is in `dirtyWidgets`.** [editor.ts:215-228](resources/js/page-builder-vue/stores/editor.ts#L215-L228). The local copy is by definition newer than the server's response — the server is just confirming "I received what you sent." Selectively merging non-content fields (`id`, `sort_order`, `is_required`, `image_urls`, `preview_html`, etc.) preserves any in-flight typing that arrived after the save fired. This is the structural fix that closes the race window even in the rarer "user types faster than the round trip" case. Be careful to keep `dirtyWidgets` in sync — `dirtyWidgets.delete(id)` should happen only when the local and server copies are known to match (which is after a clean preview refresh, not after the save).
+3. **Remove the 300 ms field-level Quill debounce** in [RichTextField.vue:57-63](resources/js/page-builder-vue/components/fields/RichTextField.vue#L57-L63). Have `text-change` emit `update:modelValue` synchronously. The store's 350 ms debounce is the single source of truth for save batching. This removes one buffering layer where keystrokes can sit invisibly during a save, and it makes the timing easier to reason about.
+
+**Optional polish (only if time):** the `RichTextField.vue:76` string-equality check on innerHTML is fragile. Consider comparing a normalized form (or skipping the watch entirely when the widget is in `dirtyWidgets`, which would be the cleaner pattern given fix #2).
+
+**Testing:**
+
+- Pest tests are not the primary verification surface for this — the bug is a Vue/timing issue. Manual verification: hard-refresh, click a widget, immediately type a paragraph at speed into the RTE, confirm no characters dropped or content wiped. Repeat across hero, text_block, and any column-child rich text widget.
+- Add a test asserting that `updateWidget`'s response merge does not overwrite local `config` when the widget is in `dirtyWidgets`. Construct a `PageWidget` factory, simulate a local mutation that adds the widget to `dirtyWidgets`, then call the API and assert the local copy still has the local-only value.
+- Run the full fast suite to make sure none of the fixes regress existing API/contract tests.
+
+**Out of scope:**
+
+- Replacing Quill with another RTE.
+- Refactoring the inspector field architecture beyond the surgical fixes above.
+- Any work on the universal Appearance panels (session 164).
+
+### 164. Appearance Controls — Universal Background, Text & Layout Sections
 
 Phase 3 of the Appearance Controls project. Build the three universal Appearance panels in the Vue inspector's Appearance tab and wire them into `appearance_config` and the public renderer. This is the heaviest UI session of the project.
 
@@ -275,9 +290,9 @@ Phase 3 of the Appearance Controls project. Build the three universal Appearance
 - Pest tests for the renderer with representative `appearance_config` shapes: color-only background, gradient background, image background with alignment, image background with overlay, text color override, full-width true at root, full-width true ignored when inside a column, padding and margin combined.
 - Widget render smoke tests for every widget that had fields removed in session 162 — confirm the universal layer now controls their appearance without regression.
 
-**Out of scope:** documentation updates (session 164), widget spacing harmonization (session 164), any further config field consolidation, any token-based palette storage.
+**Out of scope:** documentation updates (session 165), widget spacing harmonization (session 165), any further config field consolidation, any token-based palette storage.
 
-### 164. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
+### 165. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
 
 Phase 4 of the Appearance Controls project. Close out documentation and run a small polish session on hard-coded spacing values across three widgets.
 
@@ -433,7 +448,7 @@ A "kitchen sink" preview page for theme editing that exposes all major headings,
 
 ### CMS Style System — Full Widget Styling
 
-Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. Builds on the universal Appearance layer delivered in sessions 161–164 (background, text color, full-width, padding, margin, gradient, background image with alignment and overlay, all stored in `appearance_config`) — this stub now covers only the remaining ambition: per-widget styling beyond what every widget gets for free, and a way for advanced users to write custom CSS scoped to a single widget instance.
+Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. Builds on the universal Appearance layer delivered in sessions 161, 162, 162a, 164, and 165 (background, text color, full-width, padding, margin, gradient, background image with alignment and overlay, all stored in `appearance_config`) — this stub now covers only the remaining ambition: per-widget styling beyond what every widget gets for free, and a way for advanced users to write custom CSS scoped to a single widget instance.
 
 ### Widget Portability & Distribution
 

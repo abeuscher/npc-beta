@@ -1,18 +1,35 @@
 @foreach ($blocks as $block)
     @php
-        $sc = $block['style_config'] ?? [];
+        $ac = $block['appearance_config'] ?? [];
         $styleProps = [];
-        $paddingKeys = ['padding_top' => 'padding-top', 'padding_right' => 'padding-right', 'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left'];
-        $marginKeys  = ['margin_top'  => 'margin-top',  'margin_right'  => 'margin-right',  'margin_bottom'  => 'margin-bottom',  'margin_left'  => 'margin-left'];
-        foreach (array_merge($paddingKeys, $marginKeys) as $key => $cssProp) {
-            $val = isset($sc[$key]) && $sc[$key] !== '' ? (int) $sc[$key] : null;
+
+        $bgColor = $ac['background']['color'] ?? null;
+        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
+            $styleProps[] = 'background-color:' . $bgColor;
+        }
+        $textColor = $ac['text']['color'] ?? null;
+        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
+            $styleProps[] = 'color:' . $textColor;
+        }
+
+        $padding = $ac['layout']['padding'] ?? [];
+        $margin  = $ac['layout']['margin'] ?? [];
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
             if ($val !== null) {
-                $styleProps[] = $cssProp . ':' . $val . 'px';
+                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
             }
         }
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
+            if ($val !== null) {
+                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
+            }
+        }
+
         $inlineStyle = implode(';', $styleProps);
-        // Per-instance override in style_config takes precedence over widget type default
-        $instanceFullWidth = $sc['full_width'] ?? null;
+        // Per-instance override in appearance_config takes precedence over widget type default
+        $instanceFullWidth = $ac['layout']['full_width'] ?? null;
         $isFullWidth = $instanceFullWidth !== null ? (bool) $instanceFullWidth : ($block['full_width'] ?? false);
     @endphp
     <div

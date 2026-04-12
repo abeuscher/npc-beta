@@ -89,19 +89,19 @@ class PageBuilderApiController extends Controller
         }
 
         $newWidget = PageWidget::create([
-            'page_id'        => $page->id,
-            'widget_type_id' => $widgetType->id,
-            'layout_id'      => $layoutId,
-            'column_index'   => $layoutId ? ($validated['column_index'] ?? 0) : null,
-            'label'          => $label,
-            'config'         => $widgetType->getDefaultConfig(),
-            'query_config'   => [],
-            'style_config'   => [
-                'background_color' => '#ffffff',
-                'text_color'       => '#000000',
+            'page_id'           => $page->id,
+            'widget_type_id'    => $widgetType->id,
+            'layout_id'         => $layoutId,
+            'column_index'      => $layoutId ? ($validated['column_index'] ?? 0) : null,
+            'label'             => $label,
+            'config'            => $widgetType->getDefaultConfig(),
+            'query_config'      => [],
+            'appearance_config' => [
+                'background' => ['color' => '#ffffff'],
+                'text'       => ['color' => '#000000'],
             ],
-            'sort_order'     => $position,
-            'is_active'      => true,
+            'sort_order'        => $position,
+            'is_active'         => true,
         ]);
 
         $tree = $this->buildTree($page);
@@ -119,10 +119,10 @@ class PageBuilderApiController extends Controller
         abort_unless(auth()->user()?->can('update_page'), 403);
 
         $validated = $request->validate([
-            'label'        => 'nullable|string|max:255',
-            'config'       => 'nullable|array',
-            'style_config' => 'nullable|array',
-            'query_config' => 'nullable|array',
+            'label'             => 'nullable|string|max:255',
+            'config'            => 'nullable|array',
+            'appearance_config' => 'nullable|array',
+            'query_config'      => 'nullable|array',
         ]);
 
         $updates = [];
@@ -132,8 +132,8 @@ class PageBuilderApiController extends Controller
         if (array_key_exists('config', $validated)) {
             $updates['config'] = $validated['config'];
         }
-        if (array_key_exists('style_config', $validated)) {
-            $updates['style_config'] = $validated['style_config'];
+        if (array_key_exists('appearance_config', $validated)) {
+            $updates['appearance_config'] = $validated['appearance_config'];
         }
         if (array_key_exists('query_config', $validated)) {
             $updates['query_config'] = $validated['query_config'];
@@ -195,16 +195,16 @@ class PageBuilderApiController extends Controller
         $siblingQuery->clone()->where('sort_order', '>=', $newPosition)->increment('sort_order');
 
         $copy = PageWidget::create([
-            'page_id'        => $page->id,
-            'widget_type_id' => $widget->widget_type_id,
-            'layout_id'      => $widget->layout_id,
-            'column_index'   => $widget->column_index,
-            'label'          => $widget->label,
-            'config'         => $widget->config ?? [],
-            'query_config'   => $widget->query_config ?? [],
-            'style_config'   => $widget->style_config ?? [],
-            'sort_order'     => $newPosition,
-            'is_active'      => $widget->is_active,
+            'page_id'           => $page->id,
+            'widget_type_id'    => $widget->widget_type_id,
+            'layout_id'         => $widget->layout_id,
+            'column_index'      => $widget->column_index,
+            'label'             => $widget->label,
+            'config'            => $widget->config ?? [],
+            'query_config'      => $widget->query_config ?? [],
+            'appearance_config' => $widget->appearance_config ?? [],
+            'sort_order'        => $newPosition,
+            'is_active'         => $widget->is_active,
         ]);
 
         $tree = $this->buildTree($page);
@@ -686,7 +686,7 @@ class PageBuilderApiController extends Controller
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
             'query_config'              => $pw->query_config ?? [],
-            'style_config'              => $pw->style_config ?? [],
+            'appearance_config'         => $pw->appearance_config ?? [],
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
@@ -711,7 +711,7 @@ class PageBuilderApiController extends Controller
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
             'query_config'              => $pw->query_config ?? [],
-            'style_config'              => $pw->style_config ?? [],
+            'appearance_config'         => $pw->appearance_config ?? [],
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
@@ -734,13 +734,13 @@ class PageBuilderApiController extends Controller
                 $html = '<div class="widget-preview-notice">No preview available</div>';
             } else {
                 $handle = $widgetType->handle;
-                $sc = $pw->style_config ?? [];
-                $inlineStyle = self::buildInlineStyles($sc);
+                $ac = $pw->appearance_config ?? [];
+                $inlineStyle = self::buildInlineStyles($ac);
 
                 $configFullWidth = $pw->config['full_width'] ?? null;
-                $styleFullWidth = $sc['full_width'] ?? null;
+                $appearanceFullWidth = $ac['layout']['full_width'] ?? null;
                 $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth
-                    : ($styleFullWidth !== null ? (bool) $styleFullWidth : ($widgetType->full_width ?? false));
+                    : ($appearanceFullWidth !== null ? (bool) $appearanceFullWidth : ($widgetType->full_width ?? false));
 
                 $innerHtml = $isFullWidth
                     ? $result['html']
@@ -765,27 +765,33 @@ class PageBuilderApiController extends Controller
         ];
     }
 
-    private static function buildInlineStyles(array $styleConfig): string
+    private static function buildInlineStyles(array $appearanceConfig): string
     {
         $styleProps = [];
 
-        if (! empty($styleConfig['background_color'])) {
-            $styleProps[] = 'background-color:' . $styleConfig['background_color'];
+        $bgColor = $appearanceConfig['background']['color'] ?? null;
+        if (! empty($bgColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $bgColor)) {
+            $styleProps[] = 'background-color:' . $bgColor;
         }
-        if (! empty($styleConfig['text_color'])) {
-            $styleProps[] = 'color:' . $styleConfig['text_color'];
+        $textColor = $appearanceConfig['text']['color'] ?? null;
+        if (! empty($textColor) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $textColor)) {
+            $styleProps[] = 'color:' . $textColor;
         }
 
-        $spacingKeys = [
-            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-        ];
-        foreach ($spacingKeys as $key => $cssProp) {
-            $val = isset($styleConfig[$key]) && $styleConfig[$key] !== '' ? (int) $styleConfig[$key] : null;
+        $padding = $appearanceConfig['layout']['padding'] ?? [];
+        $margin  = $appearanceConfig['layout']['margin'] ?? [];
+        $sides = ['top', 'right', 'bottom', 'left'];
+
+        foreach ($sides as $side) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
             if ($val !== null) {
-                $styleProps[] = $cssProp . ':' . $val . 'px';
+                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
+            }
+        }
+        foreach ($sides as $side) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
+            if ($val !== null) {
+                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
         }
 

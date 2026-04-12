@@ -82,7 +82,6 @@ it('generates config for the hero widget with correct keys', function () {
     expect($config['content'])->toBeString()->toContain('<p>');
     expect($config['ctas'])->toBeArray();
     expect($config['fullscreen'])->toBeTrue();
-    expect($config['background_image'])->toBeString()->toStartWith('https://loremflickr.com/');
 });
 
 it('generates config for the text_block widget', function () {

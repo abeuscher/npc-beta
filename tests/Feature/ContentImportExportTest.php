@@ -48,7 +48,7 @@ function ieMakePageWithWidgets(string $slug, array $configs = [['handle' => 'tex
             'label'          => $cfg['label'] ?? null,
             'config'         => $cfg['config'] ?? $wt->getDefaultConfig(),
             'query_config'   => [],
-            'style_config'   => [],
+            'appearance_config' => [],
             'sort_order'     => $i,
             'is_active'      => true,
         ]);
@@ -112,13 +112,13 @@ it('round-trips a page with a column layout containing widgets', function () {
         'page_id' => $page->id, 'layout_id' => $layout->id, 'column_index' => 0,
         'widget_type_id' => $textWt->id, 'label' => 'Left',
         'config' => ['content' => '<p>Left col</p>'],
-        'query_config' => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
     PageWidget::create([
         'page_id' => $page->id, 'layout_id' => $layout->id, 'column_index' => 1,
         'widget_type_id' => $textWt->id, 'label' => 'Right',
         'config' => ['content' => '<p>Right col</p>'],
-        'query_config' => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
@@ -155,7 +155,7 @@ it('round-trips a page with a logo widget media reference', function () {
         'label'          => 'Site Logo',
         'config'         => ['logo' => null, 'text' => 'Acme', 'link_url' => '/'],
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
@@ -246,7 +246,7 @@ it('round-trips a page template with customised chrome and header/footer pages',
         'page_id' => $headerPage->id, 'widget_type_id' => $logoWt->id,
         'label' => 'Header Logo',
         'config' => ['logo' => null, 'text' => 'Brand', 'link_url' => '/'],
-        'query_config' => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
 
     $footerPage = Page::create([
@@ -261,7 +261,7 @@ it('round-trips a page template with customised chrome and header/footer pages',
         'page_id' => $footerPage->id, 'widget_type_id' => $textWt->id,
         'label' => 'Copyright',
         'config' => ['content' => '<p>© 2026 Acme</p>'],
-        'query_config' => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
 
     $template->update([
@@ -313,7 +313,7 @@ it('overwrites a page with a colliding slug while preserving its id', function (
         'widget_type_id' => WidgetType::where('handle', 'text_block')->first()->id,
         'label'          => 'Stale',
         'config'         => ['content' => '<p>STALE</p>'],
-        'query_config'   => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config'   => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
 
     app(ContentImporter::class)->import($bundle, new ImportLog());
@@ -366,7 +366,7 @@ it('clears collection_handle when the referenced collection does not exist', fun
         'widget_type_id' => $blogWt->id,
         'label'          => 'Listing',
         'config'         => ['collection_handle' => 'does_not_exist'],
-        'query_config'   => [], 'style_config' => [], 'sort_order' => 0, 'is_active' => true,
+        'query_config'   => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
@@ -435,7 +435,7 @@ it('leaves widget media null and warns when the source file is missing', functio
                     'label'        => 'Logo',
                     'config'       => ['logo' => 99, 'text' => 'X', 'link_url' => '/'],
                     'query_config' => [],
-                    'style_config' => [],
+                    'appearance_config' => [],
                     'sort_order'   => 0,
                     'is_active'    => true,
                     'media'        => [[

@@ -1,6 +1,6 @@
 .widget-logo-garden {
     --logo-columns: 5;
-    --logo-bg: #ffffff;
+    --logo-container-bg: #ffffff;
     --logo-max-height: 150px;
 
     // Static + flipper: flexbox with centered last row
@@ -33,7 +33,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--logo-bg);
+    background: var(--logo-container-bg);
     padding: 1rem;
     min-height: calc(var(--logo-max-height) + 2rem);
     // Width calculated from logos_per_row, accounting for gap
@@ -110,7 +110,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--logo-bg);
+    background: var(--logo-container-bg);
     padding: 1rem;
     backface-visibility: hidden;
 }

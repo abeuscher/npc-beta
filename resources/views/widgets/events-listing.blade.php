@@ -11,8 +11,6 @@
     $showSearch      = $config['show_search'] ?? false;
     $sortDefault     = $config['sort_default'] ?? 'soonest';
     $effect          = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
-    $bgColor         = $config['background_color'] ?? '';
-    $textColor       = $config['text_color'] ?? '';
 
     // Serialize events for Alpine
     $items = $events->map(function ($event) use ($eventsPrefix) {
@@ -75,9 +73,6 @@
 
 <div
     class="widget-events-listing"
-    @if ($bgColor || $textColor)
-    style="{{ $bgColor ? 'background-color:' . e($bgColor) . ';' : '' }}{{ $textColor ? 'color:' . e($textColor) . ';' : '' }}"
-    @endif
     x-data="{
         swiper: null,
         search: '',

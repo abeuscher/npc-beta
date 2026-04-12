@@ -1,3 +1,26 @@
+export interface WidgetAppearanceConfig {
+  background?: {
+    color?: string
+    gradient?: any
+    image_id?: string | number | null
+    alignment?: string
+    fit?: string
+    overlay?: {
+      enabled?: boolean
+      color?: string
+      opacity?: number
+    }
+  }
+  text?: {
+    color?: string
+  }
+  layout?: {
+    full_width?: boolean
+    padding?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
+    margin?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
+  }
+}
+
 export interface Widget {
   id: string
   widget_type_id: string
@@ -13,7 +36,7 @@ export interface Widget {
   label: string
   config: Record<string, any>
   query_config: Record<string, any>
-  style_config: Record<string, any>
+  appearance_config: WidgetAppearanceConfig
   sort_order: number
   is_active: boolean
   is_required: boolean
@@ -127,7 +150,7 @@ export interface CreateWidgetPayload {
 export interface UpdateWidgetPayload {
   label?: string
   config?: Record<string, any>
-  style_config?: Record<string, any>
+  appearance_config?: WidgetAppearanceConfig
   query_config?: Record<string, any>
 }
 

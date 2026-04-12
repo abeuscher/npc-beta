@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
 import ColorPicker from './primitives/ColorPicker.vue'
@@ -23,27 +23,12 @@ const showFullWidth = computed(() => !schemaKeys.value.has('full_width'))
 const showBgColor = computed(() => !schemaKeys.value.has('background_color'))
 const showTextColor = computed(() => !schemaKeys.value.has('text_color'))
 
-const defaults: Record<string, any> = {
-  background_color: '#ffffff',
-  text_color: '#000000',
-}
+const fullWidth = computed(() => !!props.widget.appearance_config?.layout?.full_width)
+const backgroundColor = computed(() => props.widget.appearance_config?.background?.color ?? '#ffffff')
+const textColor = computed(() => props.widget.appearance_config?.text?.color ?? '#000000')
 
-// Populate defaults on mount for widgets with empty style_config values
-// Only for controls this widget doesn't define in its own config_schema
-onMounted(() => {
-  for (const [key, defaultValue] of Object.entries(defaults)) {
-    if (!schemaKeys.value.has(key) && (props.widget.style_config?.[key] === undefined || props.widget.style_config?.[key] === null || props.widget.style_config?.[key] === '')) {
-      store.updateLocalStyleConfig(props.widget.id, key, defaultValue)
-    }
-  }
-})
-
-const fullWidth = computed(() => !!props.widget.style_config?.full_width)
-const backgroundColor = computed(() => props.widget.style_config?.background_color ?? '#ffffff')
-const textColor = computed(() => props.widget.style_config?.text_color ?? '#000000')
-
-function updateStyle(key: string, value: any) {
-  store.updateLocalStyleConfig(props.widget.id, key, value)
+function updateAppearance(path: string, value: any) {
+  store.updateLocalAppearanceConfig(props.widget.id, path, value)
 }
 
 const bgField = { key: 'background_color', label: 'Background Color', type: 'color', helper: '#ffffff' }
@@ -57,7 +42,7 @@ const textField = { key: 'text_color', label: 'Text Color', type: 'color', helpe
         type="checkbox"
         :checked="fullWidth"
         class="appearance-controls__checkbox"
-        @change="updateStyle('full_width', ($event.target as HTMLInputElement).checked)"
+        @change="updateAppearance('layout.full_width', ($event.target as HTMLInputElement).checked)"
       >
       <span>Full width</span>
     </label>
@@ -67,7 +52,7 @@ const textField = { key: 'text_color', label: 'Text Color', type: 'color', helpe
         :model-value="backgroundColor"
         label="Background Color"
         :placeholder="bgField.helper"
-        @update:model-value="updateStyle('background_color', $event)"
+        @update:model-value="updateAppearance('background.color', $event)"
       />
     </div>
 
@@ -76,7 +61,7 @@ const textField = { key: 'text_color', label: 'Text Color', type: 'color', helpe
         :model-value="textColor"
         label="Text Color"
         :placeholder="textField.helper"
-        @update:model-value="updateStyle('text_color', $event)"
+        @update:model-value="updateAppearance('text.color', $event)"
       />
     </div>
   </div>

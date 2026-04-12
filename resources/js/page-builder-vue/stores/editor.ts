@@ -473,7 +473,7 @@ export const useEditorStore = defineStore('editor', () => {
     // Label-only edits don't change rendered HTML, so skip the auto-refresh.
     return (
       payload.config !== undefined ||
-      payload.style_config !== undefined ||
+      payload.appearance_config !== undefined ||
       payload.query_config !== undefined
     )
   }
@@ -578,13 +578,29 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
-  function updateLocalStyleConfig(widgetId: string, key: string, value: any): void {
+  /**
+   * Update a single nested path inside the widget's appearance_config and queue a debounced save.
+   * The path is a dot-separated string, e.g. 'background.color', 'layout.full_width', 'layout.padding.top'.
+   * Intermediate objects are created as needed; the rest of the bag is preserved.
+   */
+  function updateLocalAppearanceConfig(widgetId: string, path: string, value: any): void {
     const w = widgets.value[widgetId]
     if (!w) return
 
-    w.style_config = { ...w.style_config, [key]: value }
+    const segments = path.split('.')
+    const next: Record<string, any> = { ...(w.appearance_config ?? {}) }
+
+    let cursor: Record<string, any> = next
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i]
+      cursor[seg] = { ...(cursor[seg] ?? {}) }
+      cursor = cursor[seg]
+    }
+    cursor[segments[segments.length - 1]] = value
+
+    w.appearance_config = next as any
     dirtyWidgets.value.add(widgetId)
-    flushDebouncedSave(widgetId, { style_config: { ...w.style_config } })
+    flushDebouncedSave(widgetId, { appearance_config: next as any })
   }
 
   function updateLocalQueryConfig(
@@ -667,7 +683,7 @@ export const useEditorStore = defineStore('editor', () => {
     refreshPreview,
     uploadImage,
     removeImage,
-    updateLocalStyleConfig,
+    updateLocalAppearanceConfig,
     updateLocalQueryConfig,
     saveColorSwatches: saveColorSwatchesAction,
   }

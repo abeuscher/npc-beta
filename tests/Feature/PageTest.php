@@ -114,7 +114,7 @@ it('renders a page layout with grid CSS and child widgets', function () {
         'label'          => 'Left',
         'config'         => array_merge($wt->getDefaultConfig(), ['content' => 'Left content']),
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
@@ -127,7 +127,7 @@ it('renders a page layout with grid CSS and child widgets', function () {
         'label'          => 'Right',
         'config'         => array_merge($wt->getDefaultConfig(), ['content' => 'Right content']),
         'query_config'   => [],
-        'style_config'   => [],
+        'appearance_config' => [],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);

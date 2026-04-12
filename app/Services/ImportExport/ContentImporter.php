@@ -311,16 +311,16 @@ class ContentImporter
         }
 
         $widget = PageWidget::create([
-            'page_id'        => $page->id,
-            'layout_id'      => null,
-            'column_index'   => null,
-            'widget_type_id' => $widgetType->id,
-            'label'          => $item['label'] ?? null,
-            'config'         => $this->sanitizeWidgetConfig($item['config'] ?? [], $widgetType, $page->slug, $log),
-            'query_config'   => $item['query_config'] ?? [],
-            'style_config'   => $item['style_config'] ?? [],
-            'sort_order'     => $item['sort_order'] ?? 0,
-            'is_active'      => $item['is_active'] ?? true,
+            'page_id'           => $page->id,
+            'layout_id'         => null,
+            'column_index'      => null,
+            'widget_type_id'    => $widgetType->id,
+            'label'             => $item['label'] ?? null,
+            'config'            => $this->sanitizeWidgetConfig($item['config'] ?? [], $widgetType, $page->slug, $log),
+            'query_config'      => $item['query_config'] ?? [],
+            'appearance_config' => $item['appearance_config'] ?? [],
+            'sort_order'        => $item['sort_order'] ?? 0,
+            'is_active'         => $item['is_active'] ?? true,
         ]);
 
         $this->rewireWidgetMedia($widget, $item['media'] ?? [], $log);
@@ -348,16 +348,16 @@ class ContentImporter
                 }
 
                 $widget = PageWidget::create([
-                    'page_id'        => $page->id,
-                    'layout_id'      => $layout->id,
-                    'column_index'   => (int) $columnIndex,
-                    'widget_type_id' => $widgetType->id,
-                    'label'          => $slotItem['label'] ?? null,
-                    'config'         => $this->sanitizeWidgetConfig($slotItem['config'] ?? [], $widgetType, $page->slug, $log),
-                    'query_config'   => $slotItem['query_config'] ?? [],
-                    'style_config'   => $slotItem['style_config'] ?? [],
-                    'sort_order'     => $slotItem['sort_order'] ?? 0,
-                    'is_active'      => $slotItem['is_active'] ?? true,
+                    'page_id'           => $page->id,
+                    'layout_id'         => $layout->id,
+                    'column_index'      => (int) $columnIndex,
+                    'widget_type_id'    => $widgetType->id,
+                    'label'             => $slotItem['label'] ?? null,
+                    'config'            => $this->sanitizeWidgetConfig($slotItem['config'] ?? [], $widgetType, $page->slug, $log),
+                    'query_config'      => $slotItem['query_config'] ?? [],
+                    'appearance_config' => $slotItem['appearance_config'] ?? [],
+                    'sort_order'        => $slotItem['sort_order'] ?? 0,
+                    'is_active'         => $slotItem['is_active'] ?? true,
                 ]);
 
                 $this->rewireWidgetMedia($widget, $slotItem['media'] ?? [], $log);

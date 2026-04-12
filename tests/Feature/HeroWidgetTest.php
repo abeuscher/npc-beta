@@ -25,7 +25,7 @@ it('creates hero widget type with correct category and config schema after seedi
         ->and($hero->allowed_page_types)->toBeNull();
 
     $keys = collect($hero->config_schema)->pluck('key')->all();
-    expect($keys)->toBe(['content', 'background_color', 'text_color', 'background_image', 'background_video', 'text_position', 'ctas', 'fullscreen', 'scroll_indicator', 'full_width', 'overlap_nav', 'overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height']);
+    expect($keys)->toBe(['content', 'background_video', 'text_position', 'ctas', 'fullscreen', 'scroll_indicator', 'overlap_nav', 'background_overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height']);
 });
 
 it('renders content from config in the hero template', function () {
@@ -37,7 +37,7 @@ it('renders content from config in the hero template', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Welcome</h1><p>Subheading here</p>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'min_height'      => '24rem',
             'text_position'   => 'center-center',
             'ctas'            => [],
@@ -63,7 +63,7 @@ it('hides CTA section when ctas array is empty', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>No buttons</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'min_height'      => '24rem',
             'text_position'   => 'center-center',
             'ctas'            => [],
@@ -88,7 +88,7 @@ it('renders CTA buttons with correct style classes', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'min_height'      => '24rem',
             'text_position'   => 'center-center',
             'ctas'            => [
@@ -123,7 +123,7 @@ it('escapes CTA URLs to prevent XSS', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'min_height'      => '24rem',
             'text_position'   => 'center-center',
             'ctas'            => [
@@ -150,7 +150,7 @@ it('adds fullscreen class when fullscreen is enabled', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Big Hero</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'text_position'   => 'center-center',
             'ctas'            => [],
             'fullscreen'      => true,
@@ -173,7 +173,7 @@ it('uses height class when fullscreen is off', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Normal</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'min_height'      => '32rem',
             'text_position'   => 'center-center',
             'ctas'            => [],
@@ -199,7 +199,7 @@ it('shows scroll indicator when enabled', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'          => '<h1>Test</h1>',
-            'overlay_opacity'  => 50,
+            'background_overlay_opacity' => 50,
             'text_position'    => 'center-center',
             'ctas'             => [],
             'scroll_indicator' => true,
@@ -222,7 +222,7 @@ it('hides scroll indicator when disabled', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'          => '<h1>Test</h1>',
-            'overlay_opacity'  => 50,
+            'background_overlay_opacity' => 50,
             'text_position'    => 'center-center',
             'ctas'             => [],
             'scroll_indicator' => false,
@@ -245,7 +245,7 @@ it('adds overlap-nav class when full bleed is enabled', function () {
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',
-            'overlay_opacity' => 50,
+            'background_overlay_opacity' => 50,
             'text_position'   => 'center-center',
             'ctas'            => [],
             'overlap_nav'     => true,

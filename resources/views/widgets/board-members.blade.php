@@ -14,7 +14,7 @@
     $rowAlignment = $config['row_alignment'] ?? 'center';
     $imageShape = $config['image_shape'] ?? 'circle';
     $imageAspectRatio = $config['image_aspect_ratio'] ?? '1 / 1';
-    $bgColor = $config['background_color'] ?? '#ffffff';
+    $bgColor = $config['grid_background_color'] ?? '#ffffff';
     $paneColor = $config['pane_color'] ?? '#ffffff';
     $borderColor = $config['border_color'] ?? '#cccccc';
     $borderRadius = (int) ($config['border_radius'] ?? 5);
@@ -39,7 +39,7 @@
 @if (count($members) > 0 || $heading)
     <div
         class="{{ implode(' ', $classes) }}"
-        style="--bm-bg: {{ e($bgColor) }}; --bm-pane: {{ e($paneColor) }}; --bm-border: {{ e($borderColor) }}; --bm-radius: {{ $borderRadius }}px; --bm-padding: {{ $paddingBottom }};"
+        style="--bm-grid-bg: {{ e($bgColor) }}; --bm-pane: {{ e($paneColor) }}; --bm-border: {{ e($borderColor) }}; --bm-radius: {{ $borderRadius }}px; --bm-padding: {{ $paddingBottom }};"
     >
         @if ($heading)
             <h2 class="board-members__heading">{{ $heading }}</h2>
