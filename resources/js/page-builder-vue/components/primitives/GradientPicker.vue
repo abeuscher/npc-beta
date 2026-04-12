@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import ColorPicker from './ColorPicker.vue'
 import {
   composeGradientCss,
@@ -11,10 +11,12 @@ const props = withDefaults(
   defineProps<{
     modelValue?: GradientValue | null
     label?: string
+    compact?: boolean
   }>(),
   {
     modelValue: null,
     label: '',
+    compact: false,
   }
 )
 
@@ -46,7 +48,33 @@ const DEFAULT_LAYER: GradientLayer = {
   to_alpha: 100,
 }
 
+const rootEl = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
+
+defineExpose({ isOpen })
+
+function onDocumentClick(e: MouseEvent): void {
+  if (!isOpen.value) return
+  if (!rootEl.value) return
+  if (rootEl.value.contains(e.target as Node)) return
+  isOpen.value = false
+}
+
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && isOpen.value) {
+    isOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocumentClick)
+  document.addEventListener('keydown', onKeydown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClick)
+  document.removeEventListener('keydown', onKeydown)
+})
 
 const gradients = computed<GradientLayer[]>(() => {
   return Array.isArray(props.modelValue?.gradients) ? props.modelValue!.gradients : []
@@ -102,26 +130,28 @@ function clearAll(): void {
 </script>
 
 <template>
-  <div class="gradient-picker">
-    <label v-if="label" class="inspector-label">{{ label }}</label>
+  <div ref="rootEl" class="gradient-picker">
+    <template v-if="!compact">
+      <label v-if="label" class="inspector-label">{{ label }}</label>
 
-    <button
-      type="button"
-      class="gradient-picker__trigger"
-      :class="{ 'gradient-picker__trigger--open': isOpen }"
-      @click="toggleOpen"
-    >
-      <span
-        class="gradient-picker__trigger-swatch"
-        :class="{ 'gradient-picker__trigger-swatch--empty': !hasGradient }"
-        :style="triggerStyle"
+      <button
+        type="button"
+        class="gradient-picker__trigger"
+        :class="{ 'gradient-picker__trigger--open': isOpen }"
+        @click="toggleOpen"
       >
-        <span v-if="!hasGradient" class="gradient-picker__trigger-empty">no gradient</span>
-      </span>
-      <span class="gradient-picker__trigger-caret" aria-hidden="true">
-        {{ isOpen ? '▴' : '▾' }}
-      </span>
-    </button>
+        <span
+          class="gradient-picker__trigger-swatch"
+          :class="{ 'gradient-picker__trigger-swatch--empty': !hasGradient }"
+          :style="triggerStyle"
+        >
+          <span v-if="!hasGradient" class="gradient-picker__trigger-empty">no gradient</span>
+        </span>
+        <span class="gradient-picker__trigger-caret" aria-hidden="true">
+          {{ isOpen ? '▴' : '▾' }}
+        </span>
+      </button>
+    </template>
 
     <div v-if="isOpen" class="gradient-picker__panel">
       <div class="gradient-picker__body">

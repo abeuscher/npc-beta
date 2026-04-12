@@ -7,11 +7,13 @@ const props = withDefaults(
     modelValue?: string
     label?: string
     placeholder?: string
+    compact?: boolean
   }>(),
   {
     modelValue: '',
     label: '',
     placeholder: 'Transparent',
+    compact: false,
   }
 )
 
@@ -100,7 +102,10 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="color-picker__trigger"
-      :class="{ 'color-picker__trigger--open': isOpen }"
+      :class="{
+        'color-picker__trigger--open': isOpen,
+        'color-picker__trigger--compact': compact,
+      }"
       @click="togglePopover"
     >
       <span
@@ -111,10 +116,10 @@ onBeforeUnmount(() => {
         <slot name="icon" />
         <span v-if="!hasValue" class="color-picker__trigger-empty">?</span>
       </span>
-      <span class="color-picker__trigger-text">
+      <span v-if="!compact" class="color-picker__trigger-text">
         {{ hasValue ? modelValue : placeholder }}
       </span>
-      <span class="color-picker__trigger-caret" aria-hidden="true">▾</span>
+      <span v-if="!compact" class="color-picker__trigger-caret" aria-hidden="true">▾</span>
     </button>
 
     <div v-if="isOpen" class="color-picker__popover" role="dialog" aria-label="Color picker">
@@ -231,6 +236,18 @@ onBeforeUnmount(() => {
 .color-picker__trigger--open {
   border-color: var(--c-primary-400, #818cf8);
   box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
+}
+
+.color-picker__trigger--compact {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.color-picker__trigger--compact .color-picker__trigger-swatch {
+  width: 2rem;
+  height: 2rem;
 }
 
 .color-picker__trigger-swatch {

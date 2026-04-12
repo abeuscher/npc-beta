@@ -5,6 +5,7 @@ import { useEditorStore } from '../../stores/editor'
 import ColorPicker from '../primitives/ColorPicker.vue'
 import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
+import { composeGradientCss } from '../../helpers/gradient'
 
 const props = defineProps<{
   widget: Widget
@@ -12,6 +13,7 @@ const props = defineProps<{
 
 const store = useEditorStore()
 const uploading = ref(false)
+const gradientPickerRef = ref<InstanceType<typeof GradientPicker> | null>(null)
 
 const backgroundColor = computed(() => props.widget.appearance_config?.background?.color ?? '#ffffff')
 const gradient = computed(() => props.widget.appearance_config?.background?.gradient ?? null)
@@ -20,8 +22,21 @@ const fit = computed(() => props.widget.appearance_config?.background?.fit ?? 'c
 const imageUrl = computed(() => props.widget.appearance_image_url ?? null)
 const hasImage = computed(() => imageUrl.value !== null)
 
+const hasGradient = computed(() => Array.isArray(gradient.value?.gradients) && gradient.value!.gradients.length > 0)
+const gradientPreviewCss = computed(() => composeGradientCss(gradient.value ?? null))
+const gradientSwatchStyle = computed(() => {
+  if (!hasGradient.value || gradientPreviewCss.value === '') return undefined
+  return { backgroundImage: gradientPreviewCss.value }
+})
+
 function updateAppearance(path: string, value: any) {
   store.updateLocalAppearanceConfig(props.widget.id, path, value)
+}
+
+function toggleGradientPanel() {
+  if (gradientPickerRef.value) {
+    gradientPickerRef.value.isOpen = !gradientPickerRef.value.isOpen
+  }
 }
 
 async function handleImageUpload(event: Event) {
@@ -52,88 +67,88 @@ function triggerFileInput() {
   <div class="bg-panel">
     <p class="bg-panel__heading">Background</p>
 
-    <!-- Color & Gradient -->
-    <div class="bg-panel__section">
-      <ColorPicker
-        :model-value="backgroundColor"
-        label="Color"
-        @update:model-value="updateAppearance('background.color', $event)"
-      />
-    </div>
+    <!-- Top row: Color, Gradient, Image -->
+    <div class="bg-panel__row">
+      <div class="bg-panel__row-cell">
+        <label class="inspector-label">Color</label>
+        <ColorPicker
+          :model-value="backgroundColor"
+          compact
+          @update:model-value="updateAppearance('background.color', $event)"
+        />
+      </div>
 
-    <div class="bg-panel__section">
-      <GradientPicker
-        :model-value="gradient"
-        label="Gradient"
-        @update:model-value="updateAppearance('background.gradient', $event)"
-      />
-      <p class="inspector-hint">Use opacity sliders on each gradient stop to tint a background image.</p>
-    </div>
+      <div class="bg-panel__row-cell">
+        <label class="inspector-label">Gradient</label>
+        <button
+          type="button"
+          class="bg-panel__gradient-swatch"
+          :class="{ 'bg-panel__gradient-swatch--empty': !hasGradient }"
+          :style="gradientSwatchStyle"
+          @click.stop="toggleGradientPanel"
+        />
+      </div>
 
-    <!-- Image -->
-    <div class="bg-panel__section">
-      <p class="inspector-section-title">Image</p>
-
-      <input
-        :id="`bg-upload-${widget.id}`"
-        type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
-        class="bg-panel__file-input"
-        @change="handleImageUpload"
-      >
-
-      <div v-if="hasImage" class="bg-panel__image-preview">
-        <img :src="imageUrl!" alt="Background image" class="bg-panel__thumbnail" />
-        <button type="button" class="bg-panel__remove-link" @click="handleImageRemove">
-          Remove image
+      <div class="bg-panel__row-cell">
+        <label class="inspector-label">Image</label>
+        <input
+          :id="`bg-upload-${widget.id}`"
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+          class="bg-panel__file-input"
+          @change="handleImageUpload"
+        >
+        <div v-if="hasImage" class="bg-panel__image-thumb" @click="triggerFileInput">
+          <img :src="imageUrl!" alt="Background image" />
+          <button
+            type="button"
+            class="bg-panel__image-remove"
+            title="Remove image"
+            @click.stop="handleImageRemove"
+          >&times;</button>
+        </div>
+        <button
+          v-else
+          type="button"
+          class="bg-panel__upload-tile"
+          :disabled="uploading"
+          @click="triggerFileInput"
+        >
+          <span v-if="uploading">…</span>
+          <span v-else class="bg-panel__upload-icon">+</span>
         </button>
       </div>
 
-      <button
-        v-if="!hasImage"
-        type="button"
-        class="bg-panel__upload-tile"
-        :disabled="uploading"
-        @click="triggerFileInput"
-      >
-        <span v-if="uploading">Uploading…</span>
-        <span v-else>Drop or click to upload</span>
-      </button>
-
-      <button
-        v-if="hasImage && !uploading"
-        type="button"
-        class="bg-panel__replace-btn"
-        @click="triggerFileInput"
-      >
-        Replace image
-      </button>
-
-      <div class="bg-panel__image-row">
-        <div class="bg-panel__field">
-          <label class="inspector-label">Fit</label>
-          <select
-            :value="fit"
-            class="inspector-control"
-            :disabled="!hasImage"
-            @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="cover">Cover</option>
-            <option value="contain">Contain</option>
-          </select>
-        </div>
-
-        <div class="bg-panel__field">
-          <NinePointAlignment
-            :model-value="alignment"
-            :disabled="!hasImage"
-            label="Alignment"
-            @update:model-value="updateAppearance('background.alignment', $event)"
-          />
-        </div>
+      <div class="bg-panel__row-cell">
+        <label class="inspector-label">&nbsp;</label>
+        <NinePointAlignment
+          :model-value="alignment"
+          :disabled="!hasImage"
+          @update:model-value="updateAppearance('background.alignment', $event)"
+        />
       </div>
-      <p v-if="!hasImage" class="inspector-hint inspector-hint--italic">Upload an image to set fit and alignment</p>
+
+      <div class="bg-panel__row-cell">
+        <label class="inspector-label">Fit</label>
+        <select
+          :value="fit"
+          class="inspector-control inspector-control--sm"
+          :disabled="!hasImage"
+          @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="cover">Cover</option>
+          <option value="contain">Contain</option>
+        </select>
+      </div>
     </div>
+
+    <!-- Gradient panel (full width, normal flow below the row) -->
+    <GradientPicker
+      ref="gradientPickerRef"
+      :model-value="gradient"
+      compact
+      @update:model-value="updateAppearance('background.gradient', $event)"
+    />
   </div>
 </template>
 
@@ -153,28 +168,115 @@ function triggerFileInput() {
   color: #1f2937;
 }
 
-.bg-panel__section {
+/* ── Top row: color, gradient, image ─────────────────────────────────────── */
+
+.bg-panel__row {
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.bg-panel__row-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.25rem;
+  min-width: 0;
 }
+
+/* Make color picker popover break out of the narrow grid cell */
+.bg-panel__row-cell :deep(.color-picker__popover) {
+  min-width: 14rem;
+}
+
+/* ── Gradient swatch (manual trigger in the row) ─────────────────────────── */
+
+.bg-panel__gradient-swatch {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  padding: 0;
+  background: #fff;
+}
+
+.bg-panel__gradient-swatch--empty {
+  background: repeating-linear-gradient(
+    45deg,
+    #f3f4f6,
+    #f3f4f6 4px,
+    #e5e7eb 4px,
+    #e5e7eb 8px
+  );
+}
+
+.bg-panel__gradient-swatch:hover {
+  border-color: #9ca3af;
+}
+
+/* ── Hidden file input ───────────────────────────────────────────────────── */
 
 .bg-panel__file-input {
   display: none;
 }
 
+/* ── Image thumbnail with delete button ──────────────────────────────────── */
+
+.bg-panel__image-thumb {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.bg-panel__image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bg-panel__image-remove {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: none;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  display: none;
+}
+
+.bg-panel__image-thumb:hover .bg-panel__image-remove {
+  display: block;
+}
+
+/* ── Upload tile (no image state) ────────────────────────────────────────── */
+
 .bg-panel__upload-tile {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 4rem;
+  width: 2rem;
+  height: 2rem;
   border: 2px dashed #d1d5db;
-  border-radius: 0.375rem;
+  border-radius: 0.25rem;
   background: #f9fafb;
-  color: #6b7280;
-  font-size: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
   cursor: pointer;
+  padding: 0;
 }
 
 .bg-panel__upload-tile:hover {
@@ -187,60 +289,10 @@ function triggerFileInput() {
   opacity: 0.6;
 }
 
-.bg-panel__image-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.bg-panel__thumbnail {
-  width: 100%;
-  max-height: 6rem;
-  object-fit: cover;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-}
-
-.bg-panel__remove-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.6875rem;
-  color: #ef4444;
-  cursor: pointer;
-  text-align: left;
-}
-
-.bg-panel__remove-link:hover {
-  text-decoration: underline;
-}
-
-.bg-panel__replace-btn {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  background: #fff;
-  font-size: 0.6875rem;
-  color: #4b5563;
-  cursor: pointer;
-}
-
-.bg-panel__replace-btn:hover {
-  border-color: var(--c-primary-400, #818cf8);
-  color: var(--c-primary-600, #4f46e5);
-}
-
-.bg-panel__image-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  align-items: start;
-}
-
-.bg-panel__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.bg-panel__upload-icon {
+  font-weight: 300;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 </style>

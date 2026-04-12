@@ -171,6 +171,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 162 | Appearance Controls — Schema Rename & Widget Dedupe Sweep |
 | 163 | Page Builder Bug Fixes |
 | 164 | Appearance Controls — Background Panel |
+| 165 | Appearance Controls — Text & Section Layout Panels |
 
 ---
 
@@ -215,26 +216,6 @@ Architectural lift, sequenced between session 162 and session 164. Surfaced duri
 - Updated `tests/Feature/HeroWidgetTest.php`: drop the `overlap_nav`, `nav_link_color`, `nav_hover_color` assertions from the hero schema key list, add new assertions for the wrapper-level full-bleed behaviour.
 - Render smoke test: a non-hero widget with the new full-bleed flag set renders with the same overlap-nav class on its wrapper.
 - `PageControllerTest` (or equivalent): asserts that the `__navOverlap` / `__navOverlayLinkColor` view shares are populated based on the new field location, not on the hero handle.
-
-### 165. Appearance Controls — Text & Section Layout Panels
-
-Phase 3b of the Appearance Controls project. Builds the remaining two universal Appearance panels (Text and Section Layout) in the Vue inspector, retires the temporary `WidgetAppearanceControls.vue` and `SpacingControl.vue` components, and lands regression smoke tests for every widget that lost or renamed config fields in session 162. This session completes the universal Appearance layer for Beta 1.
-
-**`TextPanel.vue`:** single section, single control. `ColorPicker` bound to `appearance_config.text.color`, using the existing primitive's `icon` slot to pass an inline "T" SVG. Helper-text line under the control noting that inline RTE color styling overrides this value. No new appearance keys — `text.color` is already wired in the renderer via `AppearanceStyleComposer` from session 164.
-
-**`SectionLayoutPanel.vue`:** Width subsection (full-width toggle, disabled and tooltipped when `widget.layout_id !== null`), Padding subsection (all-sides shorthand input + four per-side inputs), Margin subsection (same shape). The all-sides shorthand logic moves verbatim from the retired `SpacingControl.vue`. Both the Background panel's full-width toggle (from 164) and this panel's full-width toggle bind to the same store path — duplicate UI is intentional for discoverability.
-
-**Retire `WidgetAppearanceControls.vue`:** delete the file, remove the import from `InspectorPanel.vue`, remove the element from the appearance tab template. After session 162's dedupe sweep, no widget has its own `background_color`, `text_color`, or `full_width` config field — every widget routes through the universal Appearance layer. No backwards-compat shim.
-
-**Retire `SpacingControl.vue`:** delete the file, remove the import, remove the element. `SectionLayoutPanel`'s Padding and Margin sections supersede it.
-
-**Inspector tab structure after retirements:** `<BackgroundPanel>`, `<TextPanel>`, `<SectionLayoutPanel>`, `<InspectorFieldGroup :fields="appearanceFields">`, `<QuerySettings>`. `InspectorFieldGroup` continues to render any per-widget appearance-group fields that survived the universal layer (e.g., `hero.nav_link_color`, `hero.nav_hover_color`).
-
-**Regression smoke tests** for every widget that lost or renamed config fields in session 162 (`hero`, `product_carousel`, `carousel`, `bar_chart`, `logo_garden`, `board_members`, `blog_listing`, `events_listing`). Each widget gets a pair of cases: a surviving-keys-only smoke test (no PHP notices on render) and a universal-appearance-layer integration test (set `background.color` and `text.color` via `appearance_config`, render through the public renderer, assert the outer wrapper's inline style carries the values).
-
-**No new appearance keys.** The schema-doc shape and `AppearanceStyleComposer` are unchanged from session 164. Every change is UI plumbing or test coverage.
-
-**Out of scope:** documentation pass on `widget-types.md` and `widget-development.md` (session 166), widget spacing harmonization (session 166), any inspector tab structure changes beyond mounting the two new panels and removing the two retired components.
 
 ### 166. Appearance Controls — Docs Finalization & Widget Spacing Harmonization
 
@@ -394,6 +375,16 @@ A "kitchen sink" preview page for theme editing that exposes all major headings,
 ### CMS Style System — Full Widget Styling
 
 Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. Builds on the universal Appearance layer delivered in sessions 161, 162, 162a, 164, and 165 (background, text color, full-width, padding, margin, gradient, background image with alignment and overlay, all stored in `appearance_config`) — this stub now covers only the remaining ambition: per-widget styling beyond what every widget gets for free, and a way for advanced users to write custom CSS scoped to a single widget instance.
+
+### Spacing Controls — Axis Locking & Presets
+
+UX improvement to the Section Layout panel's padding and margin controls. Two features:
+
+1. **Axis locking:** Replace the "All" shorthand with a linked-axes model — "Lock horizontal" (left+right) and "Lock vertical" (top+bottom) toggles. When an axis is locked, changing one side writes both. When both axes are locked, all four sides follow. This matches the most common real-world pattern: horizontal sides are almost always equal, vertical sides are often independent.
+
+2. **Spacing presets:** A preset picker (similar to the gradient/color swatch pickers) that lets users save and recall named spacing configurations. Presets write predefined pixel values to all four sides; the user can then unlock and tweak individual sides. May involve adding default spacing values to the template/theme settings, or allowing widgets to declare their own defaults. A small visual cue in the preset menu should help users understand what each preset applies.
+
+This is a self-contained session focused on the inspector UI layer. No new `appearance_config` keys — the underlying four-side padding/margin store paths are unchanged. The axis locks are local UI state (not persisted), and the presets are a lookup from a new site-settings or template-level configuration.
 
 ### Widget Portability & Distribution
 

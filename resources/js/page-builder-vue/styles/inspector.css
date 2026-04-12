@@ -37,6 +37,16 @@
   background: #fff;
 }
 
+select.inspector-control {
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
 .inspector-control:focus {
   outline: none;
   border-color: var(--c-primary-400, #818cf8);
