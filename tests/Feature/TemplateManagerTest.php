@@ -228,7 +228,7 @@ it('changing page template on edit updates template_id', function () {
         'status'      => 'published',
     ]);
 
-    Livewire::test(\App\Filament\Resources\PageResource\Pages\EditPage::class, [
+    Livewire::test(\App\Filament\Resources\PageResource\Pages\EditPageDetails::class, [
         'record' => $page->id,
     ])
         ->fillForm(['template_id' => $pt2->id])
@@ -335,7 +335,7 @@ it('inheritHeader resets header_page_id to null', function () {
 
 // ── Save block layout as content template from EditPage ───────────────────
 
-it('save block layout as content template from edit page', function () {
+it('save block layout as content template from edit page details', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
     $textWidget = WidgetType::where('handle', 'text_block')->first();
 
@@ -349,7 +349,7 @@ it('save block layout as content template from edit page', function () {
         'is_active'      => true,
     ]);
 
-    Livewire::test(\App\Filament\Resources\PageResource\Pages\EditPage::class, [
+    Livewire::test(\App\Filament\Resources\PageResource\Pages\EditPageDetails::class, [
         'record' => $page->id,
     ])
         ->callAction('saveAsContentTemplate', [

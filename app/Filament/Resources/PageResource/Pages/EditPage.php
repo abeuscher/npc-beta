@@ -3,21 +3,16 @@
 namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
-use App\Filament\Pages\Settings\CmsSettingsPage;
-use App\Models\PageWidget;
 use App\Models\SiteSetting;
-use App\Models\Template;
-use App\Rules\ValidHtmlSnippet;
-use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
-use Filament\Forms;
-use Filament\Notifications\Notification;
-use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Filament\Forms\Form;
+use Filament\Resources\Pages\EditRecord;
 
-class EditPage extends ReadOnlyAwareEditRecord
+class EditPage extends EditRecord
 {
     protected static string $resource = PageResource::class;
+
+    protected static string $view = 'filament.resources.page-resource.pages.edit-page';
 
     public function getTitle(): string
     {
@@ -32,179 +27,31 @@ class EditPage extends ReadOnlyAwareEditRecord
         return 'Edit ' . $typeLabel;
     }
 
-    protected function getReadOnlyHeaderActions(): array
+    public function form(Form $form): Form
     {
-        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-        $path = $this->record->slug === 'home' ? '/' : '/' . $this->record->slug;
-        $url  = $base . $path;
+        return $form->schema([]);
+    }
 
-        $isDraft = $this->record->status !== 'published';
-
-        return [
-            $isDraft
-                ? Actions\Action::make('publicUrl')
-                    ->label($url)
-                    ->link()
-                    ->color('gray')
-                    ->disabled()
-                    ->extraAttributes([
-                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                        'title' => 'Page not published',
-                    ])
-                : Actions\Action::make('publicUrl')
-                    ->label($url)
-                    ->url($url)
-                    ->openUrlInNewTab()
-                    ->link()
-                    ->color('primary')
-                    ->extraAttributes([
-                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                        'title' => $url,
-                    ]),
-        ];
+    protected function getFormActions(): array
+    {
+        return [];
     }
 
     protected function getHeaderActions(): array
     {
-        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-        $path = $this->record->slug === 'home' ? '/' : '/' . $this->record->slug;
-        $url  = $base . $path;
-
-        $isDraft = $this->record->status !== 'published';
-
         return [
-            $isDraft
-                ? Actions\Action::make('publicUrl')
-                    ->label($url)
-                    ->link()
-                    ->color('gray')
-                    ->disabled()
-                    ->extraAttributes([
-                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                        'title' => 'Page not published',
-                    ])
-                : Actions\Action::make('publicUrl')
-                    ->label($url)
-                    ->url($url)
-                    ->openUrlInNewTab()
-                    ->link()
-                    ->color('primary')
-                    ->extraAttributes([
-                        'style' => 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw;display:block;font-family:monospace;font-size:0.8125rem;',
-                        'title' => $url,
-                    ]),
-
-            Actions\DeleteAction::make()
-                ->hidden(fn () => $this->record->type === 'system'),
-
-            Actions\ActionGroup::make([
-                Actions\Action::make('exportPage')
-                    ->label('Export Page')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
-                    ->action(function (): StreamedResponse {
-                        abort_unless(auth()->user()?->can('update_page'), 403);
-
-                        $bundle   = app(ContentExporter::class)->exportPages([$this->record->id]);
-                        $filename = now()->format('Ymd-His') . '-page-' . $this->record->slug . '.json';
-
-                        return response()->streamDownload(
-                            fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
-                            $filename,
-                            ['Content-Type' => 'application/json'],
-                        );
-                    }),
-
-                Actions\Action::make('saveAsContentTemplate')
-                    ->label('Save Block Layout as Template')
-                    ->icon('heroicon-o-clipboard-document-list')
-                    ->hidden(fn () => ! auth()->user()?->can('update_page'))
-                    ->form([
-                        Forms\Components\TextInput::make('template_name')
-                            ->label('Template Name')
-                            ->required()
-                            ->maxLength(255),
-
-                        Forms\Components\Textarea::make('template_description')
-                            ->label('Description')
-                            ->rows(2)
-                            ->maxLength(1000),
-                    ])
-                    ->action(function (array $data) {
-                        abort_unless(auth()->user()?->can('update_page'), 403);
-                        $definition = PageWidget::serializeStack($this->record->id);
-
-                        if (empty($definition)) {
-                            Notification::make()
-                                ->title('No widgets to save')
-                                ->body('This page has no widgets. Add blocks first.')
-                                ->warning()
-                                ->send();
-                            return;
-                        }
-
-                        Template::create([
-                            'name'        => $data['template_name'],
-                            'type'        => 'content',
-                            'description' => $data['template_description'] ?: null,
-                            'definition'  => $definition,
-                            'is_default'  => false,
-                            'created_by'  => auth()->id(),
-                        ]);
-
-                        Notification::make()
-                            ->title("Template saved: {$data['template_name']}")
-                            ->success()
-                            ->send();
-                    })
-                    ->modalHeading('Save Block Layout as Content Template')
-                    ->modalSubmitActionLabel('Save Template'),
-
-                Actions\Action::make('editSnippets')
-                    ->label('Edit Header & Footer Snippets')
-                    ->icon('heroicon-o-code-bracket')
-                    ->visible(fn () => auth()->user()?->can('edit_page_snippets') ?? false)
-                    ->fillForm(fn () => [
-                        'head_snippet' => $this->record->head_snippet,
-                        'body_snippet' => $this->record->body_snippet,
-                    ])
-                    ->form([
-                        Forms\Components\Placeholder::make('snippet_info')
-                            ->label('')
-                            ->content(new \Illuminate\Support\HtmlString(
-                                'This control is for per-page code snippets only. If you are trying to install Google Tag Manager or any other site-wide scripts, please use the Site Header and Site Footer fields on the <a href="' . CmsSettingsPage::getUrl() . '" class="underline text-primary-600 dark:text-primary-400" target="_blank">CMS Settings Page</a>.'
-                            )),
-
-                        Forms\Components\Textarea::make('head_snippet')
-                            ->label('Head snippet (before </head>)')
-                            ->rows(4)
-                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
-                            ->rules([new ValidHtmlSnippet()]),
-
-                        Forms\Components\Textarea::make('body_snippet')
-                            ->label('Body snippet (before </body>)')
-                            ->rows(4)
-                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
-                            ->rules([new ValidHtmlSnippet()]),
-                    ])
-                    ->action(function (array $data) {
-                        abort_unless(auth()->user()?->can('edit_page_snippets'), 403);
-                        $this->record->update([
-                            'head_snippet' => $data['head_snippet'],
-                            'body_snippet' => $data['body_snippet'],
-                        ]);
-
-                        Notification::make()
-                            ->title('Snippets saved')
-                            ->success()
-                            ->send();
-                    })
-                    ->modalHeading('Header & Footer Snippets')
-                    ->modalSubmitActionLabel('Save Snippets'),
-            ])
-                ->icon('heroicon-m-ellipsis-vertical')
-                ->tooltip('More actions'),
+            Actions\Action::make('pageDetails')
+                ->label('Edit Page Details')
+                ->icon('heroicon-o-cog-6-tooth')
+                ->url(fn () => PageResource::getUrl('details', ['record' => $this->record])),
         ];
     }
 
+    public function getBreadcrumbs(): array
+    {
+        return [
+            ListPages::getUrl() => 'Pages',
+            'Edit Page',
+        ];
+    }
 }

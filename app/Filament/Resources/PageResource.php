@@ -37,7 +37,7 @@ class PageResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema(
-            static::pageBuilderFormSchema(
+            static::metadataFormSchema(
                 type: 'page',
                 modelType: 'page',
                 tagType: 'page',
@@ -106,7 +106,6 @@ class PageResource extends Resource
                         ->columnSpanFull(),
                 ],
                 withSeo: true,
-                pageBuilderProps: fn ($record) => ['pageId' => $record->id],
             )
         );
     }
@@ -256,9 +255,10 @@ class PageResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListPages::route('/'),
-            'create' => Pages\CreatePage::route('/create'),
-            'edit'   => Pages\EditPage::route('/{record}/edit'),
+            'index'   => Pages\ListPages::route('/'),
+            'create'  => Pages\CreatePage::route('/create'),
+            'edit'    => Pages\EditPage::route('/{record}/edit'),
+            'details' => Pages\EditPageDetails::route('/{record}/details'),
         ];
     }
 }

@@ -1,8 +1,8 @@
 ---
 title: Pages
-description: How to create and manage public website pages using the built-in page builder, including content blocks, slugs, and publishing.
+description: How to create and manage public website pages using the built-in page builder, including content blocks and visual editing.
 version: "0.25"
-updated: 2026-04-01
+updated: 2026-04-12
 tags: [cms, pages, page-builder, content]
 routes:
   - filament.admin.resources.pages.index
@@ -21,30 +21,43 @@ The Pages index shows all pages with their slug, title, and published status. Us
 
 ## Creating a Page
 
-- **Title** (required) — the page's display title. Also used to generate the slug.
-- **Slug** — the URL path for this page (e.g., `/about-us`). Auto-generated from the title but editable.
-- **Content blocks** — build the page body using the block editor. Add text, images, headings, buttons, and other content elements.
-- **Published** — toggle to control whether the page is visible on the public site.
+When you create a new page, you set the title, page type, template, and optionally select a content template to prepopulate blocks. After creation, you are taken to the page builder to add content.
 
 ## The Page Builder
 
-The page builder uses a block-based editor. Each block type has its own fields. Blocks can be reordered by dragging or using the up/down controls in the block menu. Click the ellipsis (⋯) on any block to duplicate, move, or delete it.
+The page builder is the primary editing view when you open a page. The header shows the page title, author, status, and public URL. The main area is a live preview of your page content.
 
-## Slugs
+### Adding blocks
 
-Slugs are generated from the page title when you first create a page. You can edit the slug at any time. Changing a slug will break any existing links to the old URL — update links accordingly.
+Use the **+ Widget** button below the preview to open the widget picker and add a content block. Use the **+ Columns** button to add a multi-column layout (2, 3, or 4 columns).
 
-## Tags
+### Editing blocks
 
-You can apply page tags to categorize content and build filtered listings. The Tags field appears in the page edit form.
+Click any block in the preview to select it. The inspector panel on the right shows the block's settings. Changes are saved automatically as you edit — there is no save button needed.
 
-- **Selecting existing tags** — click the Tags field and type to search. Click a tag to apply it. Applied tags appear as pills.
-- **Removing a tag** — click the × on any tag pill.
-- **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
+The inspector has two tabs:
+- **Content** — the block's content fields (text, images, links, etc.).
+- **Appearance** — background color/image, text color, spacing, and layout options.
 
-## Saving and Publishing
+### Reordering blocks
 
-Use the **Save** button to save a draft. Toggle the **Published** switch to make the page live on the public site. Pages that are not published are only visible to logged-in admins.
+Drag blocks in the preview to reorder them. You can also drag blocks into and out of column layouts.
+
+### Block actions
+
+Click the ellipsis menu on any block to access additional actions: duplicate, delete, or toggle visibility.
+
+### Viewport preview
+
+Use the device icons above the preview to switch between desktop, tablet, and mobile viewport widths. The preview scales to show how the page will look at each size.
+
+## Page Details
+
+To edit page metadata (title, slug, status, template, images, tags, SEO), click **Edit Page Details** in the page header. See the **Page Details** help article for more information.
+
+## Save as Template
+
+When a page has at least one block, the **Save as Template** button appears at the bottom of the builder. This saves the current block arrangement as a reusable content template that can be applied when creating new pages.
 
 ## Deleted Records and Trash
 

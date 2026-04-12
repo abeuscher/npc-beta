@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Filament\Resources\PageResource;
+use App\Filament\Resources\PostResource;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
@@ -360,9 +362,41 @@ class PageBuilder extends Component
         // until Phase 3 migrates the store to use 'items'.
         $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
 
+        // Page metadata for the builder header
+        $pageTitle  = $page?->title ?? '';
+        $pageAuthor = $page?->author?->name ?? '';
+        $pageStatus = $page?->status ?? 'draft';
+        $pageTags   = $page
+            ? $page->tags()->where('type', match ($page->type) {
+                'post' => 'post',
+                'event' => 'event',
+                default => 'page',
+            })->pluck('name')->toArray()
+            : [];
+
+        $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+        $path = ($page && $page->slug === 'home') ? '/' : '/' . ($page->slug ?? '');
+        $pageUrl = $base . $path;
+
+        // Details URL — only for page/post types that have a details sub-page
+        $detailsUrl = null;
+        if ($page) {
+            if ($page->type === 'post') {
+                $detailsUrl = PostResource::getUrl('details', ['record' => $page]);
+            } elseif (in_array($page->type, ['default', 'member', 'system'])) {
+                $detailsUrl = PageResource::getUrl('details', ['record' => $page]);
+            }
+        }
+
         return [
             'page_id'                 => $this->pageId,
             'page_type'               => $this->pageType,
+            'page_title'              => $pageTitle,
+            'page_author'             => $pageAuthor,
+            'page_status'             => $pageStatus,
+            'page_url'                => $pageUrl,
+            'page_tags'               => $pageTags,
+            'details_url'             => $detailsUrl,
             'widgets'                 => $legacyWidgets,
             'items'                   => $items,
             'required_libs'           => array_values(array_unique($allLibs)),

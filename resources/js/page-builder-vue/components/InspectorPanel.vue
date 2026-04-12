@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useEditorStore } from '../stores/editor'
 import type { FieldDef } from '../types'
 import InspectorHeader from './InspectorHeader.vue'
 import InspectorTabs from './InspectorTabs.vue'
 import InspectorFieldGroup from './InspectorFieldGroup.vue'
-import ApplyChangesButton from './ApplyChangesButton.vue'
 import BackgroundPanel from './appearance/BackgroundPanel.vue'
 import TextPanel from './appearance/TextPanel.vue'
 import SectionLayoutPanel from './appearance/SectionLayoutPanel.vue'
 import QuerySettings from './QuerySettings.vue'
 import LayoutInspectorPanel from './LayoutInspectorPanel.vue'
-import { ref } from 'vue'
 
 const store = useEditorStore()
 const activeTab = ref<'content' | 'appearance'>('content')
@@ -56,7 +54,6 @@ const appearanceFields = computed(() => {
         </div>
       </div>
 
-      <ApplyChangesButton />
     </template>
 
     <div v-else class="inspector-panel__placeholder">
@@ -70,6 +67,7 @@ const appearanceFields = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  margin-top: 2rem;
 }
 
 .inspector-panel__placeholder {

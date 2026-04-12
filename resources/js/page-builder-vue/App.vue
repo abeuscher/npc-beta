@@ -13,6 +13,14 @@ const props = defineProps<{
 
 const store = useEditorStore()
 
+function openSaveTemplateModal() {
+  window.dispatchEvent(
+    new CustomEvent('open-save-template-modal', {
+      detail: { pageId: store.pageId },
+    })
+  )
+}
+
 async function handleWidgetCreated(e: Event) {
   const detail = (e as CustomEvent).detail ?? {}
   if (detail.pageId !== store.pageId) return
@@ -56,12 +64,21 @@ onUnmounted(() => {
         <InspectorPanel />
       </div>
     </div>
+
+    <div v-if="store.rootWidgets.length > 0" class="vue-editor__footer">
+      <button
+        type="button"
+        class="vue-editor__save-template-btn"
+        @click="openSaveTemplateModal"
+      >
+        Save as Template
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .vue-editor {
-  margin-top: 1.5rem;
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
   padding: 1rem;
@@ -80,6 +97,33 @@ onUnmounted(() => {
   top: 1rem;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
+}
+
+.vue-editor__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.vue-editor__save-template-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.vue-editor__save-template-btn:hover {
+  background: #f9fafb;
 }
 
 @media (max-width: 768px) {

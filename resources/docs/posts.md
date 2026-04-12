@@ -2,7 +2,7 @@
 title: Blog Posts
 description: How to write, publish, and manage blog posts that appear on the public website.
 version: "0.25"
-updated: 2026-04-01
+updated: 2026-04-12
 tags: [cms, posts, blog, content]
 routes:
   - filament.admin.resources.posts.index
@@ -21,25 +21,21 @@ The Posts index shows all posts with their title, publication date, and status. 
 
 ## Writing a Post
 
-- **Title** (required) — the post's headline.
-- **Slug** — auto-generated from the title. Appears in the post's URL.
-- **Content** — the body of the post, assembled using the page builder block editor (same system as Pages).
-- **Excerpt** — a short summary used in post listings and social previews. If left blank, the system uses the first paragraph.
-- **Featured image** — an image displayed at the top of the post and in listing cards.
-- **Published** — toggle to publish. Draft posts are not visible to the public.
-- **Published at** — optionally set a future date to schedule the post.
+When you create a new post, you set the title. After creation, you are taken to the page builder to add content using the same block editor as Pages.
 
-## Tags
+The builder header shows the post title, author, status, and public URL. Use **+ Widget** and **+ Columns** below the preview to add content blocks. Click any block to edit it in the inspector panel on the right. Changes are saved automatically.
 
-Posts can be tagged to help readers find related content. Tags appear on the public post page and can be used to build filtered listing pages.
+## Post Details
 
-- **Selecting existing tags** — click the Tags field and type to search. Click a tag to apply it. Applied tags appear as pills.
-- **Removing a tag** — click the × on any tag pill.
-- **Creating a new tag** — type the label in the **Create tag** field below the selector and click **+**. The tag is created and applied immediately.
+To edit post metadata (title, slug, status, images, tags, SEO), click **Edit Post Details** in the page header. See the **Post Details** help article for more information.
+
+## Save as Template
+
+When a post has at least one block, the **Save as Template** button appears at the bottom of the builder. This saves the current block arrangement as a reusable content template.
 
 ## Editing Published Posts
 
-You can edit a published post at any time. Changes take effect immediately on save. If you need to make substantial changes to a live post, consider setting it back to draft until edits are complete.
+You can edit a published post at any time. Changes take effect immediately. If you need to make substantial changes to a live post, consider setting it back to draft via Post Details until edits are complete.
 
 ## Deleted Records and Trash
 

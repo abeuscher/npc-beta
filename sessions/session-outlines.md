@@ -173,6 +173,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 164 | Appearance Controls — Background Panel |
 | 165 | Appearance Controls — Text & Section Layout Panels |
 | 166 | Appearance Controls — Docs Finalization & Widget Spacing Harmonization |
+| 167 | Page Builder as Main Edit View |
 
 ---
 
@@ -187,38 +188,6 @@ Two small cosmetic fixes:
 2. **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
 
 **Testing:** Visual verification only. No new tests expected.
-
-### Page Builder as Main Edit View
-
-Restructure the page edit experience so the page builder is the primary view and page metadata lives on a separate details sub-page.
-
-**Builder header — new layout:**
-
-Remove the "Page Builder" heading, "Add and arrange blocks on this page" subtext, block count from header, and "Add block" button from header. Replace with:
-
-- **Row 1:** `[Page Name bold] by [Author plain] [Status italic]`
-- **Row 2:** `[Page URL linked] [Tags listed horizontally]`
-- **Right side:** "Edit Page Details" button linking to the new details sub-page.
-
-**Below the preview canvas:**
-
-- Move the block count ("N blocks on this page") to below the preview window, left-aligned.
-- Add a `+ Columns` button with a dropdown for column options next to the existing `+ Widget` button. These become the only way to add widgets and columns — no header button.
-
-**Footer area (where Save/Cancel currently live):**
-
-- Remove the "Save changes" and "Cancel" buttons (the builder already auto-saves via REST).
-- Replace with a "Save as Template" button in the same location.
-
-**New Filament sub-page — Edit Page Details:**
-
-A new `PageResource/Pages/EditPageDetails.php` containing the form fields currently on `EditPage`: title, slug, status, template, page type, images, SEO fields, and any other page metadata. Standard Filament save button for the metadata form. Breadcrumb: Pages > Edit Page > Page Details.
-
-Status is read-only in the builder header (italic text). To change status, the user navigates to Edit Page Details.
-
-Same pattern applies to `EditPost`.
-
-**Testing:** Existing page builder and page edit tests updated to reflect the new route structure. New test asserting the details sub-page loads and saves correctly.
 
 ---
 

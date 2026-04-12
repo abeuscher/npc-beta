@@ -120,6 +120,12 @@ export interface ThemePaletteEntry {
 export interface BootstrapData {
   page_id: string
   page_type: string
+  page_title: string
+  page_author: string
+  page_status: string
+  page_url: string
+  page_tags: string[]
+  details_url: string | null
   items: PageItem[]
   required_libs: string[]
   widget_types: WidgetType[]

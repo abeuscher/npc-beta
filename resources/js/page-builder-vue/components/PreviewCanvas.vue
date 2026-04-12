@@ -14,11 +14,11 @@ const { presetViewport, zoomFactor, computeZoom, setViewport } = useViewport()
 const paneEl = ref<HTMLElement | null>(null)
 const scopeEl = ref<HTMLElement | null>(null)
 
-// Add block dropdown
-const addMenuOpen = ref(false)
+// Columns dropdown
+const columnsMenuOpen = ref(false)
 
 function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
-  addMenuOpen.value = false
+  columnsMenuOpen.value = false
 
   let insertPosition: number | null = null
   if (position === 'bottom') {
@@ -41,7 +41,7 @@ function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
 }
 
 async function addColumnLayout(columns: number) {
-  addMenuOpen.value = false
+  columnsMenuOpen.value = false
   const layout = await store.createLayout({
     label: `${columns} Column Layout`,
     display: 'grid',
@@ -52,9 +52,9 @@ async function addColumnLayout(columns: number) {
   }
 }
 
-function closeAddMenu(e: Event) {
-  if (!(e.target as Element)?.closest('.add-block-dropdown')) {
-    addMenuOpen.value = false
+function closeColumnsMenu(e: Event) {
+  if (!(e.target as Element)?.closest('.preview-canvas__columns-dropdown')) {
+    columnsMenuOpen.value = false
   }
 }
 
@@ -163,7 +163,7 @@ const presetIcons: Record<number, string> = {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(async () => {
-  document.addEventListener('click', closeAddMenu)
+  document.addEventListener('click', closeColumnsMenu)
   measurePane()
 
   if (paneEl.value) {
@@ -182,7 +182,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeAddMenu)
+  document.removeEventListener('click', closeColumnsMenu)
   resizeObserver?.disconnect()
 })
 
@@ -204,69 +204,8 @@ watch(
 
 <template>
   <div ref="paneEl" class="preview-canvas" style="min-width: 0">
-    <!-- Toolbar: add block + viewport toggle -->
+    <!-- Viewport toggle bar -->
     <div class="preview-canvas__viewport-bar">
-      <!-- Add Block dropdown (left) -->
-      <div class="add-block-dropdown">
-        <button
-          type="button"
-          class="add-block-dropdown__trigger"
-          @click.stop="addMenuOpen = !addMenuOpen"
-        >
-          + Add Block
-        </button>
-        <div v-show="addMenuOpen" class="add-block-dropdown__menu">
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            @click="openWidgetPicker('bottom')"
-          >
-            Insert at bottom
-          </button>
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            :class="{ 'add-block-dropdown__item--disabled': !store.selectedWidget }"
-            :disabled="!store.selectedWidget"
-            @click="openWidgetPicker('above')"
-          >
-            Insert above selected
-          </button>
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            :class="{ 'add-block-dropdown__item--disabled': !store.selectedWidget }"
-            :disabled="!store.selectedWidget"
-            @click="openWidgetPicker('below')"
-          >
-            Insert below selected
-          </button>
-          <div class="add-block-dropdown__divider"></div>
-          <div class="add-block-dropdown__heading">Column Layout</div>
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            @click="addColumnLayout(2)"
-          >
-            + 2 columns
-          </button>
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            @click="addColumnLayout(3)"
-          >
-            + 3 columns
-          </button>
-          <button
-            type="button"
-            class="add-block-dropdown__item"
-            @click="addColumnLayout(4)"
-          >
-            + 4 columns
-          </button>
-        </div>
-      </div>
-
       <span class="preview-canvas__viewport-label">Viewport:</span>
       <button
         v-for="vp in viewportPresets"
@@ -345,18 +284,39 @@ watch(
           v-if="store.pageItems.length === 0"
           class="preview-canvas__empty"
         >
-          No blocks yet. Click <strong>+ Add Block</strong> to get started.
+          No blocks yet. Click <strong>+ Widget</strong> below to get started.
         </div>
+      </div>
+    </div>
 
+    <!-- Bottom action bar: + Widget, + Columns, block count -->
+    <div class="preview-canvas__bottom-bar">
+      <div class="preview-canvas__bottom-actions">
         <button
-          v-else
           type="button"
-          class="preview-canvas__add-bottom"
+          class="preview-canvas__action-btn preview-canvas__action-btn--primary"
           @click="openWidgetPicker('bottom')"
         >
-          + Add widget
+          + Widget
         </button>
+        <div class="preview-canvas__columns-dropdown">
+          <button
+            type="button"
+            class="preview-canvas__action-btn preview-canvas__action-btn--secondary"
+            @click.stop="columnsMenuOpen = !columnsMenuOpen"
+          >
+            + Columns &#9662;
+          </button>
+          <div v-show="columnsMenuOpen" class="preview-canvas__columns-menu">
+            <button type="button" class="preview-canvas__columns-item" @click="addColumnLayout(2)">2 columns</button>
+            <button type="button" class="preview-canvas__columns-item" @click="addColumnLayout(3)">3 columns</button>
+            <button type="button" class="preview-canvas__columns-item" @click="addColumnLayout(4)">4 columns</button>
+          </div>
+        </div>
       </div>
+      <p class="preview-canvas__block-count">
+        {{ store.rootWidgets.length }} block(s) on this page
+      </p>
     </div>
   </div>
 </template>
@@ -369,81 +329,6 @@ watch(
   gap: 0.25rem;
   margin-bottom: 0.5rem;
   padding: 0 0.25rem;
-}
-
-/* Add Block dropdown */
-.add-block-dropdown {
-  position: relative;
-  margin-right: auto;
-}
-
-.add-block-dropdown__trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border-radius: 0.375rem;
-  border: none;
-  background: var(--c-primary-600, #4f46e5);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.add-block-dropdown__trigger:hover {
-  background: var(--c-primary-500, #6366f1);
-}
-
-.add-block-dropdown__menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  margin-top: 0.25rem;
-  min-width: 12rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  background: #fff;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.add-block-dropdown__item {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  text-align: left;
-  border: none;
-  background: none;
-  color: #374151;
-  cursor: pointer;
-}
-
-.add-block-dropdown__item:hover:not(:disabled) {
-  background: #f3f4f6;
-}
-
-.add-block-dropdown__item--disabled {
-  color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.add-block-dropdown__divider {
-  height: 1px;
-  background: #e5e7eb;
-  margin: 0.25rem 0;
-}
-
-.add-block-dropdown__heading {
-  padding: 0.375rem 0.75rem 0.125rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9ca3af;
 }
 
 .preview-canvas__viewport-label {
@@ -484,7 +369,7 @@ watch(
   border: 1px solid #e5e7eb;
   background: #fff;
   overflow: hidden;
-  padding-top: 5rem;
+  padding-top: 1.5rem;
 }
 
 .preview-canvas__empty {
@@ -494,23 +379,90 @@ watch(
   color: #9ca3af;
 }
 
-.preview-canvas__add-bottom {
-  display: block;
-  width: 100%;
-  margin-top: 1rem;
-  padding: 1.5rem;
-  font-size: 2rem;
-  font-weight: 600;
-  color: #4f46e5;
-  background: #fff;
-  border: 2px dashed #c7d2fe;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+/* Bottom action bar */
+.preview-canvas__bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0 0.25rem;
 }
 
-.preview-canvas__add-bottom:hover {
-  background: #eef2ff;
-  border-color: #818cf8;
+.preview-canvas__bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preview-canvas__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.preview-canvas__action-btn--primary {
+  background: var(--c-primary-600, #4f46e5);
+  color: #fff;
+}
+
+.preview-canvas__action-btn--primary:hover {
+  background: var(--c-primary-500, #6366f1);
+}
+
+.preview-canvas__action-btn--secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.preview-canvas__action-btn--secondary:hover {
+  background: #f9fafb;
+}
+
+.preview-canvas__columns-dropdown {
+  position: relative;
+}
+
+.preview-canvas__columns-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 20;
+  margin-bottom: 0.25rem;
+  min-width: 8rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.preview-canvas__columns-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  text-align: left;
+  border: none;
+  background: none;
+  color: #374151;
+  cursor: pointer;
+}
+
+.preview-canvas__columns-item:hover {
+  background: #f3f4f6;
+}
+
+.preview-canvas__block-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
 }
 </style>

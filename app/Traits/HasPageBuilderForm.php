@@ -11,19 +11,10 @@ use Filament\Forms;
 trait HasPageBuilderForm
 {
     /**
-     * Assemble the standard CMS edit form layout.
-     *
-     * @param  string  $type           Content type: 'page', 'post', or 'event'.
-     * @param  string  $modelType      Model type string for CustomFieldDef::forModel().
-     * @param  string  $tagType        Tag type key for TagSelect (page, post, event).
-     * @param  array   $extraTitleFields  Additional fields appended below the unified header
-     *                                    fieldset (e.g. page type selector, system slug display).
-     * @param  array   $uniqueSections    Additional sections below the top row (e.g. event location).
-     * @param  array   $imageFields       Image fields rendered in the collapsed Images section.
-     * @param  bool    $withSeo           Include the full-width SEO section.
-     * @param  callable|null $pageBuilderProps  Callable for page builder; null to omit.
+     * Return only the metadata form sections (header, images, custom fields, SEO).
+     * Used by EditPageDetails / EditPostDetails which do not render the page builder.
      */
-    public static function pageBuilderFormSchema(
+    public static function metadataFormSchema(
         string $type,
         string $modelType,
         string $tagType,
@@ -31,7 +22,6 @@ trait HasPageBuilderForm
         array $uniqueSections = [],
         array $imageFields = [],
         bool $withSeo = true,
-        ?callable $pageBuilderProps = null,
         ?Forms\Components\Component $templateField = null,
     ): array {
         // ── Unified header fieldset: two 12-col rows ──────────────────────
@@ -122,19 +112,56 @@ trait HasPageBuilderForm
                 ->columnSpanFull();
         }
 
-        // ── Page Builder (full width, hidden on create) ───────────────────
-        if ($pageBuilderProps !== null) {
-            $props = $pageBuilderProps;
-            $schema[] = Forms\Components\Section::make('Page Builder')
+        return $schema;
+    }
+
+    /**
+     * Return only the page builder section (Livewire component, hidden on create).
+     */
+    public static function pageBuilderSection(callable $pageBuilderProps): array
+    {
+        return [
+            Forms\Components\Section::make('Page Builder')
                 ->description('Add and arrange content blocks for this page.')
                 ->schema([
                     Forms\Components\Livewire::make(
                         PageBuilder::class,
-                        fn ($record) => $record ? $props($record) : []
+                        fn ($record) => $record ? $pageBuilderProps($record) : []
                     )->columnSpanFull(),
                 ])
                 ->hidden(fn ($record) => $record === null)
-                ->columnSpanFull();
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * Assemble the standard CMS edit form layout (metadata + page builder).
+     * Kept for backward compatibility — EventResource uses this combined form.
+     */
+    public static function pageBuilderFormSchema(
+        string $type,
+        string $modelType,
+        string $tagType,
+        array $extraTitleFields = [],
+        array $uniqueSections = [],
+        array $imageFields = [],
+        bool $withSeo = true,
+        ?callable $pageBuilderProps = null,
+        ?Forms\Components\Component $templateField = null,
+    ): array {
+        $schema = static::metadataFormSchema(
+            type: $type,
+            modelType: $modelType,
+            tagType: $tagType,
+            extraTitleFields: $extraTitleFields,
+            uniqueSections: $uniqueSections,
+            imageFields: $imageFields,
+            withSeo: $withSeo,
+            templateField: $templateField,
+        );
+
+        if ($pageBuilderProps !== null) {
+            $schema = array_merge($schema, static::pageBuilderSection($pageBuilderProps));
         }
 
         return $schema;

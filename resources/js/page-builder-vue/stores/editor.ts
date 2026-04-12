@@ -23,6 +23,12 @@ export const useEditorStore = defineStore('editor', () => {
   // Core data
   const pageId = ref('')
   const pageType = ref('default')
+  const pageTitle = ref('')
+  const pageAuthor = ref('')
+  const pageStatus = ref('draft')
+  const pageUrl = ref('')
+  const pageTags = ref<string[]>([])
+  const detailsUrl = ref<string | null>(null)
   const widgets = ref<Record<string, Widget>>({}) // flat map of all widgets (root + inside layouts)
   const layouts = ref<Record<string, PageLayout>>({}) // flat map of layouts
   const pageItems = ref<PageItem[]>([]) // ordered merged page flow
@@ -127,6 +133,12 @@ export const useEditorStore = defineStore('editor', () => {
   function loadTree(data: BootstrapData): void {
     pageId.value = data.page_id
     pageType.value = data.page_type
+    pageTitle.value = data.page_title ?? ''
+    pageAuthor.value = data.page_author ?? ''
+    pageStatus.value = data.page_status ?? 'draft'
+    pageUrl.value = data.page_url ?? ''
+    pageTags.value = data.page_tags ?? []
+    detailsUrl.value = data.details_url ?? null
     widgetTypes.value = data.widget_types
     requiredHandles.value = data.required_handles
     collections.value = data.collections
@@ -675,6 +687,12 @@ export const useEditorStore = defineStore('editor', () => {
     // State
     pageId,
     pageType,
+    pageTitle,
+    pageAuthor,
+    pageStatus,
+    pageUrl,
+    pageTags,
+    detailsUrl,
     widgets,
     layouts,
     pageItems,
