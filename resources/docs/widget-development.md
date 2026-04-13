@@ -411,10 +411,51 @@ Sample images live in `resources/sample-images/{category}/` (e.g. `portraits/`, 
 
 ---
 
+## Declaring manifest metadata
+
+Every widget definition inherits six optional manifest methods from `WidgetDefinition`. Metadata is code-only — it is not written to `widget_types` and is not part of `toRow()`. The widget browser UI reads it at runtime via `WidgetRegistry::manifests()`, and CI (`tests/Feature/WidgetManifestTest.php`) validates the contract.
+
+| Method | Default | Notes |
+|--------|---------|-------|
+| `version(): string` | `'1.0.0'` | Must match `/^\d+\.\d+\.\d+$/`. Bump per-widget when a widget's contract changes. |
+| `author(): string` | `'Nonprofit CRM'` | Leave as-is for first-party widgets. |
+| `license(): string` | `'MIT'` | Allow-list: `MIT`, `Apache-2.0`, `GPL-3.0`, `BSD-3-Clause`, `proprietary`. |
+| `screenshots(): array` | `[]` | Paths relative to the widget folder (e.g. `'screenshots/hero.png'`). Every path must exist on disk. |
+| `keywords(): array` | `[]` | Lowercase slugs matching `/^[a-z0-9-]+$/` — used for browser search. |
+| `presets(): array` | `[]` | Named config bundles (see shape below). |
+
+The base class also exposes a `manifest(): array` aggregator that returns all six fields plus `handle`, `label`, `description`, and `category` in a single stable shape. Don't override it; override the individual getters.
+
+### Preset shape
+
+```php
+public function presets(): array
+{
+    return [
+        [
+            'handle'            => 'dark-hero',        // slug, unique within the widget
+            'label'             => 'Dark Hero',        // human-readable, non-empty
+            'description'       => 'Short sentence.',  // string or null
+            'config'            => [                   // subset of schema() keys
+                'background' => 'dark',
+                'alignment'  => 'center',
+            ],
+            'appearance_config' => [                   // appearance jsonb bag subset
+                'padding' => ['top' => 80, 'bottom' => 80],
+            ],
+        ],
+    ];
+}
+```
+
+Every key in `preset.config` must appear in the widget's `schema()` — CI enforces this and names the offending widget handle in the failure message.
+
+---
+
 ## Quick-Start Checklist for a New Widget
 
 1. Create the widget folder at `app/Widgets/{PascalName}/`.
-2. Create `{PascalName}Definition.php` extending `App\Widgets\Contracts\WidgetDefinition` with `handle()`, `label()`, `description()`, `schema()`, and `defaults()`. Override optional methods (`category`, `collections`, `assets`, `fullWidth`, `defaultOpen`, `allowedPageTypes`, `requiredConfig`, `css`, `js`) as needed.
+2. Create `{PascalName}Definition.php` extending `App\Widgets\Contracts\WidgetDefinition` with `handle()`, `label()`, `description()`, `schema()`, and `defaults()`. Override optional methods (`category`, `collections`, `assets`, `fullWidth`, `defaultOpen`, `allowedPageTypes`, `requiredConfig`, `css`, `js`) as needed. Override manifest metadata (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) only when the defaults don't fit — see "Declaring manifest metadata" below.
 3. Create `template.blade.php` in the same folder. The base-class default `template()` method will find it via the `widgets::` namespace.
 4. If the widget needs custom styles, create `styles.scss` in the same folder and return its path from `assets()`: `['scss' => ['app/Widgets/{PascalName}/styles.scss']]`.
 5. Register the definition in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{PascalName}\{PascalName}Definition());`

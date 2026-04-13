@@ -80,11 +80,18 @@ Abstract base class. Concrete widget definitions extend it.
 - `js()` → `null`
 - `code()` → `null`
 - `variableName()` → `null`
+- `version()` → `'1.0.0'`
+- `author()` → `'Nonprofit CRM'`
+- `license()` → `'MIT'`
+- `screenshots()` → `[]`
+- `keywords()` → `[]`
+- `presets()` → `[]`
 
 **Introspection / validation:**
 
 - `toRow()` — returns the array shape `WidgetType::updateOrCreate()` expects.
 - `validate()` — throws when `defaults()` is missing a key declared in `schema()`.
+- `manifest()` — returns the aggregated metadata array (handle, label, description, category, version, author, license, screenshots, keywords, presets). Consumed by the widget browser UI; never written to the DB.
 
 ### `App\Services\WidgetRegistry`
 
@@ -93,6 +100,7 @@ Singleton service. Holds registered definitions keyed by handle.
 - `register(WidgetDefinition $def): void`
 - `all(): array`
 - `find(string $handle): ?WidgetDefinition`
+- `manifests(): array` — handle → `$def->manifest()` for every registered definition. Called by the widget browser UI to populate its grid in one pass.
 - `sync(): void` — iterates all definitions, calls `validate()`, then `WidgetType::updateOrCreate(['handle' => $def->handle()], $def->toRow())`.
 
 ### `App\Providers\WidgetServiceProvider`
@@ -175,6 +183,75 @@ Because both the renderer and the inspector draw defaults from the resolver, the
 
 ---
 
-## Current status (session 172)
+## Manifest & Metadata
 
-Stage 3 of the Sovereign Widget arc is complete. Every registered widget — all 30 (29 seeder-declared widgets plus `nav`) — is now a self-contained folder under `app/Widgets/`. The legacy `resources/views/widgets/` and `resources/scss/widgets/` directories have been retired.
+Every widget declares human-facing metadata — version, author, license, screenshots, keywords, presets — via optional methods on its definition class. Metadata is **code-only**: it lives on the definition, not in the `widget_types` table, and is not part of `toRow()`. The widget browser UI reads it at runtime via `WidgetRegistry::manifests()`.
+
+### Methods
+
+| Method | Default | Purpose |
+|--------|---------|---------|
+| `version(): string` | `'1.0.0'` | Semver. Must match `/^\d+\.\d+\.\d+$/`. |
+| `author(): string` | `'Nonprofit CRM'` | Attribution. |
+| `license(): string` | `'MIT'` | One of `MIT`, `Apache-2.0`, `GPL-3.0`, `BSD-3-Clause`, `proprietary`. |
+| `screenshots(): array` | `[]` | List of paths relative to the widget's folder (e.g. `'screenshots/hero.png'`). |
+| `keywords(): array` | `[]` | Lowercase slug tags for browser search. Each must match `/^[a-z0-9-]+$/`. |
+| `presets(): array` | `[]` | List of named config bundles (see shape below). |
+
+All six are optional. Every widget is first-party, so the defaults are expected to cover `author` and `license`; override only when a widget has a genuine reason to differ (e.g. a future third-party widget).
+
+### `manifest()` aggregator
+
+The base class ships a `manifest(): array` that returns the full metadata surface in one shape:
+
+```php
+[
+    'handle'      => $this->handle(),
+    'label'       => $this->label(),
+    'description' => $this->description(),
+    'category'    => $this->category(),
+    'version'     => $this->version(),
+    'author'      => $this->author(),
+    'license'     => $this->license(),
+    'screenshots' => $this->screenshots(),
+    'keywords'    => $this->keywords(),
+    'presets'     => $this->presets(),
+]
+```
+
+The widget browser UI calls `manifest()` (via `WidgetRegistry::manifests()`) once per widget instead of eight getters. The key set is stable — third-party widgets will depend on it.
+
+### Preset shape
+
+Each preset is an array with these keys:
+
+```php
+[
+    'handle'            => 'dark-hero',        // slug, unique within the widget
+    'label'             => 'Dark Hero',        // human-readable, non-empty
+    'description'       => 'Short sentence.',  // string or null
+    'config'            => [...],              // widget config overrides (subset of schema keys)
+    'appearance_config' => [...],              // appearance jsonb bag subset
+]
+```
+
+Every key in `preset.config` must appear in the widget's `schema()` — CI enforces this.
+
+### CI validation
+
+`tests/Feature/WidgetManifestTest.php` iterates every registered definition and asserts:
+
+1. `version()` matches `/^\d+\.\d+\.\d+$/`.
+2. `license()` is in the allow-list.
+3. Every path in `screenshots()` exists on disk (resolved against `app/Widgets/{Folder}/`).
+4. Every keyword matches `/^[a-z0-9-]+$/`.
+5. Every preset has the correct shape and all `preset.config` keys exist in `schema()`.
+6. `manifest()` returns exactly the expected top-level keys (prevents shape drift).
+
+Each rule fails with a message naming the offending widget handle.
+
+---
+
+## Current status (session 173)
+
+Stage 4 of the Sovereign Widget arc is complete. Every registered widget — all 30 (29 seeder-declared widgets plus `nav`) — is now a self-contained folder under `app/Widgets/`. The manifest/metadata contract is defined on the base class with CI validation in place; Stage 5 (widget browser UI) is the first consumer.

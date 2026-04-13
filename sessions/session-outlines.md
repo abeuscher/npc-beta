@@ -179,6 +179,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 170 | Widget Definition Class & Registry |
 | 171 | Defaults Binding & Sovereign Rendering |
 | 172 | Per-Widget File Colocation |
+| 173 | Widget Manifest & Metadata |
 
 ---
 
@@ -222,7 +223,7 @@ This is phased over several sessions. Each stage leaves the app shippable.
 
 - **Stage 3 — Per-Widget File Colocation.** *(Completed session 172.)* Every widget now lives at `app/Widgets/{PascalName}/` with `{PascalName}Definition.php`, `template.blade.php`, and optional `styles.scss`. Blade `widgets::` namespace registered in `WidgetServiceProvider`. Base-class `template()` default resolves `@include('widgets::{Folder}.template')`. Base class also gained optional `css()`, `js()`, `code()`, `variableName()` for widgets with inline DB-column source. Shared Blade fragments (buttons, icons, share-icons) moved to `resources/views/widget-shared/`. Legacy `resources/views/widgets/` and `resources/scss/widgets/` directories retired. `WidgetTypeSeeder` now a thin wrapper over `WidgetRegistry::sync()`.
 
-- **Stage 4 — Widget Manifest & Metadata.** Each widget declares human-facing metadata (description, category, version, author, license, screenshots, required capabilities, min app version) via the definition class. Not runtime-critical — used by the browser/installer. Manifest schema defined, validation in CI.
+- **Stage 4 — Widget Manifest & Metadata.** *(Completed session 173.)* Base class now exposes six optional manifest methods (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) plus a `manifest()` aggregator bundling those with `handle`/`label`/`description`/`category`. `WidgetRegistry::manifests()` returns handle → manifest for the Stage 5 browser. Metadata is code-only (not persisted to `widget_types`, not in `toRow()`). CI validates version semver, license allow-list, screenshot paths on disk, keyword slugs, preset shape + schema-key cross-reference, and manifest key stability. Every widget inherits defaults unchanged — no per-widget overrides this session. `requiredCapabilities()` and `minAppVersion()` deferred pending clearer Stage 5/6 needs.
 
 - **Stage 4.5 — Widget Thumbnail Generation.** Implement the automated thumbnail workflow from `sessions/thumb-creation-workflow.md` — but built into the new widget structure rather than as a parallel central manifest. Each widget declares its own `thumbnailMetadata()` (viewport, interaction key, duration) and ships a `demo.blade.php` inside its directory. The Playwright script iterates the registry. Deferred until after the structural work lands so we don't author demo data against a directory layout that's about to change.
 

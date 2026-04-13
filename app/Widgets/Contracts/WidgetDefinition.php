@@ -84,6 +84,52 @@ abstract class WidgetDefinition
         return null;
     }
 
+    public function version(): string
+    {
+        return '1.0.0';
+    }
+
+    public function author(): string
+    {
+        return 'Nonprofit CRM';
+    }
+
+    public function license(): string
+    {
+        return 'MIT';
+    }
+
+    public function screenshots(): array
+    {
+        return [];
+    }
+
+    public function keywords(): array
+    {
+        return [];
+    }
+
+    public function presets(): array
+    {
+        return [];
+    }
+
+    public function manifest(): array
+    {
+        return [
+            'handle'      => $this->handle(),
+            'label'       => $this->label(),
+            'description' => $this->description(),
+            'category'    => $this->category(),
+            'version'     => $this->version(),
+            'author'      => $this->author(),
+            'license'     => $this->license(),
+            'screenshots' => $this->screenshots(),
+            'keywords'    => $this->keywords(),
+            'presets'     => $this->presets(),
+        ];
+    }
+
     public function toRow(): array
     {
         return [

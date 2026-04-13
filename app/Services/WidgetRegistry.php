@@ -26,6 +26,15 @@ class WidgetRegistry
         return $this->definitions[$handle] ?? null;
     }
 
+    /** @return array<string, array> handle → manifest */
+    public function manifests(): array
+    {
+        return array_map(
+            fn (WidgetDefinition $def) => $def->manifest(),
+            $this->definitions
+        );
+    }
+
     public function sync(): void
     {
         foreach ($this->definitions as $def) {
