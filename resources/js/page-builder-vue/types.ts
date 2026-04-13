@@ -61,6 +61,14 @@ export type WidgetItem = Widget & { type: 'widget' }
 export type LayoutItem = PageLayout & { type: 'layout' }
 export type PageItem = WidgetItem | LayoutItem
 
+export interface WidgetPreset {
+  handle: string
+  label: string
+  description?: string | null
+  config: Record<string, any>
+  appearance_config: WidgetAppearanceConfig
+}
+
 export interface WidgetType {
   id: string
   handle: string
@@ -73,6 +81,7 @@ export interface WidgetType {
   full_width: boolean
   default_open: boolean
   required_config: { keys: string[]; message: string } | null
+  presets: WidgetPreset[]
   thumbnail: string | null
   thumbnail_hover: string | null
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 defineProps<{
-  activeTab: 'content' | 'appearance'
+  activeTab: 'content' | 'appearance' | 'presets'
 }>()
 
 const emit = defineEmits<{
-  'update:activeTab': [value: 'content' | 'appearance']
+  'update:activeTab': [value: 'content' | 'appearance' | 'presets']
 }>()
 </script>
 
@@ -25,6 +25,14 @@ const emit = defineEmits<{
       @click="emit('update:activeTab', 'appearance')"
     >
       Appearance
+    </button>
+    <button
+      type="button"
+      class="inspector-tabs__btn"
+      :class="{ 'inspector-tabs__btn--active': activeTab === 'presets' }"
+      @click="emit('update:activeTab', 'presets')"
+    >
+      Presets
     </button>
   </div>
 </template>

@@ -181,6 +181,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 172 | Per-Widget File Colocation |
 | 173 | Widget Manifest & Metadata |
 | 174 | Sovereign Widget Demos & Static Thumbnails |
+| 175 | Preset Inspector UI & Hero Preset Pilot |
 
 ---
 
@@ -230,8 +231,10 @@ This is phased over several sessions. Each stage leaves the app shippable.
 
 - **Stage 5 — Preset System (multi-session sub-arc).** The `presets()` contract shipped in Stage 4 (session 173) and is CI-validated — every widget can declare named config bundles, and the manifest aggregator already exposes them. This stage turns that contract into a shipped feature.
 
-  - **Stage 5a — Preset Inspector UI & Hero Preset Pilot.** *(Planned session 175.)* Build the "apply preset" mechanic: a preset gallery surface inside the inspector (compact cards keyed to the widget's `presets()`), one-click apply that writes the preset's `config` + `appearance_config` into the widget instance and refreshes the preview. Pilot the end-to-end flow with a small set of Hero presets (≈3–4) authored inside `HeroDefinition::presets()`. No backend schema changes — presets stay code-only, live on the definition. Preset gallery appears when a widget is first added and remains accessible via the inspector for re-application.
-  - **Stage 5b+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Cadence mirrors the sovereignty work that converted widgets to definition classes session-by-session.
+  - **Stage 5a — Preset Inspector UI & Hero Preset Pilot.** *(Completed session 175.)* Build the "apply preset" mechanic: a third inspector tab ("Presets") listing full-panel-width cards keyed to the widget's `presets()`, one-click apply that routes the preset's `config` + `appearance_config` through the debounced save path and refreshes the preview. Pilot the end-to-end flow with a small set of Hero presets (≈3–4) authored inside `HeroDefinition::presets()`. No backend schema changes — presets stay code-only, live on the definition. A scope refinement during the session confirmed **presets are appearance-only**: `preset.config` keys must live under schema fields whose `group` is `appearance`, apply overlays `config` (preserving content-group keys) and replaces `appearance_config` wholesale, and a CI assertion enforces the group rule.
+  - **Stage 5b — Designer Preset Drafts & Export.** *(Planned session 176.)* Close the designer-feedback loop. Designers iterate on a widget's appearance live in the builder, click "Save current appearance as preset" from inside the Presets tab, and the result is a DB-backed draft in a new `widget_presets` table (scoped by `widget_type_id`). Drafts show up in the same gallery as code-authored presets with a "Draft" badge and per-card actions: rename/describe inline, delete, and export. Export copies a pretty-printed PHP array literal to the clipboard, ready to paste into the widget's `presets()` method. Promotion to shipped preset is manual paste-then-delete — no automation crosses the code/DB boundary. Same appearance-only rule applies to drafts; validation is server-side.
+  - **Stage 5c — Preset Thumbnails.** *(Planned session 177.)* Extend the static thumbnail pipeline from session 174 to capture per-preset thumbnails. Path convention is already reserved at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png`. Work includes: a dev-route variant that renders a widget with a specific preset applied, extending `scripts/generate-thumbnails.js` to iterate code-authored presets from the manifest, and wiring the preset cards in the inspector gallery to display the thumbnail when present (current session 175 UI reserves the slot but renders it empty). DB drafts are out of scope — thumbnails are for code-shipped presets only.
+  - **Stage 5d+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Fed by whatever the designer produces via the Stage 5b draft/export workflow. Cadence mirrors the sovereignty work that converted widgets to definition classes session-by-session.
 
 - **Stage 6 — Widget Browser UI (admin).** Admin page that lists all registered widgets in a browsable grid — search, filter by category, preview thumbnails + preset count chip. "Installed" is implicit. Prepares the UI surface for later external-registry installs. Now consumes static thumbnails from Stage 4.5 Phase 1 and preset data from Stage 5.
 
@@ -396,10 +399,6 @@ Page-level settings for background color, content width, and chrome outside the 
 ### Design System Editor — Typography & Buttons
 
 Move the design system editor inside the page editor as a separate view accessible from within it. Typography controls for H1–H6, P, UL/OL with per-element settings: font family, font variant, font size, line height, case transform (all-caps, small-caps, lowercase), letter spacing, margin (top/bottom only), padding (top/bottom only), border, outline, and bullet type/position where relevant. Button controls already built (session 134). Relationship to templates and themes needs defining. Start with text and buttons, expand to context-specific styles (captions, form labels, etc.) later.
-
-### Widget Presets Pane
-
-Third pane in the inspector allowing users to pick from pre-saved presets or save the current widget as a preset. A preset is a widget with default settings and no content. Could leverage the existing "save as template" feature. Needs design on how to define "settings without content" in the system.
 
 ### Widget Portability & Distribution
 

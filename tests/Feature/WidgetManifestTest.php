@@ -98,9 +98,18 @@ it('every widget preset has the required shape and references valid config keys'
                 "Widget [{$handle}] preset missing 'appearance_config' array"
             );
 
+            $appearanceKeys = collect($def->schema())
+                ->filter(fn ($field) => ($field['group'] ?? 'content') === 'appearance')
+                ->pluck('key')
+                ->filter()
+                ->all();
+
             foreach (array_keys($preset['config']) as $key) {
                 expect(in_array($key, $schemaKeys, true))->toBeTrue(
                     "Widget [{$handle}] preset [{$preset['handle']}] references unknown schema key: {$key}"
+                );
+                expect(in_array($key, $appearanceKeys, true))->toBeTrue(
+                    "Widget [{$handle}] preset [{$preset['handle']}] sets content-group key: {$key} — presets may only touch appearance-group schema keys"
                 );
             }
         }

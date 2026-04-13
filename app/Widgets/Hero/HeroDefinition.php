@@ -88,6 +88,97 @@ class HeroDefinition extends WidgetDefinition
         ];
     }
 
+    public function presets(): array
+    {
+        return [
+            [
+                'handle'      => 'bold-statement',
+                'label'       => 'Bold Statement',
+                'description' => 'Full-viewport gradient banner — strong landing-page opener.',
+                'config'      => [
+                    'text_position'              => 'center-center',
+                    'fullscreen'                 => true,
+                    'scroll_indicator'           => true,
+                    'overlap_nav'                => true,
+                    'background_overlay_opacity' => 30,
+                ],
+                'appearance_config' => [
+                    'background' => [
+                        'gradient' => [
+                            'gradients' => [
+                                ['type' => 'linear', 'from' => '#0a2540', 'from_alpha' => 100, 'to' => '#60a5fa', 'to_alpha' => 100, 'angle' => 135],
+                            ],
+                        ],
+                    ],
+                    'text' => [
+                        'color'  => '#ffffff',
+                        'shadow' => true,
+                    ],
+                ],
+            ],
+            [
+                'handle'      => 'minimal-left',
+                'label'       => 'Minimal Left',
+                'description' => 'Quiet intro on a soft background — good for interior pages.',
+                'config'      => [
+                    'text_position' => 'center-left',
+                    'fullscreen'    => false,
+                    'min_height'    => '16rem',
+                ],
+                'appearance_config' => [
+                    'background' => [
+                        'color' => '#f4f1ea',
+                    ],
+                    'text' => [
+                        'color' => '#1f2937',
+                    ],
+                ],
+            ],
+            [
+                'handle'      => 'campaign-cta',
+                'label'       => 'Campaign CTA',
+                'description' => 'Dark-overlay headline — designed to sit above a fundraising drive.',
+                'config'      => [
+                    'text_position'              => 'bottom-center',
+                    'fullscreen'                 => false,
+                    'min_height'                 => '32rem',
+                    'background_overlay_opacity' => 60,
+                ],
+                'appearance_config' => [
+                    'background' => [
+                        'gradient' => [
+                            'gradients' => [
+                                ['type' => 'linear', 'from' => '#111827', 'from_alpha' => 0, 'to' => '#111827', 'to_alpha' => 85, 'angle' => 180],
+                            ],
+                        ],
+                    ],
+                    'text' => [
+                        'color'  => '#ffffff',
+                        'shadow' => true,
+                    ],
+                ],
+            ],
+            [
+                'handle'      => 'compact-announcement',
+                'label'       => 'Compact Announcement',
+                'description' => 'Short banner for news or alerts — sits tight under the navigation.',
+                'config'      => [
+                    'text_position' => 'center-center',
+                    'fullscreen'    => false,
+                    'min_height'    => '16rem',
+                ],
+                'appearance_config' => [
+                    'background' => [
+                        'color' => '#1d4ed8',
+                    ],
+                    'text' => [
+                        'color' => '#ffffff',
+                    ],
+                ],
+            ],
+        ];
+    }
+
     public function demoConfig(): array
     {
         return [

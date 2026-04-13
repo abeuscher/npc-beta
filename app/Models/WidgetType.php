@@ -122,6 +122,8 @@ class WidgetType extends Model implements HasMedia
      */
     public static function forPicker(string $pageType = 'default'): array
     {
+        $registry = app(\App\Services\WidgetRegistry::class);
+
         return static::orderBy('label')
             ->with('media')
             ->get()
@@ -135,6 +137,7 @@ class WidgetType extends Model implements HasMedia
                 'collections'     => $wt->collections,
                 'config_schema'   => $wt->config_schema,
                 'required_config' => $wt->required_config,
+                'presets'         => $registry->find($wt->handle)?->presets() ?? [],
                 'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])

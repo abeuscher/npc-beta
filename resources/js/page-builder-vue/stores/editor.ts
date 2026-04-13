@@ -5,6 +5,7 @@ import type {
   PageLayout,
   PageItem,
   WidgetType,
+  WidgetPreset,
   Collection,
   Tag,
   PageRef,
@@ -666,6 +667,22 @@ export const useEditorStore = defineStore('editor', () => {
     flushDebouncedSave(widgetId, { appearance_config: next as any })
   }
 
+  function applyPreset(widgetId: string, preset: WidgetPreset): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    const nextConfig = { ...(w.config ?? {}), ...preset.config }
+    const nextAppearance = { ...preset.appearance_config } as any
+
+    w.config = nextConfig
+    w.appearance_config = nextAppearance
+    dirtyWidgets.value.add(widgetId)
+    flushDebouncedSave(widgetId, {
+      config: nextConfig,
+      appearance_config: nextAppearance,
+    })
+  }
+
   function updateLocalQueryConfig(
     widgetId: string,
     collHandle: string,
@@ -757,6 +774,7 @@ export const useEditorStore = defineStore('editor', () => {
     removeAppearanceImage,
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
+    applyPreset,
     saveColorSwatches: saveColorSwatchesAction,
   }
 })

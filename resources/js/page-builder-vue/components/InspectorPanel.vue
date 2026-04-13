@@ -5,6 +5,7 @@ import type { FieldDef } from '../types'
 import InspectorHeader from './InspectorHeader.vue'
 import InspectorTabs from './InspectorTabs.vue'
 import InspectorFieldGroup from './InspectorFieldGroup.vue'
+import InspectorPresetGallery from './InspectorPresetGallery.vue'
 import BackgroundPanel from './appearance/BackgroundPanel.vue'
 import TextPanel from './appearance/TextPanel.vue'
 import SectionLayoutPanel from './appearance/SectionLayoutPanel.vue'
@@ -12,7 +13,7 @@ import QuerySettings from './QuerySettings.vue'
 import LayoutInspectorPanel from './LayoutInspectorPanel.vue'
 
 const store = useEditorStore()
-const activeTab = ref<'content' | 'appearance'>('content')
+const activeTab = ref<'content' | 'appearance' | 'presets'>('content')
 
 const widget = computed(() => store.selectedWidget)
 const layout = computed(() => store.selectedLayout)
@@ -51,6 +52,10 @@ const appearanceFields = computed(() => {
           <BackgroundPanel :widget="widget" />
           <TextPanel :widget="widget" />
           <SectionLayoutPanel :widget="widget" />
+        </div>
+
+        <div v-show="activeTab === 'presets'" class="inspector-panel__tab-content">
+          <InspectorPresetGallery :widget="widget" />
         </div>
       </div>
 

@@ -495,9 +495,9 @@ public function presets(): array
             'handle'            => 'dark-hero',        // slug, unique within the widget
             'label'             => 'Dark Hero',        // human-readable, non-empty
             'description'       => 'Short sentence.',  // string or null
-            'config'            => [                   // subset of schema() keys
-                'background' => 'dark',
+            'config'            => [                   // appearance-group schema keys only
                 'alignment'  => 'center',
+                'min_height' => '32rem',
             ],
             'appearance_config' => [                   // appearance jsonb bag subset
                 'padding' => ['top' => 80, 'bottom' => 80],
@@ -507,7 +507,18 @@ public function presets(): array
 }
 ```
 
-Every key in `preset.config` must appear in the widget's `schema()` — CI enforces this and names the offending widget handle in the failure message.
+Every key in `preset.config` must appear in the widget's `schema()` **and** live under a field whose `group` is `appearance`. Presets are an appearance-layer feature — they may not touch content-group keys. CI enforces both rules and names the offending widget handle in the failure message.
+
+### Presets in the inspector
+
+The inspector panel exposes presets via a third "Presets" tab next to Content and Appearance. Each preset renders as a full-panel-width card (label + muted description, with a reserved empty thumbnail slot above). Clicking a card applies the preset with mixed semantics designed to leave content intact:
+
+- `preset.config` is **overlaid** onto the widget's existing `config` — only the appearance-group keys the preset declares change; content-group keys (rich-text body, CTA buttons, media IDs) are preserved.
+- `preset.appearance_config` **replaces** the widget's `appearance_config` wholesale — that bag is 100 % appearance, so nothing is preserved.
+
+A synthetic "Blank" card is always prepended to the gallery. It is generated in the frontend from the appearance-group subset of the widget's `defaults()` plus an empty `appearance_config`, giving a one-click "reset appearance" option. It is not part of `presets()`.
+
+Per-preset thumbnail images will live at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png`. The path is reserved; the cards render an empty placeholder until a file is added.
 
 ---
 

@@ -235,7 +235,30 @@ Each preset is an array with these keys:
 ]
 ```
 
-Every key in `preset.config` must appear in the widget's `schema()` — CI enforces this.
+Every key in `preset.config` must appear in the widget's `schema()` **and** the corresponding schema field must declare `group: 'appearance'`. Presets may only shape the appearance layer — they are forbidden from touching content-group keys. CI enforces both rules.
+
+### Inspector Presets tab
+
+The inspector panel exposes presets as a third tab ("Presets") alongside Content and Appearance. When a widget is selected, the tab lists every preset the widget declares as a full-panel-width card — preset `label` on top, `description` below in muted text, and a reserved empty thumbnail slot above the text (see the path note below).
+
+A synthetic "Blank" card is always prepended to the gallery. It represents the appearance-group subset of the widget's `defaults()` plus an empty `appearance_config`, giving the editor a one-click "reset appearance to defaults" starting point. The Blank card is rendered by the frontend only — it is not declared in `presets()` and does not appear in the manifest output.
+
+Applying a preset is **appearance-only** with mixed apply semantics:
+
+- `preset.config` is **overlaid** onto the widget instance's existing `config`. Only the appearance-group keys the preset declares change; every content-group key (the rich-text body, media IDs, CTA buttons, etc.) is preserved untouched.
+- `preset.appearance_config` **replaces** the widget instance's `appearance_config` wholesale — the nested jsonb bag is 100 % appearance, so there is nothing to preserve.
+
+The action routes through the same debounced save path the rest of the inspector uses, so the preview refreshes the same way a field edit does. The editor does not track which preset was applied — after apply, the widget is just a widget with that config, and subsequent field edits do not "dirty" or "detach from" the preset.
+
+### Preset thumbnail path (reserved)
+
+Each widget's `thumbnails/` folder (session 174) also reserves a path for per-preset imagery:
+
+```
+app/Widgets/{PascalName}/thumbnails/preset-{handle}.png
+```
+
+The inspector's preset cards render an empty placeholder box in this slot today. No thumbnail files are authored yet — the path is reserved so future sessions can drop images in without changing the card layout.
 
 ### CI validation
 
@@ -245,7 +268,7 @@ Every key in `preset.config` must appear in the widget's `schema()` — CI enfor
 2. `license()` is in the allow-list.
 3. Every path in `screenshots()` exists on disk (resolved against `app/Widgets/{Folder}/`).
 4. Every keyword matches `/^[a-z0-9-]+$/`.
-5. Every preset has the correct shape and all `preset.config` keys exist in `schema()`.
+5. Every preset has the correct shape and all `preset.config` keys exist in `schema()` under a field whose `group` is `appearance`.
 6. `manifest()` returns exactly the expected top-level keys (prevents shape drift).
 
 Each rule fails with a message naming the offending widget handle.

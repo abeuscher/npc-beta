@@ -15,6 +15,7 @@ use App\Services\AppearanceStyleComposer;
 use App\Services\DemoDataService;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetConfigResolver;
+use App\Services\WidgetRegistry;
 use App\Services\WidgetRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -334,6 +335,8 @@ class PageBuilderApiController extends Controller
 
         $pageType = $request->query('page_type', 'default');
 
+        $registry = app(WidgetRegistry::class);
+
         $types = WidgetType::orderBy('label')
             ->with('media')
             ->get()
@@ -350,6 +353,7 @@ class PageBuilderApiController extends Controller
                 'full_width'      => $wt->full_width,
                 'default_open'    => $wt->default_open,
                 'required_config' => $wt->required_config,
+                'presets'         => $registry->find($wt->handle)?->presets() ?? [],
                 'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])
