@@ -11,12 +11,10 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\WidgetType;
-use App\Services\AppearanceStyleComposer;
-use App\Services\DemoDataService;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetConfigResolver;
+use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
-use App\Services\WidgetRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -319,11 +317,9 @@ class PageBuilderApiController extends Controller
 
         $widget->load('widgetType');
 
-        $previewData = $this->renderWidgetForPreview($widget);
-
         return response()->json([
             'id'            => $widget->id,
-            'html'          => $previewData['html'],
+            'html'          => app(WidgetPreviewRenderer::class)->render($widget),
             'required_libs' => [],
         ]);
     }
@@ -661,7 +657,7 @@ class PageBuilderApiController extends Controller
             $item = $this->formatWidgetWithPreview($pw, $requiredHandles);
             $item['type'] = 'widget';
             $items[] = $item;
-            $this->collectLibs($pw, $allLibs);
+            app(WidgetPreviewRenderer::class)->collectLibs($pw, $allLibs);
         }
 
         foreach ($layouts as $layout) {
@@ -676,7 +672,7 @@ class PageBuilderApiController extends Controller
                 $childData = $this->formatWidgetWithPreview($child, $requiredHandles);
                 $childData['type'] = 'widget';
                 $slots[$idx][] = $childData;
-                $this->collectLibs($child, $allLibs);
+                app(WidgetPreviewRenderer::class)->collectLibs($child, $allLibs);
             }
             $item['slots'] = (object) $slots;
             $items[] = $item;
@@ -766,79 +762,10 @@ class PageBuilderApiController extends Controller
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
             'image_urls'                => $pw->configImageUrls(),
             'appearance_image_url'      => $pw->appearanceImageUrl(),
-            'preview_html'              => $this->renderWidgetForPreview($pw)['html'],
+            'preview_html'              => app(WidgetPreviewRenderer::class)->render($pw),
         ];
 
         return $data;
-    }
-
-    private function renderWidgetForPreview(PageWidget $pw): array
-    {
-        $widgetType = $pw->widgetType;
-
-        try {
-            $fallbackData = $this->buildDemoCollectionData($pw);
-            $result = WidgetRenderer::render($pw, [], $fallbackData);
-
-            if ($result['html'] === null) {
-                $html = '<div class="widget-preview-notice">No preview available</div>';
-            } else {
-                $handle = $widgetType->handle;
-                $composed = app(AppearanceStyleComposer::class)->compose($pw);
-                $inlineStyle = $composed['inline_style'];
-
-                $configFullWidth = $pw->config['full_width'] ?? null;
-                $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
-
-                $innerHtml = $isFullWidth
-                    ? $result['html']
-                    : '<div class="site-container">' . $result['html'] . '</div>';
-
-                $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
-                $innerHtml = preg_replace('#<script\b(?![^>]*type=["\']application/json["\'])[^>]*>.*?</script>#si', '', $innerHtml);
-
-                $html = $styles
-                    . '<div class="widget widget--' . e($handle) . '"'
-                    . ' id="widget-' . e($pw->id) . '"'
-                    . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
-                    . '>' . $innerHtml . '</div>';
-            }
-        } catch (\Throwable $e) {
-            $html = '<div class="widget-preview-notice widget-preview-notice--error">Preview error: ' . e($e->getMessage()) . '</div>';
-        }
-
-        return [
-            'id'   => $pw->id,
-            'html' => $html,
-        ];
-    }
-
-    private function buildDemoCollectionData(PageWidget $pw): array
-    {
-        $widgetType = $pw->widgetType;
-        if (! $widgetType || empty($widgetType->collections)) {
-            return [];
-        }
-
-        $demoService = app(DemoDataService::class);
-        $fallback = [];
-
-        foreach ($widgetType->collections as $collSlot) {
-            $collHandle = $pw->config['collection_handle'] ?? $collSlot;
-            $collection = Collection::where('handle', $collHandle)->first();
-            $sourceType = $collection?->source_type ?? $collSlot;
-            $fallback[$collSlot] = $demoService->generateCollectionData($sourceType, 3, $collection);
-        }
-
-        return $fallback;
-    }
-
-    private function collectLibs(PageWidget $pw, array &$libs): void
-    {
-        $assets = $pw->widgetType?->assets ?? [];
-        foreach ($assets['libs'] ?? [] as $lib) {
-            $libs[] = $lib;
-        }
     }
 
     // ── Color Swatches ────────────────────────────────────────────────────
