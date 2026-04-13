@@ -51,7 +51,7 @@
                             x-data="{ copied: false }"
                             x-on:click="navigator.clipboard.writeText(window.location.href).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
                         >
-                            @include('widgets.partials.share-icons.copy_link')
+                            @include('widget-shared.share-icons.copy_link')
                             <span class="social-sharing__copied" x-show="copied" x-cloak x-transition.opacity>Copied!</span>
                         </button>
                     @else
@@ -62,7 +62,7 @@
                             target="_blank"
                             rel="noopener"
                         >
-                            @include('widgets.partials.share-icons.' . $platform)
+                            @include('widget-shared.share-icons.' . $platform)
                         </a>
                     @endif
                 @endforeach

@@ -44,7 +44,7 @@
 
             @if (!empty($ctas))
                 <div class="hero-ctas">
-                    @include('widgets.components.buttons', [
+                    @include('widget-shared.buttons', [
                         'buttons'   => $ctas,
                         'alignment' => str_contains($position, 'center') ? 'center' : (str_contains($position, 'right') ? 'right' : 'left'),
                     ])

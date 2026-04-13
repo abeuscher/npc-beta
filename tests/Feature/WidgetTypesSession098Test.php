@@ -66,7 +66,7 @@ it('event json endpoint does not expose internal fields', function () {
 // ── Video embed URL parsing ──────────────────────────────────────────────────
 
 it('parses youtube watch url into nocookie embed url', function () {
-    $html = view('widgets.video-embed', [
+    $html = view('widgets::VideoEmbed.template', [
         'config' => [
             'video_url'       => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
             'show_related'    => false,
@@ -85,7 +85,7 @@ it('parses youtube watch url into nocookie embed url', function () {
 });
 
 it('parses youtube short url into nocookie embed url', function () {
-    $html = view('widgets.video-embed', [
+    $html = view('widgets::VideoEmbed.template', [
         'config' => [
             'video_url'       => 'https://youtu.be/dQw4w9WgXcQ',
             'show_related'    => false,
@@ -100,7 +100,7 @@ it('parses youtube short url into nocookie embed url', function () {
 });
 
 it('parses vimeo url into embed url', function () {
-    $html = view('widgets.video-embed', [
+    $html = view('widgets::VideoEmbed.template', [
         'config' => [
             'video_url'       => 'https://vimeo.com/123456789',
             'show_related'    => false,
@@ -118,7 +118,7 @@ it('parses vimeo url into embed url', function () {
 });
 
 it('shows fallback for unsupported video url', function () {
-    $html = view('widgets.video-embed', [
+    $html = view('widgets::VideoEmbed.template', [
         'config' => [
             'video_url'       => 'https://example.com/video/123',
             'show_related'    => false,
@@ -134,7 +134,7 @@ it('shows fallback for unsupported video url', function () {
 });
 
 it('does not produce iframe for arbitrary urls', function () {
-    $html = view('widgets.video-embed', [
+    $html = view('widgets::VideoEmbed.template', [
         'config' => [
             'video_url'       => 'https://evil.com/xss?v=dQw4w9WgXcQ',
             'show_related'    => false,

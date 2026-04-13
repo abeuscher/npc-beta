@@ -29,7 +29,7 @@
             @endif
 
             @if (!empty($ctas))
-                @include('widgets.components.buttons', [
+                @include('widget-shared.buttons', [
                     'buttons'   => $ctas,
                     'alignment' => $buttonAlignment,
                 ])

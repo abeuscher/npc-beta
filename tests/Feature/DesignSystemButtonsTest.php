@@ -111,7 +111,7 @@ it('generates button override css in the build pipeline', function () {
 it('appends external link icon for outbound urls', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widgets.components.buttons', [
+    $view = view('widget-shared.buttons', [
         'buttons' => [
             ['text' => 'Internal', 'url' => '/about', 'style' => 'primary'],
             ['text' => 'External', 'url' => 'https://other-site.com/page', 'style' => 'primary'],
@@ -130,7 +130,7 @@ it('appends external link icon for outbound urls', function () {
 it('does not flag subdomain urls as external', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widgets.components.buttons', [
+    $view = view('widget-shared.buttons', [
         'buttons' => [
             ['text' => 'Subdomain', 'url' => 'https://blog.example.org/post', 'style' => 'primary'],
         ],
@@ -140,7 +140,7 @@ it('does not flag subdomain urls as external', function () {
 });
 
 it('does not flag relative urls as external', function () {
-    $view = view('widgets.components.buttons', [
+    $view = view('widget-shared.buttons', [
         'buttons' => [
             ['text' => 'Relative', 'url' => '/contact', 'style' => 'primary'],
         ],

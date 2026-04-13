@@ -108,7 +108,7 @@ it('board_members renames background_color to grid_background_color and preserve
 
 it('hero widget renders with the new background_overlay_opacity key', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/hero.blade.php')),
+        file_get_contents(base_path('app/Widgets/Hero/template.blade.php')),
         [
             'config' => [
                 'content'                    => '<h1>Hello</h1>',
@@ -129,7 +129,7 @@ it('hero widget renders with the new background_overlay_opacity key', function (
 
 it('product_carousel widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/product-carousel.blade.php')),
+        file_get_contents(base_path('app/Widgets/ProductCarousel/template.blade.php')),
         [
             'config' => ['heading' => 'Products'],
             'configMedia' => [],
@@ -142,7 +142,7 @@ it('product_carousel widget renders without background_color or text_color reads
 
 it('bar_chart widget renders bar_fill_color into the chart config', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/bar-chart.blade.php')),
+        file_get_contents(base_path('app/Widgets/BarChart/template.blade.php')),
         [
             'config' => [
                 'heading'        => 'Stats',
@@ -167,7 +167,7 @@ it('bar_chart widget renders bar_fill_color into the chart config', function () 
 
 it('carousel widget reads caption_text_color and caption_link_color', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/carousel.blade.php')),
+        file_get_contents(base_path('app/Widgets/Carousel/template.blade.php')),
         [
             'config' => [
                 'image_field'        => 'photo',
@@ -186,7 +186,7 @@ it('carousel widget reads caption_text_color and caption_link_color', function (
 
 it('logo_garden widget reads container_background_color into --logo-container-bg', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/logo-garden.blade.php')),
+        file_get_contents(base_path('app/Widgets/LogoGarden/template.blade.php')),
         [
             'config' => [
                 'image_field'                => 'logo',
@@ -204,7 +204,7 @@ it('logo_garden widget reads container_background_color into --logo-container-bg
 
 it('board_members widget reads grid_background_color into --bm-grid-bg', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/board-members.blade.php')),
+        file_get_contents(base_path('app/Widgets/BoardMembers/template.blade.php')),
         [
             'config' => [
                 'heading'              => 'Our Board',
@@ -224,7 +224,7 @@ it('board_members widget reads grid_background_color into --bm-grid-bg', functio
 
 it('blog_listing widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config' => [
                 'heading'          => 'Posts',
@@ -245,7 +245,7 @@ it('blog_listing widget renders without background_color or text_color reads', f
 
 it('events_listing widget renders without background_color or text_color reads', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config' => [
                 'heading'          => 'Events',

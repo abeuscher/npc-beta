@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Contracts;
 
+use Illuminate\Support\Str;
 use RuntimeException;
 
 abstract class WidgetDefinition
@@ -16,7 +17,12 @@ abstract class WidgetDefinition
 
     abstract public function defaults(): array;
 
-    abstract public function template(): string;
+    public function template(): string
+    {
+        $folder = Str::replaceLast('Definition', '', class_basename(static::class));
+
+        return "@include('widgets::" . $folder . ".template')";
+    }
 
     public function category(): array
     {
@@ -58,6 +64,26 @@ abstract class WidgetDefinition
         return null;
     }
 
+    public function css(): ?string
+    {
+        return null;
+    }
+
+    public function js(): ?string
+    {
+        return null;
+    }
+
+    public function code(): ?string
+    {
+        return null;
+    }
+
+    public function variableName(): ?string
+    {
+        return null;
+    }
+
     public function toRow(): array
     {
         return [
@@ -73,6 +99,10 @@ abstract class WidgetDefinition
             'config_schema'      => $this->schema(),
             'template'           => $this->template(),
             'required_config'    => $this->requiredConfig(),
+            'css'                => $this->css(),
+            'js'                 => $this->js(),
+            'code'               => $this->code(),
+            'variable_name'      => $this->variableName(),
         ];
     }
 

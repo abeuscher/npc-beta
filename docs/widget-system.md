@@ -1,14 +1,53 @@
 # Widget System
 
-Part of the multi-session Sovereign Widget arc (sessions 170+). This document describes the code-level widget authoring pattern introduced in session 170.
+Part of the multi-session Sovereign Widget arc (sessions 170+). This document describes the code-level widget authoring pattern.
 
 ---
 
 ## Overview
 
-Historically, widget types were declared as arrays inside `database/seeders/WidgetTypeSeeder.php`. Starting in session 170, a widget can be declared as a PHP class — a **widget definition** — which the application registers at boot time and syncs into the `widget_types` table.
+Every widget is a self-contained folder under `app/Widgets/{PascalName}/` holding its definition class, Blade template, and (optionally) SCSS. The application registers each definition at boot time and syncs them into the `widget_types` table.
 
-The database remains the runtime source of truth. The renderer, inspector, and widget picker all continue reading from `widget_types`. The definition class is a code-level authoring surface that writes to the DB via a sync step.
+The database remains the runtime source of truth. The renderer, inspector, and widget picker all read from `widget_types`. The definition class is the code-level authoring surface that writes to the DB via a sync step.
+
+---
+
+## File layout
+
+Each widget is one folder at `app/Widgets/{PascalName}/`:
+
+```
+app/Widgets/Nav/
+├── NavDefinition.php        # the definition class
+├── template.blade.php       # the Blade template (required for render_mode = server)
+└── styles.scss              # optional — present only if the widget has SCSS
+```
+
+- The folder is PascalCase (e.g. `Nav`, `BlogPager`, `ThreeBuckets`).
+- The class is `{PascalName}Definition` in the matching namespace `App\Widgets\{PascalName}`.
+- The widget's **handle** (which may be snake_case — e.g. `bar_chart`, `portal_signup`) lives in `handle()` / the DB row. Folder name and handle are independent.
+
+---
+
+## Blade namespace
+
+`WidgetServiceProvider::boot()` registers a `widgets` Blade namespace pointing at `app_path('Widgets')`:
+
+```php
+View::addNamespace('widgets', app_path('Widgets'));
+```
+
+After registration, `@include('widgets::Nav.template')` resolves to `app/Widgets/Nav/template.blade.php`.
+
+The base-class `template()` default produces that include automatically, so a widget with a standard `template.blade.php` file never needs to override `template()`:
+
+```php
+public function template(): string
+{
+    $folder = Str::replaceLast('Definition', '', class_basename(static::class));
+    return "@include('widgets::" . $folder . ".template')";
+}
+```
 
 ---
 
@@ -25,10 +64,10 @@ Abstract base class. Concrete widget definitions extend it.
 - `description(): string`
 - `schema(): array` — field definitions in the same shape as the legacy `config_schema`
 - `defaults(): array` — key/value map of defaults; every key declared in `schema()` must appear here
-- `template(): string` — Blade template string
 
 **Optional methods (defaulted):**
 
+- `template()` → `"@include('widgets::{Folder}.template')"` (the base-class default; override only for inline Blade bodies)
 - `category()` → `['content']`
 - `collections()` → `[]`
 - `assets()` → `[]`
@@ -37,6 +76,10 @@ Abstract base class. Concrete widget definitions extend it.
 - `allowedPageTypes()` → `null` (meaning "all")
 - `renderMode()` → `'server'`
 - `requiredConfig()` → `null`
+- `css()` → `null`
+- `js()` → `null`
+- `code()` → `null`
+- `variableName()` → `null`
 
 **Introspection / validation:**
 
@@ -55,29 +98,49 @@ Singleton service. Holds registered definitions keyed by handle.
 ### `App\Providers\WidgetServiceProvider`
 
 - `register()` registers the `WidgetRegistry` singleton.
-- `boot()` registers concrete definitions: `$registry->register(new NavDefinition())`.
+- `boot()` registers the Blade `widgets` namespace and every concrete definition via `$registry->register(new ...Definition())`.
 
 ### Seeder integration
 
-`WidgetTypeSeeder` still declares all widgets that have not yet been migrated to the definition pattern. At the end of `run()`, it calls `app(WidgetRegistry::class)->sync()` so that registry-declared widgets are written to the DB alongside the seeder-declared ones.
-
-Order: seeder entries first, then registry sync. Since both use `updateOrCreate` keyed on handle, a handle collision would result in the registry version overwriting the seeder version.
+`WidgetTypeSeeder::run()` is trivial: it removes a small number of legacy handles (`event_dates`, `hero_fullsize`, `site_header`, `site_footer`) that may linger from earlier schemas, then calls `app(WidgetRegistry::class)->sync()`.
 
 ---
 
-## Adding a new widget under the new system
+## Adding a new widget
 
-1. Create `app/Widgets/{Name}/{Name}Definition.php` extending `WidgetDefinition`.
-2. Implement the required methods.
-3. Register it in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{Name}\{Name}Definition());`
-4. Remove (or skip adding) a corresponding `WidgetType::updateOrCreate(...)` block in `WidgetTypeSeeder`.
-5. Run `php artisan migrate:fresh --seed` (or `db:seed`) to write the row.
+1. Create `app/Widgets/{PascalName}/` folder.
+2. Create `{PascalName}Definition.php` extending `WidgetDefinition`, implementing the required methods.
+3. Create `template.blade.php` in the same folder. The base-class default `template()` method will find it via the `widgets::` namespace.
+4. (Optional) Create `styles.scss` in the same folder and reference it in `assets()`:
+   ```php
+   public function assets(): array
+   {
+       return ['scss' => ['app/Widgets/{PascalName}/styles.scss']];
+   }
+   ```
+5. Register it in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{PascalName}\{PascalName}Definition());`
+6. Run `php artisan db:seed --class=WidgetTypeSeeder` (or `migrate:fresh --seed`) to write the row.
+7. If the widget has SCSS, run `php artisan build:public` to rebuild the public bundle.
 
 ---
 
-## Config resolution (session 171)
+## Shared Blade fragments
 
-Session 171 introduced `App\Services\WidgetConfigResolver`, a stateless singleton that composes a widget's effective config at read time. This replaces per-template `$config['x'] ?? 'fallback'` defensiveness.
+Reusable Blade fragments that multiple widgets include (buttons, share icons, icon components) live under `resources/views/widget-shared/`. They are **not** widgets and don't belong inside any single widget's folder.
+
+Include them via the default view namespace:
+
+```blade
+@include('widget-shared.buttons', ['buttons' => $ctas, 'alignment' => $buttonAlignment])
+@include('widget-shared.icon-github')
+@include('widget-shared.share-icons.' . $platform)
+```
+
+---
+
+## Config resolution
+
+`App\Services\WidgetConfigResolver` is a stateless singleton that composes a widget's effective config at read time. This replaces per-template `$config['x'] ?? 'fallback'` defensiveness.
 
 ### Composition order
 
@@ -89,8 +152,8 @@ defaults → theme overrides (stub) → instance config
 
 Later layers overwrite earlier ones key-by-key.
 
-- **defaults:** from `WidgetDefinition::defaults()` if the widget handle is registered, otherwise from `WidgetType::getDefaultConfig()` (which reads `config_schema[].default`). This is the coexistence branch for widgets not yet migrated to the definition pattern.
-- **theme overrides:** a Stage-N extension point. In session 171 this returns `[]`. Future template/theme-level defaults will compose in here without any per-widget template change.
+- **defaults:** from `WidgetDefinition::defaults()` if the widget handle is registered, otherwise from `WidgetType::getDefaultConfig()` (which reads `config_schema[].default`). The fallback branch is a safety net for DB rows whose definition is no longer registered at runtime (handle drift, uninstalled widget, etc.) — in normal operation every widget has a definition and the fallback is unused.
+- **theme overrides:** a Stage-N extension point. Currently returns `[]`. Future template/theme-level defaults will compose in here without any per-widget template change.
 - **instance config:** the contents of `page_widgets.config` — sparse, containing only the user's explicit overrides.
 
 ### Public surface
@@ -112,8 +175,6 @@ Because both the renderer and the inspector draw defaults from the resolver, the
 
 ---
 
-## Current status (session 171)
+## Current status (session 172)
 
-Only the `nav` widget has been migrated to the definition class. All other widgets remain declared in `WidgetTypeSeeder`. The coexistence path is permanent until every widget is migrated — both definition and seeder-sourced widgets flow through the resolver identically.
-
-Blade templates and SCSS partials for definition-backed widgets still live at their legacy paths (`resources/views/widgets/*.blade.php`, `resources/scss/widgets/_*.scss`). Physical file colocation into `app/Widgets/*/` is deferred to a later stage of the Sovereign Widget arc.
+Stage 3 of the Sovereign Widget arc is complete. Every registered widget — all 30 (29 seeder-declared widgets plus `nav`) — is now a self-contained folder under `app/Widgets/`. The legacy `resources/views/widgets/` and `resources/scss/widgets/` directories have been retired.

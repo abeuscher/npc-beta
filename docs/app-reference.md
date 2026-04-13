@@ -137,7 +137,8 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 | Individual block in the builder | `App\Livewire\PageBuilderBlock` — `app/Livewire/PageBuilderBlock.php` |
 | Page builder blade | `resources/views/livewire/page-builder.blade.php` |
 | Block blade (includes widget picker modal) | `resources/views/livewire/page-builder-block.blade.php` |
-| Widget templates | `resources/views/widgets/*.blade.php` |
+| Widget folders (definition + template + optional SCSS) | `app/Widgets/{PascalName}/` |
+| Shared Blade fragments used by widgets | `resources/views/widget-shared/` |
 | Page context service (data for widget templates) | `App\Services\PageContext` — `app/Services/PageContext.php` |
 | Widget data resolver | `App\Services\WidgetDataResolver` — `app/Services/WidgetDataResolver.php` |
 | Inspector panel (admin UI) | `App\Livewire\PageBuilderInspector` — `app/Livewire/PageBuilderInspector.php` |

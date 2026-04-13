@@ -46,7 +46,7 @@ it('getDefaultConfig returns all platforms enabled by default', function () {
 
 it('renders share links for all enabled platforms', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => 'Share this page',
             'platforms'         => ['bluesky', 'mastodon', 'email', 'copy_link', 'linkedin', 'facebook'],
@@ -70,7 +70,7 @@ it('renders share links for all enabled platforms', function () {
 
 it('omits disabled platforms', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => '',
             'platforms'         => ['bluesky', 'email'],
@@ -93,7 +93,7 @@ it('omits disabled platforms', function () {
 
 it('renders nothing when platforms array is empty', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => 'Share',
             'platforms'         => [],
@@ -111,7 +111,7 @@ it('renders nothing when platforms array is empty', function () {
 
 it('renders Alpine copy-link markup when copy_link is enabled', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => '',
             'platforms'         => ['copy_link'],
@@ -132,7 +132,7 @@ it('renders Alpine copy-link markup when copy_link is enabled', function () {
 
 it('uses configured mastodon instance domain', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => '',
             'platforms'         => ['mastodon'],
@@ -152,7 +152,7 @@ it('uses configured mastodon instance domain', function () {
 
 it('external share links have target blank and rel noopener', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/social-sharing.blade.php')),
+        file_get_contents(base_path('app/Widgets/SocialSharing/template.blade.php')),
         ['config' => [
             'heading'           => '',
             'platforms'         => ['bluesky', 'linkedin', 'facebook'],

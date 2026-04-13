@@ -67,7 +67,7 @@ it('sync() writes registered widgets to the widget_types table', function () {
     expect($row->label)->toBe('Navigation');
     expect($row->full_width)->toBeTrue();
     expect($row->category)->toBe(['layout']);
-    expect($row->template)->toBe("@include('widgets.nav')");
+    expect($row->template)->toBe("@include('widgets::Nav.template')");
     expect($row->required_config)->toBe(['keys' => ['navigation_menu_id'], 'message' => 'Select a navigation menu.']);
 });
 
@@ -83,6 +83,12 @@ it('sync() is idempotent', function () {
 
     expect($secondId)->toBe($firstId);
     expect(WidgetType::where('handle', 'nav')->count())->toBe(1);
+});
+
+it('widgets:: Blade namespace resolves to app/Widgets/{Folder}/template.blade.php', function () {
+    expect(view()->exists('widgets::Nav.template'))->toBeTrue();
+    expect(view()->exists('widgets::BlogPager.template'))->toBeTrue();
+    expect(view()->exists('widgets::NoSuchWidget.template'))->toBeFalse();
 });
 
 it('seeder-sourced nav row matches registry-sourced nav row', function () {

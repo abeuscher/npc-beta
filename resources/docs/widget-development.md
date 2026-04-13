@@ -18,8 +18,8 @@ Technical reference for building and maintaining page builder widgets. This docu
 
 | Location | Purpose |
 |----------|---------|
-| `resources/views/widgets/` | Blade templates (one per widget) |
-| `resources/scss/widgets/` | Widget-specific SCSS partials (e.g. `_product-carousel.scss`) |
+| `app/Widgets/{PascalName}/` | Self-contained widget folder: definition class, Blade template, optional SCSS |
+| `resources/views/widget-shared/` | Shared Blade fragments included by multiple widgets (buttons, icons, share icons) |
 | `resources/js/public.js` | Public-facing JS — Swiper modules, Alpine, Chart.js |
 | `app/Models/WidgetType.php` | Widget type definition model |
 | `app/Models/PageWidget.php` | Widget instance model (per-page placement) |
@@ -32,7 +32,10 @@ Technical reference for building and maintaining page builder widgets. This docu
 | `resources/js/page-builder-vue/components/InspectorField.vue` | Field-type → Vue component map for `config_schema` rendering |
 | `resources/js/page-builder-vue/components/fields/` | Vue field components (one per field type) |
 | `resources/js/page-builder-vue/stores/editor.ts` | Pinia editor store: local state, debounced REST saves |
-| `database/seeders/WidgetTypeSeeder.php` | All built-in widget type definitions |
+| `app/Providers/WidgetServiceProvider.php` | Registers the Blade `widgets::` namespace and every widget definition |
+| `app/Widgets/Contracts/WidgetDefinition.php` | Abstract base class for every widget definition |
+| `app/Services/WidgetRegistry.php` | Holds registered definitions; `sync()` writes them to `widget_types` |
+| `database/seeders/WidgetTypeSeeder.php` | Cleans up retired handles; calls `WidgetRegistry::sync()` |
 | `database/seeders/*DemoSeeder.php` | Demo data for widgets that use collections |
 | `resources/views/components/page-widgets.blade.php` | Outer rendering loop (spacing, full-width) |
 
@@ -50,7 +53,7 @@ A widget type is defined by a record in the `widget_types` table. The key column
 | `category` | JSON array of category slugs for filtering: `content`, `layout`, `media`, `blog`, `events`, `forms`, `portal`, `giving_and_sales`. |
 | `allowed_page_types` | JSON array restricting to page types (`default`, `post`, `member`, `system`), or `null` for all. |
 | `render_mode` | `server` (Blade) or `client` (JS). |
-| `template` | For server mode: Blade string. Typically `@include('widgets.widget-name')`. |
+| `template` | For server mode: Blade string. Written by the definition's `template()` method — by default `@include('widgets::{Folder}.template')`. |
 | `code` | For client mode: raw JavaScript string. |
 | `css` | Inline CSS stored in the database (compiled into the bundle). |
 | `js` | Inline JS stored in the database (compiled into the bundle). |
@@ -108,7 +111,7 @@ Some widgets bypass the collection system and call services directly from their 
 
 ### Blade template
 
-The primary rendering file. Located at `resources/views/widgets/{widget-name}.blade.php`.
+The primary rendering file. Located at `app/Widgets/{PascalName}/template.blade.php`.
 
 Conventions:
 - Extract config values into variables at the top in a `@php` block.
@@ -118,7 +121,7 @@ Conventions:
 
 ### SCSS
 
-External SCSS partials go in `resources/scss/widgets/_widget-name.scss` and are referenced in the widget type's `assets.scss` array.
+Widget SCSS lives at `app/Widgets/{PascalName}/styles.scss` and is referenced in the widget definition's `assets()` method: `['scss' => ['app/Widgets/{PascalName}/styles.scss']]`.
 
 Conventions:
 - Top-level class: `.widget-{widget-name}` (matches the wrapper class `.widget--{handle}`).
@@ -291,10 +294,13 @@ docker compose exec app php artisan build:public --debug  # verbose output
 
 ### Adding assets to a widget
 
-In the seeder, set the `assets` key:
+In the widget definition's `assets()` method:
 
 ```php
-'assets' => ['scss' => ['resources/scss/widgets/_my-widget.scss']],
+public function assets(): array
+{
+    return ['scss' => ['app/Widgets/MyWidget/styles.scss']];
+}
 ```
 
 For inline CSS/JS (stored in the database), use the `css` and `js` columns instead.
@@ -407,15 +413,17 @@ Sample images live in `resources/sample-images/{category}/` (e.g. `portraits/`, 
 
 ## Quick-Start Checklist for a New Widget
 
-1. Add the widget type definition to `WidgetTypeSeeder.php` with handle, label, description, category, config_schema, and template reference.
-2. Create the Blade template at `resources/views/widgets/{handle}.blade.php`.
-3. If the widget needs custom styles, create `resources/scss/widgets/_{handle}.scss` and reference it in `assets.scss`.
-4. If the widget uses a collection, add a slot to the `collections` array and include a `collection_handle` select in the config schema.
-5. If the widget needs demo data, create a demo seeder and wire it into `seedWidgetCollections()`.
-6. Run the seeder: `php artisan db:seed --class=WidgetTypeSeeder`.
-7. Run the build: `php artisan build:public`.
-8. Write tests covering the seeder, data resolution, and template rendering.
-9. Update the widget count assertion in `WidgetPickerSession119Test`.
+1. Create the widget folder at `app/Widgets/{PascalName}/`.
+2. Create `{PascalName}Definition.php` extending `App\Widgets\Contracts\WidgetDefinition` with `handle()`, `label()`, `description()`, `schema()`, and `defaults()`. Override optional methods (`category`, `collections`, `assets`, `fullWidth`, `defaultOpen`, `allowedPageTypes`, `requiredConfig`, `css`, `js`) as needed.
+3. Create `template.blade.php` in the same folder. The base-class default `template()` method will find it via the `widgets::` namespace.
+4. If the widget needs custom styles, create `styles.scss` in the same folder and return its path from `assets()`: `['scss' => ['app/Widgets/{PascalName}/styles.scss']]`.
+5. Register the definition in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{PascalName}\{PascalName}Definition());`
+6. If the widget uses a collection, add a slot to `collections()` and include a `collection_handle` select in `schema()`.
+7. If the widget needs demo data, create a demo seeder and wire it into `seedWidgetCollections()`.
+8. Run the seeder: `php artisan db:seed --class=WidgetTypeSeeder`.
+9. Run the build: `php artisan build:public`.
+10. Write tests covering the data resolution and template rendering.
+11. Update the widget count assertion in `WidgetPickerSession119Test` if widget total changes.
 
 ---
 

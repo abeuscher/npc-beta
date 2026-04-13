@@ -93,7 +93,7 @@ it('blog listing widget renders with default content template', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => 'Latest Posts',
@@ -124,7 +124,7 @@ it('blog listing widget applies token replacement correctly', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -148,7 +148,7 @@ it('blog listing widget applies token replacement correctly', function () {
 
 it('blog listing renders empty state when no posts exist', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -168,7 +168,7 @@ it('blog listing renders empty state when no posts exist', function () {
 
 it('blog listing renders search input when show_search is enabled', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -201,7 +201,7 @@ it('events listing widget renders with default content template', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => 'Upcoming Events',
@@ -235,7 +235,7 @@ it('events listing widget applies token replacement correctly', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -260,7 +260,7 @@ it('events listing widget applies token replacement correctly', function () {
 
 it('events listing renders empty state when no upcoming events', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -280,7 +280,7 @@ it('events listing renders empty state when no upcoming events', function () {
 
 it('events listing renders search input when show_search is enabled', function () {
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -300,21 +300,6 @@ it('events listing renders search input when show_search is enabled', function (
         ->toContain('Search events');
 });
 
-// ── Pager partial ────────────────────────────────────────────────────────────
-
-it('pager partial renders pagination markup', function () {
-    $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/partials/pager.blade.php')),
-        []
-    );
-
-    expect($html)
-        ->toContain('widget-pager')
-        ->toContain('aria-label="Pagination"')
-        ->toContain('aria-label="Previous page"')
-        ->toContain('aria-label="Next page"');
-});
-
 // ── Swiper integration ───────────────────────────────────────────────────────
 
 it('blog listing renders Swiper container with slides', function () {
@@ -327,7 +312,7 @@ it('blog listing renders Swiper container with slides', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -362,7 +347,7 @@ it('blog listing renders default spaceBetween when gap is not set', function () 
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -389,7 +374,7 @@ it('blog listing renders custom spaceBetween from gap config', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/blog-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/BlogListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -420,7 +405,7 @@ it('events listing renders default spaceBetween when gap is not set', function (
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',
@@ -448,7 +433,7 @@ it('events listing renders custom spaceBetween from gap config', function () {
     ]);
 
     $html = Blade::render(
-        file_get_contents(resource_path('views/widgets/events-listing.blade.php')),
+        file_get_contents(base_path('app/Widgets/EventsListing/template.blade.php')),
         [
             'config'      => [
                 'heading'          => '',

@@ -175,7 +175,7 @@ it('product carousel blade renders slides with product data and buy forms', func
         'sort_order' => 0,
     ]);
 
-    $html = view('widgets.product-carousel', [
+    $html = view('widgets::ProductCarousel.template', [
         'config'         => ['heading' => 'Our Products'],
         'configMedia'    => [],
         'collectionData' => [],

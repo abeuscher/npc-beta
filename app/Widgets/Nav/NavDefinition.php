@@ -33,7 +33,7 @@ class NavDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['scss' => ['resources/scss/widgets/_navigation.scss']];
+        return ['scss' => ['app/Widgets/Nav/styles.scss']];
     }
 
     public function schema(): array
@@ -84,11 +84,6 @@ class NavDefinition extends WidgetDefinition
             'drop_align'          => 'left',
             'mobile_animation'    => 'slide',
         ];
-    }
-
-    public function template(): string
-    {
-        return "@include('widgets.nav')";
     }
 
     public function requiredConfig(): ?array

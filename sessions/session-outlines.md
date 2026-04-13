@@ -178,6 +178,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 169 | Navigation Widget |
 | 170 | Widget Definition Class & Registry |
 | 171 | Defaults Binding & Sovereign Rendering |
+| 172 | Per-Widget File Colocation |
 
 ---
 
@@ -219,7 +220,7 @@ This is phased over several sessions. Each stage leaves the app shippable.
 
 - **Stage 2 — Defaults Binding & Sovereign Rendering.** *(Completed session 171.)* Introduced `App\Services\WidgetConfigResolver` (registered as a singleton) composing `defaults → theme overrides (stub) → instance config`. `WidgetRenderer` resolves config before passing to Blade; nav template dropped its defensive `?? '...'` chains. Instance configs are now sparse — new widgets created with `config = []`, saves strip keys equal to the resolved default. API/bootstrap payloads ship `resolved_defaults` so the inspector and renderer draw defaults from the same source; inspector offers a widget-level "reset all settings" action guarded by a confirmation modal. Theme overrides remain stubbed (empty); non-nav widgets still source defaults via the resolver's coexistence branch (`WidgetType::getDefaultConfig`) until Stage 3 promotes them to definition classes.
 
-- **Stage 3 — Per-Widget File Colocation.** Move each widget's template and scss next to its definition (`app/Widgets/Nav/template.blade.php`, `app/Widgets/Nav/styles.scss`). Blade loader gets a new namespace; build server's SCSS collector reads from `app/Widgets/*/styles.scss`. Mechanical mass migration. Old `resources/views/widgets/` and `resources/scss/widgets/` directories disappear.
+- **Stage 3 — Per-Widget File Colocation.** *(Completed session 172.)* Every widget now lives at `app/Widgets/{PascalName}/` with `{PascalName}Definition.php`, `template.blade.php`, and optional `styles.scss`. Blade `widgets::` namespace registered in `WidgetServiceProvider`. Base-class `template()` default resolves `@include('widgets::{Folder}.template')`. Base class also gained optional `css()`, `js()`, `code()`, `variableName()` for widgets with inline DB-column source. Shared Blade fragments (buttons, icons, share-icons) moved to `resources/views/widget-shared/`. Legacy `resources/views/widgets/` and `resources/scss/widgets/` directories retired. `WidgetTypeSeeder` now a thin wrapper over `WidgetRegistry::sync()`.
 
 - **Stage 4 — Widget Manifest & Metadata.** Each widget declares human-facing metadata (description, category, version, author, license, screenshots, required capabilities, min app version) via the definition class. Not runtime-critical — used by the browser/installer. Manifest schema defined, validation in CI.
 

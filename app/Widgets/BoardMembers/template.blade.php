@@ -94,14 +94,14 @@
                         <div class="board-member__links">
                             @if ($linkedin)
                                 <a href="{{ e($linkedin) }}" target="_blank" rel="noopener noreferrer" class="board-member__link board-member__link--linkedin">
-                                    @include('widgets.components.icon-linkedin')
+                                    @include('widget-shared.icon-linkedin')
                                     <span class="sr-only">LinkedIn</span>
                                 </a>
                             @endif
 
                             @if ($github)
                                 <a href="{{ e($github) }}" target="_blank" rel="noopener noreferrer" class="board-member__link board-member__link--github">
-                                    @include('widgets.components.icon-github')
+                                    @include('widget-shared.icon-github')
                                     <span class="sr-only">GitHub</span>
                                 </a>
                             @endif
