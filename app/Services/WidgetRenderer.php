@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PageWidget;
 use App\Models\WidgetType;
+use App\Services\WidgetConfigResolver;
 use Illuminate\Support\Facades\Blade;
 
 class WidgetRenderer
@@ -22,7 +23,7 @@ class WidgetRenderer
             return ['html' => null, 'styles' => '', 'scripts' => ''];
         }
 
-        $config  = $pw->config ?? [];
+        $config  = app(WidgetConfigResolver::class)->resolve($pw);
         $styles  = '';
         $scripts = '';
 

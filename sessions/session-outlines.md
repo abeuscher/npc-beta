@@ -177,6 +177,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 168 | Most Used Widgets & Text Drop Shadow |
 | 169 | Navigation Widget |
 | 170 | Widget Definition Class & Registry |
+| 171 | Defaults Binding & Sovereign Rendering |
 
 ---
 
@@ -216,7 +217,7 @@ This is phased over several sessions. Each stage leaves the app shippable.
 
 - **Stage 1 — Widget Definition Class & Registry.** *(Completed session 170.)* Introduced `App\Widgets\Contracts\WidgetDefinition` base class and `App\Services\WidgetRegistry` service bound by `WidgetServiceProvider`. Seeder now calls `WidgetRegistry::sync()` at the end of `run()`. Nav widget converted as proof-of-concept (`App\Widgets\Nav\NavDefinition`); other widgets stay seeder-driven via the coexistence path.
 
-- **Stage 2 — Defaults Binding & Sovereign Rendering.** The defaults-binding session discussed in session 169. `WidgetDefinition::defaults()` is the source of truth for defaults. A `WidgetConfigResolver` composes `widget.defaults() → theme overrides (stub) → instance config → resolved config`. Blade templates stop using `$config['x'] ?? ''` and receive a fully-resolved config. Instance configs become sparse — only overrides get stored. Inspector shows resolved-vs-override state.
+- **Stage 2 — Defaults Binding & Sovereign Rendering.** *(Completed session 171.)* Introduced `App\Services\WidgetConfigResolver` (registered as a singleton) composing `defaults → theme overrides (stub) → instance config`. `WidgetRenderer` resolves config before passing to Blade; nav template dropped its defensive `?? '...'` chains. Instance configs are now sparse — new widgets created with `config = []`, saves strip keys equal to the resolved default. API/bootstrap payloads ship `resolved_defaults` so the inspector and renderer draw defaults from the same source; inspector offers a widget-level "reset all settings" action guarded by a confirmation modal. Theme overrides remain stubbed (empty); non-nav widgets still source defaults via the resolver's coexistence branch (`WidgetType::getDefaultConfig`) until Stage 3 promotes them to definition classes.
 
 - **Stage 3 — Per-Widget File Colocation.** Move each widget's template and scss next to its definition (`app/Widgets/Nav/template.blade.php`, `app/Widgets/Nav/styles.scss`). Blade loader gets a new namespace; build server's SCSS collector reads from `app/Widgets/*/styles.scss`. Mechanical mass migration. Old `resources/views/widgets/` and `resources/scss/widgets/` directories disappear.
 

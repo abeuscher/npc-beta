@@ -10,6 +10,7 @@ use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\DemoDataService;
+use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRenderer;
 use App\Models\Collection;
 use Filament\Notifications\Notification;
@@ -111,8 +112,6 @@ class PageBuilder extends Component
             $this->addModalLabel = $widgetType->label . ' ' . ($count + 1);
         }
 
-        $defaultConfig = $widgetType->getDefaultConfig();
-
         if ($this->insertLayoutId) {
             // Insert into a column slot
             $columnIndex = $this->insertColumnIndex ?? 0;
@@ -126,7 +125,7 @@ class PageBuilder extends Component
                 'column_index'      => $columnIndex,
                 'widget_type_id'    => $widgetType->id,
                 'label'             => $this->addModalLabel,
-                'config'            => $defaultConfig,
+                'config'            => [],
                 'query_config'      => [],
                 'appearance_config' => [
                     'background' => ['color' => '#ffffff'],
@@ -152,7 +151,7 @@ class PageBuilder extends Component
                 'page_id'           => $this->pageId,
                 'widget_type_id'    => $widgetType->id,
                 'label'             => $this->addModalLabel,
-                'config'            => $defaultConfig,
+                'config'            => [],
                 'query_config'      => [],
                 'appearance_config' => [
                     'background' => ['color' => '#ffffff'],
@@ -265,6 +264,7 @@ class PageBuilder extends Component
                 'column_index'              => $pw->column_index,
                 'label'                     => $pw->label ?? '',
                 'config'                    => $pw->config ?? [],
+                'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
                 'query_config'              => $pw->query_config ?? [],
                 'appearance_config'         => $pw->appearance_config ?? [],
                 'sort_order'                => $pw->sort_order ?? 0,
@@ -300,6 +300,7 @@ class PageBuilder extends Component
                     'column_index'              => $child->column_index,
                     'label'                     => $child->label ?? '',
                     'config'                    => $child->config ?? [],
+                    'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($child),
                     'query_config'              => $child->query_config ?? [],
                     'appearance_config'         => $child->appearance_config ?? [],
                     'sort_order'                => $child->sort_order ?? 0,

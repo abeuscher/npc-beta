@@ -495,6 +495,14 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  function clearAllOverrides(widgetId: string): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+    w.config = {}
+    dirtyWidgets.value.add(widgetId)
+    flushDebouncedSave(widgetId, { config: {} })
+  }
+
   function payloadAffectsPreview(payload: UpdateWidgetPayload): boolean {
     // Label-only edits don't change rendered HTML, so skip the auto-refresh.
     return (
@@ -734,6 +742,7 @@ export const useEditorStore = defineStore('editor', () => {
     createWidget,
     updateWidget,
     updateLocalConfig,
+    clearAllOverrides,
     deleteWidget,
     copyWidget,
     reorderWidgets,

@@ -3,6 +3,7 @@ import { ref, nextTick } from 'vue'
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
 import ConfirmDeleteModal from './ConfirmDeleteModal.vue'
+import ConfirmResetModal from './ConfirmResetModal.vue'
 
 const props = defineProps<{
   widget: Widget
@@ -13,6 +14,7 @@ const editing = ref(false)
 const draft = ref('')
 const labelInput = ref<HTMLInputElement | null>(null)
 const showDeleteModal = ref(false)
+const showResetModal = ref(false)
 
 function startEditing() {
   draft.value = props.widget.label
@@ -35,6 +37,16 @@ async function confirmDelete() {
   showDeleteModal.value = false
   await store.deleteWidget(props.widget.id)
 }
+
+function openResetModal() {
+  if (Object.keys(props.widget.config).length === 0) return
+  showResetModal.value = true
+}
+
+function confirmReset() {
+  showResetModal.value = false
+  store.clearAllOverrides(props.widget.id)
+}
 </script>
 
 <template>
@@ -53,6 +65,17 @@ async function confirmDelete() {
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="inspector-header__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.364-6.364a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2.414a2 2 0 01.586-1.414z"/>
+        </svg>
+      </button>
+      <button
+        type="button"
+        title="Reset all settings to defaults"
+        class="inspector-header__reset-btn"
+        :disabled="Object.keys(widget.config).length === 0"
+        @click="openResetModal"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="inspector-header__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992h4.992m0 0-3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
         </svg>
       </button>
       <button
@@ -94,6 +117,13 @@ async function confirmDelete() {
       :widget-label="widget.label"
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
+    />
+
+    <ConfirmResetModal
+      :visible="showResetModal"
+      :widget-label="widget.label"
+      @confirm="confirmReset"
+      @cancel="showResetModal = false"
     />
   </div>
 </template>
@@ -143,6 +173,26 @@ async function confirmDelete() {
   color: #111827;
 }
 
+.inspector-header__reset-btn {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: none;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.inspector-header__reset-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.inspector-header__reset-btn:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .inspector-header__delete-btn {
   flex-shrink: 0;
   padding: 0.25rem;
@@ -166,6 +216,19 @@ async function confirmDelete() {
   .inspector-header__edit-btn:hover {
     background: #374151;
     color: #fff;
+  }
+
+  .inspector-header__reset-btn {
+    color: #fff;
+  }
+
+  .inspector-header__reset-btn:hover:not(:disabled) {
+    background: #374151;
+    color: #fff;
+  }
+
+  .inspector-header__reset-btn:disabled {
+    color: #6b7280;
   }
 
   .inspector-header__delete-btn {

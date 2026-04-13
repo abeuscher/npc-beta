@@ -35,6 +35,7 @@ export interface Widget {
   column_index: number | null
   label: string
   config: Record<string, any>
+  resolved_defaults: Record<string, any>
   query_config: Record<string, any>
   appearance_config: WidgetAppearanceConfig
   sort_order: number

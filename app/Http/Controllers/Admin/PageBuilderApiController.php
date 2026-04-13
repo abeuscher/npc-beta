@@ -14,6 +14,7 @@ use App\Models\WidgetType;
 use App\Services\AppearanceStyleComposer;
 use App\Services\DemoDataService;
 use App\Services\PageBuilderDataSources;
+use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -95,7 +96,7 @@ class PageBuilderApiController extends Controller
             'layout_id'         => $layoutId,
             'column_index'      => $layoutId ? ($validated['column_index'] ?? 0) : null,
             'label'             => $label,
-            'config'            => $widgetType->getDefaultConfig(),
+            'config'            => [],
             'query_config'      => [],
             'appearance_config' => [
                 'background' => ['color' => '#ffffff'],
@@ -131,7 +132,7 @@ class PageBuilderApiController extends Controller
             $updates['label'] = $validated['label'];
         }
         if (array_key_exists('config', $validated)) {
-            $updates['config'] = $validated['config'];
+            $updates['config'] = $this->stripDefaults($widget, $validated['config'] ?? []);
         }
         if (array_key_exists('appearance_config', $validated)) {
             $updates['appearance_config'] = $validated['appearance_config'];
@@ -456,7 +457,7 @@ class PageBuilderApiController extends Controller
         // Update config with media ID
         $config = $widget->config ?? [];
         $config[$key] = $media->id;
-        $widget->update(['config' => $config]);
+        $widget->update(['config' => $this->stripDefaults($widget, $config)]);
 
         return response()->json([
             'media_id' => $media->id,
@@ -472,7 +473,7 @@ class PageBuilderApiController extends Controller
 
         $config = $widget->config ?? [];
         $config[$key] = null;
-        $widget->update(['config' => $config]);
+        $widget->update(['config' => $this->stripDefaults($widget, $config)]);
 
         return response()->json(['removed' => true]);
     }
@@ -716,6 +717,7 @@ class PageBuilderApiController extends Controller
             'column_index'              => $pw->column_index,
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
+            'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
             'query_config'              => $pw->query_config ?? [],
             'appearance_config'         => $pw->appearance_config ?? [],
             'sort_order'                => $pw->sort_order ?? 0,
@@ -742,6 +744,7 @@ class PageBuilderApiController extends Controller
             'column_index'              => $pw->column_index,
             'label'                     => $pw->label ?? '',
             'config'                    => $pw->config ?? [],
+            'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
             'query_config'              => $pw->query_config ?? [],
             'appearance_config'         => $pw->appearance_config ?? [],
             'sort_order'                => $pw->sort_order ?? 0,
@@ -865,6 +868,19 @@ class PageBuilderApiController extends Controller
         }
 
         return $urls;
+    }
+
+    private function stripDefaults(PageWidget $widget, array $config): array
+    {
+        $defaults = app(WidgetConfigResolver::class)->resolvedDefaults($widget);
+
+        foreach ($config as $key => $value) {
+            if (array_key_exists($key, $defaults) && $defaults[$key] === $value) {
+                unset($config[$key]);
+            }
+        }
+
+        return $config;
     }
 
     private function computeBareSlug(Page $page): string

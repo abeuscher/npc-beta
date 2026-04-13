@@ -25,7 +25,8 @@ const store = useEditorStore()
 
 const fieldValue = computed(() => {
   const val = props.widget.config[props.field.key]
-  return val !== undefined ? val : props.field.default
+  if (val !== undefined) return val
+  return props.widget.resolved_defaults?.[props.field.key]
 })
 
 function handleUpdate(value: any) {

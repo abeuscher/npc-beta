@@ -75,8 +75,45 @@ Order: seeder entries first, then registry sync. Since both use `updateOrCreate`
 
 ---
 
-## Current status (session 170)
+## Config resolution (session 171)
 
-Only the `nav` widget has been migrated. All other widgets remain declared in `WidgetTypeSeeder`. The coexistence path is permanent until every widget is migrated.
+Session 171 introduced `App\Services\WidgetConfigResolver`, a stateless singleton that composes a widget's effective config at read time. This replaces per-template `$config['x'] ?? 'fallback'` defensiveness.
+
+### Composition order
+
+For any `PageWidget`, the resolver produces:
+
+```
+defaults → theme overrides (stub) → instance config
+```
+
+Later layers overwrite earlier ones key-by-key.
+
+- **defaults:** from `WidgetDefinition::defaults()` if the widget handle is registered, otherwise from `WidgetType::getDefaultConfig()` (which reads `config_schema[].default`). This is the coexistence branch for widgets not yet migrated to the definition pattern.
+- **theme overrides:** a Stage-N extension point. In session 171 this returns `[]`. Future template/theme-level defaults will compose in here without any per-widget template change.
+- **instance config:** the contents of `page_widgets.config` — sparse, containing only the user's explicit overrides.
+
+### Public surface
+
+- `resolve(PageWidget $pw): array` — the merged config. Used by `WidgetRenderer::render()` before passing to Blade.
+- `resolvedDefaults(PageWidget $pw): array` — defaults + theme overrides, without the instance layer. Shipped to the Vue inspector as the `resolved_defaults` payload field so the inspector and the renderer draw from the same source of truth.
+- `hasOverride(PageWidget $pw, string $key): bool` — true when the instance explicitly overrides a key.
+- `defaultFor(PageWidget $pw, string $key): mixed` — the value the resolver would use if the instance did not override the key.
+
+### Sparse instance configs
+
+New widgets are created with `config = []`. On save, `PageBuilderApiController::update()` strips any key whose submitted value equals the resolved default (strict `===`). The result: `page_widgets.config` stores only the user's explicit overrides. Future changes to `defaults()` propagate automatically to untouched fields on existing widgets.
+
+Pre-existing fat rows (created before session 171) continue rendering correctly because the resolver composes over them; they will be naturally slimmed the next time a user saves.
+
+### The invariant
+
+Because both the renderer and the inspector draw defaults from the resolver, the inspector's displayed value for any field always equals the value the renderer uses for that field. There is no path where the two can diverge.
+
+---
+
+## Current status (session 171)
+
+Only the `nav` widget has been migrated to the definition class. All other widgets remain declared in `WidgetTypeSeeder`. The coexistence path is permanent until every widget is migrated — both definition and seeder-sourced widgets flow through the resolver identically.
 
 Blade templates and SCSS partials for definition-backed widgets still live at their legacy paths (`resources/views/widgets/*.blade.php`, `resources/scss/widgets/_*.scss`). Physical file colocation into `app/Widgets/*/` is deferred to a later stage of the Sovereign Widget arc.

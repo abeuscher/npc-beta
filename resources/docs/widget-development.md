@@ -229,11 +229,15 @@ Adding a new field type requires: a new Vue component under `components/fields/`
 
 ### State and persistence
 
-State lives in the Pinia store at `resources/js/page-builder-vue/stores/editor.ts`. Field components mutate the local store via helpers like `updateLocalConfig(widgetId, key, value)` and `updateLocalStyleConfig(widgetId, key, value)` — these update the store immediately so the inspector and preview reflect the change without a server round-trip.
+State lives in the Pinia store at `resources/js/page-builder-vue/stores/editor.ts`. Field components mutate the local store via helpers like `updateLocalConfig(widgetId, key, value)` and `updateLocalStyleConfig(widgetId, key, value)` — these update the store immediately so the inspector and preview reflect the change without a server round-trip. The inspector header exposes a widget-level "reset all settings to defaults" action (between the rename and delete buttons) that calls `clearAllOverrides(widgetId)`; the store zeroes the local config and the server's sparse-save persists `{}`, so every field falls back to its resolved default.
 
-Each local mutation enqueues a debounced REST save: 350 ms after the last input event, the store calls `PUT /admin/api/page-builder/widgets/{id}` with the merged config / style_config / query_config payload. Pending changes for the same widget are coalesced into a single request. After a successful config-affecting save, the store also issues a preview refresh request to re-render the widget HTML server-side.
+Each local mutation enqueues a debounced REST save: 350 ms after the last input event, the store calls `PUT /admin/api/page-builder/widgets/{id}` with the merged config / style_config / query_config payload. Pending changes for the same widget are coalesced into a single request. The server applies sparse-save — any config key whose value equals the resolved default is stripped before persisting. After a successful config-affecting save, the store also issues a preview refresh request to re-render the widget HTML server-side.
 
 There is no `wire:model.live` binding anywhere in the inspector — Livewire is not in the data path for field edits.
+
+### Defaults and the `resolved_defaults` wire contract
+
+Each widget in the API/bootstrap payload carries a `resolved_defaults` map alongside `config`. This is the output of `WidgetConfigResolver::resolvedDefaults($pw)` — the composed defaults-plus-theme layer, without the instance overrides. The inspector reads a field's display value as `widget.config[key] ?? widget.resolved_defaults[key]` and uses the same map to decide whether a field is overridden (value present in `config` AND different from the resolved default). `field.default` from the schema is not consulted at display time. Because the renderer also draws defaults from the same resolver, the inspector display can never diverge from the rendered output. See `docs/widget-system.md` for the resolver's composition order and sparse-save rules.
 
 ### Bootstrap data
 

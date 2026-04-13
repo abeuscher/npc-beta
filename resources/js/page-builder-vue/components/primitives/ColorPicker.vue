@@ -103,7 +103,6 @@ onBeforeUnmount(() => {
       type="button"
       class="color-picker__trigger"
       :class="{
-        'color-picker__trigger--open': isOpen,
         'color-picker__trigger--compact': compact,
       }"
       @click="togglePopover"
@@ -231,11 +230,6 @@ onBeforeUnmount(() => {
 
 .color-picker__trigger:hover {
   border-color: #9ca3af;
-}
-
-.color-picker__trigger--open {
-  border-color: var(--c-primary-400, #818cf8);
-  box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
 
 .color-picker__trigger--compact {

@@ -1,26 +1,26 @@
 @php
-    $menuId          = $config['navigation_menu_id'] ?? null;
-    $brandingType    = $config['branding_type'] ?? 'none';
-    $brandingText    = $config['branding_text'] ?? '';
+    $menuId          = $config['navigation_menu_id'];
+    $brandingType    = $config['branding_type'];
+    $brandingText    = $config['branding_text'];
     $brandingMedia   = $configMedia['branding_image'] ?? null;
-    $alignment       = $config['alignment'] ?? 'middle-left';
-    $dropAnimation   = $config['drop_animation'] ?? 'fade';
-    $dropAlign       = $config['drop_align'] ?? 'left';
-    $dropBorderColor = $config['drop_border_color'] ?? '';
-    $dropBorderWidth = (int) ($config['drop_border_width'] ?? 0);
-    $dropFillColor   = $config['drop_fill_color'] ?? '#ffffff';
-    $dropFillGradient = is_array($config['drop_fill_gradient'] ?? null) ? $config['drop_fill_gradient'] : null;
-    $mobileAnimation = $config['mobile_animation'] ?? 'slide';
+    $alignment       = $config['alignment'];
+    $dropAnimation   = $config['drop_animation'];
+    $dropAlign       = $config['drop_align'];
+    $dropBorderColor = $config['drop_border_color'];
+    $dropBorderWidth = (int) $config['drop_border_width'];
+    $dropFillColor   = $config['drop_fill_color'];
+    $dropFillGradient = is_array($config['drop_fill_gradient']) ? $config['drop_fill_gradient'] : null;
+    $mobileAnimation = $config['mobile_animation'];
     $mobileBreakpoint = 768;
-    $parentTemplate  = $config['parent_template'] ?? '<a href="{{url}}" class="widget-nav__link {{active_class}}">{{label}}</a>';
-    $childTemplate   = $config['child_template'] ?? '<a href="{{url}}" class="widget-nav__drop-link {{active_class}}">{{label}}</a>';
+    $parentTemplate  = $config['parent_template'];
+    $childTemplate   = $config['child_template'];
 
     // Link colors
-    $hexPattern    = '/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/';
-    $linkColor     = $config['link_color'] ?? '';
-    $hoverColor    = $config['hover_color'] ?? '';
-    $dropLinkColor = $config['drop_link_color'] ?? '';
-    $dropHoverColor = $config['drop_hover_color'] ?? '';
+    $hexPattern     = '/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/';
+    $linkColor      = $config['link_color'];
+    $hoverColor     = $config['hover_color'];
+    $dropLinkColor  = $config['drop_link_color'];
+    $dropHoverColor = $config['drop_hover_color'];
 
     $navColorVars = [];
     if ($linkColor && preg_match($hexPattern, $linkColor))         $navColorVars[] = '--nav-link-color:' . $linkColor;
