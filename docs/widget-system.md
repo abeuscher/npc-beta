@@ -250,6 +250,13 @@ Applying a preset is **appearance-only** with mixed apply semantics:
 
 The action routes through the same debounced save path the rest of the inspector uses, so the preview refreshes the same way a field edit does. The editor does not track which preset was applied — after apply, the widget is just a widget with that config, and subsequent field edits do not "dirty" or "detach from" the preset.
 
+The same overlay-config / replace-appearance rule is applied by **two** call sites and they must stay in lock-step:
+
+- `resources/js/page-builder-vue/stores/editor.ts` → `applyPreset()` (admin inspector)
+- `app/Http/Controllers/Dev/WidgetDemoController.php` → `showPreset()` (dev preview route)
+
+When changing the apply semantics, update both. There is no shared service — the operation is small enough that duplication is cheaper than a service hop, but the two implementations must produce identical `config` / `appearance_config` shapes given the same inputs.
+
 ### User-authored drafts
 
 Designers can save the current live appearance of a widget instance as a **draft preset** from inside the inspector Presets tab. Drafts live in the `widget_presets` table (see [`docs/schema/widget_presets.md`](schema/widget_presets.md)) — not on the widget definition class. They are a scratch pool scoped by `widget_type_id`, global per install (no per-site, per-template, or per-user ownership), and subject to the same appearance-only rule as code-authored presets: `config` keys that don't resolve to a `group: 'appearance'` schema field are rejected on save (422).

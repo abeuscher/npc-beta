@@ -274,43 +274,6 @@ The `_fields/` render partials follow the same pattern:
 
 ---
 
-## Migration from current system
-
-### What moves
-
-| Current location | New location |
-|---|---|
-| `resources/views/widgets/hero.blade.php` | `widgets/hero/template.blade.php` |
-| `resources/views/widgets/carousel.blade.php` | `widgets/carousel/template.blade.php` |
-| `resources/scss/widgets/_event-calendar.scss` | `widgets/event-calendar/style.scss` |
-| `resources/scss/_custom.scss` (button classes) | `widgets/_fields/buttons/style.scss` (or stays in `_custom.scss` since it's site-level) |
-| `resources/views/livewire/partials/inspector-fields/buttons.blade.php` | `widgets/_fields/buttons/inspector.blade.php` |
-| `resources/views/widgets/components/buttons.blade.php` | `widgets/_fields/buttons/render.blade.php` |
-| `database/seeders/WidgetTypeSeeder.php` entries | Individual `widget.json` manifests |
-| Inline `css` column content | `style.scss` in widget folder |
-| Inline `js` column content | `script.js` in widget folder |
-
-### What gets removed
-
-- `WidgetTypeSeeder.php` — replaced by `widget:sync`
-- On-the-fly ScssPhp compilation in the layout — replaced by Vite bundle
-- Inline `<style>` and `<script>` output in the layout — replaced by Vite bundle
-- `css`, `js`, `code` columns in `widget_types` — can be kept for backward compat but ignored by the renderer
-
-### Migration sequence
-
-1. Create `widgets/` directory structure and manifests for all existing widgets
-2. Move templates, styles, JS into widget folders
-3. Register the `widgets::` view namespace
-4. Update the renderer to resolve templates from the new location
-5. Build the Vite dynamic entry
-6. Build `widget:sync` command
-7. Remove the seeder
-8. Remove inline CSS/JS output from the layout
-9. Run full test suite
-
----
-
 ## Pinned / required widgets
 
 Some widgets are required on specific pages (e.g., `portal_login` on the login page). This constraint currently lives in `WidgetType::$requiredFor`. Under the installable model, this moves to the manifest:

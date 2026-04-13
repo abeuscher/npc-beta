@@ -67,11 +67,6 @@ class AdminPanelProvider extends PanelProvider
                     ->name('quickbooks.disconnect')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
 
-                // Page preview for the page builder (renders full page with public layout)
-                \Illuminate\Support\Facades\Route::get('/preview/{page}', [\App\Http\Controllers\Admin\PagePreviewController::class, 'show'])
-                    ->name('page-preview')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-
                 // Page builder API (Vue editor)
                 \Illuminate\Support\Facades\Route::prefix('api/page-builder')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class)

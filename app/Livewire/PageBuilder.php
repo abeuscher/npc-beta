@@ -53,28 +53,11 @@ class PageBuilder extends Component
             $page = Page::find($pageId);
             if ($page) {
                 $this->pageType = $page->type;
-                $this->requiredHandles = WidgetType::requiredForPage(
-                    $this->computeBareSlug($page)
-                );
+                $this->requiredHandles = WidgetType::requiredForPage($page->bareSlug());
             }
         }
 
         $this->widgetTypes = WidgetType::forPicker($this->pageType);
-    }
-
-    private function computeBareSlug(Page $page): string
-    {
-        $prefix = match ($page->type) {
-            'system' => SiteSetting::get('system_prefix', 'system'),
-            'member' => SiteSetting::get('portal_prefix', 'members'),
-            default  => '',
-        };
-
-        if ($prefix !== '' && str_starts_with($page->slug, $prefix . '/')) {
-            return substr($page->slug, strlen($prefix) + 1);
-        }
-
-        return $page->slug;
     }
 
     // -------------------------------------------------------------------------
@@ -270,7 +253,7 @@ class PageBuilder extends Component
                 'sort_order'                => $pw->sort_order ?? 0,
                 'is_active'                 => $pw->is_active,
                 'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
-                'image_urls'                => $this->resolveWidgetImageUrls($pw),
+                'image_urls'                => $pw->configImageUrls(),
                 'preview_html'              => $preview['html'],
             ];
         }
@@ -306,7 +289,7 @@ class PageBuilder extends Component
                     'sort_order'                => $child->sort_order ?? 0,
                     'is_active'                 => $child->is_active,
                     'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
-                    'image_urls'                => $this->resolveWidgetImageUrls($child),
+                    'image_urls'                => $child->configImageUrls(),
                     'preview_html'              => $childPreview['html'],
                 ];
             }
@@ -418,21 +401,6 @@ class PageBuilder extends Component
     // -------------------------------------------------------------------------
     // Preview rendering helpers (used by getBootstrapData)
     // -------------------------------------------------------------------------
-
-    private function resolveWidgetImageUrls(PageWidget $pw): array
-    {
-        $urls = [];
-        $schema = $pw->widgetType?->config_schema ?? [];
-
-        foreach ($schema as $field) {
-            if (in_array($field['type'] ?? '', ['image', 'video'])) {
-                $media = $pw->getFirstMedia("config_{$field['key']}");
-                $urls[$field['key']] = $media?->getUrl();
-            }
-        }
-
-        return $urls;
-    }
 
     private function collectLibs(PageWidget $pw, array &$libs): void
     {

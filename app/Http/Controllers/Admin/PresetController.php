@@ -120,14 +120,14 @@ class PresetController extends Controller
 
     private function nextDraftIdentity(WidgetType $widgetType): array
     {
-        $existing = WidgetPreset::where('widget_type_id', $widgetType->id)
-            ->pluck('handle')
-            ->all();
+        $maxNumber = WidgetPreset::where('widget_type_id', $widgetType->id)
+            ->where('handle', 'like', 'draft-%')
+            ->get()
+            ->map(fn ($p) => (int) substr($p->handle, 6))
+            ->filter(fn ($n) => $n > 0)
+            ->max();
 
-        $n = 1;
-        while (in_array("draft-{$n}", $existing, true)) {
-            $n++;
-        }
+        $n = ($maxNumber ?? 0) + 1;
 
         return ["draft-{$n}", "Draft {$n}"];
     }

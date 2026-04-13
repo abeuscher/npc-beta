@@ -184,6 +184,31 @@ class PageWidget extends Model implements HasMedia
         }
     }
 
+    public function configImageUrls(): array
+    {
+        $urls = [];
+        $schema = $this->widgetType?->config_schema ?? [];
+
+        foreach ($schema as $field) {
+            if (in_array($field['type'] ?? '', ['image', 'video'])) {
+                $media = $this->getFirstMedia("config_{$field['key']}");
+                $urls[$field['key']] = $media?->getUrl();
+            }
+        }
+
+        return $urls;
+    }
+
+    public function appearanceImageUrl(): ?string
+    {
+        $media = $this->getFirstMedia('appearance_background_image');
+        if (! $media) {
+            return null;
+        }
+
+        return $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('appearance_background_image')->singleFile();

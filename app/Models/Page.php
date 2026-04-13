@@ -93,6 +93,21 @@ class Page extends Model implements HasMedia
         return $this->morphToMany(Tag::class, 'taggable');
     }
 
+    public function bareSlug(): string
+    {
+        $prefix = match ($this->type) {
+            'system' => SiteSetting::get('system_prefix', 'system'),
+            'member' => SiteSetting::get('portal_prefix', 'members'),
+            default  => '',
+        };
+
+        if ($prefix !== '' && str_starts_with($this->slug, $prefix . '/')) {
+            return substr($this->slug, strlen($prefix) + 1);
+        }
+
+        return $this->slug;
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('post_thumbnail')->singleFile();

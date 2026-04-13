@@ -173,7 +173,7 @@ it('updates a widget label and config', function () {
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
             'label'  => 'Updated Label',
-            'config' => ['heading' => 'New Heading'],
+            'config' => ['content' => '<p>New Content</p>'],
         ]);
 
     $response->assertOk()
@@ -181,7 +181,60 @@ it('updates a widget label and config', function () {
 
     $widget->refresh();
     expect($widget->label)->toBe('Updated Label');
-    expect($widget->config['heading'])->toBe('New Heading');
+    expect($widget->config['content'])->toBe('<p>New Content</p>');
+});
+
+it('strips config keys that are not declared in the widget schema', function () {
+    $page = apiPage();
+    $widget = apiWidget($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
+            'config' => [
+                'content'   => '<p>Keep me</p>',
+                'junk_key'  => 'drop me',
+                'evil_blob' => ['nested' => true],
+            ],
+        ])->assertOk();
+
+    $widget->refresh();
+    expect($widget->config)->toHaveKey('content');
+    expect($widget->config)->not->toHaveKey('junk_key');
+    expect($widget->config)->not->toHaveKey('evil_blob');
+});
+
+it('strips appearance_config keys outside the background/text/layout whitelist', function () {
+    $page = apiPage();
+    $widget = apiWidget($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
+            'appearance_config' => [
+                'background' => ['color' => '#abcdef'],
+                'rogue_key'  => 'drop me',
+            ],
+        ])->assertOk();
+
+    $widget->refresh();
+    expect($widget->appearance_config)->toHaveKey('background');
+    expect($widget->appearance_config)->not->toHaveKey('rogue_key');
+});
+
+it('strips query_config slots that are not declared on the widget type', function () {
+    $page = apiPage();
+    $widget = apiWidget($page, 'carousel');
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
+            'query_config' => [
+                'slides'    => ['limit' => 5],
+                'phantom'   => ['limit' => 99],
+            ],
+        ])->assertOk();
+
+    $widget->refresh();
+    expect($widget->query_config)->toHaveKey('slides');
+    expect($widget->query_config)->not->toHaveKey('phantom');
 });
 
 it('update endpoint contract that the JS selective merge depends on', function () {
@@ -196,11 +249,11 @@ it('update endpoint contract that the JS selective merge depends on', function (
     //   - include the server-authoritative metadata fields that the client
     //     unconditionally merges.
     $page = apiPage();
-    $widget = apiWidget($page);
+    $widget = apiWidget($page, 'carousel');
 
-    $sentConfig = ['heading' => 'Echo', 'body' => 'Lorem ipsum'];
+    $sentConfig = ['collection_handle' => 'whatever'];
     $sentAppearance = ['background' => ['color' => '#abcdef']];
-    $sentQuery = ['posts' => ['limit' => 5]];
+    $sentQuery = ['slides' => ['limit' => 5]];
 
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
@@ -214,10 +267,9 @@ it('update endpoint contract that the JS selective merge depends on', function (
 
     // User-mutable fields are echoed back exactly as sent.
     $response->assertJsonPath('widget.label', 'Echo Label');
-    $response->assertJsonPath('widget.config.heading', 'Echo');
-    $response->assertJsonPath('widget.config.body', 'Lorem ipsum');
+    $response->assertJsonPath('widget.config.collection_handle', 'whatever');
     $response->assertJsonPath('widget.appearance_config.background.color', '#abcdef');
-    $response->assertJsonPath('widget.query_config.posts.limit', 5);
+    $response->assertJsonPath('widget.query_config.slides.limit', 5);
 
     // Confirm no server-side merging — the returned config has exactly the
     // keys we sent (no leftover defaults from the original create).

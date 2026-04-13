@@ -133,13 +133,14 @@ class PageBuilderApiController extends Controller
             $updates['label'] = $validated['label'];
         }
         if (array_key_exists('config', $validated)) {
-            $updates['config'] = $this->stripDefaults($widget, $validated['config'] ?? []);
+            $filtered = $this->filterConfigToSchema($widget, $validated['config'] ?? []);
+            $updates['config'] = $this->stripDefaults($widget, $filtered);
         }
         if (array_key_exists('appearance_config', $validated)) {
-            $updates['appearance_config'] = $validated['appearance_config'];
+            $updates['appearance_config'] = $this->filterAppearanceConfig($validated['appearance_config'] ?? []);
         }
         if (array_key_exists('query_config', $validated)) {
-            $updates['query_config'] = $validated['query_config'];
+            $updates['query_config'] = $this->filterQueryConfig($widget, $validated['query_config'] ?? []);
         }
 
         if (! empty($updates)) {
@@ -159,7 +160,7 @@ class PageBuilderApiController extends Controller
 
         // Prevent deleting required widgets
         $requiredHandles = WidgetType::requiredForPage(
-            $this->computeBareSlug($page)
+            $page->bareSlug()
         );
 
         if (in_array($widget->widgetType?->handle ?? '', $requiredHandles, true)) {
@@ -632,7 +633,7 @@ class PageBuilderApiController extends Controller
     private function buildTree(Page $page): array
     {
         $requiredHandles = WidgetType::requiredForPage(
-            $this->computeBareSlug($page)
+            $page->bareSlug()
         );
 
         // Root widgets (not in any layout)
@@ -713,7 +714,7 @@ class PageBuilderApiController extends Controller
     private function formatWidget(PageWidget $pw, Page $page): array
     {
         $requiredHandles = WidgetType::requiredForPage(
-            $this->computeBareSlug($page)
+            $page->bareSlug()
         );
 
         return [
@@ -736,8 +737,8 @@ class PageBuilderApiController extends Controller
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
-            'image_urls'                => $this->resolveImageUrls($pw),
-            'appearance_image_url'      => $this->resolveAppearanceImageUrl($pw),
+            'image_urls'                => $pw->configImageUrls(),
+            'appearance_image_url'      => $pw->appearanceImageUrl(),
         ];
     }
 
@@ -763,8 +764,8 @@ class PageBuilderApiController extends Controller
             'sort_order'                => $pw->sort_order ?? 0,
             'is_active'                 => $pw->is_active,
             'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
-            'image_urls'                => $this->resolveImageUrls($pw),
-            'appearance_image_url'      => $this->resolveAppearanceImageUrl($pw),
+            'image_urls'                => $pw->configImageUrls(),
+            'appearance_image_url'      => $pw->appearanceImageUrl(),
             'preview_html'              => $this->renderWidgetForPreview($pw)['html'],
         ];
 
@@ -858,31 +859,6 @@ class PageBuilderApiController extends Controller
 
     // ── Private helpers ─────────────────────────────────────────────────
 
-    private function resolveAppearanceImageUrl(PageWidget $pw): ?string
-    {
-        $media = $pw->getFirstMedia('appearance_background_image');
-        if (! $media) {
-            return null;
-        }
-
-        return $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
-    }
-
-    private function resolveImageUrls(PageWidget $pw): array
-    {
-        $urls = [];
-        $schema = $pw->widgetType?->config_schema ?? [];
-
-        foreach ($schema as $field) {
-            if (in_array($field['type'] ?? '', ['image', 'video'])) {
-                $media = $pw->getFirstMedia("config_{$field['key']}");
-                $urls[$field['key']] = $media?->getUrl();
-            }
-        }
-
-        return $urls;
-    }
-
     private function stripDefaults(PageWidget $widget, array $config): array
     {
         $defaults = app(WidgetConfigResolver::class)->resolvedDefaults($widget);
@@ -896,18 +872,30 @@ class PageBuilderApiController extends Controller
         return $config;
     }
 
-    private function computeBareSlug(Page $page): string
+    private function filterConfigToSchema(PageWidget $widget, array $config): array
     {
-        $prefix = match ($page->type) {
-            'system' => SiteSetting::get('system_prefix', 'system'),
-            'member' => SiteSetting::get('portal_prefix', 'members'),
-            default  => '',
-        };
+        $allowed = collect($widget->widgetType?->config_schema ?? [])
+            ->pluck('key')
+            ->filter()
+            ->all();
 
-        if ($prefix !== '' && str_starts_with($page->slug, $prefix . '/')) {
-            return substr($page->slug, strlen($prefix) + 1);
+        return array_intersect_key($config, array_flip($allowed));
+    }
+
+    private function filterAppearanceConfig(array $appearance): array
+    {
+        return array_intersect_key($appearance, array_flip(['background', 'text', 'layout']));
+    }
+
+    private function filterQueryConfig(PageWidget $widget, array $query): array
+    {
+        $slots = $widget->widgetType?->collections ?? [];
+
+        if (empty($slots)) {
+            return [];
         }
 
-        return $page->slug;
+        return array_intersect_key($query, array_flip($slots));
     }
+
 }
