@@ -184,18 +184,15 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 175 | Preset Inspector UI & Hero Preset Pilot |
 | 176 | Designer Preset Drafts & Export |
 | 177 | Preset Thumbnails |
+| 178 | Code Review & Cleanup (Audit) |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 178 — Code Review & Cleanup (Audit)
-
-Audit-only pass covering sessions 142–177 (~35 sessions since the last broad code review in 141). Produces findings tables for duplicated logic and framework alignment; fixes only clearly-safe issues (stale imports, dead files, confirmed dead code, doc drift). Deferred-decision items are flagged for discussion rather than changed in place.
-
 ### 179 — Code Review & Cleanup (Apply)
 
-Work through the tables from 178 with the user. Apply agreed refactors. Split from the audit session so there is a discussion break between finding and fixing.
+Work through the open flags and the W6/W7 tables produced in 178. Three flags need a decision before implementation: retire-or-repurpose `PagePreviewController` (orphan since 141); annotate or retire the now-executed "Migration from current system" section of `docs/widget-system-spec.md`; enforce or document the tolerance of arbitrary-key writes in `PageBuilderApiController::update()`. Then walk the W6 duplicated-logic table (8 items; headline extractions: `WidgetPreviewRenderer` service, Eloquent `JsonResource` for widget serialization, `PageBlockRenderer` service gated on the Flag A decision) and the W7 framework-alignment table (7 items; headline items: sort-order scope on `PageWidget`, single source of truth for defaults). Apply the subset the user approves across several iteration branches so the review cadence stays tight.
 
 ### 180 — Migration Squash
 

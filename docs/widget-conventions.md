@@ -32,7 +32,7 @@ Established in session 122. All future widget development should follow these pa
 
 ## Buttons
 
-- The shared button partial is at `resources/views/widgets/components/buttons.blade.php`.
+- The shared button partial is at `resources/views/widget-shared/buttons.blade.php`.
 - Uses semantic classes: `.btn-group`, `.btn-group--center`, `.btn`, `.btn--primary`, `.btn--secondary`, `.btn--text`.
 - CSS for buttons is in `resources/scss/_custom.scss`.
 

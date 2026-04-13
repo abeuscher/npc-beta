@@ -133,16 +133,21 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 
 | Your name | Class / file |
 |-----------|-------------|
-| Page builder (admin UI) | `App\Livewire\PageBuilder` — `app/Livewire/PageBuilder.php` |
-| Individual block in the builder | `App\Livewire\PageBuilderBlock` — `app/Livewire/PageBuilderBlock.php` |
-| Page builder blade | `resources/views/livewire/page-builder.blade.php` |
-| Block blade (includes widget picker modal) | `resources/views/livewire/page-builder-block.blade.php` |
+| Page builder bootstrap (Livewire shell for the Vue app) | `App\Livewire\PageBuilder` — `app/Livewire/PageBuilder.php` |
+| Page builder bootstrap blade (mounts the Vue app) | `resources/views/livewire/page-builder.blade.php` |
+| Vue page builder entry point | `resources/js/page-builder-vue/main.ts` |
+| Vue page builder root component | `resources/js/page-builder-vue/App.vue` |
+| Vue preview canvas / block cards | `resources/js/page-builder-vue/components/PreviewCanvas.vue`, `PreviewRegion.vue`, `LayoutRegion.vue` |
+| Vue inspector panel | `resources/js/page-builder-vue/components/InspectorPanel.vue` |
+| Vue Pinia editor store | `resources/js/page-builder-vue/stores/editor.ts` |
+| Page builder JSON API (used by the Vue app) | `App\Http\Controllers\Admin\PageBuilderApiController` — `app/Http/Controllers/Admin/PageBuilderApiController.php` |
 | Widget folders (definition + template + optional SCSS) | `app/Widgets/{PascalName}/` |
 | Shared Blade fragments used by widgets | `resources/views/widget-shared/` |
 | Page context service (data for widget templates) | `App\Services\PageContext` — `app/Services/PageContext.php` |
 | Widget data resolver | `App\Services\WidgetDataResolver` — `app/Services/WidgetDataResolver.php` |
-| Inspector panel (admin UI) | `App\Livewire\PageBuilderInspector` — `app/Livewire/PageBuilderInspector.php` |
-| Inspector blade | `resources/views/livewire/page-builder-inspector.blade.php` |
+| Widget registry (discovery of `app/Widgets/*`) | `App\Services\WidgetRegistry` — `app/Services/WidgetRegistry.php` |
+| Widget config resolver | `App\Services\WidgetConfigResolver` — `app/Services/WidgetConfigResolver.php` |
+| Appearance style composer | `App\Services\AppearanceStyleComposer` — `app/Services/AppearanceStyleComposer.php` |
 | Demo data service (preview fallback data) | `App\Services\DemoDataService` — `app/Services/DemoDataService.php` |
 | Widget renderer | `App\Services\WidgetRenderer` — `app/Services/WidgetRenderer.php` |
 
