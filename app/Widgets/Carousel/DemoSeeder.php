@@ -1,12 +1,12 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Widgets\Carousel;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
 use Illuminate\Database\Seeder;
 
-class CarouselDemoSeeder extends Seeder
+class DemoSeeder extends Seeder
 {
     public function run(): void
     {

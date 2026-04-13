@@ -47,4 +47,9 @@ class DonationFormDefinition extends WidgetDefinition
             'success_page' => '',
         ];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
 }

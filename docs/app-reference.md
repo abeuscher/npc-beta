@@ -224,3 +224,16 @@ Per-template `custom_scss` is still compiled at runtime by ScssPhp and injected 
 ### Fallback when the build server is unavailable
 
 The existing bundles in `public/build/widgets/` persist on disk. If the build server is unreachable, the `build:public` command fails with an error, but the site continues serving the last successful build.
+
+---
+
+## Dev tooling — widget thumbnails
+
+| Item | Path / command |
+|------|----------------|
+| Dev demo route (non-production only) | `GET /dev/widgets/{handle}` — `App\Http\Controllers\Dev\WidgetDemoController` |
+| Gate | `routes/dev.php` is conditionally required by `routes/web.php`; `App\Http\Middleware\DevRoutesMiddleware` enforces 404 in production |
+| Widget manifest JSON command | `docker compose exec app php artisan widgets:manifest-json` |
+| Thumbnail capture script (host-side) | `scripts/generate-thumbnails.js` — standalone Node, runs on the WSL2 host (not inside Docker) |
+| Host-level Playwright install | `npm install --global playwright && npx playwright install chromium` (not in `package.json`) |
+| Thumbnail output | `app/Widgets/{PascalName}/thumbnails/static.png`, committed to the repo |

@@ -107,6 +107,56 @@ it('every widget preset has the required shape and references valid config keys'
     }
 });
 
+it('demoSeeder() returns a valid class for seeder-backed widgets and null otherwise', function () {
+    $expectedSeederHandles = [
+        'carousel', 'bar_chart', 'logo_garden', 'board_members', 'event_calendar', 'donation_form',
+    ];
+
+    $registry = app(WidgetRegistry::class);
+    expect($registry->all())->not->toBeEmpty();
+
+    foreach ($registry->all() as $def) {
+        $result = $def->demoSeeder();
+
+        if (in_array($def->handle(), $expectedSeederHandles, true)) {
+            expect($result)->toBeString("Widget [{$def->handle()}] should declare a demoSeeder()");
+            expect(class_exists($result))->toBeTrue("Widget [{$def->handle()}] demoSeeder class missing: {$result}");
+        } else {
+            expect($result)->toBeNull("Widget [{$def->handle()}] should not declare a demoSeeder()");
+        }
+    }
+});
+
+it('every widget demoConfig() returns an array whose keys exist in schema()', function () {
+    $registry = app(WidgetRegistry::class);
+    expect($registry->all())->not->toBeEmpty();
+
+    foreach ($registry->all() as $def) {
+        $result = $def->demoConfig();
+
+        expect($result)->toBeArray("Widget [{$def->handle()}] demoConfig() must return an array");
+
+        $schemaKeys = collect($def->schema())->pluck('key')->filter()->all();
+
+        foreach (array_keys($result) as $key) {
+            expect(in_array($key, $schemaKeys, true))->toBeTrue(
+                "Widget [{$def->handle()}] demoConfig() references unknown schema key: {$key}"
+            );
+        }
+    }
+});
+
+it('every widget demoAppearanceConfig() returns an array', function () {
+    $registry = app(WidgetRegistry::class);
+    expect($registry->all())->not->toBeEmpty();
+
+    foreach ($registry->all() as $def) {
+        expect($def->demoAppearanceConfig())->toBeArray(
+            "Widget [{$def->handle()}] demoAppearanceConfig() must return an array"
+        );
+    }
+});
+
 it('every widget manifest() returns the expected keys', function () {
     $expected = [
         'handle', 'label', 'description', 'category',

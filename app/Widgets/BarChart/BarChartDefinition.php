@@ -61,4 +61,9 @@ class BarChartDefinition extends WidgetDefinition
             'bar_fill_color'    => '#0172ad',
         ];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
 }

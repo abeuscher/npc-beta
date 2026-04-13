@@ -90,4 +90,9 @@ class BoardMembersDefinition extends WidgetDefinition
     {
         return ['keys' => ['collection_handle'], 'message' => 'Select a collection and map its fields to display team members.'];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
 }

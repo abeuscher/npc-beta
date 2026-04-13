@@ -20,6 +20,7 @@ use App\Http\Controllers\Portal\LoginController;
 use App\Http\Controllers\Portal\ResetPasswordController;
 use App\Http\Controllers\Portal\SignupController;
 use App\Http\Controllers\PostController;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 
 // MailChimp webhook — no auth, no CSRF. Path is configurable via MAILCHIMP_WEBHOOK_PATH.
@@ -130,6 +131,11 @@ Route::get('/account/email/confirm', [AccountController::class, 'confirmEmailCha
 // Sitemap and robots.txt
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+// Dev-only routes — widget demo surface for thumbnail capture, etc.
+if (! App::environment('production')) {
+    require base_path('routes/dev.php');
+}
 
 // Slug route is registered last so Filament and other named routes take priority.
 // The .* pattern allows forward-slash segments (e.g. events/board-meeting).

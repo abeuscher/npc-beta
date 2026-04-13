@@ -86,7 +86,7 @@ it('seeder creates three_buckets widget with correct config schema', function ()
 // ── Board members demo seeder ───────────────────────────────────────────────
 
 it('board members demo seeder creates collection and items', function () {
-    $this->artisan('db:seed', ['--class' => 'BoardMembersDemoSeeder']);
+    $this->artisan('db:seed', ['--class' => 'App\\Widgets\\BoardMembers\\DemoSeeder']);
 
     $collection = Collection::where('handle', 'board-members-demo')->first();
 

@@ -49,4 +49,9 @@ class EventCalendarDefinition extends WidgetDefinition
             'default_view' => 'month',
         ];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
 }

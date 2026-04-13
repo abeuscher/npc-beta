@@ -180,6 +180,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 171 | Defaults Binding & Sovereign Rendering |
 | 172 | Per-Widget File Colocation |
 | 173 | Widget Manifest & Metadata |
+| 174 | Sovereign Widget Demos & Static Thumbnails |
 
 ---
 
@@ -225,13 +226,28 @@ This is phased over several sessions. Each stage leaves the app shippable.
 
 - **Stage 4 — Widget Manifest & Metadata.** *(Completed session 173.)* Base class now exposes six optional manifest methods (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) plus a `manifest()` aggregator bundling those with `handle`/`label`/`description`/`category`. `WidgetRegistry::manifests()` returns handle → manifest for the Stage 5 browser. Metadata is code-only (not persisted to `widget_types`, not in `toRow()`). CI validates version semver, license allow-list, screenshot paths on disk, keyword slugs, preset shape + schema-key cross-reference, and manifest key stability. Every widget inherits defaults unchanged — no per-widget overrides this session. `requiredCapabilities()` and `minAppVersion()` deferred pending clearer Stage 5/6 needs.
 
-- **Stage 4.5 — Widget Thumbnail Generation.** Implement the automated thumbnail workflow from `sessions/thumb-creation-workflow.md` — but built into the new widget structure rather than as a parallel central manifest. Each widget declares its own `thumbnailMetadata()` (viewport, interaction key, duration) and ships a `demo.blade.php` inside its directory. The Playwright script iterates the registry. Deferred until after the structural work lands so we don't author demo data against a directory layout that's about to change.
+- **Stage 4.5 Phase 1 — Sovereign Widget Demos & Static Thumbnails.** *(Completed session 174.)* Widget sovereignty extended to demo data: each widget that needs seeded fixtures ships its own `DemoSeeder` inside its folder, and the base class exposes an optional `demoSeeder(): ?string` method. Dev-only `GET /dev/widgets/{handle}` route (gated by `DevRoutesMiddleware` + conditional `require` in `routes/web.php`) renders any widget in isolation at a fixed 800×500 viewport via the existing `WidgetRenderer` pipeline. Host-side Playwright script (`scripts/generate-thumbnails.js`) plus a `widgets:manifest-json` Artisan command produce static PNG thumbnails at `app/Widgets/{PascalName}/thumbnails/static.png`, committed to the repo. `ProductDemoSeeder` deleted outright (domain-model seeding, not widget data); `ProductCarousel`/`ProductDisplay` render their honest disconnected state with zero products. Per-widget `thumbnailMetadata()` and `demo.blade.php` both rejected — one standard viewport, one render pipeline, no duplication.
 
-- **Stage 5 — Widget Browser UI (admin).** Admin page that lists all registered widgets in a browsable grid — search, filter by category, preview thumbnails. "Installed" is implicit. Prepares the UI surface for later external-registry installs.
+- **Stage 5 — Preset System (multi-session sub-arc).** The `presets()` contract shipped in Stage 4 (session 173) and is CI-validated — every widget can declare named config bundles, and the manifest aggregator already exposes them. This stage turns that contract into a shipped feature.
 
-- **Stage 6 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
+  - **Stage 5a — Preset Inspector UI & Hero Preset Pilot.** *(Planned session 175.)* Build the "apply preset" mechanic: a preset gallery surface inside the inspector (compact cards keyed to the widget's `presets()`), one-click apply that writes the preset's `config` + `appearance_config` into the widget instance and refreshes the preview. Pilot the end-to-end flow with a small set of Hero presets (≈3–4) authored inside `HeroDefinition::presets()`. No backend schema changes — presets stay code-only, live on the definition. Preset gallery appears when a widget is first added and remains accessible via the inspector for re-application.
+  - **Stage 5b+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Cadence mirrors the sovereignty work that converted widgets to definition classes session-by-session.
 
-- **Stage 7 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from. Likely deferred to post-Beta 1 — this is a product of its own.
+- **Stage 6 — Widget Browser UI (admin).** Admin page that lists all registered widgets in a browsable grid — search, filter by category, preview thumbnails + preset count chip. "Installed" is implicit. Prepares the UI surface for later external-registry installs. Now consumes static thumbnails from Stage 4.5 Phase 1 and preset data from Stage 5.
+
+- **Stage 7 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
+
+- **Stage 8 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from. Likely deferred to post-Beta 1 — this is a product of its own.
+
+### Deferred: Stage 4.5 Phase 2 — Animated Thumbnails
+
+Originally planned as the follow-up to static thumbnail work — per-widget interaction signal for animated capture (MP4/WebP via ffmpeg post-processing). Deferred to post-Beta 1 on value grounds:
+
+- Only realized benefit is in the Stage 6 widget browser UI (which itself lands mid-arc, not Beta-1-critical), where static + preset count conveys most of the same information.
+- Significant cost: new per-widget interaction contract, ffmpeg host dependency, multi-variant widget design problem (`logo_garden` alone has three motion modes), repo bloat from MP4 files, per-widget re-record maintenance when behavior changes.
+- Clipped animations can look worse than the well-composed static still captured in Phase 1.
+
+Revisit after Stage 6 ships, once there's real evidence of whether motion is missed in the browser grid. Static thumbnails remain the committed artifact; the existing `scripts/generate-thumbnails.js` is positioned to grow `--animated` if/when we come back.
 
 ---
 

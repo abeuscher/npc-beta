@@ -114,6 +114,21 @@ abstract class WidgetDefinition
         return [];
     }
 
+    public function demoSeeder(): ?string
+    {
+        return null;
+    }
+
+    public function demoConfig(): array
+    {
+        return [];
+    }
+
+    public function demoAppearanceConfig(): array
+    {
+        return [];
+    }
+
     public function manifest(): array
     {
         return [

@@ -252,6 +252,69 @@ Each rule fails with a message naming the offending widget handle.
 
 ---
 
-## Current status (session 173)
+## Demo data & thumbnails
 
-Stage 4 of the Sovereign Widget arc is complete. Every registered widget — all 30 (29 seeder-declared widgets plus `nav`) — is now a self-contained folder under `app/Widgets/`. The manifest/metadata contract is defined on the base class with CI validation in place; Stage 5 (widget browser UI) is the first consumer.
+Widget sovereignty extends to demo data. Each widget that needs seeded fixtures for a functional preview ships its own `DemoSeeder` inside its folder — no central demo-data service, no parallel manifest.
+
+### `demoSeeder()` contract
+
+Every `WidgetDefinition` may optionally declare a demo seeder class via:
+
+```php
+public function demoSeeder(): ?string
+{
+    return DemoSeeder::class;
+}
+```
+
+The base-class default returns `null`. When non-null, the FQCN must be an `Illuminate\Database\Seeder` subclass living at `app/Widgets/{PascalName}/DemoSeeder.php`. Seeders must be idempotent — running them on an already-seeded DB must not duplicate rows or error out.
+
+As of session 174, six widgets declare seeders: `carousel`, `bar_chart`, `logo_garden`, `board_members`, `event_calendar`, `donation_form`. `ProductCarousel` and `ProductDisplay` intentionally do **not** declare one — with zero products, they render their own disconnected state, which is the correct signal.
+
+### `demoConfig()` and `demoAppearanceConfig()`
+
+Some widgets are config-only (no collection, no DB fixtures) — `text_block`, `hero`, `video_embed`. Their defaults are empty strings, so a defaults-only demo renders blank. Two additional optional methods on `WidgetDefinition` cover that path:
+
+| Method | Default | Purpose |
+|--------|---------|---------|
+| `demoConfig(): array` | `[]` | Config overrides to apply for the demo render. Merged on top of `defaults()` by the dev controller. Keys must exist in `schema()`. |
+| `demoAppearanceConfig(): array` | `[]` | Appearance-config overrides (padding, background gradient, text color, etc.) composed through `AppearanceStyleComposer`. Shape mirrors the live `appearance_config` jsonb bag. |
+
+Both are optional, both live on the definition class, and both can coexist with `demoSeeder()` on the same widget. The dev controller computes the effective config as `defaults() + demoConfig() + (collection_handle override when a seeder ran)` and the effective appearance as `demoAppearanceConfig()`. The rendered widget is then wrapped in a single `<div>` carrying the composed inline style from `AppearanceStyleComposer`.
+
+Neither method affects production rendering — they are only read by `App\Http\Controllers\Dev\WidgetDemoController`.
+
+### Dev demo route
+
+`GET /dev/widgets/{handle}` renders a single widget at a fixed 800×500 viewport using the production widget asset bundle. The route is registered from `routes/dev.php`, which `routes/web.php` only requires when `! App::environment('production')`. `App\Http\Middleware\DevRoutesMiddleware` enforces the same gate at request time.
+
+The controller (`App\Http\Controllers\Dev\WidgetDemoController`) resolves the definition through `WidgetRegistry`, runs its `demoSeeder()` if declared (idempotent), builds a transient `PageWidget` with `defaults()` as config (plus the seeded `collection_handle` when the widget has a collection slot), and renders via `WidgetRenderer::render()`. There is no duplicate demo template — the dev route and the public site use the same pipeline.
+
+### Static thumbnails (host-side Playwright)
+
+Static PNG thumbnails are captured by `scripts/generate-thumbnails.js`, a standalone Node script that runs on the **host** (not inside Docker). Chromium is not installed in the app container.
+
+Host-level install (once):
+
+```bash
+npm install --global playwright
+npx playwright install chromium
+```
+
+Run against one widget or all:
+
+```bash
+node scripts/generate-thumbnails.js --widget=text_block
+node scripts/generate-thumbnails.js --all
+node scripts/generate-thumbnails.js --base-url=http://localhost
+```
+
+The script reads the widget list via `docker compose exec app php artisan widgets:manifest-json` and writes each PNG to `app/Widgets/{PascalName}/thumbnails/static.png`. Thumbnails are committed to the repo as part of the widget package — they are not build artifacts.
+
+Animated thumbnails (MP4/WebP) and the ffmpeg pipeline are deferred to Stage 4.5 Phase 2.
+
+---
+
+## Current status (session 174)
+
+Stage 4.5 Phase 1 of the Sovereign Widget arc is complete. Each widget that needs demo data now ships its own `DemoSeeder`; the dev demo route renders widgets in isolation at a fixed viewport; a host-side Playwright script produces static PNG thumbnails from real renders. Animated capture (Phase 2) is the next step.

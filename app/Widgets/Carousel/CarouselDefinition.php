@@ -80,4 +80,9 @@ class CarouselDefinition extends WidgetDefinition
     {
         return ['keys' => ['collection_handle', 'image_field'], 'message' => 'Select a collection and map its image field to display slides.'];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
 }

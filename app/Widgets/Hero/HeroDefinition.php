@@ -87,4 +87,24 @@ class HeroDefinition extends WidgetDefinition
             'min_height'                 => '24rem',
         ];
     }
+
+    public function demoConfig(): array
+    {
+        return [
+            'content' => '<h1 style="color:#ffffff">Welcome</h1>',
+        ];
+    }
+
+    public function demoAppearanceConfig(): array
+    {
+        return [
+            'background' => [
+                'gradient' => [
+                    'gradients' => [
+                        ['type' => 'linear', 'from' => '#0a2540', 'to' => '#60a5fa', 'angle' => 135],
+                    ],
+                ],
+            ],
+        ];
+    }
 }

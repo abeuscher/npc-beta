@@ -342,24 +342,55 @@ Collections define their own field schema. Supported field types for collection 
 
 ## Demo Seeders
 
-Widgets that depend on collections need sample data for testing. Demo seeders create collections with representative items.
+Widgets that need seeded fixtures for a functional preview ship their own `DemoSeeder` inside the widget folder. Sovereignty extends to demo data — no central demo-data service, no parallel manifest.
 
 ### Existing demo seeders
 
-| Seeder | Creates | Used by |
+| Seeder class | Creates | Used by |
+|--------------|---------|---------|
+| `App\Widgets\Carousel\DemoSeeder` | `carousel-demo` collection with 4 slides (title, description, image fields) | Carousel widget |
+| `App\Widgets\BarChart\DemoSeeder` | `chart-demo` collection with 10 monthly data points (label, value fields) | Bar Chart widget |
+| `App\Widgets\LogoGarden\DemoSeeder` | `logo-garden-demo` collection with 9 logo items (name, logo image) | Logo Garden widget |
+| `App\Widgets\BoardMembers\DemoSeeder` | `board-members-demo` collection with 6 members (name, photo, title, department, bio, social links) | Board Members widget |
+| `App\Widgets\EventCalendar\DemoSeeder` | 3 published upcoming events (demo-event-1…3) | Event Calendar widget |
+| `App\Widgets\DonationForm\DemoSeeder` | `demo-fund` Fund + `Spring Annual Appeal` Campaign | Donation Form widget |
+
+Every seeder must be idempotent — running it on an already-seeded DB must not duplicate rows or error out.
+
+Each declaring widget overrides `demoSeeder()` on its definition to return the FQCN:
+
+```php
+public function demoSeeder(): ?string
+{
+    return DemoSeeder::class;
+}
+```
+
+`DashboardDebugGeneratorWidget::seedWidgetCollections()` iterates `WidgetRegistry::all()` and runs every non-null `demoSeeder()` — no hard-coded list.
+
+### Config-only demos: `demoConfig()` and `demoAppearanceConfig()`
+
+Widgets without a collection (e.g. `text_block`, `hero`, `video_embed`) supply their demo content through two optional methods on the definition:
+
+| Method | Returns | Purpose |
 |--------|---------|---------|
-| `CarouselDemoSeeder` | `carousel-demo` collection with 4 slides (title, description, image fields) | Carousel widget |
-| `ChartDemoSeeder` | `chart-demo` collection with 10 monthly data points (month, value fields) | Bar Chart widget |
-| `LogoGardenDemoSeeder` | `logo-garden-demo` collection with logo items (name, url, image fields) | Logo Garden widget |
-| `BoardMembersDemoSeeder` | `board-members-demo` collection with 6 members (name, photo, title, department, bio, social links) | Board Members widget |
-| `ProductDemoSeeder` | 5 published products with 1-3 price tiers and sample images | Product Carousel and Product Display widgets |
+| `demoConfig(): array` | Config overrides | Merged on top of `defaults()` by the dev demo controller. Keys must match `schema()`. Example: `['content' => '<h2>Lorem ipsum</h2>…']`. |
+| `demoAppearanceConfig(): array` | Appearance-config overrides | Padding, gradients, text color, etc. — same shape as the live `appearance_config` jsonb bag. Composed through `App\Services\AppearanceStyleComposer` and applied as inline style on the demo wrapper. |
+
+Both default to `[]` on the base class and are only consumed by the dev demo route — production rendering is untouched.
 
 ### Writing a demo seeder
 
-Pattern:
+Place it at `app/Widgets/{PascalName}/DemoSeeder.php` with namespace `App\Widgets\{PascalName}`. Pattern:
 
 ```php
-class MyWidgetDemoSeeder extends Seeder
+namespace App\Widgets\MyWidget;
+
+use App\Models\Collection;
+use App\Models\CollectionItem;
+use Illuminate\Database\Seeder;
+
+class DemoSeeder extends Seeder
 {
     public function run(): void
     {
@@ -401,13 +432,41 @@ class MyWidgetDemoSeeder extends Seeder
 }
 ```
 
-Register the seeder in `DashboardDebugGeneratorWidget::seedWidgetCollections()`:
+Wire it into the widget definition by overriding `demoSeeder()`:
 
 ```php
-Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\MyWidgetDemoSeeder', '--force' => true]);
+public function demoSeeder(): ?string
+{
+    return DemoSeeder::class;
+}
 ```
 
+`DashboardDebugGeneratorWidget::seedWidgetCollections()` and the dev demo route will pick it up automatically via the registry.
+
 Sample images live in `resources/sample-images/{category}/` (e.g. `portraits/`, `products/`).
+
+---
+
+## Generating a thumbnail for your widget
+
+Static PNG thumbnails are captured from the dev demo route (`/dev/widgets/{handle}`) by a host-side Playwright script at `scripts/generate-thumbnails.js`.
+
+Host-level install (once per machine; **not** added to the project `package.json`):
+
+```bash
+npm install --global playwright
+npx playwright install chromium
+```
+
+Capture one widget or all:
+
+```bash
+node scripts/generate-thumbnails.js --widget=my_widget
+node scripts/generate-thumbnails.js --all
+node scripts/generate-thumbnails.js --base-url=http://localhost
+```
+
+Each PNG is written to `app/Widgets/{PascalName}/thumbnails/static.png` at a fixed 800×500 viewport and committed to the repo alongside the widget's other files. If the result looks visibly wrong, fix the widget template — don't re-shoot until the underlying render is right.
 
 ---
 
@@ -460,7 +519,7 @@ Every key in `preset.config` must appear in the widget's `schema()` — CI enfor
 4. If the widget needs custom styles, create `styles.scss` in the same folder and return its path from `assets()`: `['scss' => ['app/Widgets/{PascalName}/styles.scss']]`.
 5. Register the definition in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{PascalName}\{PascalName}Definition());`
 6. If the widget uses a collection, add a slot to `collections()` and include a `collection_handle` select in `schema()`.
-7. If the widget needs demo data, create a demo seeder and wire it into `seedWidgetCollections()`.
+7. If the widget needs demo data, write `app/Widgets/{PascalName}/DemoSeeder.php` and override `demoSeeder()` on the definition to return `DemoSeeder::class`. The registry picks it up automatically.
 8. Run the seeder: `php artisan db:seed --class=WidgetTypeSeeder`.
 9. Run the build: `php artisan build:public`.
 10. Write tests covering the data resolution and template rendering.

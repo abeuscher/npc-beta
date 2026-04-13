@@ -50,4 +50,11 @@ class VideoEmbedDefinition extends WidgetDefinition
     {
         return ['keys' => ['video_url'], 'message' => 'Enter a YouTube or Vimeo URL.'];
     }
+
+    public function demoConfig(): array
+    {
+        return [
+            'video_url' => 'https://www.youtube.com/watch?v=ONwe96StEpA&t=165',
+        ];
+    }
 }

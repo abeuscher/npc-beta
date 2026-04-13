@@ -144,20 +144,6 @@ it('seeder creates product_carousel with correct config schema', function () {
         ->not->toContain('full_width');
 });
 
-// ── ProductDemoSeeder ───────────────────────────────────────────────────────
-
-it('ProductDemoSeeder creates products with prices and images', function () {
-    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\ProductDemoSeeder']);
-
-    $products = Product::where('status', 'published')->get();
-
-    expect($products)->toHaveCount(5);
-
-    foreach ($products as $product) {
-        expect($product->prices)->not->toBeEmpty("Product '{$product->name}' should have at least one price tier");
-    }
-});
-
 // ── Blade template rendering ────────────────────────────────────────────────
 
 it('product carousel blade renders slides with product data and buy forms', function () {

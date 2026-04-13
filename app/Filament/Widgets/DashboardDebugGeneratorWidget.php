@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\WidgetType;
 use App\Services\DemoDataService;
+use App\Services\WidgetRegistry;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Artisan;
@@ -192,12 +193,12 @@ class DashboardDebugGeneratorWidget extends Widget
 
             if ($textBlockType) {
                 $demoService = app(DemoDataService::class);
-                $demoConfig  = $demoService->generateForWidget($textBlockType);
+                $demoConfiguration  = $demoService->generateForWidget($textBlockType);
 
                 PageWidget::create([
                     'page_id'        => $page->id,
                     'widget_type_id' => $textBlockType->id,
-                    'config'         => $demoConfig,
+                    'config'         => $demoConfiguration,
                     'sort_order'     => 0,
                 ]);
             }
@@ -215,13 +216,21 @@ class DashboardDebugGeneratorWidget extends Widget
 
     public function seedWidgetCollections(): void
     {
-        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\CarouselDemoSeeder', '--force' => true]);
-        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ChartDemoSeeder', '--force' => true]);
-        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\LogoGardenDemoSeeder', '--force' => true]);
-        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\BoardMembersDemoSeeder', '--force' => true]);
-        Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ProductDemoSeeder', '--force' => true]);
+        $labels = [];
 
-        $this->feedback = 'Widget demo collections seeded (carousel, chart, logo garden, board members, products).';
+        foreach (app(WidgetRegistry::class)->all() as $def) {
+            $seederClass = $def->demoSeeder();
+            if ($seederClass === null) {
+                continue;
+            }
+
+            Artisan::call('db:seed', ['--class' => $seederClass, '--force' => true]);
+            $labels[] = $def->label();
+        }
+
+        $this->feedback = $labels === []
+            ? 'No widgets declared a demo seeder.'
+            : 'Widget demo collections seeded: ' . implode(', ', $labels) . '.';
     }
 
     public function wipe(): void
