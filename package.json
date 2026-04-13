@@ -3,7 +3,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build",
+        "generate-thumbnails": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-presets",
+        "generate-presets": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-static"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.11",

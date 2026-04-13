@@ -518,7 +518,7 @@ The inspector panel exposes presets via a third "Presets" tab next to Content an
 
 A synthetic "Blank" card is always prepended to the gallery. It is generated in the frontend from the appearance-group subset of the widget's `defaults()` plus an empty `appearance_config`, giving a one-click "reset appearance" option. It is not part of `presets()`.
 
-Per-preset thumbnail images will live at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png`. The path is reserved; the cards render an empty placeholder until a file is added.
+Per-preset thumbnail images live at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png` and are captured via `scripts/generate-thumbnails.js` (the same host-side script that produces `static.png`). Cards render the PNG when it exists on disk and fall back to an empty placeholder otherwise. Detailed capture instructions live in `docs/widget-system.md`. DB draft presets do not get thumbnails.
 
 ### Authoring presets via the designer draft workflow
 

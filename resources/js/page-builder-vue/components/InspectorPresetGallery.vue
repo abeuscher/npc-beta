@@ -202,7 +202,14 @@ function phpArray(v: any, indent: number): string {
       class="preset-card"
       @click="apply(preset)"
     >
-      <div class="preset-card__thumb" aria-hidden="true"></div>
+      <img
+        v-if="preset.thumbnail"
+        :src="preset.thumbnail"
+        class="preset-card__thumb"
+        alt=""
+        loading="lazy"
+      />
+      <div v-else class="preset-card__thumb" aria-hidden="true"></div>
       <div class="preset-card__body">
         <div class="preset-card__label-row">
           <div class="preset-card__label">{{ preset.label }}</div>
@@ -353,6 +360,11 @@ function phpArray(v: any, indent: number): string {
   aspect-ratio: 16 / 9;
   background: #f3f4f6;
   border-bottom: 1px solid #e5e7eb;
+}
+
+img.preset-card__thumb {
+  display: block;
+  object-fit: cover;
 }
 
 .preset-card__body {

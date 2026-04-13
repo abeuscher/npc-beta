@@ -67,6 +67,7 @@ export interface WidgetPreset {
   description?: string | null
   config: Record<string, any>
   appearance_config: WidgetAppearanceConfig
+  thumbnail?: string | null
 }
 
 export interface WidgetDraftPreset extends WidgetPreset {

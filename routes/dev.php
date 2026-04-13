@@ -7,4 +7,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(DevRoutesMiddleware::class)->group(function () {
     Route::get('/dev/widgets/{handle}', [WidgetDemoController::class, 'show'])
         ->name('dev.widgets.show');
+    Route::get('/dev/widgets/{handle}/presets/{presetHandle}', [WidgetDemoController::class, 'showPreset'])
+        ->name('dev.widgets.preset');
 });

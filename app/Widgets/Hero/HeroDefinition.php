@@ -217,7 +217,7 @@ class HeroDefinition extends WidgetDefinition
     public function demoConfig(): array
     {
         return [
-            'content' => '<h1 style="color:#ffffff">Welcome</h1>',
+            'content' => '<h1>Welcome</h1>',
         ];
     }
 
@@ -230,6 +230,9 @@ class HeroDefinition extends WidgetDefinition
                         ['type' => 'linear', 'from' => '#0a2540', 'to' => '#60a5fa', 'angle' => 135],
                     ],
                 ],
+            ],
+            'text' => [
+                'color' => '#ffffff',
             ],
         ];
     }

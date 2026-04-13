@@ -268,15 +268,23 @@ Promotion to code is **manual**: export, paste into the widget's `presets()` met
 
 CRUD happens only inside the builder inspector. There is no Filament resource for `widget_presets`, no admin list page, no bulk export. All four endpoints gate on the `update_page` permission.
 
-### Preset thumbnail path (reserved)
+### Preset thumbnails
 
-Each widget's `thumbnails/` folder (session 174) also reserves a path for per-preset imagery:
+Each widget's `thumbnails/` folder (session 174) also holds per-preset imagery:
 
 ```
 app/Widgets/{PascalName}/thumbnails/preset-{handle}.png
 ```
 
-The inspector's preset cards render an empty placeholder box in this slot today. No thumbnail files are authored yet — the path is reserved so future sessions can drop images in without changing the card layout.
+Capture flow (host-side, not inside Docker):
+
+1. The dev route `GET /dev/widgets/{handle}/presets/{presetHandle}` renders the widget at 800×500 with the preset applied. Baseline demo config comes from `defaults() + demoConfig()` (and any seeded collection handle); then `preset.config` is overlaid and `preset.appearance_config` replaces the demo appearance wholesale — matching the inspector's apply semantics.
+2. `scripts/generate-thumbnails.js` iterates each widget's code-authored presets from the manifest, hits the dev preset route, and writes `preset-{handle}.png` alongside `static.png`. Run locally with `node scripts/generate-thumbnails.js --widget={handle}`; scope to one preset with `--preset={presetHandle}`.
+3. Captured PNGs are committed to the repo; capture is a local developer chore, not a CI step.
+
+The inspector's code-authored preset cards display the PNG when it exists on disk and fall back to the empty placeholder otherwise. Thumbnails are served by a dedicated public controller — see the "Dev tooling — widget thumbnails" block in `docs/app-reference.md` for the full route table.
+
+**DB draft presets do not get thumbnails.** They change too fast to be worth a committed artefact; draft cards in the inspector keep the empty placeholder.
 
 ### CI validation
 

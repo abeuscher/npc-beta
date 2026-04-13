@@ -6,6 +6,7 @@
  *   node scripts/generate-thumbnails.js            # every registered widget
  *   node scripts/generate-thumbnails.js --all
  *   node scripts/generate-thumbnails.js --widget=text_block
+ *   node scripts/generate-thumbnails.js --widget=hero --preset=bold-statement
  *   node scripts/generate-thumbnails.js --base-url=http://localhost:8080
  *
  * Requirements (install once, globally):
@@ -30,18 +31,34 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
-    const args = { all: false, widget: null, baseUrl: 'http://localhost' };
+    const args = {
+        all: false,
+        widget: null,
+        preset: null,
+        baseUrl: 'http://localhost',
+        doStatic: true,
+        doPresets: true,
+    };
     for (const raw of argv.slice(2)) {
         if (raw === '--all') {
             args.all = true;
+        } else if (raw === '--no-static') {
+            args.doStatic = false;
+        } else if (raw === '--no-presets') {
+            args.doPresets = false;
         } else if (raw.startsWith('--widget=')) {
             args.widget = raw.slice('--widget='.length);
+        } else if (raw.startsWith('--preset=')) {
+            args.preset = raw.slice('--preset='.length);
         } else if (raw.startsWith('--base-url=')) {
             args.baseUrl = raw.slice('--base-url='.length).replace(/\/$/, '');
         }
     }
     if (!args.widget) {
         args.all = true;
+    }
+    if (args.preset) {
+        args.doStatic = false;
     }
     return args;
 }
@@ -105,27 +122,56 @@ async function main() {
     let failures = 0;
 
     for (const handle of handles) {
-        const url = `${args.baseUrl}/dev/widgets/${handle}`;
         const outDir = path.join(PROJECT_ROOT, 'app', 'Widgets', pascalFolder(handle), 'thumbnails');
-        const outFile = path.join(outDir, 'static.png');
 
-        const page = await context.newPage();
-        try {
-            const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-            if (!response || !response.ok()) {
+        if (args.doStatic) {
+            const url = `${args.baseUrl}/dev/widgets/${handle}`;
+            const outFile = path.join(outDir, 'static.png');
+            const page = await context.newPage();
+            try {
+                const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+                if (!response || !response.ok()) {
+                    failures += 1;
+                    console.error(`FAIL ${handle}: HTTP ${response ? response.status() : 'no response'} at ${url}`);
+                    await page.close();
+                    continue;
+                }
+                fs.mkdirSync(outDir, { recursive: true });
+                await page.screenshot({ path: outFile, type: 'png' });
+                console.log(`OK   ${handle} → ${path.relative(PROJECT_ROOT, outFile)}`);
+            } catch (err) {
                 failures += 1;
-                console.error(`FAIL ${handle}: HTTP ${response ? response.status() : 'no response'} at ${url}`);
+                console.error(`FAIL ${handle}: ${err.message}`);
+            } finally {
                 await page.close();
+            }
+        }
+
+        const presets = args.doPresets ? (manifest[handle]?.presets ?? []) : [];
+        for (const preset of presets) {
+            if (args.preset && preset.handle !== args.preset) {
                 continue;
             }
-            fs.mkdirSync(outDir, { recursive: true });
-            await page.screenshot({ path: outFile, type: 'png' });
-            console.log(`OK   ${handle} → ${path.relative(PROJECT_ROOT, outFile)}`);
-        } catch (err) {
-            failures += 1;
-            console.error(`FAIL ${handle}: ${err.message}`);
-        } finally {
-            await page.close();
+            const presetUrl = `${args.baseUrl}/dev/widgets/${handle}/presets/${preset.handle}`;
+            const presetFile = path.join(outDir, `preset-${preset.handle}.png`);
+            const presetPage = await context.newPage();
+            try {
+                const response = await presetPage.goto(presetUrl, { waitUntil: 'networkidle', timeout: 30000 });
+                if (!response || !response.ok()) {
+                    failures += 1;
+                    console.error(`FAIL ${handle}/${preset.handle}: HTTP ${response ? response.status() : 'no response'} at ${presetUrl}`);
+                    await presetPage.close();
+                    continue;
+                }
+                fs.mkdirSync(outDir, { recursive: true });
+                await presetPage.screenshot({ path: presetFile, type: 'png' });
+                console.log(`OK   ${handle}/${preset.handle} → ${path.relative(PROJECT_ROOT, presetFile)}`);
+            } catch (err) {
+                failures += 1;
+                console.error(`FAIL ${handle}/${preset.handle}: ${err.message}`);
+            } finally {
+                await presetPage.close();
+            }
         }
     }
 

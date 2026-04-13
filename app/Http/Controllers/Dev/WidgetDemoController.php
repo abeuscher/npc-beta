@@ -21,6 +21,29 @@ class WidgetDemoController extends Controller
 
     public function show(string $handle)
     {
+        [$def, $widgetType, $config, $appearanceConfig] = $this->resolveBaseline($handle);
+
+        return $this->renderWidget($handle, $widgetType, $config, $appearanceConfig);
+    }
+
+    public function showPreset(string $handle, string $presetHandle)
+    {
+        [$def, $widgetType, $config, $appearanceConfig] = $this->resolveBaseline($handle);
+
+        $preset = collect($def->presets())->firstWhere('handle', $presetHandle);
+
+        if (! $preset) {
+            abort(404);
+        }
+
+        $config = array_merge($config, $preset['config'] ?? []);
+        $appearanceConfig = $preset['appearance_config'] ?? [];
+
+        return $this->renderWidget($handle, $widgetType, $config, $appearanceConfig);
+    }
+
+    private function resolveBaseline(string $handle): array
+    {
         if (class_exists(\Barryvdh\Debugbar\Facades\Debugbar::class)) {
             \Barryvdh\Debugbar\Facades\Debugbar::disable();
         }
@@ -47,11 +70,16 @@ class WidgetDemoController extends Controller
             $config['collection_handle'] = self::SEEDED_COLLECTION_HANDLES[$handle];
         }
 
+        return [$def, $widgetType, $config, $def->demoAppearanceConfig()];
+    }
+
+    private function renderWidget(string $handle, WidgetType $widgetType, array $config, array $appearanceConfig)
+    {
         $pw = new PageWidget([
             'widget_type_id'    => $widgetType->id,
             'config'            => $config,
             'query_config'      => [],
-            'appearance_config' => $def->demoAppearanceConfig(),
+            'appearance_config' => $appearanceConfig,
             'is_active'         => true,
         ]);
         $pw->setRelation('widgetType', $widgetType);

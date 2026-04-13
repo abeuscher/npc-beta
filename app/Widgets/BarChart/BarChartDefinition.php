@@ -62,8 +62,55 @@ class BarChartDefinition extends WidgetDefinition
         ];
     }
 
+    public function requiredConfig(): ?array
+    {
+        return ['keys' => ['collection_handle', 'x_field', 'y_field'], 'message' => 'Select a collection and map its X and Y fields to display a chart.'];
+    }
+
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+    public function presets(): array
+    {
+        return [
+[
+    'handle'            => 'draft-1',
+    'label'             => 'Black Chart',
+    'description'       => null,
+    'config'            => [
+        'bar_fill_color' => '#373c44',
+    ],
+    'appearance_config' => [
+        'text'       => [
+            'color' => '#000000',
+        ],
+        'layout'     => [
+            'padding'    => [
+                'top'    => '25',
+                'left'   => '25',
+                'right'  => '25',
+                'bottom' => '25',
+            ],
+            'full_width' => false,
+        ],
+        'background' => [
+            'color' => '#ffffff',
+        ],
+    ],
+],
+
+        ];
+    }
+    public function demoConfig(): array
+    {
+        return [
+            'heading'        => 'Monthly Signups',
+            'x_field'        => 'label',
+            'y_field'        => 'value',
+            'x_label'        => 'Month',
+            'y_label'        => 'Signups',
+            'bar_fill_color' => '#0172ad',
+        ];
     }
 }

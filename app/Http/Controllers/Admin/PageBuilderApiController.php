@@ -353,7 +353,7 @@ class PageBuilderApiController extends Controller
                 'full_width'      => $wt->full_width,
                 'default_open'    => $wt->default_open,
                 'required_config' => $wt->required_config,
-                'presets'         => $registry->find($wt->handle)?->presets() ?? [],
+                'presets'         => WidgetType::resolvePresetThumbnails($wt->handle, $registry->find($wt->handle)?->presets() ?? []),
                 'draft_presets'   => $wt->draftPresets->map(fn ($p) => [
                     'id'                => $p->id,
                     'handle'            => $p->handle,
@@ -363,7 +363,7 @@ class PageBuilderApiController extends Controller
                     'appearance_config' => $p->appearance_config ?? [],
                     'is_draft'          => true,
                 ])->values()->toArray(),
-                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
+                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: WidgetType::resolveStaticThumbnail($wt->handle),
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])
             ->values();

@@ -183,20 +183,30 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 174 | Sovereign Widget Demos & Static Thumbnails |
 | 175 | Preset Inspector UI & Hero Preset Pilot |
 | 176 | Designer Preset Drafts & Export |
+| 177 | Preset Thumbnails |
 
 ---
 
-## CMS & Page Builder — Beta 1 Scope
+## Housekeeping & Review — Beta 1 Scope
 
-### Bug Fixes — Hero Text Alignment & Admin Nav Header
+### 178 — Code Review & Cleanup (Audit)
 
-Two small cosmetic fixes:
+Audit-only pass covering sessions 142–177 (~35 sessions since the last broad code review in 141). Produces findings tables for duplicated logic and framework alignment; fixes only clearly-safe issues (stale imports, dead files, confirmed dead code, doc drift). Deferred-decision items are flagged for discussion rather than changed in place.
 
-1. **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
+### 179 — Code Review & Cleanup (Apply)
 
-2. **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
+Work through the tables from 178 with the user. Apply agreed refactors. Split from the audit session so there is a discussion break between finding and fixing.
 
-**Testing:** Visual verification only. No new tests expected.
+### 180 — Migration Squash
+
+Squash all migrations since the session-142 squash into a new `database/schema/pgsql-schema.sql` dump. Standard procedure: `schema:dump`, delete superseded migration files, verify `migrate:fresh --seed`. Update `docs/schema/README.md` squash note. Coordinate with production deploy so the prod server transitions cleanly.
+
+### 181 — Bug Fixes *(stub)*
+
+Stub — items to be filled in before the session starts. Known candidates:
+
+- **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
+- **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
 
 ---
 
@@ -211,47 +221,6 @@ Two small cosmetic fixes:
 - **Widget toolset tightening (session 169).** Session 169 expanded the config field type system with `alignment` (9-point picker), `gradient`, and `color` (the full ColorPicker primitive with swatches and theme palette). Every existing widget needs a pass to replace legacy `color`-as-text-input fields with the proper ColorPicker, and to add gradient/alignment controls where appropriate. This is per-widget work — tedious but necessary to get each widget's inspector into shape.
 
 - **Font control primitive (planned).** Build a comprehensive font control for the inspector — a small icon/swatch trigger that opens a panel with font family, weight, size, line height, letter spacing, and case transform. Same visual pattern as the gradient and color pickers (compact trigger, popover with full editor). Needed as a new `font` field type before any widget-level typography controls can be added. User to provide visual model at session start.
-
----
-
-## Sovereign Widget System — Multi-Session Arc
-
-**Goal:** Each widget becomes a self-contained, installable package — its own directory with definition class, template, styles, assets, and metadata. The long-term destination is a widget registry / browser / installer that users can browse and pull from. The near-term destination is a per-widget code model that replaces the monolithic `WidgetTypeSeeder` and scattered `resources/views/widgets/` + `resources/scss/widgets/` files.
-
-This is phased over several sessions. Each stage leaves the app shippable.
-
-- **Stage 1 — Widget Definition Class & Registry.** *(Completed session 170.)* Introduced `App\Widgets\Contracts\WidgetDefinition` base class and `App\Services\WidgetRegistry` service bound by `WidgetServiceProvider`. Seeder now calls `WidgetRegistry::sync()` at the end of `run()`. Nav widget converted as proof-of-concept (`App\Widgets\Nav\NavDefinition`); other widgets stay seeder-driven via the coexistence path.
-
-- **Stage 2 — Defaults Binding & Sovereign Rendering.** *(Completed session 171.)* Introduced `App\Services\WidgetConfigResolver` (registered as a singleton) composing `defaults → theme overrides (stub) → instance config`. `WidgetRenderer` resolves config before passing to Blade; nav template dropped its defensive `?? '...'` chains. Instance configs are now sparse — new widgets created with `config = []`, saves strip keys equal to the resolved default. API/bootstrap payloads ship `resolved_defaults` so the inspector and renderer draw defaults from the same source; inspector offers a widget-level "reset all settings" action guarded by a confirmation modal. Theme overrides remain stubbed (empty); non-nav widgets still source defaults via the resolver's coexistence branch (`WidgetType::getDefaultConfig`) until Stage 3 promotes them to definition classes.
-
-- **Stage 3 — Per-Widget File Colocation.** *(Completed session 172.)* Every widget now lives at `app/Widgets/{PascalName}/` with `{PascalName}Definition.php`, `template.blade.php`, and optional `styles.scss`. Blade `widgets::` namespace registered in `WidgetServiceProvider`. Base-class `template()` default resolves `@include('widgets::{Folder}.template')`. Base class also gained optional `css()`, `js()`, `code()`, `variableName()` for widgets with inline DB-column source. Shared Blade fragments (buttons, icons, share-icons) moved to `resources/views/widget-shared/`. Legacy `resources/views/widgets/` and `resources/scss/widgets/` directories retired. `WidgetTypeSeeder` now a thin wrapper over `WidgetRegistry::sync()`.
-
-- **Stage 4 — Widget Manifest & Metadata.** *(Completed session 173.)* Base class now exposes six optional manifest methods (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) plus a `manifest()` aggregator bundling those with `handle`/`label`/`description`/`category`. `WidgetRegistry::manifests()` returns handle → manifest for the Stage 5 browser. Metadata is code-only (not persisted to `widget_types`, not in `toRow()`). CI validates version semver, license allow-list, screenshot paths on disk, keyword slugs, preset shape + schema-key cross-reference, and manifest key stability. Every widget inherits defaults unchanged — no per-widget overrides this session. `requiredCapabilities()` and `minAppVersion()` deferred pending clearer Stage 5/6 needs.
-
-- **Stage 4.5 Phase 1 — Sovereign Widget Demos & Static Thumbnails.** *(Completed session 174.)* Widget sovereignty extended to demo data: each widget that needs seeded fixtures ships its own `DemoSeeder` inside its folder, and the base class exposes an optional `demoSeeder(): ?string` method. Dev-only `GET /dev/widgets/{handle}` route (gated by `DevRoutesMiddleware` + conditional `require` in `routes/web.php`) renders any widget in isolation at a fixed 800×500 viewport via the existing `WidgetRenderer` pipeline. Host-side Playwright script (`scripts/generate-thumbnails.js`) plus a `widgets:manifest-json` Artisan command produce static PNG thumbnails at `app/Widgets/{PascalName}/thumbnails/static.png`, committed to the repo. `ProductDemoSeeder` deleted outright (domain-model seeding, not widget data); `ProductCarousel`/`ProductDisplay` render their honest disconnected state with zero products. Per-widget `thumbnailMetadata()` and `demo.blade.php` both rejected — one standard viewport, one render pipeline, no duplication.
-
-- **Stage 5 — Preset System (multi-session sub-arc).** The `presets()` contract shipped in Stage 4 (session 173) and is CI-validated — every widget can declare named config bundles, and the manifest aggregator already exposes them. This stage turns that contract into a shipped feature.
-
-  - **Stage 5a — Preset Inspector UI & Hero Preset Pilot.** *(Completed session 175.)* Build the "apply preset" mechanic: a third inspector tab ("Presets") listing full-panel-width cards keyed to the widget's `presets()`, one-click apply that routes the preset's `config` + `appearance_config` through the debounced save path and refreshes the preview. Pilot the end-to-end flow with a small set of Hero presets (≈3–4) authored inside `HeroDefinition::presets()`. No backend schema changes — presets stay code-only, live on the definition. A scope refinement during the session confirmed **presets are appearance-only**: `preset.config` keys must live under schema fields whose `group` is `appearance`, apply overlays `config` (preserving content-group keys) and replaces `appearance_config` wholesale, and a CI assertion enforces the group rule.
-  - **Stage 5b — Designer Preset Drafts & Export.** *(Completed session 176.)* Close the designer-feedback loop. Designers iterate on a widget's appearance live in the builder, click "Save current appearance as preset" from inside the Presets tab, and the result is a DB-backed draft in a new `widget_presets` table (scoped by `widget_type_id`). Drafts show up in the same gallery as code-authored presets with a "Draft" badge and per-card actions: rename/describe inline, delete, and export. Export copies a pretty-printed PHP array literal to the clipboard, ready to paste into the widget's `presets()` method. Promotion to shipped preset is manual paste-then-delete — no automation crosses the code/DB boundary. Same appearance-only rule applies to drafts; validation is server-side.
-  - **Stage 5c — Preset Thumbnails.** *(Planned session 177.)* Extend the static thumbnail pipeline from session 174 to capture per-preset thumbnails. Path convention is already reserved at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png`. Work includes: a dev-route variant that renders a widget with a specific preset applied, extending `scripts/generate-thumbnails.js` to iterate code-authored presets from the manifest, and wiring the preset cards in the inspector gallery to display the thumbnail when present (current session 175 UI reserves the slot but renders it empty). DB drafts are out of scope — thumbnails are for code-shipped presets only.
-  - **Stage 5d+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Fed by whatever the designer produces via the Stage 5b draft/export workflow. Cadence mirrors the sovereignty work that converted widgets to definition classes session-by-session.
-
-- **Stage 6 — Widget Browser UI (admin).** Admin page that lists all registered widgets in a browsable grid — search, filter by category, preview thumbnails + preset count chip. "Installed" is implicit. Prepares the UI surface for later external-registry installs. Now consumes static thumbnails from Stage 4.5 Phase 1 and preset data from Stage 5.
-
-- **Stage 7 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
-
-- **Stage 8 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from. Likely deferred to post-Beta 1 — this is a product of its own.
-
-### Deferred: Stage 4.5 Phase 2 — Animated Thumbnails
-
-Originally planned as the follow-up to static thumbnail work — per-widget interaction signal for animated capture (MP4/WebP via ffmpeg post-processing). Deferred to post-Beta 1 on value grounds:
-
-- Only realized benefit is in the Stage 6 widget browser UI (which itself lands mid-arc, not Beta-1-critical), where static + preset count conveys most of the same information.
-- Significant cost: new per-widget interaction contract, ffmpeg host dependency, multi-variant widget design problem (`logo_garden` alone has three motion modes), repo bloat from MP4 files, per-widget re-record maintenance when behavior changes.
-- Clipped animations can look worse than the well-composed static still captured in Phase 1.
-
-Revisit after Stage 6 ships, once there's real evidence of whether motion is missed in the browser grid. Static thumbnails remain the committed artifact; the existing `scripts/generate-thumbnails.js` is positioned to grow `--animated` if/when we come back.
 
 ---
 
@@ -280,6 +249,16 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 ---
 
 ## Post-Beta 1
+
+### Sovereign Widget System — Remaining Stages
+
+The Widget Definition Class, registry, config resolver, per-widget colocation, manifest/metadata, demos, static thumbnails, preset inspector, designer drafts, and preset thumbnails all shipped across sessions 170–177. Remaining stages are deferred until post-Beta 1.
+
+- **Stage 5d+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Fed by the designer draft/export workflow delivered in session 176.
+- **Stage 6 — Widget Browser UI (admin).** Admin page listing all registered widgets in a browsable grid — search, filter by category, preview thumbnails + preset count chip. Consumes the static thumbnails and preset data already in place. Prepares the UI surface for later external-registry installs.
+- **Stage 7 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
+- **Stage 8 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from.
+- **Animated Thumbnails.** Originally planned as Stage 4.5 Phase 2. Revisit after Stage 6 ships, once there is real evidence of whether motion is missed in the browser grid. Static thumbnails remain the committed artifact; `scripts/generate-thumbnails.js` is positioned to grow `--animated` if/when we come back.
 
 ### Vue Page Builder Test Coverage
 

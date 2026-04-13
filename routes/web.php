@@ -20,6 +20,7 @@ use App\Http\Controllers\Portal\LoginController;
 use App\Http\Controllers\Portal\ResetPasswordController;
 use App\Http\Controllers\Portal\SignupController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\WidgetThumbnailController;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 
@@ -131,6 +132,10 @@ Route::get('/account/email/confirm', [AccountController::class, 'confirmEmailCha
 // Sitemap and robots.txt
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+// Widget thumbnail images (public, static assets served from app/Widgets/*/thumbnails/).
+Route::get('/widget-thumbnails/{handle}/{file}', [WidgetThumbnailController::class, 'show'])
+    ->name('widget-thumbnails.show');
 
 // Dev-only routes — widget demo surface for thumbnail capture, etc.
 if (! App::environment('production')) {

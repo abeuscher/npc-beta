@@ -231,9 +231,11 @@ The existing bundles in `public/build/widgets/` persist on disk. If the build se
 
 | Item | Path / command |
 |------|----------------|
-| Dev demo route (non-production only) | `GET /dev/widgets/{handle}` — `App\Http\Controllers\Dev\WidgetDemoController` |
+| Dev demo route (non-production only) | `GET /dev/widgets/{handle}` — `App\Http\Controllers\Dev\WidgetDemoController@show` |
+| Dev preset variant route (non-production only) | `GET /dev/widgets/{handle}/presets/{presetHandle}` — `WidgetDemoController@showPreset` |
 | Gate | `routes/dev.php` is conditionally required by `routes/web.php`; `App\Http\Middleware\DevRoutesMiddleware` enforces 404 in production |
 | Widget manifest JSON command | `docker compose exec app php artisan widgets:manifest-json` |
-| Thumbnail capture script (host-side) | `scripts/generate-thumbnails.js` — standalone Node, runs on the WSL2 host (not inside Docker) |
+| Thumbnail capture script (host-side) | `scripts/generate-thumbnails.js` — standalone Node, runs on the WSL2 host (not inside Docker). Supports `--widget=` and `--preset=` filters. |
 | Host-level Playwright install | `npm install --global playwright && npx playwright install chromium` (not in `package.json`) |
-| Thumbnail output | `app/Widgets/{PascalName}/thumbnails/static.png`, committed to the repo |
+| Thumbnail output | `app/Widgets/{PascalName}/thumbnails/static.png` and `preset-{handle}.png`, committed to the repo |
+| Public thumbnail serving route | `GET /widget-thumbnails/{handle}/{file}` — `App\Http\Controllers\WidgetThumbnailController`. Strict filename regex (`static.png` / `preset-*.png`). |

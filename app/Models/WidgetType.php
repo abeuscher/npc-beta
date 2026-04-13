@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -142,7 +143,7 @@ class WidgetType extends Model implements HasMedia
                 'collections'     => $wt->collections,
                 'config_schema'   => $wt->config_schema,
                 'required_config' => $wt->required_config,
-                'presets'         => $registry->find($wt->handle)?->presets() ?? [],
+                'presets'         => static::resolvePresetThumbnails($wt->handle, $registry->find($wt->handle)?->presets() ?? []),
                 'draft_presets'   => $wt->draftPresets->map(fn ($p) => [
                     'id'                => $p->id,
                     'handle'            => $p->handle,
@@ -152,10 +153,56 @@ class WidgetType extends Model implements HasMedia
                     'appearance_config' => $p->appearance_config ?? [],
                     'is_draft'          => true,
                 ])->values()->toArray(),
-                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
+                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: static::resolveStaticThumbnail($wt->handle),
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])
             ->values()
             ->toArray();
+    }
+
+    /**
+     * Attach a `thumbnail` key to each code-authored preset, resolving to a
+     * public widget-thumbnails URL when the PNG exists on disk and null otherwise.
+     *
+     * @param  array<int, array<string, mixed>>  $presets
+     * @return array<int, array<string, mixed>>
+     */
+    public static function resolvePresetThumbnails(string $widgetHandle, array $presets): array
+    {
+        $def = app(\App\Services\WidgetRegistry::class)->find($widgetHandle);
+        $folder = $def ? Str::beforeLast(class_basename($def), 'Definition') : null;
+
+        return array_map(function (array $preset) use ($widgetHandle, $folder) {
+            $thumbnail = null;
+            if ($folder && isset($preset['handle'])) {
+                $file = 'preset-' . $preset['handle'] . '.png';
+                $path = base_path("app/Widgets/{$folder}/thumbnails/{$file}");
+                if (file_exists($path)) {
+                    $thumbnail = route('widget-thumbnails.show', ['handle' => $widgetHandle, 'file' => $file])
+                        . '?v=' . filemtime($path);
+                }
+            }
+            $preset['thumbnail'] = $thumbnail;
+            return $preset;
+        }, $presets);
+    }
+
+    /**
+     * Resolve the widget's `static.png` to a public widget-thumbnails URL when
+     * the file exists on disk, or null otherwise.
+     */
+    public static function resolveStaticThumbnail(string $widgetHandle): ?string
+    {
+        $def = app(\App\Services\WidgetRegistry::class)->find($widgetHandle);
+        if (! $def) {
+            return null;
+        }
+        $folder = Str::beforeLast(class_basename($def), 'Definition');
+        $path = base_path("app/Widgets/{$folder}/thumbnails/static.png");
+        if (! file_exists($path)) {
+            return null;
+        }
+        return route('widget-thumbnails.show', ['handle' => $widgetHandle, 'file' => 'static.png'])
+            . '?v=' . filemtime($path);
     }
 }
