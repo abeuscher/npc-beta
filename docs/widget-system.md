@@ -250,6 +250,24 @@ Applying a preset is **appearance-only** with mixed apply semantics:
 
 The action routes through the same debounced save path the rest of the inspector uses, so the preview refreshes the same way a field edit does. The editor does not track which preset was applied — after apply, the widget is just a widget with that config, and subsequent field edits do not "dirty" or "detach from" the preset.
 
+### User-authored drafts
+
+Designers can save the current live appearance of a widget instance as a **draft preset** from inside the inspector Presets tab. Drafts live in the `widget_presets` table (see [`docs/schema/widget_presets.md`](schema/widget_presets.md)) — not on the widget definition class. They are a scratch pool scoped by `widget_type_id`, global per install (no per-site, per-template, or per-user ownership), and subject to the same appearance-only rule as code-authored presets: `config` keys that don't resolve to a `group: 'appearance'` schema field are rejected on save (422).
+
+The save action snapshots the selected instance's current appearance — the resulting `preset.config` is a **fat slice**: every appearance-group schema key is materialized, either from the instance's own `config` or (for keys the designer never touched) from the widget type's resolved defaults. Presets are fat by design even though widget instances are sparse, because apply overlays `preset.config` onto the target; missing keys would otherwise inherit whatever the target already had set, producing a partial look. `appearance_config` is captured as-is. A new row gets an auto-generated `handle` (`draft-N`) and `label` (`Draft N`) — the designer renames later. The instance itself is not mutated.
+
+The Presets tab merges code presets and DB drafts — Blank first, then `presets()`, then drafts (each carrying a small **Draft** badge). Applying a draft is identical to applying a code-authored preset: `config` overlayed, `appearance_config` replaced, routed through the debounced save path.
+
+Each draft card exposes three actions:
+
+- **Rename** — inline edit of `label` and `description`; server re-validates handle uniqueness on commit.
+- **Delete** — removes the row.
+- **Export** — writes a pretty-printed PHP array literal for the preset (`handle`, `label`, `description`, `config`, `appearance_config`) to the clipboard. The literal is paste-ready — it includes a trailing comma so it drops straight into a `presets(): array` return list.
+
+Promotion to code is **manual**: export, paste into the widget's `presets()` method, run `php artisan test --filter=WidgetManifestTest` to confirm the literal is valid, then delete the draft from the gallery. There is no automated promotion path and no "promote draft to code" CLI — the code path is the canonical authoring surface.
+
+CRUD happens only inside the builder inspector. There is no Filament resource for `widget_presets`, no admin list page, no bulk export. All four endpoints gate on the `update_page` permission.
+
 ### Preset thumbnail path (reserved)
 
 Each widget's `thumbnails/` folder (session 174) also reserves a path for per-preset imagery:

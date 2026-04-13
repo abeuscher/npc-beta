@@ -69,6 +69,11 @@ export interface WidgetPreset {
   appearance_config: WidgetAppearanceConfig
 }
 
+export interface WidgetDraftPreset extends WidgetPreset {
+  id: string
+  is_draft: true
+}
+
 export interface WidgetType {
   id: string
   handle: string
@@ -82,6 +87,7 @@ export interface WidgetType {
   default_open: boolean
   required_config: { keys: string[]; message: string } | null
   presets: WidgetPreset[]
+  draft_presets?: WidgetDraftPreset[]
   thumbnail: string | null
   thumbnail_hover: string | null
 }

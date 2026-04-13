@@ -56,6 +56,46 @@ class TextBlockDefinition extends WidgetDefinition
         ];
     }
 
+    public function presets(): array
+    {
+        return [
+            [
+    'handle'            => 'draft-1',
+    'label'             => 'Pinko',
+    'description'       => null,
+    'config'            => [],
+    'appearance_config' => [
+        'text'       => [
+            'color' => '#000000',
+        ],
+        'layout'     => [
+            'padding' => [
+                'top'    => '50',
+                'left'   => '50',
+                'right'  => '50',
+                'bottom' => '50',
+            ],
+        ],
+        'background' => [
+            'color'    => '#ffffff',
+            'gradient' => [
+                'gradients' => [
+                    [
+                        'to'         => '#fad0c4',
+                        'from'       => '#ff9a9e',
+                        'type'       => 'linear',
+                        'angle'      => 180,
+                        'to_alpha'   => 100,
+                        'from_alpha' => 100,
+                    ],
+                ],
+            ],
+        ],
+    ],
+],
+        ];
+    }
+
     public function demoAppearanceConfig(): array
     {
         return [

@@ -9,6 +9,7 @@ import type {
   PageLayout,
   PageItem,
   WidgetType,
+  WidgetDraftPreset,
   Collection,
   Tag,
   PageRef,
@@ -253,4 +254,28 @@ export function saveColorSwatches(
   swatches: string[]
 ): Promise<{ swatches: string[] }> {
   return request('PUT', 'color-swatches', { swatches })
+}
+
+// Widget presets (designer drafts)
+export function createDraftPreset(
+  widgetTypeId: string,
+  widgetId: string
+): Promise<{ preset: WidgetDraftPreset }> {
+  return request('POST', 'widget-presets', {
+    widget_type_id: widgetTypeId,
+    widget_id: widgetId,
+  })
+}
+
+export function updateDraftPreset(
+  presetId: string,
+  payload: { label?: string; description?: string | null; handle?: string }
+): Promise<{ preset: WidgetDraftPreset }> {
+  return request('PATCH', `widget-presets/${presetId}`, payload)
+}
+
+export function deleteDraftPreset(
+  presetId: string
+): Promise<{ deleted: boolean }> {
+  return request('DELETE', `widget-presets/${presetId}`)
 }

@@ -338,7 +338,7 @@ class PageBuilderApiController extends Controller
         $registry = app(WidgetRegistry::class);
 
         $types = WidgetType::orderBy('label')
-            ->with('media')
+            ->with(['media', 'draftPresets'])
             ->get()
             ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
             ->map(fn ($wt) => [
@@ -354,6 +354,15 @@ class PageBuilderApiController extends Controller
                 'default_open'    => $wt->default_open,
                 'required_config' => $wt->required_config,
                 'presets'         => $registry->find($wt->handle)?->presets() ?? [],
+                'draft_presets'   => $wt->draftPresets->map(fn ($p) => [
+                    'id'                => $p->id,
+                    'handle'            => $p->handle,
+                    'label'             => $p->label,
+                    'description'       => $p->description,
+                    'config'            => $p->config ?? [],
+                    'appearance_config' => $p->appearance_config ?? [],
+                    'is_draft'          => true,
+                ])->values()->toArray(),
                 'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])

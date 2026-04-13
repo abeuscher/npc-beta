@@ -117,6 +117,41 @@ class HeroDefinition extends WidgetDefinition
                 ],
             ],
             [
+    'handle'            => 'draft-2',
+    'label'             => 'Blue Steel',
+    'description'       => null,
+    'config'            => [
+        'fullscreen'                 => false,
+        'min_height'                 => '24rem',
+        'overlap_nav'                => false,
+        'text_position'              => 'top-left',
+        'nav_link_color'             => '',
+        'nav_hover_color'            => '',
+        'scroll_indicator'           => false,
+        'background_overlay_opacity' => 50,
+    ],
+    'appearance_config' => [
+        'text'       => [
+            'color' => '#ffffff',
+        ],
+        'background' => [
+            'color'    => '#ffffff',
+            'gradient' => [
+                'gradients' => [
+                    [
+                        'to'         => '#4ca1af',
+                        'from'       => '#2c3e50',
+                        'type'       => 'linear',
+                        'angle'      => 180,
+                        'to_alpha'   => 100,
+                        'from_alpha' => 100,
+                    ],
+                ],
+            ],
+        ],
+    ],
+],
+            [
                 'handle'      => 'minimal-left',
                 'label'       => 'Minimal Left',
                 'description' => 'Quiet intro on a soft background — good for interior pages.',

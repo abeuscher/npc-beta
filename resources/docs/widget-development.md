@@ -520,6 +520,20 @@ A synthetic "Blank" card is always prepended to the gallery. It is generated in 
 
 Per-preset thumbnail images will live at `app/Widgets/{PascalName}/thumbnails/preset-{handle}.png`. The path is reserved; the cards render an empty placeholder until a file is added.
 
+### Authoring presets via the designer draft workflow
+
+The preferred authoring path for a new preset is to iterate in the builder rather than hand-writing an array literal:
+
+1. Open a page with an instance of the widget, tweak its appearance fields until it looks right, then click **Save current appearance as preset** in the inspector Presets tab. A `Draft N` card appears in the gallery.
+2. Optionally rename the draft (click **Rename** on the card). Give it a stable `handle` (slug) and a short `description` at this point — that's what ends up in the code.
+3. Apply the draft to other instances to verify it behaves correctly — the content of those instances is preserved; only appearance changes.
+4. When satisfied, click **Export** on the draft card. A pretty-printed PHP array literal is written to your clipboard, trailing comma included so it drops straight into a `presets(): array` return list.
+5. Paste the literal into the widget's `{PascalName}Definition::presets()` method.
+6. Run `php artisan test --filter=WidgetManifestTest` to confirm the preset passes shape and appearance-group validation.
+7. Delete the draft from the gallery — the code-authored version is now the source of truth.
+
+Drafts live in the `widget_presets` table and are global per widget type (no per-user ownership). Any admin with `update_page` can see, rename, export, or delete any draft. The draft pool is a scratch surface; code remains the canonical preset source.
+
 ---
 
 ## Quick-Start Checklist for a New Widget

@@ -667,6 +667,47 @@ export const useEditorStore = defineStore('editor', () => {
     flushDebouncedSave(widgetId, { appearance_config: next as any })
   }
 
+  async function saveDraftPreset(widgetId: string): Promise<void> {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    const res = await api.createDraftPreset(w.widget_type_id, widgetId)
+    const wt = widgetTypes.value.find((t) => t.id === w.widget_type_id)
+    if (wt) {
+      const next = [...(wt.draft_presets ?? []), res.preset]
+      wt.draft_presets = next
+    }
+  }
+
+  async function renameDraftPreset(
+    presetId: string,
+    payload: { label?: string; description?: string | null; handle?: string }
+  ): Promise<void> {
+    const res = await api.updateDraftPreset(presetId, payload)
+    for (const wt of widgetTypes.value) {
+      const drafts = wt.draft_presets ?? []
+      const idx = drafts.findIndex((d) => d.id === presetId)
+      if (idx !== -1) {
+        const next = drafts.slice()
+        next[idx] = res.preset
+        wt.draft_presets = next
+        break
+      }
+    }
+  }
+
+  async function deleteDraftPreset(presetId: string): Promise<void> {
+    await api.deleteDraftPreset(presetId)
+    for (const wt of widgetTypes.value) {
+      const drafts = wt.draft_presets ?? []
+      const idx = drafts.findIndex((d) => d.id === presetId)
+      if (idx !== -1) {
+        wt.draft_presets = drafts.filter((d) => d.id !== presetId)
+        break
+      }
+    }
+  }
+
   function applyPreset(widgetId: string, preset: WidgetPreset): void {
     const w = widgets.value[widgetId]
     if (!w) return
@@ -775,6 +816,9 @@ export const useEditorStore = defineStore('editor', () => {
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
     applyPreset,
+    saveDraftPreset,
+    renameDraftPreset,
+    deleteDraftPreset,
     saveColorSwatches: saveColorSwatchesAction,
   }
 })

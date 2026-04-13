@@ -93,10 +93,12 @@ function handleClick() {
 
 .preview-region__overlay:hover {
   outline: 2px solid #282cfc;
+  outline-offset: -1px;
 }
 
 .preview-region--selected > .preview-region__overlay {
   outline: 2px solid #6366f1;
+  outline-offset: -1px;
 }
 
 .preview-region--refreshing-blur > .preview-region__overlay {

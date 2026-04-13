@@ -115,6 +115,11 @@ class WidgetType extends Model implements HasMedia
         return $this->hasMany(PageWidget::class);
     }
 
+    public function draftPresets(): HasMany
+    {
+        return $this->hasMany(WidgetPreset::class);
+    }
+
     /**
      * Return widget types formatted for the picker modal, filtered by page type.
      *
@@ -125,7 +130,7 @@ class WidgetType extends Model implements HasMedia
         $registry = app(\App\Services\WidgetRegistry::class);
 
         return static::orderBy('label')
-            ->with('media')
+            ->with(['media', 'draftPresets'])
             ->get()
             ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
             ->map(fn ($wt) => [
@@ -138,6 +143,15 @@ class WidgetType extends Model implements HasMedia
                 'config_schema'   => $wt->config_schema,
                 'required_config' => $wt->required_config,
                 'presets'         => $registry->find($wt->handle)?->presets() ?? [],
+                'draft_presets'   => $wt->draftPresets->map(fn ($p) => [
+                    'id'                => $p->id,
+                    'handle'            => $p->handle,
+                    'label'             => $p->label,
+                    'description'       => $p->description,
+                    'config'            => $p->config ?? [],
+                    'appearance_config' => $p->appearance_config ?? [],
+                    'is_draft'          => true,
+                ])->values()->toArray(),
                 'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: null,
                 'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
             ])

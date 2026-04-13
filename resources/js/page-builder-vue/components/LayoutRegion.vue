@@ -200,10 +200,12 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
 
 .layout-region--selected > .layout-region__container:hover {
   outline: 2px solid #282cfc;
+  outline-offset: -1px;
 }
 
 .layout-region--selected > .layout-region__container {
   outline: 2px solid #6366f1;
+  outline-offset: -1px;
 }
 
 .layout-region--selected > .layout-region__selector {

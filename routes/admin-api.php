@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\PageBuilderApiController;
+use App\Http\Controllers\Admin\PresetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -49,3 +50,8 @@ Route::delete('widgets/{widget}/appearance-image', [PageBuilderApiController::cl
 
 // Color swatches
 Route::put('color-swatches', [PageBuilderApiController::class, 'updateColorSwatches']);
+
+// Widget presets (designer drafts)
+Route::post('widget-presets', [PresetController::class, 'store']);
+Route::patch('widget-presets/{preset}', [PresetController::class, 'update']);
+Route::delete('widget-presets/{preset}', [PresetController::class, 'destroy']);
