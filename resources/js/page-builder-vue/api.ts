@@ -279,3 +279,9 @@ export function deleteDraftPreset(
 ): Promise<{ deleted: boolean }> {
   return request('DELETE', `widget-presets/${presetId}`)
 }
+
+export function exportDefaults(
+  widgetId: string
+): Promise<{ php: string }> {
+  return request('POST', 'widget-defaults/export', { widget_id: widgetId })
+}

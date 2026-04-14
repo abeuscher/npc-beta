@@ -46,10 +46,12 @@ function togglePopover(): void {
 
 function selectColor(hex: string): void {
   emit('update:modelValue', hex)
+  closePopover()
 }
 
 function clearColor(): void {
   emit('update:modelValue', '')
+  closePopover()
 }
 
 function onWheelInput(e: Event): void {

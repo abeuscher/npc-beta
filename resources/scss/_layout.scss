@@ -44,11 +44,16 @@
             background: transparent;
         }
 
+        // In overlay mode the hero's nav_link_color / nav_hover_color override the
+        // Nav widget's own link colors. Use distinct CSS custom properties here
+        // (--overlay-nav-link-color / --overlay-nav-hover-color) set on the wrapper
+        // so the Nav widget's own --nav-link-color (set inline on <nav>, a closer
+        // ancestor) does not shadow the hero override.
         nav a {
-            color: var(--nav-link-color, inherit);
+            color: var(--overlay-nav-link-color, var(--nav-link-color, inherit));
 
             &:hover {
-                color: var(--nav-hover-color, inherit);
+                color: var(--overlay-nav-hover-color, var(--nav-hover-color, inherit));
             }
         }
     }

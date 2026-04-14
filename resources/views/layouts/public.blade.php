@@ -207,8 +207,8 @@
 
     @php
         $__navStyle = '';
-        if (!empty($__navOverlayLinkColor ?? '')) $__navStyle .= '--nav-link-color:' . $__navOverlayLinkColor . ';';
-        if (!empty($__navOverlayHoverColor ?? '')) $__navStyle .= '--nav-hover-color:' . $__navOverlayHoverColor . ';';
+        if (!empty($__navOverlayLinkColor ?? '')) $__navStyle .= '--overlay-nav-link-color:' . $__navOverlayLinkColor . ';';
+        if (!empty($__navOverlayHoverColor ?? '')) $__navStyle .= '--overlay-nav-hover-color:' . $__navOverlayHoverColor . ';';
     @endphp
     <div class="site-nav-wrapper {{ ($__navOverlap ?? false) ? 'site-nav-wrapper--overlay' : '' }}" @if ($__navStyle) style="{{ $__navStyle }}" @endif>
         @if (view()->exists('custom.header'))

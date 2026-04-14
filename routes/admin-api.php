@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\PageBuilderApiController;
 use App\Http\Controllers\Admin\PresetController;
+use App\Http\Controllers\Admin\WidgetDefaultsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,3 +56,6 @@ Route::put('color-swatches', [PageBuilderApiController::class, 'updateColorSwatc
 Route::post('widget-presets', [PresetController::class, 'store']);
 Route::patch('widget-presets/{preset}', [PresetController::class, 'update']);
 Route::delete('widget-presets/{preset}', [PresetController::class, 'destroy']);
+
+// Widget defaults export (designer copy-out to Definition files)
+Route::post('widget-defaults/export', [WidgetDefaultsController::class, 'export']);

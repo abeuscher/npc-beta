@@ -34,7 +34,7 @@ it('registers and retrieves definitions by handle', function () {
     expect($registry->find('alpha'))->toBe($def);
     expect($registry->find('missing'))->toBeNull();
     expect($registry->all())->toHaveKey('alpha');
-});
+})->group('widget-lint');
 
 it('validate() throws when defaults is missing a schema key', function () {
     $def = new FakeWidgetDefinition(
@@ -55,7 +55,7 @@ it('validate() passes when every schema key has a default', function () {
 
     $def->validate();
     expect(true)->toBeTrue();
-});
+})->group('widget-lint');
 
 it('sync() writes registered widgets to the widget_types table', function () {
     $registry = new WidgetRegistry();
@@ -69,7 +69,7 @@ it('sync() writes registered widgets to the widget_types table', function () {
     expect($row->category)->toBe(['layout']);
     expect($row->template)->toBe("@include('widgets::Nav.template')");
     expect($row->required_config)->toBe(['keys' => ['navigation_menu_id'], 'message' => 'Select a navigation menu.']);
-});
+})->group('widget-lint');
 
 it('sync() is idempotent', function () {
     $registry = new WidgetRegistry();
@@ -83,13 +83,13 @@ it('sync() is idempotent', function () {
 
     expect($secondId)->toBe($firstId);
     expect(WidgetType::where('handle', 'nav')->count())->toBe(1);
-});
+})->group('widget-lint');
 
 it('widgets:: Blade namespace resolves to app/Widgets/{Folder}/template.blade.php', function () {
     expect(view()->exists('widgets::Nav.template'))->toBeTrue();
     expect(view()->exists('widgets::BlogPager.template'))->toBeTrue();
     expect(view()->exists('widgets::NoSuchWidget.template'))->toBeFalse();
-});
+})->group('widget-lint');
 
 it('seeder-sourced nav row matches registry-sourced nav row', function () {
     $this->seed(\Database\Seeders\WidgetTypeSeeder::class);

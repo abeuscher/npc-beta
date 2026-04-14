@@ -19,7 +19,7 @@ it('every widget version() matches semver', function () {
         expect((bool) preg_match('/^\d+\.\d+\.\d+$/', $def->version()))
             ->toBeTrue("Widget [{$def->handle()}] has invalid version: {$def->version()}");
     }
-});
+})->group('widget-lint');
 
 it('every widget license() is in the allow-list', function () {
     $allowed = ['MIT', 'Apache-2.0', 'GPL-3.0', 'BSD-3-Clause', 'proprietary'];
@@ -30,7 +30,7 @@ it('every widget license() is in the allow-list', function () {
             "Widget [{$def->handle()}] has disallowed license: {$def->license()}"
         );
     }
-});
+})->group('widget-lint');
 
 it('every widget screenshot path exists on disk', function () {
     $registry = app(WidgetRegistry::class);
@@ -45,7 +45,7 @@ it('every widget screenshot path exists on disk', function () {
             );
         }
     }
-});
+})->group('widget-lint');
 
 it('every widget keyword is a lowercase slug', function () {
     $registry = app(WidgetRegistry::class);
@@ -58,7 +58,7 @@ it('every widget keyword is a lowercase slug', function () {
             );
         }
     }
-});
+})->group('widget-lint');
 
 it('every widget preset has the required shape and references valid config keys', function () {
     $registry = app(WidgetRegistry::class);
@@ -114,7 +114,7 @@ it('every widget preset has the required shape and references valid config keys'
             }
         }
     }
-});
+})->group('widget-lint');
 
 it('demoSeeder() returns a valid class for seeder-backed widgets and null otherwise', function () {
     $expectedSeederHandles = [
@@ -134,7 +134,7 @@ it('demoSeeder() returns a valid class for seeder-backed widgets and null otherw
             expect($result)->toBeNull("Widget [{$def->handle()}] should not declare a demoSeeder()");
         }
     }
-});
+})->group('widget-lint');
 
 it('every widget demoConfig() returns an array whose keys exist in schema()', function () {
     $registry = app(WidgetRegistry::class);
@@ -153,7 +153,7 @@ it('every widget demoConfig() returns an array whose keys exist in schema()', fu
             );
         }
     }
-});
+})->group('widget-lint');
 
 it('every widget demoAppearanceConfig() returns an array', function () {
     $registry = app(WidgetRegistry::class);
@@ -164,7 +164,7 @@ it('every widget demoAppearanceConfig() returns an array', function () {
             "Widget [{$def->handle()}] demoAppearanceConfig() must return an array"
         );
     }
-});
+})->group('widget-lint');
 
 it('every widget manifest() returns the expected keys', function () {
     $expected = [
@@ -185,4 +185,4 @@ it('every widget manifest() returns the expected keys', function () {
             "Widget [{$def->handle()}] manifest() has unexpected keys"
         );
     }
-});
+})->group('widget-lint');

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useEditorStore } from '../stores/editor'
+import * as api from '../api'
 import type { Widget, WidgetPreset, WidgetDraftPreset } from '../types'
 
 const props = defineProps<{
@@ -107,6 +108,18 @@ async function removeDraft(preset: WidgetDraftPreset): Promise<void> {
 }
 
 const exportedId = ref<string | null>(null)
+const defaultsExported = ref(false)
+
+async function exportDefaultsToClipboard(): Promise<void> {
+  try {
+    const res = await api.exportDefaults(props.widget.id)
+    await navigator.clipboard.writeText(res.php)
+    defaultsExported.value = true
+    setTimeout(() => { defaultsExported.value = false }, 2000)
+  } catch (e: any) {
+    error.value = e?.message ?? 'Export failed.'
+  }
+}
 
 function exportToClipboard(preset: WidgetDraftPreset): void {
   const literal = buildPhpLiteral(preset)
@@ -175,6 +188,14 @@ function phpArray(v: any, indent: number): string {
       @click="saveDraft"
     >
       {{ saving ? 'Saving…' : 'Save current appearance as preset' }}
+    </button>
+
+    <button
+      type="button"
+      class="preset-save"
+      @click="exportDefaultsToClipboard"
+    >
+      {{ defaultsExported ? 'Copied!' : 'Copy as defaults()' }}
     </button>
 
     <p v-if="error" class="preset-error">{{ error }}</p>

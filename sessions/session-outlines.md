@@ -186,18 +186,15 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 177 | Preset Thumbnails |
 | 178 | Code Review & Cleanup (Audit) |
 | 179 | Code Review & Cleanup (Apply) |
+| 180 | Defaults Authoring & Housekeeping |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 180 — Defaults Authoring & Housekeeping
+### 181 — Migration Squash & Inline JS/CSS Audit
 
-Add a "defaults" authoring mechanism in the inspector (parallel to the existing draft-preset feature) so the designer can export the current widget instance as a paste-ready `defaults(): array` method body for a widget Definition file. The endpoint is pure: widget instance in, PHP string out — no DB write. Wrap the existing widget-file lint coverage (`WidgetDefinition::validate`, `WidgetManifestTest`, `WidgetRegistryTest`) into a single `widgets:lint` artisan command so the designer can verify paste-edited Definition files quickly, and extend the lint to check type alignment between `schema()` field types and `defaults()` values (toggle → bool, number → numeric, etc.). Two housekeeping bug fixes bundled in: hero widget's link-colour override has stopped taking effect (likely CSS cascade specificity); the color-picker popover in the inspector doesn't close after a swatch selection and should.
-
-### 181 — Migration Squash
-
-Squash all migrations since the session-142 squash into a new `database/schema/pgsql-schema.sql` dump. Standard procedure: `schema:dump`, delete superseded migration files, verify `migrate:fresh --seed`. Update `docs/schema/README.md` squash note. Coordinate with production deploy so the prod server transitions cleanly.
+Squash all migrations since the session-142 squash into a new `database/schema/pgsql-schema.sql` dump: `schema:dump`, delete superseded migration files, verify `migrate:fresh --seed`, update the `docs/schema/README.md` squash note. Coordinate with production deploy so the prod server transitions cleanly. While in the neighbourhood, carry forward session 142's JS/CSS extraction pass: inventory inline `x-data` blocks and `<script>`/`<style>` blocks in admin Blade files added or regressed since 142, extract any longer than ~5 lines into `Alpine.data()` components under `resources/js/page-builder/`, and lift static duplicate inline CSS into SCSS. The inline audit is time-boxed — if inventory surfaces more than ~5 candidates, the user picks a subset and the rest become a stub for a follow-up session.
 
 ### 182 — Bug Fixes *(stub)*
 

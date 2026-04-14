@@ -306,6 +306,20 @@ The inspector's code-authored preset cards display the PNG when it exists on dis
 
 Each rule fails with a message naming the offending widget handle.
 
+`tests/Feature/WidgetDefaultsLintTest.php` adds defaults-focused assertions:
+
+1. Every `defaults()` value matches its schema field type (toggle → bool, number → int|float|null, image/video → null|int|string, checkboxes → array, gradient → null|array, buttons → array|string, everything else → string).
+2. Every `select` field `default` is one of the declared option keys.
+3. Every `defaults()` key appears in `schema()` (no orphan keys — complements the inverse check in `WidgetDefinition::validate()`).
+
+These tests plus the manifest/registry suites are tagged `widget-lint`. Run them all with:
+
+```bash
+docker compose exec app php artisan widgets:lint
+```
+
+The command prints a one-line pass/fail summary; on failure it includes the underlying Pest output so the offending widget and key are visible.
+
 ---
 
 ## Demo data & thumbnails
