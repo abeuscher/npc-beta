@@ -30,7 +30,19 @@ class PortalLoginDefinition extends WidgetDefinition
     {
         return [];
     }
-
+   public function demoAppearanceConfig(): array
+    {
+        return [
+            'layout'     => [
+                'padding' => [
+                    'top'    => '100',
+                    'left'   => '0',
+                    'right'  => '0',
+                    'bottom' => '75',
+                ],
+            ],
+        ];
+    }
     public function defaults(): array
     {
         return [];

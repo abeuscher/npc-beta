@@ -82,7 +82,19 @@ class TextBlockDefinition extends WidgetDefinition
                 . 'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>',
         ];
     }
-
+   public function demoAppearanceConfig(): array
+    {
+        return [
+            'layout'     => [
+                'padding' => [
+                    'top'    => '100',
+                    'left'   => '50',
+                    'right'  => '50',
+                    'bottom' => '75',
+                ],
+            ],
+        ];
+    }
     public function presets(): array
     {
         return [

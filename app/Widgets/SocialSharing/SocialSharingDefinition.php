@@ -30,7 +30,19 @@ class SocialSharingDefinition extends WidgetDefinition
     {
         return ['scss' => ['app/Widgets/SocialSharing/styles.scss']];
     }
-
+   public function demoAppearanceConfig(): array
+    {
+        return [
+            'layout'     => [
+                'padding' => [
+                    'top'    => '100',
+                    'left'   => '0',
+                    'right'  => '0',
+                    'bottom' => '75',
+                ],
+            ],
+        ];
+    }
     public function schema(): array
     {
         return [

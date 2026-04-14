@@ -39,7 +39,19 @@ class EventRegistrationDefinition extends WidgetDefinition
             'event_slug' => '',
         ];
     }
-
+   public function demoAppearanceConfig(): array
+    {
+        return [
+            'layout'     => [
+                'padding' => [
+                    'top'    => '100',
+                    'left'   => '0',
+                    'right'  => '0',
+                    'bottom' => '75',
+                ],
+            ],
+        ];
+    }
     public function requiredConfig(): ?array
     {
         return ['keys' => ['event_slug'], 'message' => 'Select an event to display its registration form.'];
