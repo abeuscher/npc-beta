@@ -19,6 +19,18 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+if (! function_exists('firstSampleLogo')) {
+    function firstSampleLogo(): string
+    {
+        $files = glob(resource_path('sample-images/logos/*'));
+        $files = array_values(array_filter($files, fn ($p) => is_file($p) && ! str_starts_with(basename($p), '.')));
+        if (empty($files)) {
+            throw new RuntimeException('No sample logos available in resources/sample-images/logos/');
+        }
+        return $files[0];
+    }
+}
+
 beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
 });
@@ -51,7 +63,7 @@ it('returns the og_image media URL when a page has an attached image', function 
     Storage::fake('public');
 
     $page = Page::factory()->create(['slug' => 'has-og', 'status' => 'published']);
-    $media = $page->addMedia(resource_path('sample-images/logos/logo-adidas.png'))
+    $media = $page->addMedia(firstSampleLogo())
         ->preservingOriginal()
         ->toMediaCollection('og_image', 'public');
 
@@ -89,7 +101,9 @@ it('round-trips a page with an attached og_image media file', function () {
     Storage::fake('public');
 
     $page = Page::factory()->create(['slug' => 'round-trip-og', 'status' => 'published']);
-    $media = $page->addMedia(resource_path('sample-images/logos/logo-adidas.png'))
+    $logoPath = firstSampleLogo();
+    $logoName = basename($logoPath);
+    $media = $page->addMedia($logoPath)
         ->preservingOriginal()
         ->toMediaCollection('og_image', 'public');
 
@@ -104,7 +118,7 @@ it('round-trips a page with an attached og_image media file', function () {
     $ogDescriptor = collect($exportedPage['media'])
         ->firstWhere('collection_name', 'og_image');
     expect($ogDescriptor)->not->toBeNull()
-        ->and($ogDescriptor['file_name'])->toBe('logo-adidas.png');
+        ->and($ogDescriptor['file_name'])->toBe($logoName);
 
     // Wipe the page's media (DB rows only — file stays on the fake disk)
     $page->media()->delete();
@@ -117,7 +131,7 @@ it('round-trips a page with an attached og_image media file', function () {
     $reimported = Page::where('slug', 'round-trip-og')->first();
     $reimportedMedia = $reimported->getFirstMedia('og_image');
     expect($reimportedMedia)->not->toBeNull()
-        ->and($reimportedMedia->file_name)->toBe('logo-adidas.png');
+        ->and($reimportedMedia->file_name)->toBe($logoName);
 });
 
 it('exports the bundle with the bumped format_version', function () {

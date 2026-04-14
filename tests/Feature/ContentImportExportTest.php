@@ -160,7 +160,10 @@ it('round-trips a page with a logo widget media reference', function () {
         'is_active'      => true,
     ]);
 
-    $media = $widget->addMedia(resource_path('sample-images/logos/logo-adidas.png'))
+    $logoPath = firstSampleLogo();
+    $logoName = basename($logoPath);
+
+    $media = $widget->addMedia($logoPath)
         ->preservingOriginal()
         ->toMediaCollection('config_logo', 'public');
 
@@ -175,7 +178,7 @@ it('round-trips a page with a logo widget media reference', function () {
     $exportedWidget = $bundle['payload']['pages'][0]['widgets'][0];
     expect($exportedWidget['media'])->toHaveCount(1);
     expect($exportedWidget['media'][0]['key'])->toBe('logo');
-    expect($exportedWidget['media'][0]['file_name'])->toBe('logo-adidas.png');
+    expect($exportedWidget['media'][0]['file_name'])->toBe($logoName);
 
     // Wipe the widget (DB row only — file stays on disk because Storage::fake doesn't auto-delete)
     PageWidget::where('page_id', $page->id)->delete();
@@ -191,7 +194,7 @@ it('round-trips a page with a logo widget media reference', function () {
 
     $reimportedMedia = $reimported->getFirstMedia('config_logo');
     expect($reimportedMedia)->not->toBeNull();
-    expect($reimportedMedia->file_name)->toBe('logo-adidas.png');
+    expect($reimportedMedia->file_name)->toBe($logoName);
     expect($reimported->config['logo'])->toBe($reimportedMedia->id);
 });
 
