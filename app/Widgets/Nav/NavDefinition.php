@@ -61,30 +61,30 @@ class NavDefinition extends WidgetDefinition
         ];
     }
 
-    public function defaults(): array
-    {
-        return [
-            'navigation_menu_id'  => '',
-            'branding_type'       => 'none',
-            'branding_image'      => null,
-            'branding_text'       => '',
-            'parent_template'     => '<a href="{{url}}" class="widget-nav__link {{active_class}}">{{label}}</a>',
-            'child_template'      => '<a href="{{url}}" class="widget-nav__drop-link {{active_class}}">{{label}}</a>',
-            'link_color'          => '#1d4ed8',
-            'hover_color'         => '#60a5fa',
-            'drop_link_color'     => '#1d4ed8',
-            'drop_hover_color'    => '#60a5fa',
-            'alignment'           => 'middle-left',
-            '_drop_label'         => '',
-            'drop_fill_color'     => '#ffffff',
-            'drop_fill_gradient'  => null,
-            'drop_border_color'   => '',
-            'drop_border_width'   => 0,
-            'drop_animation'      => 'fade',
-            'drop_align'          => 'left',
-            'mobile_animation'    => 'slide',
-        ];
-    }
+public function defaults(): array
+{
+    return [
+        'navigation_menu_id' => 'a189ec8c-8dd1-4bd1-8d1f-6366ce317dec',
+        'branding_type'      => 'none',
+        'branding_image'     => null,
+        'branding_text'      => null,
+        'parent_template'    => '<p><a href="{{url}}" class="widget-nav__link {{active_class}}">{{label}}</a></p>',
+        'child_template'     => '<p><a href="{{url}}" class="widget-nav__drop-link {{active_class}}">{{label}}</a></p>',
+        'link_color'         => '#1d4ed8',
+        'hover_color'        => '#60a5fa',
+        'drop_link_color'    => '#1d4ed8',
+        'drop_hover_color'   => '#60a5fa',
+        'alignment'          => 'middle-right',
+        '_drop_label'        => null,
+        'drop_fill_color'    => '#ffffff',
+        'drop_fill_gradient' => null,
+        'drop_border_color'  => null,
+        'drop_border_width'  => 0,
+        'drop_animation'     => 'fade',
+        'drop_align'         => 'left',
+        'mobile_animation'   => 'slide',
+    ];
+}
 
     public function requiredConfig(): ?array
     {

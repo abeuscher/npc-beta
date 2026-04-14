@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict eqky4OAE8oXvuElb0hNWWPzgqEmwl5wcbdxMrPVfChv3ARpoCdT9K1ubFJALAS0
+\restrict Wl10mQsdBvwkfkk6jiuT8EnlJ0CcTp4dF36jJIl8gsfUsp65cQ1VcfkKFfl8KGg
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -1020,6 +1020,23 @@ CREATE TABLE public.organizations (
 
 
 --
+-- Name: page_layouts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.page_layouts (
+    id uuid NOT NULL,
+    page_id uuid NOT NULL,
+    label character varying(255),
+    display character varying(255) DEFAULT 'grid'::character varying NOT NULL,
+    columns integer DEFAULT 2 NOT NULL,
+    layout_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
 -- Name: page_widgets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1034,9 +1051,9 @@ CREATE TABLE public.page_widgets (
     updated_at timestamp(0) without time zone,
     widget_type_id uuid NOT NULL,
     query_config jsonb DEFAULT '{}'::jsonb NOT NULL,
-    parent_widget_id uuid,
     column_index smallint,
-    style_config jsonb DEFAULT '{}'::jsonb NOT NULL
+    appearance_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    layout_id uuid
 );
 
 
@@ -1058,7 +1075,6 @@ CREATE TABLE public.pages (
     custom_fields jsonb,
     author_id bigint NOT NULL,
     status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
-    og_image_path character varying(255),
     noindex boolean DEFAULT false NOT NULL,
     head_snippet text,
     body_snippet text,
@@ -1449,6 +1465,23 @@ CREATE TABLE public.waitlist_entries (
 
 
 --
+-- Name: widget_presets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.widget_presets (
+    id uuid NOT NULL,
+    widget_type_id uuid NOT NULL,
+    handle character varying(255) NOT NULL,
+    label character varying(255) NOT NULL,
+    description text,
+    config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    appearance_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
 -- Name: widget_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1472,6 +1505,7 @@ CREATE TABLE public.widget_types (
     allowed_page_types jsonb,
     description text,
     full_width boolean DEFAULT false NOT NULL,
+    required_config jsonb,
     CONSTRAINT widget_types_render_mode_check CHECK (((render_mode)::text = ANY (ARRAY[('server'::character varying)::text, ('client'::character varying)::text])))
 );
 
@@ -2051,6 +2085,14 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: page_layouts page_layouts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_layouts
+    ADD CONSTRAINT page_layouts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: page_widgets page_widgets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2288,6 +2330,22 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.waitlist_entries
     ADD CONSTRAINT waitlist_entries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: widget_presets widget_presets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.widget_presets
+    ADD CONSTRAINT widget_presets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: widget_presets widget_presets_widget_type_id_handle_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.widget_presets
+    ADD CONSTRAINT widget_presets_widget_type_id_handle_unique UNIQUE (widget_type_id, handle);
 
 
 --
@@ -2932,19 +2990,27 @@ ALTER TABLE ONLY public.notes
 
 
 --
+-- Name: page_layouts page_layouts_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_layouts
+    ADD CONSTRAINT page_layouts_page_id_foreign FOREIGN KEY (page_id) REFERENCES public.pages(id) ON DELETE CASCADE;
+
+
+--
+-- Name: page_widgets page_widgets_layout_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.page_widgets
+    ADD CONSTRAINT page_widgets_layout_id_foreign FOREIGN KEY (layout_id) REFERENCES public.page_layouts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: page_widgets page_widgets_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.page_widgets
     ADD CONSTRAINT page_widgets_page_id_foreign FOREIGN KEY (page_id) REFERENCES public.pages(id) ON DELETE CASCADE;
-
-
---
--- Name: page_widgets page_widgets_parent_widget_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.page_widgets
-    ADD CONSTRAINT page_widgets_parent_widget_id_foreign FOREIGN KEY (parent_widget_id) REFERENCES public.page_widgets(id) ON DELETE SET NULL;
 
 
 --
@@ -3092,16 +3158,24 @@ ALTER TABLE ONLY public.waitlist_entries
 
 
 --
+-- Name: widget_presets widget_presets_widget_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.widget_presets
+    ADD CONSTRAINT widget_presets_widget_type_id_foreign FOREIGN KEY (widget_type_id) REFERENCES public.widget_types(id) ON DELETE CASCADE;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict eqky4OAE8oXvuElb0hNWWPzgqEmwl5wcbdxMrPVfChv3ARpoCdT9K1ubFJALAS0
+\unrestrict Wl10mQsdBvwkfkk6jiuT8EnlJ0CcTp4dF36jJIl8gsfUsp65cQ1VcfkKFfl8KGg
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict kmlz6ePzodX4ERnyYy4spu6jhyOxw8m8ZaRw3TrKa4sACNAbSHMipbB3BAaRrKX
+\restrict uAur3B0RkOY0kPm7lcOqrd5VIEfk1voN8lds24Vfuu9ZDxjDC1IggOQghd3ucei
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3170,6 +3244,11 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 45	2026_04_03_161823_add_full_width_to_widget_types_table	10
 46	2026_04_05_224551_add_group_and_subtype_to_widget_config_schemas	11
 47	2026_04_06_074630_add_libs_to_widget_type_assets	12
+48	2026_04_09_052412_add_required_config_to_widget_types	13
+49	2026_04_09_100000_create_page_layouts_and_migrate_column_widgets	13
+50	2026_04_09_171811_drop_og_image_path_from_pages	13
+51	2026_04_11_000000_rename_style_config_to_appearance_config_on_page_widgets	13
+52	2026_04_13_025417_create_widget_presets_table	13
 \.
 
 
@@ -3177,12 +3256,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 47, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 52, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict kmlz6ePzodX4ERnyYy4spu6jhyOxw8m8ZaRw3TrKa4sACNAbSHMipbB3BAaRrKX
+\unrestrict uAur3B0RkOY0kPm7lcOqrd5VIEfk1voN8lds24Vfuu9ZDxjDC1IggOQghd3ucei
 

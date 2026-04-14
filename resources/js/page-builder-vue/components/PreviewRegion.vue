@@ -23,7 +23,7 @@ const needsConfig = computed(() => {
   const req = props.widget.widget_type_required_config
   if (!req?.keys?.length) return false
   return req.keys.some(key => {
-    const val = props.widget.config[key]
+    const val = props.widget.config[key] ?? props.widget.resolved_defaults?.[key]
     return val === null || val === undefined || val === ''
   })
 })

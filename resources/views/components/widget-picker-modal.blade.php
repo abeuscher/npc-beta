@@ -17,20 +17,7 @@
 
 @teleport('body')
     <div
-        x-data="{
-            picked: false,
-            filter: '',
-            activeCategory: '{{ $hasMostUsed ? 'most_used' : '' }}',
-            matchesFilter(label, desc) {
-                if (this.filter === '') return true;
-                const q = this.filter.toLowerCase();
-                return label.toLowerCase().includes(q) || (desc && desc.toLowerCase().includes(q));
-            },
-            matchesCategory(cats) {
-                if (this.activeCategory === '') return true;
-                return cats.includes(this.activeCategory);
-            },
-        }"
+        x-data="widgetPickerModal(@js($hasMostUsed ? 'most_used' : ''))"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
         x-on:keydown.escape.window="if (filter !== '') { filter = ''; activeCategory = ''; } else { $wire.set('{{ $showProperty }}', false); }"
     >

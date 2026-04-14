@@ -187,16 +187,17 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 178 | Code Review & Cleanup (Audit) |
 | 179 | Code Review & Cleanup (Apply) |
 | 180 | Defaults Authoring & Housekeeping |
+| 181 | Migration Squash & Inline JS/CSS Audit |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 181 — Migration Squash & Inline JS/CSS Audit
+### 182 — Design System Editor — Typography
 
-Squash all migrations since the session-142 squash into a new `database/schema/pgsql-schema.sql` dump: `schema:dump`, delete superseded migration files, verify `migrate:fresh --seed`, update the `docs/schema/README.md` squash note. Coordinate with production deploy so the prod server transitions cleanly. While in the neighbourhood, carry forward session 142's JS/CSS extraction pass: inventory inline `x-data` blocks and `<script>`/`<style>` blocks in admin Blade files added or regressed since 142, extract any longer than ~5 lines into `Alpine.data()` components under `resources/js/page-builder/`, and lift static duplicate inline CSS into SCSS. The inline audit is time-boxed — if inventory surfaces more than ~5 candidates, the user picks a subset and the rest become a stub for a follow-up session.
+Build a Vue-based Typography editor as a new tab on the Design System Editor with a reusable `font` inspector primitive (family / weight / size / line-height / letter-spacing / case), template-scoped storage, and a three-bucket family inheritance model (heading / body / nav) that replaces the existing `heading_font` / `body_font` columns via migration. Elements: H1–H6, P, UL li, OL li; per-element font primitive + four-side margin/padding (lifted from the Appearance Controls spacing picker) + list-style-type + marker color for UL/OL. Editable pangram preview at the top. Downloadable SCSS export. No import, no contextual styles (modals/forms), no font uploads this session. See `sessions/182. Design System Editor — Typography.md` for the full spec.
 
-### 182 — Bug Fixes *(stub)*
+### 183 — Bug Fixes *(stub)*
 
 Stub — items to be filled in before the session starts. Known candidates:
 

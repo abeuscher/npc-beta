@@ -1,16 +1,5 @@
 <div
-    x-data="{
-        get radius() {
-            const val = $wire.data?.button_styles?.['{{ $variant }}']?.border_radius ?? 'slightly-rounded';
-            return { 'sharp': '0', 'slightly-rounded': '0.25em', 'rounded': '0.5em', 'pill': '999px' }[val] ?? '0.25em';
-        },
-        get bg() { return $wire.data?.button_styles?.['{{ $variant }}']?.bg_color || 'transparent'; },
-        get color() { return $wire.data?.button_styles?.['{{ $variant }}']?.text_color || 'inherit'; },
-        get borderColor() { return $wire.data?.button_styles?.['{{ $variant }}']?.border_color || 'transparent'; },
-        get borderWidth() { return $wire.data?.button_styles?.['{{ $variant }}']?.border_width || '0'; },
-        get fontWeight() { return $wire.data?.button_styles?.['{{ $variant }}']?.font_weight || '600'; },
-        get textTransform() { return $wire.data?.button_styles?.['{{ $variant }}']?.text_transform || 'none'; },
-    }"
+    x-data="buttonPreview(@js($variant))"
     class="mt-3 rounded-lg bg-gray-50 dark:bg-white/5 p-4"
 >
     <p class="text-xs text-gray-400 dark:text-gray-500 mb-2">Preview</p>

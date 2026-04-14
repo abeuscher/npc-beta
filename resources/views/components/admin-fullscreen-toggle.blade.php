@@ -1,24 +1,6 @@
 <button
     type="button"
-    x-data="{
-        fullscreen: localStorage.getItem('np-fullscreen') === '1',
-        init() {
-            this.apply();
-            this.$watch('fullscreen', () => this.apply());
-        },
-        toggle() {
-            this.fullscreen = ! this.fullscreen;
-        },
-        apply() {
-            if (this.fullscreen) {
-                document.documentElement.classList.add('np-fullscreen');
-                localStorage.setItem('np-fullscreen', '1');
-            } else {
-                document.documentElement.classList.remove('np-fullscreen');
-                localStorage.setItem('np-fullscreen', '0');
-            }
-        },
-    }"
+    x-data="fullscreenToggle()"
     x-on:click="toggle()"
     x-bind:aria-label="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
     class="fi-icon-btn relative flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 outline-none transition duration-75 hover:text-gray-500 focus-visible:bg-gray-50 dark:text-gray-500 dark:hover:text-gray-400 dark:focus-visible:bg-white/5"

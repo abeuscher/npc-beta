@@ -16,6 +16,7 @@ export default defineConfig({
         'resources/js/public.js',
         'resources/js/page-builder-vue/main.ts',
         'resources/css/filament/admin/theme.css',
+        'resources/js/admin.js',
       ],
       refresh: true,
     }),

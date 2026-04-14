@@ -1,10 +1,6 @@
 <div
     class="help-search-container"
-    x-data="{
-        open: false,
-        focusIndex: -1,
-        close() { this.open = false; this.focusIndex = -1; },
-    }"
+    x-data="helpSearch()"
     x-on:click.away="close()"
     x-on:keydown.escape.window="close()"
 >

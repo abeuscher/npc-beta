@@ -116,6 +116,14 @@ class AdminPanelProvider extends PanelProvider
                     '<link rel="stylesheet" href="/css/admin.css">'
                 )
             )
+            // Admin Alpine components — helpSearch, buttonPreview, fullscreenToggle,
+            // widgetPickerModal, permissionTable, quillEditor, customSelect.
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => new HtmlString(
+                    app(\Illuminate\Foundation\Vite::class)('resources/js/admin.js')
+                )
+            )
             // Library bundle manifest for admin preview JS loading.
             // Injected as a global JS object so the page builder can load
             // per-library bundles on demand when a widget preview renders.
