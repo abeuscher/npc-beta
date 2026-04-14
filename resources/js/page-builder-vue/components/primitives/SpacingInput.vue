@@ -2,14 +2,14 @@
 import { computed } from 'vue'
 
 export interface SpacingValue {
-  top: number | string | null
-  right: number | string | null
-  bottom: number | string | null
-  left: number | string | null
+  top: number
+  right: number
+  bottom: number
+  left: number
 }
 
 const props = defineProps<{
-  modelValue: Partial<SpacingValue> | null | undefined
+  modelValue: Partial<Record<keyof SpacingValue, number | string | null>> | null | undefined
   label?: string
   unit?: string
 }>()
@@ -21,34 +21,35 @@ const emit = defineEmits<{
 const sides = ['top', 'right', 'bottom', 'left'] as const
 type Side = typeof sides[number]
 
+function coerce(v: number | string | null | undefined): number {
+  if (v === null || v === undefined || v === '') return 0
+  const n = typeof v === 'number' ? v : parseInt(v, 10)
+  return Number.isFinite(n) ? n : 0
+}
+
 const current = computed<SpacingValue>(() => ({
-  top:    props.modelValue?.top    ?? null,
-  right:  props.modelValue?.right  ?? null,
-  bottom: props.modelValue?.bottom ?? null,
-  left:   props.modelValue?.left   ?? null,
+  top:    coerce(props.modelValue?.top),
+  right:  coerce(props.modelValue?.right),
+  bottom: coerce(props.modelValue?.bottom),
+  left:   coerce(props.modelValue?.left),
 }))
 
 const allValue = computed(() => {
   const { top, right, bottom, left } = current.value
-  const normalised = [top, right, bottom, left].map(v => v === null ? '' : String(v))
-  const [t, r, b, l] = normalised
-  return (t === r && r === b && b === l && t !== '') ? t : ''
+  return (top === right && right === bottom && bottom === left) ? String(top) : ''
 })
 
 const allPlaceholder = computed(() => {
   const { top, right, bottom, left } = current.value
-  const normalised = [top, right, bottom, left].map(v => v === null ? '' : String(v))
-  const [t, r, b, l] = normalised
-  return (t === r && r === b && b === l) ? '' : 'mixed'
+  return (top === right && right === bottom && bottom === left) ? '' : 'mixed'
 })
 
 function setSide(side: Side, raw: string) {
-  const value = raw === '' ? null : raw
-  emit('update:modelValue', { ...current.value, [side]: value })
+  emit('update:modelValue', { ...current.value, [side]: coerce(raw) })
 }
 
 function setAll(raw: string) {
-  const value = raw === '' ? null : raw
+  const value = coerce(raw)
   emit('update:modelValue', { top: value, right: value, bottom: value, left: value })
 }
 
@@ -93,6 +94,7 @@ const sideOrder: { key: Side, label: string }[] = [
 .spacing-input {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .spacing-input__label {
@@ -101,8 +103,12 @@ const sideOrder: { key: Side, label: string }[] = [
 
 .spacing-input__grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.spacing-input__field {
+  min-width: 0;
 }
 
 .spacing-input__field-label {
@@ -111,7 +117,18 @@ const sideOrder: { key: Side, label: string }[] = [
 }
 
 .spacing-input__input {
-  padding: 0.25rem 0.375rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.25rem 0.25rem;
   text-align: center;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.spacing-input__input::-webkit-outer-spin-button,
+.spacing-input__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 </style>

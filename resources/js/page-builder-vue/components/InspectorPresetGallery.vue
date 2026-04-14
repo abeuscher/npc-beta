@@ -112,6 +112,7 @@ const defaultsExported = ref(false)
 
 async function exportDefaultsToClipboard(): Promise<void> {
   try {
+    await store.flushPendingSaves()
     const res = await api.exportDefaults(props.widget.id)
     await navigator.clipboard.writeText(res.php)
     defaultsExported.value = true

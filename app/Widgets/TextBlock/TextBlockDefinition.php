@@ -45,6 +45,33 @@ class TextBlockDefinition extends WidgetDefinition
         ];
     }
 
+    public function defaultAppearanceConfig(): array
+    {
+        return [
+            'background' => [
+                'color' => '#ffffff',
+            ],
+            'text'       => [
+                'color' => '#000000',
+            ],
+            'layout'     => [
+                'full_width' => false,
+                'padding'    => [
+                    'top'    => 150,
+                    'right'  => 0,
+                    'bottom' => 150,
+                    'left'   => 0,
+                ],
+                'margin'     => [
+                    'top'    => 0,
+                    'right'  => 0,
+                    'bottom' => 0,
+                    'left'   => 0,
+                ],
+            ],
+        ];
+    }
+
     public function demoConfig(): array
     {
         return [
@@ -93,15 +120,6 @@ class TextBlockDefinition extends WidgetDefinition
         ],
     ],
 ],
-        ];
-    }
-
-    public function demoAppearanceConfig(): array
-    {
-        return [
-            'layout' => [
-                'padding' => ['left' => 50, 'right' => 50],
-            ],
         ];
     }
 }

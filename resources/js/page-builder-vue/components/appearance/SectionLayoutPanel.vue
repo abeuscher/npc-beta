@@ -22,8 +22,7 @@ function updateAppearance(path: string, value: any) {
 
 function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
   for (const side of ['top', 'right', 'bottom', 'left'] as const) {
-    const v = value[side]
-    updateAppearance(`layout.${box}.${side}`, v === null ? '' : v)
+    updateAppearance(`layout.${box}.${side}`, value[side])
   }
 }
 </script>

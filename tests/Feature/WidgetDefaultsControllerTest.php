@@ -101,6 +101,71 @@ it('rejects unauthenticated defaults export', function () {
     ])->assertStatus(401);
 });
 
+it('export emits a defaultAppearanceConfig() method with the widget appearance merged onto concrete defaults', function () {
+    $widget = defaultsHeroWidget();
+    $widget->update([
+        'appearance_config' => [
+            'layout' => [
+                'padding' => ['top' => 50, 'right' => 50, 'bottom' => 50, 'left' => 50],
+            ],
+        ],
+    ]);
+
+    $php = $this->actingAs(defaultsUser())
+        ->postJson(defaultsApiPrefix() . '/widget-defaults/export', [
+            'widget_id' => $widget->id,
+        ])
+        ->json('php');
+
+    expect($php)->toContain('public function defaultAppearanceConfig(): array');
+
+    $class = 'WidgetAppearanceExport_' . uniqid();
+    eval("class {$class} { {$php} }");
+    $appearance = (new $class())->defaultAppearanceConfig();
+
+    expect($appearance)->toBeArray();
+    expect($appearance['layout']['padding'])->toBe([
+        'top' => 50, 'right' => 50, 'bottom' => 50, 'left' => 50,
+    ]);
+    // Unset sides fall through to the concrete zero-state default, never null/missing.
+    expect($appearance['layout']['margin'])->toBe([
+        'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0,
+    ]);
+    expect($appearance['layout']['full_width'])->toBeFalse();
+    expect($appearance['background']['color'])->toBe('#ffffff');
+    expect($appearance['text']['color'])->toBe('#000000');
+});
+
+it('export skips null/empty overrides and coerces numeric strings to int so unset sides stay concrete', function () {
+    $widget = defaultsHeroWidget();
+    $widget->update([
+        'appearance_config' => [
+            'layout' => [
+                'padding' => [
+                    'top'    => '150',
+                    'right'  => null,
+                    'bottom' => '150',
+                    'left'   => '',
+                ],
+            ],
+        ],
+    ]);
+
+    $php = $this->actingAs(defaultsUser())
+        ->postJson(defaultsApiPrefix() . '/widget-defaults/export', [
+            'widget_id' => $widget->id,
+        ])
+        ->json('php');
+
+    $class = 'WidgetAppearanceMerge_' . uniqid();
+    eval("class {$class} { {$php} }");
+    $appearance = (new $class())->defaultAppearanceConfig();
+
+    expect($appearance['layout']['padding'])->toBe([
+        'top' => 150, 'right' => 0, 'bottom' => 150, 'left' => 0,
+    ]);
+});
+
 it('rejects defaults export from users without update_page permission', function () {
     $widget = defaultsHeroWidget();
     $user = defaultsUser(['view_page']);

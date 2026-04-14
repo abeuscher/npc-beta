@@ -11,6 +11,7 @@ use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\WidgetPreviewRenderer;
+use App\Services\WidgetRegistry;
 use App\Models\Collection;
 use Filament\Notifications\Notification;
 use Livewire\Component;
@@ -108,6 +109,9 @@ class PageBuilder extends Component
                 ->increment('sort_order');
         }
 
+        $def = app(WidgetRegistry::class)->find($widgetType->handle);
+        $appearance = $def?->defaultAppearanceConfig() ?? [];
+
         $newBlock = PageWidget::create([
             'page_id'           => $this->pageId,
             'layout_id'         => $this->insertLayoutId,
@@ -116,10 +120,7 @@ class PageBuilder extends Component
             'label'             => $this->addModalLabel,
             'config'            => [],
             'query_config'      => [],
-            'appearance_config' => [
-                'background' => ['color' => '#ffffff'],
-                'text'       => ['color' => '#000000'],
-            ],
+            'appearance_config' => $appearance,
             'sort_order'        => $position,
             'is_active'         => true,
         ]);

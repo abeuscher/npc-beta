@@ -45,6 +45,41 @@ class TypographyCompiler
     }
 
     /**
+     * Compile typography with each selector prefixed by the given scopes, so the
+     * rules apply only inside those containers (e.g. the page-builder preview and
+     * the Quill rich-text editor). Multiple scopes produce a grouped selector.
+     *
+     * @param  array<int, string>  $scopes
+     */
+    public static function compileScoped(array $scopes, ?array $typography = null): string
+    {
+        $scopes = array_values(array_filter(array_map('trim', $scopes)));
+        if (! $scopes) {
+            return '';
+        }
+
+        $resolved = TypographyResolver::resolve($typography);
+        $blocks   = [];
+
+        foreach (self::ELEMENT_SELECTORS as $key => $selector) {
+            $config = $resolved['elements'][$key] ?? null;
+            if (! $config) {
+                continue;
+            }
+
+            $decls = self::elementDeclarations($key, $config);
+            if (! $decls) {
+                continue;
+            }
+
+            $prefixed = array_map(fn ($scope) => $scope . ' ' . $selector, $scopes);
+            $blocks[] = implode(', ', $prefixed) . ' { ' . implode('; ', $decls) . '; }';
+        }
+
+        return implode("\n", $blocks);
+    }
+
+    /**
      * Return the set of Google Font family names referenced by the resolved typography.
      * Only families that appear in the curated catalog are returned.
      *

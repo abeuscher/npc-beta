@@ -402,8 +402,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
-  async function refreshPreview(id: string): Promise<void> {
-    // Flush any pending debounced saves so the server has the latest config
+  async function flushPendingSaves(): Promise<void> {
     if (debounceSaveTimer) {
       clearTimeout(debounceSaveTimer)
       debounceSaveTimer = null
@@ -411,15 +410,18 @@ export const useEditorStore = defineStore('editor', () => {
     const pending = { ...pendingConfigChanges.value }
     pendingConfigChanges.value = {}
 
-    // Wait for all pending saves to complete before fetching preview
     const savePromises = Object.entries(pending).map(([widgetId, payload]) =>
       updateWidget(widgetId, payload).catch((e) =>
-        console.error('Pre-preview save failed:', e)
+        console.error('Pending save failed:', e)
       )
     )
     if (savePromises.length > 0) {
       await Promise.all(savePromises)
     }
+  }
+
+  async function refreshPreview(id: string): Promise<void> {
+    await flushPendingSaves()
 
     // Abort any in-flight refresh for the same widget so a stale render
     // can't overwrite a newer one.
@@ -675,6 +677,8 @@ export const useEditorStore = defineStore('editor', () => {
     const w = widgets.value[widgetId]
     if (!w) return
 
+    await flushPendingSaves()
+
     const res = await api.createDraftPreset(w.widget_type_id, widgetId)
     const wt = widgetTypes.value.find((t) => t.id === w.widget_type_id)
     if (wt) {
@@ -814,6 +818,7 @@ export const useEditorStore = defineStore('editor', () => {
     updateLocalLayout,
     deleteLayout,
     refreshPreview,
+    flushPendingSaves,
     uploadImage,
     removeImage,
     uploadAppearanceImage,

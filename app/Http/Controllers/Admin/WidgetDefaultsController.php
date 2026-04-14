@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PageWidget;
 use App\Services\WidgetConfigResolver;
+use App\Services\WidgetRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WidgetDefaultsController extends Controller
 {
-    public function export(Request $request, WidgetConfigResolver $resolver): JsonResponse
+    public function export(Request $request, WidgetConfigResolver $resolver, WidgetRegistry $registry): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
@@ -35,21 +36,50 @@ class WidgetDefaultsController extends Controller
             $ordered[$key] = $resolved[$key];
         }
 
+        $def = $registry->find($widget->widgetType?->handle ?? '');
+        $appearanceDefaults = $def?->defaultAppearanceConfig() ?? [];
+        $appearance = $this->mergeDeep($appearanceDefaults, $widget->appearance_config ?? []);
+
         return response()->json([
-            'php' => $this->buildMethod($ordered),
+            'php' => $this->buildMethods($ordered, $appearance),
         ]);
     }
 
-    private function buildMethod(array $map): string
+    private function buildMethods(array $map, array $appearance): string
     {
-        $body = $this->phpArray($map, 2);
+        $defaultsBody = $this->phpArray($map, 2);
+        $appearanceBody = $this->phpArray($appearance, 2);
 
         return <<<PHP
 public function defaults(): array
 {
-    return {$body};
+    return {$defaultsBody};
+}
+
+public function defaultAppearanceConfig(): array
+{
+    return {$appearanceBody};
 }
 PHP;
+    }
+
+    private function mergeDeep(array $base, array $override): array
+    {
+        foreach ($override as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (is_array($value) && isset($base[$key]) && is_array($base[$key]) && ! array_is_list($base[$key])) {
+                $base[$key] = $this->mergeDeep($base[$key], $value);
+                continue;
+            }
+            if (array_key_exists($key, $base) && is_int($base[$key]) && (is_string($value) || is_float($value)) && is_numeric($value)) {
+                $base[$key] = (int) $value;
+                continue;
+            }
+            $base[$key] = $value;
+        }
+        return $base;
     }
 
     private function phpArray(array $v, int $indent): string

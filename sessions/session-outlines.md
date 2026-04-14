@@ -189,14 +189,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 180 | Defaults Authoring & Housekeeping |
 | 181 | Migration Squash & Inline JS/CSS Audit |
 | 182 | Design System Editor — Typography |
+| 183 | Page Builder Typography Inheritance & Theme Editor Polish |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
-
-### 183 — Page Builder Typography Inheritance & Theme Editor Polish
-
-Wire the page builder's preview canvas and the Quill rich-text editor inside it to consume the same typography CSS the public site renders, so designers see theme changes live in the editor. Also apply a round of UI polish to the Theme → Text Styles tab based on notes the user hands over at session start. No new storage, no migrations — rendering/integration + aesthetic refinement only. See `sessions/183. Page Builder Typography Inheritance & Polish.md` for the full spec.
 
 ### 184 — Bug Fixes *(stub)*
 

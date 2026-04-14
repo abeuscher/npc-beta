@@ -33,6 +33,20 @@ function inheritBucketFor(el: ElementKey): { family: string | null, label: strin
   return { family: state.value.buckets.body_family, label: 'Body' }
 }
 
+function applyInheritedFamily(el: ElementKey) {
+  if (!state.value) return
+  const inherit = inheritBucketFor(el)
+  if (!inherit.family) return
+  state.value.elements[el].font.family = inherit.family
+  store.queueSave()
+}
+
+function isInheritingFamily(el: ElementKey): boolean {
+  if (!state.value) return false
+  const inherit = inheritBucketFor(el)
+  return !!inherit.family && state.value.elements[el].font.family === inherit.family
+}
+
 function previewStyle(el: ElementKey): Record<string, string> {
   if (!state.value) return {}
   const cfg = state.value.elements[el]
@@ -211,8 +225,7 @@ function downloadScss() {
         class="theme-typography__element"
         :class="{ 'theme-typography__element--open': expanded[el] }"
       >
-        <button
-          type="button"
+        <div
           class="theme-typography__element-header"
           :aria-expanded="expanded[el]"
           @click="toggle(el)"
@@ -229,30 +242,40 @@ function downloadScss() {
               <component :is="el" class="theme-typography__preview-inline">{{ state.sample_text }}</component>
             </template>
           </div>
+          <button
+            v-if="inheritBucketFor(el).family"
+            type="button"
+            class="theme-typography__inherit"
+            :disabled="isInheritingFamily(el)"
+            :title="isInheritingFamily(el)
+              ? `Already using ${inheritBucketFor(el).label} family`
+              : `Use ${inheritBucketFor(el).label} family`"
+            @click.stop="applyInheritedFamily(el)"
+          >Use {{ inheritBucketFor(el).label }}</button>
           <span class="theme-typography__chevron" aria-hidden="true">{{ expanded[el] ? '▾' : '▸' }}</span>
-        </button>
+        </div>
 
         <div v-if="expanded[el]" class="theme-typography__element-body">
           <div class="theme-typography__controls">
             <FontInput
               :model-value="state.elements[el].font"
               :families="families"
-              :family-inherits-from="inheritBucketFor(el).family"
-              :family-inherit-label="inheritBucketFor(el).label"
               @update:model-value="onFontChange(el, $event)"
             />
-            <SpacingInput
-              label="Margin"
-              unit="px"
-              :model-value="state.elements[el].margin"
-              @update:model-value="onSpacingChange(el, 'margin', $event)"
-            />
-            <SpacingInput
-              label="Padding"
-              unit="px"
-              :model-value="state.elements[el].padding"
-              @update:model-value="onSpacingChange(el, 'padding', $event)"
-            />
+            <div class="theme-typography__spacing-row">
+              <SpacingInput
+                label="Margin"
+                unit="px"
+                :model-value="state.elements[el].margin"
+                @update:model-value="onSpacingChange(el, 'margin', $event)"
+              />
+              <SpacingInput
+                label="Padding"
+                unit="px"
+                :model-value="state.elements[el].padding"
+                @update:model-value="onSpacingChange(el, 'padding', $event)"
+              />
+            </div>
 
             <div v-if="el === 'ul_li' || el === 'ol_li'" class="theme-typography__list-controls">
               <div>
@@ -388,7 +411,7 @@ function downloadScss() {
 
 .theme-typography__element-header {
   display: grid;
-  grid-template-columns: 10rem minmax(0, 1fr) 1rem;
+  grid-template-columns: 10rem minmax(0, 1fr) auto 1rem;
   align-items: center;
   gap: 1rem;
   width: 100%;
@@ -398,6 +421,33 @@ function downloadScss() {
   border-radius: 0.25rem;
   cursor: pointer;
   text-align: left;
+}
+
+.theme-typography__inherit {
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.theme-typography__inherit:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.theme-typography__inherit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.theme-typography__spacing-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .theme-typography__element-header:hover {

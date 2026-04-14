@@ -6,6 +6,50 @@
 >
 
     {{-- ------------------------------------------------------------------ --}}
+    {{-- Theme typography — scoped to the preview canvas and Quill editor     --}}
+    {{-- so the public site's fonts/sizes render inside the builder without   --}}
+    {{-- leaking into the Filament admin chrome.                               --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @php
+        $__pbTypography    = \App\Services\TypographyResolver::load();
+        $__pbTypographyCss = \App\Services\TypographyCompiler::compileScoped(
+            ['.page-builder .widget-preview-scope', '.page-builder .ql-editor'],
+            $__pbTypography,
+        );
+        $__pbBucketVars = [];
+        $__pbHeadingFamily = $__pbTypography['buckets']['heading_family'] ?? null;
+        $__pbBodyFamily    = $__pbTypography['buckets']['body_family'] ?? null;
+        if ($__pbHeadingFamily) {
+            $__pbBucketVars[] = "--font-family-heading: {$__pbHeadingFamily}";
+        }
+        if ($__pbBodyFamily) {
+            $__pbBucketVars[] = "--font-family-body: {$__pbBodyFamily}";
+        }
+
+        $__pbFontsUsed   = \App\Services\TypographyCompiler::googleFontsUsed($__pbTypography);
+        $__pbFontsHref   = '';
+        if ($__pbFontsUsed) {
+            $__pbFontsHref = 'https://fonts.googleapis.com/css2?' . collect($__pbFontsUsed)
+                ->map(fn ($f) => 'family=' . str_replace(' ', '+', $f) . ':wght@400;600;700')
+                ->implode('&') . '&display=swap';
+        }
+    @endphp
+
+    @if ($__pbFontsHref)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="{{ $__pbFontsHref }}">
+    @endif
+
+    @if ($__pbBucketVars)
+        <style>.page-builder .widget-preview-scope, .page-builder .ql-editor { {!! implode('; ', $__pbBucketVars) !!}; }</style>
+    @endif
+
+    @if ($__pbTypographyCss)
+        <style>{!! $__pbTypographyCss !!}</style>
+    @endif
+
+    {{-- ------------------------------------------------------------------ --}}
     {{-- Vue editor app                                                       --}}
     {{-- ------------------------------------------------------------------ --}}
     <div data-page-builder-app data-bootstrap='@json($bootstrapData)' wire:ignore></div>

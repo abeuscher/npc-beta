@@ -52,20 +52,20 @@ class AppearanceStyleComposer
             $styleProps[] = 'text-shadow:0 1px 3px rgba(0,0,0,0.6)';
         }
 
-        // Padding
+        // Padding — concrete 0 means "no override; let SCSS/intrinsic default apply"
         $padding = $ac['layout']['padding'] ?? [];
         foreach (['top', 'right', 'bottom', 'left'] as $side) {
-            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
-            if ($val !== null) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : 0;
+            if ($val !== 0) {
                 $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
             }
         }
 
-        // Margin
+        // Margin — concrete 0 means "no override; let SCSS/intrinsic default apply"
         $margin = $ac['layout']['margin'] ?? [];
         foreach (['top', 'right', 'bottom', 'left'] as $side) {
-            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
-            if ($val !== null) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : 0;
+            if ($val !== 0) {
                 $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
         }

@@ -129,6 +129,24 @@ abstract class WidgetDefinition
         return [];
     }
 
+    /**
+     * Concrete default appearance_config shape. Every leaf is a concrete value
+     * (no nulls, no empty strings, no missing keys). Overridden per widget to
+     * ship with its own defaults; new instances are seeded from this shape.
+     */
+    public function defaultAppearanceConfig(): array
+    {
+        return [
+            'background' => ['color' => '#ffffff'],
+            'text'       => ['color' => '#000000'],
+            'layout'     => [
+                'full_width' => false,
+                'padding'    => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+                'margin'     => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+            ],
+        ];
+    }
+
     public function manifest(): array
     {
         return [
