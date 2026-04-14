@@ -185,20 +185,21 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 176 | Designer Preset Drafts & Export |
 | 177 | Preset Thumbnails |
 | 178 | Code Review & Cleanup (Audit) |
+| 179 | Code Review & Cleanup (Apply) |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 179 — Code Review & Cleanup (Apply)
+### 180 — Defaults Authoring & Housekeeping
 
-Work through the open flags and the W6/W7 tables produced in 178. Three flags need a decision before implementation: retire-or-repurpose `PagePreviewController` (orphan since 141); annotate or retire the now-executed "Migration from current system" section of `docs/widget-system-spec.md`; enforce or document the tolerance of arbitrary-key writes in `PageBuilderApiController::update()`. Then walk the W6 duplicated-logic table (8 items; headline extractions: `WidgetPreviewRenderer` service, Eloquent `JsonResource` for widget serialization, `PageBlockRenderer` service gated on the Flag A decision) and the W7 framework-alignment table (7 items; headline items: sort-order scope on `PageWidget`, single source of truth for defaults). Apply the subset the user approves across several iteration branches so the review cadence stays tight.
+Add a "defaults" authoring mechanism in the inspector (parallel to the existing draft-preset feature) so the designer can export the current widget instance as a paste-ready `defaults(): array` method body for a widget Definition file. The endpoint is pure: widget instance in, PHP string out — no DB write. Wrap the existing widget-file lint coverage (`WidgetDefinition::validate`, `WidgetManifestTest`, `WidgetRegistryTest`) into a single `widgets:lint` artisan command so the designer can verify paste-edited Definition files quickly, and extend the lint to check type alignment between `schema()` field types and `defaults()` values (toggle → bool, number → numeric, etc.). Two housekeeping bug fixes bundled in: hero widget's link-colour override has stopped taking effect (likely CSS cascade specificity); the color-picker popover in the inspector doesn't close after a swatch selection and should.
 
-### 180 — Migration Squash
+### 181 — Migration Squash
 
 Squash all migrations since the session-142 squash into a new `database/schema/pgsql-schema.sql` dump. Standard procedure: `schema:dump`, delete superseded migration files, verify `migrate:fresh --seed`. Update `docs/schema/README.md` squash note. Coordinate with production deploy so the prod server transitions cleanly.
 
-### 181 — Bug Fixes *(stub)*
+### 182 — Bug Fixes *(stub)*
 
 Stub — items to be filled in before the session starts. Known candidates:
 
