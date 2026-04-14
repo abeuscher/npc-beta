@@ -51,8 +51,6 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
 
     public function form(Form $form): Form
     {
-        $fontOptions = $this->getFontOptions();
-
         return $form->schema([
             Forms\Components\TextInput::make('name')
                 ->required()
@@ -89,21 +87,6 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
                     Forms\Components\ColorPicker::make('footer_bg_color')
                         ->label('Footer bg')
                         ->columnSpan(2),
-                ])
-                ->columns(12)
-                ->columnSpanFull(),
-
-            Forms\Components\Section::make('Fonts')
-                ->schema([
-                    Forms\Components\Select::make('heading_font')
-                        ->label('Heading font')
-                        ->options($fontOptions)
-                        ->columnSpan(6),
-
-                    Forms\Components\Select::make('body_font')
-                        ->label('Body font')
-                        ->options($fontOptions)
-                        ->columnSpan(6),
                 ])
                 ->columns(12)
                 ->columnSpanFull(),
@@ -166,8 +149,6 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
         $this->assertCanEdit();
         $this->record->update([
             'primary_color'    => null,
-            'heading_font'     => null,
-            'body_font'        => null,
             'header_bg_color'  => null,
             'nav_link_color'   => null,
             'nav_hover_color'  => null,
@@ -299,22 +280,4 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
         return $this->record->createChromePage($position, $sourcePageId);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private function getFontOptions(): array
-    {
-        return [
-            ''                                         => '— Default (System) —',
-            'system-ui, sans-serif'                    => 'System UI',
-            'Georgia, serif'                           => 'Georgia (serif)',
-            "'Inter', system-ui, sans-serif"           => 'Inter',
-            "'Lato', system-ui, sans-serif"            => 'Lato',
-            "'Merriweather', Georgia, serif"           => 'Merriweather',
-            "'Montserrat', system-ui, sans-serif"      => 'Montserrat',
-            "'Open Sans', system-ui, sans-serif"       => 'Open Sans',
-            "'Playfair Display', Georgia, serif"       => 'Playfair Display',
-            "'Raleway', system-ui, sans-serif"         => 'Raleway',
-            "'Source Sans 3', system-ui, sans-serif"   => 'Source Sans 3',
-        ];
-    }
 }

@@ -11,8 +11,6 @@ Page templates (header, footer, colors, fonts, SCSS) and content templates (widg
 | is_default | boolean | no | default: false; exactly one `page`-type template may be default |
 | definition | jsonb | no | default: {}; for `content` templates: array of widget specs `[{handle, config, sort_order}]`. For `page` templates: unused |
 | primary_color | string | yes | null = inherit from default |
-| heading_font | string | yes | null = inherit |
-| body_font | string | yes | null = inherit |
 | header_bg_color | string | yes | null = inherit |
 | footer_bg_color | string | yes | null = inherit |
 | nav_link_color | string | yes | null = inherit |

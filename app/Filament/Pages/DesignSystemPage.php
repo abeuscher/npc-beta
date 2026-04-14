@@ -4,27 +4,30 @@ namespace App\Filament\Pages;
 
 use App\Models\SiteSetting;
 use App\Services\AssetBuildService;
+use App\Services\TypographyResolver;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Livewire\Attributes\Url;
 
 class DesignSystemPage extends Page
 {
-    protected static ?string $navigationGroup = 'Tools';
+    protected static ?string $navigationGroup = 'CMS';
 
-    protected static ?string $navigationLabel = 'Design System';
+    protected static ?string $navigationLabel = 'Theme';
 
     protected static ?string $navigationIcon = 'heroicon-o-swatch';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 7;
 
     protected static string $view = 'filament.pages.design-system';
 
-    protected static ?string $title = 'Design System';
+    protected static ?string $title = 'Theme';
 
-    public ?string $activeTab = 'buttons';
+    #[Url]
+    public ?string $activeTab = 'text-styles';
 
     public ?array $data = [];
 
@@ -36,14 +39,41 @@ class DesignSystemPage extends Page
     public function getBreadcrumbs(): array
     {
         return [
-            'Tools',
-            'Design System',
+            'CMS',
+            'Theme',
         ];
     }
 
     public function mount(): void
     {
         $this->loadButtonSettings();
+    }
+
+    public function getTypographyBootstrap(): array
+    {
+        return [
+            'typography' => TypographyResolver::load(),
+            'families'   => TypographyResolver::fontCatalog(),
+            'saveUrl'    => route('filament.admin.theme.typography.update'),
+            'exportUrl'  => route('filament.admin.theme.typography.export'),
+            'csrfToken'  => csrf_token(),
+        ];
+    }
+
+    public function getReturnToUrl(): ?string
+    {
+        $candidate = request()->query('return_to');
+        if (! is_string($candidate) || $candidate === '') {
+            return null;
+        }
+        $parsed = parse_url($candidate);
+        if (! isset($parsed['path'])) {
+            return null;
+        }
+        if (isset($parsed['host']) && $parsed['host'] !== request()->getHost()) {
+            return null;
+        }
+        return ($parsed['path']) . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
     }
 
     public function switchTab(string $tab): void

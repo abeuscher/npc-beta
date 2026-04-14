@@ -71,6 +71,15 @@ class AdminPanelProvider extends PanelProvider
                 \Illuminate\Support\Facades\Route::prefix('api/page-builder')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class)
                     ->group(base_path('routes/admin-api.php'));
+
+                // Theme editor (Vue typography island + SCSS export)
+                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->group(function () {
+                        \Illuminate\Support\Facades\Route::post('/api/theme/typography', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'update'])
+                            ->name('theme.typography.update');
+                        \Illuminate\Support\Facades\Route::get('/design-system/typography/export.scss', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'export'])
+                            ->name('theme.typography.export');
+                    });
             })
             ->colors([
                 'primary' => Color::hex($primaryColor),

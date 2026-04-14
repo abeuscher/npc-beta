@@ -153,10 +153,10 @@ it('saves page template appearance via edit form', function () {
 it('clears appearance to inherit from default', function () {
     Template::factory()->create(['type' => 'page', 'is_default' => true, 'primary_color' => '#111111']);
     $child = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => false,
-        'primary_color' => '#222222',
-        'heading_font'  => 'Inter',
+        'type'            => 'page',
+        'is_default'      => false,
+        'primary_color'   => '#222222',
+        'header_bg_color' => '#333333',
     ]);
 
     Livewire::test(EditPageTemplate::class, ['record' => $child->id])
@@ -164,7 +164,7 @@ it('clears appearance to inherit from default', function () {
 
     $child->refresh();
     expect($child->primary_color)->toBeNull();
-    expect($child->heading_font)->toBeNull();
+    expect($child->header_bg_color)->toBeNull();
 });
 
 // ── Page creation with templates ──────────────────────────────────────────
@@ -271,21 +271,21 @@ it('save as template creates content template from page widget stack', function 
 
 it('non-default page template inherits values from default when fields are null', function () {
     $default = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#aaaaaa',
-        'heading_font'  => 'Inter',
+        'type'            => 'page',
+        'is_default'      => true,
+        'primary_color'   => '#aaaaaa',
+        'header_bg_color' => '#bbbbbb',
     ]);
 
     $child = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => false,
-        'primary_color' => null,
-        'heading_font'  => null,
+        'type'            => 'page',
+        'is_default'      => false,
+        'primary_color'   => null,
+        'header_bg_color' => null,
     ]);
 
     expect($child->resolved('primary_color'))->toBe('#aaaaaa');
-    expect($child->resolved('heading_font'))->toBe('Inter');
+    expect($child->resolved('header_bg_color'))->toBe('#bbbbbb');
 });
 
 // ── Custom header/footer for non-default templates ────────────────────────

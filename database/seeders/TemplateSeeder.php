@@ -17,8 +17,6 @@ class TemplateSeeder extends Seeder
                 'is_default'       => true,
                 'description'      => 'Default site template — colors, fonts, header, and footer.',
                 'primary_color'    => '#0172ad',
-                'heading_font'     => null,
-                'body_font'        => null,
                 'header_bg_color'  => '#ffffff',
                 'footer_bg_color'  => '#ffffff',
                 'nav_link_color'   => '#373c44',

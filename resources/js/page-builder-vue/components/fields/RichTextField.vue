@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const store = useEditorStore()
 const editorEl = ref<HTMLElement | null>(null)
+const currentUrl = typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
 let quillInstance: any = null
 let suppressChange = false
 
@@ -123,6 +124,11 @@ function handleImageUpload() {
 
 <template>
   <div class="inspector-richtext">
+    <a
+      v-if="store.themeEditorUrl"
+      class="inspector-richtext__theme-link"
+      :href="`${store.themeEditorUrl}&return_to=${encodeURIComponent(currentUrl)}`"
+    >Edit site styles →</a>
     <div ref="editorEl"></div>
   </div>
 </template>
@@ -132,6 +138,20 @@ function handleImageUpload() {
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
   position: relative;
+}
+
+.inspector-richtext__theme-link {
+  display: block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  color: #6b7280;
+  text-align: right;
+  text-decoration: none;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.inspector-richtext__theme-link:hover {
+  color: #2563eb;
 }
 
 .inspector-richtext :deep(.ql-toolbar) {

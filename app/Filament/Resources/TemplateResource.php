@@ -20,7 +20,7 @@ class TemplateResource extends Resource
 
     protected static ?string $navigationLabel = 'Templates';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 8;
 
     public static function canViewAny(): bool
     {

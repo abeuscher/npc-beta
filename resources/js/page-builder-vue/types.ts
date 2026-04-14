@@ -156,6 +156,7 @@ export interface BootstrapData {
   inline_image_upload_url: string
   color_swatches: string[]
   theme_palette: ThemePaletteEntry[]
+  theme_editor_url: string
 }
 
 export interface TreeResponse {

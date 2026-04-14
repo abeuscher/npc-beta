@@ -40,21 +40,21 @@ it('resolved() returns own value when non-default template has a value', functio
 
 it('resolved() falls back to default value when non-default template field is null', function () {
     Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#ff0000',
-        'heading_font'  => 'Inter',
+        'type'            => 'page',
+        'is_default'      => true,
+        'primary_color'   => '#ff0000',
+        'header_bg_color' => '#abcdef',
     ]);
 
     $child = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => false,
-        'primary_color' => null,
-        'heading_font'  => null,
+        'type'            => 'page',
+        'is_default'      => false,
+        'primary_color'   => null,
+        'header_bg_color' => null,
     ]);
 
     expect($child->resolved('primary_color'))->toBe('#ff0000');
-    expect($child->resolved('heading_font'))->toBe('Inter');
+    expect($child->resolved('header_bg_color'))->toBe('#abcdef');
 });
 
 // ── Scopes ──────────────────────────────────────────────────────────────────
@@ -96,7 +96,6 @@ it('TemplateSeeder creates default page template with correct values', function 
     expect($default)->not->toBeNull();
     expect($default->name)->toBe('Default');
     expect($default->primary_color)->toBe('#0172ad');
-    expect($default->heading_font)->toBeNull();
     expect($default->header_bg_color)->toBe('#ffffff');
     expect($default->header_page_id)->toBe($header->id);
     expect($default->footer_page_id)->toBe($footer->id);

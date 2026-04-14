@@ -188,21 +188,26 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 179 | Code Review & Cleanup (Apply) |
 | 180 | Defaults Authoring & Housekeeping |
 | 181 | Migration Squash & Inline JS/CSS Audit |
+| 182 | Design System Editor — Typography |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 182 — Design System Editor — Typography
+### 183 — Page Builder Typography Inheritance & Theme Editor Polish
 
-Build a Vue-based Typography editor as a new tab on the Design System Editor with a reusable `font` inspector primitive (family / weight / size / line-height / letter-spacing / case), template-scoped storage, and a three-bucket family inheritance model (heading / body / nav) that replaces the existing `heading_font` / `body_font` columns via migration. Elements: H1–H6, P, UL li, OL li; per-element font primitive + four-side margin/padding (lifted from the Appearance Controls spacing picker) + list-style-type + marker color for UL/OL. Editable pangram preview at the top. Downloadable SCSS export. No import, no contextual styles (modals/forms), no font uploads this session. See `sessions/182. Design System Editor — Typography.md` for the full spec.
+Wire the page builder's preview canvas and the Quill rich-text editor inside it to consume the same typography CSS the public site renders, so designers see theme changes live in the editor. Also apply a round of UI polish to the Theme → Text Styles tab based on notes the user hands over at session start. No new storage, no migrations — rendering/integration + aesthetic refinement only. See `sessions/183. Page Builder Typography Inheritance & Polish.md` for the full spec.
 
-### 183 — Bug Fixes *(stub)*
+### 184 — Bug Fixes *(stub)*
 
 Stub — items to be filled in before the session starts. Known candidates:
 
 - **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
 - **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
+
+### 185 — Theme Colors Refactor *(stub)*
+
+Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 
 ---
 

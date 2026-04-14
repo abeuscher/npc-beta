@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Wl10mQsdBvwkfkk6jiuT8EnlJ0CcTp4dF36jJIl8gsfUsp65cQ1VcfkKFfl8KGg
+\restrict b7mM7R8I8ubYwsclCr6DzliBKiEPkYMKeoYePKewMs2ILnIrpMsP4IeRsH5IUkC
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -1375,8 +1375,6 @@ CREATE TABLE public.templates (
     is_default boolean DEFAULT false NOT NULL,
     definition jsonb DEFAULT '{}'::jsonb NOT NULL,
     primary_color character varying(255),
-    heading_font character varying(255),
-    body_font character varying(255),
     header_bg_color character varying(255),
     footer_bg_color character varying(255),
     nav_link_color character varying(255),
@@ -3169,13 +3167,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Wl10mQsdBvwkfkk6jiuT8EnlJ0CcTp4dF36jJIl8gsfUsp65cQ1VcfkKFfl8KGg
+\unrestrict b7mM7R8I8ubYwsclCr6DzliBKiEPkYMKeoYePKewMs2ILnIrpMsP4IeRsH5IUkC
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict uAur3B0RkOY0kPm7lcOqrd5VIEfk1voN8lds24Vfuu9ZDxjDC1IggOQghd3ucei
+\restrict FOyd1ee9kPHFgLz2hOu51OOFtv3OYcjEbImUe9pZRu5rACcJhY2dXFVXVQRz9ck
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3249,6 +3247,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 50	2026_04_09_171811_drop_og_image_path_from_pages	13
 51	2026_04_11_000000_rename_style_config_to_appearance_config_on_page_widgets	13
 52	2026_04_13_025417_create_widget_presets_table	13
+53	2026_04_14_100000_add_typography_and_drop_template_fonts	14
 \.
 
 
@@ -3256,12 +3255,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 52, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 53, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict uAur3B0RkOY0kPm7lcOqrd5VIEfk1voN8lds24Vfuu9ZDxjDC1IggOQghd3ucei
+\unrestrict FOyd1ee9kPHFgLz2hOu51OOFtv3OYcjEbImUe9pZRu5rACcJhY2dXFVXVQRz9ck
 

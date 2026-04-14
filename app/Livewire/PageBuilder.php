@@ -331,6 +331,7 @@ class PageBuilder extends Component
             'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
             'color_swatches'          => $colorSwatches,
             'theme_palette'           => $themePalette,
+            'theme_editor_url'        => \App\Filament\Pages\DesignSystemPage::getUrl(['activeTab' => 'text-styles']),
         ];
     }
 

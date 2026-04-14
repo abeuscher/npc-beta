@@ -15,6 +15,7 @@ export default defineConfig({
         'resources/scss/public.scss',
         'resources/js/public.js',
         'resources/js/page-builder-vue/main.ts',
+        'resources/js/theme-editor/main.ts',
         'resources/css/filament/admin/theme.css',
         'resources/js/admin.js',
       ],

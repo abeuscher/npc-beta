@@ -54,7 +54,7 @@
             </nav>
         </div>
 
-        {{-- ── Colors & Fonts tab ─────────────────────────────────────────── --}}
+        {{-- ── Colors tab ─────────────────────────────────────────── --}}
         <div x-show="tab === 'appearance'" class="space-y-4">
             @if ($this->isNonDefault)
                 @php
@@ -63,9 +63,7 @@
                         && $this->record->nav_link_color === null
                         && $this->record->nav_hover_color === null
                         && $this->record->nav_active_color === null
-                        && $this->record->footer_bg_color === null
-                        && $this->record->heading_font === null
-                        && $this->record->body_font === null;
+                        && $this->record->footer_bg_color === null;
                 @endphp
                 <div x-data="{ inherit: @js($colorsInherited) }" class="space-y-4">
                     <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">

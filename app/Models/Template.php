@@ -19,8 +19,6 @@ class Template extends Model
         'is_default',
         'definition',
         'primary_color',
-        'heading_font',
-        'body_font',
         'header_bg_color',
         'footer_bg_color',
         'nav_link_color',
@@ -46,8 +44,6 @@ class Template extends Model
 
     public const INHERITABLE_FIELDS = [
         'primary_color',
-        'heading_font',
-        'body_font',
         'header_bg_color',
         'footer_bg_color',
         'nav_link_color',

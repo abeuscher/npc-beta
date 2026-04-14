@@ -328,8 +328,6 @@ class ContentExporter
 
         // Page template — chrome fields and chrome page slug references.
         $data['primary_color']    = $template->primary_color;
-        $data['heading_font']     = $template->heading_font;
-        $data['body_font']        = $template->body_font;
         $data['header_bg_color']  = $template->header_bg_color;
         $data['footer_bg_color']  = $template->footer_bg_color;
         $data['nav_link_color']   = $template->nav_link_color;

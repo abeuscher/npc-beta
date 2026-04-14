@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Widget } from '../../types'
 import { useEditorStore } from '../../stores/editor'
+import SpacingInput, { type SpacingValue } from '../primitives/SpacingInput.vue'
 
 const props = defineProps<{
   widget: Widget
@@ -13,82 +14,24 @@ const fullWidth = computed(() => !!props.widget.appearance_config?.layout?.full_
 const isColumnChild = computed(() => props.widget.layout_id !== null)
 
 const padding = computed(() => props.widget.appearance_config?.layout?.padding ?? {})
-const margin = computed(() => props.widget.appearance_config?.layout?.margin ?? {})
-
-// Padding "All" computed
-const paddingAll = computed(() => {
-  const t = padding.value.top ?? ''
-  const r = padding.value.right ?? ''
-  const b = padding.value.bottom ?? ''
-  const l = padding.value.left ?? ''
-  return (t === r && r === b && b === l && t !== '') ? t : ''
-})
-
-const paddingAllPlaceholder = computed(() => {
-  const t = padding.value.top ?? ''
-  const r = padding.value.right ?? ''
-  const b = padding.value.bottom ?? ''
-  const l = padding.value.left ?? ''
-  return (t === r && r === b && b === l) ? '' : 'mixed'
-})
-
-// Margin "All" computed
-const marginAll = computed(() => {
-  const t = margin.value.top ?? ''
-  const r = margin.value.right ?? ''
-  const b = margin.value.bottom ?? ''
-  const l = margin.value.left ?? ''
-  return (t === r && r === b && b === l && t !== '') ? t : ''
-})
-
-const marginAllPlaceholder = computed(() => {
-  const t = margin.value.top ?? ''
-  const r = margin.value.right ?? ''
-  const b = margin.value.bottom ?? ''
-  const l = margin.value.left ?? ''
-  return (t === r && r === b && b === l) ? '' : 'mixed'
-})
+const margin  = computed(() => props.widget.appearance_config?.layout?.margin ?? {})
 
 function updateAppearance(path: string, value: any) {
   store.updateLocalAppearanceConfig(props.widget.id, path, value)
 }
 
-function setPaddingAll(value: string) {
-  const v = value === '' ? '' : value
-  updateAppearance('layout.padding.top', v)
-  updateAppearance('layout.padding.right', v)
-  updateAppearance('layout.padding.bottom', v)
-  updateAppearance('layout.padding.left', v)
+function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
+  for (const side of ['top', 'right', 'bottom', 'left'] as const) {
+    const v = value[side]
+    updateAppearance(`layout.${box}.${side}`, v === null ? '' : v)
+  }
 }
-
-function setMarginAll(value: string) {
-  const v = value === '' ? '' : value
-  updateAppearance('layout.margin.top', v)
-  updateAppearance('layout.margin.right', v)
-  updateAppearance('layout.margin.bottom', v)
-  updateAppearance('layout.margin.left', v)
-}
-
-const paddingKeys = [
-  { key: 'left', label: 'Left' },
-  { key: 'top', label: 'Top' },
-  { key: 'right', label: 'Right' },
-  { key: 'bottom', label: 'Bottom' },
-]
-
-const marginKeys = [
-  { key: 'left', label: 'Left' },
-  { key: 'top', label: 'Top' },
-  { key: 'right', label: 'Right' },
-  { key: 'bottom', label: 'Bottom' },
-]
 </script>
 
 <template>
   <div class="layout-panel">
     <p class="layout-panel__heading">Section Layout</p>
 
-    <!-- Width -->
     <div class="layout-panel__section">
       <label
         class="layout-panel__toggle"
@@ -106,60 +49,22 @@ const marginKeys = [
       </label>
     </div>
 
-    <!-- Padding -->
     <div class="layout-panel__section">
-      <p class="inspector-section-title layout-panel__section-label">Padding (px)</p>
-      <div class="layout-panel__grid">
-        <div class="layout-panel__field">
-          <label class="inspector-label layout-panel__field-label">All</label>
-          <input
-            type="number"
-            min="0"
-            :value="paddingAll"
-            :placeholder="paddingAllPlaceholder"
-            class="inspector-control layout-panel__input"
-            @input="setPaddingAll(($event.target as HTMLInputElement).value)"
-          >
-        </div>
-        <div v-for="item in paddingKeys" :key="item.key" class="layout-panel__field">
-          <label class="inspector-label layout-panel__field-label">{{ item.label }}</label>
-          <input
-            type="number"
-            min="0"
-            :value="padding[item.key] ?? ''"
-            class="inspector-control layout-panel__input"
-            @input="updateAppearance('layout.padding.' + item.key, ($event.target as HTMLInputElement).value)"
-          >
-        </div>
-      </div>
+      <SpacingInput
+        label="Padding"
+        unit="px"
+        :model-value="padding"
+        @update:model-value="applySpacing('padding', $event)"
+      />
     </div>
 
-    <!-- Margin -->
     <div class="layout-panel__section">
-      <p class="inspector-section-title layout-panel__section-label">Margin (px)</p>
-      <div class="layout-panel__grid">
-        <div class="layout-panel__field">
-          <label class="inspector-label layout-panel__field-label">All</label>
-          <input
-            type="number"
-            min="0"
-            :value="marginAll"
-            :placeholder="marginAllPlaceholder"
-            class="inspector-control layout-panel__input"
-            @input="setMarginAll(($event.target as HTMLInputElement).value)"
-          >
-        </div>
-        <div v-for="item in marginKeys" :key="item.key" class="layout-panel__field">
-          <label class="inspector-label layout-panel__field-label">{{ item.label }}</label>
-          <input
-            type="number"
-            min="0"
-            :value="margin[item.key] ?? ''"
-            class="inspector-control layout-panel__input"
-            @input="updateAppearance('layout.margin.' + item.key, ($event.target as HTMLInputElement).value)"
-          >
-        </div>
-      </div>
+      <SpacingInput
+        label="Margin"
+        unit="px"
+        :model-value="margin"
+        @update:model-value="applySpacing('margin', $event)"
+      />
     </div>
   </div>
 </template>
@@ -196,25 +101,5 @@ const marginKeys = [
 .layout-panel__toggle--disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.layout-panel__section-label {
-  margin-bottom: 0.5rem;
-}
-
-.layout-panel__grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
-}
-
-.layout-panel__field-label {
-  text-align: center;
-  color: #9ca3af;
-}
-
-.layout-panel__input {
-  padding: 0.25rem 0.375rem;
-  text-align: center;
 }
 </style>

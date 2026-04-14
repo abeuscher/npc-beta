@@ -114,8 +114,6 @@ class ContentImporter
 
         $template->update([
             'primary_color'    => $data['primary_color'] ?? null,
-            'heading_font'     => $data['heading_font'] ?? null,
-            'body_font'        => $data['body_font'] ?? null,
             'header_bg_color'  => $data['header_bg_color'] ?? null,
             'footer_bg_color'  => $data['footer_bg_color'] ?? null,
             'nav_link_color'   => $data['nav_link_color'] ?? null,

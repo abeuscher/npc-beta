@@ -55,6 +55,9 @@ export const useEditorStore = defineStore('editor', () => {
   // Inline image upload URL (from bootstrap data, used by RichTextField)
   const inlineImageUploadUrl = ref('')
 
+  // Theme editor URL (from bootstrap data, used by RichTextField "edit site styles" link)
+  const themeEditorUrl = ref('')
+
   // Color swatches (shared across all color picker fields)
   const colorSwatches = ref<string[]>([])
 
@@ -147,6 +150,7 @@ export const useEditorStore = defineStore('editor', () => {
     pages.value = data.pages
     events.value = data.events
     inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
+    themeEditorUrl.value = data.theme_editor_url ?? ''
     colorSwatches.value = data.color_swatches ?? []
     themePalette.value = data.theme_palette ?? []
 
@@ -776,6 +780,7 @@ export const useEditorStore = defineStore('editor', () => {
     saving,
     dragging,
     inlineImageUploadUrl,
+    themeEditorUrl,
     colorSwatches,
     themePalette,
 

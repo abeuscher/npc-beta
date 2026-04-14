@@ -87,30 +87,22 @@
         $cssVars = [];
 
         $primaryColor = $__tpl?->resolved('primary_color');
-        $headingFont  = $__tpl?->resolved('heading_font');
-        $bodyFont     = $__tpl?->resolved('body_font');
-
         if ($primaryColor) {
             $cssVars[] = "--color-primary: {$primaryColor}";
         }
-        if ($headingFont) {
-            $cssVars[] = "--font-family-heading: {$headingFont}";
+
+        $__typography    = \App\Services\TypographyResolver::load();
+        $__typographyCss = \App\Services\TypographyCompiler::compile($__typography);
+        $headingFamily   = $__typography['buckets']['heading_family'] ?? null;
+        $bodyFamily      = $__typography['buckets']['body_family'] ?? null;
+        if ($headingFamily) {
+            $cssVars[] = "--font-family-heading: {$headingFamily}";
         }
-        if ($bodyFont) {
-            $cssVars[] = "--font-family-body: {$bodyFont}";
+        if ($bodyFamily) {
+            $cssVars[] = "--font-family-body: {$bodyFamily}";
         }
 
-        // Extract Google Font names from font-stack values and build the URL
-        $googleFonts = ['Inter', 'Lato', 'Merriweather', 'Montserrat', 'Open Sans', 'Playfair Display', 'Raleway', 'Source Sans 3'];
-        $fontsToLoad = [];
-        foreach ([$headingFont, $bodyFont] as $fontStack) {
-            if (!$fontStack) continue;
-            foreach ($googleFonts as $gFont) {
-                if (str_contains($fontStack, $gFont) && !in_array($gFont, $fontsToLoad)) {
-                    $fontsToLoad[] = $gFont;
-                }
-            }
-        }
+        $fontsToLoad   = \App\Services\TypographyCompiler::googleFontsUsed($__typography);
         $googleFontsUrl = '';
         if ($fontsToLoad) {
             $families = collect($fontsToLoad)
@@ -146,6 +138,10 @@
 
     @if ($cssVars)
         <style>:root { {!! implode('; ', $cssVars) !!}; }</style>
+    @endif
+
+    @if ($__typographyCss)
+        <style>{!! $__typographyCss !!}</style>
     @endif
 
     @if ($scopedRules)
