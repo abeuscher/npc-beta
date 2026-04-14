@@ -79,6 +79,10 @@ class WidgetType extends Model implements HasMedia
 
     public function getDefaultConfig(): array
     {
+        if ($def = app(\App\Services\WidgetRegistry::class)->find($this->handle)) {
+            return $def->defaults();
+        }
+
         $config = [];
         foreach ($this->config_schema ?? [] as $field) {
             if (empty($field['key'])) {
@@ -142,6 +146,9 @@ class WidgetType extends Model implements HasMedia
                 'category'        => $wt->category ?? ['content'],
                 'collections'     => $wt->collections,
                 'config_schema'   => $wt->config_schema,
+                'assets'          => $wt->assets ?? [],
+                'full_width'      => $wt->full_width,
+                'default_open'    => $wt->default_open,
                 'required_config' => $wt->required_config,
                 'presets'         => static::resolvePresetThumbnails($wt->handle, $registry->find($wt->handle)?->presets() ?? []),
                 'draft_presets'   => $wt->draftPresets->map(fn ($p) => [

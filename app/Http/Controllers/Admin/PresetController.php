@@ -85,16 +85,12 @@ class PresetController extends Controller
             }
         }
 
-        $updates = [];
-        foreach (['label', 'description', 'handle'] as $field) {
-            if (array_key_exists($field, $validated) && $validated[$field] !== null) {
-                $updates[$field] = $validated[$field];
-            }
-        }
-
-        if (! empty($updates)) {
-            $preset->update($updates);
-        }
+        $preset->fill(
+            collect($validated)
+                ->only(['label', 'description', 'handle'])
+                ->filter(fn ($v) => $v !== null)
+                ->all()
+        )->save();
 
         return response()->json(['preset' => $this->format($preset->fresh())]);
     }

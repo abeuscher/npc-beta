@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReorderWidgetsRequest;
 use App\Http\Resources\WidgetPreviewResource;
 use App\Http\Resources\WidgetResource;
 use App\Models\Collection;
@@ -16,7 +17,6 @@ use App\Models\WidgetType;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
-use App\Services\WidgetRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -199,68 +199,9 @@ class PageBuilderApiController extends Controller
         ], 201);
     }
 
-    public function reorder(Request $request, Page $page): JsonResponse
+    public function reorder(ReorderWidgetsRequest $request, Page $page): JsonResponse
     {
-        abort_unless(auth()->user()?->can('update_page'), 403);
-
-        $validated = $request->validate([
-            'items'                => 'required|array|min:1',
-            'items.*.id'           => 'required|uuid',
-            'items.*.type'         => 'nullable|string|in:widget,layout',
-            'items.*.layout_id'    => 'nullable|uuid',
-            'items.*.column_index' => 'nullable|integer|min:0',
-            'items.*.sort_order'   => 'required|integer|min:0',
-        ]);
-
-        // Default type to 'widget' for backward compatibility with the Phase 2 Vue store
-        $items = array_map(function ($item) {
-            $item['type'] = $item['type'] ?? 'widget';
-            return $item;
-        }, $validated['items']);
-
-        $widgetIds = collect($items)->where('type', 'widget')->pluck('id')->all();
-        $layoutIds = collect($items)->where('type', 'layout')->pluck('id')->all();
-
-        // Validate widget ownership
-        if (! empty($widgetIds)) {
-            $validCount = PageWidget::where('page_id', $page->id)
-                ->whereIn('id', $widgetIds)
-                ->count();
-
-            if ($validCount !== count(array_unique($widgetIds))) {
-                return response()->json(['error' => 'Invalid widget IDs.'], 422);
-            }
-        }
-
-        // Validate layout ownership
-        if (! empty($layoutIds)) {
-            $validCount = PageLayout::where('page_id', $page->id)
-                ->whereIn('id', $layoutIds)
-                ->count();
-
-            if ($validCount !== count(array_unique($layoutIds))) {
-                return response()->json(['error' => 'Invalid layout IDs.'], 422);
-            }
-        }
-
-        // Validate referenced layout_id values belong to this page
-        $referencedLayoutIds = collect($items)
-            ->where('type', 'widget')
-            ->pluck('layout_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        if (! empty($referencedLayoutIds)) {
-            $validCount = PageLayout::where('page_id', $page->id)
-                ->whereIn('id', $referencedLayoutIds)
-                ->count();
-
-            if ($validCount !== count($referencedLayoutIds)) {
-                return response()->json(['error' => 'Invalid referenced layout IDs.'], 422);
-            }
-        }
+        $items = $request->normalizedItems();
 
         foreach ($items as $item) {
             if ($item['type'] === 'widget') {
@@ -312,40 +253,7 @@ class PageBuilderApiController extends Controller
 
         $pageType = $request->query('page_type', 'default');
 
-        $registry = app(WidgetRegistry::class);
-
-        $types = WidgetType::orderBy('label')
-            ->with(['media', 'draftPresets'])
-            ->get()
-            ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
-            ->map(fn ($wt) => [
-                'id'              => $wt->id,
-                'handle'          => $wt->handle,
-                'label'           => $wt->label,
-                'description'     => $wt->description,
-                'category'        => $wt->category ?? ['content'],
-                'config_schema'   => $wt->config_schema,
-                'collections'     => $wt->collections,
-                'assets'          => $wt->assets ?? [],
-                'full_width'      => $wt->full_width,
-                'default_open'    => $wt->default_open,
-                'required_config' => $wt->required_config,
-                'presets'         => WidgetType::resolvePresetThumbnails($wt->handle, $registry->find($wt->handle)?->presets() ?? []),
-                'draft_presets'   => $wt->draftPresets->map(fn ($p) => [
-                    'id'                => $p->id,
-                    'handle'            => $p->handle,
-                    'label'             => $p->label,
-                    'description'       => $p->description,
-                    'config'            => $p->config ?? [],
-                    'appearance_config' => $p->appearance_config ?? [],
-                    'is_draft'          => true,
-                ])->values()->toArray(),
-                'thumbnail'       => $wt->getFirstMediaUrl('thumbnail', 'picker') ?: WidgetType::resolveStaticThumbnail($wt->handle),
-                'thumbnail_hover' => $wt->getFirstMediaUrl('thumbnail_hover', 'picker') ?: null,
-            ])
-            ->values();
-
-        return response()->json(['widget_types' => $types]);
+        return response()->json(['widget_types' => WidgetType::forPicker($pageType)]);
     }
 
     public function collections(): JsonResponse
