@@ -4,6 +4,9 @@ namespace App\Widgets\BoardMembers;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\Models\SampleImage;
+use App\Services\SampleImageLibrary;
+use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -32,12 +35,11 @@ class DemoSeeder extends Seeder
             ]
         );
 
-        $titles = ['Board Chair', 'Vice Chair', 'Treasurer', 'Secretary', 'Director', 'Director'];
+        $titles      = ['Board Chair', 'Vice Chair', 'Treasurer', 'Secretary', 'Director', 'Director'];
         $departments = ['Executive Committee', 'Executive Committee', 'Finance', 'Governance', 'Programs', 'Development'];
 
-        $portraitDir = base_path('resources/sample-images/portraits');
-        $portraits = glob($portraitDir . '/*.jpg');
-        shuffle($portraits);
+        $this->call(SampleImageLibrarySeeder::class);
+        $portraits = app(SampleImageLibrary::class)->random(SampleImage::CATEGORY_PORTRAITS, count($titles));
 
         foreach ($titles as $i => $jobTitle) {
             $name = fake()->name();
@@ -71,10 +73,11 @@ class DemoSeeder extends Seeder
                 ]
             );
 
-            if (isset($portraits[$i]) && file_exists($portraits[$i])) {
+            $source = $portraits->get($i);
+            if ($source) {
                 try {
                     $item->clearMediaCollection('photo');
-                    $item->addMedia($portraits[$i])
+                    $item->addMedia($source->getPath())
                         ->preservingOriginal()
                         ->toMediaCollection('photo');
                 } catch (\Throwable $e) {

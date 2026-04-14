@@ -3,10 +3,16 @@
 namespace App\Services;
 
 use App\Models\Collection;
+use App\Models\SampleImage;
 use App\Models\WidgetType;
 
 class DemoDataService
 {
+    public function __construct(private readonly SampleImageLibrary $sampleImages = new SampleImageLibrary())
+    {
+    }
+
+
     /**
      * Generate plausible sample config data for a widget type.
      *
@@ -181,25 +187,24 @@ class DemoDataService
 
     private function generateImageUrl(array $fieldDef = []): string
     {
-        $key = $fieldDef['key'] ?? '';
+        $key      = $fieldDef['key'] ?? '';
+        $category = $this->categoryForKey($key);
 
-        // Derive keyword and dimensions from the field key or context
-        [$width, $height, $keyword] = match (true) {
-            str_contains($key, 'background') || str_contains($key, 'hero')
-                => [800, 600, 'nature'],
-            str_contains($key, 'portrait') || str_contains($key, 'headshot') || str_contains($key, 'photo') || str_contains($key, 'member')
-                => [400, 400, 'portrait'],
+        return $this->sampleImages->urlOrPlaceholder($category);
+    }
+
+    private function categoryForKey(string $key): string
+    {
+        return match (true) {
             str_contains($key, 'logo')
-                => [300, 200, 'logo'],
-            str_contains($key, 'thumbnail') || str_contains($key, 'thumb')
-                => [400, 300, 'city'],
-            str_contains($key, 'icon')
-                => [200, 200, 'abstract'],
+                => SampleImage::CATEGORY_LOGOS,
+            str_contains($key, 'portrait') || str_contains($key, 'headshot') || str_contains($key, 'photo') || str_contains($key, 'member')
+                => SampleImage::CATEGORY_PORTRAITS,
+            str_contains($key, 'product') || str_contains($key, 'item')
+                => SampleImage::CATEGORY_PRODUCT_PHOTOS,
             default
-                => [600, 400, 'nature'],
+                => SampleImage::CATEGORY_STILL_PHOTOS,
         };
-
-        return "https://loremflickr.com/{$width}/{$height}/{$keyword}";
     }
 
     // ── Collection data generators ──────────────────────────────────────
@@ -224,7 +229,7 @@ class DemoDataService
                 'is_virtual'    => $i % 3 === 0,
                 'is_free'       => $isFree,
                 'url'           => 'https://example.com/events',
-                'thumbnail_url' => 'https://loremflickr.com/600/400/event',
+                'thumbnail_url' => $this->sampleImages->urlOrPlaceholder(SampleImage::CATEGORY_STILL_PHOTOS),
             ];
         }
 
@@ -241,7 +246,7 @@ class DemoDataService
                 'title'         => fake()->sentence(rand(4, 8)),
                 'slug'          => fake()->slug(3),
                 'published_at'  => now()->subDays(rand(1, 365))->toIso8601String(),
-                'thumbnail_url' => 'https://loremflickr.com/600/400/city',
+                'thumbnail_url' => $this->sampleImages->urlOrPlaceholder(SampleImage::CATEGORY_STILL_PHOTOS),
             ];
         }
 
@@ -263,7 +268,7 @@ class DemoDataService
                 'description' => fake()->sentence(),
                 'capacity'    => $capacity,
                 'available'   => $available,
-                'image_url'   => 'https://loremflickr.com/600/400/product',
+                'image_url'   => $this->sampleImages->urlOrPlaceholder(SampleImage::CATEGORY_PRODUCT_PHOTOS),
                 'prices'      => [
                     [
                         'id'              => fake()->uuid(),

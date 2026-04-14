@@ -4,6 +4,9 @@ namespace App\Widgets\LogoGarden;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\Models\SampleImage;
+use App\Services\SampleImageLibrary;
+use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -25,43 +28,37 @@ class DemoSeeder extends Seeder
             ]
         );
 
-        $logos = [
-            ['name' => 'Adidas',    'file' => 'logo-adidas.png'],
-            ['name' => 'Amazon',    'file' => 'logo-amazon.png'],
-            ['name' => 'Arrow',     'file' => 'logo-arrow.webp'],
-            ['name' => 'Google',    'file' => 'logo-google.png'],
-            ['name' => 'Instagram', 'file' => 'logo-instagram.png'],
-            ['name' => 'Nissan',    'file' => 'logo-nissan.png'],
-            ['name' => 'Spotify',   'file' => 'logo-spotify.png'],
-            ['name' => 'Wave',      'file' => 'logo-wave.webp'],
-            ['name' => 'YouTube',   'file' => 'logo-youtube.png'],
-        ];
+        $this->call(SampleImageLibrarySeeder::class);
+        $logos = app(SampleImageLibrary::class)->random(SampleImage::CATEGORY_LOGOS, 9);
 
-        $sampleDir = resource_path('sample-images/logos');
+        CollectionItem::where('collection_id', $collection->id)->delete();
 
-        foreach ($logos as $i => $data) {
-            $item = CollectionItem::updateOrCreate(
-                [
-                    'collection_id' => $collection->id,
-                    'sort_order'    => $i,
-                ],
-                [
-                    'data'         => ['name' => $data['name']],
-                    'is_published' => true,
-                ]
-            );
+        foreach ($logos as $i => $source) {
+            $item = CollectionItem::create([
+                'collection_id' => $collection->id,
+                'sort_order'    => $i,
+                'data'          => ['name' => $this->labelFromFilename($source->file_name)],
+                'is_published'  => true,
+            ]);
 
-            // Attach sample image if available and not already attached
-            $filePath = $sampleDir . '/' . $data['file'];
-            if (file_exists($filePath) && $item->getFirstMedia('logo') === null) {
-                try {
-                    $item->addMedia($filePath)
-                        ->preservingOriginal()
-                        ->toMediaCollection('logo');
-                } catch (\Throwable $e) {
-                    $this->command?->warn("Could not attach {$data['file']}: {$e->getMessage()}");
-                }
+            try {
+                $item->addMedia($source->getPath())
+                    ->preservingOriginal()
+                    ->toMediaCollection('logo');
+            } catch (\Throwable $e) {
+                $this->command?->warn("Could not attach logo {$source->file_name}: {$e->getMessage()}");
             }
         }
+    }
+
+    private function labelFromFilename(string $fileName): string
+    {
+        $base = preg_replace('/\.(svg\.png|svg|png|jpe?g|webp|gif)$/i', '', $fileName);
+        $base = preg_replace('/[_\-\s]logo([_\-\s].*)?$/i', '', $base);
+        $base = preg_replace('/^logo[_\-\s]of[_\-\s]/i', '', $base);
+        $base = str_replace(['_', '-'], ' ', $base);
+        $base = preg_replace('/\s+/', ' ', $base);
+
+        return trim($base) ?: $fileName;
     }
 }

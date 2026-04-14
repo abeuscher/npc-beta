@@ -348,7 +348,7 @@ Widgets that need seeded fixtures for a functional preview ship their own `DemoS
 
 | Seeder class | Creates | Used by |
 |--------------|---------|---------|
-| `App\Widgets\Carousel\DemoSeeder` | `carousel-demo` collection with 4 slides (title, description, image fields) | Carousel widget |
+| `App\Widgets\Carousel\DemoSeeder` | `carousel-demo` collection with 4 slides (title, description, image) — images drawn from the still-photos sample library | Carousel widget |
 | `App\Widgets\BarChart\DemoSeeder` | `chart-demo` collection with 10 monthly data points (label, value fields) | Bar Chart widget |
 | `App\Widgets\LogoGarden\DemoSeeder` | `logo-garden-demo` collection with 9 logo items (name, logo image) | Logo Garden widget |
 | `App\Widgets\BoardMembers\DemoSeeder` | `board-members-demo` collection with 6 members (name, photo, title, department, bio, social links) | Board Members widget |
@@ -388,6 +388,9 @@ namespace App\Widgets\MyWidget;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\Models\SampleImage;
+use App\Services\SampleImageLibrary;
+use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -414,16 +417,21 @@ class DemoSeeder extends Seeder
             ['title' => 'Item Two'],
         ];
 
+        $this->call(SampleImageLibrarySeeder::class);
+        $images = app(SampleImageLibrary::class)
+            ->random(SampleImage::CATEGORY_STILL_PHOTOS, count($items));
+
         foreach ($items as $i => $data) {
             $item = CollectionItem::updateOrCreate(
                 ['collection_id' => $collection->id, 'sort_order' => $i],
                 ['data' => $data, 'is_published' => true]
             );
 
-            // Attach image from sample-images directory
-            if (isset($images[$i]) && file_exists($images[$i])) {
+            // Attach an image pulled from the sample image library (see next section).
+            $source = $images->get($i);
+            if ($source) {
                 $item->clearMediaCollection('image');
-                $item->addMedia($images[$i])
+                $item->addMedia($source->getPath())
                     ->preservingOriginal()
                     ->toMediaCollection('image');
             }
@@ -443,7 +451,42 @@ public function demoSeeder(): ?string
 
 `DashboardDebugGeneratorWidget::seedWidgetCollections()` and the dev demo route will pick it up automatically via the registry.
 
-Sample images live in `resources/sample-images/{category}/` (e.g. `portraits/`, `products/`).
+### Sample image library
+
+Demo imagery comes from a central pool managed as Spatie media attached to the `App\Models\SampleImage` host model. Four categories, one per folder under `resources/sample-images/`:
+
+| Category constant | Folder | Used for |
+|-------------------|--------|----------|
+| `SampleImage::CATEGORY_PORTRAITS` | `portraits/` | Headshots, board/team members |
+| `SampleImage::CATEGORY_STILL_PHOTOS` | `still-photos/` | Hero backgrounds, carousel slides, blog/event thumbnails |
+| `SampleImage::CATEGORY_LOGOS` | `logos/` | Logo garden and similar brand rows |
+| `SampleImage::CATEGORY_PRODUCT_PHOTOS` | `product-photos/` | Product carousel, product display |
+
+**Swapping image sets:** drop new files into the appropriate folder and run `php artisan db:seed --class=Database\\Seeders\\SampleImageLibrarySeeder`. The seeder is idempotent and sync-style — new files are ingested, entries whose files have disappeared are deleted, unchanged files are left alone.
+
+**Using the library from a demo seeder:** call `SampleImageLibrary::random($category, $count)` to get a collection of `Media` rows and attach each to your widget's CollectionItem.
+
+```php
+use App\Models\SampleImage;
+use App\Services\SampleImageLibrary;
+use Database\Seeders\SampleImageLibrarySeeder;
+
+$this->call(SampleImageLibrarySeeder::class); // ensure the pool is populated
+$images = app(SampleImageLibrary::class)->random(SampleImage::CATEGORY_STILL_PHOTOS, 4);
+
+foreach ($items as $i => $data) {
+    $item = CollectionItem::updateOrCreate(/* ... */);
+    if ($source = $images->get($i)) {
+        $item->addMedia($source->getPath())
+            ->preservingOriginal()
+            ->toMediaCollection('image');
+    }
+}
+```
+
+The same pool powers the dashboard random data generator via `App\Services\DemoDataService` — it maps image field keys (`logo`, `portrait`, `product`, etc.) to a category and returns a pool URL, falling back to `/images/sample-placeholder.png` when the pool is empty.
+
+**Widgets backed by system collections** (ProductCarousel → `products`, EventsListing → `events`, BlogListing → `blog_posts`) do **not** ship demo seeders — their demo data flows through `DemoDataService` only. Do not add demo seeders for these.
 
 ---
 

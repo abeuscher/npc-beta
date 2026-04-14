@@ -4,6 +4,9 @@ namespace App\Widgets\Carousel;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\Models\SampleImage;
+use App\Services\SampleImageLibrary;
+use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -45,8 +48,11 @@ class DemoSeeder extends Seeder
             ],
         ];
 
+        $this->call(SampleImageLibrarySeeder::class);
+        $photos = app(SampleImageLibrary::class)->random(SampleImage::CATEGORY_STILL_PHOTOS, count($slides));
+
         foreach ($slides as $i => $data) {
-            CollectionItem::updateOrCreate(
+            $item = CollectionItem::updateOrCreate(
                 [
                     'collection_id' => $collection->id,
                     'sort_order'    => $i,
@@ -56,6 +62,17 @@ class DemoSeeder extends Seeder
                     'is_published' => true,
                 ]
             );
+
+            $source = $photos->get($i);
+            if ($source && $item->getFirstMedia('image') === null) {
+                try {
+                    $item->addMedia($source->getPath())
+                        ->preservingOriginal()
+                        ->toMediaCollection('image');
+                } catch (\Throwable $e) {
+                    $this->command?->warn("Could not attach carousel image: {$e->getMessage()}");
+                }
+            }
         }
     }
 }
