@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WidgetPreviewResource;
+use App\Http\Resources\WidgetResource;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\Page;
@@ -64,36 +66,21 @@ class PageBuilderApiController extends Controller
 
         $position = $validated['insert_position'] ?? null;
 
-        if ($layoutId) {
-            $columnIndex = $validated['column_index'] ?? 0;
-            if ($position === null) {
-                $position = (PageWidget::where('layout_id', $layoutId)
-                    ->where('column_index', $columnIndex)
-                    ->max('sort_order') ?? -1) + 1;
-            } else {
-                PageWidget::where('layout_id', $layoutId)
-                    ->where('column_index', $columnIndex)
-                    ->where('sort_order', '>=', $position)
-                    ->increment('sort_order');
-            }
+        $columnIndex = $layoutId ? ($validated['column_index'] ?? 0) : null;
+
+        if ($position === null) {
+            $position = (PageWidget::inSlot($page->id, $layoutId, $columnIndex)->max('sort_order') ?? -1) + 1;
         } else {
-            if ($position === null) {
-                $position = (PageWidget::where('page_id', $page->id)
-                    ->whereNull('layout_id')
-                    ->max('sort_order') ?? -1) + 1;
-            } else {
-                PageWidget::where('page_id', $page->id)
-                    ->whereNull('layout_id')
-                    ->where('sort_order', '>=', $position)
-                    ->increment('sort_order');
-            }
+            PageWidget::inSlot($page->id, $layoutId, $columnIndex)
+                ->where('sort_order', '>=', $position)
+                ->increment('sort_order');
         }
 
         $newWidget = PageWidget::create([
             'page_id'           => $page->id,
             'widget_type_id'    => $widgetType->id,
             'layout_id'         => $layoutId,
-            'column_index'      => $layoutId ? ($validated['column_index'] ?? 0) : null,
+            'column_index'      => $columnIndex,
             'label'             => $label,
             'config'            => [],
             'query_config'      => [],
@@ -183,18 +170,11 @@ class PageBuilderApiController extends Controller
 
         $page = $widget->page;
 
-        // Insert copy after the source at the same nesting level
-        $siblingQuery = PageWidget::where('page_id', $page->id);
-        if ($widget->layout_id) {
-            $siblingQuery->where('layout_id', $widget->layout_id)
-                ->where('column_index', $widget->column_index);
-        } else {
-            $siblingQuery->whereNull('layout_id');
-        }
-
         $newPosition = $widget->sort_order + 1;
 
-        $siblingQuery->clone()->where('sort_order', '>=', $newPosition)->increment('sort_order');
+        PageWidget::inSlot($page->id, $widget->layout_id, $widget->column_index)
+            ->where('sort_order', '>=', $newPosition)
+            ->increment('sort_order');
 
         $copy = PageWidget::create([
             'page_id'           => $page->id,
@@ -709,63 +689,16 @@ class PageBuilderApiController extends Controller
 
     private function formatWidget(PageWidget $pw, Page $page): array
     {
-        $requiredHandles = WidgetType::requiredForPage(
-            $page->bareSlug()
-        );
-
-        return [
-            'id'                        => $pw->id,
-            'widget_type_id'            => $pw->widget_type_id,
-            'widget_type_handle'        => $pw->widgetType?->handle ?? '',
-            'widget_type_label'         => $pw->widgetType?->label ?? 'Unknown',
-            'widget_type_collections'   => $pw->widgetType?->collections ?? [],
-            'widget_type_config_schema' => $pw->widgetType?->config_schema ?? [],
-            'widget_type_assets'        => $pw->widgetType?->assets ?? [],
-            'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
-            'widget_type_required_config' => $pw->widgetType?->required_config,
-            'layout_id'                 => $pw->layout_id,
-            'column_index'              => $pw->column_index,
-            'label'                     => $pw->label ?? '',
-            'config'                    => $pw->config ?? [],
-            'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
-            'query_config'              => $pw->query_config ?? [],
-            'appearance_config'         => $pw->appearance_config ?? [],
-            'sort_order'                => $pw->sort_order ?? 0,
-            'is_active'                 => $pw->is_active,
-            'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
-            'image_urls'                => $pw->configImageUrls(),
-            'appearance_image_url'      => $pw->appearanceImageUrl(),
-        ];
+        return (new WidgetResource($pw))
+            ->withRequiredHandles(WidgetType::requiredForPage($page->bareSlug()))
+            ->resolve();
     }
 
     private function formatWidgetWithPreview(PageWidget $pw, array $requiredHandles): array
     {
-        $data = [
-            'id'                        => $pw->id,
-            'widget_type_id'            => $pw->widget_type_id,
-            'widget_type_handle'        => $pw->widgetType?->handle ?? '',
-            'widget_type_label'         => $pw->widgetType?->label ?? 'Unknown',
-            'widget_type_collections'   => $pw->widgetType?->collections ?? [],
-            'widget_type_config_schema' => $pw->widgetType?->config_schema ?? [],
-            'widget_type_assets'        => $pw->widgetType?->assets ?? [],
-            'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
-            'widget_type_required_config' => $pw->widgetType?->required_config,
-            'layout_id'                 => $pw->layout_id,
-            'column_index'              => $pw->column_index,
-            'label'                     => $pw->label ?? '',
-            'config'                    => $pw->config ?? [],
-            'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
-            'query_config'              => $pw->query_config ?? [],
-            'appearance_config'         => $pw->appearance_config ?? [],
-            'sort_order'                => $pw->sort_order ?? 0,
-            'is_active'                 => $pw->is_active,
-            'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandles, true),
-            'image_urls'                => $pw->configImageUrls(),
-            'appearance_image_url'      => $pw->appearanceImageUrl(),
-            'preview_html'              => app(WidgetPreviewRenderer::class)->render($pw),
-        ];
-
-        return $data;
+        return (new WidgetPreviewResource($pw))
+            ->withRequiredHandles($requiredHandles)
+            ->resolve();
     }
 
     // ── Color Swatches ────────────────────────────────────────────────────

@@ -36,6 +36,16 @@ class PageWidget extends Model implements HasMedia
         'is_active'         => 'boolean',
     ];
 
+    public function scopeInSlot($query, string $pageId, ?string $layoutId, ?int $columnIndex)
+    {
+        if ($layoutId) {
+            return $query->where('layout_id', $layoutId)
+                ->where('column_index', $columnIndex ?? 0);
+        }
+
+        return $query->where('page_id', $pageId)->whereNull('layout_id');
+    }
+
     public function page(): BelongsTo
     {
         return $this->belongsTo(Page::class);

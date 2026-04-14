@@ -4,12 +4,12 @@ namespace App\Livewire;
 
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\PostResource;
+use App\Http\Resources\WidgetPreviewResource;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
-use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
 use App\Models\Collection;
 use Filament\Notifications\Notification;
@@ -95,54 +95,34 @@ class PageBuilder extends Component
         }
 
         if ($this->insertLayoutId) {
-            // Insert into a column slot
             $columnIndex = $this->insertColumnIndex ?? 0;
-            $position = (PageWidget::where('layout_id', $this->insertLayoutId)
-                ->where('column_index', $columnIndex)
+            $position = (PageWidget::inSlot($this->pageId, $this->insertLayoutId, $columnIndex)
                 ->max('sort_order') ?? -1) + 1;
-
-            $newBlock = PageWidget::create([
-                'page_id'           => $this->pageId,
-                'layout_id'         => $this->insertLayoutId,
-                'column_index'      => $columnIndex,
-                'widget_type_id'    => $widgetType->id,
-                'label'             => $this->addModalLabel,
-                'config'            => [],
-                'query_config'      => [],
-                'appearance_config' => [
-                    'background' => ['color' => '#ffffff'],
-                    'text'       => ['color' => '#000000'],
-                ],
-                'sort_order'        => $position,
-                'is_active'         => true,
-            ]);
         } else {
-            // Insert at root level
-            $rootCount = PageWidget::where('page_id', $this->pageId)
-                ->whereNull('layout_id')
-                ->count();
+            $columnIndex = null;
+            $rootCount = PageWidget::inSlot($this->pageId, null, null)->count();
             $position = $this->insertPosition ?? $rootCount;
 
-            // Shift sort_order for blocks at or after the insert position
-            PageWidget::where('page_id', $this->pageId)
-                ->whereNull('layout_id')
+            PageWidget::inSlot($this->pageId, null, null)
                 ->where('sort_order', '>=', $position)
                 ->increment('sort_order');
-
-            $newBlock = PageWidget::create([
-                'page_id'           => $this->pageId,
-                'widget_type_id'    => $widgetType->id,
-                'label'             => $this->addModalLabel,
-                'config'            => [],
-                'query_config'      => [],
-                'appearance_config' => [
-                    'background' => ['color' => '#ffffff'],
-                    'text'       => ['color' => '#000000'],
-                ],
-                'sort_order'        => $position,
-                'is_active'         => true,
-            ]);
         }
+
+        $newBlock = PageWidget::create([
+            'page_id'           => $this->pageId,
+            'layout_id'         => $this->insertLayoutId,
+            'column_index'      => $columnIndex,
+            'widget_type_id'    => $widgetType->id,
+            'label'             => $this->addModalLabel,
+            'config'            => [],
+            'query_config'      => [],
+            'appearance_config' => [
+                'background' => ['color' => '#ffffff'],
+                'text'       => ['color' => '#000000'],
+            ],
+            'sort_order'        => $position,
+            'is_active'         => true,
+        ]);
 
         $this->showAddModal      = false;
         $this->insertPosition    = null;
@@ -229,33 +209,11 @@ class PageBuilder extends Component
                 continue;
             }
 
-            $previewHtml = $previewRenderer->render($pw);
             $previewRenderer->collectLibs($pw, $allLibs);
 
-            $items[] = [
-                'type'                      => 'widget',
-                'id'                        => $pw->id,
-                'widget_type_id'            => $pw->widget_type_id,
-                'widget_type_handle'        => $pw->widgetType?->handle ?? '',
-                'widget_type_label'         => $pw->widgetType?->label ?? 'Unknown',
-                'widget_type_collections'   => $pw->widgetType?->collections ?? [],
-                'widget_type_config_schema' => $pw->widgetType?->config_schema ?? [],
-                'widget_type_assets'        => $pw->widgetType?->assets ?? [],
-                'widget_type_default_open'  => $pw->widgetType?->default_open ?? false,
-                'widget_type_required_config' => $pw->widgetType?->required_config,
-                'layout_id'                 => $pw->layout_id,
-                'column_index'              => $pw->column_index,
-                'label'                     => $pw->label ?? '',
-                'config'                    => $pw->config ?? [],
-                'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($pw),
-                'query_config'              => $pw->query_config ?? [],
-                'appearance_config'         => $pw->appearance_config ?? [],
-                'sort_order'                => $pw->sort_order ?? 0,
-                'is_active'                 => $pw->is_active,
-                'is_required'               => in_array($pw->widgetType?->handle ?? '', $requiredHandlesForPage, true),
-                'image_urls'                => $pw->configImageUrls(),
-                'preview_html'              => $previewHtml,
-            ];
+            $items[] = ['type' => 'widget'] + (new WidgetPreviewResource($pw))
+                ->withRequiredHandles($requiredHandlesForPage)
+                ->resolve();
         }
 
         foreach ($layouts as $layout) {
@@ -265,33 +223,11 @@ class PageBuilder extends Component
                     continue;
                 }
                 $idx = $child->column_index ?? 0;
-                $childPreviewHtml = $previewRenderer->render($child);
                 $previewRenderer->collectLibs($child, $allLibs);
 
-                $slots[$idx][] = [
-                    'type'                      => 'widget',
-                    'id'                        => $child->id,
-                    'widget_type_id'            => $child->widget_type_id,
-                    'widget_type_handle'        => $child->widgetType?->handle ?? '',
-                    'widget_type_label'         => $child->widgetType?->label ?? 'Unknown',
-                    'widget_type_collections'   => $child->widgetType?->collections ?? [],
-                    'widget_type_config_schema' => $child->widgetType?->config_schema ?? [],
-                    'widget_type_assets'        => $child->widgetType?->assets ?? [],
-                    'widget_type_default_open'  => $child->widgetType?->default_open ?? false,
-                    'widget_type_required_config' => $child->widgetType?->required_config,
-                    'layout_id'                 => $child->layout_id,
-                    'column_index'              => $child->column_index,
-                    'label'                     => $child->label ?? '',
-                    'config'                    => $child->config ?? [],
-                    'resolved_defaults'         => app(WidgetConfigResolver::class)->resolvedDefaults($child),
-                    'query_config'              => $child->query_config ?? [],
-                    'appearance_config'         => $child->appearance_config ?? [],
-                    'sort_order'                => $child->sort_order ?? 0,
-                    'is_active'                 => $child->is_active,
-                    'is_required'               => in_array($child->widgetType?->handle ?? '', $requiredHandlesForPage, true),
-                    'image_urls'                => $child->configImageUrls(),
-                    'preview_html'              => $childPreviewHtml,
-                ];
+                $slots[$idx][] = ['type' => 'widget'] + (new WidgetPreviewResource($child))
+                    ->withRequiredHandles($requiredHandlesForPage)
+                    ->resolve();
             }
 
             $items[] = [
