@@ -30,7 +30,9 @@ class WidgetPreviewRenderer
             $configFullWidth = $pw->config['full_width'] ?? null;
             $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
 
-            $innerHtml = $isFullWidth
+            // Column children render without .site-container: the enclosing
+            // .layout-column handles layout, matching PageController.
+            $innerHtml = ($isFullWidth || $pw->layout_id !== null)
                 ? $result['html']
                 : '<div class="site-container">' . $result['html'] . '</div>';
 

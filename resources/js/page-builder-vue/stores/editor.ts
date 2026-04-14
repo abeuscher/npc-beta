@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import type {
   Widget,
   PageLayout,
@@ -72,7 +73,6 @@ export const useEditorStore = defineStore('editor', () => {
   const pendingConfigChanges = ref<Record<string, Record<string, any>>>({})
 
   // Debounced layout save state
-  let debounceLayoutTimer: ReturnType<typeof setTimeout> | null = null
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
   // Per-widget preview refresh tracking (counter, abort, indicator stages, errors)
@@ -566,19 +566,19 @@ export const useEditorStore = defineStore('editor', () => {
     }
     pendingLayoutChanges.value[layoutId] = merged
 
-    if (debounceLayoutTimer) clearTimeout(debounceLayoutTimer)
-    debounceLayoutTimer = setTimeout(() => {
-      const toSave = { ...pendingLayoutChanges.value }
-      pendingLayoutChanges.value = {}
-      debounceLayoutTimer = null
-
-      for (const [id, payload] of Object.entries(toSave)) {
-        api.updateLayout(id, payload).catch((e) =>
-          console.error('Debounced layout save failed:', e)
-        )
-      }
-    }, 500)
+    flushPendingLayoutSaves()
   }
+
+  const flushPendingLayoutSaves = useDebounceFn(() => {
+    const toSave = { ...pendingLayoutChanges.value }
+    pendingLayoutChanges.value = {}
+
+    for (const [id, payload] of Object.entries(toSave)) {
+      api.updateLayout(id, payload).catch((e) =>
+        console.error('Debounced layout save failed:', e)
+      )
+    }
+  }, 500)
 
   async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
     saving.value = true

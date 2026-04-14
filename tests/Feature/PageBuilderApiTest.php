@@ -109,6 +109,30 @@ it('returns the widget tree for a page', function () {
         ]);
 });
 
+it('wraps root widget previews in .site-container but not column children', function () {
+    $page = apiPage();
+
+    $rootWidget = apiWidget($page, 'text_block', 0);
+    $rootWidget->update(['config' => ['content' => '<p>Root content</p>']]);
+
+    $layout = apiLayout($page, 1);
+    $childWidget = apiChildWidget($page, $layout, 0, 0);
+    $childWidget->update(['config' => ['content' => '<p>Column content</p>']]);
+
+    $response = $this->actingAs(apiUser())
+        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+
+    $response->assertOk();
+
+    $items = $response->json('items');
+    $rootPreview  = collect($items)->firstWhere('id', $rootWidget->id)['preview_html'];
+    $layoutItem   = collect($items)->firstWhere('type', 'layout');
+    $childPreview = $layoutItem['slots']['0'][0]['preview_html'];
+
+    expect($rootPreview)->toContain('site-container');
+    expect($childPreview)->not->toContain('site-container');
+});
+
 // ── POST widgets (create) ────────────────────────────────────────────────
 
 it('creates a widget on a page', function () {
