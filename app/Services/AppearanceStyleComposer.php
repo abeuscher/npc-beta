@@ -89,10 +89,19 @@ class AppearanceStyleComposer
     private function composeBackgroundImage(PageWidget $pw, array $ac, array &$styleProps): void
     {
         $gradientCss = app(GradientComposer::class)->compose($ac['background']['gradient'] ?? null);
-        $media = $pw->getFirstMedia('appearance_background_image');
-        $imageUrl = $media
-            ? ($media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl())
-            : null;
+        $useCurrentPageHeader = (bool) ($ac['background']['use_current_page_header'] ?? false);
+
+        if ($useCurrentPageHeader) {
+            $imageUrl = $this->resolveCurrentPageHeaderUrl($pw);
+        } else {
+            $media = $pw->getFirstMedia('appearance_background_image');
+            if ($media !== null) {
+                $imageUrl = $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
+            } else {
+                $directUrl = $ac['background']['image_url'] ?? null;
+                $imageUrl = is_string($directUrl) && $directUrl !== '' ? $directUrl : null;
+            }
+        }
 
         if ($gradientCss === '' && $imageUrl === null) {
             return;
@@ -120,5 +129,31 @@ class AppearanceStyleComposer
         }
         $styleProps[] = 'background-size:' . $fit;
         $styleProps[] = 'background-repeat:no-repeat';
+    }
+
+    private function resolveCurrentPageHeaderUrl(PageWidget $pw): ?string
+    {
+        $page = $pw->page;
+        if ($page === null) {
+            return null;
+        }
+
+        if ($page->type === 'event') {
+            $event = $page->event;
+            if ($event !== null) {
+                $media = $event->getFirstMedia('event_header');
+                if ($media !== null) {
+                    return $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
+                }
+            }
+            return null;
+        }
+
+        $media = $page->getFirstMedia('post_header');
+        if ($media === null) {
+            return null;
+        }
+
+        return $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl();
     }
 }

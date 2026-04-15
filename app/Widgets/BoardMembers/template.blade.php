@@ -14,7 +14,7 @@
     $rowAlignment = $config['row_alignment'] ?? 'center';
     $imageShape = $config['image_shape'] ?? 'circle';
     $imageAspectRatio = $config['image_aspect_ratio'] ?? '1 / 1';
-    $bgColor = $config['grid_background_color'] ?? '#ffffff';
+    $bgColor = $config['grid_background_color'] ?? 'transparent';
     $paneColor = $config['pane_color'] ?? '#ffffff';
     $borderColor = $config['border_color'] ?? '#cccccc';
     $borderRadius = (int) ($config['border_radius'] ?? 5);

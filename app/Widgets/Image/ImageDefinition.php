@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Image;
 
+use App\Models\SampleImage;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class ImageDefinition extends WidgetDefinition
@@ -26,6 +27,13 @@ class ImageDefinition extends WidgetDefinition
         return ['content', 'media'];
     }
 
+    public function assets(): array
+    {
+        return [
+            'scss' => ['app/Widgets/Image/styles.scss'],
+        ];
+    }
+
     public function schema(): array
     {
         return [
@@ -43,6 +51,17 @@ class ImageDefinition extends WidgetDefinition
             'alt_text'   => '',
             'object_fit' => 'cover',
             'link_url'   => '',
+        ];
+    }
+
+    public function demoImages(): array
+    {
+        return [
+            [
+                'category' => SampleImage::CATEGORY_STILL_PHOTOS,
+                'count'    => 1,
+                'target'   => 'config.image',
+            ],
         ];
     }
 }

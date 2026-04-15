@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
@@ -189,4 +190,82 @@ it('forces full_width false for column-child widget', function () {
 
     $result = $this->composer->compose($pw);
     expect($result['is_full_width'])->toBeFalse();
+});
+
+// ── use_current_page_header override ────────────────────────────────────────
+
+it('uses post_header from the current page when override is on', function () {
+    Storage::fake('public');
+
+    $this->page->addMedia(UploadedFile::fake()->image('post-hdr.jpg', 1200, 400))
+        ->usingFileName('post-hdr.jpg')
+        ->toMediaCollection('post_header', 'public');
+
+    $pw = renderWidget($this->page, $this->widgetType, [
+        'background' => ['use_current_page_header' => true],
+    ]);
+
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('background-image:url(');
+});
+
+it('uses event_header when override is on and page is an event landing page', function () {
+    Storage::fake('public');
+
+    $this->page->update(['type' => 'event']);
+
+    $event = Event::factory()->create([
+        'title'           => 'Gala',
+        'landing_page_id' => $this->page->id,
+    ]);
+    $event->addMedia(UploadedFile::fake()->image('event-hdr.jpg', 1200, 400))
+        ->usingFileName('event-hdr.jpg')
+        ->toMediaCollection('event_header', 'public');
+
+    $pw = renderWidget($this->page, $this->widgetType, [
+        'background' => ['use_current_page_header' => true],
+    ]);
+
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('background-image:url(');
+});
+
+it('renders no background image when override is on and no header is attached', function () {
+    $pw = renderWidget($this->page, $this->widgetType, [
+        'background' => ['use_current_page_header' => true],
+    ]);
+
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->not->toContain('background-image')
+        ->not->toContain('background-position')
+        ->not->toContain('background-size');
+});
+
+it('ignores the widget-owned background image when override is on', function () {
+    Storage::fake('public');
+
+    $pw = renderWidget($this->page, $this->widgetType, [
+        'background' => ['use_current_page_header' => true],
+    ]);
+
+    $pw->addMedia(UploadedFile::fake()->image('widget-bg.jpg', 800, 600))
+        ->usingFileName('widget-bg.jpg')
+        ->toMediaCollection('appearance_background_image', 'public');
+    $pw->refresh();
+
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->not->toContain('background-image');
+});
+
+it('still composes gradient layer when override is on and no header is attached', function () {
+    $pw = renderWidget($this->page, $this->widgetType, [
+        'background' => [
+            'use_current_page_header' => true,
+            'gradient' => ['gradients' => [['type' => 'linear', 'from' => '#000', 'to' => '#fff']]],
+        ],
+    ]);
+
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('background-image:linear-gradient(');
 });

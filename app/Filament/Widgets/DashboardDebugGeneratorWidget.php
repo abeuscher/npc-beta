@@ -11,13 +11,16 @@ use App\Models\PageWidget;
 use App\Models\PortalAccount;
 use App\Models\Product;
 use App\Models\ProductPrice;
+use App\Models\SampleImage;
 use App\Models\WidgetType;
 use App\Services\DemoDataService;
+use App\Services\SampleImageLibrary;
 use App\Services\WidgetRegistry;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Spatie\MediaLibrary\HasMedia;
 
 class DashboardDebugGeneratorWidget extends Widget
 {
@@ -93,6 +96,9 @@ class DashboardDebugGeneratorWidget extends Widget
                 'capacity'  => $capacity,
             ]);
 
+            $this->attachPoolImage($event, SampleImage::CATEGORY_STILL_PHOTOS, 'event_thumbnail');
+            $this->attachPoolImage($event, SampleImage::CATEGORY_STILL_PHOTOS, 'event_header');
+
             if ($isFree) {
                 $maxReg        = $capacity ? min(30, $capacity) : 30;
                 $regCount      = rand(0, $maxReg);
@@ -141,6 +147,8 @@ class DashboardDebugGeneratorWidget extends Widget
                     'sort_order' => $j + 1,
                 ]);
             }
+
+            $this->attachPoolImage($product, SampleImage::CATEGORY_PRODUCT_PHOTOS, 'product_image');
         }
     }
 
@@ -191,6 +199,9 @@ class DashboardDebugGeneratorWidget extends Widget
                 'published_at' => $publishedAt,
             ]);
 
+            $this->attachPoolImage($page, SampleImage::CATEGORY_STILL_PHOTOS, 'post_thumbnail');
+            $this->attachPoolImage($page, SampleImage::CATEGORY_STILL_PHOTOS, 'post_header');
+
             if ($textBlockType) {
                 $demoService = app(DemoDataService::class);
                 $demoConfiguration  = $demoService->generateForWidget($textBlockType);
@@ -211,6 +222,22 @@ class DashboardDebugGeneratorWidget extends Widget
                     'sort_order'     => 1,
                 ]);
             }
+        }
+    }
+
+    private function attachPoolImage(HasMedia $model, string $category, string $collection): void
+    {
+        $media = app(SampleImageLibrary::class)->random($category, 1)->first();
+        if ($media === null) {
+            return;
+        }
+
+        try {
+            $model->addMedia($media->getPath())
+                ->preservingOriginal()
+                ->toMediaCollection($collection);
+        } catch (\Throwable $e) {
+            // Silent: pool attachment is a demo nicety, not a correctness requirement.
         }
     }
 

@@ -51,7 +51,7 @@ class BoardMembersDefinition extends WidgetDefinition
             ['key' => 'extra_url_field',      'type' => 'select', 'label' => 'Extra URL field',   'options_from' => 'collection_fields:text',  'depends_on' => 'collection_handle', 'group' => 'content'],
             ['key' => 'extra_url_label_field','type' => 'select', 'label' => 'Extra URL label field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'group' => 'content'],
             ['key' => 'image_shape',          'type' => 'select', 'label' => 'Image shape',       'default' => 'circle', 'options' => ['circle' => 'Circle', 'rectangle' => 'Rectangle'], 'group' => 'appearance'],
-            ['key' => 'grid_background_color', 'type' => 'color', 'label' => 'Grid Background Color', 'default' => '#ffffff', 'group' => 'appearance'],
+            ['key' => 'grid_background_color', 'type' => 'color', 'label' => 'Grid Background Color', 'default' => 'transparent', 'group' => 'appearance'],
             ['key' => 'pane_color',           'type' => 'color',  'label' => 'Card Color',        'default' => '#ffffff', 'group' => 'appearance'],
             ['key' => 'border_color',         'type' => 'color',  'label' => 'Border Color',      'default' => '#cccccc', 'group' => 'appearance'],
             ['key' => 'items_per_row',        'type' => 'number', 'label' => 'Items per row',     'default' => 3, 'advanced' => true, 'group' => 'appearance'],
@@ -76,7 +76,7 @@ class BoardMembersDefinition extends WidgetDefinition
             'extra_url_field'       => '',
             'extra_url_label_field' => '',
             'image_shape'           => 'circle',
-            'grid_background_color' => '#ffffff',
+            'grid_background_color' => 'transparent',
             'pane_color'            => '#ffffff',
             'border_color'          => '#cccccc',
             'items_per_row'         => 3,
@@ -94,5 +94,18 @@ class BoardMembersDefinition extends WidgetDefinition
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+
+    public function demoConfig(): array
+    {
+        return [
+            'image_field'       => 'photo',
+            'name_field'        => 'name',
+            'title_field'       => 'job_title',
+            'department_field'  => 'department',
+            'description_field' => 'bio',
+            'linkedin_field'    => 'linkedin',
+            'github_field'      => 'github',
+        ];
     }
 }

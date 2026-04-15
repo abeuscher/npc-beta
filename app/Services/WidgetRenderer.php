@@ -56,10 +56,11 @@ class WidgetRenderer
 
         if ($widgetType->render_mode === 'server') {
             $templateVars = [
-                'config'         => $config,
-                'configMedia'    => $configMedia,
-                'collectionData' => $collectionData,
-                'pageContext'    => app(PageContext::class),
+                'config'             => $config,
+                'configMedia'        => $configMedia,
+                'collectionData'     => $collectionData,
+                'pageContext'        => app(PageContext::class),
+                'pageContextTokens'  => app(PageContextTokens::class),
             ];
 
             if (! empty($columnChildren)) {

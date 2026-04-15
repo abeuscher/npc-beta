@@ -488,6 +488,30 @@ The same pool powers the dashboard random data generator via `App\Services\DemoD
 
 **Widgets backed by system collections** (ProductCarousel → `products`, EventsListing → `events`, BlogListing → `blog_posts`) do **not** ship demo seeders — their demo data flows through `DemoDataService` only. Do not add demo seeders for these.
 
+### Declaring pool images for demo-mode thumbnails
+
+Widgets whose `/dev/widgets/{handle}` capture renders an empty frame because they lack content can declare pool-image dependencies via `demoImages()` on the widget definition. `WidgetDemoController` reads the declaration at render time and injects URLs into config or into the shared appearance background slot.
+
+```php
+public function demoImages(): array
+{
+    return [
+        [
+            'category' => SampleImage::CATEGORY_STILL_PHOTOS,
+            'count'    => 1,
+            'target'   => 'appearance.background_image',
+        ],
+    ];
+}
+```
+
+Targets:
+
+- `appearance.background_image` — writes the first URL into `appearance_config.background.image_url`. The appearance composer renders it as a `background-image` when no `appearance_background_image` media is attached. Useful for Hero and any widget whose thumbnail benefits from a backdrop.
+- `config.<key>` — writes the URL into `config.<key>`. If `count === 1` the value is a string; otherwise an array. The widget template chooses how to read it.
+
+The pool returns `min(count, available)` — a widget that asks for 6 with only 2 in the folder receives 2. An empty pool yields no injection and the widget renders whatever it renders without images.
+
 ---
 
 ## Generating a thumbnail for your widget

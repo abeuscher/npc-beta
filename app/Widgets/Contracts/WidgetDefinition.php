@@ -130,6 +130,27 @@ abstract class WidgetDefinition
     }
 
     /**
+     * Declare sample-image-pool dependencies for demo mode. Each entry:
+     *   - category: sample_images folder name (e.g. 'still-photos', 'portraits').
+     *   - count:    max number of images requested. The pool returns
+     *               min(count, available); an empty pool returns zero.
+     *   - target:   where to inject the URL(s). One of:
+     *                 'appearance.background_image' — writes a URL into
+     *                   appearance_config.background.image_url (first image only).
+     *                 'config.<key>' — writes a URL into config.<key>
+     *                   (first image only if count === 1, otherwise an array).
+     *
+     * Returning an empty array means this widget does not request any pool
+     * images. WidgetDemoController reads this at thumbnail-capture time.
+     *
+     * @return array<int, array{category: string, count: int, target: string}>
+     */
+    public function demoImages(): array
+    {
+        return [];
+    }
+
+    /**
      * Concrete default appearance_config shape. Every leaf is a concrete value
      * (no nulls, no empty strings, no missing keys). Overridden per widget to
      * ship with its own defaults; new instances are seeded from this shape.
@@ -137,9 +158,12 @@ abstract class WidgetDefinition
     public function defaultAppearanceConfig(): array
     {
         return [
-            'background' => ['color' => '#ffffff'],
-            'text'       => ['color' => '#000000'],
-            'layout'     => [
+            'background' => [
+                'color'                    => '#ffffff',
+                'use_current_page_header'  => false,
+            ],
+            'text'   => ['color' => '#000000'],
+            'layout' => [
                 'full_width' => false,
                 'padding'    => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
                 'margin'     => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],

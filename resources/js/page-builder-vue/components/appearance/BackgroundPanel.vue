@@ -20,7 +20,9 @@ const gradient = computed(() => props.widget.appearance_config?.background?.grad
 const alignment = computed(() => props.widget.appearance_config?.background?.alignment ?? 'center')
 const fit = computed(() => props.widget.appearance_config?.background?.fit ?? 'cover')
 const imageUrl = computed(() => props.widget.appearance_image_url ?? null)
+const useCurrentPageHeader = computed(() => props.widget.appearance_config?.background?.use_current_page_header ?? false)
 const hasImage = computed(() => imageUrl.value !== null)
+const imageControlsDisabled = computed(() => useCurrentPageHeader.value || !hasImage.value)
 
 const hasGradient = computed(() => Array.isArray(gradient.value?.gradients) && gradient.value!.gradients.length > 0)
 const gradientPreviewCss = computed(() => composeGradientCss(gradient.value ?? null))
@@ -123,7 +125,7 @@ function triggerFileInput() {
         <label class="inspector-label">&nbsp;</label>
         <NinePointAlignment
           :model-value="alignment"
-          :disabled="!hasImage"
+          :disabled="imageControlsDisabled"
           @update:model-value="updateAppearance('background.alignment', $event)"
         />
       </div>
@@ -133,7 +135,7 @@ function triggerFileInput() {
         <select
           :value="fit"
           class="inspector-control inspector-control--sm"
-          :disabled="!hasImage"
+          :disabled="imageControlsDisabled"
           @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
         >
           <option value="cover">Cover</option>
@@ -141,6 +143,16 @@ function triggerFileInput() {
         </select>
       </div>
     </div>
+
+    <!-- Override: use current page's header image instead of the uploaded image -->
+    <label class="bg-panel__override">
+      <input
+        type="checkbox"
+        :checked="useCurrentPageHeader"
+        @change="updateAppearance('background.use_current_page_header', ($event.target as HTMLInputElement).checked)"
+      >
+      <span>Use current page's header image</span>
+    </label>
 
     <!-- Gradient panel (full width, normal flow below the row) -->
     <GradientPicker
@@ -293,6 +305,19 @@ function triggerFileInput() {
   font-weight: 300;
   font-size: 1rem;
   line-height: 1;
+}
+
+.bg-panel__override {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.bg-panel__override input {
+  margin: 0;
 }
 
 </style>

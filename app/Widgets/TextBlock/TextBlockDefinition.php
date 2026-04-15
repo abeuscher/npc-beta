@@ -23,7 +23,7 @@ class TextBlockDefinition extends WidgetDefinition
 
     public function category(): array
     {
-        return ['content'];
+        return ['content','most_used'];
     }
 
     public function defaultOpen(): bool

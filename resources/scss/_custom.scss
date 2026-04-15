@@ -493,6 +493,32 @@
     text-align: right;
 }
 
+.pager-link__anchor {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    text-decoration: none;
+}
+
+.pager-link--next .pager-link__anchor {
+    align-items: flex-end;
+}
+
+.pager-link__thumb {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 0.25rem;
+}
+
+.pager-link__title {
+    display: block;
+}
+
 .pager-meta {
     font-size: 0.875rem;
     color: $color-text-muted;

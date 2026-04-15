@@ -190,19 +190,33 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 181 | Migration Squash & Inline JS/CSS Audit |
 | 182 | Design System Editor — Typography |
 | 183 | Page Builder Typography Inheritance & Theme Editor Polish |
+| 184 | Sample Image Library & Demo Seeder Integration |
+| 185 | Image Support Across Content Types |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 184 — Bug Fixes *(stub)*
+### 186 — Bug Fixes & Widget Tuning *(next)*
 
-Stub — items to be filled in before the session starts. Known candidates:
+Standing bug list plus the per-widget cleanup pass started after session 169 — replace legacy color text-input fields with the proper ColorPicker, add gradient / 9-point alignment controls where appropriate. Initial bugs:
 
 - **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
 - **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
 
-### 185 — Theme Colors Refactor *(stub)*
+Bug list and widget list both expected to grow during the session as the user surfaces items. Prompt: `sessions/186. Bug Fixes & Widget Tuning.md`.
+
+### 187 — Importer: Datasheets & Mapping *(stub)*
+
+Build out the importer to handle a full org's worth of data using a real-world export as the working example. Goals:
+
+- Support the kinds of CSV/spreadsheet datasets a nonprofit would arrive with from another platform — contacts, memberships, donations, events, registrations, etc.
+- Document the mapping flow: how each datasheet's columns get mapped to the CRM's fields, including custom fields and lookup-by-key behavior.
+- Use the WCG export as the concrete example dataset for development, screenshots in docs, and end-to-end testing.
+
+**Local-only datafiles.** WCG datasheets are private and must never enter source control. Place them in a gitignored folder (e.g. `local/import-fixtures/wcg/`) and add the path to `.gitignore`. Do not paste sample rows into committed docs or fixtures. Tests that exercise the importer should use anonymised fixtures kept under `tests/Fixtures/` rather than the real datasheets.
+
+### 188 — Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 
@@ -218,7 +232,7 @@ Complete the theme/template split started in session 182 by moving colour-relate
 
 - **Widget toolset tightening (session 169).** Session 169 expanded the config field type system with `alignment` (9-point picker), `gradient`, and `color` (the full ColorPicker primitive with swatches and theme palette). Every existing widget needs a pass to replace legacy `color`-as-text-input fields with the proper ColorPicker, and to add gradient/alignment controls where appropriate. This is per-widget work — tedious but necessary to get each widget's inspector into shape.
 
-- **Font control primitive (planned).** Build a comprehensive font control for the inspector — a small icon/swatch trigger that opens a panel with font family, weight, size, line height, letter spacing, and case transform. Same visual pattern as the gradient and color pickers (compact trigger, popover with full editor). Needed as a new `font` field type before any widget-level typography controls can be added. User to provide visual model at session start.
+- **Font control primitive (built; tightening pending).** Initial font control primitive shipped and in use in the theme editor — covers family, weight, size, line height, letter spacing, case. Needs a tightening pass before being adopted as a `font` field type for widget-level typography controls (compact trigger ergonomics, swatch behaviour, sensible defaults). Schedule when widget typography work is up next.
 
 ---
 

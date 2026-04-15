@@ -23,7 +23,7 @@ class CarouselDefinition extends WidgetDefinition
 
     public function category(): array
     {
-        return ['content', 'media'];
+        return ['content', 'media', 'most_used'];
     }
 
     public function collections(): array

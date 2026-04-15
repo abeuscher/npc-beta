@@ -95,6 +95,16 @@ class PageResource extends Resource
                         ->nullable()
                         ->columnSpanFull(),
 
+                    SpatieMediaLibraryFileUpload::make('post_header')
+                        ->label('Header image')
+                        ->helperText('Used as the header background when a widget opts into the current page\'s header image.')
+                        ->collection('post_header')
+                        ->disk('public')
+                        ->visibility('public')
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                        ->nullable()
+                        ->columnSpanFull(),
+
                     SpatieMediaLibraryFileUpload::make('og_image')
                         ->label('Open Graph image')
                         ->helperText('Used for social sharing previews.')

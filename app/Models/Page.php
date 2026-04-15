@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
@@ -86,6 +87,11 @@ class Page extends Model implements HasMedia
     public function template(): BelongsTo
     {
         return $this->belongsTo(Template::class);
+    }
+
+    public function event(): HasOne
+    {
+        return $this->hasOne(Event::class, 'landing_page_id');
     }
 
     public function tags(): MorphToMany

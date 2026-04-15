@@ -1,0 +1,13 @@
+.widget-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.widget-image--cover {
+    object-fit: cover;
+}
+
+.widget-image--contain {
+    object-fit: contain;
+}

@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Hero;
 
+use App\Models\SampleImage;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class HeroDefinition extends WidgetDefinition
@@ -23,7 +24,7 @@ class HeroDefinition extends WidgetDefinition
 
     public function category(): array
     {
-        return ['content'];
+        return ['content','most_used'];
     }
 
     public function fullWidth(): bool
@@ -233,6 +234,17 @@ class HeroDefinition extends WidgetDefinition
             ],
             'text' => [
                 'color' => '#ffffff',
+            ],
+        ];
+    }
+
+    public function demoImages(): array
+    {
+        return [
+            [
+                'category' => SampleImage::CATEGORY_STILL_PHOTOS,
+                'count'    => 1,
+                'target'   => 'appearance.background_image',
             ],
         ];
     }

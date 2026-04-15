@@ -18,35 +18,25 @@
 
     // Build WebP srcset from generated conversions
     $webpSrcset = '';
-    $fallbackSrcset = '';
     if ($media && $hasConversions && !$isSvg) {
-        $webpParts = [];
-        $fallbackParts = [];
+        $widthEntries = [];
 
-        // Collect responsive-* conversions
+        // Collect responsive-* conversions (each carries an explicit width descriptor)
         foreach ($media->generated_conversions as $name => $generated) {
             if (!$generated) continue;
             if (str_starts_with($name, 'responsive-')) {
                 $w = (int) str_replace('responsive-', '', $name);
-                $webpParts[$w] = $media->getUrl($name) . " {$w}w";
+                $widthEntries[$w] = $media->getUrl($name) . " {$w}w";
             }
         }
 
-        // Add the main webp conversion
-        if (!empty($media->generated_conversions['webp'])) {
-            $webpParts[0] = $media->getUrl('webp');
-            // Use max breakpoint width or media width
-            $maxW = $media->getCustomProperty('width', 0);
-            if ($maxW && !isset($webpParts[$maxW])) {
-                $webpParts[$maxW] = $media->getUrl('webp') . " {$maxW}w";
-            }
+        if (!empty($widthEntries)) {
+            krsort($widthEntries);
+            $webpSrcset = implode(', ', $widthEntries);
+        } elseif (!empty($media->generated_conversions['webp'])) {
+            // No responsive variants — fall back to a plain srcset of the base webp URL.
+            $webpSrcset = $media->getUrl('webp');
         }
-
-        krsort($webpParts);
-        $webpSrcset = implode(', ', array_filter($webpParts, fn ($v, $k) => $k > 0, ARRAY_FILTER_USE_BOTH));
-
-        // Original format fallback — just the original URL
-        $fallbackSrcset = $originalUrl;
     }
 @endphp
 
