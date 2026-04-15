@@ -86,15 +86,26 @@
 
 .hero--pos-top-left .hero-body > .site-container,
 .hero--pos-center-left .hero-body > .site-container,
-.hero--pos-bottom-left .hero-body > .site-container     { align-items: flex-start; text-align: left; }
+.hero--pos-bottom-left .hero-body > .site-container     { align-items: flex-start; }
 
 .hero--pos-top-center .hero-body > .site-container,
 .hero--pos-center-center .hero-body > .site-container,
-.hero--pos-bottom-center .hero-body > .site-container   { align-items: center; text-align: center; }
+.hero--pos-bottom-center .hero-body > .site-container   { align-items: center; }
 
 .hero--pos-top-right .hero-body > .site-container,
 .hero--pos-center-right .hero-body > .site-container,
-.hero--pos-bottom-right .hero-body > .site-container    { align-items: flex-end; text-align: right; }
+.hero--pos-bottom-right .hero-body > .site-container    { align-items: flex-end; }
+
+// Rich-text alignment inside the hero content is driven by Quill's
+// ql-align-* classes (emitted per block). Keep the content's own text
+// alignment independent of the outer text-position layout.
+.hero-content {
+    text-align: left;
+
+    .ql-align-center  { text-align: center; }
+    .ql-align-right   { text-align: right; }
+    .ql-align-justify { text-align: justify; }
+}
 
 // ── Scroll indicator ────────────────────────────────────────────────────────
 

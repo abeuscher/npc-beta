@@ -164,6 +164,22 @@ class AdminPanelProvider extends PanelProvider
                         : new HtmlString('');
                 }
             )
+            // Public widget JS bundle — exposes per-widget Alpine factories
+            // (window.NPWidgets.*) so the page builder preview can initialize
+            // interactive widgets (blog/events listing carousels, bar chart,
+            // event calendar). The bundle defines no globals besides NPWidgets
+            // and does not touch Alpine itself, so it coexists with Filament.
+            ->renderHook(
+                'panels::head.end',
+                function (): HtmlString {
+                    $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
+                    $widgetJs = $widgetManifest['js'] ?? null;
+
+                    return $widgetJs
+                        ? new HtmlString('<script src="/build/widgets/' . $widgetJs . '"></script>')
+                        : new HtmlString('');
+                }
+            )
             // Fullscreen mode bootstrap — set the html class from localStorage before
             // first paint so the layout doesn't flash. The topbar toggle button keeps
             // this in sync with the sidebar collapse state at runtime.

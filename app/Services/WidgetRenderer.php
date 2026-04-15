@@ -51,6 +51,30 @@ class WidgetRenderer
             }
         }
 
+        // Substitute {{title}}, {{date}}, etc. in text/richtext fields using the
+        // widget's owning page. Richtext fields get HTML-escaped values since
+        // they're rendered raw; text fields keep raw values (Blade escapes on
+        // output).
+        $pageContext = app(PageContext::class);
+        $tokens = app(PageContextTokens::class);
+        // Laravel's container auto-injects an empty Page instance when
+        // PageContext is resolved without an explicit binding, so test for
+        // `exists` (true once loaded from DB) rather than null.
+        $ctxPage = $pageContext->currentPage;
+        $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $pw->page;
+        foreach ($widgetType->config_schema ?? [] as $field) {
+            $type = $field['type'] ?? '';
+            $key = $field['key'] ?? '';
+            if (! $key || ! isset($config[$key]) || ! is_string($config[$key])) {
+                continue;
+            }
+            if ($type === 'richtext') {
+                $config[$key] = $tokens->substitute($config[$key], $tokenPage, true);
+            } elseif ($type === 'text') {
+                $config[$key] = $tokens->substitute($config[$key], $tokenPage, false);
+            }
+        }
+
         // Build template variables and render
         $html = '';
 
@@ -59,8 +83,8 @@ class WidgetRenderer
                 'config'             => $config,
                 'configMedia'        => $configMedia,
                 'collectionData'     => $collectionData,
-                'pageContext'        => app(PageContext::class),
-                'pageContextTokens'  => app(PageContextTokens::class),
+                'pageContext'        => $pageContext,
+                'pageContextTokens'  => $tokens,
             ];
 
             if (! empty($columnChildren)) {

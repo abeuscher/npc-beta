@@ -35,6 +35,7 @@ class EventsListingDefinition extends WidgetDefinition
     {
         return [
             'scss' => ['app/Widgets/EventsListing/styles.scss', 'app/Widgets/BlogPager/styles.scss'],
+            'js'   => ['app/Widgets/EventsListing/script.js'],
             'libs' => ['swiper'],
         ];
     }

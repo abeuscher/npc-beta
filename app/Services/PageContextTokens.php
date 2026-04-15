@@ -19,7 +19,7 @@ class PageContextTokens
         'location',
     ];
 
-    public function substitute(string $text, ?Page $currentPage): string
+    public function substitute(string $text, ?Page $currentPage, bool $escapeHtml = false): string
     {
         if ($text === '' || $currentPage === null) {
             return $text;
@@ -32,7 +32,8 @@ class PageContextTokens
         $values = $this->values($currentPage);
 
         foreach ($values as $token => $value) {
-            $text = str_replace('{{' . $token . '}}', $value, $text);
+            $replacement = $escapeHtml ? e($value) : $value;
+            $text = str_replace('{{' . $token . '}}', $replacement, $text);
         }
 
         return $text;

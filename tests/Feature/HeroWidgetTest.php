@@ -54,6 +54,38 @@ it('renders content from config in the hero template', function () {
         ->toContain('widget--hero');
 });
 
+it('substitutes {{title}} and {{date}} tokens in hero richtext content', function () {
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create([
+        'title'        => 'Annual Gala',
+        'slug'         => 'annual-gala',
+        'status'       => 'published',
+        'published_at' => '2026-05-01 00:00:00',
+    ]);
+
+    $pw = PageWidget::create([
+        'page_id'        => $page->id,
+        'widget_type_id' => $hero->id,
+        'config'         => [
+            'content'                    => '<h1>{{title}}</h1><p>{{date}}</p>',
+            'background_overlay_opacity' => 50,
+            'min_height'                 => '24rem',
+            'text_position'              => 'center-center',
+            'ctas'                       => [],
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])
+        ->toContain('<h1>Annual Gala</h1>')
+        ->toContain('<p>May 1, 2026</p>')
+        ->not->toContain('{{title}}')
+        ->not->toContain('{{date}}');
+});
+
 it('hides CTA section when ctas array is empty', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero No CTA', 'slug' => 'hero-no-cta', 'status' => 'published']);

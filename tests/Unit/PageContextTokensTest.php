@@ -78,6 +78,18 @@ it('yields empty event tokens when the page has no event', function () {
     expect($this->tokens->substitute('[{{starts_at}}][{{location}}]', $page))->toBe('[][]');
 });
 
+it('html-escapes substituted values when escape flag is set', function () {
+    $page = Page::factory()->create(['title' => 'Tom & Jerry <script>']);
+    expect($this->tokens->substitute('{{title}}', $page, true))
+        ->toBe('Tom &amp; Jerry &lt;script&gt;');
+});
+
+it('leaves substituted values raw when escape flag is not set', function () {
+    $page = Page::factory()->create(['title' => 'Tom & Jerry']);
+    expect($this->tokens->substitute('{{title}}', $page, false))
+        ->toBe('Tom & Jerry');
+});
+
 it('returns a values map with concrete strings', function () {
     $page = Page::factory()->create(['title' => 'Hello', 'meta_description' => '', 'published_at' => null]);
     $values = $this->tokens->values($page);

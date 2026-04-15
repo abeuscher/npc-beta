@@ -30,6 +30,7 @@ class EventCalendarDefinition extends WidgetDefinition
     {
         return [
             'scss' => ['app/Widgets/EventCalendar/styles.scss'],
+            'js'   => ['app/Widgets/EventCalendar/script.js'],
             'libs' => ['jcalendar'],
         ];
     }

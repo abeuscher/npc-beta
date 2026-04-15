@@ -11,6 +11,7 @@
     $showSearch      = $config['show_search'] ?? false;
     $sortDefault     = $config['sort_default'] ?? 'newest';
     $effect          = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
+    $gap             = (int) ($config['gap'] ?? 24);
 
     // Serialize posts for Alpine
     $items = $posts->map(function ($post) use ($blogPrefix) {
@@ -50,96 +51,19 @@
     $pages = array_chunk($renderedCards, $perPage);
 
     $listingData = json_encode([
-        'cards' => $renderedCards,
-        'items' => $items,
-        'columns' => $columns,
-        'perPage' => $perPage,
+        'cards'       => $renderedCards,
+        'items'       => $items,
+        'columns'     => $columns,
+        'perPage'     => $perPage,
         'sortDefault' => $sortDefault,
-        'effect' => $effect,
+        'effect'      => $effect,
+        'gap'         => $gap,
     ]);
 @endphp
 
 <div
     class="widget-blog-listing"
-    x-data="{
-        swiper: null,
-        search: '',
-        cfg: null,
-        init() {
-            this.cfg = JSON.parse(this.$refs.listingData.textContent);
-            let swiperEl = this.$refs.swiperEl;
-            if (!swiperEl || !window.Swiper) return;
-
-            let modules = [window.SwiperModules.Navigation, window.SwiperModules.Pagination];
-            if (this.cfg.effect === 'fade') modules.push(window.SwiperModules.EffectFade);
-
-            this.swiper = new window.Swiper(swiperEl, this.buildOpts(modules));
-        },
-        buildOpts(modules) {
-            return {
-                modules: modules,
-                slidesPerView: 1,
-                slidesPerGroup: 1,
-                spaceBetween: {{ (int) ($config['gap'] ?? 24) }},
-                effect: this.cfg.effect,
-                fadeEffect: this.cfg.effect === 'fade' ? { crossFade: true } : undefined,
-                navigation: { nextEl: this.$refs.btnNext, prevEl: this.$refs.btnPrev },
-                pagination: {
-                    el: this.$refs.pagination,
-                    clickable: true,
-                    renderBullet: (index, className) => '<span class=&quot;' + className + '&quot;>' + (index + 1) + '</span>',
-                },
-            };
-        },
-        rebuildSlides() {
-            let indices = this.getFilteredIndices(this.search, this.cfg.sortDefault);
-            let swiperEl = this.$refs.swiperEl;
-            if (this.swiper) this.swiper.destroy(true, true);
-
-            let wrapper = swiperEl.querySelector('.swiper-wrapper');
-            wrapper.innerHTML = '';
-
-            if (indices.length) {
-                for (let i = 0; i < indices.length; i += this.cfg.perPage) {
-                    let chunk = indices.slice(i, i + this.cfg.perPage).map(idx => this.cfg.cards[idx]);
-                    wrapper.innerHTML += this.buildSlideHtml(chunk);
-                }
-                this.$refs.emptyMsg.style.display = 'none';
-            } else {
-                this.$refs.emptyMsg.style.display = '';
-            }
-
-            let modules = [window.SwiperModules.Navigation, window.SwiperModules.Pagination];
-            if (this.cfg.effect === 'fade') modules.push(window.SwiperModules.EffectFade);
-            this.swiper = new window.Swiper(swiperEl, this.buildOpts(modules));
-        },
-        buildSlideHtml(cardHtmlArray) {
-            let cards = cardHtmlArray.map(html => '<article class=&quot;content-card&quot;>' + html + '</article>').join('');
-            return '<div class=&quot;swiper-slide&quot;><div class=&quot;content-grid&quot; style=&quot;grid-template-columns:repeat(' + this.cfg.columns + ',1fr);&quot;>' + cards + '</div></div>';
-        },
-        getFilteredIndices(query, sortBy) {
-            let indices = this.cfg.items.map((_, i) => i);
-            if (query && query.trim()) {
-                let q = query.toLowerCase();
-                indices = indices.filter(i => {
-                    let item = this.cfg.items[i];
-                    return item.title.toLowerCase().includes(q)
-                        || item.excerpt.toLowerCase().includes(q)
-                        || item.date.toLowerCase().includes(q);
-                });
-            }
-            indices.sort((a, b) => {
-                let ia = this.cfg.items[a], ib = this.cfg.items[b];
-                switch (sortBy) {
-                    case 'oldest':   return (ia.date_iso || '').localeCompare(ib.date_iso || '');
-                    case 'title_az': return ia.title.localeCompare(ib.title);
-                    case 'title_za': return ib.title.localeCompare(ia.title);
-                    default:         return (ib.date_iso || '').localeCompare(ia.date_iso || '');
-                }
-            });
-            return indices;
-        },
-    }"
+    x-data="NPWidgets.blogListing()"
     x-effect="if (cfg && search !== undefined) rebuildSlides()"
 >
     <script x-ref="listingData" type="application/json">{!! $listingData !!}</script>

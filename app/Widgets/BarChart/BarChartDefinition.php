@@ -33,7 +33,10 @@ class BarChartDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['libs' => ['chart.js']];
+        return [
+            'js'   => ['app/Widgets/BarChart/script.js'],
+            'libs' => ['chart.js'],
+        ];
     }
 
     public function schema(): array

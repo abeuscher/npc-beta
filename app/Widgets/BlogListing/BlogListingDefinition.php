@@ -35,6 +35,7 @@ class BlogListingDefinition extends WidgetDefinition
     {
         return [
             'scss' => ['app/Widgets/BlogListing/styles.scss', 'app/Widgets/BlogPager/styles.scss'],
+            'js'   => ['app/Widgets/BlogListing/script.js'],
             'libs' => ['swiper'],
         ];
     }

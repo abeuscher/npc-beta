@@ -192,21 +192,17 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 183 | Page Builder Typography Inheritance & Theme Editor Polish |
 | 184 | Sample Image Library & Demo Seeder Integration |
 | 185 | Image Support Across Content Types |
+| 186 | Bug Fixes & Widget Tuning |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 186 — Bug Fixes & Widget Tuning *(next)*
+### 187 — Content Template Editor & Per-Type Defaults *(next)*
 
-Standing bug list plus the per-widget cleanup pass started after session 169 — replace legacy color text-input fields with the proper ColorPicker, add gradient / 9-point alignment controls where appropriate. Initial bugs:
+Make content templates first-class. Give them a real widget editor (template-aware page builder API), let any page type pick a template at creation (remove the current blog-post exclusion), and wire a per-page-type default in `site_settings` so new pages/posts/events hydrate from a template when the user doesn't pick one. Ownership-after-hydration contract preserved — templates seed; they don't constrain. Prompt: `sessions/187. Content Template Editor & Per-Type Defaults.md`.
 
-- **Hero left-aligned text bug.** Left-aligned copy inside a centered hero block renders centered instead of left-aligned. The text within the block should respect the alignment setting independent of the block's position. CSS fix in the hero widget SCSS.
-- **Admin nav header styling.** The left nav header has separate chrome/styling that makes it look like part of the top header bar rather than the left menu. Remove the header styling so it appears as a seamless part of the left navigation menu below it.
-
-Bug list and widget list both expected to grow during the session as the user surfaces items. Prompt: `sessions/186. Bug Fixes & Widget Tuning.md`.
-
-### 187 — Importer: Datasheets & Mapping *(stub)*
+### 188 — Importer: Datasheets & Mapping *(stub)*
 
 Build out the importer to handle a full org's worth of data using a real-world export as the working example. Goals:
 
@@ -216,7 +212,7 @@ Build out the importer to handle a full org's worth of data using a real-world e
 
 **Local-only datafiles.** WCG datasheets are private and must never enter source control. Place them in a gitignored folder (e.g. `local/import-fixtures/wcg/`) and add the path to `.gitignore`. Do not paste sample rows into committed docs or fixtures. Tests that exercise the importer should use anonymised fixtures kept under `tests/Fixtures/` rather than the real datasheets.
 
-### 188 — Theme Colors Refactor *(stub)*
+### 189 — Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 

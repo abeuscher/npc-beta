@@ -361,7 +361,7 @@ it('blog listing renders default spaceBetween when gap is not set', function () 
         ]
     );
 
-    expect($html)->toContain('spaceBetween: 24');
+    expect($html)->toContain('"gap":24');
 });
 
 it('blog listing renders custom spaceBetween from gap config', function () {
@@ -389,7 +389,7 @@ it('blog listing renders custom spaceBetween from gap config', function () {
         ]
     );
 
-    expect($html)->toContain('spaceBetween: 32');
+    expect($html)->toContain('"gap":32');
 });
 
 // ── Gap config field — events listing ───────────────────────────────────────
@@ -419,7 +419,7 @@ it('events listing renders default spaceBetween when gap is not set', function (
         ]
     );
 
-    expect($html)->toContain('spaceBetween: 24');
+    expect($html)->toContain('"gap":24');
 });
 
 it('events listing renders custom spaceBetween from gap config', function () {
@@ -448,5 +448,5 @@ it('events listing renders custom spaceBetween from gap config', function () {
         ]
     );
 
-    expect($html)->toContain('spaceBetween: 40');
+    expect($html)->toContain('"gap":40');
 });
