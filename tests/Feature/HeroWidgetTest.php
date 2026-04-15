@@ -20,7 +20,7 @@ it('creates hero widget type with correct category and config schema after seedi
     $hero = seedHeroWidget();
 
     expect($hero->label)->toBe('Hero')
-        ->and($hero->category)->toBe(['content'])
+        ->and($hero->category)->toBe(['content', 'most_used'])
         ->and($hero->render_mode)->toBe('server')
         ->and($hero->allowed_page_types)->toBeNull();
 
