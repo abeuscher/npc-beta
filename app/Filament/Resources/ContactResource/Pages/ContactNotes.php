@@ -51,7 +51,7 @@ class ContactNotes extends Page implements HasActions
     {
         $notes = $this->filter !== 'activity'
             ? Note::query()
-                ->with('author')
+                ->with(['author', 'importSource'])
                 ->where('notable_type', Contact::class)
                 ->where('notable_id', $this->record->id)
                 ->get()
@@ -70,12 +70,16 @@ class ContactNotes extends Page implements HasActions
             : collect();
 
         $noteItems = $notes->map(fn ($n) => (object) [
-            '_type'       => 'note',
-            'id'          => $n->id,
-            'body'        => $n->body,
-            'author_name' => $n->author?->name ?? 'Unknown',
-            'occurred_at' => $n->occurred_at,
-            'created_at'  => $n->created_at,
+            '_type'              => 'note',
+            'id'                 => $n->id,
+            'body'               => $n->body,
+            'author_name'        => $n->author?->name ?? 'Unknown',
+            'occurred_at'        => $n->occurred_at,
+            'created_at'         => $n->created_at,
+            'import_source_name' => $n->importSource?->name,
+            'import_source_url'  => $n->importSource
+                ? \App\Filament\Pages\ImportHistoryPage::getUrl(['source' => $n->importSource->id])
+                : null,
         ]);
 
         $logItems = $logs->map(fn ($l) => (object) [

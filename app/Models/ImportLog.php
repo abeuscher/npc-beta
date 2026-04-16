@@ -25,16 +25,22 @@ class ImportLog extends Model
         'error_count',
         'errors',
         'duplicate_strategy',
+        'match_key',
+        'column_preferences',
+        'relational_map',
+        'import_source_id',
         'status',
         'started_at',
         'completed_at',
     ];
 
     protected $casts = [
-        'column_map'        => 'array',
-        'custom_field_map'  => 'array',
-        'custom_field_log'  => 'array',
-        'errors'            => 'array',
+        'column_map'         => 'array',
+        'custom_field_map'   => 'array',
+        'custom_field_log'   => 'array',
+        'column_preferences' => 'array',
+        'relational_map'     => 'array',
+        'errors'             => 'array',
         'started_at'   => 'datetime',
         'completed_at' => 'datetime',
     ];
@@ -42,5 +48,10 @@ class ImportLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
     }
 }

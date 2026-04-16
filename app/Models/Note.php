@@ -19,6 +19,7 @@ class Note extends Model
         'author_id',
         'body',
         'occurred_at',
+        'import_source_id',
     ];
 
     protected $casts = [
@@ -33,5 +34,10 @@ class Note extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
     }
 }

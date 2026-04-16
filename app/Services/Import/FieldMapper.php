@@ -5,15 +5,40 @@ namespace App\Services\Import;
 class FieldMapper
 {
     /**
+     * Headers (normalized: lowercased + trimmed) that must never be mapped or
+     * auto-promoted to a custom field. Sensitive or auth-only — we never want
+     * these landing in the CRM.
+     */
+    public const SKIPPED_HEADERS = [
+        'password',
+        'pwd',
+        'passwd',
+        'pass',
+        'password_hash',
+        'password hash',
+        'passwordhash',
+    ];
+
+    /**
      * Return the canonical destination field for a source column header.
      * Returns null if the column should be ignored.
      */
     public function map(string $sourceColumn, string $preset = 'generic'): ?string
     {
         $normalized = strtolower(trim($sourceColumn));
-        $map        = static::presetMap($preset);
+
+        if (static::isSkipped($normalized)) {
+            return null;
+        }
+
+        $map = static::presetMap($preset);
 
         return $map[$normalized] ?? null;
+    }
+
+    public static function isSkipped(string $normalizedHeader): bool
+    {
+        return in_array($normalizedHeader, static::SKIPPED_HEADERS, true);
     }
 
     /**

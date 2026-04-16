@@ -16,6 +16,13 @@
                                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                     by {{ $item->author_name }} · {{ $item->occurred_at->format('M j, Y g:i a') }}
                                 </p>
+                                @if ($item->import_source_name)
+                                    <a href="{{ $item->import_source_url }}"
+                                       class="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700 hover:bg-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-900/60">
+                                        <x-heroicon-o-arrow-up-tray class="h-3 w-3" />
+                                        {{ $item->import_source_name }}
+                                    </a>
+                                @endif
                             </div>
                             <div class="flex items-center gap-3 shrink-0">
                                 <button

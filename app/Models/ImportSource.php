@@ -13,6 +13,15 @@ class ImportSource extends Model
     protected $fillable = [
         'name',
         'notes',
+        'field_map',
+        'custom_field_map',
+        'match_key',
+        'match_key_column',
+    ];
+
+    protected $casts = [
+        'field_map'        => 'array',
+        'custom_field_map' => 'array',
     ];
 
     public function sessions(): HasMany

@@ -148,9 +148,12 @@ class ImporterPage extends Page implements HasTable
                             'approved_at' => now(),
                         ]);
 
-                        $staged = ImportStagedUpdate::where('import_session_id', $record->id)->get();
-                        $sessionLabel = $record->importSource?->name ?? $record->filename;
-                        $approverName = auth()->user()->name;
+                        $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
+                        $sourceName    = $record->importSource?->name;
+                        $sourceId      = $record->importSource?->id;
+                        $sessionLabel  = $record->session_label ?: $record->filename;
+                        $sourceDisplay = $sourceName ?: 'unknown source';
+                        $approverName  = auth()->user()->name;
 
                         foreach ($staged as $update) {
                             $contact = Contact::withoutGlobalScopes()->find($update->contact_id);
@@ -168,11 +171,12 @@ class ImporterPage extends Page implements HasTable
                             }
 
                             Note::create([
-                                'notable_type' => Contact::class,
-                                'notable_id'   => $contact->id,
-                                'author_id'    => auth()->id(),
-                                'body'         => "Changes applied from import session {$sessionLabel} — approved by {$approverName}",
-                                'occurred_at'  => now(),
+                                'notable_type'     => Contact::class,
+                                'notable_id'       => $contact->id,
+                                'author_id'        => auth()->id(),
+                                'body'             => "Changes applied from import from {$sourceDisplay} (session: {$sessionLabel}) — approved by {$approverName}",
+                                'occurred_at'      => now(),
+                                'import_source_id' => $sourceId,
                             ]);
                         }
 
@@ -221,19 +225,23 @@ class ImporterPage extends Page implements HasTable
                                 ->forceDelete();
                         }
 
-                        $staged = ImportStagedUpdate::where('import_session_id', $record->id)->get();
-                        $sessionLabel = $record->importSource?->name ?? $record->filename;
+                        $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
+                        $sourceName    = $record->importSource?->name;
+                        $sourceId      = $record->importSource?->id;
+                        $sessionLabel  = $record->session_label ?: $record->filename;
+                        $sourceDisplay = $sourceName ?: 'unknown source';
 
                         foreach ($staged as $update) {
                             $contact = Contact::withoutGlobalScopes()->find($update->contact_id);
 
                             if ($contact) {
                                 Note::create([
-                                    'notable_type' => Contact::class,
-                                    'notable_id'   => $contact->id,
-                                    'author_id'    => auth()->id(),
-                                    'body'         => "Staged changes from import session {$sessionLabel} were discarded during rollback.",
-                                    'occurred_at'  => now(),
+                                    'notable_type'     => Contact::class,
+                                    'notable_id'       => $contact->id,
+                                    'author_id'        => auth()->id(),
+                                    'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
+                                    'occurred_at'      => now(),
+                                    'import_source_id' => $sourceId,
                                 ]);
                             }
                         }

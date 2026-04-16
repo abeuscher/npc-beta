@@ -194,35 +194,25 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 185 | Image Support Across Content Types |
 | 186 | Bug Fixes & Widget Tuning |
 | 187 | Content Template Editor & Per-Type Defaults |
+| 188 | CRM Importer — Contacts: Presets, Dry-Run & Match Keys |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 188 — CRM Importer — Contacts: Presets, Dry-Run & Match Keys *(next)*
+### 189 — CRM Importer — Events, Registrations & Transaction Linking *(next)*
 
-Extend the existing contact importer (already handles a 4-step wizard + staged-update approvals + rollback + batch-traceable notes) to cover the gaps that become obvious when working with a real nonprofit's export. Scope:
+Apply the session 188 importer pattern to event data. The distinguishing work is multi-entity resolution: each row in a real-world events export is denormalized across an event, a contact (looked up, not created), a registration, and often a transaction. Scope:
 
-- **Presets per source.** Promote `ImportSource` to a full preset — store the column-to-field map, custom-field map, and the chosen match key on the source row itself. Re-imports from the same source remember the shape; the admin doesn't re-map on every run.
-- **True dry-run with halt-on-error.** Wrap the full import pipeline in a transaction that rolls back after counting. Produce a report (would create X / update Y / skip Z / error N with per-row detail). If any rows erred, the admin can either proceed omitting the errored rows or cancel and fix the CSV upstream.
-- **Configurable match key.** User picks one mapped column as the match key (typically an external ID, sometimes email, phone, or a custom field). Composite keys out of scope.
-- **Collision-option relabelling.** Clearer language for non-experts: "Skip the row", "Update the existing contact", "Create a duplicate anyway" (with warning). Drop ambiguous "Replace" semantics.
-- **Source link on timeline notes.** Existing import notes already reference `session_label`; extend them to also link back to `ImportSource` for click-through traceability.
+- **Denormalized single-CSV shape accepted natively.** One row → event upsert + contact lookup + registration create + optional Transaction upsert.
+- **Contacts must pre-exist.** Unresolved-contact rows error cleanly; contacts are imported first via 188. No auto-create from the events sheet.
+- **Events match on external ID only** via `ImportIdMap`. No composite keys.
+- **Transaction ID as the universal payment external key** — renaming the conceptual "invoice number" to a platform-agnostic label. Backed by `ImportIdMap` keyed on `(source, model_type='transaction', source_id)`. Transactions upsert on this key so the same invoice appearing in multiple sheets (Events CSV here + Invoice Details in 190) never duplicates; the second import enriches the first.
+- **Duplicate-then-diverge architecture.** `ImportEventsPage` + `ImportEventsProgressPage` are siblings of the contacts versions. Session 191 extracts a shared base once there are two concrete implementations.
+- **Reuse** `ImportSource` / `ImportSession` / staged-updates / timeline notes / relational-destination primitives (tag/note) / collision resolution / dry-run report / top-nav / runCommit flow from 188.
+- Ticket tiers deferred to their own pre-Beta 1 session; `ticket_type` + `ticket_fee` live as flat fields on `event_registrations` in the meantime.
 
-**CMS vs CRM importers are different things** — the CMS `ContentImporter` is a backup/restore format (session 187 kept its shape intact). This session is strictly the Tools → Importer surface for CRM data, nothing to do with content bundles.
-
-**Local-only datafiles.** WCG datasheets stay in a gitignored folder (`local/import-fixtures/wcg/`). Tests use anonymised fixtures under `tests/Fixtures/`. Never commit real data.
-
-Prompt: `sessions/188. CRM Importer — Contacts: Presets, Dry-Run & Match Keys.md`.
-
-### 189 — CRM Importer — Events & Registrations *(stub)*
-
-Apply the same pattern session 188 builds for contacts to event data. Scope:
-
-- Import events (name, slug, dates, location, pricing) from a CSV shape using the preset/mapping/dry-run infrastructure from 188.
-- Import event registrations — each row is a registration that must lookup-by-key to both an existing contact and an existing event. Decide how the importer handles a registration whose contact isn't yet in the system (fail the row? create the contact inline?).
-- Reuse `ImportSource` / `ImportSession` / staged-updates / timeline notes — the entity-specific work is mostly the field registry, match-key semantics, and row processor.
-- Use WCG event exports as the concrete working dataset.
+Prompt: `sessions/189. CRM Importer — Events, Registrations & Transaction Linking.md`.
 
 ### 190 — CRM Importer — Donations, Memberships & Financial *(stub)*
 
@@ -234,9 +224,24 @@ Apply the same pattern to financial data. Scope:
 - Same open question as 189: what happens when the linked contact or fund doesn't exist yet? Probably fail the row with a clear message — financial imports should not silently create half-formed related records.
 - Decimal / currency parsing from messy spreadsheet formats ("$1,234.56", "1234.56 USD", "1234") is worth explicit handling; many real exports have inconsistent cell formats.
 
-### 191 — Theme Colors Refactor *(stub)*
+### 191 — CRM Importer — Polish, Noise Detection & Source Templates *(stub)*
+
+Round off the importer after three entity-focused sessions (contacts, events, financials). Scope:
+
+- **Value-pattern noise detection.** During auto-custom-field mapping, recognise cell patterns that signal procedural cruft from legacy systems — long `Field&&Visibility` concatenations (Wild Apricot `Access to profile by others`), structured key-value strings, enormous bundled metadata — and default those columns to unmapped with a banner explaining why. User can still opt in.
+- **Per-source skip-header list.** Extend `FieldMapper::SKIPPED_HEADERS` into per-source arrays, seeded for the three built-in presets (Generic / Wild Apricot / Bloomerang). Known noise headers (`Details to show`, `Subscription source`, `Photo albums enabled`, `Member bundle ID or email`, etc.) default to ignored when the matching preset is selected. Admin can override.
+- **Downloadable CSV templates per content type.** Generate a skeleton CSV with our canonical column names — one per importable content type (contacts, events/registrations, donations, memberships). Users fill the template and re-import, guaranteeing clean mappings and no noise.
+- **Assorted polish** captured during UAT of 188/189/190 but not urgent — copy tweaks, edge-case handling, performance tuning for very large imports if it surfaced.
+
+### 192 — Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
+
+---
+
+### Event Ticket Tiers *(stub — pre-Beta 1)*
+
+Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
 
 ---
 
@@ -511,6 +516,22 @@ Build a targeting filter UI for mailing lists based on agreed field policy (deci
 - **`mailing_list_opt_in`:** available as a filter; show a visible warning when a list is being sent without it applied.
 - **`do_not_contact`:** hard system exclusion — always enforced, cannot be filtered out by the admin. Help copy must state: set only on explicit opt-out; clear only on explicit re-consent (activity log covers audit trail).
 - **Prohibited:** actual donation amounts, fund designation detail, under-age or arbitrary age filters, portal account status (portal communications are a system email concern, not a list concern).
+
+---
+
+### Path to Success — LLM-Assisted Data Prep Tutorial *(stub — post-Beta 1)*
+
+Second path to success for messy incoming data. Publish a help article (plus a linked video walkthrough) titled something like "When your export doesn't match our template: use Claude Code to reshape it." Covers:
+
+- Downloading our canonical CSV template per content type (produced by session 191).
+- Opening Claude Code (or similar LLM CLI) inside the folder containing the user's export.
+- A short, copy-pasteable prompt that tells the LLM: "reshape this export to match <template>, ask me questions about any ambiguous columns, preserve all data, output a new CSV." Includes guidance on iterating and verifying.
+- Common pitfalls: columns the LLM shouldn't guess at, sensitivity of date/currency parsing, how to spot-check the output.
+- The philosophy: LLMs crush data-shaping tasks that humans find tedious. Leveraging that as a supported path cuts onboarding friction dramatically, especially for legacy system exports that our importer's presets won't cover on day one.
+
+Context from implementation discussion: a veteran of 5M-contact migrations confirms this is the standard approach the author already uses personally. Making it a first-class supported path — not a hack — is a real competitive advantage against the 6-8-week "data migration consulting" model. Pairs with the downloadable CSV templates from session 191.
+
+Not a code session — a content session. Ships as a help article + a short screencast.
 
 ---
 

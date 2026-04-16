@@ -70,7 +70,19 @@
                                 <li>
                                     <span class="font-mono text-xs text-gray-500">{{ $field }}</span>
                                     <span class="text-gray-400 mx-1">→</span>
-                                    <span>{{ $value ?? '(blank)' }}</span>
+                                    <span>
+                                        @if (is_array($value))
+                                            @if ($field === 'custom_fields')
+                                                @foreach ($value as $cfHandle => $cfValue)
+                                                    <span class="inline-block mr-2"><span class="font-mono text-xs text-gray-400">{{ $cfHandle }}:</span> {{ is_scalar($cfValue) ? $cfValue : json_encode($cfValue) }}</span>
+                                                @endforeach
+                                            @else
+                                                <span class="font-mono text-xs text-gray-500">{{ json_encode($value) }}</span>
+                                            @endif
+                                        @else
+                                            {{ $value ?? '(blank)' }}
+                                        @endif
+                                    </span>
                                 </li>
                                 @endforeach
                             </ul>

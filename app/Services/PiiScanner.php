@@ -26,51 +26,96 @@ class PiiScanner
     ];
 
     /**
+     * Column headers (normalised) whose cells should never trigger the 9-digit
+     * ABA-routing / SSN-bare heuristic. US ZIP+4 without the hyphen is 9 digits
+     * and would otherwise produce false positives.
+     */
+    private const ZIP_LIKE_HEADERS = [
+        'zip',
+        'zipcode',
+        'postal',
+        'postalcode',
+        'postcode',
+    ];
+
+    public const DEFAULT_LIMIT = 50;
+
+    /**
      * Scan a CSV file for PII / sensitive financial identifiers.
      *
-     * Returns null when the file is clean.
-     * Returns an array with 'reason', 'detail', and optionally 'row'/'column'
-     * when a violation is found.
+     * Returns:
+     *   [
+     *     'header_violation' => bool,   // true when scan bailed on a blocked header (row scan never ran)
+     *     'violations'       => [       // up to $limit rows
+     *         [
+     *             'reason'   => string,
+     *             'detail'   => string,
+     *             'row'      => int,
+     *             'column'   => string,
+     *             'row_data' => array,  // the entire original CSV row
+     *         ],
+     *         ...
+     *     ],
+     *     'truncated'        => bool,   // true if scan stopped at $limit
+     *   ]
      */
-    public function scan(string $filePath, array $headers): ?array
+    public function scan(string $filePath, array $headers, int $limit = self::DEFAULT_LIMIT): array
     {
-        // Layer 1 — column header blocklist
         $headerViolation = $this->scanHeaders($headers);
 
         if ($headerViolation !== null) {
             return [
-                'reason' => 'blocked_header',
-                'detail' => "Column header \"{$headerViolation}\" matches a blocked sensitive-data field name.",
+                'header_violation' => true,
+                'violations' => [[
+                    'reason'   => 'blocked_header',
+                    'detail'   => "Column header \"{$headerViolation}\" matches a blocked sensitive-data field name.",
+                    'row'      => 0,
+                    'column'   => $headerViolation,
+                    'row_data' => [],
+                ]],
+                'truncated' => false,
             ];
         }
 
-        // Layer 2 — cell content patterns
+        $zipColumnIndexes = $this->zipLikeColumnIndexes($headers);
+
         $handle = fopen($filePath, 'r');
+        fgetcsv($handle, null, ',', '"', '\\'); // skip header
 
-        // Skip header row
-        fgetcsv($handle);
+        $violations = [];
+        $rowNumber  = 2;
 
-        $rowNumber = 2;
-
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, null, ',', '"', '\\')) !== false) {
             foreach ($row as $colIndex => $value) {
                 if ($value === null || $value === '') {
                     continue;
                 }
 
-                $match = $this->scanCell($value);
+                $isZipColumn = in_array($colIndex, $zipColumnIndexes, true);
+                $match       = $this->scanCell((string) $value, $isZipColumn);
 
                 if ($match !== null) {
-                    fclose($handle);
-
-                    $columnLabel = $headers[$colIndex] ?? "column " . ($colIndex + 1);
-
-                    return [
-                        'reason'  => $match,
-                        'detail'  => "Row {$rowNumber}, column \"{$columnLabel}\" appears to contain a {$match}.",
-                        'row'     => $rowNumber,
-                        'column'  => $columnLabel,
+                    $columnLabel  = $headers[$colIndex] ?? 'column ' . ($colIndex + 1);
+                    $violations[] = [
+                        'reason'   => $match,
+                        'detail'   => "Row {$rowNumber}, column \"{$columnLabel}\" appears to contain a {$match}.",
+                        'row'      => $rowNumber,
+                        'column'   => $columnLabel,
+                        'row_data' => $row,
                     ];
+
+                    if (count($violations) >= $limit) {
+                        fclose($handle);
+
+                        return [
+                            'header_violation' => false,
+                            'violations'       => $violations,
+                            'truncated'        => true,
+                        ];
+                    }
+
+                    // One violation per row is plenty — move on.
+                    break;
                 }
             }
 
@@ -79,7 +124,11 @@ class PiiScanner
 
         fclose($handle);
 
-        return null;
+        return [
+            'header_violation' => false,
+            'violations'       => $violations,
+            'truncated'        => false,
+        ];
     }
 
     /**
@@ -100,25 +149,29 @@ class PiiScanner
     }
 
     /**
-     * Check a single cell value for sensitive data patterns.
+     * Check a single cell value for sensitive data patterns. Pass
+     * $isZipColumn = true to suppress the bare 9-digit heuristic (US ZIP+4 is
+     * 9 digits and a chunk of valid ZIPs start with 01–12/21–32).
      * Returns a short string describing the match type, or null if clean.
      */
-    public function scanCell(string $value): ?string
+    public function scanCell(string $value, bool $isZipColumn = false): ?string
     {
         $stripped = preg_replace('/[\s\-]/', '', $value);
 
-        // Credit card PAN: 13–19 digits passing Luhn check
+        // Credit card PAN: 13–19 digits passing Luhn. Always checked.
         if (preg_match('/^\d{13,19}$/', $stripped) && $this->luhn($stripped)) {
             return 'credit card number';
         }
 
-        // SSN: ###-##-####
+        // SSN format (###-##-####). Hyphenated form is distinctive enough to
+        // always check — a ZIP column wouldn't contain this shape.
         if (preg_match('/^\d{3}-\d{2}-\d{4}$/', $value)) {
             return 'Social Security Number';
         }
 
-        // 9-digit sequences: ABA routing (prefix 01–12 or 21–32) or SSN
-        if (preg_match('/^\d{9}$/', $stripped)) {
+        // Bare 9-digit heuristic — suppressed on ZIP/postal columns where the
+        // same shape is just a ZIP+4 without the hyphen.
+        if (! $isZipColumn && preg_match('/^\d{9}$/', $stripped)) {
             $prefix = (int) substr($stripped, 0, 2);
 
             if (($prefix >= 1 && $prefix <= 12) || ($prefix >= 21 && $prefix <= 32)) {
@@ -129,6 +182,21 @@ class PiiScanner
         }
 
         return null;
+    }
+
+    private function zipLikeColumnIndexes(array $headers): array
+    {
+        $indexes = [];
+
+        foreach ($headers as $i => $header) {
+            $normalized = strtolower(str_replace([' ', '_'], '', $header));
+
+            if (in_array($normalized, self::ZIP_LIKE_HEADERS, true)) {
+                $indexes[] = $i;
+            }
+        }
+
+        return $indexes;
     }
 
     private function luhn(string $number): bool

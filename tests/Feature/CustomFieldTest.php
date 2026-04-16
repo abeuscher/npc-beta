@@ -10,7 +10,6 @@ use App\Models\Page;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -118,13 +117,18 @@ it('import creates a new CustomFieldDef when handle does not exist', function ()
 
     $user = User::factory()->create();
     $user->givePermissionTo('import_data');
+    $this->actingAs($user);
 
-    Livewire::actingAs($user)
-        ->test(ImportProgressPage::class, ['importLogId' => $log->id])
-        ->call('tick');
+    $page = new ImportProgressPage();
+    $page->importLogId = $log->id;
+    $page->mount();     // auto-runs dry-run (rolled back)
+    $page->runCommit();    // reset counters, enter committing phase
+    while (! $page->done) {
+        $page->tick();
+    }
 
     expect(CustomFieldDef::where('handle', 'wild_apricot_id')->where('model_type', 'contact')->exists())->toBeTrue();
-    expect(Contact::where('email', 'alice@example.com')->first()?->custom_fields['wild_apricot_id'])->toBe('99887');
+    expect(Contact::withoutGlobalScopes()->where('email', 'alice@example.com')->first()?->custom_fields['wild_apricot_id'])->toBe('99887');
 });
 
 it('import reuses existing CustomFieldDef and logs action as reused', function () {
@@ -152,10 +156,15 @@ it('import reuses existing CustomFieldDef and logs action as reused', function (
 
     $user = User::factory()->create();
     $user->givePermissionTo('import_data');
+    $this->actingAs($user);
 
-    Livewire::actingAs($user)
-        ->test(ImportProgressPage::class, ['importLogId' => $log->id])
-        ->call('tick');
+    $page = new ImportProgressPage();
+    $page->importLogId = $log->id;
+    $page->mount();
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
 
     // Only one def should exist (the existing one was reused)
     expect(CustomFieldDef::where('handle', 'member_id')->count())->toBe(1);

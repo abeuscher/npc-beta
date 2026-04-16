@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\ImportLog;
+use App\Models\ImportSource;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Contracts\HasTable;
@@ -12,6 +13,12 @@ use Filament\Tables\Table;
 class ImportHistoryPage extends Page implements HasTable
 {
     use InteractsWithTable;
+
+    protected $queryString = [
+        'sourceId' => ['as' => 'source'],
+    ];
+
+    public string $sourceId = '';
 
     protected static ?string $navigationGroup = 'CRM';
 
@@ -37,21 +44,43 @@ class ImportHistoryPage extends Page implements HasTable
 
     public function getBreadcrumbs(): array
     {
-        return [
+        $crumbs = [
             ImporterPage::getUrl() => 'Importer',
-            'History',
         ];
+
+        if ($this->sourceId && ($name = ImportSource::whereKey($this->sourceId)->value('name'))) {
+            $crumbs['History'] = 'History';
+            $crumbs[]          = "Source: {$name}";
+
+            return $crumbs;
+        }
+
+        $crumbs[] = 'History';
+
+        return $crumbs;
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(ImportLog::query()->latest())
+            ->query(function () {
+                $query = ImportLog::query()->with('importSource')->latest();
+
+                if ($this->sourceId) {
+                    $query->where('import_source_id', $this->sourceId);
+                }
+
+                return $query;
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date')
                     ->dateTime()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('importSource.name')
+                    ->label('Source')
+                    ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('filename')
                     ->label('File')
