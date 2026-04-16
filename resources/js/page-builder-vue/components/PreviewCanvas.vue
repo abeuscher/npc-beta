@@ -17,6 +17,36 @@ const scopeEl = ref<HTMLElement | null>(null)
 // Columns dropdown
 const columnsMenuOpen = ref(false)
 
+// Layer explorer dropdown
+const layerMenuOpen = ref(false)
+
+const allItems = computed(() => {
+  const items: { id: string; label: string; type: 'widget' | 'layout'; handle: string; nested: boolean }[] = []
+  for (const item of store.pageItems) {
+    if (item.type === 'layout') {
+      items.push({ id: item.id, label: item.label || 'Column Layout', type: 'layout', handle: 'layout', nested: false })
+      const slots = (item as any).slots ?? {}
+      for (const col of Object.values(slots) as any[]) {
+        for (const w of col) {
+          items.push({ id: w.id, label: w.label || w.widget_type_handle, type: 'widget', handle: w.widget_type_handle, nested: true })
+        }
+      }
+    } else {
+      items.push({ id: item.id, label: (item as any).label || (item as any).widget_type_handle, type: 'widget', handle: (item as any).widget_type_handle, nested: false })
+    }
+  }
+  return items
+})
+
+function selectLayerItem(id: string, type: 'widget' | 'layout') {
+  layerMenuOpen.value = false
+  if (type === 'widget') {
+    store.selectBlock(id)
+  } else {
+    store.selectItem(id, 'layout')
+  }
+}
+
 function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
   columnsMenuOpen.value = false
 
@@ -35,7 +65,7 @@ function openWidgetPicker(position: 'bottom' | 'above' | 'below') {
 
   window.dispatchEvent(
     new CustomEvent('open-widget-picker', {
-      detail: { insertPosition, pageId: store.pageId },
+      detail: { insertPosition, ownerId: store.ownerId },
     })
   )
 }
@@ -52,9 +82,13 @@ async function addColumnLayout(columns: number) {
   }
 }
 
-function closeColumnsMenu(e: Event) {
-  if (!(e.target as Element)?.closest('.preview-canvas__columns-dropdown')) {
+function closeDropdowns(e: Event) {
+  const target = e.target as Element
+  if (!target?.closest('.preview-canvas__columns-dropdown')) {
     columnsMenuOpen.value = false
+  }
+  if (!target?.closest('.preview-canvas__layer-explorer')) {
+    layerMenuOpen.value = false
   }
 }
 
@@ -163,7 +197,7 @@ const presetIcons: Record<number, string> = {
 let resizeObserver: ResizeObserver | null = null
 
 onMounted(async () => {
-  document.addEventListener('click', closeColumnsMenu)
+  document.addEventListener('click', closeDropdowns)
   measurePane()
 
   if (paneEl.value) {
@@ -182,7 +216,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeColumnsMenu)
+  document.removeEventListener('click', closeDropdowns)
   resizeObserver?.disconnect()
 })
 
@@ -314,9 +348,32 @@ watch(
           </div>
         </div>
       </div>
-      <p class="preview-canvas__block-count">
-        {{ store.rootWidgets.length }} block(s) on this page
-      </p>
+      <div class="preview-canvas__layer-explorer">
+        <button
+          type="button"
+          class="preview-canvas__block-count"
+          @click.stop="layerMenuOpen = !layerMenuOpen"
+        >
+          {{ allItems.length }} block(s) &#9662;
+        </button>
+        <div v-show="layerMenuOpen" class="preview-canvas__layer-menu">
+          <button
+            v-for="item in allItems"
+            :key="item.id"
+            type="button"
+            class="preview-canvas__layer-item"
+            :class="{
+              'preview-canvas__layer-item--selected': store.selectedItemId === item.id,
+              'preview-canvas__layer-item--nested': item.nested
+            }"
+            @click="selectLayerItem(item.id, item.type)"
+          >
+            <span class="preview-canvas__layer-type">{{ item.type === 'layout' ? '⊞' : '◻' }}</span>
+            <span class="preview-canvas__layer-label">{{ item.label }}</span>
+            <span class="preview-canvas__layer-handle">{{ item.handle }}</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -459,9 +516,84 @@ watch(
   background: #f3f4f6;
 }
 
+.preview-canvas__layer-explorer {
+  position: relative;
+}
+
 .preview-canvas__block-count {
   font-size: 0.875rem;
   color: #6b7280;
   margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.preview-canvas__block-count:hover {
+  background: #f3f4f6;
+}
+
+.preview-canvas__layer-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 50;
+  padding: 0.25rem 0;
+}
+
+.preview-canvas__layer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  text-align: left;
+  color: #374151;
+}
+
+.preview-canvas__layer-item:hover {
+  background: #f3f4f6;
+}
+
+.preview-canvas__layer-item--selected {
+  background: #eff6ff;
+  font-weight: 600;
+}
+
+.preview-canvas__layer-item--nested {
+  padding-left: 1.5rem;
+}
+
+.preview-canvas__layer-type {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
+.preview-canvas__layer-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-canvas__layer-handle {
+  font-size: 0.6875rem;
+  color: #9ca3af;
+  flex-shrink: 0;
 }
 </style>

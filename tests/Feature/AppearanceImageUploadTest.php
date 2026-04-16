@@ -33,8 +33,7 @@ beforeEach(function () {
         'config_schema' => [],
     ]);
 
-    $this->widget = PageWidget::create([
-        'page_id'           => $this->page->id,
+    $this->widget = $this->page->widgets()->create([
         'widget_type_id'    => $this->widgetType->id,
         'label'             => 'Test',
         'config'            => [],

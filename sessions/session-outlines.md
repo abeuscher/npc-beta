@@ -193,26 +193,48 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 184 | Sample Image Library & Demo Seeder Integration |
 | 185 | Image Support Across Content Types |
 | 186 | Bug Fixes & Widget Tuning |
+| 187 | Content Template Editor & Per-Type Defaults |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 187 — Content Template Editor & Per-Type Defaults *(next)*
+### 188 — CRM Importer — Contacts: Presets, Dry-Run & Match Keys *(next)*
 
-Make content templates first-class. Give them a real widget editor (template-aware page builder API), let any page type pick a template at creation (remove the current blog-post exclusion), and wire a per-page-type default in `site_settings` so new pages/posts/events hydrate from a template when the user doesn't pick one. Ownership-after-hydration contract preserved — templates seed; they don't constrain. Prompt: `sessions/187. Content Template Editor & Per-Type Defaults.md`.
+Extend the existing contact importer (already handles a 4-step wizard + staged-update approvals + rollback + batch-traceable notes) to cover the gaps that become obvious when working with a real nonprofit's export. Scope:
 
-### 188 — Importer: Datasheets & Mapping *(stub)*
+- **Presets per source.** Promote `ImportSource` to a full preset — store the column-to-field map, custom-field map, and the chosen match key on the source row itself. Re-imports from the same source remember the shape; the admin doesn't re-map on every run.
+- **True dry-run with halt-on-error.** Wrap the full import pipeline in a transaction that rolls back after counting. Produce a report (would create X / update Y / skip Z / error N with per-row detail). If any rows erred, the admin can either proceed omitting the errored rows or cancel and fix the CSV upstream.
+- **Configurable match key.** User picks one mapped column as the match key (typically an external ID, sometimes email, phone, or a custom field). Composite keys out of scope.
+- **Collision-option relabelling.** Clearer language for non-experts: "Skip the row", "Update the existing contact", "Create a duplicate anyway" (with warning). Drop ambiguous "Replace" semantics.
+- **Source link on timeline notes.** Existing import notes already reference `session_label`; extend them to also link back to `ImportSource` for click-through traceability.
 
-Build out the importer to handle a full org's worth of data using a real-world export as the working example. Goals:
+**CMS vs CRM importers are different things** — the CMS `ContentImporter` is a backup/restore format (session 187 kept its shape intact). This session is strictly the Tools → Importer surface for CRM data, nothing to do with content bundles.
 
-- Support the kinds of CSV/spreadsheet datasets a nonprofit would arrive with from another platform — contacts, memberships, donations, events, registrations, etc.
-- Document the mapping flow: how each datasheet's columns get mapped to the CRM's fields, including custom fields and lookup-by-key behavior.
-- Use the WCG export as the concrete example dataset for development, screenshots in docs, and end-to-end testing.
+**Local-only datafiles.** WCG datasheets stay in a gitignored folder (`local/import-fixtures/wcg/`). Tests use anonymised fixtures under `tests/Fixtures/`. Never commit real data.
 
-**Local-only datafiles.** WCG datasheets are private and must never enter source control. Place them in a gitignored folder (e.g. `local/import-fixtures/wcg/`) and add the path to `.gitignore`. Do not paste sample rows into committed docs or fixtures. Tests that exercise the importer should use anonymised fixtures kept under `tests/Fixtures/` rather than the real datasheets.
+Prompt: `sessions/188. CRM Importer — Contacts: Presets, Dry-Run & Match Keys.md`.
 
-### 189 — Theme Colors Refactor *(stub)*
+### 189 — CRM Importer — Events & Registrations *(stub)*
+
+Apply the same pattern session 188 builds for contacts to event data. Scope:
+
+- Import events (name, slug, dates, location, pricing) from a CSV shape using the preset/mapping/dry-run infrastructure from 188.
+- Import event registrations — each row is a registration that must lookup-by-key to both an existing contact and an existing event. Decide how the importer handles a registration whose contact isn't yet in the system (fail the row? create the contact inline?).
+- Reuse `ImportSource` / `ImportSession` / staged-updates / timeline notes — the entity-specific work is mostly the field registry, match-key semantics, and row processor.
+- Use WCG event exports as the concrete working dataset.
+
+### 190 — CRM Importer — Donations, Memberships & Financial *(stub)*
+
+Apply the same pattern to financial data. Scope:
+
+- Donations (amount, currency, received_at, payment method, fund, campaign, donor contact lookup).
+- Memberships (tier, start/end dates, contact lookup).
+- Transactions / purchases if the working dataset includes them.
+- Same open question as 189: what happens when the linked contact or fund doesn't exist yet? Probably fail the row with a clear message — financial imports should not silently create half-formed related records.
+- Decimal / currency parsing from messy spreadsheet formats ("$1,234.56", "1234.56 USD", "1234") is worth explicit handling; many real exports have inconsistent cell formats.
+
+### 191 — Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 

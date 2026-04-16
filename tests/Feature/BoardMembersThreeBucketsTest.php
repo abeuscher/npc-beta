@@ -145,8 +145,7 @@ it('board members template renders member cards with semantic HTML', function ()
     $page = Page::factory()->create(['slug' => 'board-test', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'board_members')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'heading'           => 'Our Board',
@@ -186,8 +185,7 @@ it('three buckets template renders three columns with headings body and buttons'
     $page = Page::factory()->create(['slug' => 'buckets-test', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'three_buckets')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'heading_1' => 'Mission',

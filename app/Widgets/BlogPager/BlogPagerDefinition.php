@@ -33,11 +33,17 @@ class BlogPagerDefinition extends WidgetDefinition
 
     public function schema(): array
     {
-        return [];
+        return [
+            ['key' => 'prev_template', 'type' => 'richtext', 'label' => 'Previous link template', 'group' => 'content', 'default' => '<span class="pager-link__title">&larr; {{title}}</span><small>{{author}} | {{date}}</small>'],
+            ['key' => 'next_template', 'type' => 'richtext', 'label' => 'Next link template', 'group' => 'content', 'default' => '<span class="pager-link__title">{{title}} &rarr;</span><small>{{author}} | {{date}}</small>'],
+        ];
     }
 
     public function defaults(): array
     {
-        return [];
+        return [
+            'prev_template' => '<span class="pager-link__title">&larr; {{title}}</span><small>{{author}} | {{date}}</small>',
+            'next_template' => '<span class="pager-link__title">{{title}} &rarr;</span><small>{{author}} | {{date}}</small>',
+        ];
     }
 }

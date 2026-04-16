@@ -88,21 +88,6 @@ class TemplateResource extends Resource
                     ])
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('widget_count')
-                    ->label('Widgets')
-                    ->getStateUsing(fn (Template $record) => $record->type === 'content'
-                        ? (is_array($record->definition) ? count($record->definition) : 0)
-                        : null
-                    )
-                    ->placeholder('—'),
-
-                Tables\Columns\IconColumn::make('is_default')
-                    ->label('Default')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('')
-                    ->trueColor('success'),
-
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()

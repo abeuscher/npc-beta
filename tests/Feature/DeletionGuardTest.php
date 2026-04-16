@@ -127,8 +127,7 @@ it('allows product deletion when no purchases exist', function () {
 it('blocks widget type deletion when page widgets reference it', function () {
     $widgetType = WidgetType::factory()->create();
     $page = Page::factory()->create();
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'sort_order'     => 0,

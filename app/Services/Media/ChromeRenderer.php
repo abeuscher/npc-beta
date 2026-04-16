@@ -45,14 +45,14 @@ class ChromeRenderer
             return null;
         }
 
-        $rootWidgets = $page->pageWidgets()
+        $rootWidgets = $page->widgets()
             ->with('widgetType')
             ->where('is_active', true)
             ->whereNull('layout_id')
             ->orderBy('sort_order')
             ->get();
 
-        $layouts = PageLayout::where('page_id', $page->id)
+        $layouts = $page->layouts()
             ->with(['widgets' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'), 'widgets.widgetType'])
             ->orderBy('sort_order')
             ->get();

@@ -59,6 +59,15 @@ class PageObserver
         ActivityLogger::log($page, 'updated', $description);
     }
 
+    public function deleting(Page $page): void
+    {
+        // Force-delete: tear down owned widget + layout rows (polymorphic, no DB FK cascade).
+        if ($page->isForceDeleting()) {
+            $page->layouts()->delete();
+            $page->widgets()->delete();
+        }
+    }
+
     public function deleted(Page $page): void
     {
         Cache::forget('sitemap_xml');

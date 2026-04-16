@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PostResource\Pages;
 use App\Models\Page;
+use App\Models\Template;
 use App\Services\ImportExport\ContentExporter;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
@@ -53,6 +54,14 @@ class PostResource extends Resource
                 extraTitleFields: [
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
+
+                    Forms\Components\Select::make('content_template_id')
+                        ->label('Content Template')
+                        ->options(fn () => collect(['none' => 'None (blank)'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                        ->default(fn () => \App\Models\SiteSetting::get('default_content_template_post') ?: 'none')
+                        ->helperText('Widget preset — applied once at creation.')
+                        ->hiddenOn('edit')
+                        ->columnSpanFull(),
                 ],
                 imageFields: [
                     SpatieMediaLibraryFileUpload::make('post_thumbnail')

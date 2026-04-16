@@ -14,11 +14,14 @@ use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
 use App\Models\Collection;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 
 class PageBuilder extends Component
 {
-    public string $pageId = '';
+    public string $ownerId = '';
+
+    public string $ownerType = 'page';
 
     private function assertCanEdit(): void
     {
@@ -45,19 +48,43 @@ class PageBuilder extends Component
     public string $saveTemplateName = '';
     public string $saveTemplateDescription = '';
 
-    public function mount(string $pageId = ''): void
+    /**
+     * Mount accepts the legacy `pageId` prop (page-typed) and a new
+     * `ownerId` / `ownerType` pair (polymorphic). Callers that still pass
+     * `pageId` get page-owner semantics automatically.
+     */
+    public function mount(string $pageId = '', string $ownerId = '', string $ownerType = 'page'): void
     {
-        $this->pageId = $pageId;
-
-        if ($pageId) {
-            $page = Page::find($pageId);
-            if ($page) {
-                $this->pageType = $page->type;
-                $this->requiredHandles = WidgetType::requiredForPage($page->bareSlug());
-            }
+        if ($ownerId !== '') {
+            $this->ownerId = $ownerId;
+            $this->ownerType = $ownerType;
+        } else {
+            $this->ownerId = $pageId;
+            $this->ownerType = 'page';
         }
 
-        $this->widgetTypes = WidgetType::forPicker($this->pageType);
+        $owner = $this->resolveOwner();
+
+        if ($owner instanceof Page) {
+            $this->pageType = $owner->type;
+            $this->requiredHandles = WidgetType::requiredForPage($owner->bareSlug());
+        }
+
+        $this->widgetTypes = $owner instanceof Template
+            ? WidgetType::forPicker(null)
+            : WidgetType::forPicker($this->pageType);
+    }
+
+    private function resolveOwner(): ?Model
+    {
+        if (! $this->ownerId) {
+            return null;
+        }
+
+        return match ($this->ownerType) {
+            'template' => Template::find($this->ownerId),
+            default    => Page::find($this->ownerId),
+        };
     }
 
     // -------------------------------------------------------------------------
@@ -82,14 +109,14 @@ class PageBuilder extends Component
         ]);
 
         $widgetType = WidgetType::find($widgetTypeId);
+        $owner = $this->resolveOwner();
 
-        if (! $widgetType) {
+        if (! $widgetType || ! $owner) {
             return;
         }
 
-        // Auto-generate label if not provided: "Widget Type Label N"
         if (blank($this->addModalLabel)) {
-            $count = PageWidget::where('page_id', $this->pageId)
+            $count = PageWidget::forOwner($owner)
                 ->whereHas('widgetType', fn ($q) => $q->where('id', $widgetTypeId))
                 ->count();
             $this->addModalLabel = $widgetType->label . ' ' . ($count + 1);
@@ -97,14 +124,14 @@ class PageBuilder extends Component
 
         if ($this->insertLayoutId) {
             $columnIndex = $this->insertColumnIndex ?? 0;
-            $position = (PageWidget::inSlot($this->pageId, $this->insertLayoutId, $columnIndex)
+            $position = (PageWidget::inSlot($owner, $this->insertLayoutId, $columnIndex)
                 ->max('sort_order') ?? -1) + 1;
         } else {
             $columnIndex = null;
-            $rootCount = PageWidget::inSlot($this->pageId, null, null)->count();
+            $rootCount = PageWidget::inSlot($owner, null, null)->count();
             $position = $this->insertPosition ?? $rootCount;
 
-            PageWidget::inSlot($this->pageId, null, null)
+            PageWidget::inSlot($owner, null, null)
                 ->where('sort_order', '>=', $position)
                 ->increment('sort_order');
         }
@@ -113,7 +140,8 @@ class PageBuilder extends Component
         $appearance = $def?->defaultAppearanceConfig() ?? [];
 
         $newBlock = PageWidget::create([
-            'page_id'           => $this->pageId,
+            'owner_type'        => $owner->getMorphClass(),
+            'owner_id'          => $owner->getKey(),
             'layout_id'         => $this->insertLayoutId,
             'column_index'      => $columnIndex,
             'widget_type_id'    => $widgetType->id,
@@ -130,11 +158,11 @@ class PageBuilder extends Component
         $this->insertLayoutId    = null;
         $this->insertColumnIndex = null;
         $this->addModalLabel     = '';
-        $this->js("window.dispatchEvent(new CustomEvent('widget-created', { detail: { widgetId: '" . $newBlock->id . "', pageId: '" . $this->pageId . "' } }))");
+        $this->js("window.dispatchEvent(new CustomEvent('widget-created', { detail: { widgetId: '" . $newBlock->id . "', ownerId: '" . $this->ownerId . "', ownerType: '" . $this->ownerType . "' } }))");
     }
 
     // -------------------------------------------------------------------------
-    // Save as Content Template
+    // Save as Content Template — only meaningful when the owner is a Page.
     // -------------------------------------------------------------------------
 
     public function openSaveTemplateModal(): void
@@ -153,18 +181,22 @@ class PageBuilder extends Component
             'saveTemplateDescription' => 'nullable|string|max:1000',
         ]);
 
-        $definition = PageWidget::serializeStack($this->pageId);
+        $source = $this->resolveOwner();
+        if (! $source instanceof Page) {
+            return;
+        }
 
-        $name = $this->saveTemplateName;
-
-        Template::create([
-            'name'        => $name,
+        $template = Template::create([
+            'name'        => $this->saveTemplateName,
             'type'        => 'content',
             'description' => $this->saveTemplateDescription ?: null,
-            'definition'  => $definition,
             'is_default'  => false,
             'created_by'  => auth()->id(),
         ]);
+
+        PageWidget::copyOwnedStack($source, $template);
+
+        $name = $this->saveTemplateName;
 
         $this->showSaveTemplateModal = false;
         $this->saveTemplateName = '';
@@ -175,7 +207,7 @@ class PageBuilder extends Component
             ->success()
             ->send();
 
-        $this->js("window.dispatchEvent(new CustomEvent('template-saved', { detail: { pageId: '" . $this->pageId . "' } }))");
+        $this->js("window.dispatchEvent(new CustomEvent('template-saved', { detail: { ownerId: '" . $this->ownerId . "' } }))");
     }
 
     // -------------------------------------------------------------------------
@@ -184,22 +216,27 @@ class PageBuilder extends Component
 
     public function getBootstrapData(): array
     {
-        $page = Page::find($this->pageId);
+        $owner = $this->resolveOwner();
+        $page = $owner instanceof Page ? $owner : null;
+        $template = $owner instanceof Template ? $owner : null;
 
-        // Build the merged page flow (root widgets + layouts) with preview HTML
         $requiredHandlesForPage = $this->requiredHandles;
 
-        $rootWidgets = PageWidget::where('page_id', $this->pageId)
-            ->whereNull('layout_id')
-            ->where('is_active', true)
-            ->with('widgetType')
-            ->orderBy('sort_order')
-            ->get();
+        $rootWidgets = $owner
+            ? PageWidget::forOwner($owner)
+                ->whereNull('layout_id')
+                ->where('is_active', true)
+                ->with('widgetType')
+                ->orderBy('sort_order')
+                ->get()
+            : collect();
 
-        $layouts = \App\Models\PageLayout::where('page_id', $this->pageId)
-            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
-            ->orderBy('sort_order')
-            ->get();
+        $layouts = $owner
+            ? \App\Models\PageLayout::forOwner($owner)
+                ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
+                ->orderBy('sort_order')
+                ->get()
+            : collect();
 
         $allLibs = [];
         $items = [];
@@ -234,7 +271,8 @@ class PageBuilder extends Component
             $items[] = [
                 'type'          => 'layout',
                 'id'            => $layout->id,
-                'page_id'       => $layout->page_id,
+                'owner_type'    => $layout->owner_type,
+                'owner_id'      => $layout->owner_id,
                 'label'         => $layout->label ?? '',
                 'display'       => $layout->display,
                 'columns'       => $layout->columns,
@@ -276,17 +314,16 @@ class PageBuilder extends Component
         $colorSwatches = json_decode(SiteSetting::get('editor_color_swatches', '[]'), true) ?: [];
 
         // Theme palette: resolved colors from the page's active template (or the default template).
+        // For template-owned stacks we use the default page template's palette.
         $activeTemplate = $page?->template ?? Template::query()->default()->first();
         $themePalette = $activeTemplate?->resolvedPalette() ?? [];
 
-        // Legacy 'widgets' key: root widgets only, kept for current Vue store compatibility
-        // until Phase 3 migrates the store to use 'items'.
         $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
 
-        // Page metadata for the builder header
-        $pageTitle  = $page?->title ?? '';
+        // Page-only metadata; templates fall back to empty strings.
+        $pageTitle  = $page?->title ?? ($template?->name ?? '');
         $pageAuthor = $page?->author?->name ?? '';
-        $pageStatus = $page?->status ?? 'draft';
+        $pageStatus = $page?->status ?? '';
         $pageTags   = $page
             ? $page->tags()->where('type', match ($page->type) {
                 'post' => 'post',
@@ -296,10 +333,12 @@ class PageBuilder extends Component
             : [];
 
         $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
-        $path = ($page && $page->slug === 'home') ? '/' : '/' . ($page->slug ?? '');
-        $pageUrl = $base . $path;
+        $path = $page
+            ? ($page->slug === 'home' ? '/' : '/' . $page->slug)
+            : '';
+        $pageUrl = $page ? ($base . $path) : '';
 
-        // Details URL — only for page/post types that have a details sub-page
+        // Details URL — only for page/post types that have a details sub-page.
         $detailsUrl = null;
         if ($page) {
             if ($page->type === 'post') {
@@ -309,8 +348,12 @@ class PageBuilder extends Component
             }
         }
 
+        $apiBaseUrl = '/' . $adminPath . '/api/page-builder/' . ($this->ownerType === 'template' ? 'templates' : 'pages') . '/' . $this->ownerId;
+
         return [
-            'page_id'                 => $this->pageId,
+            'owner_id'                => $this->ownerId,
+            'owner_type'              => $this->ownerType,
+            'page_id'                 => $page?->id ?? '',
             'page_type'               => $this->pageType,
             'page_title'              => $pageTitle,
             'page_author'             => $pageAuthor,
@@ -328,7 +371,8 @@ class PageBuilder extends Component
             'pages'                   => $pages,
             'events'                  => $events,
             'csrf_token'              => csrf_token(),
-            'api_base_url'            => '/' . $adminPath . '/api/page-builder',
+            'api_base_url'            => $apiBaseUrl,
+            'api_lookup_url'          => '/' . $adminPath . '/api/page-builder',
             'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
             'color_swatches'          => $colorSwatches,
             'theme_palette'           => $themePalette,

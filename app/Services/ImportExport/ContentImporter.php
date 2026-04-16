@@ -107,7 +107,23 @@ class ContentImporter
         }
 
         if ($type === 'content') {
-            $template->update(['definition' => $data['definition'] ?? []]);
+            // Replace the template's widget stack with whatever the bundle carries.
+            $template->widgets()->delete();
+            $template->layouts()->delete();
+
+            // Widgets array is the new format; `definition` is the pre-polymorphism
+            // format, still accepted so older bundles round-trip cleanly.
+            $widgets = $data['widgets'] ?? $data['definition'] ?? [];
+
+            foreach ($widgets as $item) {
+                $itemType = $item['type'] ?? 'widget';
+
+                if ($itemType === 'layout') {
+                    $this->hydrateLayoutForOwner($template, $item, $log);
+                } else {
+                    $this->hydrateRootWidgetForOwner($template, $item, $log);
+                }
+            }
 
             return;
         }
@@ -221,8 +237,8 @@ class ContentImporter
 
             // Wipe the existing widget tree so the imported one is canonical.
             // Layouts cascade their widgets via FK on delete; root widgets need an explicit delete.
-            PageWidget::where('page_id', $page->id)->delete();
-            PageLayout::where('page_id', $page->id)->delete();
+            $page->widgets()->delete();
+            $page->layouts()->delete();
         } else {
             $attributes['author_id'] = $this->resolveAuthorId();
             if (! empty($data['id'])) {
@@ -303,18 +319,26 @@ class ContentImporter
      */
     protected function hydrateRootWidget(Page $page, array $item, ImportLog $log): void
     {
-        $widgetType = $this->resolveWidgetType($item['handle'] ?? null, $page->slug, $log);
+        $this->hydrateRootWidgetForOwner($page, $item, $log, $page->slug);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    protected function hydrateRootWidgetForOwner(\Illuminate\Database\Eloquent\Model $owner, array $item, ImportLog $log, ?string $label = null): void
+    {
+        $label = $label ?? ($owner->name ?? (string) $owner->getKey());
+        $widgetType = $this->resolveWidgetType($item['handle'] ?? null, $label, $log);
         if (! $widgetType) {
             return;
         }
 
-        $widget = PageWidget::create([
-            'page_id'           => $page->id,
+        $widget = $owner->widgets()->create([
             'layout_id'         => null,
             'column_index'      => null,
             'widget_type_id'    => $widgetType->id,
             'label'             => $item['label'] ?? null,
-            'config'            => $this->sanitizeWidgetConfig($item['config'] ?? [], $widgetType, $page->slug, $log),
+            'config'            => $this->sanitizeWidgetConfig($item['config'] ?? [], $widgetType, $label, $log),
             'query_config'      => $item['query_config'] ?? [],
             'appearance_config' => $item['appearance_config'] ?? [],
             'sort_order'        => $item['sort_order'] ?? 0,
@@ -329,8 +353,16 @@ class ContentImporter
      */
     protected function hydrateLayout(Page $page, array $item, ImportLog $log): void
     {
-        $layout = PageLayout::create([
-            'page_id'       => $page->id,
+        $this->hydrateLayoutForOwner($page, $item, $log, $page->slug);
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    protected function hydrateLayoutForOwner(\Illuminate\Database\Eloquent\Model $owner, array $item, ImportLog $log, ?string $label = null): void
+    {
+        $label = $label ?? ($owner->name ?? (string) $owner->getKey());
+        $layout = $owner->layouts()->create([
             'label'         => $item['label'] ?? null,
             'display'       => $item['display'] ?? 'grid',
             'columns'       => $item['columns'] ?? 2,
@@ -340,18 +372,17 @@ class ContentImporter
 
         foreach ($item['slots'] ?? [] as $columnIndex => $slotWidgets) {
             foreach ($slotWidgets as $slotItem) {
-                $widgetType = $this->resolveWidgetType($slotItem['handle'] ?? null, $page->slug, $log);
+                $widgetType = $this->resolveWidgetType($slotItem['handle'] ?? null, $label, $log);
                 if (! $widgetType) {
                     continue;
                 }
 
-                $widget = PageWidget::create([
-                    'page_id'           => $page->id,
+                $widget = $owner->widgets()->create([
                     'layout_id'         => $layout->id,
                     'column_index'      => (int) $columnIndex,
                     'widget_type_id'    => $widgetType->id,
                     'label'             => $slotItem['label'] ?? null,
-                    'config'            => $this->sanitizeWidgetConfig($slotItem['config'] ?? [], $widgetType, $page->slug, $log),
+                    'config'            => $this->sanitizeWidgetConfig($slotItem['config'] ?? [], $widgetType, $label, $log),
                     'query_config'      => $slotItem['query_config'] ?? [],
                     'appearance_config' => $slotItem['appearance_config'] ?? [],
                     'sort_order'        => $slotItem['sort_order'] ?? 0,

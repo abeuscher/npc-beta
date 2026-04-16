@@ -6,13 +6,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class PageLayout extends Model
 {
     use HasUuids;
 
     protected $fillable = [
-        'page_id',
+        'owner_type',
+        'owner_id',
         'label',
         'display',
         'columns',
@@ -24,9 +26,15 @@ class PageLayout extends Model
         'layout_config' => 'array',
     ];
 
-    public function page(): BelongsTo
+    public function scopeForOwner($query, Model $owner)
     {
-        return $this->belongsTo(Page::class);
+        return $query->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
+    }
+
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function widgets(): HasMany

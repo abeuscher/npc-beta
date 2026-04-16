@@ -1,50 +1,71 @@
 @php
     $prev = null;
     $next = null;
+    $hasPosts = false;
 
     if ($pageContext->currentPage && $pageContext->currentPage->type === 'post') {
-        $allPosts = $pageContext->posts(); // DESC order — index 0 = newest
+        $allPosts = $pageContext->posts();
         $idx = $allPosts->search(fn ($p) => $p->id === $pageContext->currentPage->id);
 
         if ($idx !== false) {
-            $next = $idx > 0                        ? $allPosts->get($idx - 1) : null; // newer
-            $prev = $idx < $allPosts->count() - 1   ? $allPosts->get($idx + 1) : null; // older
+            $next = $idx > 0                        ? $allPosts->get($idx - 1) : null;
+            $prev = $idx < $allPosts->count() - 1   ? $allPosts->get($idx + 1) : null;
+            $hasPosts = true;
         }
     }
-@endphp
 
-@php
-    $thumbFor = function ($post) {
-        return $post->getFirstMediaUrl('post_thumbnail', 'webp')
+    $defaultPrevTemplate = '<span class="pager-link__title">&larr; {{title}}</span><small>{{author}} | {{date}}</small>';
+    $defaultNextTemplate = '<span class="pager-link__title">{{title}} &rarr;</span><small>{{author}} | {{date}}</small>';
+
+    $prevTemplate = trim(strip_tags($config['prev_template'] ?? '')) !== '' ? ($config['prev_template'] ?? $defaultPrevTemplate) : $defaultPrevTemplate;
+    $nextTemplate = trim(strip_tags($config['next_template'] ?? '')) !== '' ? ($config['next_template'] ?? $defaultNextTemplate) : $defaultNextTemplate;
+
+    $resolveTokens = function (string $template, $post) {
+        if (! $post) {
+            return $template;
+        }
+
+        $thumbUrl = $post->getFirstMediaUrl('post_thumbnail', 'webp')
             ?: $post->getFirstMediaUrl('post_thumbnail');
+        $imgHtml = $thumbUrl ? '<img src="' . e($thumbUrl) . '" alt="' . e($post->title) . '" class="pager-link__thumb" loading="lazy">' : '';
+
+        $tokens = [
+            '{{title}}'  => e($post->title),
+            '{{url}}'    => url('/' . $post->slug),
+            '{{date}}'   => $post->published_at?->format('F j, Y') ?? '',
+            '{{author}}' => e($post->author?->name ?? ''),
+            '{{image}}'  => $imgHtml,
+        ];
+
+        return str_replace(array_keys($tokens), array_values($tokens), $template);
     };
+
+    $isPreview = ! $hasPosts;
 @endphp
 
-@if ($prev || $next)
+@if ($prev || $next || $isPreview)
     <nav class="widget-blog-pager" aria-label="Post navigation">
         <span class="pager-link">
             @if ($next)
-                @php $thumb = $thumbFor($next); @endphp
-                <a href="/{{ $next->slug }}" rel="next" class="pager-link__anchor">
-                    @if ($thumb)
-                        <img src="{{ $thumb }}" alt="" class="pager-link__thumb" loading="lazy">
-                    @endif
-                    <span class="pager-link__title">&larr; {{ $next->title }}</span>
+                <a href="{{ url('/' . $next->slug) }}" rel="next" class="pager-link__anchor">
+                    {!! $resolveTokens($nextTemplate, $next) !!}
                 </a>
-                <small class="pager-meta">{{ $next->author?->name }} | {{ ($next->published_at ?? $next->created_at)->format('F j, Y') }}</small>
+            @elseif ($isPreview)
+                <span class="pager-link__anchor">
+                    {!! $nextTemplate !!}
+                </span>
             @endif
         </span>
 
         <span class="pager-link pager-link--next">
             @if ($prev)
-                @php $thumb = $thumbFor($prev); @endphp
-                <a href="/{{ $prev->slug }}" rel="prev" class="pager-link__anchor">
-                    @if ($thumb)
-                        <img src="{{ $thumb }}" alt="" class="pager-link__thumb" loading="lazy">
-                    @endif
-                    <span class="pager-link__title">{{ $prev->title }} &rarr;</span>
+                <a href="{{ url('/' . $prev->slug) }}" rel="prev" class="pager-link__anchor">
+                    {!! $resolveTokens($prevTemplate, $prev) !!}
                 </a>
-                <small class="pager-meta">{{ $prev->author?->name }} | {{ ($prev->published_at ?? $prev->created_at)->format('F j, Y') }}</small>
+            @elseif ($isPreview)
+                <span class="pager-link__anchor">
+                    {!! $prevTemplate !!}
+                </span>
             @endif
         </span>
     </nav>

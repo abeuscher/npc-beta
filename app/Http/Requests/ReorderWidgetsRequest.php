@@ -33,21 +33,24 @@ class ReorderWidgetsRequest extends FormRequest
                 return;
             }
 
-            $page = $this->route('page');
+            $owner = $this->route('owner');
+            if (! $owner) {
+                return;
+            }
             $items = $this->normalizedItems();
 
             $widgetIds = collect($items)->where('type', 'widget')->pluck('id')->unique()->all();
             $layoutIds = collect($items)->where('type', 'layout')->pluck('id')->unique()->all();
 
             if (! empty($widgetIds)) {
-                $count = PageWidget::where('page_id', $page->id)->whereIn('id', $widgetIds)->count();
+                $count = PageWidget::forOwner($owner)->whereIn('id', $widgetIds)->count();
                 if ($count !== count($widgetIds)) {
                     $v->errors()->add('items', 'Invalid widget IDs.');
                 }
             }
 
             if (! empty($layoutIds)) {
-                $count = PageLayout::where('page_id', $page->id)->whereIn('id', $layoutIds)->count();
+                $count = PageLayout::forOwner($owner)->whereIn('id', $layoutIds)->count();
                 if ($count !== count($layoutIds)) {
                     $v->errors()->add('items', 'Invalid layout IDs.');
                 }
@@ -62,7 +65,7 @@ class ReorderWidgetsRequest extends FormRequest
                 ->all();
 
             if (! empty($referencedLayoutIds)) {
-                $count = PageLayout::where('page_id', $page->id)->whereIn('id', $referencedLayoutIds)->count();
+                $count = PageLayout::forOwner($owner)->whereIn('id', $referencedLayoutIds)->count();
                 if ($count !== count($referencedLayoutIds)) {
                     $v->errors()->add('items', 'Invalid referenced layout IDs.');
                 }

@@ -32,8 +32,7 @@ it('renders content from config in the hero template', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero Test', 'slug' => 'hero-test', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Welcome</h1><p>Subheading here</p>',
@@ -63,8 +62,7 @@ it('substitutes {{title}} and {{date}} tokens in hero richtext content', functio
         'published_at' => '2026-05-01 00:00:00',
     ]);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'                    => '<h1>{{title}}</h1><p>{{date}}</p>',
@@ -90,8 +88,7 @@ it('hides CTA section when ctas array is empty', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero No CTA', 'slug' => 'hero-no-cta', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>No buttons</h1>',
@@ -115,8 +112,7 @@ it('renders CTA buttons with correct style classes', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero CTAs', 'slug' => 'hero-ctas', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',
@@ -150,8 +146,7 @@ it('escapes CTA URLs to prevent XSS', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero XSS', 'slug' => 'hero-xss', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',
@@ -177,8 +172,7 @@ it('adds fullscreen class when fullscreen is enabled', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Fullscreen Hero', 'slug' => 'fullscreen-hero', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Big Hero</h1>',
@@ -200,8 +194,7 @@ it('uses height class when fullscreen is off', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Standard Hero', 'slug' => 'standard-hero', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Normal</h1>',
@@ -226,8 +219,7 @@ it('shows scroll indicator when enabled', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Scroll Hero', 'slug' => 'scroll-hero', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'          => '<h1>Test</h1>',
@@ -249,8 +241,7 @@ it('hides scroll indicator when disabled', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'No Scroll Hero', 'slug' => 'no-scroll-hero', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'          => '<h1>Test</h1>',
@@ -278,8 +269,7 @@ it('renders schema defaults when widget config is empty', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Hero Empty', 'slug' => 'hero-empty', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [],
         'sort_order'     => 0,
@@ -302,8 +292,7 @@ it('adds overlap-nav class when full bleed is enabled', function () {
     $hero = seedHeroWidget();
     $page = Page::factory()->create(['title' => 'Bleed Hero', 'slug' => 'bleed-hero', 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $hero->id,
         'config'         => [
             'content'         => '<h1>Test</h1>',

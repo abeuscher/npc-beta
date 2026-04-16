@@ -133,7 +133,7 @@ class AppearanceStyleComposer
 
     private function resolveCurrentPageHeaderUrl(PageWidget $pw): ?string
     {
-        $page = $pw->page;
+        $page = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
         if ($page === null) {
             return null;
         }

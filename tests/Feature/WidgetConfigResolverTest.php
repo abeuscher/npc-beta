@@ -20,8 +20,7 @@ function navPageWidget(array $config = []): PageWidget
     $wt = WidgetType::where('handle', 'nav')->firstOrFail();
     $page = Page::factory()->create(['title' => 'R', 'slug' => 'r-' . uniqid(), 'status' => 'published']);
 
-    return PageWidget::create([
-        'page_id'        => $page->id,
+    return $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => $config,
         'sort_order'     => 0,
@@ -41,8 +40,7 @@ function nonDefinitionPageWidget(array $schema, array $config = []): PageWidget
     ]);
     $page = Page::factory()->create(['title' => 'P', 'slug' => 'p-' . uniqid(), 'status' => 'published']);
 
-    return PageWidget::create([
-        'page_id'        => $page->id,
+    return $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => $config,
         'sort_order'     => 0,
@@ -108,8 +106,7 @@ it('pre-existing fat rows still render correctly via the resolver (regression)',
     $fat = $wt->getDefaultConfig();
     $fat['link_color'] = '#123456';
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => $fat,
         'sort_order'     => 0,

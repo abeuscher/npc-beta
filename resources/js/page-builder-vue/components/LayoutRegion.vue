@@ -77,7 +77,7 @@ function openSlotPicker(slotIdx: number) {
       detail: {
         layoutId: props.layout.id,
         columnIndex: slotIdx,
-        pageId: store.pageId,
+        ownerId: store.ownerId,
       },
     })
   )

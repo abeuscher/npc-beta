@@ -133,8 +133,7 @@ it('logo garden renders static grid with collection data', function () {
     $page = Page::factory()->create(['slug' => 'logo-test', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'logo_garden')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'collection_handle' => 'test-logos',
@@ -186,8 +185,7 @@ it('logo garden renders carousel mode markup', function () {
     $page = Page::factory()->create(['slug' => 'logo-carousel-test', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'logo_garden')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'collection_handle' => 'carousel-logos',
@@ -244,8 +242,7 @@ it('logo garden renders flipper mode markup', function () {
     $page = Page::factory()->create(['slug' => 'logo-flipper-test', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'logo_garden')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'collection_handle' => 'flipper-logos',
@@ -295,8 +292,7 @@ it('logo garden carousel renders default spaceBetween when gap is not set', func
     $page = Page::factory()->create(['slug' => 'logo-gap-default', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'logo_garden')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'collection_handle' => 'gap-default-logos',
@@ -342,8 +338,7 @@ it('logo garden carousel renders custom spaceBetween from gap config', function 
     $page = Page::factory()->create(['slug' => 'logo-gap-custom', 'status' => 'published']);
     $wt = WidgetType::where('handle', 'logo_garden')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'collection_handle' => 'gap-custom-logos',

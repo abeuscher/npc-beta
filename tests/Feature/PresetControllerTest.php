@@ -38,8 +38,7 @@ function presetHeroWidget(): PageWidget
 
     $wt = WidgetType::where('handle', 'hero')->firstOrFail();
 
-    return PageWidget::create([
-        'page_id'           => $page->id,
+    return $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Hero',
         'config'            => [
@@ -96,8 +95,7 @@ it('materializes defaults for appearance-group keys not set on the instance', fu
 
     $wt = WidgetType::where('handle', 'hero')->firstOrFail();
 
-    $widget = PageWidget::create([
-        'page_id'           => $page->id,
+    $widget = $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Hero',
         'config'            => ['text_position' => 'top-left'],
@@ -274,7 +272,7 @@ it('exposes DB draft presets through the page-builder bootstrap payload', functi
         'appearance_config' => ['background' => ['color' => '#222222']],
     ]);
 
-    $bootstrap = \Livewire\Livewire::test(\App\Livewire\PageBuilder::class, ['pageId' => $widget->page_id])
+    $bootstrap = \Livewire\Livewire::test(\App\Livewire\PageBuilder::class, ['pageId' => $widget->owner_id])
         ->instance()
         ->getBootstrapData();
 

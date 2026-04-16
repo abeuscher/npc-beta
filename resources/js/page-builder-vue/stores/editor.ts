@@ -23,6 +23,7 @@ import * as api from '../api'
 
 export const useEditorStore = defineStore('editor', () => {
   // Core data
+  const ownerId = ref('')
   const pageId = ref('')
   const pageType = ref('default')
   const pageTitle = ref('')
@@ -135,6 +136,7 @@ export const useEditorStore = defineStore('editor', () => {
   // ── Actions ────────────────────────────────────────────────────────────
 
   function loadTree(data: BootstrapData): void {
+    ownerId.value = data.owner_id ?? data.page_id
     pageId.value = data.page_id
     pageType.value = data.page_type
     pageTitle.value = data.page_title ?? ''
@@ -759,6 +761,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   return {
     // State
+    ownerId,
     pageId,
     pageType,
     pageTitle,

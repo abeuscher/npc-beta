@@ -92,8 +92,7 @@ it('renders a page layout with grid CSS and child widgets', function () {
         'published_at' => now(),
     ]);
 
-    $layout = PageLayout::create([
-        'page_id'       => $page->id,
+    $layout = $page->layouts()->create([
         'label'         => 'Two Col',
         'display'       => 'grid',
         'columns'       => 2,
@@ -106,8 +105,7 @@ it('renders a page layout with grid CSS and child widgets', function () {
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => 0,
         'widget_type_id' => $wt->id,
@@ -119,8 +117,7 @@ it('renders a page layout with grid CSS and child widgets', function () {
         'is_active'      => true,
     ]);
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => 1,
         'widget_type_id' => $wt->id,
@@ -152,8 +149,7 @@ it('contains a layout in .site-container by default and emits new style fields',
         'published_at' => now(),
     ]);
 
-    $layout = PageLayout::create([
-        'page_id'       => $page->id,
+    $layout = $page->layouts()->create([
         'display'       => 'grid',
         'columns'       => 1,
         'layout_config' => [
@@ -166,8 +162,7 @@ it('contains a layout in .site-container by default and emits new style fields',
     ]);
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => 0,
         'widget_type_id' => $wt->id,
@@ -196,8 +191,7 @@ it('renders a layout edge-to-edge when full_width is true', function () {
         'published_at' => now(),
     ]);
 
-    $layout = PageLayout::create([
-        'page_id'       => $page->id,
+    $layout = $page->layouts()->create([
         'display'       => 'grid',
         'columns'       => 1,
         'layout_config' => [
@@ -208,8 +202,7 @@ it('renders a layout edge-to-edge when full_width is true', function () {
     ]);
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => 0,
         'widget_type_id' => $wt->id,

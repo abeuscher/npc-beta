@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
-use App\Services\Media\InlineImageRenderer;
+use App\Services\PageBlockRenderer;
 use App\Services\PageContext;
-use Illuminate\Support\Facades\Blade;
+use App\Services\WidgetRenderer;
 use Illuminate\Support\Facades\View;
 
 class PostController extends Controller
@@ -38,78 +38,29 @@ class PostController extends Controller
         $pageContext = new PageContext($page);
         View::share('pageContext', $pageContext);
 
-        $pageWidgets = $page->pageWidgets()
+        $pageWidgets = $page->widgets()
             ->with('widgetType')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
-        $blocks        = [];
-        $inlineStyles  = '';
-        $inlineScripts = '';
+        $blocks         = [];
+        $inlineStyles   = '';
+        $inlineScripts  = '';
+        $widgetAssets   = ['css' => [], 'js' => [], 'scss' => []];
+
+        $blockRenderer = app(PageBlockRenderer::class);
 
         foreach ($pageWidgets as $pw) {
-            $widgetType = $pw->widgetType;
-
-            if (! $widgetType) {
-                continue;
+            $blockData = $blockRenderer->renderWidgetBlock($pw);
+            if ($blockData) {
+                $blocks[]       = $blockData['block'];
+                $inlineStyles  .= $blockData['styles'];
+                $inlineScripts .= $blockData['scripts'];
             }
-
-            $config = $pw->config ?? [];
-
-            // Process inline images in richtext config fields
-            foreach ($widgetType->config_schema ?? [] as $field) {
-                if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
-                    $config[$field['key']] = InlineImageRenderer::process($config[$field['key']]);
-                }
-            }
-
-            $composed = app(\App\Services\AppearanceStyleComposer::class)->compose($pw);
-
-            if ($widgetType->render_mode === 'server') {
-                $html = $widgetType->template
-                    ? Blade::render($widgetType->template, ['config' => $config])
-                    : '';
-
-                $blocks[] = [
-                    'handle'       => $widgetType->handle,
-                    'instance_id'  => $pw->id,
-                    'html'         => $html,
-                    'css'          => $widgetType->css ?? '',
-                    'js'           => $widgetType->js ?? '',
-                    'inline_style' => $composed['inline_style'],
-                    'full_width'   => $composed['is_full_width'],
-                ];
-
-                if ($widgetType->css) {
-                    $inlineStyles .= "\n" . $widgetType->css;
-                }
-
-                if ($widgetType->js) {
-                    $inlineScripts .= "\n" . $widgetType->js;
-                }
-            } else {
-                $clientHtml = $widgetType->code
-                    ? '<script>' . $widgetType->code . '</script>'
-                    : '';
-
-                $blocks[] = [
-                    'handle'       => $widgetType->handle,
-                    'instance_id'  => $pw->id,
-                    'html'         => $clientHtml,
-                    'css'          => $widgetType->css ?? '',
-                    'js'           => '',
-                    'inline_style' => $composed['inline_style'],
-                    'full_width'   => $composed['is_full_width'],
-                ];
-
-                if ($widgetType->css) {
-                    $inlineStyles .= "\n" . $widgetType->css;
-                }
-            }
+            WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
         }
 
-        // Check if the first widget is a hero with overlap_nav enabled
         $firstPw = $pageWidgets->first();
         $navOverlap = $firstPw
             && $firstPw->widgetType?->handle === 'hero'
@@ -118,6 +69,6 @@ class PostController extends Controller
         View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
         View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
 
-        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
+        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
     }
 }

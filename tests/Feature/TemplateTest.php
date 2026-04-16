@@ -141,7 +141,7 @@ it('createLandingPageForEvent uses content template widget definitions', functio
     \App\Filament\Resources\EventResource::createLandingPageForEvent($event);
 
     $page = Page::find($event->fresh()->landing_page_id);
-    $handles = PageWidget::where('page_id', $page->id)
+    $handles = PageWidget::forOwner($page)
         ->join('widget_types', 'widget_types.id', '=', 'page_widgets.widget_type_id')
         ->orderBy('page_widgets.sort_order')
         ->pluck('widget_types.handle')
@@ -158,7 +158,7 @@ it('createLandingPageForEvent falls back to hardcoded widgets when template is m
     \App\Filament\Resources\EventResource::createLandingPageForEvent($event);
 
     $page = Page::find($event->fresh()->landing_page_id);
-    $handles = PageWidget::where('page_id', $page->id)
+    $handles = PageWidget::forOwner($page)
         ->join('widget_types', 'widget_types.id', '=', 'page_widgets.widget_type_id')
         ->orderBy('page_widgets.sort_order')
         ->pluck('widget_types.handle')

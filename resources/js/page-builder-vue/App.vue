@@ -23,7 +23,7 @@ function openSaveTemplateModal() {
 
 async function handleWidgetCreated(e: Event) {
   const detail = (e as CustomEvent).detail ?? {}
-  if (detail.pageId !== store.pageId) return
+  if (detail.ownerId !== store.ownerId) return
   const widgetId = detail.widgetId ?? null
   await store.reloadTree()
   if (widgetId) {
@@ -33,12 +33,12 @@ async function handleWidgetCreated(e: Event) {
 
 function handleTemplateSaved(e: Event) {
   const detail = (e as CustomEvent).detail ?? {}
-  if (detail.pageId !== store.pageId) return
+  if (detail.ownerId !== store.ownerId) return
   // no-op for now — could show a notification in the future
 }
 
 onMounted(() => {
-  configure(props.bootstrap.csrf_token, props.bootstrap.api_base_url)
+  configure(props.bootstrap.csrf_token, props.bootstrap.api_base_url, props.bootstrap.api_lookup_url)
   store.loadTree(props.bootstrap)
 
   // Event bridge: listen for Livewire mutations

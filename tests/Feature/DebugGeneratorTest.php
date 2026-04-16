@@ -94,7 +94,7 @@ it('generates blog posts with page widgets', function () {
     $blogPagerType = WidgetType::where('handle', 'blog_pager')->first();
 
     $posts->each(function ($post) use ($textBlockType, $blogPagerType) {
-        $widgets = PageWidget::where('page_id', $post->id)->orderBy('sort_order')->get();
+        $widgets = PageWidget::forOwner($post)->orderBy('sort_order')->get();
         expect($widgets)->toHaveCount(2);
 
         expect($widgets[0]->widget_type_id)->toBe($textBlockType->id);

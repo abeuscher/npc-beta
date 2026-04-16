@@ -31,8 +31,7 @@ beforeEach(function () {
 
 function makeWidget(Page $page, WidgetType $wt, array $ac = [], ?string $layoutId = null): PageWidget
 {
-    return PageWidget::create([
-        'page_id'           => $page->id,
+    return $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'layout_id'         => $layoutId,
         'label'             => 'Test',
@@ -128,8 +127,7 @@ it('falls back to widget_type default for full_width', function () {
 });
 
 it('forces full_width false for column-child widget', function () {
-    $layout = PageLayout::create([
-        'page_id'       => $this->page->id,
+    $layout = $this->page->layouts()->create([
         'label'         => 'Test Layout',
         'display'       => 'grid',
         'columns'       => 2,

@@ -108,8 +108,7 @@ it('map embed blade renders iframe when valid URL provided', function () {
     $wt = WidgetType::where('handle', 'map_embed')->first();
     $page = Page::factory()->create();
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'heading'      => 'Our Location',
@@ -140,8 +139,7 @@ it('map embed blade renders nothing when invalid input provided', function () {
     $wt = WidgetType::where('handle', 'map_embed')->first();
     $page = Page::factory()->create();
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
             'map_input' => 'not a valid url',

@@ -42,8 +42,7 @@ function ieMakePageWithWidgets(string $slug, array $configs = [['handle' => 'tex
     foreach ($configs as $i => $cfg) {
         $wt = WidgetType::where('handle', $cfg['handle'])->firstOrFail();
 
-        PageWidget::create([
-            'page_id'        => $page->id,
+        $page->widgets()->create([
             'widget_type_id' => $wt->id,
             'label'          => $cfg['label'] ?? null,
             'config'         => $cfg['config'] ?? $wt->getDefaultConfig(),
@@ -76,7 +75,7 @@ it('round-trips a page with text widgets only', function () {
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 
     // Wipe widgets but keep the page row to verify overwrite path
-    PageWidget::where('page_id', $page->id)->delete();
+    PageWidget::forOwner($page)->delete();
     $page->update(['title' => 'Wiped', 'meta_title' => null]);
 
     app(ContentImporter::class)->import($bundle, new ImportLog());
@@ -85,7 +84,7 @@ it('round-trips a page with text widgets only', function () {
     expect($reloaded->id)->toBe($page->id); // id preserved
     expect($reloaded->title)->toBe('Test round-trip-text');
 
-    $widgets = PageWidget::where('page_id', $reloaded->id)->orderBy('sort_order')->get();
+    $widgets = PageWidget::forOwner($reloaded)->orderBy('sort_order')->get();
     expect($widgets)->toHaveCount(2);
     expect($widgets[0]->label)->toBe('Block A');
     expect($widgets[0]->config['content'])->toBe('<p>Hello A</p>');
@@ -97,8 +96,7 @@ it('round-trips a page with text widgets only', function () {
 it('round-trips a page with a column layout containing widgets', function () {
     $page = Page::factory()->create(['slug' => 'round-trip-layout', 'status' => 'published']);
 
-    $layout = PageLayout::create([
-        'page_id'       => $page->id,
+    $layout = $page->layouts()->create([
         'label'         => 'Two-Col',
         'display'       => 'grid',
         'columns'       => 2,
@@ -108,14 +106,14 @@ it('round-trips a page with a column layout containing widgets', function () {
 
     $textWt = WidgetType::where('handle', 'text_block')->first();
 
-    PageWidget::create([
-        'page_id' => $page->id, 'layout_id' => $layout->id, 'column_index' => 0,
+    $page->widgets()->create([
+        'layout_id' => $layout->id, 'column_index' => 0,
         'widget_type_id' => $textWt->id, 'label' => 'Left',
         'config' => ['content' => '<p>Left col</p>'],
         'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
     ]);
-    PageWidget::create([
-        'page_id' => $page->id, 'layout_id' => $layout->id, 'column_index' => 1,
+    $page->widgets()->create([
+        'layout_id' => $layout->id, 'column_index' => 1,
         'widget_type_id' => $textWt->id, 'label' => 'Right',
         'config' => ['content' => '<p>Right col</p>'],
         'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
@@ -123,12 +121,12 @@ it('round-trips a page with a column layout containing widgets', function () {
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 
-    PageWidget::where('page_id', $page->id)->delete();
-    PageLayout::where('page_id', $page->id)->delete();
+    PageWidget::forOwner($page)->delete();
+    PageLayout::forOwner($page)->delete();
 
     app(ContentImporter::class)->import($bundle, new ImportLog());
 
-    $layouts = PageLayout::where('page_id', $page->id)->get();
+    $layouts = PageLayout::forOwner($page)->get();
     expect($layouts)->toHaveCount(1);
     expect($layouts[0]->columns)->toBe(2);
     expect($layouts[0]->layout_config['gap'])->toBe('1rem');
@@ -149,8 +147,7 @@ it('round-trips a page with a logo widget media reference', function () {
     $page = Page::factory()->create(['slug' => 'round-trip-media', 'status' => 'published']);
     $logoWt = WidgetType::where('handle', 'logo')->firstOrFail();
 
-    $widget = PageWidget::create([
-        'page_id'        => $page->id,
+    $widget = $page->widgets()->create([
         'widget_type_id' => $logoWt->id,
         'label'          => 'Site Logo',
         'config'         => ['logo' => null, 'text' => 'Acme', 'link_url' => '/'],
@@ -181,14 +178,14 @@ it('round-trips a page with a logo widget media reference', function () {
     expect($exportedWidget['media'][0]['file_name'])->toBe($logoName);
 
     // Wipe the widget (DB row only — file stays on disk because Storage::fake doesn't auto-delete)
-    PageWidget::where('page_id', $page->id)->delete();
+    PageWidget::forOwner($page)->delete();
 
     $log = new ImportLog();
     app(ContentImporter::class)->import($bundle, $log);
 
     expect($log->hasWarnings())->toBeFalse();
 
-    $reimported = PageWidget::where('page_id', $page->id)->first();
+    $reimported = PageWidget::forOwner($page)->first();
     expect($reimported)->not->toBeNull();
     expect($reimported->config['text'])->toBe('Acme');
 
@@ -209,13 +206,14 @@ it('round-trips a bulk bundle of multiple pages', function () {
     expect($bundle['payload']['pages'])->toHaveCount(3);
 
     // Wipe widgets to simulate a fresh import target
-    PageWidget::whereIn('page_id', [$p1->id, $p2->id, $p3->id])->delete();
+    PageWidget::where('owner_type', (new \App\Models\Page())->getMorphClass())
+        ->whereIn('owner_id', [$p1->id, $p2->id, $p3->id])->delete();
 
     app(ContentImporter::class)->import($bundle, new ImportLog());
 
     foreach (['bulk-1' => '<p>P1</p>', 'bulk-2' => '<p>P2</p>', 'bulk-3' => '<p>P3</p>'] as $slug => $expected) {
         $page    = Page::where('slug', $slug)->first();
-        $widget  = PageWidget::where('page_id', $page->id)->first();
+        $widget  = PageWidget::forOwner($page)->first();
         expect($widget->config['content'])->toBe($expected);
     }
 });
@@ -244,8 +242,8 @@ it('round-trips a page template with customised chrome and header/footer pages',
         'author_id' => User::factory()->create()->id,
     ]);
     $logoWt = WidgetType::where('handle', 'logo')->first();
-    PageWidget::create([
-        'page_id' => $headerPage->id, 'widget_type_id' => $logoWt->id,
+    $headerPage->widgets()->create([
+        'widget_type_id' => $logoWt->id,
         'label' => 'Header Logo',
         'config' => ['logo' => null, 'text' => 'Brand', 'link_url' => '/'],
         'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
@@ -259,8 +257,8 @@ it('round-trips a page template with customised chrome and header/footer pages',
         'author_id' => User::factory()->create()->id,
     ]);
     $textWt = WidgetType::where('handle', 'text_block')->first();
-    PageWidget::create([
-        'page_id' => $footerPage->id, 'widget_type_id' => $textWt->id,
+    $footerPage->widgets()->create([
+        'widget_type_id' => $textWt->id,
         'label' => 'Copyright',
         'config' => ['content' => '<p>© 2026 Acme</p>'],
         'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
@@ -276,7 +274,8 @@ it('round-trips a page template with customised chrome and header/footer pages',
     expect($bundle['payload']['pages'])->toHaveCount(2);
 
     // Now wipe absolutely everything for those records to mimic a migrate:fresh
-    PageWidget::whereIn('page_id', [$headerPage->id, $footerPage->id])->delete();
+    PageWidget::where('owner_type', (new \App\Models\Page())->getMorphClass())
+        ->whereIn('owner_id', [$headerPage->id, $footerPage->id])->delete();
     Page::whereIn('id', [$headerPage->id, $footerPage->id])->forceDelete();
     $template->update(['header_page_id' => null, 'footer_page_id' => null, 'primary_color' => null]);
 
@@ -290,11 +289,11 @@ it('round-trips a page template with customised chrome and header/footer pages',
 
     $reloadedHeader = Page::find($reloadedTemplate->header_page_id);
     expect($reloadedHeader->slug)->toBe('_header_custom_chrome');
-    $headerWidget = PageWidget::where('page_id', $reloadedHeader->id)->first();
+    $headerWidget = PageWidget::forOwner($reloadedHeader)->first();
     expect($headerWidget->config['text'])->toBe('Brand');
 
     $reloadedFooter = Page::find($reloadedTemplate->footer_page_id);
-    $footerWidget   = PageWidget::where('page_id', $reloadedFooter->id)->first();
+    $footerWidget   = PageWidget::forOwner($reloadedFooter)->first();
     expect($footerWidget->config['content'])->toBe('<p>© 2026 Acme</p>');
 });
 
@@ -309,9 +308,8 @@ it('overwrites a page with a colliding slug while preserving its id', function (
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 
     // Mutate the existing page to verify it gets reset
-    PageWidget::where('page_id', $page->id)->delete();
-    PageWidget::create([
-        'page_id'        => $page->id,
+    PageWidget::forOwner($page)->delete();
+    $page->widgets()->create([
         'widget_type_id' => WidgetType::where('handle', 'text_block')->first()->id,
         'label'          => 'Stale',
         'config'         => ['content' => '<p>STALE</p>'],
@@ -323,7 +321,7 @@ it('overwrites a page with a colliding slug while preserving its id', function (
     $reloaded = Page::where('slug', 'collision')->first();
     expect($reloaded->id)->toBe($originalId);
 
-    $widgets = PageWidget::where('page_id', $reloaded->id)->get();
+    $widgets = PageWidget::forOwner($reloaded)->get();
     expect($widgets)->toHaveCount(1);
     expect($widgets[0]->label)->toBe('Original');
     expect($widgets[0]->config['content'])->toBe('<p>v1</p>');
@@ -352,7 +350,7 @@ it('restores a soft-deleted page when re-importing its slug', function () {
     expect($reloaded->id)->toBe($originalId);
     expect($reloaded->trashed())->toBeFalse();
 
-    $widgets = PageWidget::where('page_id', $reloaded->id)->get();
+    $widgets = PageWidget::forOwner($reloaded)->get();
     expect($widgets)->toHaveCount(1);
     expect($widgets[0]->label)->toBe('Original');
 });
@@ -363,8 +361,7 @@ it('clears collection_handle when the referenced collection does not exist', fun
     $blogWt = WidgetType::where('handle', 'blog_listing')->firstOrFail();
 
     $page = Page::factory()->create(['slug' => 'missing-coll', 'status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $blogWt->id,
         'label'          => 'Listing',
         'config'         => ['collection_handle' => 'does_not_exist'],
@@ -373,12 +370,12 @@ it('clears collection_handle when the referenced collection does not exist', fun
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 
-    PageWidget::where('page_id', $page->id)->delete();
+    PageWidget::forOwner($page)->delete();
 
     $log = new ImportLog();
     app(ContentImporter::class)->import($bundle, $log);
 
-    $widget = PageWidget::where('page_id', $page->id)->first();
+    $widget = PageWidget::forOwner($page)->first();
     expect($widget->config['collection_handle'])->toBe('');
     expect($log->hasWarnings())->toBeTrue();
     expect($log->warnings()[0]['message'])->toContain("'does_not_exist'");
@@ -457,7 +454,8 @@ it('leaves widget media null and warns when the source file is missing', functio
     $log = new ImportLog();
     app(ContentImporter::class)->import($bundle, $log);
 
-    $widget = PageWidget::whereHas('page', fn ($q) => $q->where('slug', 'missing-media'))->first();
+    $missingPage = Page::where('slug', 'missing-media')->first();
+    $widget = PageWidget::forOwner($missingPage)->first();
     expect($widget)->not->toBeNull();
     expect($widget->config['logo'])->toBeNull();
     expect($widget->getFirstMedia('config_logo'))->toBeNull();

@@ -69,7 +69,7 @@ class SeoMetaGenerator
      */
     public static function extractDescription(Page $page): string
     {
-        $widgets = $page->pageWidgets()
+        $widgets = $page->widgets()
             ->with('widgetType')
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -116,7 +116,7 @@ class SeoMetaGenerator
      */
     public static function extractFirstImage(Page $page): string
     {
-        $widgets = $page->pageWidgets()
+        $widgets = $page->widgets()
             ->with('widgetType')
             ->where('is_active', true)
             ->orderBy('sort_order')

@@ -15,8 +15,7 @@ it('emits text-shadow when text.shadow is true', function () {
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
     $wt = WidgetType::factory()->create(['handle' => 'shadow_test_' . uniqid()]);
 
-    $pw = PageWidget::create([
-        'page_id'           => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Shadow Test',
         'config'            => [],
@@ -34,8 +33,7 @@ it('does not emit text-shadow when text.shadow is absent', function () {
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
     $wt = WidgetType::factory()->create(['handle' => 'no_shadow_' . uniqid()]);
 
-    $pw = PageWidget::create([
-        'page_id'           => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'No Shadow Test',
         'config'            => [],
@@ -53,8 +51,7 @@ it('does not emit text-shadow when text.shadow is false', function () {
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
     $wt = WidgetType::factory()->create(['handle' => 'shadow_false_' . uniqid()]);
 
-    $pw = PageWidget::create([
-        'page_id'           => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Shadow False Test',
         'config'            => [],

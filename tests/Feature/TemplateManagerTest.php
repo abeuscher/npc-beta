@@ -41,7 +41,6 @@ it('lists content templates on the content tab', function () {
     Template::factory()->create([
         'type'       => 'content',
         'name'       => 'About Page',
-        'definition' => [['handle' => 'text_block', 'config' => [], 'sort_order' => 0]],
     ]);
 
     Livewire::test(ListTemplates::class)
@@ -192,11 +191,16 @@ it('page creation with content template prepopulates widgets', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $ct = Template::factory()->create([
-        'type'       => 'content',
-        'name'       => 'Test Content',
-        'definition' => [
-            ['handle' => 'text_block', 'config' => ['content' => 'Hello'], 'sort_order' => 0],
-        ],
+        'type' => 'content',
+        'name' => 'Test Content',
+    ]);
+
+    $textWidget = WidgetType::where('handle', 'text_block')->firstOrFail();
+    $ct->widgets()->create([
+        'widget_type_id' => $textWidget->id,
+        'config'         => ['content' => 'Hello'],
+        'sort_order'     => 0,
+        'is_active'      => true,
     ]);
 
     Livewire::test(\App\Filament\Resources\PageResource\Pages\CreatePage::class)
@@ -211,7 +215,7 @@ it('page creation with content template prepopulates widgets', function () {
     $page = Page::where('title', 'Hydrated Page')->first();
     expect($page)->not->toBeNull();
 
-    $widgets = PageWidget::where('page_id', $page->id)->get();
+    $widgets = PageWidget::forOwner($page)->get();
     expect($widgets)->toHaveCount(1);
     expect($widgets->first()->config)->toBe(['content' => 'Hello']);
 });
@@ -245,8 +249,7 @@ it('save as template creates content template from page widget stack', function 
 
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $textWidget->id,
         'label'          => 'Hero',
         'config'         => ['content' => 'Welcome'],
@@ -262,9 +265,11 @@ it('save as template creates content template from page widget stack', function 
 
     $template = Template::where('name', 'My Template')->where('type', 'content')->first();
     expect($template)->not->toBeNull();
-    expect($template->definition)->toHaveCount(1);
-    expect($template->definition[0]['handle'])->toBe('text_block');
-    expect($template->definition[0]['config'])->toBe(['content' => 'Welcome']);
+
+    $templateWidgets = PageWidget::forOwner($template)->with('widgetType')->get();
+    expect($templateWidgets)->toHaveCount(1);
+    expect($templateWidgets->first()->widgetType->handle)->toBe('text_block');
+    expect($templateWidgets->first()->config)->toBe(['content' => 'Welcome']);
 });
 
 // ── Non-default page template inheritance ─────────────────────────────────
@@ -340,8 +345,7 @@ it('save block layout as content template from edit page details', function () {
     $textWidget = WidgetType::where('handle', 'text_block')->first();
 
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $textWidget->id,
         'label'          => 'Test Block',
         'config'         => ['heading' => 'Hello'],
@@ -359,8 +363,10 @@ it('save block layout as content template from edit page details', function () {
 
     $template = Template::where('name', 'From Edit Page')->where('type', 'content')->first();
     expect($template)->not->toBeNull();
-    expect($template->definition)->toHaveCount(1);
-    expect($template->definition[0]['handle'])->toBe('text_block');
+
+    $templateWidgets = PageWidget::forOwner($template)->with('widgetType')->get();
+    expect($templateWidgets)->toHaveCount(1);
+    expect($templateWidgets->first()->widgetType->handle)->toBe('text_block');
 });
 
 // ── Site Theme page retired ───────────────────────────────────────────────

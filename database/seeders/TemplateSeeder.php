@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Page;
+use App\Models\SiteSetting;
 use App\Models\Template;
+use App\Models\WidgetType;
 use Illuminate\Database\Seeder;
 
 class TemplateSeeder extends Seeder
@@ -28,64 +30,81 @@ class TemplateSeeder extends Seeder
             ]
         );
 
-        // Ensure is_default is true even if the record already existed.
         if (! $default->is_default) {
             $default->update(['is_default' => true]);
         }
 
         // ── Content templates ────────────────────────────────────────────────
+        // Each content template is a stack of polymorphic PageWidget rows
+        // owned by the template. Seeded only on first creation — existing
+        // templates keep whatever stack they have.
 
-        Template::firstOrCreate(
-            ['name' => 'Contact Page', 'type' => 'content'],
-            [
-                'description' => 'Contact page with a heading and web form.',
-                'definition'  => [
-                    ['handle' => 'text_block', 'config' => ['heading' => 'Contact Us'], 'sort_order' => 1],
-                    ['handle' => 'web_form',   'config' => [],                          'sort_order' => 2],
-                ],
-            ]
-        );
+        $this->seedContentTemplate('Contact Page', 'Contact page with a heading and web form.', [
+            ['handle' => 'text_block', 'config' => ['heading' => 'Contact Us']],
+            ['handle' => 'web_form',   'config' => []],
+        ]);
 
-        Template::firstOrCreate(
-            ['name' => 'About Page', 'type' => 'content'],
-            [
-                'description' => 'About page with heading, image, and body text.',
-                'definition'  => [
-                    ['handle' => 'text_block', 'config' => ['heading' => 'About Us'], 'sort_order' => 1],
-                    ['handle' => 'image',      'config' => [],                         'sort_order' => 2],
-                    ['handle' => 'text_block', 'config' => [],                         'sort_order' => 3],
-                ],
-            ]
-        );
+        $this->seedContentTemplate('About Page', 'About page with heading, image, and body text.', [
+            ['handle' => 'text_block', 'config' => ['heading' => 'About Us']],
+            ['handle' => 'image',      'config' => []],
+            ['handle' => 'text_block', 'config' => []],
+        ]);
 
-        Template::firstOrCreate(
-            ['name' => 'Event Landing Page', 'type' => 'content'],
-            [
-                'description' => 'Standard event landing page with description and registration widgets.',
-                'definition'  => [
-                    ['handle' => 'event_description',  'config' => [], 'sort_order' => 1],
-                    ['handle' => 'event_registration', 'config' => [], 'sort_order' => 2],
-                ],
-            ]
-        );
+        $this->seedContentTemplate('Event Landing Page', 'Standard event landing page with description and registration widgets.', [
+            ['handle' => 'event_description',  'config' => []],
+            ['handle' => 'event_registration', 'config' => []],
+        ]);
 
-        Template::firstOrCreate(
-            ['name' => 'Blog Post', 'type' => 'content'],
-            [
-                'description' => 'Blog post with a single text block.',
-                'definition'  => [
-                    ['handle' => 'text_block', 'config' => [], 'sort_order' => 1],
-                ],
-            ]
-        );
+        $blogPost = $this->seedContentTemplate('Blog Post', 'Standard blog post layout with content and a prev/next pager.', [
+            ['handle' => 'text_block', 'config' => []],
+            ['handle' => 'blog_pager', 'config' => []],
+        ]);
 
-        Template::firstOrCreate(
-            ['name' => 'Blank', 'type' => 'content'],
-            [
-                'description' => 'Empty page — no widgets.',
-                'definition'  => [],
-            ]
-        );
+        $this->seedContentTemplate('Blank', 'Empty page — no widgets.', []);
+
+        // Wire per-type default settings on fresh install. firstOrCreate so we
+        // never overwrite an admin's later choice.
+        $this->seedDefaultIfUnset('default_content_template_post', $blogPost->id);
     }
 
+    private function seedDefaultIfUnset(string $key, string $value): void
+    {
+        if (SiteSetting::where('key', $key)->exists()) {
+            return;
+        }
+
+        SiteSetting::set($key, $value);
+    }
+
+    /**
+     * @param  array<int, array{handle: string, config?: array<string, mixed>}>  $widgets
+     */
+    private function seedContentTemplate(string $name, string $description, array $widgets): Template
+    {
+        $template = Template::firstOrCreate(
+            ['name' => $name, 'type' => 'content'],
+            ['description' => $description],
+        );
+
+        if ($template->wasRecentlyCreated) {
+            foreach ($widgets as $index => $spec) {
+                $widgetType = WidgetType::where('handle', $spec['handle'])->first();
+                if (! $widgetType) {
+                    continue;
+                }
+
+                $template->widgets()->create([
+                    'widget_type_id'    => $widgetType->id,
+                    'label'             => null,
+                    'config'            => $spec['config'] ?? [],
+                    'query_config'      => [],
+                    'appearance_config' => \App\Models\PageWidget::resolveAppearance([], $spec['handle']),
+                    'sort_order'        => $index + 1,
+                    'is_active'         => true,
+                ]);
+            }
+        }
+
+        return $template;
+    }
 }

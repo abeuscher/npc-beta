@@ -155,8 +155,7 @@ it('nulls contact_duplicate_dismissals dismissed_by on user delete', function ()
 it('blocks widget type delete when page widgets reference it', function () {
     $widgetType = WidgetType::factory()->create();
     $page = Page::factory()->create();
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'query_config'   => [],
@@ -198,8 +197,7 @@ it('cascades waitlist entry delete when product is deleted', function () {
 it('cascades page widget delete when page is force-deleted', function () {
     $page = Page::factory()->create();
     $widgetType = WidgetType::factory()->create();
-    $widget = PageWidget::create([
-        'page_id'        => $page->id,
+    $widget = $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'query_config'   => [],

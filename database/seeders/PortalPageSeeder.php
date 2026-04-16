@@ -119,7 +119,7 @@ class PortalPageSeeder extends Seeder
             return;
         }
 
-        $exists = PageWidget::where('page_id', $page->id)
+        $exists = PageWidget::forOwner($page)
             ->where('widget_type_id', $widgetType->id)
             ->exists();
 
@@ -127,13 +127,13 @@ class PortalPageSeeder extends Seeder
             return;
         }
 
-        PageWidget::create([
-            'page_id'        => $page->id,
-            'widget_type_id' => $widgetType->id,
-            'label'          => $label,
-            'config'         => $config,
-            'sort_order'     => $sortOrder,
-            'is_active'      => true,
+        $page->widgets()->create([
+            'widget_type_id'    => $widgetType->id,
+            'label'             => $label,
+            'config'            => $config,
+            'appearance_config' => \App\Models\PageWidget::resolveAppearance([], $widgetType->handle),
+            'sort_order'        => $sortOrder,
+            'is_active'         => true,
         ]);
     }
 }

@@ -39,8 +39,7 @@ function renderNavWidget(WidgetType $navType, array $config): string
 {
     $page = Page::factory()->create(['title' => 'Nav Test', 'slug' => 'nav-test-' . uniqid(), 'status' => 'published']);
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $navType->id,
         'config'         => $config,
         'sort_order'     => 0,

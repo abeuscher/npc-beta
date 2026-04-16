@@ -114,8 +114,7 @@ it('renders widget HTML when system page has active widgets', function () {
         'template'      => '<div class="test-chrome">Hello Chrome</div>',
     ]);
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Test',
         'config'         => [],
@@ -178,8 +177,7 @@ it('renders widget-driven header when widgets exist', function () {
         'template'      => '<header class="widget-header">Widget Header Active</header>',
     ]);
 
-    PageWidget::create([
-        'page_id'        => $headerPage->id,
+    $headerPage->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Test Header',
         'config'         => [],
@@ -216,8 +214,7 @@ it('renders widget-driven footer when widgets exist', function () {
         'template'      => '<footer class="widget-footer">Widget Footer Active</footer>',
     ]);
 
-    PageWidget::create([
-        'page_id'        => $footerPage->id,
+    $footerPage->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Test Footer',
         'config'         => [],
@@ -280,8 +277,7 @@ it('renders a column layout on a system page', function () {
         'template'      => '<div class="test-layout-widget">Layout child content</div>',
     ]);
 
-    $layout = PageLayout::create([
-        'page_id'       => $page->id,
+    $layout = $page->layouts()->create([
         'label'         => 'Two Col',
         'display'       => 'grid',
         'columns'       => 2,
@@ -292,8 +288,7 @@ it('renders a column layout on a system page', function () {
         'sort_order'    => 0,
     ]);
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => 0,
         'widget_type_id' => $widgetType->id,
@@ -321,8 +316,7 @@ it('wraps chrome layout in site-container by default', function () {
         'published_at' => now(),
     ]);
 
-    PageLayout::create([
-        'page_id'       => $page->id,
+    $page->layouts()->create([
         'display'       => 'grid',
         'columns'       => 1,
         'layout_config' => ['grid_template_columns' => '1fr'],
@@ -344,8 +338,7 @@ it('renders chrome layout edge-to-edge when full_width is true', function () {
         'published_at' => now(),
     ]);
 
-    PageLayout::create([
-        'page_id'       => $page->id,
+    $page->layouts()->create([
         'display'       => 'grid',
         'columns'       => 1,
         'layout_config' => [
@@ -370,8 +363,7 @@ it('emits new layout style fields in chrome', function () {
         'published_at' => now(),
     ]);
 
-    PageLayout::create([
-        'page_id'       => $page->id,
+    $page->layouts()->create([
         'display'       => 'grid',
         'columns'       => 1,
         'layout_config' => [
@@ -399,8 +391,7 @@ it('logo widget renders text and link', function () {
     $page = Page::factory()->create(['status' => 'published']);
     $logoType = WidgetType::where('handle', 'logo')->firstOrFail();
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $logoType->id,
         'label'          => 'Logo',
         'config'         => [
@@ -452,8 +443,7 @@ it('nav widget renders links from a NavigationMenu by handle', function () {
     $page = Page::factory()->create(['status' => 'published']);
     $navType = WidgetType::where('handle', 'nav')->firstOrFail();
 
-    $pw = PageWidget::create([
-        'page_id'        => $page->id,
+    $pw = $page->widgets()->create([
         'widget_type_id' => $navType->id,
         'label'          => 'Nav',
         'config'         => ['navigation_menu_id' => $menu->id],

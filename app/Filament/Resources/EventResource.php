@@ -111,34 +111,37 @@ class EventResource extends Resource
             ->where('type', 'content')
             ->first();
 
-        $widgetSpecs = $template?->definition ?? [];
+        if ($template && $template->widgets()->exists()) {
+            \App\Models\PageWidget::copyOwnedStack($template, $page);
 
-        // Fall back to hardcoded handles if template is missing or empty.
-        if (empty($widgetSpecs)) {
-            $widgetSpecs = [
-                ['handle' => 'event_description',  'config' => [], 'sort_order' => 1],
-                ['handle' => 'event_registration', 'config' => [], 'sort_order' => 2],
-            ];
-        }
-
-        foreach ($widgetSpecs as $spec) {
-            $widgetType = WidgetType::where('handle', $spec['handle'])->first();
-
-            if (! $widgetType) {
-                continue;
+            // Stamp the event slug onto every copied widget's config.
+            foreach ($page->widgets()->get() as $widget) {
+                $config = $widget->config ?? [];
+                $config['event_slug'] = $event->slug;
+                $widget->update(['config' => $config]);
             }
+        } else {
+            // Fall back to hardcoded handles if template is missing or empty.
+            $fallbacks = [
+                ['handle' => 'event_description',  'sort_order' => 1],
+                ['handle' => 'event_registration', 'sort_order' => 2],
+            ];
 
-            $config = $spec['config'] ?? [];
-            $config['event_slug'] = $event->slug;
+            foreach ($fallbacks as $spec) {
+                $widgetType = WidgetType::where('handle', $spec['handle'])->first();
+                if (! $widgetType) {
+                    continue;
+                }
 
-            PageWidget::create([
-                'page_id'        => $page->id,
-                'widget_type_id' => $widgetType->id,
-                'label'          => $widgetType->label,
-                'config'         => $config,
-                'sort_order'     => $spec['sort_order'] ?? 0,
-                'is_active'      => true,
-            ]);
+                $page->widgets()->create([
+                    'widget_type_id'    => $widgetType->id,
+                    'label'             => $widgetType->label,
+                    'config'            => ['event_slug' => $event->slug],
+                    'appearance_config' => \App\Models\PageWidget::resolveAppearance([], $spec['handle']),
+                    'sort_order'        => $spec['sort_order'],
+                    'is_active'         => true,
+                ]);
+            }
         }
 
         $event->update(['landing_page_id' => $page->id]);

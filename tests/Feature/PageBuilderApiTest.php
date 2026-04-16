@@ -36,8 +36,7 @@ function apiWidget(Page $page, ?string $handle = null, int $sortOrder = 0): Page
 {
     $wt = WidgetType::where('handle', $handle ?? 'text_block')->firstOrFail();
 
-    return PageWidget::create([
-        'page_id'        => $page->id,
+    return $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'label'          => $wt->label . ' ' . ($sortOrder + 1),
         'config'         => $wt->getDefaultConfig(),
@@ -50,8 +49,7 @@ function apiWidget(Page $page, ?string $handle = null, int $sortOrder = 0): Page
 
 function apiLayout(Page $page, int $sortOrder = 0): PageLayout
 {
-    return PageLayout::create([
-        'page_id'       => $page->id,
+    return $page->layouts()->create([
         'label'         => 'Test Layout',
         'display'       => 'grid',
         'columns'       => 2,
@@ -64,8 +62,7 @@ function apiChildWidget(Page $page, PageLayout $layout, int $columnIndex, int $s
 {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    return PageWidget::create([
-        'page_id'        => $page->id,
+    return $page->widgets()->create([
         'layout_id'      => $layout->id,
         'column_index'   => $columnIndex,
         'widget_type_id' => $wt->id,
@@ -91,7 +88,7 @@ it('returns the widget tree for a page', function () {
     $w2 = apiWidget($page, 'text_block', 1);
 
     $response = $this->actingAs(apiUser())
-        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk()
         ->assertJsonCount(2, 'widgets')
@@ -120,7 +117,7 @@ it('wraps root widget previews in .site-container but not column children', func
     $childWidget->update(['config' => ['content' => '<p>Column content</p>']]);
 
     $response = $this->actingAs(apiUser())
-        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk();
 
@@ -140,7 +137,7 @@ it('creates a widget on a page', function () {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/{$page->id}/widgets", [
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
             'widget_type_id' => $wt->id,
             'label'          => 'My Widget',
         ]);
@@ -150,8 +147,9 @@ it('creates a widget on a page', function () {
         ->assertJsonStructure(['widget', 'tree', 'required_libs']);
 
     $this->assertDatabaseHas('page_widgets', [
-        'page_id' => $page->id,
-        'label'   => 'My Widget',
+        'owner_type' => (new \App\Models\Page())->getMorphClass(),
+        'owner_id'   => $page->id,
+        'label'      => 'My Widget',
     ]);
 });
 
@@ -160,7 +158,7 @@ it('auto-generates a label when creating without one', function () {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/{$page->id}/widgets", [
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
             'widget_type_id' => $wt->id,
         ]);
 
@@ -175,7 +173,7 @@ it('inserts at the specified position', function () {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/{$page->id}/widgets", [
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
             'widget_type_id'  => $wt->id,
             'label'           => 'Inserted',
             'insert_position' => 1,
@@ -355,7 +353,7 @@ it('copies a widget', function () {
         ->assertJsonStructure(['widget', 'tree', 'required_libs']);
 
     // Original + copy = 2 root widgets
-    expect(PageWidget::where('page_id', $page->id)->whereNull('layout_id')->count())->toBe(2);
+    expect(PageWidget::forOwner($page)->whereNull('layout_id')->count())->toBe(2);
 });
 
 // ── PUT reorder ──────────────────────────────────────────────────────────
@@ -366,7 +364,7 @@ it('reorders widgets', function () {
     $w2 = apiWidget($page, 'text_block', 1);
 
     $response = $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+        ->putJson(apiPrefix() . "/pages/{$page->id}/widgets/reorder", [
             'items' => [
                 ['id' => $w2->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
                 ['id' => $w1->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 1],
@@ -384,7 +382,7 @@ it('rejects reorder with invalid widget IDs', function () {
     $widget = apiWidget($otherPage);
 
     $response = $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+        ->putJson(apiPrefix() . "/pages/{$page->id}/widgets/reorder", [
             'items' => [
                 ['id' => $widget->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
             ],
@@ -412,7 +410,7 @@ it('returns preview HTML for a widget', function () {
 it('returns 403 for unauthenticated requests', function () {
     $page = apiPage();
 
-    $this->getJson(apiPrefix() . "/{$page->id}/widgets")
+    $this->getJson(apiPrefix() . "/pages/{$page->id}/widgets")
         ->assertUnauthorized();
 });
 
@@ -421,7 +419,7 @@ it('returns 403 for users without view_page on read endpoints', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->getJson(apiPrefix() . "/{$page->id}/widgets")
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets")
         ->assertForbidden();
 });
 
@@ -431,7 +429,7 @@ it('returns 403 for users without update_page on write endpoints', function () {
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $this->actingAs($user)
-        ->postJson(apiPrefix() . "/{$page->id}/widgets", [
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
             'widget_type_id' => $wt->id,
         ])
         ->assertForbidden();
@@ -446,7 +444,7 @@ it('cannot create a widget referencing a layout from a different page', function
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/{$page1->id}/widgets", [
+        ->postJson(apiPrefix() . "/pages/{$page1->id}/widgets", [
             'widget_type_id' => $wt->id,
             'layout_id'      => $layout->id, // layout from page2
         ]);
@@ -460,7 +458,7 @@ it('creates a layout on a page', function () {
     $page = apiPage();
 
     $response = $this->actingAs(apiUser())
-        ->postJson(apiPrefix() . "/{$page->id}/layouts", [
+        ->postJson(apiPrefix() . "/pages/{$page->id}/layouts", [
             'label'   => 'Two Column',
             'display' => 'grid',
             'columns' => 2,
@@ -473,8 +471,9 @@ it('creates a layout on a page', function () {
         ->assertJsonStructure(['layout', 'items', 'required_libs']);
 
     $this->assertDatabaseHas('page_layouts', [
-        'page_id' => $page->id,
-        'label'   => 'Two Column',
+        'owner_type' => (new \App\Models\Page())->getMorphClass(),
+        'owner_id'   => $page->id,
+        'label'      => 'Two Column',
     ]);
 });
 
@@ -583,7 +582,7 @@ it('layout endpoints require update_page permission', function () {
     $user = apiUser(['view_page']);
 
     $this->actingAs($user)
-        ->postJson(apiPrefix() . "/{$page->id}/layouts", ['label' => 'X'])
+        ->postJson(apiPrefix() . "/pages/{$page->id}/layouts", ['label' => 'X'])
         ->assertForbidden();
 });
 
@@ -595,7 +594,7 @@ it('returns merged page flow with widgets and layouts interleaved', function () 
     $w2 = apiWidget($page, 'text_block', 2);
 
     $response = $this->actingAs(apiUser())
-        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk();
 
@@ -615,7 +614,7 @@ it('reorders widgets and layouts together (mixed reorder)', function () {
     $layout = apiLayout($page, 1);
 
     $response = $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+        ->putJson(apiPrefix() . "/pages/{$page->id}/widgets/reorder", [
             'items' => [
                 ['id' => $layout->id, 'type' => 'layout', 'sort_order' => 0],
                 ['id' => $w1->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 1],
@@ -636,7 +635,7 @@ it('moves a widget into a layout via reorder', function () {
     $layout = apiLayout($page, 1);
 
     $response = $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+        ->putJson(apiPrefix() . "/pages/{$page->id}/widgets/reorder", [
             'items' => [
                 ['id' => $widget->id, 'type' => 'widget', 'layout_id' => $layout->id, 'column_index' => 0, 'sort_order' => 0],
             ],
@@ -655,7 +654,7 @@ it('moves a widget out of a layout via reorder', function () {
     $widget = apiChildWidget($page, $layout, 0, 0);
 
     $response = $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/{$page->id}/widgets/reorder", [
+        ->putJson(apiPrefix() . "/pages/{$page->id}/widgets/reorder", [
             'items' => [
                 ['id' => $widget->id, 'type' => 'widget', 'layout_id' => null, 'column_index' => null, 'sort_order' => 0],
             ],
@@ -766,7 +765,7 @@ it('includes appearance_image_url as null when no image', function () {
     $widget = apiWidget($page);
 
     $response = $this->actingAs(apiUser())
-        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk();
     $widgetData = collect($response->json('items'))->firstWhere('id', $widget->id);
@@ -786,7 +785,7 @@ it('includes appearance_image_url when image is uploaded', function () {
         ->assertOk();
 
     $response = $this->actingAs(apiUser())
-        ->getJson(apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk();
     $widgetData = collect($response->json('items'))->firstWhere('id', $widget->id);

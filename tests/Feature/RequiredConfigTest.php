@@ -95,8 +95,7 @@ it('widget tree response includes widget_type_required_config', function () {
     $page = Page::factory()->create(['status' => 'published']);
     $wt = WidgetType::where('handle', 'carousel')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'label'          => 'Test Carousel',
         'config'         => $wt->getDefaultConfig(),
@@ -107,7 +106,7 @@ it('widget tree response includes widget_type_required_config', function () {
     ]);
 
     $response = $this->actingAs(rc_apiUser())
-        ->getJson(rc_apiPrefix() . "/{$page->id}/widgets");
+        ->getJson(rc_apiPrefix() . "/pages/{$page->id}/widgets");
 
     $response->assertOk();
 

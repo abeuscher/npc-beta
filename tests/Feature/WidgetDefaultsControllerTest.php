@@ -37,8 +37,7 @@ function defaultsHeroWidget(array $config = []): PageWidget
 
     $wt = WidgetType::where('handle', 'hero')->firstOrFail();
 
-    return PageWidget::create([
-        'page_id'           => $page->id,
+    return $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Hero',
         'config'            => $config,

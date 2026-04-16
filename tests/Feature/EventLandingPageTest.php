@@ -33,7 +33,7 @@ it('createLandingPageForEvent creates the standard widgets', function () {
     EventResource::createLandingPageForEvent($event);
 
     $page = Page::where('slug', 'events/my-event')->first();
-    $handles = PageWidget::where('page_id', $page->id)
+    $handles = PageWidget::forOwner($page)
         ->join('widget_types', 'widget_types.id', '=', 'page_widgets.widget_type_id')
         ->pluck('widget_types.handle')
         ->all();

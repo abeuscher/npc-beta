@@ -15,6 +15,8 @@ class EditContentTemplate extends ReadOnlyAwareEditRecord
 {
     protected static string $resource = TemplateResource::class;
 
+    protected static string $view = 'filament.resources.template-resource.pages.edit-content-template';
+
     public function getTitle(): string
     {
         return 'Edit Content Template';

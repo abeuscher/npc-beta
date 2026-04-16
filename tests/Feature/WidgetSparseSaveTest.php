@@ -33,8 +33,7 @@ function sparsePage(): Page
 function sparseNavWidget(Page $page, array $config = []): PageWidget
 {
     $wt = WidgetType::where('handle', 'nav')->firstOrFail();
-    return PageWidget::create([
-        'page_id'        => $page->id,
+    return $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'label'          => 'Nav',
         'config'         => $config,
@@ -89,7 +88,7 @@ it('creates new widgets with an empty config (sparse from birth — API)', funct
     $wt   = WidgetType::where('handle', 'nav')->firstOrFail();
 
     $response = $this->actingAs($user)
-        ->postJson("/admin/api/page-builder/{$page->id}/widgets", [
+        ->postJson("/admin/api/page-builder/pages/{$page->id}/widgets", [
             'widget_type_id' => $wt->id,
         ])
         ->assertCreated();
@@ -109,7 +108,7 @@ it('creates new widgets with an empty config (sparse from birth — Livewire)', 
         ->call('openAddModal', null, null, null)
         ->call('createBlock', $wt->id);
 
-    $pw = PageWidget::where('page_id', $page->id)
+    $pw = PageWidget::forOwner($page)
         ->where('widget_type_id', $wt->id)
         ->firstOrFail();
 
@@ -122,7 +121,7 @@ it('includes resolved_defaults in the widget payload', function () {
     $pw   = sparseNavWidget($page, ['link_color' => '#ff0000']);
 
     $response = $this->actingAs($user)
-        ->getJson("/admin/api/page-builder/{$page->id}/widgets")
+        ->getJson("/admin/api/page-builder/pages/{$page->id}/widgets")
         ->assertOk();
 
     $widget = collect($response->json('widgets'))->firstWhere('id', $pw->id);

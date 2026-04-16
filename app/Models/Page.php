@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
@@ -79,9 +80,14 @@ class Page extends Model implements HasMedia
         return $this->belongsTo(User::class, 'author_id');
     }
 
-    public function pageWidgets(): HasMany
+    public function widgets(): MorphMany
     {
-        return $this->hasMany(PageWidget::class);
+        return $this->morphMany(PageWidget::class, 'owner');
+    }
+
+    public function layouts(): MorphMany
+    {
+        return $this->morphMany(PageLayout::class, 'owner');
     }
 
     public function template(): BelongsTo

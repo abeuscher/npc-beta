@@ -1,8 +1,8 @@
 <div
     class="page-builder"
     x-data
-    x-on:open-widget-picker.window="if ($event.detail?.pageId === @js($pageId)) { $wire.openAddModal($event.detail?.insertPosition ?? null, $event.detail?.layoutId ?? null, $event.detail?.columnIndex ?? null) }"
-    x-on:open-save-template-modal.window="if ($event.detail?.pageId === @js($pageId)) { $wire.openSaveTemplateModal() }"
+    x-on:open-widget-picker.window="if ($event.detail?.ownerId === @js($ownerId)) { $wire.openAddModal($event.detail?.insertPosition ?? null, $event.detail?.layoutId ?? null, $event.detail?.columnIndex ?? null) }"
+    x-on:open-save-template-modal.window="if ($event.detail?.ownerId === @js($ownerId)) { $wire.openSaveTemplateModal() }"
 >
 
     {{-- ------------------------------------------------------------------ --}}

@@ -13,10 +13,12 @@ use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
+use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,14 +26,14 @@ class PageBuilderApiController extends Controller
 {
     // ── Widget CRUD ──────────────────────────────────────────────────────────
 
-    public function index(Page $page): JsonResponse
+    public function index($owner): JsonResponse
     {
         abort_unless(auth()->user()?->can('view_page'), 403);
 
-        return response()->json($this->buildTree($page));
+        return response()->json($this->buildTree($owner));
     }
 
-    public function store(Request $request, Page $page): JsonResponse
+    public function store(Request $request, $owner): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
@@ -45,39 +47,37 @@ class PageBuilderApiController extends Controller
 
         $widgetType = WidgetType::findOrFail($validated['widget_type_id']);
 
-        // Validate layout belongs to this page
         $layoutId = $validated['layout_id'] ?? null;
         if ($layoutId) {
             abort_unless(
-                PageLayout::where('id', $layoutId)->where('page_id', $page->id)->exists(),
+                PageLayout::where('id', $layoutId)->forOwner($owner)->exists(),
                 422,
-                'Layout does not belong to this page.'
+                'Layout does not belong to this owner.'
             );
         }
 
-        // Auto-generate label if not provided
         $label = $validated['label'] ?? '';
         if (blank($label)) {
-            $count = PageWidget::where('page_id', $page->id)
+            $count = PageWidget::forOwner($owner)
                 ->where('widget_type_id', $widgetType->id)
                 ->count();
             $label = $widgetType->label . ' ' . ($count + 1);
         }
 
         $position = $validated['insert_position'] ?? null;
-
         $columnIndex = $layoutId ? ($validated['column_index'] ?? 0) : null;
 
         if ($position === null) {
-            $position = (PageWidget::inSlot($page->id, $layoutId, $columnIndex)->max('sort_order') ?? -1) + 1;
+            $position = (PageWidget::inSlot($owner, $layoutId, $columnIndex)->max('sort_order') ?? -1) + 1;
         } else {
-            PageWidget::inSlot($page->id, $layoutId, $columnIndex)
+            PageWidget::inSlot($owner, $layoutId, $columnIndex)
                 ->where('sort_order', '>=', $position)
                 ->increment('sort_order');
         }
 
         $newWidget = PageWidget::create([
-            'page_id'           => $page->id,
+            'owner_type'        => $owner->getMorphClass(),
+            'owner_id'          => $owner->getKey(),
             'widget_type_id'    => $widgetType->id,
             'layout_id'         => $layoutId,
             'column_index'      => $columnIndex,
@@ -92,10 +92,10 @@ class PageBuilderApiController extends Controller
             'is_active'         => true,
         ]);
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
-            'widget'        => $this->formatWidget($newWidget->fresh(['widgetType']), $page),
+            'widget'        => $this->formatWidget($newWidget->fresh(['widgetType']), $owner),
             'tree'          => $tree['widgets'],
             'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
@@ -133,7 +133,7 @@ class PageBuilderApiController extends Controller
         }
 
         return response()->json([
-            'widget' => $this->formatWidget($widget->fresh(['widgetType']), $widget->page),
+            'widget' => $this->formatWidget($widget->fresh(['widgetType']), $widget->owner),
         ]);
     }
 
@@ -141,20 +141,19 @@ class PageBuilderApiController extends Controller
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
-        $page = $widget->page;
+        $owner = $widget->owner;
 
-        // Prevent deleting required widgets
-        $requiredHandles = WidgetType::requiredForPage(
-            $page->bareSlug()
-        );
-
-        if (in_array($widget->widgetType?->handle ?? '', $requiredHandles, true)) {
-            return response()->json(['error' => 'This widget is required and cannot be deleted.'], 403);
+        // Required-widgets rule only applies to Pages.
+        if ($owner instanceof Page) {
+            $requiredHandles = WidgetType::requiredForPage($owner->bareSlug());
+            if (in_array($widget->widgetType?->handle ?? '', $requiredHandles, true)) {
+                return response()->json(['error' => 'This widget is required and cannot be deleted.'], 403);
+            }
         }
 
         $widget->delete();
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
             'deleted'       => true,
@@ -168,16 +167,17 @@ class PageBuilderApiController extends Controller
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
-        $page = $widget->page;
+        $owner = $widget->owner;
 
         $newPosition = $widget->sort_order + 1;
 
-        PageWidget::inSlot($page->id, $widget->layout_id, $widget->column_index)
+        PageWidget::inSlot($owner, $widget->layout_id, $widget->column_index)
             ->where('sort_order', '>=', $newPosition)
             ->increment('sort_order');
 
         $copy = PageWidget::create([
-            'page_id'           => $page->id,
+            'owner_type'        => $owner->getMorphClass(),
+            'owner_id'          => $owner->getKey(),
             'widget_type_id'    => $widget->widget_type_id,
             'layout_id'         => $widget->layout_id,
             'column_index'      => $widget->column_index,
@@ -189,24 +189,24 @@ class PageBuilderApiController extends Controller
             'is_active'         => $widget->is_active,
         ]);
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
-            'widget'        => $this->formatWidget($copy->fresh(['widgetType']), $page),
+            'widget'        => $this->formatWidget($copy->fresh(['widgetType']), $owner),
             'tree'          => $tree['widgets'],
             'items'         => $tree['items'],
             'required_libs' => $tree['required_libs'],
         ], 201);
     }
 
-    public function reorder(ReorderWidgetsRequest $request, Page $page): JsonResponse
+    public function reorder(ReorderWidgetsRequest $request, $owner): JsonResponse
     {
         $items = $request->normalizedItems();
 
         foreach ($items as $item) {
             if ($item['type'] === 'widget') {
                 PageWidget::where('id', $item['id'])
-                    ->where('page_id', $page->id)
+                    ->forOwner($owner)
                     ->update([
                         'layout_id'    => ! empty($item['layout_id']) ? $item['layout_id'] : null,
                         'column_index' => $item['column_index'] ?? null,
@@ -214,14 +214,14 @@ class PageBuilderApiController extends Controller
                     ]);
             } else {
                 PageLayout::where('id', $item['id'])
-                    ->where('page_id', $page->id)
+                    ->forOwner($owner)
                     ->update([
                         'sort_order' => (int) $item['sort_order'],
                     ]);
             }
         }
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
             'tree'          => $tree['widgets'],
@@ -352,7 +352,6 @@ class PageBuilderApiController extends Controller
             ->usingFileName($request->file('file')->hashName())
             ->toMediaCollection($collectionName, 'public');
 
-        // Update config with media ID
         $config = $widget->config ?? [];
         $config[$key] = $media->id;
         $widget->update(['config' => $this->stripDefaults($widget, $config)]);
@@ -408,7 +407,7 @@ class PageBuilderApiController extends Controller
 
     // ── Layout CRUD ─────────────────────────────────────────────────────────
 
-    public function storeLayout(Request $request, Page $page): JsonResponse
+    public function storeLayout(Request $request, $owner): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
@@ -419,15 +418,16 @@ class PageBuilderApiController extends Controller
         ]);
 
         $maxSort = max(
-            PageWidget::where('page_id', $page->id)->whereNull('layout_id')->max('sort_order') ?? -1,
-            PageLayout::where('page_id', $page->id)->max('sort_order') ?? -1,
+            PageWidget::forOwner($owner)->whereNull('layout_id')->max('sort_order') ?? -1,
+            PageLayout::forOwner($owner)->max('sort_order') ?? -1,
         );
 
         $columns = $validated['columns'] ?? 2;
         $display = $validated['display'] ?? 'grid';
 
         $layout = PageLayout::create([
-            'page_id'       => $page->id,
+            'owner_type'    => $owner->getMorphClass(),
+            'owner_id'      => $owner->getKey(),
             'label'         => $validated['label'] ?? 'Column Layout',
             'display'       => $display,
             'columns'       => $columns,
@@ -438,7 +438,7 @@ class PageBuilderApiController extends Controller
             'sort_order'    => $maxSort + 1,
         ]);
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
             'layout'        => $this->formatLayout($layout),
@@ -469,7 +469,6 @@ class PageBuilderApiController extends Controller
             $updates['columns'] = $validated['columns'];
         }
         if (array_key_exists('layout_config', $validated)) {
-            // Sanitize: only allow known CSS property keys
             $allowed = [
                 'grid_template_columns', 'gap', 'align_items', 'justify_items',
                 'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
@@ -481,7 +480,6 @@ class PageBuilderApiController extends Controller
                 $validated['layout_config'],
                 array_flip($allowed)
             );
-            // Merge with existing layout_config so partial updates don't wipe other keys
             $updates['layout_config'] = array_merge($layout->layout_config ?? [], $sanitized);
         }
 
@@ -498,12 +496,11 @@ class PageBuilderApiController extends Controller
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
 
-        $page = $layout->page;
+        $owner = $layout->owner;
 
-        // Cascade delete is handled by FK, but we delete explicitly for clarity
         $layout->delete();
 
-        $tree = $this->buildTree($page);
+        $tree = $this->buildTree($owner);
 
         return response()->json([
             'deleted'       => true,
@@ -514,22 +511,20 @@ class PageBuilderApiController extends Controller
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private function buildTree(Page $page): array
+    private function buildTree(Model $owner): array
     {
-        $requiredHandles = WidgetType::requiredForPage(
-            $page->bareSlug()
-        );
+        $requiredHandles = $owner instanceof Page
+            ? WidgetType::requiredForPage($owner->bareSlug())
+            : [];
 
-        // Root widgets (not in any layout)
-        $rootWidgets = PageWidget::where('page_id', $page->id)
+        $rootWidgets = PageWidget::forOwner($owner)
             ->whereNull('layout_id')
             ->where('is_active', true)
             ->with('widgetType')
             ->orderBy('sort_order')
             ->get();
 
-        // Layouts with their child widgets
-        $layouts = PageLayout::where('page_id', $page->id)
+        $layouts = PageLayout::forOwner($owner)
             ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
@@ -550,7 +545,6 @@ class PageBuilderApiController extends Controller
 
         foreach ($layouts as $layout) {
             $item = $this->formatLayout($layout);
-            // Add preview HTML for each child widget in slots
             $slots = [];
             foreach ($layout->widgets as $child) {
                 if (! $child->widgetType) {
@@ -566,11 +560,8 @@ class PageBuilderApiController extends Controller
             $items[] = $item;
         }
 
-        // Sort by sort_order
         usort($items, fn ($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
 
-        // Legacy 'widgets' key: root widgets only, kept for current Vue store compatibility
-        // until Phase 3 migrates the store to use 'items'.
         $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
 
         return [
@@ -585,7 +576,8 @@ class PageBuilderApiController extends Controller
         return [
             'type'          => 'layout',
             'id'            => $layout->id,
-            'page_id'       => $layout->page_id,
+            'owner_type'    => $layout->owner_type,
+            'owner_id'      => $layout->owner_id,
             'label'         => $layout->label ?? '',
             'display'       => $layout->display,
             'columns'       => $layout->columns,
@@ -595,10 +587,14 @@ class PageBuilderApiController extends Controller
         ];
     }
 
-    private function formatWidget(PageWidget $pw, Page $page): array
+    private function formatWidget(PageWidget $pw, Model $owner): array
     {
+        $requiredHandles = $owner instanceof Page
+            ? WidgetType::requiredForPage($owner->bareSlug())
+            : [];
+
         return (new WidgetResource($pw))
-            ->withRequiredHandles(WidgetType::requiredForPage($page->bareSlug()))
+            ->withRequiredHandles($requiredHandles)
             ->resolve();
     }
 
@@ -665,5 +661,4 @@ class PageBuilderApiController extends Controller
 
         return array_intersect_key($query, array_flip($slots));
     }
-
 }

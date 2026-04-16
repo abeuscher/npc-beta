@@ -206,20 +206,20 @@ class DashboardDebugGeneratorWidget extends Widget
                 $demoService = app(DemoDataService::class);
                 $demoConfiguration  = $demoService->generateForWidget($textBlockType);
 
-                PageWidget::create([
-                    'page_id'        => $page->id,
-                    'widget_type_id' => $textBlockType->id,
-                    'config'         => $demoConfiguration,
-                    'sort_order'     => 0,
+                $page->widgets()->create([
+                    'widget_type_id'    => $textBlockType->id,
+                    'config'            => $demoConfiguration,
+                    'appearance_config' => PageWidget::resolveAppearance([], 'text_block'),
+                    'sort_order'        => 0,
                 ]);
             }
 
             if ($blogPagerType) {
-                PageWidget::create([
-                    'page_id'        => $page->id,
-                    'widget_type_id' => $blogPagerType->id,
-                    'config'         => [],
-                    'sort_order'     => 1,
+                $page->widgets()->create([
+                    'widget_type_id'    => $blogPagerType->id,
+                    'config'            => [],
+                    'appearance_config' => PageWidget::resolveAppearance([], 'blog_pager'),
+                    'sort_order'        => 1,
                 ]);
             }
         }

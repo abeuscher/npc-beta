@@ -61,7 +61,8 @@ class WidgetRenderer
         // PageContext is resolved without an explicit binding, so test for
         // `exists` (true once loaded from DB) rather than null.
         $ctxPage = $pageContext->currentPage;
-        $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $pw->page;
+        $ownerPage = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
+        $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $ownerPage;
         foreach ($widgetType->config_schema ?? [] as $field) {
             $type = $field['type'] ?? '';
             $key = $field['key'] ?? '';

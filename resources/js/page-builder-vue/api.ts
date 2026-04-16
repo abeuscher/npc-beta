@@ -18,10 +18,22 @@ import type {
 
 let csrfToken = ''
 let baseUrl = ''
+let lookupUrl = ''
 
-export function configure(token: string, url: string): void {
+/**
+ * Configure the API client.
+ * - `url`: owner-scoped base (e.g. `/admin/api/page-builder/pages/{uuid}`).
+ *   Used for widget/layout CRUD under a specific owner.
+ * - `lookup`: owner-agnostic lookup base (e.g. `/admin/api/page-builder`).
+ *   Used for widget-types, collections, tags, pages, events, data-sources,
+ *   widget-presets, widget-defaults, color-swatches, and widget- and
+ *   layout-keyed routes (update/delete/copy/preview/image). Defaults to the
+ *   parent of `url` when omitted.
+ */
+export function configure(token: string, url: string, lookup?: string): void {
   csrfToken = token
   baseUrl = url.replace(/\/$/, '')
+  lookupUrl = (lookup ?? baseUrl.replace(/\/(pages|templates)\/[^/]+$/, '')).replace(/\/$/, '')
 }
 
 export class ApiError extends Error {
@@ -42,7 +54,26 @@ async function request<T>(
   body?: any,
   signal?: AbortSignal
 ): Promise<T> {
-  const url = `${baseUrl}/${path.replace(/^\//, '')}`
+  return requestAt<T>(baseUrl, method, path, body, signal)
+}
+
+async function lookup<T>(
+  method: string,
+  path: string,
+  body?: any,
+  signal?: AbortSignal
+): Promise<T> {
+  return requestAt<T>(lookupUrl, method, path, body, signal)
+}
+
+async function requestAt<T>(
+  base: string,
+  method: string,
+  path: string,
+  body?: any,
+  signal?: AbortSignal
+): Promise<T> {
+  const url = `${base}/${path.replace(/^\//, '')}`
 
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -78,63 +109,63 @@ async function request<T>(
   return res.json()
 }
 
-// Widget CRUD
-export function getWidgets(pageId: string): Promise<TreeResponse> {
-  return request('GET', `${pageId}/widgets`)
+// Widget CRUD — owner-scoped (baseUrl already encodes the owner).
+export function getWidgets(_ownerKey?: string): Promise<TreeResponse> {
+  return request('GET', 'widgets')
 }
 
 export function createWidget(
-  pageId: string,
+  _ownerKey: string | undefined,
   payload: CreateWidgetPayload
 ): Promise<{ widget: Widget; items: PageItem[]; required_libs: string[] }> {
-  return request('POST', `${pageId}/widgets`, payload)
+  return request('POST', 'widgets', payload)
 }
 
 export function updateWidget(
   widgetId: string,
   payload: UpdateWidgetPayload
 ): Promise<{ widget: Widget }> {
-  return request('PUT', `widgets/${widgetId}`, payload)
+  return lookup('PUT', `widgets/${widgetId}`, payload)
 }
 
 export function deleteWidget(
   widgetId: string
 ): Promise<{ deleted: boolean; items: PageItem[]; required_libs: string[] }> {
-  return request('DELETE', `widgets/${widgetId}`)
+  return lookup('DELETE', `widgets/${widgetId}`)
 }
 
 export function copyWidget(
   widgetId: string
 ): Promise<{ widget: Widget; items: PageItem[]; required_libs: string[] }> {
-  return request('POST', `widgets/${widgetId}/copy`)
+  return lookup('POST', `widgets/${widgetId}/copy`)
 }
 
 export function reorderWidgets(
-  pageId: string,
+  _ownerKey: string | undefined,
   items: ReorderItem[]
 ): Promise<{ items: PageItem[]; required_libs: string[] }> {
-  return request('PUT', `${pageId}/widgets/reorder`, { items })
+  return request('PUT', 'widgets/reorder', { items })
 }
 
 // Layout CRUD
 export function createLayout(
-  pageId: string,
+  _ownerKey: string | undefined,
   payload: CreateLayoutPayload
 ): Promise<{ layout: PageLayout; items: PageItem[]; required_libs: string[] }> {
-  return request('POST', `${pageId}/layouts`, payload)
+  return request('POST', 'layouts', payload)
 }
 
 export function updateLayout(
   layoutId: string,
   payload: UpdateLayoutPayload
 ): Promise<{ layout: PageLayout }> {
-  return request('PUT', `layouts/${layoutId}`, payload)
+  return lookup('PUT', `layouts/${layoutId}`, payload)
 }
 
 export function deleteLayout(
   layoutId: string
 ): Promise<{ deleted: boolean; items: PageItem[]; required_libs: string[] }> {
-  return request('DELETE', `layouts/${layoutId}`)
+  return lookup('DELETE', `layouts/${layoutId}`)
 }
 
 // Preview
@@ -142,42 +173,42 @@ export function getPreview(
   widgetId: string,
   signal?: AbortSignal
 ): Promise<{ id: string; html: string; required_libs: string[] }> {
-  return request('GET', `widgets/${widgetId}/preview`, undefined, signal)
+  return lookup('GET', `widgets/${widgetId}/preview`, undefined, signal)
 }
 
 // Lookups
 export function getWidgetTypes(
   pageType: string
 ): Promise<{ widget_types: WidgetType[] }> {
-  return request('GET', `widget-types?page_type=${encodeURIComponent(pageType)}`)
+  return lookup('GET', `widget-types?page_type=${encodeURIComponent(pageType)}`)
 }
 
 export function getCollections(): Promise<{ collections: Collection[] }> {
-  return request('GET', 'collections')
+  return lookup('GET', 'collections')
 }
 
 export function getCollectionFields(
   handle: string
 ): Promise<{ fields: { key: string; label: string; type: string }[] }> {
-  return request('GET', `collections/${encodeURIComponent(handle)}/fields`)
+  return lookup('GET', `collections/${encodeURIComponent(handle)}/fields`)
 }
 
 export function getTags(): Promise<{ tags: Tag[] }> {
-  return request('GET', 'tags')
+  return lookup('GET', 'tags')
 }
 
 export function getPages(): Promise<{ pages: PageRef[] }> {
-  return request('GET', 'pages')
+  return lookup('GET', 'pages')
 }
 
 export function getEvents(): Promise<{ events: EventRef[] }> {
-  return request('GET', 'events')
+  return lookup('GET', 'events')
 }
 
 export function getDataSource(
   source: string
 ): Promise<{ options: Record<string, string> }> {
-  return request('GET', `data-sources/${encodeURIComponent(source)}`)
+  return lookup('GET', `data-sources/${encodeURIComponent(source)}`)
 }
 
 // Image upload
@@ -186,7 +217,7 @@ export async function uploadImage(
   key: string,
   file: File
 ): Promise<{ media_id: number; url: string }> {
-  const url = `${baseUrl}/widgets/${widgetId}/image`
+  const url = `${lookupUrl}/widgets/${widgetId}/image`
   const formData = new FormData()
   formData.append('key', key)
   formData.append('file', file)
@@ -213,7 +244,7 @@ export async function removeImage(
   widgetId: string,
   key: string
 ): Promise<{ removed: boolean }> {
-  return request('DELETE', `widgets/${widgetId}/image/${encodeURIComponent(key)}`)
+  return lookup('DELETE', `widgets/${widgetId}/image/${encodeURIComponent(key)}`)
 }
 
 // Appearance background image
@@ -221,7 +252,7 @@ export async function uploadAppearanceImage(
   widgetId: string,
   file: File
 ): Promise<{ url: string }> {
-  const url = `${baseUrl}/widgets/${widgetId}/appearance-image`
+  const url = `${lookupUrl}/widgets/${widgetId}/appearance-image`
   const formData = new FormData()
   formData.append('file', file)
 
@@ -246,14 +277,14 @@ export async function uploadAppearanceImage(
 export async function removeAppearanceImage(
   widgetId: string
 ): Promise<{ removed: boolean }> {
-  return request('DELETE', `widgets/${widgetId}/appearance-image`)
+  return lookup('DELETE', `widgets/${widgetId}/appearance-image`)
 }
 
 // Color swatches
 export function saveColorSwatches(
   swatches: string[]
 ): Promise<{ swatches: string[] }> {
-  return request('PUT', 'color-swatches', { swatches })
+  return lookup('PUT', 'color-swatches', { swatches })
 }
 
 // Widget presets (designer drafts)
@@ -261,7 +292,7 @@ export function createDraftPreset(
   widgetTypeId: string,
   widgetId: string
 ): Promise<{ preset: WidgetDraftPreset }> {
-  return request('POST', 'widget-presets', {
+  return lookup('POST', 'widget-presets', {
     widget_type_id: widgetTypeId,
     widget_id: widgetId,
   })
@@ -271,17 +302,17 @@ export function updateDraftPreset(
   presetId: string,
   payload: { label?: string; description?: string | null; handle?: string }
 ): Promise<{ preset: WidgetDraftPreset }> {
-  return request('PATCH', `widget-presets/${presetId}`, payload)
+  return lookup('PATCH', `widget-presets/${presetId}`, payload)
 }
 
 export function deleteDraftPreset(
   presetId: string
 ): Promise<{ deleted: boolean }> {
-  return request('DELETE', `widget-presets/${presetId}`)
+  return lookup('DELETE', `widget-presets/${presetId}`)
 }
 
 export function exportDefaults(
   widgetId: string
 ): Promise<{ php: string }> {
-  return request('POST', 'widget-defaults/export', { widget_id: widgetId })
+  return lookup('POST', 'widget-defaults/export', { widget_id: widgetId })
 }

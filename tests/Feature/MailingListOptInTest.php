@@ -27,8 +27,7 @@ it('opt-in checkbox is not rendered when mailing_list_opt_in_enabled is false', 
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
     $page = Page::factory()->create(['status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
         'config'         => ['event_slug' => $event->slug],
@@ -52,8 +51,7 @@ it('opt-in checkbox is rendered when mailing_list_opt_in_enabled is true', funct
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
     $page = Page::factory()->create(['status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
         'config'         => ['event_slug' => $event->slug],

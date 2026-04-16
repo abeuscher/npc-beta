@@ -62,8 +62,7 @@ function makePost(array $attributes): Page
 
     $widgetType = WidgetType::where('handle', 'text_block')->first();
     if ($widgetType && isset($attributes['content'])) {
-        PageWidget::create([
-            'page_id'        => $page->id,
+        $page->widgets()->create([
             'widget_type_id' => $widgetType->id,
             'label'          => 'Post Content',
             'config'         => ['content' => $attributes['content']],

@@ -1,11 +1,12 @@
 ## page_widgets
 
-Widgets embedded on a page, ordered by sort_order. Root widgets have `layout_id IS NULL`. Widgets inside a column layout reference the layout via `layout_id` and indicate their column slot via `column_index`.
+Widgets placed on a widget stack, ordered by sort_order. The stack is owned polymorphically — either a `Page` or a `Template`. Root widgets have `layout_id IS NULL`. Widgets inside a column layout reference the layout via `layout_id` and indicate their column slot via `column_index`.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
-| page_id | uuid | no | FK→pages, cascade |
+| owner_type | string | no | Morph type: `App\Models\Page` or `App\Models\Template` |
+| owner_id | uuid | no | FK to the owning page or template (polymorphic, no DB constraint) |
 | layout_id | uuid | yes | FK→page_layouts.id, cascade on delete; null for root widgets |
 | column_index | smallint unsigned | yes | Slot index within layout; null for root widgets |
 | widget_type_id | uuid | no | FK→widget_types, restrictOnDelete |
@@ -17,6 +18,10 @@ Widgets embedded on a page, ordered by sort_order. Root widgets have `layout_id 
 | is_active | boolean | no | default: true |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+
+**Indexes:** `(owner_type, owner_id)`.
+
+**Cascade:** no DB-level FK from owner_id. Page and Template models handle deletion of owned rows via model observers/events.
 
 ### Appearance config shape
 

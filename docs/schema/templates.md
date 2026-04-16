@@ -2,6 +2,8 @@
 
 Page templates (header, footer, colors, fonts, SCSS) and content templates (widget stack presets). One `page`-type template is marked `is_default`; non-default templates inherit from the default for any null field.
 
+Content templates own their widget stack as polymorphic `page_widgets` + `page_layouts` rows (`owner_type = 'App\Models\Template'`). The `definition` JSONB column was removed in session 187.
+
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
@@ -9,7 +11,6 @@ Page templates (header, footer, colors, fonts, SCSS) and content templates (widg
 | type | string | no | `page` or `content` |
 | description | text | yes | |
 | is_default | boolean | no | default: false; exactly one `page`-type template may be default |
-| definition | jsonb | no | default: {}; for `content` templates: array of widget specs `[{handle, config, sort_order}]`. For `page` templates: unused |
 | primary_color | string | yes | null = inherit from default |
 | header_bg_color | string | yes | null = inherit |
 | footer_bg_color | string | yes | null = inherit |

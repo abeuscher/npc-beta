@@ -63,13 +63,12 @@ class SystemPageSeeder extends Seeder
                 continue;
             }
 
-            $exists = PageWidget::where('page_id', $page->id)
+            $exists = PageWidget::forOwner($page)
                 ->where('widget_type_id', $widgetType->id)
                 ->exists();
 
             if (! $exists) {
-                PageWidget::create([
-                    'page_id'        => $page->id,
+                $page->widgets()->create([
                     'widget_type_id' => $widgetType->id,
                     'label'          => $def['title'],
                     'config'         => [],
@@ -114,7 +113,7 @@ class SystemPageSeeder extends Seeder
         }
 
         // Skip if the header already has any widgets or layouts
-        if ($headerPage->pageWidgets()->exists() || PageLayout::where('page_id', $headerPage->id)->exists()) {
+        if ($headerPage->widgets()->exists() || PageLayout::forOwner($headerPage)->exists()) {
             return;
         }
 
@@ -126,8 +125,7 @@ class SystemPageSeeder extends Seeder
         }
 
         // Create a two-column layout: logo | nav
-        $layout = PageLayout::create([
-            'page_id'       => $headerPage->id,
+        $layout = $headerPage->layouts()->create([
             'label'         => 'Header',
             'display'       => 'grid',
             'columns'       => 2,
@@ -149,8 +147,7 @@ class SystemPageSeeder extends Seeder
         $logoConfig['text'] = SiteSetting::get('site_name', config('app.name'));
         $logoConfig['link_url'] = '/';
 
-        PageWidget::create([
-            'page_id'        => $headerPage->id,
+        $headerPage->widgets()->create([
             'layout_id'      => $layout->id,
             'column_index'   => 0,
             'widget_type_id' => $logoType->id,
@@ -167,8 +164,7 @@ class SystemPageSeeder extends Seeder
             $navConfig['navigation_menu_id'] = $menu->id;
         }
 
-        PageWidget::create([
-            'page_id'        => $headerPage->id,
+        $headerPage->widgets()->create([
             'layout_id'      => $layout->id,
             'column_index'   => 1,
             'widget_type_id' => $navType->id,
@@ -187,7 +183,7 @@ class SystemPageSeeder extends Seeder
         }
 
         // Skip if the footer already has any widgets or layouts
-        if ($footerPage->pageWidgets()->exists() || PageLayout::where('page_id', $footerPage->id)->exists()) {
+        if ($footerPage->widgets()->exists() || PageLayout::forOwner($footerPage)->exists()) {
             return;
         }
 
@@ -198,8 +194,7 @@ class SystemPageSeeder extends Seeder
 
         $siteName = SiteSetting::get('site_name', config('app.name'));
 
-        PageWidget::create([
-            'page_id'        => $footerPage->id,
+        $footerPage->widgets()->create([
             'widget_type_id' => $textType->id,
             'label'          => 'Footer',
             'config'         => [

@@ -130,14 +130,14 @@ class WidgetType extends Model implements HasMedia
      *
      * @return array<int, array<string, mixed>>
      */
-    public static function forPicker(string $pageType = 'default'): array
+    public static function forPicker(?string $pageType = 'default'): array
     {
         $registry = app(\App\Services\WidgetRegistry::class);
 
         return static::orderBy('label')
             ->with(['media', 'draftPresets'])
             ->get()
-            ->filter(fn ($wt) => $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
+            ->filter(fn ($wt) => $pageType === null || $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
             ->map(fn ($wt) => [
                 'id'              => $wt->id,
                 'handle'          => $wt->handle,

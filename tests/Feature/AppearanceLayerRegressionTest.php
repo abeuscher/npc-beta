@@ -26,8 +26,7 @@ function renderOnPage(string $handle, array $config, array $appearanceConfig = [
 
     $wt = WidgetType::where('handle', $handle)->firstOrFail();
 
-    PageWidget::create([
-        'page_id'           => $page->id,
+    $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'Test',
         'config'            => $config,

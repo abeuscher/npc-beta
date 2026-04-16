@@ -194,8 +194,7 @@ it('bar chart widget renders a canvas element with collection data', function ()
 
     $widgetType = WidgetType::where('handle', 'bar_chart')->first();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [
             'heading'           => 'Monthly Data',

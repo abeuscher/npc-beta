@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Settings;
 
 use App\Models\SiteSetting;
+use App\Models\Template;
 use App\Rules\ValidHtmlSnippet;
 use App\Services\Media\ImageSizeProfile;
 use Filament\Actions\Action;
@@ -54,6 +55,9 @@ class CmsSettingsPage extends Page
                 ->map(fn ($w) => ['width' => $w])
                 ->values()
                 ->all(),
+            'default_content_template_default' => SiteSetting::get('default_content_template_default', ''),
+            'default_content_template_post'    => SiteSetting::get('default_content_template_post', ''),
+            'default_content_template_event'   => SiteSetting::get('default_content_template_event', ''),
         ]);
     }
 
@@ -107,6 +111,26 @@ class CmsSettingsPage extends Page
                         Forms\Components\Toggle::make('auto_publish_posts')
                             ->label('Auto-publish new blog posts')
                             ->helperText('When enabled, newly created blog posts default to Published.')
+                            ->columnSpan(4),
+                    ])
+                    ->columns(12),
+
+                Forms\Components\Section::make('Default Content Templates')
+                    ->description('Choose a default content template for each page type. New pages of that type will use this template unless the user picks a different one at creation.')
+                    ->schema([
+                        Forms\Components\Select::make('default_content_template_default')
+                            ->label('Pages')
+                            ->options(fn () => collect(['' => 'None'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                            ->columnSpan(4),
+
+                        Forms\Components\Select::make('default_content_template_post')
+                            ->label('Blog Posts')
+                            ->options(fn () => collect(['' => 'None'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                            ->columnSpan(4),
+
+                        Forms\Components\Select::make('default_content_template_event')
+                            ->label('Events')
+                            ->options(fn () => collect(['' => 'None'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
                             ->columnSpan(4),
                     ])
                     ->columns(12),
@@ -296,6 +320,10 @@ class CmsSettingsPage extends Page
         SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
         SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
+
+        SiteSetting::set('default_content_template_default', $data['default_content_template_default'] ?? '');
+        SiteSetting::set('default_content_template_post', $data['default_content_template_post'] ?? '');
+        SiteSetting::set('default_content_template_event', $data['default_content_template_event'] ?? '');
 
         SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
 

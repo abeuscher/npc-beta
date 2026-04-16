@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -17,7 +17,8 @@ class PageWidget extends Model implements HasMedia
     use HasFactory, HasUuids, InteractsWithMedia;
 
     protected $fillable = [
-        'page_id',
+        'owner_type',
+        'owner_id',
         'layout_id',
         'column_index',
         'widget_type_id',
@@ -36,19 +37,25 @@ class PageWidget extends Model implements HasMedia
         'is_active'         => 'boolean',
     ];
 
-    public function scopeInSlot($query, string $pageId, ?string $layoutId, ?int $columnIndex)
+    public function scopeForOwner($query, Model $owner)
+    {
+        return $query->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
+    }
+
+    public function scopeInSlot($query, Model $owner, ?string $layoutId, ?int $columnIndex)
     {
         if ($layoutId) {
             return $query->where('layout_id', $layoutId)
                 ->where('column_index', $columnIndex ?? 0);
         }
 
-        return $query->where('page_id', $pageId)->whereNull('layout_id');
+        return $query->forOwner($owner)->whereNull('layout_id');
     }
 
-    public function page(): BelongsTo
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(Page::class);
+        return $this->morphTo();
     }
 
     public function widgetType(): BelongsTo
@@ -61,115 +68,47 @@ class PageWidget extends Model implements HasMedia
         return $this->belongsTo(PageLayout::class, 'layout_id');
     }
 
-    // ── Static helpers — serialization & copying ─────────────────────────
-
     /**
-     * Serialize a page's root widget stack into a content-template-ready array.
+     * Recursively copy every widget + layout owned by $source to $target.
+     * Media attached to each widget is copied across via spatie's copy().
      */
-    public static function serializeStack(string $pageId): array
+    public static function copyOwnedStack(Model $source, Model $target): void
     {
-        $roots = static::where('page_id', $pageId)
-            ->whereNull('layout_id')
-            ->with('widgetType')
-            ->orderBy('sort_order')
-            ->get();
-
-        $layouts = PageLayout::where('page_id', $pageId)
-            ->with(['widgets.widgetType'])
-            ->orderBy('sort_order')
-            ->get();
-
-        $items = [];
-
-        foreach ($roots as $pw) {
-            $items[] = ['sort' => $pw->sort_order, 'data' => static::serializeOne($pw)];
-        }
-
-        foreach ($layouts as $layout) {
-            $items[] = ['sort' => $layout->sort_order, 'data' => static::serializeLayout($layout)];
-        }
-
-        usort($items, fn ($a, $b) => $a['sort'] <=> $b['sort']);
-
-        return array_column($items, 'data');
-    }
-
-    private static function serializeOne(self $pw): array
-    {
-        $entry = [
-            'type'              => 'widget',
-            'handle'            => $pw->widgetType?->handle,
-            'label'             => $pw->label,
-            'config'            => $pw->config ?? [],
-            'query_config'      => $pw->query_config ?? [],
-            'appearance_config' => $pw->appearance_config ?? [],
-            'sort_order'        => $pw->sort_order,
-            'is_active'         => $pw->is_active,
-        ];
-
-        if ($pw->column_index !== null) {
-            $entry['column_index'] = $pw->column_index;
-        }
-
-        return $entry;
-    }
-
-    private static function serializeLayout(PageLayout $layout): array
-    {
-        $slots = [];
-        foreach ($layout->widgets as $widget) {
-            $idx = $widget->column_index ?? 0;
-            $slots[$idx][] = static::serializeOne($widget);
-        }
-
-        return [
-            'type'          => 'layout',
-            'label'         => $layout->label,
-            'display'       => $layout->display,
-            'columns'       => $layout->columns,
-            'layout_config' => $layout->layout_config ?? [],
-            'sort_order'    => $layout->sort_order,
-            'slots'         => $slots,
-        ];
-    }
-
-    /**
-     * Recursively copy all widgets from one page to another.
-     */
-    public static function copyBetweenPages(
-        string $sourcePageId,
-        string $targetPageId,
-    ): void {
-        // Copy root widgets
-        $rootWidgets = static::where('page_id', $sourcePageId)
+        $rootWidgets = static::query()
+            ->forOwner($source)
             ->whereNull('layout_id')
             ->orderBy('sort_order')
             ->get();
 
         foreach ($rootWidgets as $widget) {
-            static::create([
-                'page_id'           => $targetPageId,
+            $widget->loadMissing('widgetType');
+            $new = static::create([
+                'owner_type'        => $target->getMorphClass(),
+                'owner_id'          => $target->getKey(),
                 'layout_id'         => null,
                 'column_index'      => null,
                 'widget_type_id'    => $widget->widget_type_id,
                 'label'             => $widget->label,
                 'config'            => $widget->config,
                 'query_config'      => $widget->query_config,
-                'appearance_config' => $widget->appearance_config,
+                'appearance_config' => static::resolveAppearance($widget->appearance_config ?? [], $widget->widgetType?->handle),
                 'sort_order'        => $widget->sort_order,
                 'is_active'         => $widget->is_active,
             ]);
+
+            static::copyMediaTo($widget, $new);
         }
 
-        // Copy layouts with their child widgets
-        $layouts = PageLayout::where('page_id', $sourcePageId)
-            ->with('widgets')
+        $layouts = PageLayout::query()
+            ->forOwner($source)
             ->orderBy('sort_order')
+            ->with('widgets')
             ->get();
 
         foreach ($layouts as $layout) {
             $newLayout = PageLayout::create([
-                'page_id'       => $targetPageId,
+                'owner_type'    => $target->getMorphClass(),
+                'owner_id'      => $target->getKey(),
                 'label'         => $layout->label,
                 'display'       => $layout->display,
                 'columns'       => $layout->columns,
@@ -178,19 +117,50 @@ class PageWidget extends Model implements HasMedia
             ]);
 
             foreach ($layout->widgets as $widget) {
-                static::create([
-                    'page_id'           => $targetPageId,
+                $widget->loadMissing('widgetType');
+                $new = static::create([
+                    'owner_type'        => $target->getMorphClass(),
+                    'owner_id'          => $target->getKey(),
                     'layout_id'         => $newLayout->id,
                     'column_index'      => $widget->column_index,
                     'widget_type_id'    => $widget->widget_type_id,
                     'label'             => $widget->label,
                     'config'            => $widget->config,
                     'query_config'      => $widget->query_config,
-                    'appearance_config' => $widget->appearance_config,
+                    'appearance_config' => static::resolveAppearance($widget->appearance_config ?? [], $widget->widgetType?->handle),
                     'sort_order'        => $widget->sort_order,
                     'is_active'         => $widget->is_active,
                 ]);
+
+                static::copyMediaTo($widget, $new);
             }
+        }
+    }
+
+    /**
+     * Return the widget's appearance_config, falling back to the widget type's
+     * defaultAppearanceConfig() when the stored value is empty.
+     */
+    public static function resolveAppearance(array $stored, ?string $widgetTypeHandle): array
+    {
+        if (! empty($stored)) {
+            return $stored;
+        }
+
+        if ($widgetTypeHandle) {
+            $def = app(\App\Services\WidgetRegistry::class)->find($widgetTypeHandle);
+            if ($def) {
+                return $def->defaultAppearanceConfig();
+            }
+        }
+
+        return $stored;
+    }
+
+    private static function copyMediaTo(self $source, self $target): void
+    {
+        foreach ($source->getMedia() as $media) {
+            $media->copy($target, $media->collection_name, $media->disk);
         }
     }
 

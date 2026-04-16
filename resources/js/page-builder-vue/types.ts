@@ -135,6 +135,8 @@ export interface ThemePaletteEntry {
 }
 
 export interface BootstrapData {
+  owner_id?: string
+  owner_type?: string
   page_id: string
   page_type: string
   page_title: string
@@ -153,6 +155,7 @@ export interface BootstrapData {
   events: EventRef[]
   csrf_token: string
   api_base_url: string
+  api_lookup_url?: string
   inline_image_upload_url: string
   color_swatches: string[]
   theme_palette: ThemePaletteEntry[]

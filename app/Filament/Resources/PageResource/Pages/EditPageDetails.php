@@ -133,9 +133,8 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                     ])
                     ->action(function (array $data) {
                         abort_unless(auth()->user()?->can('update_page'), 403);
-                        $definition = PageWidget::serializeStack($this->record->id);
 
-                        if (empty($definition)) {
+                        if (! $this->record->widgets()->exists() && ! $this->record->layouts()->exists()) {
                             Notification::make()
                                 ->title('No widgets to save')
                                 ->body('This page has no widgets. Add blocks first.')
@@ -144,14 +143,15 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                             return;
                         }
 
-                        Template::create([
+                        $template = Template::create([
                             'name'        => $data['template_name'],
                             'type'        => 'content',
                             'description' => $data['template_description'] ?: null,
-                            'definition'  => $definition,
                             'is_default'  => false,
                             'created_by'  => auth()->id(),
                         ]);
+
+                        PageWidget::copyOwnedStack($this->record, $template);
 
                         Notification::make()
                             ->title("Template saved: {$data['template_name']}")

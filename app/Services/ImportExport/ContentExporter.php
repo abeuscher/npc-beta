@@ -173,20 +173,31 @@ class ContentExporter
     }
 
     /**
-     * Walk the page's widget+layout tree, mirroring PageWidget::serializeStack()
-     * but injecting media descriptors per widget.
+     * Walk a page's widget+layout tree, injecting media descriptors per widget.
      *
      * @return array<int, array<string, mixed>>
      */
     protected function serializeWidgetTree(string $pageId): array
     {
-        $roots = PageWidget::where('page_id', $pageId)
+        $page = \App\Models\Page::find($pageId);
+
+        return $page ? $this->serializeWidgetTreeForOwner($page) : [];
+    }
+
+    /**
+     * Walk any owner's widget+layout tree (Page or Template).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeWidgetTreeForOwner(\Illuminate\Database\Eloquent\Model $owner): array
+    {
+        $roots = PageWidget::forOwner($owner)
             ->whereNull('layout_id')
             ->with(['widgetType', 'media'])
             ->orderBy('sort_order')
             ->get();
 
-        $layouts = PageLayout::where('page_id', $pageId)
+        $layouts = PageLayout::forOwner($owner)
             ->with(['widgets.widgetType', 'widgets.media'])
             ->orderBy('sort_order')
             ->get();
@@ -321,7 +332,7 @@ class ContentExporter
         ];
 
         if ($template->type === 'content') {
-            $data['definition'] = $template->definition ?? [];
+            $data['widgets'] = $this->serializeWidgetTreeForOwner($template);
 
             return $data;
         }

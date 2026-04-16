@@ -7,17 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Template extends Model
 {
     use HasFactory, HasUuids;
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $template) {
+            // Polymorphic ownership — no DB FK cascade. Tear down owned rows.
+            $template->widgets()->delete();
+            $template->layouts()->delete();
+        });
+    }
 
     protected $fillable = [
         'name',
         'type',
         'description',
         'is_default',
-        'definition',
         'primary_color',
         'header_bg_color',
         'footer_bg_color',
@@ -36,7 +45,6 @@ class Template extends Model
     ];
 
     protected $casts = [
-        'definition' => 'array',
         'is_default' => 'boolean',
     ];
 
@@ -117,7 +125,10 @@ class Template extends Model
         ]);
 
         if ($sourcePageId) {
-            PageWidget::copyBetweenPages($sourcePageId, $page->id);
+            $source = Page::find($sourcePageId);
+            if ($source) {
+                PageWidget::copyOwnedStack($source, $page);
+            }
         }
 
         return $page;
@@ -160,5 +171,15 @@ class Template extends Model
     public function pages(): HasMany
     {
         return $this->hasMany(Page::class);
+    }
+
+    public function widgets(): MorphMany
+    {
+        return $this->morphMany(PageWidget::class, 'owner');
+    }
+
+    public function layouts(): MorphMany
+    {
+        return $this->morphMany(PageLayout::class, 'owner');
     }
 }

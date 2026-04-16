@@ -73,8 +73,8 @@ class PageResource extends Resource
                     // Content template — create only, used to prepopulate widgets.
                     Forms\Components\Select::make('content_template_id')
                         ->label('Content Template')
-                        ->options(fn () => collect(['' => 'Blank'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
-                        ->default('')
+                        ->options(fn () => collect(['none' => 'None (blank)'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
+                        ->default(fn () => \App\Models\SiteSetting::get('default_content_template_default') ?: 'none')
                         ->helperText('Widget preset — applied once at creation.')
                         ->hiddenOn('edit')
                         ->columnSpanFull(),

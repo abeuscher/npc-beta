@@ -30,15 +30,15 @@ it('can be created and associated with a page', function () {
     ]);
     $widgetType = makeWidgetType();
 
-    $widget = PageWidget::create([
-        'page_id'        => $page->id,
+    $widget = $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => ['content' => '<p>Hello</p>'],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
 
-    expect($widget->page_id)->toBe($page->id)
+    expect($widget->owner_id)->toBe($page->id)
+        ->and($widget->owner_type)->toBe((new Page())->getMorphClass())
         ->and($widget->config['content'])->toBe('<p>Hello</p>');
 });
 
@@ -50,8 +50,7 @@ it('widgetType relationship returns the correct WidgetType model', function () {
     ]);
     $widgetType = makeWidgetType(['handle' => 'text_block_2', 'label' => 'Text Block 2']);
 
-    $widget = PageWidget::create([
-        'page_id'        => $page->id,
+    $widget = $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [],
         'sort_order'     => 0,
@@ -76,23 +75,21 @@ it('inactive widgets are excluded when loading for a page', function () {
     ]);
     $widgetType = makeWidgetType();
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => ['content' => 'Active'],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
 
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => ['content' => 'Inactive'],
         'sort_order'     => 1,
         'is_active'      => false,
     ]);
 
-    $active = $page->pageWidgets()
+    $active = $page->widgets()
         ->where('is_active', true)
         ->orderBy('sort_order')
         ->get();

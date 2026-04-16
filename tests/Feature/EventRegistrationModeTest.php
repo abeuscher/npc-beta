@@ -81,8 +81,7 @@ it('widget shows closed message when registration_mode is closed', function () {
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
     $page = Page::factory()->create(['status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
         'config'         => ['event_slug' => $event->slug],
@@ -125,8 +124,7 @@ it('widget shows external registration link when registration_mode is external a
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
     $page = Page::factory()->create(['status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
         'config'         => ['event_slug' => $event->slug],
@@ -147,8 +145,7 @@ it('widget shows walk-in message when registration_mode is none', function () {
 
     $widgetType = WidgetType::where('handle', 'event_registration')->first();
     $page = Page::factory()->create(['status' => 'published']);
-    PageWidget::create([
-        'page_id'        => $page->id,
+    $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'label'          => 'Event Registration',
         'config'         => ['event_slug' => $event->slug],

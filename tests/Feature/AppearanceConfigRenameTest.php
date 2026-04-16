@@ -277,8 +277,7 @@ it('public renderer emits background-color and color from appearance_config nest
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    PageWidget::create([
-        'page_id'           => $page->id,
+    $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'TB',
         'config'            => array_merge($wt->getDefaultConfig(), ['content' => '<p>Hello</p>']),
@@ -309,8 +308,7 @@ it('public renderer ignores background.color values that are not valid hex', fun
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    PageWidget::create([
-        'page_id'           => $page->id,
+    $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'TB',
         'config'            => array_merge($wt->getDefaultConfig(), ['content' => '<p>Hi</p>']),
@@ -341,8 +339,7 @@ it('public renderer emits padding and margin from appearance_config.layout', fun
 
     $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
 
-    PageWidget::create([
-        'page_id'           => $page->id,
+    $page->widgets()->create([
         'widget_type_id'    => $wt->id,
         'label'             => 'TB',
         'config'            => array_merge($wt->getDefaultConfig(), ['content' => '<p>Hi</p>']),
