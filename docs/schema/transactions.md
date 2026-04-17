@@ -24,6 +24,7 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | payment_channel | string | yes | Imported payment channel (e.g. 'online', 'offline'). |
 | invoice_number | string | yes | Human-readable invoice/receipt number. Distinct from `external_id` (technical source-system ID). |
 | line_items | jsonb | yes | Array of `{item, quantity, price, amount}` objects. Populated by the Invoice Details importer when multiple CSV rows share the same invoice. |
+| custom_fields | jsonb | yes | User-defined custom field values. Populated by the Invoice Details importer when columns are mapped as `__custom_invoice__`. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

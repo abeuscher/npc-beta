@@ -2,24 +2,22 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ImportDryRunRollback;
+use App\Filament\Pages\Concerns\InteractsWithImportProgress;
 use App\Importers\InvoiceImportFieldRegistry;
-use App\Services\Import\FieldMapper;
 use App\Models\Contact;
-use App\Models\ImportIdMap;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
-use App\Models\Organization;
-use App\Models\Tag;
+use App\Models\ImportSource;
 use App\Models\Transaction;
-use App\Services\PiiScanner;
-use Filament\Notifications\Notification;
+use App\Services\Import\FieldMapper;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImportInvoiceDetailsProgressPage extends Page
 {
+    use InteractsWithImportProgress;
+
     protected static string $view = 'filament.pages.import-invoice-details-progress';
 
     protected static ?string $title = 'Importing Invoice Details…';
@@ -64,25 +62,9 @@ class ImportInvoiceDetailsProgressPage extends Page
     public int  $errorCount = 0;
     public bool $done       = false;
 
-    public array $dryRunReport = [
-        'imported'    => 0,
-        'updated'     => 0,
-        'skipped'     => 0,
-        'errorCount'  => 0,
-        'errors'      => [],
-        'skipReasons' => [
-            'blank_contact_key'   => 0,
-            'contact_not_found'   => 0,
-            'blank_invoice_number' => 0,
-        ],
-        'entities' => [
-            'transactions' => ['would_create' => 0, 'would_match' => 0],
-            'line_items'   => ['count' => 0],
-            'contacts'     => ['would_create' => 0],
-        ],
-    ];
-
+    public array $dryRunReport   = [];
     public array $skipRowNumbers = [];
+    public array $customFieldLog = [];
 
     public string $sessionLabel   = '';
     public string $sourceName     = '';
@@ -98,72 +80,29 @@ class ImportInvoiceDetailsProgressPage extends Page
     public array $csvHeaders    = [];
     public bool  $mappingSaved  = false;
 
-    private const CHUNK = 200;
+    // ─── Trait contract ─────────────────────────────────────────────────
 
-    public function mount(): void
+    protected function usesChunkedTick(): bool
     {
-        $log = ImportLog::findOrFail($this->importLogId);
-
-        $this->total = $log->row_count;
-
-        $fullPath = Storage::disk('local')->path($log->storage_path);
-        $handle   = fopen($fullPath, 'r');
-        $this->csvHeaders = array_map('trim', fgetcsv($handle) ?: []);
-        $this->fileOffset = (int) ftell($handle);
-        fclose($handle);
-
-        if (! env('IMPORTER_SKIP_PII_CHECK', false)) {
-            $result = (new PiiScanner())->scan($fullPath, $this->csvHeaders);
-
-            if (! empty($result['violations'])) {
-                $this->phase            = 'rejected';
-                $this->done             = true;
-                $this->rejected         = true;
-                $this->piiViolations    = $result['violations'];
-                $this->piiTruncated     = $result['truncated'] ?? false;
-                $this->piiHeaderBlocked = $result['header_violation'] ?? false;
-                $this->rejectionReason  = $result['violations'][0]['detail'];
-
-                $log->update([
-                    'status'       => 'failed',
-                    'started_at'   => now(),
-                    'completed_at' => now(),
-                    'errors'       => array_map(
-                        fn ($v) => ['type' => 'pii_rejection', 'detail' => $v['detail']],
-                        $result['violations']
-                    ),
-                ]);
-
-                return;
-            }
-        }
-
-        $log->update([
-            'status'     => 'processing',
-            'started_at' => now(),
-        ]);
-
-        if ($this->importSessionId) {
-            $session = ImportSession::find($this->importSessionId);
-
-            if ($session) {
-                $this->importerUserId = (int) $session->imported_by;
-                $this->sourceName     = $session->importSource?->name ?? '';
-                $this->sessionLabel   = $session->session_label ?: ($session->filename ?? 'Unknown');
-            }
-        }
-
-        $this->runDryRun($log);
+        return false;
     }
 
-    /**
-     * Invoice Details dry-run reads the entire file and processes all rows
-     * at once because line items must be collapsed per invoice number. The
-     * whole run wraps in a DB transaction that rolls back.
-     */
-    private function runDryRun(ImportLog $log): void
+    protected function afterPiiScan(ImportLog $log): void
     {
-        $report = [
+        $customFieldLog = $this->resolveCustomFieldDefs($log, 'transaction');
+
+        $log->update([
+            'status'           => 'processing',
+            'started_at'       => now(),
+            'custom_field_log' => $customFieldLog ?: null,
+        ]);
+
+        $this->customFieldLog = $customFieldLog;
+    }
+
+    protected function emptyDryRunReport(): array
+    {
+        return [
             'imported'    => 0,
             'updated'     => 0,
             'skipped'     => 0,
@@ -174,16 +113,153 @@ class ImportInvoiceDetailsProgressPage extends Page
                 'contact_not_found'    => 0,
                 'blank_invoice_number' => 0,
             ],
-            'entities'    => [
+            'entities' => [
                 'transactions' => ['would_create' => 0, 'would_match' => 0],
                 'line_items'   => ['count' => 0],
                 'contacts'     => ['would_create' => 0],
             ],
         ];
+    }
+
+    protected function cancelRedirectUrl(): string
+    {
+        return ImportInvoiceDetailsPage::getUrl();
+    }
+
+    protected function buildRowContext(ImportLog $log): array
+    {
+        return [
+            'columnMap'       => $log->column_map ?? [],
+            'relationalMap'   => $log->relational_map ?? [],
+            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
+        ];
+    }
+
+    protected function saveMappingToSource(ImportSource $source, ImportLog $log, array $fieldMap, array $customFieldMap): void
+    {
+        $source->update([
+            'invoices_field_map'         => $fieldMap,
+            'invoices_contact_match_key' => $log->contact_match_key ?: 'contact:email',
+        ]);
+    }
+
+    // ─── Dry-run: row-level parsing ─────────────────────────────────────
+    //
+    // The trait's runDryRun() calls processOneRow() per CSV row, but
+    // invoice details needs to group rows by invoice number before
+    // creating transactions. We handle this by accumulating parsed rows
+    // into $this->invoiceGroups during processOneRow(), then processing
+    // the groups in a post-pass hook.
+
+    /** @var array<string, array> Invoice groups accumulated during dry-run */
+    private array $invoiceGroups = [];
+
+    /**
+     * Parse a single CSV row. Returns a thin outcome that the trait
+     * feeds into accumulateOutcome(). The heavy lifting (grouping +
+     * transaction creation) happens in the overridden runDryRun().
+     */
+    protected function processOneRow(array $row, int $rowNumber, array $context): array
+    {
+        try {
+            $parsed = $this->parseRow($row, $rowNumber, $context);
+
+            if ($parsed['skip']) {
+                return [
+                    'outcome'    => 'skipped',
+                    'skipReason' => $parsed['skipReason'] ?? null,
+                ];
+            }
+
+            if ($parsed['error']) {
+                return [
+                    'outcome' => 'error',
+                    'row'     => $rowNumber,
+                    'message' => $parsed['errorData']['message'] ?? 'Unknown error',
+                    'errorData' => $parsed['errorData'],
+                ];
+            }
+
+            // Accumulate into invoice groups for the second pass.
+            $invoiceNum = $parsed['invoiceNumber'];
+
+            if (! isset($this->invoiceGroups[$invoiceNum])) {
+                $this->invoiceGroups[$invoiceNum] = [
+                    'meta'           => $parsed['meta'],
+                    'contact'        => $parsed['contact'],
+                    'contactCreated' => $parsed['contactCreated'],
+                    'items'          => [],
+                    'rows'           => [],
+                    'customFields'   => [],
+                ];
+            }
+
+            if ($parsed['lineItem']) {
+                $this->invoiceGroups[$invoiceNum]['items'][] = $parsed['lineItem'];
+            }
+
+            // Merge custom fields: first row wins (fill-blanks-only semantics).
+            foreach (($parsed['customFields'] ?? []) as $handle => $val) {
+                if (! array_key_exists($handle, $this->invoiceGroups[$invoiceNum]['customFields'])) {
+                    $this->invoiceGroups[$invoiceNum]['customFields'][$handle] = $val;
+                }
+            }
+
+            $this->invoiceGroups[$invoiceNum]['rows'][] = $rowNumber;
+
+            return [
+                'outcome'        => 'imported',
+                'invoiceNumber'  => $invoiceNum,
+                'contactCreated' => $parsed['contactCreated'],
+                'lineItem'       => $parsed['lineItem'],
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'outcome' => 'error',
+                'row'     => $rowNumber,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    protected function accumulateOutcome(array &$report, array $outcome): void
+    {
+        match ($outcome['outcome']) {
+            'imported' => $report['imported']++,
+            'updated'  => $report['updated']++,
+            'skipped'  => (function () use (&$report, $outcome) {
+                $report['skipped']++;
+                if (isset($outcome['skipReason'])) {
+                    $report['skipReasons'][$outcome['skipReason']]
+                        = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
+                }
+            })(),
+            'error' => (function () use (&$report, $outcome) {
+                $report['errorCount']++;
+                if (isset($outcome['errorData'])) {
+                    $report['errors'][] = $outcome['errorData'];
+                } else {
+                    $report['errors'][] = [
+                        'outcome' => 'error',
+                        'row'     => $outcome['row'] ?? null,
+                        'message' => $outcome['message'] ?? 'Unknown error',
+                    ];
+                }
+            })(),
+        };
+    }
+
+    // ─── Override runDryRun for two-pass invoice grouping ────────────────
+
+    protected function runDryRun(ImportLog $log): void
+    {
+        $this->invoiceGroups = [];
+
+        $report         = $this->emptyDryRunReport();
         $skipRowNumbers = [];
 
         try {
-            DB::transaction(function () use ($log, &$report, &$skipRowNumbers) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($log, &$report, &$skipRowNumbers) {
                 $fullPath = Storage::disk('local')->path($log->storage_path);
                 $handle   = fopen($fullPath, 'r');
                 fgetcsv($handle);
@@ -191,57 +267,28 @@ class ImportInvoiceDetailsProgressPage extends Page
                 $context   = $this->buildRowContext($log);
                 $rowNumber = 2;
 
-                // First pass: parse all rows into per-invoice groups.
-                $invoiceGroups = [];
-                $rowContexts   = [];
-
+                // First pass: parse rows + accumulate into invoiceGroups.
                 while (($row = fgetcsv($handle)) !== false) {
-                    $parsed = $this->parseRow($row, $rowNumber, $context);
+                    $outcome = $this->processOneRow($row, $rowNumber, $context);
 
-                    if ($parsed['skip']) {
-                        $report['skipped']++;
-                        if (isset($parsed['skipReason'])) {
-                            $report['skipReasons'][$parsed['skipReason']]
-                                = ($report['skipReasons'][$parsed['skipReason']] ?? 0) + 1;
-                        }
+                    // Only accumulate skip/error into the report here;
+                    // imported rows get their final tallies from the second pass.
+                    if ($outcome['outcome'] === 'error') {
+                        $this->accumulateOutcome($report, $outcome);
                         $skipRowNumbers[] = $rowNumber;
-                        $rowNumber++;
-                        continue;
+                    } elseif ($outcome['outcome'] === 'skipped') {
+                        $this->accumulateOutcome($report, $outcome);
+                        $skipRowNumbers[] = $rowNumber;
                     }
-
-                    if ($parsed['error']) {
-                        $report['errorCount']++;
-                        $report['errors'][] = $parsed['errorData'];
-                        $skipRowNumbers[]   = $rowNumber;
-                        $rowNumber++;
-                        continue;
-                    }
-
-                    $invoiceNum = $parsed['invoiceNumber'];
-
-                    if (! isset($invoiceGroups[$invoiceNum])) {
-                        $invoiceGroups[$invoiceNum] = [
-                            'meta'     => $parsed['meta'],
-                            'contact'  => $parsed['contact'],
-                            'contactCreated' => $parsed['contactCreated'],
-                            'items'    => [],
-                            'rows'     => [],
-                        ];
-                    }
-
-                    if ($parsed['lineItem']) {
-                        $invoiceGroups[$invoiceNum]['items'][] = $parsed['lineItem'];
-                    }
-
-                    $invoiceGroups[$invoiceNum]['rows'][] = $rowNumber;
+                    // 'imported' rows are grouped — tallied below.
 
                     $rowNumber++;
                 }
 
                 fclose($handle);
 
-                // Second pass: create/upsert transactions per invoice.
-                foreach ($invoiceGroups as $invoiceNum => $group) {
+                // Second pass: process per-invoice groups.
+                foreach ($this->invoiceGroups as $invoiceNum => $group) {
                     $result = $this->processInvoiceGroup($invoiceNum, $group, $context);
 
                     $report['imported'] += count($group['rows']);
@@ -258,10 +305,10 @@ class ImportInvoiceDetailsProgressPage extends Page
                     }
                 }
 
-                throw new InvoiceDryRunRollback();
+                throw new ImportDryRunRollback();
             });
-        } catch (InvoiceDryRunRollback $e) {
-            // expected
+        } catch (ImportDryRunRollback $e) {
+            // expected — forces transaction rollback
         }
 
         $this->dryRunReport   = $report;
@@ -270,6 +317,8 @@ class ImportInvoiceDetailsProgressPage extends Page
 
         $log->update(['errors' => $report['errors'] ?: null]);
     }
+
+    // ─── Override runCommit for synchronous full-file processing ─────────
 
     public function runCommit(): void
     {
@@ -285,8 +334,6 @@ class ImportInvoiceDetailsProgressPage extends Page
         $this->skipped    = 0;
         $this->errorCount = 0;
 
-        // For invoice details, commit processes all rows at once (same as dry-run,
-        // without the rollback) because line items must be grouped.
         $log      = ImportLog::findOrFail($this->importLogId);
         $fullPath = Storage::disk('local')->path($log->storage_path);
 
@@ -332,11 +379,18 @@ class ImportInvoiceDetailsProgressPage extends Page
                     'contactCreated' => $parsed['contactCreated'],
                     'items'          => [],
                     'rows'           => [],
+                    'customFields'   => [],
                 ];
             }
 
             if ($parsed['lineItem']) {
                 $invoiceGroups[$invoiceNum]['items'][] = $parsed['lineItem'];
+            }
+
+            foreach (($parsed['customFields'] ?? []) as $handle => $val) {
+                if (! array_key_exists($handle, $invoiceGroups[$invoiceNum]['customFields'])) {
+                    $invoiceGroups[$invoiceNum]['customFields'][$handle] = $val;
+                }
             }
 
             $invoiceGroups[$invoiceNum]['rows'][] = $rowNumber;
@@ -368,123 +422,7 @@ class ImportInvoiceDetailsProgressPage extends Page
         $this->finaliseSession();
     }
 
-    public function cancel(): void
-    {
-        if ($this->importSessionId) {
-            $session = ImportSession::find($this->importSessionId);
-            $session?->delete();
-        }
-
-        if ($this->importLogId) {
-            $log = ImportLog::find($this->importLogId);
-            $log?->delete();
-        }
-
-        $this->redirect(ImportInvoiceDetailsPage::getUrl());
-    }
-
-    public function saveMapping(): void
-    {
-        if ($this->phase !== 'done' || ! $this->importSourceId) {
-            return;
-        }
-
-        $source = \App\Models\ImportSource::find($this->importSourceId);
-        $log    = ImportLog::find($this->importLogId);
-
-        if (! $source || ! $log) {
-            return;
-        }
-
-        $fieldMap = [];
-
-        foreach (($log->column_map ?? []) as $header => $destField) {
-            $normalized = strtolower(trim($header));
-
-            if (filled($destField)) {
-                $fieldMap[$normalized] = $destField;
-            }
-        }
-
-        $source->update([
-            'invoices_field_map'          => $fieldMap,
-            'invoices_contact_match_key'  => $log->contact_match_key ?: 'contact:email',
-        ]);
-
-        $this->mappingSaved = true;
-
-        Notification::make()
-            ->title('Mapping saved')
-            ->body("Future invoice imports using {$source->name} will start from this mapping.")
-            ->success()
-            ->send();
-    }
-
-    public function downloadPiiErrors(): StreamedResponse
-    {
-        $violations = $this->piiViolations;
-        $headers    = $this->csvHeaders;
-
-        return response()->streamDownload(function () use ($violations, $headers) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['PII violations report', 'generated ' . now()->toDateTimeString()]);
-            fputcsv($out, []);
-            foreach ($violations as $v) {
-                fputcsv($out, ["Row {$v['row']}", "column \"{$v['column']}\"", $v['detail']]);
-                fputcsv($out, $headers);
-                fputcsv($out, $v['row_data']);
-                fputcsv($out, []);
-            }
-            fclose($out);
-        }, 'pii-violations.csv', ['Content-Type' => 'text/csv']);
-    }
-
-    public function downloadErrors(): StreamedResponse
-    {
-        $errors = $this->dryRunReport['errors'] ?? [];
-
-        return response()->streamDownload(function () use ($errors) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['row_number', 'error', ...$this->csvHeaders]);
-
-            $log      = ImportLog::findOrFail($this->importLogId);
-            $fullPath = Storage::disk('local')->path($log->storage_path);
-            $handle   = fopen($fullPath, 'r');
-            fgetcsv($handle);
-
-            $rowNumber  = 2;
-            $erroredSet = array_flip(array_column($errors, 'row'));
-            $errorByRow = [];
-
-            foreach ($errors as $err) {
-                $errorByRow[$err['row']] = $err['message'] ?? '';
-            }
-
-            while (($row = fgetcsv($handle)) !== false) {
-                if (isset($erroredSet[$rowNumber])) {
-                    fputcsv($out, [$rowNumber, $errorByRow[$rowNumber] ?? '', ...$row]);
-                }
-                $rowNumber++;
-            }
-
-            fclose($handle);
-            fclose($out);
-        }, 'errored-rows.csv', ['Content-Type' => 'text/csv']);
-    }
-
-    public function tick(): void
-    {
-        // Invoice details commits synchronously in runCommit() — no tick needed.
-    }
-
-    private function buildRowContext(ImportLog $log): array
-    {
-        return [
-            'columnMap'       => $log->column_map ?? [],
-            'relationalMap'   => $log->relational_map ?? [],
-            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
-        ];
-    }
+    // ─── Entity-specific methods ────────────────────────────────────────
 
     /**
      * Parse a single CSV row into structured data without creating any records.
@@ -499,6 +437,7 @@ class ImportInvoiceDetailsProgressPage extends Page
             $contactTags        = [];
             $contactOrgName     = null;
             $contactMatchSource = null;
+            $customFields       = [];
 
             foreach ($row as $index => $value) {
                 $header    = $this->csvHeaders[$index] ?? null;
@@ -506,6 +445,16 @@ class ImportInvoiceDetailsProgressPage extends Page
                 $rawValue  = FieldMapper::normalizeValue($value);
 
                 if ($destField === null) {
+                    continue;
+                }
+
+                if ($destField === '__custom_invoice__') {
+                    if ($rawValue !== null && isset($context['customFieldMap'][$header])) {
+                        $handle = $context['customFieldMap'][$header]['handle'] ?? null;
+                        if ($handle) {
+                            $customFields[$handle] = $rawValue;
+                        }
+                    }
                     continue;
                 }
 
@@ -571,10 +520,11 @@ class ImportInvoiceDetailsProgressPage extends Page
             $contactCreated = false;
 
             try {
-                $contact = $this->resolveContact(
+                $contact = $this->resolveContactByNamespacedKey(
                     $context['contactMatchKey'],
                     $contactLookup,
-                    $contactExternalId
+                    $contactExternalId,
+                    InvoiceImportFieldRegistry::class,
                 );
             } catch (\RuntimeException $e) {
                 $colInfo = $contactMatchSource
@@ -626,6 +576,7 @@ class ImportInvoiceDetailsProgressPage extends Page
                 'contactNotes'   => $contactNotes,
                 'contactTags'    => $contactTags,
                 'contactOrgName' => $contactOrgName,
+                'customFields'   => $customFields,
             ];
         } catch (\Throwable $e) {
             return [
@@ -651,9 +602,10 @@ class ImportInvoiceDetailsProgressPage extends Page
      */
     private function processInvoiceGroup(string $invoiceNumber, array $group, array $context): array
     {
-        $meta    = $group['meta'];
-        $contact = $group['contact'];
-        $items   = $group['items'];
+        $meta         = $group['meta'];
+        $contact      = $group['contact'];
+        $items        = $group['items'];
+        $customFields = $group['customFields'] ?? [];
 
         // Look for existing Transaction (from events or donations import).
         $existing = null;
@@ -704,6 +656,20 @@ class ImportInvoiceDetailsProgressPage extends Page
                 }
             }
 
+            // Merge custom fields (fill-blanks-only on existing handles).
+            if (! empty($customFields)) {
+                $existingCustom = $existing->custom_fields ?? [];
+                $merged = $existingCustom;
+                foreach ($customFields as $handle => $val) {
+                    if (! array_key_exists($handle, $merged) || blank($merged[$handle])) {
+                        $merged[$handle] = $val;
+                    }
+                }
+                if ($merged !== $existingCustom) {
+                    $fillable['custom_fields'] = $merged;
+                }
+            }
+
             if (! empty($fillable)) {
                 $existing->fill($fillable)->save();
             }
@@ -712,7 +678,7 @@ class ImportInvoiceDetailsProgressPage extends Page
         }
 
         // Create new Transaction.
-        $transaction = Transaction::create([
+        $payload = [
             'type'              => 'payment',
             'direction'         => 'in',
             'status'            => $this->mapPaymentStatus($meta['status'] ?? null),
@@ -725,178 +691,14 @@ class ImportInvoiceDetailsProgressPage extends Page
             'import_session_id' => $this->importSessionId ?: null,
             'payment_method'    => $meta['payment_type'] ?? null,
             'line_items'        => ! empty($items) ? $items : null,
-        ]);
+        ];
+
+        if (! empty($customFields)) {
+            $payload['custom_fields'] = $customFields;
+        }
+
+        $transaction = Transaction::create($payload);
 
         return ['txCreated' => true, 'transaction' => $transaction];
     }
-
-    private function autoCreateContact(array $contactLookup, ?string $externalId, array $row): Contact
-    {
-        $firstName = null;
-        $lastName  = null;
-        $email     = $contactLookup['email'] ?? null;
-
-        foreach ($this->csvHeaders as $i => $header) {
-            $n = strtolower(trim($header));
-            $v = $row[$i] ?? null;
-            if ($v === '') {
-                $v = null;
-            }
-            if (in_array($n, ['first name', 'firstname'], true)) {
-                $firstName = $v;
-            }
-            if (in_array($n, ['last name', 'lastname'], true)) {
-                $lastName = $v;
-            }
-        }
-
-        $contact = Contact::create([
-            'first_name'        => $firstName,
-            'last_name'         => $lastName,
-            'email'             => $email,
-            'source'            => 'import',
-            'import_session_id' => $this->importSessionId ?: null,
-        ]);
-
-        if (! blank($externalId) && $this->importSourceId) {
-            ImportIdMap::updateOrCreate(
-                [
-                    'import_source_id' => $this->importSourceId,
-                    'model_type'       => 'contact',
-                    'source_id'        => $externalId,
-                ],
-                ['model_uuid' => $contact->id]
-            );
-        }
-
-        return $contact;
-    }
-
-    private function resolveContact(string $matchKey, array $contactLookup, ?string $externalId): ?Contact
-    {
-        [$ns, $field] = InvoiceImportFieldRegistry::split($matchKey);
-
-        if ($ns !== 'contact') {
-            return null;
-        }
-
-        if ($field === 'external_id') {
-            if (blank($externalId) || ! $this->importSourceId) {
-                return null;
-            }
-
-            $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
-                ->where('model_type', 'contact')
-                ->where('source_id', $externalId)
-                ->first();
-
-            return $idMap ? Contact::withoutGlobalScopes()->find($idMap->model_uuid) : null;
-        }
-
-        $value = $contactLookup[$field] ?? null;
-
-        if (blank($value)) {
-            return null;
-        }
-
-        $query = Contact::withoutGlobalScopes();
-
-        if ($field === 'email') {
-            $query->whereRaw('LOWER(email) = LOWER(?)', [$value]);
-        } else {
-            $query->where($field, $value);
-        }
-
-        $matches = $query->limit(2)->get();
-
-        if ($matches->count() > 1) {
-            throw new \RuntimeException("Ambiguous contact match on {$field} = {$value}");
-        }
-
-        return $matches->first();
-    }
-
-    private function mapPaymentStatus(?string $source): string
-    {
-        if (blank($source)) {
-            return 'pending';
-        }
-
-        $normalized = strtolower(trim($source));
-
-        return match ($normalized) {
-            'paid', 'completed', 'succeeded', 'success' => 'completed',
-            'failed', 'declined', 'error'               => 'failed',
-            'free', 'waived', 'refunded'                => 'completed',
-            default                                     => 'pending',
-        };
-    }
-
-    private function parseDate(mixed $value): mixed
-    {
-        if (blank($value) || $value instanceof \DateTimeInterface) {
-            return $value ?: null;
-        }
-
-        $raw = trim((string) $value);
-
-        $formats = ['m/d/Y H:i:s', 'm/d/Y H:i', 'm/d/Y', 'Y-m-d H:i:s', 'Y-m-d', \DateTimeInterface::ATOM];
-
-        foreach ($formats as $fmt) {
-            $dt = \DateTime::createFromFormat($fmt, $raw);
-            if ($dt !== false) {
-                return \Carbon\Carbon::instance($dt);
-            }
-        }
-
-        try {
-            return \Carbon\Carbon::parse($raw);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function parseDecimal(mixed $value): ?float
-    {
-        if (blank($value)) {
-            return null;
-        }
-
-        $raw = preg_replace('/[^0-9.\-]/', '', (string) $value);
-
-        return $raw === '' ? null : (float) $raw;
-    }
-
-    private function splitDelimited(?string $value, string $delimiter): array
-    {
-        if ($value === null) {
-            return [];
-        }
-        if ($delimiter === '') {
-            $trimmed = trim($value);
-            return $trimmed === '' ? [] : [$trimmed];
-        }
-        $actual = $delimiter === '\\n' ? "\n" : $delimiter;
-        $parts  = array_map('trim', explode($actual, $value));
-        return array_values(array_filter($parts, fn ($p) => $p !== ''));
-    }
-
-    private function finaliseSession(): void
-    {
-        if (! $this->importSessionId) {
-            return;
-        }
-        ImportSession::where('id', $this->importSessionId)
-            ->update(['status' => 'reviewing']);
-    }
-
-    public function percent(): int
-    {
-        if ($this->total === 0) {
-            return $this->done ? 100 : 0;
-        }
-        return (int) min(100, round(($this->processed / $this->total) * 100));
-    }
 }
-
-class InvoiceDryRunRollback extends \RuntimeException {}

@@ -24,7 +24,7 @@ class InvoiceImportFieldRegistry
             'Invoice fields' => $prefix('invoice',  InvoiceDetailFieldRegistry::options()),
             'Contact match'  => $prefix('contact',  $contactMatch),
             'Other'          => [
-                '__custom_invoice__' => '— Create as custom field —',
+                '__custom_invoice__' => '— Create as Transaction custom field —',
                 '__tag_contact__'    => '— Apply as Contact tag —',
                 '__note_contact__'   => '— Create as Contact note —',
                 '__org_contact__'    => '— Link to Contact Organization —',

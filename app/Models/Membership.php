@@ -25,12 +25,14 @@ class Membership extends Model
         'import_source_id',
         'import_session_id',
         'external_id',
+        'custom_fields',
     ];
 
     protected $casts = [
-        'starts_on'   => 'date',
-        'expires_on'  => 'date',
-        'amount_paid' => 'decimal:2',
+        'starts_on'     => 'date',
+        'expires_on'    => 'date',
+        'amount_paid'   => 'decimal:2',
+        'custom_fields' => 'array',
     ];
 
     public function importSource(): BelongsTo

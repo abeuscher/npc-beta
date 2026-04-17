@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\ContactFieldRegistry;
+use App\Services\Import\CsvTemplateService;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\ImportSource;
@@ -16,12 +18,12 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class ImportContactsPage extends Page
 {
+    use InteractsWithImportWizard;
+
     protected static ?string $navigationGroup = 'Tools';
 
     protected static ?string $navigationLabel = 'Import Contacts';
@@ -81,45 +83,10 @@ class ImportContactsPage extends Page
                             $this->topNav(currentIndex: 0, isFirst: true, isLast: false),
 
                             Forms\Components\Grid::make(3)->schema([
-                                Forms\Components\Section::make('Source')
-                                    ->columnSpan(2)
-                                    ->schema([
-                                        Forms\Components\TextInput::make('session_label')
-                                            ->label('Session label')
-                                            ->default(fn () => 'Data Import on ' . now()->format('F j, Y \a\t g:i A'))
-                                            ->required()
-                                            ->maxLength(255),
-
-                                        Forms\Components\Grid::make(5)->schema([
-                                            Forms\Components\TextInput::make('import_source_name')
-                                                ->label('New source name')
-                                                ->placeholder('e.g. Old CRM, Salesforce 2024')
-                                                ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
-                                                ->disabled(fn (Forms\Get $get) => filled($get('import_source_id')))
-                                                ->columnSpan(2),
-
-                                            Forms\Components\Placeholder::make('or_separator')
-                                                ->hiddenLabel()
-                                                ->content(new \Illuminate\Support\HtmlString(
-                                                    '<p class="text-center font-bold text-gray-500 text-base pt-7">OR</p>'
-                                                ))
-                                                ->columnSpan(1),
-
-                                            Forms\Components\Select::make('import_source_id')
-                                                ->label('Use an existing source')
-                                                ->helperText('Select to enable re-import matching via External ID.')
-                                                ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
-                                                ->placeholder('— Select a source —')
-                                                ->nullable()
-                                                ->live()
-                                                ->afterStateUpdated(function ($state, Forms\Set $set): void {
-                                                    if ($state) {
-                                                        $set('import_source_name', '');
-                                                    }
-                                                })
-                                                ->columnSpan(2),
-                                        ]),
-                                    ]),
+                                $this->buildSourceSection(
+                                    'Data Import',
+                                    'Select to enable re-import matching via External ID.'
+                                )->columnSpan(2),
 
                                 Forms\Components\Section::make('Tags')
                                     ->columnSpan(1)
@@ -165,27 +132,11 @@ class ImportContactsPage extends Page
                                 ->helperText('When on, any CSV column that doesn\'t match a standard contact field or saved mapping becomes a new custom field automatically. Field type is guessed from a sample of rows. Skipped headers (e.g. "password") are always ignored.')
                                 ->default(false),
 
-                            Forms\Components\FileUpload::make('csv_file')
-                                ->label('CSV File')
-                                ->disk('local')
-                                ->directory('imports')
-                                ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'])
-                                ->maxSize(10240)
-                                ->live()
-                                ->helperText('Max 10 MB. CSV or plain text only. Wait for the field above to turn green before advancing to the next stage.')
-                                ->required(),
+                            $this->buildFileUpload('Wait for the field above to turn green before advancing to the next stage.'),
+                            $this->buildTemplateDownloadLink(),
                         ])
                         ->afterValidation(function () {
-                            $existingId = $this->data['import_source_id'] ?? null;
-
-                            if ($existingId) {
-                                $this->resolvedSourceId  = $existingId;
-                                $this->pendingSourceName = '';
-                            } else {
-                                $this->resolvedSourceId  = '';
-                                $this->pendingSourceName = trim($this->data['import_source_name'] ?? '');
-                            }
-
+                            $this->resolveSourceFromFormData();
                             $this->processUploadedFile();
 
                             if (empty($this->parsedHeaders)) {
@@ -222,68 +173,18 @@ class ImportContactsPage extends Page
             ->statePath('data');
     }
 
-    /**
-     * Mirror of the wizard's Back/Next buttons at the top of each step. Raw HTML
-     * rather than Filament Actions — the Action button's built-in wire:click
-     * racing with our custom x-on:click stops the previousStep event from
-     * applying. Dispatches the same events the native footer buttons do.
-     */
-    private function topNav(int $currentIndex, bool $isFirst, bool $isLast): Forms\Components\Placeholder
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $back = $isFirst ? '<span></span>'
-            : "<button type='button' class='text-sm text-gray-600 hover:text-gray-900 hover:underline underline-offset-4 dark:text-gray-400 dark:hover:text-gray-200' x-on:click=\"\$wire.dispatchFormEvent('wizard::previousStep', 'data', {$currentIndex})\">← Back</button>";
-
-        $next = $isLast ? '<span></span>'
-            : "<button type='button' class='inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500' x-on:click=\"\$wire.dispatchFormEvent('wizard::nextStep', 'data', {$currentIndex})\">Next →</button>";
-
-        $html = "<div class='flex items-center justify-between gap-3'>{$back}{$next}</div>";
-
-        return Forms\Components\Placeholder::make("topNav_{$currentIndex}")
-            ->hiddenLabel()
-            ->content(new \Illuminate\Support\HtmlString($html));
+        return CsvTemplateService::stream('contacts');
     }
+
+    // ─── Contacts-specific processUploadedFile ──────────────────────────
 
     private function processUploadedFile(): void
     {
-        $raw       = $this->data['csv_file'] ?? null;
-        $fileValue = is_array($raw) ? (reset($raw) ?: null) : $raw;
-
-        if (! $fileValue) {
+        if (! $this->parseCsvFile()) {
             return;
         }
-
-        if ($fileValue instanceof TemporaryUploadedFile) {
-            $this->uploadedFilePath = $fileValue->store('imports', 'local');
-        } else {
-            $this->uploadedFilePath = (string) $fileValue;
-        }
-
-        $fullPath = Storage::disk('local')->path($this->uploadedFilePath);
-
-        if (! file_exists($fullPath)) {
-            return;
-        }
-
-        $handle  = fopen($fullPath, 'r');
-        $headers = fgetcsv($handle) ?: [];
-
-        $sampleRows = [];
-        for ($i = 0; $i < 10; $i++) {
-            $row = fgetcsv($handle);
-            if ($row === false) {
-                break;
-            }
-            $sampleRows[] = $row;
-        }
-        fclose($handle);
-
-        if (empty($headers)) {
-            return;
-        }
-
-        $this->parsedHeaders = array_map('trim', $headers);
-        $this->sampleRows    = $sampleRows;
-        $this->autoCustomLog = [];
 
         $savedSource = $this->resolvedSourceId ? ImportSource::find($this->resolvedSourceId) : null;
         $savedFieldMap        = $savedSource?->field_map ?? [];
@@ -357,42 +258,11 @@ class ImportContactsPage extends Page
         $this->data['match_key_field'] = $this->deriveDefaultMatchKey($columnMap);
     }
 
-    /**
-     * Promote an unrecognized header to a custom-field slot with a guessed type
-     * sourced from the first sample rows. Caller passes the column_map array by
-     * reference so we only need to set one key.
-     */
     private function assignAutoCustomField(array &$columnMap, string $header, int $n): void
     {
-        $colIndex = array_search($header, $this->parsedHeaders, true);
-        $sample   = [];
-
-        if ($colIndex !== false) {
-            foreach ($this->sampleRows as $row) {
-                if (array_key_exists($colIndex, $row)) {
-                    $sample[] = $row[$colIndex];
-                }
-            }
-        }
-
-        $type = FieldTypeDetector::detect($sample);
-
-        $columnMap["col_{$n}"]      = '__custom__';
-        $this->data["cf_label_{$n}"]  = $header;
-        $this->data["cf_handle_{$n}"] = Str::slug($header, '_');
-        $this->data["cf_type_{$n}"]   = $type;
-
-        $this->autoCustomLog[] = [
-            'header' => $header,
-            'handle' => Str::slug($header, '_'),
-            'type'   => $type,
-        ];
+        $this->assignAutoCustomFieldAs($columnMap, $header, $n, '__custom__');
     }
 
-    /**
-     * Default match-key rule: external_id if mapped, else email if mapped, else
-     * the first mapped field we find. The UI never allows "none".
-     */
     private function deriveDefaultMatchKey(array $columnMap): string
     {
         $special = ['__custom__', '__org__', '__note__', '__tag__'];
@@ -412,10 +282,6 @@ class ImportContactsPage extends Page
         return $fields[0] ?? 'email';
     }
 
-    /**
-     * Build the match-key Select options from the current in-flight column_map
-     * plus any __custom__ cells (whose handles live in cf_handle_N).
-     */
     private function matchKeyOptions(Forms\Get $get): array
     {
         $options       = [];
@@ -462,38 +328,6 @@ class ImportContactsPage extends Page
         }
 
         return $bestPreset;
-    }
-
-    private function buildPreviewRows(): void
-    {
-        if (! $this->uploadedFilePath) {
-            return;
-        }
-
-        $fullPath = Storage::disk('local')->path($this->uploadedFilePath);
-
-        if (! file_exists($fullPath)) {
-            return;
-        }
-
-        $handle = fopen($fullPath, 'r');
-        fgetcsv($handle); // skip header
-
-        $rows = [];
-
-        for ($i = 0; $i < 5; $i++) {
-            $row = fgetcsv($handle);
-
-            if ($row === false) {
-                break;
-            }
-
-            $rows[] = $row;
-        }
-
-        fclose($handle);
-
-        $this->previewRows = $rows;
     }
 
     private function validateAtLeastOneIdentifier(): void
@@ -555,6 +389,8 @@ class ImportContactsPage extends Page
         }
     }
 
+    // ─── Contacts-specific column mapping with collision detection ────────
+
     private function getColumnMappingSchema(): array
     {
         if (empty($this->parsedHeaders)) {
@@ -614,7 +450,7 @@ class ImportContactsPage extends Page
 
         foreach ($this->parsedHeaders as $header) {
             if (isset($collisionHeaders[$header])) {
-                continue; // Rendered below in the collision resolution section.
+                continue;
             }
 
             foreach ($this->columnMappingRowSchema($header, $contactFields) as $component) {
@@ -657,13 +493,6 @@ class ImportContactsPage extends Page
         return $schema;
     }
 
-    /**
-     * Seed default choices for each detected collision group directly into
-     * $this->data. Filament's ->default() on dynamically-rendered components
-     * only primes the UI; wire state remains null until the user interacts,
-     * which makes ->required() fail even when the UI shows a value. Seeding
-     * keeps the visible default and the validated state in sync.
-     */
     private function seedCollisionDefaults(array $collisions): void
     {
         $this->data['collisions'] = $this->data['collisions'] ?? [];
@@ -681,10 +510,6 @@ class ImportContactsPage extends Page
         }
     }
 
-    /**
-     * Schema fragment for one column's dropdown + __custom__ subform. Reused by
-     * the main list and the duplicate-column block so the behaviour is identical.
-     */
     private function columnMappingRowSchema(string $header, array $contactFields): array
     {
         $n          = $this->headerIndex($header);
@@ -783,10 +608,6 @@ class ImportContactsPage extends Page
         return [$select, $customSubForm, $orgSubForm, $noteSubForm, $tagSubForm];
     }
 
-    /**
-     * Returns the collision groups: each entry is destField => [headers that map to it].
-     * Only returns groups with 2+ headers; standard fields only (no __custom__).
-     */
     private function detectCollisions(array $columnMap): array
     {
         $byDest  = [];
@@ -806,11 +627,6 @@ class ImportContactsPage extends Page
         return array_filter($byDest, fn ($headers) => count($headers) >= 2);
     }
 
-    /**
-     * Build the in-form UI for each collision group. Renders the per-column
-     * dropdowns for every header in the group side-by-side, followed by the
-     * strategy radio and primary column picker.
-     */
     private function collisionResolutionSchema(array $collisions, array $contactFields): array
     {
         $out = [];
@@ -869,11 +685,6 @@ class ImportContactsPage extends Page
         return $out;
     }
 
-    /**
-     * Apply the user's collision choices to $this->data (column_map, custom_field_map,
-     * column_preferences). Run once on the Map Columns step's afterValidation so the
-     * preview and runImport paths see the resolved state.
-     */
     private function applyCollisionResolutions(): void
     {
         $collisions = $this->detectCollisions($this->data['column_map'] ?? []);
@@ -921,6 +732,8 @@ class ImportContactsPage extends Page
 
         $this->data['column_preferences'] = $preferences;
     }
+
+    // ─── Contacts-specific preview with duplicate check ──────────────────
 
     private function getPreviewSchema(): array
     {
@@ -1046,21 +859,11 @@ class ImportContactsPage extends Page
         ];
     }
 
+    // ──�� Contacts-specific runImport ─────────────────────────────────────
+
     public function runImport(): void
     {
-        $blocking = ImportSession::where('model_type', 'contact')
-            ->whereIn('status', ['pending', 'reviewing'])
-            ->exists();
-
-        if ($blocking) {
-            Notification::make()
-                ->title('Import blocked')
-                ->body('A previous contact import is awaiting review. Approve or roll it back before starting a new one.')
-                ->danger()
-                ->send();
-
-            $this->halt();
-
+        if (! $this->validateBlockingSession('contact', 'contact')) {
             return;
         }
 
@@ -1087,7 +890,6 @@ class ImportContactsPage extends Page
                 $strategy = $data["org_strategy_{$n}"] ?? 'auto_create';
 
                 if ($strategy === 'as_custom') {
-                    // Shortcut for "just store as a string custom field".
                     $namedMap[$header] = null;
                     $customFieldMap[$header] = [
                         'handle'     => Str::slug($header, '_'),
@@ -1119,75 +921,24 @@ class ImportContactsPage extends Page
             }
         }
 
-        $filename = basename($this->uploadedFilePath);
-        $rowCount = $this->countCsvRows($this->uploadedFilePath);
-
-        // Resolve (or create) the ImportSource — first DB write happens here
-        if (! $this->resolvedSourceId && $this->pendingSourceName) {
-            $source = ImportSource::create(['name' => $this->pendingSourceName]);
-            $this->resolvedSourceId = $source->id;
-        }
-
-        // Create the ImportSession — second DB write happens here
-        $session = ImportSession::create([
-            'session_label'    => $data['session_label'] ?? null,
-            'import_source_id' => $this->resolvedSourceId ?: null,
-            'model_type'       => 'contact',
-            'status'           => 'pending',
-            'filename'         => $filename,
-            'row_count'        => $rowCount,
-            'tag_ids'          => array_values(array_filter($data['import_tags'] ?? [])) ?: null,
-            'imported_by'      => auth()->id(),
-        ]);
-
-        // Create the ImportLog that drives the progress page
-        $importLog = ImportLog::create([
-            'user_id'             => auth()->id(),
-            'model_type'          => 'contact',
-            'filename'            => $filename,
-            'storage_path'        => $this->uploadedFilePath,
-            'column_map'          => $namedMap,
-            'custom_field_map'    => $customFieldMap ?: null,
-            'column_preferences'  => $data['column_preferences'] ?? [],
-            'relational_map'      => $relationalMap ?: [],
-            'row_count'           => $rowCount,
-            'duplicate_strategy'  => $data['duplicate_strategy'] ?? 'skip',
-            'match_key'           => $data['match_key_field'] ?? 'email',
-            'import_source_id'    => $this->resolvedSourceId ?: null,
-            'status'              => 'pending',
-        ]);
+        [$session, $importLog] = $this->createSessionAndLog(
+            modelType: 'contact',
+            data: $data,
+            namedMap: $namedMap,
+            customFieldMap: $customFieldMap,
+            relationalMap: $relationalMap,
+            extraLogFields: [
+                'duplicate_strategy'  => $data['duplicate_strategy'] ?? 'skip',
+                'match_key'           => $data['match_key_field'] ?? 'email',
+                'column_preferences'  => $data['column_preferences'] ?? [],
+            ],
+            sessionTagIds: array_values(array_filter($data['import_tags'] ?? [])) ?: null,
+        );
 
         $this->redirect(ImportProgressPage::getUrl([
             'log'     => $importLog->id,
             'session' => $session->id,
             'source'  => $this->resolvedSourceId,
         ]));
-    }
-
-    private function countCsvRows(string $storagePath): int
-    {
-        $fullPath = Storage::disk('local')->path($storagePath);
-
-        if (! file_exists($fullPath)) {
-            return 0;
-        }
-
-        $handle = fopen($fullPath, 'r');
-        $count  = -1;
-
-        while (fgetcsv($handle) !== false) {
-            $count++;
-        }
-
-        fclose($handle);
-
-        return max(0, $count);
-    }
-
-    private function headerIndex(string $header): int
-    {
-        $index = array_search($header, $this->parsedHeaders);
-
-        return $index !== false ? $index : 0;
     }
 }

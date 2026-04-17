@@ -2,27 +2,22 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Pages\Concerns\ImportDryRunRollback;
+use App\Filament\Pages\Concerns\InteractsWithImportProgress;
 use App\Importers\MembershipImportFieldRegistry;
-use App\Services\Import\FieldMapper;
 use App\Models\Contact;
-use App\Models\ImportIdMap;
 use App\Models\ImportLog;
-use App\Models\ImportSession;
+use App\Models\ImportSource;
 use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\Note;
-use App\Models\Organization;
-use App\Models\Tag;
-use App\Services\PiiScanner;
-use Filament\Notifications\Notification;
+use App\Services\Import\FieldMapper;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImportMembershipsProgressPage extends Page
 {
+    use InteractsWithImportProgress;
+
     protected static string $view = 'filament.pages.import-memberships-progress';
 
     protected static ?string $title = 'Importing Memberships…';
@@ -85,6 +80,7 @@ class ImportMembershipsProgressPage extends Page
     ];
 
     public array $skipRowNumbers = [];
+    public array $customFieldLog = [];
 
     public string $sessionLabel   = '';
     public string $sourceName     = '';
@@ -100,67 +96,24 @@ class ImportMembershipsProgressPage extends Page
     public array $csvHeaders    = [];
     public bool  $mappingSaved  = false;
 
-    private const CHUNK = 100;
+    // ─── Abstract method implementations ────────────────────────────────
 
-    public function mount(): void
+    protected function afterPiiScan(ImportLog $log): void
     {
-        $log = ImportLog::findOrFail($this->importLogId);
-
-        $this->total = $log->row_count;
-
-        $fullPath = Storage::disk('local')->path($log->storage_path);
-        $handle   = fopen($fullPath, 'r');
-        $this->csvHeaders = array_map('trim', fgetcsv($handle) ?: []);
-        $this->fileOffset = (int) ftell($handle);
-        fclose($handle);
-
-        if (! env('IMPORTER_SKIP_PII_CHECK', false)) {
-            $result = (new PiiScanner())->scan($fullPath, $this->csvHeaders);
-
-            if (! empty($result['violations'])) {
-                $this->phase            = 'rejected';
-                $this->done             = true;
-                $this->rejected         = true;
-                $this->piiViolations    = $result['violations'];
-                $this->piiTruncated     = $result['truncated'] ?? false;
-                $this->piiHeaderBlocked = $result['header_violation'] ?? false;
-                $this->rejectionReason  = $result['violations'][0]['detail'];
-
-                $log->update([
-                    'status'       => 'failed',
-                    'started_at'   => now(),
-                    'completed_at' => now(),
-                    'errors'       => array_map(
-                        fn ($v) => ['type' => 'pii_rejection', 'detail' => $v['detail']],
-                        $result['violations']
-                    ),
-                ]);
-
-                return;
-            }
-        }
+        $customFieldLog = $this->resolveCustomFieldDefs($log, 'membership');
 
         $log->update([
-            'status'     => 'processing',
-            'started_at' => now(),
+            'status'           => 'processing',
+            'started_at'       => now(),
+            'custom_field_log' => $customFieldLog ?: null,
         ]);
 
-        if ($this->importSessionId) {
-            $session = ImportSession::find($this->importSessionId);
-
-            if ($session) {
-                $this->importerUserId = (int) $session->imported_by;
-                $this->sourceName     = $session->importSource?->name ?? '';
-                $this->sessionLabel   = $session->session_label ?: ($session->filename ?? 'Unknown');
-            }
-        }
-
-        $this->runDryRun($log);
+        $this->customFieldLog = $customFieldLog;
     }
 
-    private function runDryRun(ImportLog $log): void
+    protected function emptyDryRunReport(): array
     {
-        $report = [
+        return [
             'imported'    => 0,
             'updated'     => 0,
             'skipped'     => 0,
@@ -170,285 +123,44 @@ class ImportMembershipsProgressPage extends Page
                 'blank_contact_key' => 0,
                 'contact_not_found' => 0,
             ],
-            'entities'    => [
+            'entities' => [
                 'memberships' => ['would_create' => 0],
                 'tiers'       => ['would_create' => 0, 'would_match' => 0],
                 'contacts'    => ['would_create' => 0],
             ],
         ];
-        $skipRowNumbers = [];
-
-        try {
-            DB::transaction(function () use ($log, &$report, &$skipRowNumbers) {
-                $fullPath = Storage::disk('local')->path($log->storage_path);
-                $handle   = fopen($fullPath, 'r');
-                fgetcsv($handle);
-
-                $context   = $this->buildRowContext($log);
-                $rowNumber = 2;
-
-                while (($row = fgetcsv($handle)) !== false) {
-                    $outcome = $this->processOneRow($row, $rowNumber, $context);
-
-                    match ($outcome['outcome']) {
-                        'imported' => $report['imported']++,
-                        'skipped'  => $report['skipped']++,
-                        'error'    => null,
-                    };
-
-                    if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
-                        $report['skipReasons'][$outcome['skipReason']]
-                            = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
-                        $skipRowNumbers[] = $rowNumber;
-                    }
-
-                    if ($outcome['outcome'] === 'error') {
-                        $report['errorCount']++;
-                        $report['errors'][] = $outcome;
-                        $skipRowNumbers[]   = $rowNumber;
-                    }
-
-                    $this->accumulateEntityCounts($report, $outcome['entities'] ?? []);
-
-                    $rowNumber++;
-                }
-
-                fclose($handle);
-
-                throw new MembershipDryRunRollback();
-            });
-        } catch (MembershipDryRunRollback $e) {
-            // expected
-        }
-
-        $this->dryRunReport   = $report;
-        $this->skipRowNumbers = $skipRowNumbers;
-        $this->phase          = 'awaitingDecision';
-
-        $log->update(['errors' => $report['errors'] ?: null]);
     }
 
-    public function runCommit(): void
+    protected function buildRowContext(ImportLog $log): array
     {
-        if ($this->phase !== 'awaitingDecision') {
-            return;
-        }
-
-        $this->phase      = 'committing';
-        $this->done       = false;
-        $this->processed  = 0;
-        $this->imported   = 0;
-        $this->updated    = 0;
-        $this->skipped    = 0;
-        $this->errorCount = 0;
-
-        $log      = ImportLog::findOrFail($this->importLogId);
-        $fullPath = Storage::disk('local')->path($log->storage_path);
-        $handle   = fopen($fullPath, 'r');
-        fgetcsv($handle);
-        $this->fileOffset = (int) ftell($handle);
-        fclose($handle);
-
-        $log->update(['errors' => null, 'error_count' => 0]);
+        return [
+            'columnMap'       => $log->column_map ?? [],
+            'customFieldMap'  => $log->custom_field_map ?? [],
+            'relationalMap'   => $log->relational_map ?? [],
+            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
+        ];
     }
 
-    public function cancel(): void
+    protected function accumulateOutcome(array &$report, array $outcome): void
     {
-        if ($this->importSessionId) {
-            $session = ImportSession::find($this->importSessionId);
-            $session?->delete();
+        match ($outcome['outcome']) {
+            'imported' => $report['imported']++,
+            'skipped'  => $report['skipped']++,
+            'error'    => null,
+        };
+
+        if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
+            $report['skipReasons'][$outcome['skipReason']]
+                = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
         }
 
-        if ($this->importLogId) {
-            $log = ImportLog::find($this->importLogId);
-            $log?->delete();
+        if ($outcome['outcome'] === 'error') {
+            $report['errorCount']++;
+            $report['errors'][] = $outcome;
         }
 
-        $this->redirect(ImportMembershipsPage::getUrl());
-    }
+        $entities = $outcome['entities'] ?? [];
 
-    public function saveMapping(): void
-    {
-        if ($this->phase !== 'done' || ! $this->importSourceId) {
-            return;
-        }
-
-        $source = \App\Models\ImportSource::find($this->importSourceId);
-        $log    = ImportLog::find($this->importLogId);
-
-        if (! $source || ! $log) {
-            return;
-        }
-
-        $fieldMap       = [];
-        $customFieldMap = [];
-
-        foreach (($log->column_map ?? []) as $header => $destField) {
-            $normalized = strtolower(trim($header));
-
-            if (filled($destField)) {
-                $fieldMap[$normalized] = $destField;
-            }
-        }
-
-        foreach (($log->custom_field_map ?? []) as $header => $cfg) {
-            $normalized              = strtolower(trim($header));
-            $customFieldMap[$normalized] = $cfg;
-        }
-
-        $source->update([
-            'memberships_field_map'          => $fieldMap,
-            'memberships_custom_field_map'   => $customFieldMap,
-            'memberships_contact_match_key'  => $log->contact_match_key ?: 'contact:email',
-        ]);
-
-        $this->mappingSaved = true;
-
-        Notification::make()
-            ->title('Mapping saved')
-            ->body("Future memberships imports using {$source->name} will start from this mapping.")
-            ->success()
-            ->send();
-    }
-
-    public function downloadPiiErrors(): StreamedResponse
-    {
-        $violations = $this->piiViolations;
-        $headers    = $this->csvHeaders;
-
-        return response()->streamDownload(function () use ($violations, $headers) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['PII violations report', 'generated ' . now()->toDateTimeString(), 'violations: ' . count($violations)]);
-            fputcsv($out, []);
-            foreach ($violations as $v) {
-                fputcsv($out, ["Row {$v['row']}", "column \"{$v['column']}\"", $v['detail']]);
-                fputcsv($out, $headers);
-                fputcsv($out, $v['row_data']);
-                fputcsv($out, []);
-            }
-            fclose($out);
-        }, 'pii-violations.csv', ['Content-Type' => 'text/csv']);
-    }
-
-    public function downloadErrors(): StreamedResponse
-    {
-        $errors = $this->dryRunReport['errors'] ?? [];
-
-        return response()->streamDownload(function () use ($errors) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['row_number', 'error', ...$this->csvHeaders]);
-
-            $log      = ImportLog::findOrFail($this->importLogId);
-            $fullPath = Storage::disk('local')->path($log->storage_path);
-            $handle   = fopen($fullPath, 'r');
-            fgetcsv($handle);
-
-            $rowNumber  = 2;
-            $erroredSet = array_flip(array_column($errors, 'row'));
-            $errorByRow = [];
-
-            foreach ($errors as $err) {
-                $errorByRow[$err['row']] = $err['message'] ?? '';
-            }
-
-            while (($row = fgetcsv($handle)) !== false) {
-                if (isset($erroredSet[$rowNumber])) {
-                    fputcsv($out, [$rowNumber, $errorByRow[$rowNumber] ?? '', ...$row]);
-                }
-                $rowNumber++;
-            }
-
-            fclose($handle);
-            fclose($out);
-        }, 'errored-rows.csv', ['Content-Type' => 'text/csv']);
-    }
-
-    public function tick(): void
-    {
-        if ($this->phase !== 'committing' || $this->done) {
-            return;
-        }
-
-        $log      = ImportLog::findOrFail($this->importLogId);
-        $fullPath = Storage::disk('local')->path($log->storage_path);
-
-        if (! file_exists($fullPath)) {
-            $this->done  = true;
-            $this->phase = 'done';
-            $log->update(['status' => 'failed', 'completed_at' => now()]);
-            return;
-        }
-
-        $handle = fopen($fullPath, 'r');
-        fseek($handle, $this->fileOffset);
-
-        $context   = $this->buildRowContext($log);
-        $skipSet   = array_flip($this->skipRowNumbers);
-        $rowNumber = $this->processed + 2;
-
-        $imported    = 0;
-        $skipped     = 0;
-        $errors      = [];
-        $rowsInChunk = 0;
-
-        for ($i = 0; $i < self::CHUNK; $i++) {
-            $row = fgetcsv($handle);
-
-            if ($row === false) {
-                $this->done = true;
-                break;
-            }
-
-            $rowsInChunk++;
-
-            if (isset($skipSet[$rowNumber])) {
-                $skipped++;
-                $rowNumber++;
-                continue;
-            }
-
-            $outcome = $this->processOneRow($row, $rowNumber, $context);
-
-            match ($outcome['outcome']) {
-                'imported' => $imported++,
-                'skipped'  => $skipped++,
-                'error'    => null,
-            };
-
-            if ($outcome['outcome'] === 'error') {
-                $errors[] = ['row' => $rowNumber, 'message' => $outcome['message']];
-            }
-
-            $rowNumber++;
-        }
-
-        $this->fileOffset = (int) ftell($handle);
-        fclose($handle);
-
-        $this->imported   += $imported;
-        $this->skipped    += $skipped;
-        $this->errorCount += count($errors);
-        $this->processed  += $rowsInChunk;
-
-        $existingErrors = $log->errors ?? [];
-
-        $log->update([
-            'imported_count' => $this->imported,
-            'skipped_count'  => $this->skipped,
-            'error_count'    => $this->errorCount,
-            'errors'         => array_merge($existingErrors, $errors),
-        ]);
-
-        if ($this->done || $this->processed >= $this->total) {
-            $this->done  = true;
-            $this->phase = 'done';
-            $log->update(['status' => 'complete', 'completed_at' => now()]);
-            $this->finaliseSession();
-        }
-    }
-
-    private function accumulateEntityCounts(array &$report, array $entities): void
-    {
         if (! empty($entities['memberships']['would_create'])) {
             $report['entities']['memberships']['would_create'] += $entities['memberships']['would_create'];
         }
@@ -466,17 +178,23 @@ class ImportMembershipsProgressPage extends Page
         }
     }
 
-    private function buildRowContext(ImportLog $log): array
+    protected function cancelRedirectUrl(): string
     {
-        return [
-            'columnMap'       => $log->column_map ?? [],
-            'customFieldMap'  => $log->custom_field_map ?? [],
-            'relationalMap'   => $log->relational_map ?? [],
-            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
-        ];
+        return ImportMembershipsPage::getUrl();
     }
 
-    private function processOneRow(array $row, int $rowNumber, array $context): array
+    protected function saveMappingToSource(ImportSource $source, ImportLog $log, array $fieldMap, array $customFieldMap): void
+    {
+        $source->update([
+            'memberships_field_map'         => $fieldMap,
+            'memberships_custom_field_map'  => $customFieldMap,
+            'memberships_contact_match_key' => $log->contact_match_key ?: 'contact:email',
+        ]);
+    }
+
+    // ─── Row processing ─────────────────────────────────────────────────
+
+    protected function processOneRow(array $row, int $rowNumber, array $context): array
     {
         try {
             $memberAttrs        = [];
@@ -486,13 +204,24 @@ class ImportMembershipsProgressPage extends Page
             $contactTags        = [];
             $contactOrgName     = null;
             $contactMatchSource = null;
+            $membershipCustomFields = [];
 
             foreach ($row as $index => $value) {
                 $header    = $this->csvHeaders[$index] ?? null;
                 $destField = $header ? ($context['columnMap'][$header] ?? null) : null;
                 $rawValue  = FieldMapper::normalizeValue($value);
 
-                if ($destField === null || $destField === '__custom_membership__') {
+                if ($destField === null) {
+                    continue;
+                }
+
+                if ($destField === '__custom_membership__') {
+                    if ($rawValue !== null && isset($context['customFieldMap'][$header])) {
+                        $handle = $context['customFieldMap'][$header]['handle'] ?? null;
+                        if ($handle) {
+                            $membershipCustomFields[$handle] = $rawValue;
+                        }
+                    }
                     continue;
                 }
 
@@ -552,10 +281,11 @@ class ImportMembershipsProgressPage extends Page
             $contactCreated = false;
 
             try {
-                $contact = $this->resolveContact(
+                $contact = $this->resolveContactByNamespacedKey(
                     $context['contactMatchKey'],
                     $contactLookup,
-                    $contactExternalId
+                    $contactExternalId,
+                    MembershipImportFieldRegistry::class,
                 );
             } catch (\RuntimeException $e) {
                 $colInfo = $contactMatchSource
@@ -593,7 +323,7 @@ class ImportMembershipsProgressPage extends Page
             }
 
             // Create Membership.
-            $membership = $this->createMembership($memberAttrs, $contact, $tier);
+            $membership = $this->createMembership($memberAttrs, $contact, $tier, $membershipCustomFields);
 
             // Timeline note.
             $tierLabel = $tier?->name ?? 'unspecified';
@@ -628,7 +358,7 @@ class ImportMembershipsProgressPage extends Page
                 'row'      => $rowNumber,
                 'entities' => $entities,
             ];
-        } catch (MembershipDryRunRollback $e) {
+        } catch (ImportDryRunRollback $e) {
             throw $e;
         } catch (\Throwable $e) {
             return [
@@ -642,6 +372,8 @@ class ImportMembershipsProgressPage extends Page
             ];
         }
     }
+
+    // ─── Entity-specific helpers ────────────────────────────────────────
 
     private function resolveTier(string $name): array
     {
@@ -664,7 +396,7 @@ class ImportMembershipsProgressPage extends Page
         return [$tier, true];
     }
 
-    private function createMembership(array $attrs, Contact $contact, ?MembershipTier $tier): Membership
+    private function createMembership(array $attrs, Contact $contact, ?MembershipTier $tier, array $customFields = []): Membership
     {
         $payload = [
             'contact_id'        => $contact->id,
@@ -678,6 +410,10 @@ class ImportMembershipsProgressPage extends Page
             'import_session_id' => $this->importSessionId ?: null,
             'external_id'       => $attrs['external_id'] ?? null,
         ];
+
+        if (! empty($customFields)) {
+            $payload['custom_fields'] = $customFields;
+        }
 
         return Membership::create($payload);
     }
@@ -698,273 +434,4 @@ class ImportMembershipsProgressPage extends Page
             default                               => 'active',
         };
     }
-
-    private function autoCreateContact(array $contactLookup, ?string $externalId, array $row): Contact
-    {
-        $firstName = null;
-        $lastName  = null;
-        $email     = $contactLookup['email'] ?? null;
-
-        foreach ($this->csvHeaders as $i => $header) {
-            $n = strtolower(trim($header));
-            $v = $row[$i] ?? null;
-            if ($v === '') {
-                $v = null;
-            }
-            if (in_array($n, ['first name', 'firstname'], true)) {
-                $firstName = $v;
-            }
-            if (in_array($n, ['last name', 'lastname'], true)) {
-                $lastName = $v;
-            }
-        }
-
-        $contact = Contact::create([
-            'first_name'        => $firstName,
-            'last_name'         => $lastName,
-            'email'             => $email,
-            'source'            => 'import',
-            'import_session_id' => $this->importSessionId ?: null,
-        ]);
-
-        if (! blank($externalId) && $this->importSourceId) {
-            ImportIdMap::updateOrCreate(
-                [
-                    'import_source_id' => $this->importSourceId,
-                    'model_type'       => 'contact',
-                    'source_id'        => $externalId,
-                ],
-                ['model_uuid' => $contact->id]
-            );
-        }
-
-        return $contact;
-    }
-
-    private function resolveContact(string $matchKey, array $contactLookup, ?string $externalId): ?Contact
-    {
-        [$ns, $field] = MembershipImportFieldRegistry::split($matchKey);
-
-        if ($ns !== 'contact') {
-            return null;
-        }
-
-        if ($field === 'external_id') {
-            if (blank($externalId) || ! $this->importSourceId) {
-                return null;
-            }
-
-            $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
-                ->where('model_type', 'contact')
-                ->where('source_id', $externalId)
-                ->first();
-
-            return $idMap ? Contact::withoutGlobalScopes()->find($idMap->model_uuid) : null;
-        }
-
-        $value = $contactLookup[$field] ?? null;
-
-        if (blank($value)) {
-            return null;
-        }
-
-        $query = Contact::withoutGlobalScopes();
-
-        if ($field === 'email') {
-            $query->whereRaw('LOWER(email) = LOWER(?)', [$value]);
-        } else {
-            $query->where($field, $value);
-        }
-
-        $matches = $query->limit(2)->get();
-
-        if ($matches->count() > 1) {
-            throw new \RuntimeException("Ambiguous contact match on {$field} = {$value}");
-        }
-
-        return $matches->first();
-    }
-
-    private function parseDate(mixed $value): mixed
-    {
-        if (blank($value) || $value instanceof \DateTimeInterface) {
-            return $value ?: null;
-        }
-
-        $raw = trim((string) $value);
-
-        $formats = ['m/d/Y H:i:s', 'm/d/Y H:i', 'm/d/Y', 'Y-m-d H:i:s', 'Y-m-d', \DateTimeInterface::ATOM];
-
-        foreach ($formats as $fmt) {
-            $dt = \DateTime::createFromFormat($fmt, $raw);
-            if ($dt !== false) {
-                return \Carbon\Carbon::instance($dt);
-            }
-        }
-
-        try {
-            return \Carbon\Carbon::parse($raw);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function parseDecimal(mixed $value): ?float
-    {
-        if (blank($value)) {
-            return null;
-        }
-
-        $raw = preg_replace('/[^0-9.\-]/', '', (string) $value);
-
-        return $raw === '' ? null : (float) $raw;
-    }
-
-    private function splitDelimited(?string $value, string $delimiter): array
-    {
-        if ($value === null) {
-            return [];
-        }
-        if ($delimiter === '') {
-            $trimmed = trim($value);
-            return $trimmed === '' ? [] : [$trimmed];
-        }
-        $actual = $delimiter === '\\n' ? "\n" : $delimiter;
-        $parts  = array_map('trim', explode($actual, $value));
-        return array_values(array_filter($parts, fn ($p) => $p !== ''));
-    }
-
-    private function applyPerRowNotes(Contact $contact, array $entries): void
-    {
-        foreach ($entries as $entry) {
-            $fragments = $this->splitNoteBody(
-                $entry['body'],
-                $entry['split_mode'] ?? 'none',
-                $entry['split_regex'] ?? ''
-            );
-
-            foreach ($fragments as $fragment) {
-                Note::create([
-                    'notable_type'     => Contact::class,
-                    'notable_id'       => $contact->id,
-                    'author_id'        => $this->importerUserId ?: null,
-                    'body'             => $fragment['body'],
-                    'occurred_at'      => $fragment['occurred_at'] ?? now(),
-                    'import_source_id' => $this->importSourceId ?: null,
-                ]);
-            }
-        }
-    }
-
-    private const DATE_PREFIX_PATTERN = '/(?=\d{1,2}\s+\w{3,9}\s+\d{4}:)/';
-
-    private function splitNoteBody(string $body, string $mode, string $regex): array
-    {
-        if ($mode === 'none' || blank($body)) {
-            return [['body' => $body, 'occurred_at' => null]];
-        }
-
-        $pattern = match ($mode) {
-            'date_prefix' => self::DATE_PREFIX_PATTERN,
-            'regex'       => '/' . $regex . '/',
-            default       => null,
-        };
-
-        if (! $pattern) {
-            return [['body' => $body, 'occurred_at' => null]];
-        }
-
-        $parts = @preg_split($pattern, $body, -1, PREG_SPLIT_NO_EMPTY);
-
-        if ($parts === false || count($parts) <= 1) {
-            return [['body' => $body, 'occurred_at' => null]];
-        }
-
-        $fragments = [];
-
-        foreach ($parts as $part) {
-            $part = trim($part);
-
-            if ($part === '') {
-                continue;
-            }
-
-            $occurredAt = null;
-
-            if ($mode === 'date_prefix' && preg_match('/^(\d{1,2}\s+\w{3,9}\s+\d{4}):\s*(.*)$/s', $part, $m)) {
-                $occurredAt = $this->parseDate($m[1]);
-                $part       = trim($m[2]);
-            }
-
-            if ($part !== '') {
-                $fragments[] = ['body' => $part, 'occurred_at' => $occurredAt];
-            }
-        }
-
-        return $fragments ?: [['body' => $body, 'occurred_at' => null]];
-    }
-
-    private function applyPerRowTags(Contact $contact, array $tagNames): void
-    {
-        if (empty($tagNames)) {
-            return;
-        }
-        $ids = [];
-        foreach ($tagNames as $name) {
-            $tag = Tag::where('type', 'contact')
-                ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($name))])
-                ->first();
-            if (! $tag) {
-                $tag = Tag::create(['name' => $name, 'type' => 'contact']);
-            }
-            $ids[] = $tag->id;
-        }
-        $contact->tags()->syncWithoutDetaching($ids);
-    }
-
-    private function applyContactOrganization(Contact $contact, ?string $orgName, array $context): void
-    {
-        if (blank($orgName) || ! blank($contact->organization_id)) {
-            return;
-        }
-        $strategy = 'auto_create';
-        foreach ($context['relationalMap'] as $cfg) {
-            if (($cfg['type'] ?? null) === 'contact_organization') {
-                $strategy = $cfg['strategy'] ?? 'auto_create';
-                break;
-            }
-        }
-        $normalized = strtolower(trim($orgName));
-        $org = Organization::whereRaw('LOWER(TRIM(name)) = ?', [$normalized])->first();
-        if (! $org) {
-            if ($strategy === 'match_only') {
-                return;
-            }
-            $org = Organization::create(['name' => $orgName]);
-        }
-        Contact::withoutGlobalScopes()
-            ->where('id', $contact->id)
-            ->whereNull('organization_id')
-            ->update(['organization_id' => $org->id]);
-        $contact->organization_id = $org->id;
-    }
-
-    private function finaliseSession(): void
-    {
-        if (! $this->importSessionId) {
-            return;
-        }
-        ImportSession::where('id', $this->importSessionId)
-            ->update(['status' => 'reviewing']);
-    }
-
-    public function percent(): int
-    {
-        if ($this->total === 0) {
-            return $this->done ? 100 : 0;
-        }
-        return (int) min(100, round(($this->processed / $this->total) * 100));
-    }
 }
-
-class MembershipDryRunRollback extends \RuntimeException {}

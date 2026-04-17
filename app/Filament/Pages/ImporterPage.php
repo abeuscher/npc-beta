@@ -12,6 +12,7 @@ use App\Models\ImportStagedUpdate;
 use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Transaction;
+use App\Services\Import\CsvTemplateService;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -47,6 +48,31 @@ class ImporterPage extends Page implements HasTable
             static::getUrl() => 'Importer',
             'Main',
         ];
+    }
+
+    public function downloadContactsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('contacts');
+    }
+
+    public function downloadEventsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('events');
+    }
+
+    public function downloadDonationsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('donations');
+    }
+
+    public function downloadMembershipsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('memberships');
+    }
+
+    public function downloadInvoiceDetailsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('invoice_details');
     }
 
     public function getBlockedTypes(): array

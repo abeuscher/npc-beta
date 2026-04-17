@@ -197,18 +197,19 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 188 | CRM Importer — Contacts: Presets, Dry-Run & Match Keys |
 | 189 | CRM Importer — Events, Registrations & Transaction Linking |
 | 190 | CRM Importer — Donations, Memberships & Invoice Details |
+| 191 | CRM Importer — Polish, Shared Code & Source Templates |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 191 — CRM Importer — Polish, Shared Code & Source Templates *(next)*
+### 192 — CRM Importer — Data Review Step *(next)*
 
-Consolidation pass after three entity-focused importer sessions (188 contacts, 189 events, 190 financials). Extract shared code from the five duplicate-then-diverge wizard/progress page pairs into composable traits. Add downloadable CSV templates per content type (generated from field registries, auto-maps perfectly on re-import). Value-pattern noise detection for Wild Apricot metadata columns. Per-source skip-header lists for the three seeded presets. Update-existing strategy deferred to a standalone stub — architecturally distinct and benefits from the trait structure this session delivers.
+Insert a dedicated wizard step between Upload and Map Columns that assesses inbound CSV health and flags issues for the user to resolve *before* mapping begins. First rule: duplicate / similar column headers (catches the WA "bundle admin email" pattern that silently corrupted contact records in session 191 UAT). Designed as a pluggable rule pipeline so future data-quality checks slot in without UI rework.
 
-Prompt: `sessions/191. CRM Importer — Polish, Shared Code & Source Templates.md`.
+Prompt: `sessions/192. CRM Importer — Data Review Step.md`.
 
-### 192 — Theme Colors Refactor *(stub)*
+### Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 
@@ -239,6 +240,14 @@ The contacts importer has skip/update/duplicate strategies. Events, registration
 ### Event Ticket Tiers *(stub — pre-Beta 1)*
 
 Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
+
+### Random Data Generator — CSV Export for Import Testing *(stub — pre-Beta 1)*
+
+Extend the existing random data generator to produce CSV exports shaped like each content type's expected import format (contacts, events, donations, memberships, invoice details). Currently the importer can only be tested against real client data (WCG) which contains PII and cannot leave the local machine — this blocks any deploy-server or CI-based import testing, and blocks using the importer in demos. The generator already knows how to produce plausible contacts/events/etc as database rows; this session adds a CSV-serializing layer that mirrors the canonical template headers (see `CsvTemplateService` from session 191) and writes N synthetic rows per content type. Deliverable: an artisan command that outputs a set of fake-but-realistic CSVs to a configurable directory, suitable for dropping into the importer on any environment without PII concerns. Also valuable: seed a "demo import source" entry so repeat runs exercise the saved-mapping path.
+
+### Rich Text Custom Fields *(stub — pre-Beta 1)*
+
+Custom fields currently support `text`, `number`, `date`, `boolean`, and `select` types. Add a `rich_text` type so admins can capture formatted content (bios, descriptions, multi-paragraph notes) as a custom field. Uses the existing Filament rich editor primitive on admin forms; renders HTML on detail views and in widget output. Importer treats rich-text cells as plain strings (no HTML parsing) — same shape as `textarea` today.
 
 ### Organizations Model Overhaul *(stub — pre-Beta 1)*
 

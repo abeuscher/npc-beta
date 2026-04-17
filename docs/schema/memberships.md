@@ -17,6 +17,7 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 | import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set for imported memberships. |
 | import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for imported memberships so rollback can cascade. |
 | external_id | string | yes | Source-system record ID for dedupe. |
+| custom_fields | jsonb | yes | User-defined custom field values. Populated by the memberships importer when columns are mapped as `__custom_membership__`. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 | deleted_at | timestamp | yes | Soft delete |

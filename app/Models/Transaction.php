@@ -33,13 +33,15 @@ class Transaction extends Model
         'payment_channel',
         'invoice_number',
         'line_items',
+        'custom_fields',
     ];
 
     protected $casts = [
-        'amount'       => 'decimal:2',
-        'occurred_at'  => 'datetime',
-        'qb_synced_at' => 'datetime',
-        'line_items'   => 'array',
+        'amount'        => 'decimal:2',
+        'occurred_at'   => 'datetime',
+        'qb_synced_at'  => 'datetime',
+        'line_items'    => 'array',
+        'custom_fields' => 'array',
     ];
 
     /**

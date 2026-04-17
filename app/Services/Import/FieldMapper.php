@@ -36,9 +36,52 @@ class FieldMapper
         return $map[$normalized] ?? null;
     }
 
-    public static function isSkipped(string $normalizedHeader): bool
+    /**
+     * Per-source skip-header arrays. Merged with the global SKIPPED_HEADERS
+     * when a source preset is selected.
+     */
+    private const SOURCE_SKIPPED_HEADERS = [
+        'generic'      => [],
+        'bloomerang'   => [],
+        'wild_apricot' => [
+            'password',
+            'archived',
+            'subscribed to emails',
+            'subscription source',
+            'opted in',
+            'administration access',
+            'profile last updated',
+            'last login',
+            'updated by',
+            'access to profile by others',
+            'details to show',
+            'photo albums enabled',
+            'member bundle id or email',
+            'member role',
+            'group participation',
+        ],
+    ];
+
+    public static function isSkipped(string $normalizedHeader, ?string $sourcePreset = null): bool
     {
-        return in_array($normalizedHeader, static::SKIPPED_HEADERS, true);
+        return in_array($normalizedHeader, static::sourceSkippedHeaders($sourcePreset), true);
+    }
+
+    /**
+     * Return the full skip-header list for a given source preset, merging the
+     * global baseline with source-specific headers.
+     */
+    public static function sourceSkippedHeaders(?string $sourcePreset = null): array
+    {
+        $global = static::SKIPPED_HEADERS;
+
+        if ($sourcePreset === null) {
+            return $global;
+        }
+
+        $sourceSpecific = static::SOURCE_SKIPPED_HEADERS[$sourcePreset] ?? [];
+
+        return array_values(array_unique(array_merge($global, $sourceSpecific)));
     }
 
     /**
@@ -70,6 +113,26 @@ class FieldMapper
         }
 
         return $trimmed;
+    }
+
+    /**
+     * Map a human-readable source name to its preset key.
+     * Returns null if the source name doesn't match a known preset.
+     */
+    public static function presetFromSourceName(?string $sourceName): ?string
+    {
+        if (! $sourceName) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($sourceName));
+
+        return match ($normalized) {
+            'wild apricot' => 'wild_apricot',
+            'bloomerang'   => 'bloomerang',
+            'generic csv'  => 'generic',
+            default        => null,
+        };
     }
 
     /**

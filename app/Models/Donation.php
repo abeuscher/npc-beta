@@ -27,12 +27,14 @@ class Donation extends Model
         'import_source_id',
         'import_session_id',
         'external_id',
+        'custom_fields',
     ];
 
     protected $casts = [
-        'amount'     => 'decimal:2',
-        'started_at' => 'datetime',
-        'ended_at'   => 'datetime',
+        'amount'        => 'decimal:2',
+        'started_at'    => 'datetime',
+        'ended_at'      => 'datetime',
+        'custom_fields' => 'array',
     ];
 
     public function contact(): BelongsTo

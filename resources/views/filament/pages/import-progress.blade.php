@@ -170,6 +170,48 @@
                 </div>
             @endif
 
+            @if ($dryRunReport['updated'] > 0)
+                <div class="rounded-xl border border-blue-200 bg-white shadow-sm dark:border-blue-800 dark:bg-gray-900">
+                    <div class="border-b border-blue-200 px-5 py-3 dark:border-blue-800">
+                        <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                            {{ number_format($dryRunReport['updated']) }} existing contact{{ $dryRunReport['updated'] === 1 ? '' : 's' }} would be updated
+                        </h3>
+                        <p class="mt-1 text-xs text-blue-700 dark:text-blue-400">
+                            Non-blank values from the CSV are staged as updates on matched contacts. Blank cells are ignored. Review queue approval is still required before changes take effect.
+                        </p>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                            <tr>
+                                <th class="px-4 py-2">Row</th>
+                                <th class="px-4 py-2">Matched contact</th>
+                                <th class="px-4 py-2">Matched on</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($dryRunReport['updatePreview'] ?? [] as $entry)
+                                <tr class="border-t border-gray-100 dark:border-gray-800">
+                                    <td class="px-4 py-2 font-mono text-xs">{{ $entry['row'] }}</td>
+                                    <td class="px-4 py-2 text-xs">{{ $entry['display'] }}</td>
+                                    <td class="px-4 py-2 text-xs">
+                                        <span class="font-mono">{{ $entry['field'] }}</span>
+                                        <span class="text-gray-400">=</span>
+                                        <span>{{ $entry['value'] }}</span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            @if ($dryRunReport['updated'] > count($dryRunReport['updatePreview'] ?? []))
+                                <tr>
+                                    <td colspan="3" class="px-4 py-2 text-center text-xs text-gray-500">
+                                        … {{ number_format($dryRunReport['updated'] - count($dryRunReport['updatePreview'] ?? [])) }} more match{{ ($dryRunReport['updated'] - count($dryRunReport['updatePreview'] ?? [])) === 1 ? '' : 'es' }} (first 50 shown)
+                                    </td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
             @if ($dryRunReport['skipped'] > 0)
                 <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950">
                     <h3 class="font-semibold text-amber-800 dark:text-amber-300 mb-2">Why rows would skip</h3>
