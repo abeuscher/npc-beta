@@ -24,6 +24,9 @@ class Donation extends Model
         'stripe_customer_id',
         'started_at',
         'ended_at',
+        'import_source_id',
+        'import_session_id',
+        'external_id',
     ];
 
     protected $casts = [
@@ -35,6 +38,16 @@ class Donation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
     }
 
     public function fund(): BelongsTo

@@ -16,6 +16,15 @@ Named external systems that imports originate from (e.g. "Old CRM", "Wild Aprico
 | events_match_key | string | yes | Event match key (typically `event:external_id`). Null until the user saves an events mapping. |
 | events_match_key_column | string | yes | Original CSV column header for `events_match_key`. |
 | events_contact_match_key | string | yes | Contact match key for the events importer's contact-lookup step (e.g. `email`, `external_id`, a custom field handle). |
+| donations_field_map | jsonb | no | default: `{}`; donations-scoped equivalent of `field_map`. |
+| donations_custom_field_map | jsonb | no | default: `{}`; donations-scoped equivalent of `custom_field_map`. |
+| donations_contact_match_key | string | yes | Contact match key for the donations importer. |
+| memberships_field_map | jsonb | no | default: `{}`; memberships-scoped equivalent of `field_map`. |
+| memberships_custom_field_map | jsonb | no | default: `{}`; memberships-scoped equivalent of `custom_field_map`. |
+| memberships_contact_match_key | string | yes | Contact match key for the memberships importer. |
+| invoices_field_map | jsonb | no | default: `{}`; invoices-scoped equivalent of `field_map`. |
+| invoices_custom_field_map | jsonb | no | default: `{}`; invoices-scoped equivalent of `custom_field_map`. |
+| invoices_contact_match_key | string | yes | Contact match key for the invoice details importer. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

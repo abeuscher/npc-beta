@@ -31,12 +31,15 @@ class Transaction extends Model
         'external_id',
         'payment_method',
         'payment_channel',
+        'invoice_number',
+        'line_items',
     ];
 
     protected $casts = [
         'amount'       => 'decimal:2',
         'occurred_at'  => 'datetime',
         'qb_synced_at' => 'datetime',
+        'line_items'   => 'array',
     ];
 
     /**

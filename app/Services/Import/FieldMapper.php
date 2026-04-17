@@ -42,6 +42,37 @@ class FieldMapper
     }
 
     /**
+     * Values that should be treated as blank/null. Common placeholders in
+     * Wild Apricot, Bloomerang, and other CRM exports.
+     */
+    private const NULL_SYNONYMS = [
+        'n/a', 'na', 'n.a.', 'none', 'null', '-', '--', '—', 'undefined',
+    ];
+
+    /**
+     * Normalize a raw cell value: trim whitespace, treat empty strings and
+     * common null-synonym placeholders as null.
+     */
+    public static function normalizeValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $trimmed = trim((string) $value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (in_array(strtolower($trimmed), self::NULL_SYNONYMS, true)) {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    /**
      * Return all available preset names.
      */
     public static function presets(): array

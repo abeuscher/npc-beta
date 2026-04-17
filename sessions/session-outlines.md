@@ -196,32 +196,45 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 187 | Content Template Editor & Per-Type Defaults |
 | 188 | CRM Importer — Contacts: Presets, Dry-Run & Match Keys |
 | 189 | CRM Importer — Events, Registrations & Transaction Linking |
+| 190 | CRM Importer — Donations, Memberships & Invoice Details |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 190 — CRM Importer — Donations, Memberships & Invoice Details *(next)*
+### 191 — CRM Importer — Polish, Shared Code & Source Templates *(next)*
 
-Three new wizard pages for the remaining WCG export sheets: Donations (46 rows, one donation per row), Members (5,985 rows, membership + contact data), and Invoice Details (1,352 rows, line-item level transaction enrichment). Contact auto-create toggle (default: error-and-skip). Tier auto-create by name. Invoice Details collapse multiple line-item rows into one Transaction. `invoice_number` added as a dedicated field on transactions alongside `external_id`. Funds/Campaigns out of scope (not in WCG data).
+Consolidation pass after three entity-focused importer sessions (188 contacts, 189 events, 190 financials). Extract shared code from the five duplicate-then-diverge wizard/progress page pairs into composable traits. Add downloadable CSV templates per content type (generated from field registries, auto-maps perfectly on re-import). Value-pattern noise detection for Wild Apricot metadata columns. Per-source skip-header lists for the three seeded presets. Update-existing strategy deferred to a standalone stub — architecturally distinct and benefits from the trait structure this session delivers.
 
-Prompt: `sessions/190. CRM Importer — Donations, Memberships & Invoice Details.md`.
-
-### 191 — CRM Importer — Polish, Noise Detection & Source Templates *(stub)*
-
-Round off the importer after three entity-focused sessions (contacts, events, financials). Scope:
-
-- **Value-pattern noise detection.** During auto-custom-field mapping, recognise cell patterns that signal procedural cruft from legacy systems — long `Field&&Visibility` concatenations (Wild Apricot `Access to profile by others`), structured key-value strings, enormous bundled metadata — and default those columns to unmapped with a banner explaining why. User can still opt in.
-- **Per-source skip-header list.** Extend `FieldMapper::SKIPPED_HEADERS` into per-source arrays, seeded for the three built-in presets (Generic / Wild Apricot / Bloomerang). Known noise headers (`Details to show`, `Subscription source`, `Photo albums enabled`, `Member bundle ID or email`, etc.) default to ignored when the matching preset is selected. Admin can override.
-- **Downloadable CSV templates per content type.** Generate a skeleton CSV with our canonical column names — one per importable content type (contacts, events/registrations, donations, memberships). Users fill the template and re-import, guaranteeing clean mappings and no noise.
-- **Update-existing strategy for events (and all non-contact content types).** The contacts importer has skip/update/duplicate. Events, registrations, and transactions currently only "reuse-if-matched, create-if-not" — there's no path to update a matched Event's fields with richer data from a second CSV. This is a hard requirement, not a nice-to-have: every real client has overlapping import cycles during a system migration. They import once to validate their data, then re-import weeks later with corrections, new columns mapped, or a fresher export. The importer must treat re-import-to-update as the default customer cadence, not an edge case. Same fill-blanks-only / stage-for-review semantics as contact updates. Applies to Events, Registrations, and Transactions uniformly.
-- **Assorted polish** captured during UAT of 188/189/190 but not urgent — copy tweaks, edge-case handling, performance tuning for very large imports if it surfaced.
+Prompt: `sessions/191. CRM Importer — Polish, Shared Code & Source Templates.md`.
 
 ### 192 — Theme Colors Refactor *(stub)*
 
 Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
 
 ---
+
+### Importer Source Presets — Competitor Coverage *(stub — pre-Beta 1)*
+
+Expand the seeded importer source presets beyond Generic / Wild Apricot / Bloomerang to cover the most common nonprofit CRM migration paths. Each preset is a field map + skip-header list — no structural code changes, just data work driven by sample exports. Priority order based on installed base and likelihood of migration:
+
+1. **Blackbaud / Raiser's Edge** — the largest installed base. Exports are wide, multi-file, and use proprietary field names with constituent IDs as cross-file keys. Most common migration source for mid-to-large orgs.
+2. **Little Green Light** — very popular with small orgs. Clean CSV exports with their own naming conventions.
+3. **DonorPerfect** — large legacy installed base, especially older orgs. Wide, messy exports.
+4. **Neon CRM** — growing player, already encountered in client work.
+5. **Salesforce NPSP** — well-structured exports but deeply relational (multiple CSVs with Salesforce IDs as foreign keys). Common for orgs outgrowing or cost-cutting Salesforce.
+6. **Network for Good / Bonterra** — common donor management source.
+7. **eTapestry** (Blackbaud lower tier) — simpler variant of Raiser's Edge exports.
+8. **Kindful** (now Bloomerang) — legacy installs still export in Kindful format.
+9. **QuickBooks export** — not a CRM, but many small nonprofits track donors in QB and need to import that history.
+
+Competitive value: demonstrating fast, low-friction migration off a prospect's current platform is a core sales story. Each preset added reduces onboarding friction and strengthens the pitch against competitors on time-to-live. Pairs with the CSV template download feature from session 191 (covers the long tail of unknown formats).
+
+Approach: obtain sample exports (anonymised) for each platform, map their column conventions into `guessDestination()` heuristics and `FieldMapper::sourceSkippedHeaders()`, seed the preset. No schema changes — the preset infrastructure from sessions 188–191 handles everything.
+
+### Importer — Update-Existing Strategy for All Content Types *(stub — pre-Beta 1)*
+
+The contacts importer has skip/update/duplicate strategies. Events, registrations, donations, memberships, and transactions currently only "reuse-if-matched, create-if-not" — there's no path to update a matched record's fields with richer data from a second CSV. This is a hard requirement: every real client has overlapping import cycles during a system migration. They import once to validate, then re-import weeks later with corrections, new columns mapped, or a fresher export. The importer must treat re-import-to-update as the default customer cadence, not an edge case. Same fill-blanks-only / stage-for-review semantics as contact updates. Applies to Events, Registrations, Donations, Memberships, and Transactions uniformly. Benefits from the shared trait structure delivered in session 191.
 
 ### Event Ticket Tiers *(stub — pre-Beta 1)*
 

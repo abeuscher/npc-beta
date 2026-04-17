@@ -16,8 +16,9 @@ class TransactionFieldRegistry
             'amount'          => ['label' => 'Amount', 'type' => 'decimal'],
             'payment_state'   => ['label' => 'Payment State', 'type' => 'text'],
             'payment_method'  => ['label' => 'Payment Method', 'type' => 'text'],
-            'payment_channel' => ['label' => 'Payment Channel (online/offline)', 'type' => 'text'],
-            'occurred_at'     => ['label' => 'Paid At', 'type' => 'datetime'],
+            'payment_channel'  => ['label' => 'Payment Channel (online/offline)', 'type' => 'text'],
+            'occurred_at'      => ['label' => 'Paid At', 'type' => 'datetime'],
+            'invoice_number'   => ['label' => 'Invoice / Receipt Number', 'type' => 'text'],
         ];
     }
 

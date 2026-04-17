@@ -22,6 +22,9 @@ class Membership extends Model
         'stripe_session_id',
         'stripe_subscription_id',
         'notes',
+        'import_source_id',
+        'import_session_id',
+        'external_id',
     ];
 
     protected $casts = [
@@ -29,6 +32,16 @@ class Membership extends Model
         'expires_on'  => 'date',
         'amount_paid' => 'decimal:2',
     ];
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
+    }
 
     public function contact(): BelongsTo
     {

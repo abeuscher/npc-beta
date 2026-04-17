@@ -14,6 +14,12 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 | stripe_session_id | string | yes | Stripe Checkout session ID for paid memberships |
 | stripe_subscription_id | string | yes | Stripe subscription ID for recurring memberships |
 | notes | text | yes | |
+| import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set for imported memberships. |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for imported memberships so rollback can cascade. |
+| external_id | string | yes | Source-system record ID for dedupe. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 | deleted_at | timestamp | yes | Soft delete |
+
+Indexes:
+- `(import_source_id, external_id)` — `memberships_import_external_idx`.

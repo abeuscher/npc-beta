@@ -16,7 +16,13 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 | stripe_customer_id | string | yes | Stripe customer ID; set for recurring donations |
 | started_at | timestamp | yes | Set when status transitions to active |
 | ended_at | timestamp | yes | Set when subscription is cancelled |
+| import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set for imported donations. |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for imported donations so rollback can cascade. |
+| external_id | string | yes | Source-system record ID for dedupe. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 
-Index on `contact_id`, `fund_id`.
+Indexes:
+- `(contact_id)` — `donations_contact_id_index`.
+- `(fund_id)` — `donations_fund_id_index`.
+- `(import_source_id, external_id)` — `donations_import_external_idx`.

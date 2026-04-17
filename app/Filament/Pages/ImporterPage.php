@@ -3,11 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\Contact;
+use App\Models\Donation;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\ImportIdMap;
 use App\Models\ImportSession;
 use App\Models\ImportStagedUpdate;
+use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Transaction;
 use Filament\Pages\Page;
@@ -112,8 +114,11 @@ class ImporterPage extends Page implements HasTable
                 Tables\Filters\SelectFilter::make('model_type')
                     ->label('Type')
                     ->options([
-                        'contact' => 'Contact',
-                        'event'   => 'Event',
+                        'contact'        => 'Contact',
+                        'event'          => 'Event',
+                        'donation'       => 'Donation',
+                        'membership'     => 'Membership',
+                        'invoice_detail' => 'Invoice Detail',
                     ]),
             ])
             ->actions([
@@ -142,6 +147,16 @@ class ImporterPage extends Page implements HasTable
                             return view('filament.pages.import-events-review-preview', compact(
                                 'events', 'eventsTotal', 'registrations', 'registrationsTotal', 'transactionsTotal'
                             ));
+                        }
+
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            return view('filament.pages.import-financial-review-preview', [
+                                'record' => $record,
+                                'donationsCount'    => $record->model_type === 'donation' ? Donation::where('import_session_id', $record->id)->count() : 0,
+                                'membershipsCount'  => $record->model_type === 'membership' ? Membership::where('import_session_id', $record->id)->count() : 0,
+                                'transactionsCount' => Transaction::where('import_session_id', $record->id)->count(),
+                                'contactsCount'     => Contact::withoutGlobalScopes()->where('import_session_id', $record->id)->count(),
+                            ]);
                         }
 
                         $contacts = Contact::withoutGlobalScopes()
@@ -186,6 +201,21 @@ class ImporterPage extends Page implements HasTable
                             return "This will mark {$events} event(s) and {$regs} registration(s) as approved. This cannot be undone.";
                         }
 
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            $label = match ($record->model_type) {
+                                'donation'       => 'donation(s)',
+                                'membership'     => 'membership(s)',
+                                'invoice_detail' => 'transaction(s)',
+                            };
+                            $count = match ($record->model_type) {
+                                'donation'       => Donation::where('import_session_id', $record->id)->count(),
+                                'membership'     => Membership::where('import_session_id', $record->id)->count(),
+                                'invoice_detail' => Transaction::where('import_session_id', $record->id)->count(),
+                            };
+
+                            return "This will approve {$count} {$label} from this import. This cannot be undone.";
+                        }
+
                         return "This will make all {$record->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone.";
                     })
                     ->modalSubmitActionLabel('Approve')
@@ -197,9 +227,8 @@ class ImporterPage extends Page implements HasTable
                             'approved_at' => now(),
                         ]);
 
-                        if ($record->model_type === 'event') {
-                            // Events / registrations / transactions are already
-                            // in place — approval just flips the session flag.
+                        if (in_array($record->model_type, ['event', 'donation', 'membership', 'invoice_detail'], true)) {
+                            // Data is already in place — approval just flips the session flag.
                             return;
                         }
 
@@ -257,6 +286,10 @@ class ImporterPage extends Page implements HasTable
                             return "This will permanently delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s) created by this import. This cannot be undone.";
                         }
 
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            return $this->financialRollbackDescription($record);
+                        }
+
                         $count = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->count();
@@ -277,6 +310,12 @@ class ImporterPage extends Page implements HasTable
 
                         if ($record->model_type === 'event') {
                             $this->rollBackEventSession($record);
+                            $record->delete();
+                            return;
+                        }
+
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            $this->rollBackFinancialSession($record);
                             $record->delete();
                             return;
                         }
@@ -340,6 +379,10 @@ class ImporterPage extends Page implements HasTable
                             return "Permanently delete this session and cascade-delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s). ImportIdMap rows created by this session are also removed. This cannot be undone.";
                         }
 
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            return $this->financialRollbackDescription($record);
+                        }
+
                         $count = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->count();
@@ -352,6 +395,12 @@ class ImporterPage extends Page implements HasTable
 
                         if ($record->model_type === 'event') {
                             $this->rollBackEventSession($record);
+                            $record->delete();
+                            return;
+                        }
+
+                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            $this->rollBackFinancialSession($record);
                             $record->delete();
                             return;
                         }
@@ -413,6 +462,79 @@ class ImporterPage extends Page implements HasTable
                 ->where('model_type', 'transaction')
                 ->whereIn('model_uuid', $txIds)
                 ->delete();
+        }
+    }
+
+    private function financialRollbackDescription(ImportSession $record): string
+    {
+        $parts = [];
+
+        if ($record->model_type === 'donation') {
+            $donations = Donation::where('import_session_id', $record->id)->count();
+            $parts[]   = "{$donations} donation(s)";
+        }
+
+        if ($record->model_type === 'membership') {
+            $memberships = Membership::where('import_session_id', $record->id)->count();
+            $parts[]     = "{$memberships} membership(s)";
+        }
+
+        $tx = Transaction::where('import_session_id', $record->id)->count();
+        if ($tx > 0) {
+            $parts[] = "{$tx} transaction(s)";
+        }
+
+        $contacts = Contact::withoutGlobalScopes()
+            ->where('import_session_id', $record->id)
+            ->count();
+        if ($contacts > 0) {
+            $parts[] = "{$contacts} auto-created contact(s)";
+        }
+
+        return "This will permanently delete " . implode(', ', $parts) . " created by this import. This cannot be undone.";
+    }
+
+    private function rollBackFinancialSession(ImportSession $record): void
+    {
+        if ($record->model_type === 'donation') {
+            $donationIds = Donation::where('import_session_id', $record->id)->pluck('id')->toArray();
+
+            // Delete transactions linked to these donations.
+            if (! empty($donationIds)) {
+                Transaction::where('subject_type', Donation::class)
+                    ->whereIn('subject_id', $donationIds)
+                    ->delete();
+
+                Donation::whereIn('id', $donationIds)->delete();
+            }
+
+            // Also delete any transactions directly created by this session.
+            Transaction::where('import_session_id', $record->id)->delete();
+        }
+
+        if ($record->model_type === 'membership') {
+            Membership::where('import_session_id', $record->id)->forceDelete();
+        }
+
+        if ($record->model_type === 'invoice_detail') {
+            Transaction::where('import_session_id', $record->id)->delete();
+        }
+
+        // Delete auto-created contacts.
+        $contactIds = Contact::withoutGlobalScopes()
+            ->where('import_session_id', $record->id)
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($contactIds)) {
+            DB::table('taggables')
+                ->whereIn('taggable_id', $contactIds)
+                ->where('taggable_type', Contact::class)
+                ->delete();
+
+            Contact::withoutGlobalScopes()
+                ->whereIn('id', $contactIds)
+                ->forceDelete();
         }
     }
 }

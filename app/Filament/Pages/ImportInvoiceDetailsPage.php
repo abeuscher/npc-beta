@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Importers\EventImportFieldRegistry;
+use App\Importers\InvoiceImportFieldRegistry;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\ImportSource;
@@ -17,23 +17,23 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class ImportEventsPage extends Page
+class ImportInvoiceDetailsPage extends Page
 {
     protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?string $navigationLabel = 'Import Events';
+    protected static ?string $navigationLabel = 'Import Invoice Details';
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static string $view = 'filament.pages.import-events';
+    protected static string $view = 'filament.pages.import-invoice-details';
 
-    protected static ?string $title = 'Import Events';
+    protected static ?string $title = 'Import Invoice Details';
 
     public function getBreadcrumbs(): array
     {
         return [
             ImporterPage::getUrl() => 'Importer',
-            'Import Events',
+            'Import Invoice Details',
         ];
     }
 
@@ -47,7 +47,6 @@ class ImportEventsPage extends Page
         return false;
     }
 
-    // Wizard-step intermediate state.
     public array  $parsedHeaders     = [];
     public string $uploadedFilePath  = '';
     public array  $previewRows       = [];
@@ -80,7 +79,7 @@ class ImportEventsPage extends Page
                                 ->schema([
                                     Forms\Components\TextInput::make('session_label')
                                         ->label('Session label')
-                                        ->default(fn () => 'Events Import on ' . now()->format('F j, Y \a\t g:i A'))
+                                        ->default(fn () => 'Invoice Details Import on ' . now()->format('F j, Y \a\t g:i A'))
                                         ->required()
                                         ->maxLength(255),
 
@@ -101,7 +100,7 @@ class ImportEventsPage extends Page
 
                                         Forms\Components\Select::make('import_source_id')
                                             ->label('Use an existing source')
-                                            ->helperText('Select to enable re-import matching and load saved events mapping.')
+                                            ->helperText('Select to enable re-import matching and load saved invoice mapping.')
                                             ->options(fn () => ImportSource::orderBy('name')->pluck('name', 'id')->toArray())
                                             ->placeholder('— Select a source —')
                                             ->nullable()
@@ -115,10 +114,14 @@ class ImportEventsPage extends Page
                                     ]),
                                 ]),
 
-                            Forms\Components\Toggle::make('auto_create_custom_fields')
-                                ->label('By default, create Registration custom fields for unrecognised columns')
-                                ->helperText('Unmapped, non-ignored columns become Registration custom fields by default. Adjust per-column if some belong on the Event instead.')
-                                ->default(false),
+                            Forms\Components\Radio::make('contact_missing_strategy')
+                                ->label('When a row\'s contact is not found:')
+                                ->options([
+                                    'error' => 'Error and skip the row (default)',
+                                    'auto_create' => 'Auto-create a minimal contact record',
+                                ])
+                                ->default('error')
+                                ->required(),
 
                             Forms\Components\FileUpload::make('csv_file')
                                 ->label('CSV File')
@@ -127,7 +130,7 @@ class ImportEventsPage extends Page
                                 ->acceptedFileTypes(['text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel'])
                                 ->maxSize(10240)
                                 ->live()
-                                ->helperText('Max 10 MB. CSV or plain text only. Wait for the field above to turn green before advancing.')
+                                ->helperText('Max 10 MB. CSV or plain text only.')
                                 ->required(),
                         ])
                         ->afterValidation(function () {
@@ -146,7 +149,7 @@ class ImportEventsPage extends Page
                             if (empty($this->parsedHeaders)) {
                                 Notification::make()
                                     ->title('Could not read file')
-                                    ->body('The upload may still be in progress, or the file is not a valid CSV. Please wait for the upload bar to finish and try again.')
+                                    ->body('The upload may still be in progress, or the file is not a valid CSV.')
                                     ->danger()
                                     ->send();
 
@@ -231,13 +234,10 @@ class ImportEventsPage extends Page
 
         $this->parsedHeaders = array_map('trim', $headers);
         $this->sampleRows    = $sampleRows;
-        $this->autoCustomLog = [];
 
         $savedSource         = $this->resolvedSourceId ? ImportSource::find($this->resolvedSourceId) : null;
-        $savedFieldMap       = $savedSource?->events_field_map ?? [];
-        $savedCustomFieldMap = $savedSource?->events_custom_field_map ?? [];
-
-        $autoCustom = (bool) ($this->data['auto_create_custom_fields'] ?? false);
+        $savedFieldMap       = $savedSource?->invoices_field_map ?? [];
+        $savedCustomFieldMap = $savedSource?->invoices_custom_field_map ?? [];
 
         if ($savedSource && ! empty($savedFieldMap)) {
             $this->usedSavedMapping = true;
@@ -253,25 +253,15 @@ class ImportEventsPage extends Page
                     continue;
                 }
 
-                if (isset($savedCustomFieldMap[$normalized])) {
-                    $cfg    = $savedCustomFieldMap[$normalized];
-                    $target = $cfg['target'] ?? 'registration';
-                    $columnMap["col_{$n}"]        = $target === 'event' ? '__custom_event__' : '__custom_registration__';
-                    $this->data["cf_handle_{$n}"] = $cfg['handle'] ?? '';
-                    $this->data["cf_label_{$n}"]  = $cfg['label'] ?? $header;
-                    $this->data["cf_type_{$n}"]   = $cfg['field_type'] ?? 'text';
-                } elseif (isset($savedFieldMap[$normalized])) {
+                if (isset($savedFieldMap[$normalized])) {
                     $columnMap["col_{$n}"] = $savedFieldMap[$normalized];
-                } elseif ($autoCustom) {
-                    $this->assignAutoCustomField($columnMap, $header, $n);
                 } else {
                     $columnMap["col_{$n}"] = null;
                 }
             }
 
-            $this->data['column_map']            = $columnMap;
-            $this->data['event_match_key']       = $savedSource->events_match_key ?: EventImportFieldRegistry::defaultEventMatchKey();
-            $this->data['contact_match_key']     = $savedSource->events_contact_match_key ?: $this->deriveContactMatchKey($columnMap);
+            $this->data['column_map']        = $columnMap;
+            $this->data['contact_match_key'] = $savedSource->invoices_contact_match_key ?: $this->deriveContactMatchKey($columnMap);
 
             return;
         }
@@ -288,18 +278,10 @@ class ImportEventsPage extends Page
             }
 
             $guess = $this->guessDestination($normalized);
-
-            if ($guess !== null) {
-                $columnMap["col_{$n}"] = $guess;
-            } elseif ($autoCustom) {
-                $this->assignAutoCustomField($columnMap, $header, $n);
-            } else {
-                $columnMap["col_{$n}"] = null;
-            }
+            $columnMap["col_{$n}"] = $guess;
         }
 
         $this->data['column_map']        = $columnMap;
-        $this->data['event_match_key']   = EventImportFieldRegistry::defaultEventMatchKey();
         $this->data['contact_match_key'] = $this->deriveContactMatchKey($columnMap);
     }
 
@@ -327,66 +309,31 @@ class ImportEventsPage extends Page
         return $mapped[0] ?? 'contact:email';
     }
 
-    /**
-     * Heuristic first-pass mapping for common WCG / Wild Apricot events
-     * headers. Users can override everything in the mapping step.
-     */
     private function guessDestination(string $normalizedHeader): ?string
     {
         return match ($normalizedHeader) {
-            'event id'                  => 'event:external_id',
-            'event title'               => 'event:title',
-            'start date'                => 'event:starts_at',
-            'end date'                  => 'event:ends_at',
-            'event location'            => 'event:address_line_1',
+            'user id'                               => 'contact:external_id',
+            'email', 'email address'                => 'contact:email',
+            'phone', 'phone number'                 => 'contact:phone',
 
-            'user id'                   => 'contact:external_id',
-            'first name', 'firstname'   => null,
-            'last name', 'lastname'     => null,
-            'email', 'email address'    => 'contact:email',
-            'phone', 'phone number'     => 'contact:phone',
+            'invoice #', 'invoice number'           => 'invoice:invoice_number',
+            'invoice date'                          => 'invoice:invoice_date',
+            'origin'                                => 'invoice:origin',
+            'origin details'                        => 'invoice:origin_details',
+            'ticket type (only for event invoices)'  => 'invoice:ticket_type',
+            'status'                                => 'invoice:status',
+            'currency'                              => 'invoice:currency',
+            'payment date'                          => 'invoice:payment_date',
+            'settled payment type(s)'               => 'invoice:payment_type',
+            'item'                                  => 'invoice:item',
+            'item quantity'                         => 'invoice:item_quantity',
+            'item price'                            => 'invoice:item_price',
+            'item amount'                           => 'invoice:item_amount',
+            'internal notes'                        => 'invoice:internal_notes',
 
-            'ticket type', 'ticket type/invitee reply' => 'registration:ticket_type',
-            'ticket fee', 'ticket type fee'            => 'registration:ticket_fee',
-            'event registration date'                  => 'registration:registered_at',
-
-            'invoice #', 'invoice number', 'transaction id' => 'transaction:external_id',
-            'total fee incl. extra costs and guests registration fees' => 'transaction:amount',
-            'payment state'                                            => 'transaction:payment_state',
-            'payment type'                                             => 'transaction:payment_method',
-            'online/offline'                                           => 'transaction:payment_channel',
-
-            'internal notes' => '__note_contact__',
-            default          => null,
+            'online/offline'                        => 'invoice:status',
+            default                                 => null,
         };
-    }
-
-    private function assignAutoCustomField(array &$columnMap, string $header, int $n): void
-    {
-        $colIndex = array_search($header, $this->parsedHeaders, true);
-        $sample   = [];
-
-        if ($colIndex !== false) {
-            foreach ($this->sampleRows as $row) {
-                if (array_key_exists($colIndex, $row)) {
-                    $sample[] = $row[$colIndex];
-                }
-            }
-        }
-
-        $type = FieldTypeDetector::detect($sample);
-
-        $columnMap["col_{$n}"]        = '__custom_registration__';
-        $this->data["cf_label_{$n}"]  = $header;
-        $this->data["cf_handle_{$n}"] = Str::slug($header, '_');
-        $this->data["cf_type_{$n}"]   = $type;
-
-        $this->autoCustomLog[] = [
-            'header' => $header,
-            'handle' => Str::slug($header, '_'),
-            'type'   => $type,
-            'target' => 'registration',
-        ];
     }
 
     private function getColumnMappingSchema(): array
@@ -396,11 +343,11 @@ class ImportEventsPage extends Page
                 $this->topNav(currentIndex: 1, isFirst: false, isLast: false),
                 Forms\Components\Placeholder::make('no_headers')
                     ->label('')
-                    ->content('No columns detected. Please go back and re-upload the file.'),
+                    ->content('No columns detected.'),
             ];
         }
 
-        $grouped = EventImportFieldRegistry::groupedOptions();
+        $grouped = InvoiceImportFieldRegistry::groupedOptions();
 
         $schema = [$this->topNav(currentIndex: 1, isFirst: false, isLast: false)];
 
@@ -409,170 +356,80 @@ class ImportEventsPage extends Page
             $schema[] = Forms\Components\Placeholder::make('saved_mapping_banner')
                 ->label('')
                 ->content(new \Illuminate\Support\HtmlString(
-                    "<p class='text-sm text-gray-500'>Using saved events mapping from <strong>{$name}</strong>. Adjust any that are wrong; your overrides do not mutate the source.</p>"
-                ));
-        }
-
-        if (! empty($this->autoCustomLog)) {
-            $count   = count($this->autoCustomLog);
-            $headers = implode(', ', array_map(fn ($entry) => e($entry['header']) . " (→ {$entry['type']})", $this->autoCustomLog));
-            $schema[] = Forms\Components\Placeholder::make('auto_custom_banner')
-                ->label('')
-                ->content(new \Illuminate\Support\HtmlString(
-                    "<p class='text-sm text-blue-600 dark:text-blue-400'>Auto-created {$count} Registration custom field slot(s): {$headers}. Adjust target/type if any belong on Event instead.</p>"
+                    "<p class='text-sm text-gray-500'>Using saved invoice mapping from <strong>{$name}</strong>.</p>"
                 ));
         }
 
         foreach ($this->parsedHeaders as $header) {
-            foreach ($this->columnMappingRowSchema($header, $grouped) as $component) {
-                $schema[] = $component;
-            }
-        }
+            $n          = $this->headerIndex($header);
+            $key        = "column_map.col_{$n}";
+            $normalized = strtolower(trim($header));
+            $isSkipped  = FieldMapper::isSkipped($normalized);
 
-        $schema[] = Forms\Components\Select::make('event_match_key')
-            ->label('Match events by')
-            ->helperText('Column used to identify existing events. Events with a matching external ID are reused; otherwise a new Event is created.')
-            ->options(fn (Forms\Get $get) => $this->eventMatchKeyOptions($get))
-            ->default(EventImportFieldRegistry::defaultEventMatchKey())
-            ->selectablePlaceholder(false)
-            ->required()
-            ->live();
+            $select = Forms\Components\Select::make($key)
+                ->label($header)
+                ->options($grouped)
+                ->placeholder('— ignore —')
+                ->nullable()
+                ->live();
+
+            if ($isSkipped) {
+                $select->helperText('Sensitive header — always ignored.');
+            }
+
+            $noteSubForm = Forms\Components\Grid::make(2)
+                ->schema([
+                    Forms\Components\Select::make("note_split_{$n}")
+                        ->label('Note splitting')
+                        ->options([
+                            'none'        => 'Whole cell as one note',
+                            'date_prefix' => 'Split by date prefix (e.g. "7 Apr 2018:")',
+                            'regex'       => 'Split by custom regex',
+                        ])
+                        ->default('none')
+                        ->live()
+                        ->columnSpan(1),
+
+                    Forms\Components\TextInput::make("note_regex_{$n}")
+                        ->label('Regex pattern')
+                        ->helperText('Lookahead split pattern. Each match boundary starts a new note.')
+                        ->placeholder('e.g. (?=\\d{1,2}\\s+\\w{3,9}\\s+\\d{4}:)')
+                        ->visible(fn (Forms\Get $get) => $get("note_split_{$n}") === 'regex')
+                        ->columnSpan(1),
+                ])
+                ->visible(fn (Forms\Get $get) => $get($key) === '__note_contact__');
+
+            $tagSubForm = Forms\Components\TextInput::make("tag_delimiter_{$n}")
+                ->label('Tag delimiter (optional)')
+                ->maxLength(10)
+                ->visible(fn (Forms\Get $get) => $get($key) === '__tag_contact__');
+
+            $orgSubForm = Forms\Components\Radio::make("org_strategy_{$n}")
+                ->label('Organization handling')
+                ->options([
+                    'auto_create' => 'Match or create',
+                    'match_only'  => 'Match only',
+                    'as_custom'   => 'Import as custom field',
+                ])
+                ->default('auto_create')
+                ->required()
+                ->visible(fn (Forms\Get $get) => $get($key) === '__org_contact__');
+
+            $schema[] = $select;
+            $schema[] = $noteSubForm;
+            $schema[] = $tagSubForm;
+            $schema[] = $orgSubForm;
+        }
 
         $schema[] = Forms\Components\Select::make('contact_match_key')
             ->label('Match contacts by')
-            ->helperText('Column used to look up the contact for each row. Rows whose contact cannot be found will error — this session does not create contacts.')
+            ->helperText('Column used to look up the contact for each row.')
             ->options(fn (Forms\Get $get) => $this->contactMatchKeyOptions($get))
             ->selectablePlaceholder(false)
             ->required()
             ->live();
 
         return $schema;
-    }
-
-    private function columnMappingRowSchema(string $header, array $groupedOptions): array
-    {
-        $n          = $this->headerIndex($header);
-        $key        = "column_map.col_{$n}";
-        $normalized = strtolower(trim($header));
-        $isSkipped  = FieldMapper::isSkipped($normalized);
-
-        $select = Forms\Components\Select::make($key)
-            ->label($header)
-            ->options($groupedOptions)
-            ->placeholder('— ignore —')
-            ->nullable()
-            ->live()
-            ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n) {
-                if (in_array($state, ['__custom_event__', '__custom_registration__'], true)) {
-                    $set("cf_label_{$n}", $header);
-                    $set("cf_handle_{$n}", Str::slug($header, '_'));
-                }
-            });
-
-        if ($isSkipped) {
-            $select->helperText('Sensitive header — always ignored.');
-        }
-
-        $customSubForm = Forms\Components\Grid::make(3)
-            ->schema([
-                Forms\Components\TextInput::make("cf_label_{$n}")
-                    ->label('Field label')
-                    ->default($header)
-                    ->required()
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function ($state, Forms\Set $set) use ($n) {
-                        if (blank($this->data["cf_handle_{$n}"] ?? null)) {
-                            $set("cf_handle_{$n}", Str::slug($state ?? '', '_'));
-                        }
-                    }),
-
-                Forms\Components\TextInput::make("cf_handle_{$n}")
-                    ->label('Handle')
-                    ->required()
-                    ->rules(['alpha_dash'])
-                    ->helperText('Lowercase, underscores only.'),
-
-                Forms\Components\Select::make("cf_type_{$n}")
-                    ->label('Field type')
-                    ->options([
-                        'text'    => 'Text',
-                        'number'  => 'Number',
-                        'date'    => 'Date',
-                        'boolean' => 'Boolean',
-                        'select'  => 'Select',
-                    ])
-                    ->default('text')
-                    ->required(),
-            ])
-            ->visible(fn (Forms\Get $get) => in_array($get($key), ['__custom_event__', '__custom_registration__'], true));
-
-        $noteSubForm = Forms\Components\Grid::make(2)
-            ->schema([
-                Forms\Components\Select::make("note_split_{$n}")
-                    ->label('Note splitting')
-                    ->options([
-                        'none'        => 'Whole cell as one note',
-                        'date_prefix' => 'Split by date prefix (e.g. "7 Apr 2018:")',
-                        'regex'       => 'Split by custom regex',
-                    ])
-                    ->default('none')
-                    ->live()
-                    ->columnSpan(1),
-
-                Forms\Components\TextInput::make("note_regex_{$n}")
-                    ->label('Regex pattern')
-                    ->helperText('Lookahead split pattern. Each match boundary starts a new note.')
-                    ->placeholder('e.g. (?=\\d{1,2}\\s+\\w{3,9}\\s+\\d{4}:)')
-                    ->visible(fn (Forms\Get $get) => $get("note_split_{$n}") === 'regex')
-                    ->columnSpan(1),
-            ])
-            ->visible(fn (Forms\Get $get) => $get($key) === '__note_contact__');
-
-        $tagSubForm = Forms\Components\TextInput::make("tag_delimiter_{$n}")
-            ->label('Tag delimiter (optional)')
-            ->helperText('Leave blank to treat the whole cell as one tag. Set a delimiter (e.g. "," or "|") to split into multiple tags.')
-            ->maxLength(10)
-            ->visible(fn (Forms\Get $get) => in_array($get($key), ['__tag_contact__', '__tag_event__'], true));
-
-        $orgSubForm = Forms\Components\Radio::make("org_strategy_{$n}")
-            ->label('How should this Organization column be handled?')
-            ->options([
-                'auto_create' => 'Match by name, create missing organizations',
-                'match_only'  => 'Match by name only — rows with unknown organizations get no link',
-                'as_custom'   => 'Import as a Registration custom field (no relational link)',
-            ])
-            ->descriptions([
-                'auto_create' => 'Links contact.organization_id only if the contact has none; never overwrites an existing link.',
-                'match_only'  => 'Same fill-blanks-only rule; unmatched names are skipped.',
-                'as_custom'   => 'Stores the string on the registration\'s custom_fields; no relational link.',
-            ])
-            ->default('auto_create')
-            ->required()
-            ->visible(fn (Forms\Get $get) => $get($key) === '__org_contact__');
-
-        return [$select, $customSubForm, $noteSubForm, $tagSubForm, $orgSubForm];
-    }
-
-    private function eventMatchKeyOptions(Forms\Get $get): array
-    {
-        $options   = [];
-        $columnMap = $get('column_map') ?? [];
-
-        foreach ($this->parsedHeaders as $header) {
-            $n    = $this->headerIndex($header);
-            $dest = $columnMap["col_{$n}"] ?? null;
-
-            if (is_string($dest) && str_starts_with($dest, 'event:')) {
-                $label = EventImportFieldRegistry::flatFields()[$dest] ?? $dest;
-                $options[$dest] = $label;
-            }
-        }
-
-        if (! isset($options[EventImportFieldRegistry::defaultEventMatchKey()])) {
-            $options[EventImportFieldRegistry::defaultEventMatchKey()] = 'Event — External ID (unmapped)';
-        }
-
-        return $options;
     }
 
     private function contactMatchKeyOptions(Forms\Get $get): array
@@ -585,7 +442,7 @@ class ImportEventsPage extends Page
             $dest = $columnMap["col_{$n}"] ?? null;
 
             if (is_string($dest) && str_starts_with($dest, 'contact:')) {
-                $label = EventImportFieldRegistry::flatFields()[$dest] ?? $dest;
+                $label = InvoiceImportFieldRegistry::flatFields()[$dest] ?? $dest;
                 $options[$dest] = $label;
             }
         }
@@ -630,8 +487,8 @@ class ImportEventsPage extends Page
         $map = $this->data['column_map'] ?? [];
 
         $mappedValues = array_values(array_filter($map, fn ($v) => filled($v)));
-        $hasEventId   = in_array('event:external_id', $mappedValues, true);
         $hasContact   = false;
+        $hasInvoice   = in_array('invoice:invoice_number', $mappedValues, true);
 
         foreach ($mappedValues as $v) {
             if (is_string($v) && str_starts_with($v, 'contact:')) {
@@ -640,21 +497,10 @@ class ImportEventsPage extends Page
             }
         }
 
-        if (! $hasEventId) {
-            Notification::make()
-                ->title('Event External ID required')
-                ->body('Map a column to "Event — External ID". This session matches events by external ID only.')
-                ->danger()
-                ->send();
-
-            $this->halt();
-            return;
-        }
-
         if (! $hasContact) {
             Notification::make()
                 ->title('Contact match column required')
-                ->body('Map at least one Contact match column (Email, External ID, or Phone).')
+                ->body('Map at least one Contact match column.')
                 ->danger()
                 ->send();
 
@@ -662,12 +508,10 @@ class ImportEventsPage extends Page
             return;
         }
 
-        $eventMatch = $this->data['event_match_key'] ?? null;
-
-        if (blank($eventMatch) || ! in_array($eventMatch, $mappedValues, true)) {
+        if (! $hasInvoice) {
             Notification::make()
-                ->title('Match events by')
-                ->body('Pick a mapped Event column under "Match events by".')
+                ->title('Invoice # required')
+                ->body('Map a column to "Invoice #". Line items are grouped by invoice number.')
                 ->danger()
                 ->send();
 
@@ -702,7 +546,7 @@ class ImportEventsPage extends Page
         }
 
         $map    = $this->data['column_map'] ?? [];
-        $labels = EventImportFieldRegistry::flatFields();
+        $labels = InvoiceImportFieldRegistry::flatFields();
 
         $content = "<div class='text-sm space-y-4'>";
         $content .= "<table class='w-full border-collapse text-left'><thead><tr class='border-b'>";
@@ -720,24 +564,12 @@ class ImportEventsPage extends Page
             $destField = $map["col_{$n}"] ?? null;
             $colIndex  = array_search($header, $this->parsedHeaders);
 
-            if ($destField === '__custom_event__') {
-                $label = $this->data["cf_label_{$n}"] ?? $header;
-                $handle = $this->data["cf_handle_{$n}"] ?? '';
-                $type   = $this->data["cf_type_{$n}"] ?? 'text';
-                $destDisplay = e("Custom Event field: {$label} ({$handle}, {$type})");
-            } elseif ($destField === '__custom_registration__') {
-                $label = $this->data["cf_label_{$n}"] ?? $header;
-                $handle = $this->data["cf_handle_{$n}"] ?? '';
-                $type   = $this->data["cf_type_{$n}"] ?? 'text';
-                $destDisplay = e("Custom Registration field: {$label} ({$handle}, {$type})");
-            } elseif ($destField === '__note_contact__') {
+            if ($destField === '__note_contact__') {
                 $destDisplay = '<span class="text-primary-600">Contact Note</span>';
             } elseif ($destField === '__tag_contact__') {
                 $destDisplay = '<span class="text-primary-600">Contact Tag</span>';
-            } elseif ($destField === '__tag_event__') {
-                $destDisplay = '<span class="text-primary-600">Event Tag</span>';
             } elseif ($destField === '__org_contact__') {
-                $destDisplay = '<span class="text-primary-600">Contact Organization (fill blanks only)</span>';
+                $destDisplay = '<span class="text-primary-600">Contact Organization</span>';
             } elseif ($destField) {
                 $label = $labels[$destField] ?? $destField;
                 $destDisplay = '<span class="text-primary-600">' . e($label) . '</span>';
@@ -769,14 +601,14 @@ class ImportEventsPage extends Page
 
     public function runImport(): void
     {
-        $blocking = ImportSession::where('model_type', 'event')
+        $blocking = ImportSession::where('model_type', 'invoice_detail')
             ->whereIn('status', ['pending', 'reviewing'])
             ->exists();
 
         if ($blocking) {
             Notification::make()
                 ->title('Import blocked')
-                ->body('A previous events import is awaiting review. Approve or roll it back before starting a new one.')
+                ->body('A previous invoice details import is awaiting review.')
                 ->danger()
                 ->send();
 
@@ -786,25 +618,15 @@ class ImportEventsPage extends Page
 
         $data = $this->form->getState();
 
-        $rawMap         = $data['column_map'] ?? [];
-        $namedMap       = [];
-        $customFieldMap = [];
-        $relationalMap  = [];
+        $rawMap        = $data['column_map'] ?? [];
+        $namedMap      = [];
+        $relationalMap = [];
 
         foreach ($this->parsedHeaders as $header) {
             $n         = $this->headerIndex($header);
             $destField = $rawMap["col_{$n}"] ?? null;
 
-            if ($destField === '__custom_event__' || $destField === '__custom_registration__') {
-                $target            = $destField === '__custom_event__' ? 'event' : 'registration';
-                $namedMap[$header] = null;
-                $customFieldMap[$header] = [
-                    'handle'     => $data["cf_handle_{$n}"] ?? Str::slug($header, '_'),
-                    'label'      => $data["cf_label_{$n}"] ?? $header,
-                    'field_type' => $data["cf_type_{$n}"] ?? 'text',
-                    'target'     => $target,
-                ];
-            } elseif ($destField === '__note_contact__') {
+            if ($destField === '__note_contact__') {
                 $namedMap[$header] = '__note_contact__';
                 $splitMode = $data["note_split_{$n}"] ?? 'none';
                 $relationalMap[$header] = [
@@ -820,23 +642,10 @@ class ImportEventsPage extends Page
                     'type'      => 'contact_tag',
                     'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
                 ];
-            } elseif ($destField === '__tag_event__') {
-                $namedMap[$header] = '__tag_event__';
-                $relationalMap[$header] = [
-                    'type'      => 'event_tag',
-                    'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
-                ];
             } elseif ($destField === '__org_contact__') {
                 $strategy = $data["org_strategy_{$n}"] ?? 'auto_create';
-
                 if ($strategy === 'as_custom') {
                     $namedMap[$header] = null;
-                    $customFieldMap[$header] = [
-                        'handle'     => Str::slug($header, '_'),
-                        'label'      => $header,
-                        'field_type' => 'text',
-                        'target'     => 'registration',
-                    ];
                 } else {
                     $namedMap[$header] = '__org_contact__';
                     $relationalMap[$header] = [
@@ -860,7 +669,7 @@ class ImportEventsPage extends Page
         $session = ImportSession::create([
             'session_label'    => $data['session_label'] ?? null,
             'import_source_id' => $this->resolvedSourceId ?: null,
-            'model_type'       => 'event',
+            'model_type'       => 'invoice_detail',
             'status'           => 'pending',
             'filename'         => $filename,
             'row_count'        => $rowCount,
@@ -869,52 +678,46 @@ class ImportEventsPage extends Page
 
         $importLog = ImportLog::create([
             'user_id'            => auth()->id(),
-            'model_type'         => 'event',
+            'model_type'         => 'invoice_detail',
             'filename'           => $filename,
             'storage_path'       => $this->uploadedFilePath,
             'column_map'         => $namedMap,
-            'custom_field_map'   => $customFieldMap ?: null,
             'column_preferences' => [],
             'relational_map'     => $relationalMap ?: [],
             'row_count'          => $rowCount,
             'duplicate_strategy' => 'skip',
-            'match_key'          => $data['event_match_key'] ?? EventImportFieldRegistry::defaultEventMatchKey(),
+            'match_key'          => $data['contact_match_key'] ?? 'contact:email',
             'contact_match_key'  => $data['contact_match_key'] ?? 'contact:email',
             'import_source_id'   => $this->resolvedSourceId ?: null,
             'status'             => 'pending',
         ]);
 
-        $this->redirect(ImportEventsProgressPage::getUrl([
+        $this->redirect(ImportInvoiceDetailsProgressPage::getUrl([
             'log'     => $importLog->id,
             'session' => $session->id,
             'source'  => $this->resolvedSourceId,
+            'contact_strategy' => $data['contact_missing_strategy'] ?? 'error',
         ]));
     }
 
     private function countCsvRows(string $storagePath): int
     {
         $fullPath = Storage::disk('local')->path($storagePath);
-
         if (! file_exists($fullPath)) {
             return 0;
         }
-
         $handle = fopen($fullPath, 'r');
         $count  = -1;
-
         while (fgetcsv($handle) !== false) {
             $count++;
         }
-
         fclose($handle);
-
         return max(0, $count);
     }
 
     private function headerIndex(string $header): int
     {
         $index = array_search($header, $this->parsedHeaders);
-
         return $index !== false ? $index : 0;
     }
 }

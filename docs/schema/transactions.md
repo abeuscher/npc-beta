@@ -22,6 +22,8 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | external_id | string | yes | The source-system payment reference (invoice #, confirmation code, Stripe PaymentIntent). Universal payment external key; deduped via `(import_source_id, external_id)`. |
 | payment_method | string | yes | Imported payment method (Card, Check, Cash, etc). Free-text snapshot from source. |
 | payment_channel | string | yes | Imported payment channel (e.g. 'online', 'offline'). |
+| invoice_number | string | yes | Human-readable invoice/receipt number. Distinct from `external_id` (technical source-system ID). |
+| line_items | jsonb | yes | Array of `{item, quantity, price, amount}` objects. Populated by the Invoice Details importer when multiple CSV rows share the same invoice. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     @php $blockedTypes = $this->getBlockedTypes(); @endphp
 
-    <div class="max-w-2xl space-y-6">
+    <div class="max-w-4xl space-y-6">
         <p class="text-sm text-gray-500">Choose the type of data you want to import.</p>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -44,13 +44,50 @@
                 </a>
             @endif
 
-            {{-- Import Financial Data (stub) --}}
-            <div title="Coming soon"
-                 class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-50 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
-                <x-heroicon-o-banknotes class="h-10 w-10 text-gray-400" />
-                <span class="text-base font-semibold text-gray-400">Import Financial Data</span>
-                <span class="text-xs text-gray-400">Coming soon</span>
-            </div>
+            {{-- Import Donations --}}
+            @if (in_array('donation', $blockedTypes))
+                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
+                    <x-heroicon-o-gift class="h-10 w-10 text-gray-400" />
+                    <span class="text-base font-semibold text-gray-400">Import Donations</span>
+                    <span class="text-xs text-gray-400">A previous donations import is awaiting review.</span>
+                </div>
+            @else
+                <a href="{{ \App\Filament\Pages\ImportDonationsPage::getUrl() }}"
+                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
+                    <x-heroicon-o-gift class="h-10 w-10 text-primary-500" />
+                    <span class="text-base font-semibold">Import Donations</span>
+                </a>
+            @endif
+
+            {{-- Import Memberships --}}
+            @if (in_array('membership', $blockedTypes))
+                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
+                    <x-heroicon-o-identification class="h-10 w-10 text-gray-400" />
+                    <span class="text-base font-semibold text-gray-400">Import Memberships</span>
+                    <span class="text-xs text-gray-400">A previous memberships import is awaiting review.</span>
+                </div>
+            @else
+                <a href="{{ \App\Filament\Pages\ImportMembershipsPage::getUrl() }}"
+                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
+                    <x-heroicon-o-identification class="h-10 w-10 text-primary-500" />
+                    <span class="text-base font-semibold">Import Memberships</span>
+                </a>
+            @endif
+
+            {{-- Import Invoice Details --}}
+            @if (in_array('invoice_detail', $blockedTypes))
+                <div class="flex flex-col items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-6 text-center opacity-60 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700">
+                    <x-heroicon-o-document-text class="h-10 w-10 text-gray-400" />
+                    <span class="text-base font-semibold text-gray-400">Import Invoice Details</span>
+                    <span class="text-xs text-gray-400">A previous invoice details import is awaiting review.</span>
+                </div>
+            @else
+                <a href="{{ \App\Filament\Pages\ImportInvoiceDetailsPage::getUrl() }}"
+                   class="flex flex-col items-center gap-3 rounded-xl border-2 border-primary-300 bg-white p-6 text-center shadow-sm transition hover:border-primary-500 hover:shadow-md dark:bg-gray-900 dark:border-primary-700 dark:hover:border-primary-400">
+                    <x-heroicon-o-document-text class="h-10 w-10 text-primary-500" />
+                    <span class="text-base font-semibold">Import Invoice Details</span>
+                </a>
+            @endif
 
         </div>
 
