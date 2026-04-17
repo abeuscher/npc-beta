@@ -56,6 +56,7 @@ class ImportInvoiceDetailsPage extends Page
     public bool   $usedSavedMapping  = false;
     public array  $autoCustomLog     = [];
     public array  $noiseColumns      = [];
+    public array  $duplicateFindings = [];
 
     public ?array $data = [];
 
@@ -109,6 +110,8 @@ class ImportInvoiceDetailsPage extends Page
                                 $this->halt();
                             }
                         }),
+
+                    $this->buildReviewStep(),
 
                     Wizard\Step::make('Map Columns')
                         ->icon('heroicon-o-arrows-right-left')
@@ -178,7 +181,7 @@ class ImportInvoiceDetailsPage extends Page
     {
         if (empty($this->parsedHeaders)) {
             return [
-                $this->topNav(currentIndex: 1, isFirst: false, isLast: false),
+                $this->topNav(currentIndex: 2, isFirst: false, isLast: false),
                 Forms\Components\Placeholder::make('no_headers')
                     ->label('')
                     ->content('No columns detected.'),
@@ -187,7 +190,7 @@ class ImportInvoiceDetailsPage extends Page
 
         $grouped = InvoiceImportFieldRegistry::groupedOptions();
 
-        $schema = [$this->topNav(currentIndex: 1, isFirst: false, isLast: false)];
+        $schema = [$this->topNav(currentIndex: 2, isFirst: false, isLast: false)];
 
         if ($banner = $this->savedMappingBanner('invoice')) {
             $schema[] = $banner;

@@ -6,10 +6,12 @@ use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\ImportSource;
 use App\Services\Import\CsvTemplateService;
+use App\Services\Import\DuplicateHeaderDetector;
 use App\Services\Import\FieldMapper;
 use App\Services\Import\FieldTypeDetector;
 use App\Services\Import\NoiseDetector;
 use Filament\Forms;
+use Filament\Forms\Components\Wizard;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -30,7 +32,8 @@ trait InteractsWithImportWizard
     // Each consuming page must declare these as public properties:
     //   parsedHeaders, uploadedFilePath, previewRows, sampleRows,
     //   importSessionId, resolvedSourceId, pendingSourceName,
-    //   savedSourceName, usedSavedMapping, autoCustomLog, data
+    //   savedSourceName, usedSavedMapping, autoCustomLog,
+    //   duplicateFindings, data
     //
     // Optional (declare if noise detection is desired):
     //   noiseColumns — array of header indices flagged as system metadata
@@ -155,11 +158,66 @@ trait InteractsWithImportWizard
             return false;
         }
 
-        $this->parsedHeaders = array_map('trim', $headers);
+        $newHeaders = array_map('trim', $headers);
+
+        if ($newHeaders !== $this->parsedHeaders) {
+            $this->data['review_decisions'] = [];
+            $this->data['ignored_columns']  = [];
+        }
+
+        $this->parsedHeaders = $newHeaders;
         $this->sampleRows    = $sampleRows;
         $this->autoCustomLog = [];
 
+        $this->detectDuplicateHeaders();
+
         return true;
+    }
+
+    protected function detectDuplicateHeaders(): void
+    {
+        $this->duplicateFindings = DuplicateHeaderDetector::detect($this->parsedHeaders);
+        $this->seedReviewDecisionDefaults();
+    }
+
+    protected function seedReviewDecisionDefaults(): void
+    {
+        $decisions = $this->data['review_decisions'] ?? [];
+
+        foreach ($this->duplicateFindings as $finding) {
+            foreach ($finding['indices'] as $pos => $idx) {
+                $key = "col_{$idx}";
+
+                if (! isset($decisions[$key])) {
+                    $decisions[$key] = $pos === 0 ? 'keep' : 'ignore';
+                }
+            }
+        }
+
+        $this->data['review_decisions'] = $decisions;
+    }
+
+    protected function sampleValuesFor(int $colIndex): array
+    {
+        $samples = [];
+
+        foreach ($this->sampleRows as $row) {
+            if (count($samples) >= 5) {
+                break;
+            }
+
+            $value = trim((string) ($row[$colIndex] ?? ''));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $samples[] = mb_strlen($value) > 80
+                ? mb_substr($value, 0, 80) . '…'
+                : $value;
+        }
+
+        return $samples;
     }
 
     // ─── Source resolution (identical afterValidation pattern) ────────────
@@ -329,6 +387,126 @@ trait InteractsWithImportWizard
             ));
     }
 
+    // ─── Review Data step (shared by all five wizard pages) ──────────────
+
+    protected function buildReviewStep(): Wizard\Step
+    {
+        return Wizard\Step::make('Review Data')
+            ->icon('heroicon-o-magnifying-glass')
+            ->schema(fn () => $this->getReviewStepSchema())
+            ->afterValidation(fn () => $this->finalizeReviewDecisions());
+    }
+
+    protected function getReviewStepSchema(): array
+    {
+        $schema = [$this->topNav(currentIndex: 1, isFirst: false, isLast: false)];
+
+        if (empty($this->parsedHeaders)) {
+            $schema[] = Forms\Components\Placeholder::make('no_headers')
+                ->label('')
+                ->content('No columns detected. Please go back and re-upload the file.');
+
+            return $schema;
+        }
+
+        if (empty($this->duplicateFindings)) {
+            $schema[] = Forms\Components\Placeholder::make('review_empty_state')
+                ->label('')
+                ->content(new \Illuminate\Support\HtmlString(
+                    "<p class='text-sm text-gray-600 dark:text-gray-300'>No obvious column issues detected. Click <strong>Next</strong> to continue to mapping.</p>"
+                ));
+
+            return $schema;
+        }
+
+        $count = count($this->duplicateFindings);
+        $noun  = $count === 1 ? 'finding' : 'findings';
+
+        $schema[] = Forms\Components\Placeholder::make('review_summary')
+            ->label('')
+            ->content(new \Illuminate\Support\HtmlString(
+                "<p class='text-sm text-amber-700 dark:text-amber-400'><strong>{$count} {$noun} to review.</strong> Multiple columns in the uploaded CSV appear to hold the same kind of data. Pick which columns to keep and which to drop before mapping.</p>"
+            ));
+
+        $schema[] = Forms\Components\Placeholder::make('review_guidance')
+            ->label('')
+            ->content(new \Illuminate\Support\HtmlString(
+                "<p class='text-xs text-gray-500 dark:text-gray-400'>When multiple columns hold the same kind of data, dropping the duplicates is generally safer than trying to merge them. You can always revisit this by re-uploading.</p>"
+            ));
+
+        foreach ($this->duplicateFindings as $fIdx => $finding) {
+            $schema[] = $this->buildFindingSection($fIdx, $finding);
+        }
+
+        return $schema;
+    }
+
+    protected function buildFindingSection(int $findingIndex, array $finding): Forms\Components\Section
+    {
+        $inner = [];
+
+        foreach ($finding['indices'] as $pos => $idx) {
+            $header  = $finding['headers'][$pos];
+            $samples = $this->sampleValuesFor($idx);
+
+            $sampleText = empty($samples)
+                ? 'No sample values in first 10 rows.'
+                : 'Samples: ' . implode('  •  ', array_map('e', $samples));
+
+            $inner[] = Forms\Components\Radio::make("review_decisions.col_{$idx}")
+                ->label($header)
+                ->helperText(new \Illuminate\Support\HtmlString("<span class='text-xs'>{$sampleText}</span>"))
+                ->options([
+                    'keep'   => 'Keep (map later)',
+                    'ignore' => 'Ignore this column',
+                ])
+                ->default($pos === 0 ? 'keep' : 'ignore')
+                ->required()
+                ->inline()
+                ->columnSpanFull();
+        }
+
+        return Forms\Components\Section::make('Potential duplicate columns')
+            ->description($finding['summary'])
+            ->schema($inner)
+            ->collapsible(false);
+    }
+
+    protected function finalizeReviewDecisions(): void
+    {
+        $decisions      = $this->data['review_decisions'] ?? [];
+        $ignoredIndices = [];
+
+        foreach ($decisions as $key => $decision) {
+            if ($decision !== 'ignore') {
+                continue;
+            }
+
+            if (preg_match('/^col_(\d+)$/', $key, $matches)) {
+                $ignoredIndices[] = (int) $matches[1];
+            }
+        }
+
+        sort($ignoredIndices);
+        $ignoredIndices = array_values(array_unique($ignoredIndices));
+
+        $this->data['ignored_columns'] = $ignoredIndices;
+
+        $columnMap = $this->data['column_map'] ?? [];
+
+        foreach ($ignoredIndices as $idx) {
+            $columnMap["col_{$idx}"] = null;
+
+            unset(
+                $this->data["cf_label_{$idx}"],
+                $this->data["cf_handle_{$idx}"],
+                $this->data["cf_type_{$idx}"]
+            );
+        }
+
+        $this->data['column_map'] = $columnMap;
+    }
+
     // ─── Column mapping row (shared by events/donations/memberships) ─────
 
     /**
@@ -470,7 +648,8 @@ trait InteractsWithImportWizard
         $savedCustomFieldMap = $savedSource?->{$savedCustomFieldMapKey} ?? [];
         $sourcePreset        = FieldMapper::presetFromSourceName($savedSource?->name);
 
-        $autoCustom = $supportsAutoCustom && (bool) ($this->data['auto_create_custom_fields'] ?? false);
+        $autoCustom      = $supportsAutoCustom && (bool) ($this->data['auto_create_custom_fields'] ?? false);
+        $ignoredColumns  = $this->data['ignored_columns'] ?? [];
 
         if ($savedSource && ! empty($savedFieldMap)) {
             $this->usedSavedMapping = true;
@@ -480,6 +659,11 @@ trait InteractsWithImportWizard
             foreach ($this->parsedHeaders as $header) {
                 $n          = $this->headerIndex($header);
                 $normalized = strtolower(trim($header));
+
+                if (in_array($n, $ignoredColumns, true)) {
+                    $columnMap["col_{$n}"] = null;
+                    continue;
+                }
 
                 if (FieldMapper::isSkipped($normalized, $sourcePreset)) {
                     $columnMap["col_{$n}"] = null;
@@ -525,6 +709,11 @@ trait InteractsWithImportWizard
         foreach ($this->parsedHeaders as $header) {
             $n          = $this->headerIndex($header);
             $normalized = strtolower(trim($header));
+
+            if (in_array($n, $ignoredColumns, true)) {
+                $columnMap["col_{$n}"] = null;
+                continue;
+            }
 
             if (FieldMapper::isSkipped($normalized, $sourcePreset)) {
                 $columnMap["col_{$n}"] = null;
@@ -585,7 +774,7 @@ trait InteractsWithImportWizard
         array $customDisplayMap = [],
         array $relationalDisplayMap = [],
     ): array {
-        $top = [$this->topNav(currentIndex: 2, isFirst: false, isLast: true)];
+        $top = [$this->topNav(currentIndex: 3, isFirst: false, isLast: true)];
 
         if (empty($this->previewRows)) {
             return [

@@ -64,6 +64,7 @@ class ImportContactsPage extends Page
     public string $savedSourceName    = '';   // Set when pre-populating from a saved preset
     public bool   $usedSavedMapping   = false;
     public array  $autoCustomLog      = [];   // [[header, handle, type], ...] — audit of auto-created columns
+    public array  $duplicateFindings  = [];   // Finding groups from DuplicateHeaderDetector
 
     public ?array $data = [];
 
@@ -150,6 +151,8 @@ class ImportContactsPage extends Page
                             }
                         }),
 
+                    $this->buildReviewStep(),
+
                     Wizard\Step::make('Map Columns')
                         ->icon('heroicon-o-arrows-right-left')
                         ->schema(fn () => $this->getColumnMappingSchema())
@@ -190,7 +193,8 @@ class ImportContactsPage extends Page
         $savedFieldMap        = $savedSource?->field_map ?? [];
         $savedCustomFieldMap  = $savedSource?->custom_field_map ?? [];
 
-        $autoCustom = (bool) ($this->data['auto_create_custom_fields'] ?? false);
+        $autoCustom     = (bool) ($this->data['auto_create_custom_fields'] ?? false);
+        $ignoredColumns = $this->data['ignored_columns'] ?? [];
 
         if ($savedSource && ! empty($savedFieldMap)) {
             $this->usedSavedMapping = true;
@@ -201,6 +205,11 @@ class ImportContactsPage extends Page
             foreach ($this->parsedHeaders as $header) {
                 $n          = $this->headerIndex($header);
                 $normalized = strtolower(trim($header));
+
+                if (in_array($n, $ignoredColumns, true)) {
+                    $columnMap["col_{$n}"] = null;
+                    continue;
+                }
 
                 if (FieldMapper::isSkipped($normalized)) {
                     $columnMap["col_{$n}"] = null;
@@ -237,6 +246,11 @@ class ImportContactsPage extends Page
         foreach ($this->parsedHeaders as $header) {
             $n          = $this->headerIndex($header);
             $normalized = strtolower(trim($header));
+
+            if (in_array($n, $ignoredColumns, true)) {
+                $columnMap["col_{$n}"] = null;
+                continue;
+            }
 
             if (FieldMapper::isSkipped($normalized)) {
                 $columnMap["col_{$n}"] = null;
@@ -395,7 +409,7 @@ class ImportContactsPage extends Page
     {
         if (empty($this->parsedHeaders)) {
             return [
-                $this->topNav(currentIndex: 1, isFirst: false, isLast: false),
+                $this->topNav(currentIndex: 2, isFirst: false, isLast: false),
                 Forms\Components\Placeholder::make('no_headers')
                     ->label('')
                     ->content('No columns detected. Please go back and re-upload the file.'),
@@ -412,7 +426,7 @@ class ImportContactsPage extends Page
             ContactFieldRegistry::options()
         );
 
-        $schema = [$this->topNav(currentIndex: 1, isFirst: false, isLast: false)];
+        $schema = [$this->topNav(currentIndex: 2, isFirst: false, isLast: false)];
 
         if ($this->usedSavedMapping) {
             $name = e($this->savedSourceName);
@@ -737,7 +751,7 @@ class ImportContactsPage extends Page
 
     private function getPreviewSchema(): array
     {
-        $top = [$this->topNav(currentIndex: 2, isFirst: false, isLast: true)];
+        $top = [$this->topNav(currentIndex: 3, isFirst: false, isLast: true)];
 
         if (empty($this->previewRows)) {
             return [

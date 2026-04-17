@@ -55,6 +55,7 @@ class ImportMembershipsPage extends Page
     public bool   $usedSavedMapping  = false;
     public array  $autoCustomLog     = [];
     public array  $noiseColumns      = [];
+    public array  $duplicateFindings = [];
 
     public ?array $data = [];
 
@@ -112,6 +113,8 @@ class ImportMembershipsPage extends Page
                                 $this->halt();
                             }
                         }),
+
+                    $this->buildReviewStep(),
 
                     Wizard\Step::make('Map Columns')
                         ->icon('heroicon-o-arrows-right-left')
@@ -173,7 +176,7 @@ class ImportMembershipsPage extends Page
     {
         if (empty($this->parsedHeaders)) {
             return [
-                $this->topNav(currentIndex: 1, isFirst: false, isLast: false),
+                $this->topNav(currentIndex: 2, isFirst: false, isLast: false),
                 Forms\Components\Placeholder::make('no_headers')
                     ->label('')
                     ->content('No columns detected. Please go back and re-upload the file.'),
@@ -182,7 +185,7 @@ class ImportMembershipsPage extends Page
 
         $grouped = MembershipImportFieldRegistry::groupedOptions();
 
-        $schema = [$this->topNav(currentIndex: 1, isFirst: false, isLast: false)];
+        $schema = [$this->topNav(currentIndex: 2, isFirst: false, isLast: false)];
 
         if ($banner = $this->savedMappingBanner('memberships')) {
             $schema[] = $banner;
