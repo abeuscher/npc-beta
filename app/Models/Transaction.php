@@ -26,6 +26,11 @@ class Transaction extends Model
         'qb_sync_error',
         'qb_synced_at',
         'occurred_at',
+        'import_source_id',
+        'import_session_id',
+        'external_id',
+        'payment_method',
+        'payment_channel',
     ];
 
     protected $casts = [
@@ -64,5 +69,15 @@ class Transaction extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
     }
 }

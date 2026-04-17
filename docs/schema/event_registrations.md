@@ -22,5 +22,11 @@ Registrations submitted for an event.
 | stripe_session_id | string | yes | Stripe Checkout session ID for paid registrations |
 | mailing_list_opt_in | boolean | no | default: false |
 | notes | text | yes | |
+| ticket_type | string | yes | Denormalized snapshot of the ticket tier (free/paid/member/etc). Populated by the events importer. |
+| ticket_fee | decimal(10,2) | yes | Denormalized fee amount from the source. Authoritative amount lives on the linked Transaction when present. |
+| payment_state | string | yes | Denormalized payment-state snapshot from the source (e.g. "Paid", "Free"). Authoritative state lives on the Transaction when present. |
+| transaction_id | uuid | yes | FK→transactions, nullOnDelete. Set when the events importer created or matched a Transaction for this registration. |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for registrations created by the events importer so rollback can cascade correctly. |
+| custom_fields | jsonb | no | default: `{}`. Registration-scoped custom-field values (populated by the events importer's `__custom_registration__` sentinel). |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |

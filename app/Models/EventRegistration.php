@@ -33,11 +33,19 @@ class EventRegistration extends Model
         'stripe_session_id',
         'notes',
         'mailing_list_opt_in',
+        'ticket_type',
+        'ticket_fee',
+        'payment_state',
+        'transaction_id',
+        'import_session_id',
+        'custom_fields',
     ];
 
     protected $casts = [
-        'registered_at'      => 'datetime',
+        'registered_at'       => 'datetime',
         'mailing_list_opt_in' => 'boolean',
+        'ticket_fee'          => 'decimal:2',
+        'custom_fields'       => 'array',
     ];
 
     // ──────────────────────────────────────────────────────────
@@ -52,5 +60,15 @@ class EventRegistration extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
     }
 }

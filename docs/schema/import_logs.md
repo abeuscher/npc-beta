@@ -17,7 +17,8 @@ Legacy import log records (pre-session-038 importer). Superseded by import_sessi
 | error_count | integer | no | default: 0 |
 | errors | jsonb | yes | |
 | duplicate_strategy | string | no | default: 'skip' |
-| match_key | string | no | default: 'email'. Contact field key (or custom field handle) used to match existing rows. |
+| match_key | string | no | default: 'email'. Primary match key for the imported entity (contact field key, custom field handle, or — for events — namespaced event field like `event:external_id`). |
+| contact_match_key | string | yes | Events-importer only. Namespaced contact field used to look up the contact for each row (e.g. `contact:email`, `contact:external_id`). Null for contact imports. |
 | import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set when the import was run against a saved source; enables per-source filtering on the history page. |
 | column_preferences | jsonb | no | default: `{}`. Map of destination-field → preferred source-header for imports where the user resolved a multi-column mapping collision. Processor applies the preferred column's value when non-blank, falling back to other mapped columns otherwise. |
 | relational_map | jsonb | no | default: `{}`. Keys = source headers mapped to a relational destination (`__org__`, `__note__`, `__tag__`). Values carry the per-column sub-configuration (org strategy, note delimiter + skip-blanks, tag delimiter). Empty when no relational columns were mapped. |

@@ -26,6 +26,7 @@ class ImportLog extends Model
         'errors',
         'duplicate_strategy',
         'match_key',
+        'contact_match_key',
         'column_preferences',
         'relational_map',
         'import_source_id',

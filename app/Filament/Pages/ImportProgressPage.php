@@ -877,7 +877,10 @@ class ImportProgressPage extends Page
             ];
         }
 
-        $createAttrs = array_merge(['source' => 'import'], $attributes);
+        $createAttrs = array_filter(
+            array_merge(['source' => 'import'], $attributes),
+            fn ($v) => $v !== null
+        );
 
         if ($this->importSessionId) {
             $createAttrs['import_session_id'] = $this->importSessionId;

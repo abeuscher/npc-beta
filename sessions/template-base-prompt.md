@@ -37,9 +37,20 @@ Before doing anything else:
 
 **Everything below this line happens only when the user explicitly says to close the session.**
 
-Do not ask whether to close. Do not suggest it. Do not pipeline into these steps after tests pass or after manual testing is complete. Wait for the user to initiate this phase.
+Do not ask whether to close. Do not suggest it. Do not pipeline into these steps after tests pass or after manual testing is complete. Wait for the user to initiate each phase.
 
-When the user says to close:
+### Phase 1 — Attenuate and prepare next session
+
+After implementation and manual testing are complete, Claude stops and waits. The user reviews the changes and brings up the next session's prompt when ready. No merge, push, or deploy happens at this stage unless the user explicitly requests it (e.g. for deploy-server testing or structural changes that affect CI).
+
+Claude then drafts the next session's documents:
+
+- **Next session base prompt**: copy `sessions/template-base-prompt.md` to `sessions/(NNN+1). base-prompt.md`, updating the session number, title, and any session-specific read-list items.
+- **Next session prompt**: draft `sessions/(NNN+1). Session Title.md` using `sessions/template-session-prompt.md` as the format reference. Base it on the relevant stub in `session-outlines.md`, informed by what was learned during this session. This may take iteration with the user.
+
+### Phase 2 — Close
+
+When the user says to close (after the next session's prompt is agreed):
 
 - **Session log**: write a log file at `sessions/NNN. Session Title — Log.md`. Use `sessions/template-session-log.md` as the format reference — copy its structure exactly, do not base it on previous logs.
 - **Update session-outlines.md**: move this session's title into the Completed Sessions table. Review upcoming stubs and update them if this session's work affects their scope or dependencies.

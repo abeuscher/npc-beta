@@ -17,11 +17,18 @@ class ImportSource extends Model
         'custom_field_map',
         'match_key',
         'match_key_column',
+        'events_field_map',
+        'events_custom_field_map',
+        'events_match_key',
+        'events_match_key_column',
+        'events_contact_match_key',
     ];
 
     protected $casts = [
-        'field_map'        => 'array',
-        'custom_field_map' => 'array',
+        'field_map'               => 'array',
+        'custom_field_map'        => 'array',
+        'events_field_map'        => 'array',
+        'events_custom_field_map' => 'array',
     ];
 
     public function sessions(): HasMany

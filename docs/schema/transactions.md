@@ -17,5 +17,15 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | qb_sync_error | text | yes | Last sync error message; cleared on success |
 | qb_synced_at | timestamp | yes | Set when QB sync succeeds |
 | occurred_at | timestamp | no | default: current |
+| import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Identifies the source that owns this external_id for dedupe. |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for transactions created by the importer so rollback can cascade correctly. |
+| external_id | string | yes | The source-system payment reference (invoice #, confirmation code, Stripe PaymentIntent). Universal payment external key; deduped via `(import_source_id, external_id)`. |
+| payment_method | string | yes | Imported payment method (Card, Check, Cash, etc). Free-text snapshot from source. |
+| payment_channel | string | yes | Imported payment channel (e.g. 'online', 'offline'). |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+
+Indexes:
+- `(import_source_id, external_id)` — `transactions_import_external_idx`, for fast upsert lookup.
+- `(contact_id)` — `transactions_contact_id_index`.
+- `(subject_type, subject_id)` — `transactions_subject_type_subject_id_index`.

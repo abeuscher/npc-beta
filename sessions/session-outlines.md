@@ -195,34 +195,17 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 186 | Bug Fixes & Widget Tuning |
 | 187 | Content Template Editor & Per-Type Defaults |
 | 188 | CRM Importer — Contacts: Presets, Dry-Run & Match Keys |
+| 189 | CRM Importer — Events, Registrations & Transaction Linking |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 189 — CRM Importer — Events, Registrations & Transaction Linking *(next)*
+### 190 — CRM Importer — Donations, Memberships & Invoice Details *(next)*
 
-Apply the session 188 importer pattern to event data. The distinguishing work is multi-entity resolution: each row in a real-world events export is denormalized across an event, a contact (looked up, not created), a registration, and often a transaction. Scope:
+Three new wizard pages for the remaining WCG export sheets: Donations (46 rows, one donation per row), Members (5,985 rows, membership + contact data), and Invoice Details (1,352 rows, line-item level transaction enrichment). Contact auto-create toggle (default: error-and-skip). Tier auto-create by name. Invoice Details collapse multiple line-item rows into one Transaction. `invoice_number` added as a dedicated field on transactions alongside `external_id`. Funds/Campaigns out of scope (not in WCG data).
 
-- **Denormalized single-CSV shape accepted natively.** One row → event upsert + contact lookup + registration create + optional Transaction upsert.
-- **Contacts must pre-exist.** Unresolved-contact rows error cleanly; contacts are imported first via 188. No auto-create from the events sheet.
-- **Events match on external ID only** via `ImportIdMap`. No composite keys.
-- **Transaction ID as the universal payment external key** — renaming the conceptual "invoice number" to a platform-agnostic label. Backed by `ImportIdMap` keyed on `(source, model_type='transaction', source_id)`. Transactions upsert on this key so the same invoice appearing in multiple sheets (Events CSV here + Invoice Details in 190) never duplicates; the second import enriches the first.
-- **Duplicate-then-diverge architecture.** `ImportEventsPage` + `ImportEventsProgressPage` are siblings of the contacts versions. Session 191 extracts a shared base once there are two concrete implementations.
-- **Reuse** `ImportSource` / `ImportSession` / staged-updates / timeline notes / relational-destination primitives (tag/note) / collision resolution / dry-run report / top-nav / runCommit flow from 188.
-- Ticket tiers deferred to their own pre-Beta 1 session; `ticket_type` + `ticket_fee` live as flat fields on `event_registrations` in the meantime.
-
-Prompt: `sessions/189. CRM Importer — Events, Registrations & Transaction Linking.md`.
-
-### 190 — CRM Importer — Donations, Memberships & Financial *(stub)*
-
-Apply the same pattern to financial data. Scope:
-
-- Donations (amount, currency, received_at, payment method, fund, campaign, donor contact lookup).
-- Memberships (tier, start/end dates, contact lookup).
-- Transactions / purchases if the working dataset includes them.
-- Same open question as 189: what happens when the linked contact or fund doesn't exist yet? Probably fail the row with a clear message — financial imports should not silently create half-formed related records.
-- Decimal / currency parsing from messy spreadsheet formats ("$1,234.56", "1234.56 USD", "1234") is worth explicit handling; many real exports have inconsistent cell formats.
+Prompt: `sessions/190. CRM Importer — Donations, Memberships & Invoice Details.md`.
 
 ### 191 — CRM Importer — Polish, Noise Detection & Source Templates *(stub)*
 
@@ -231,6 +214,7 @@ Round off the importer after three entity-focused sessions (contacts, events, fi
 - **Value-pattern noise detection.** During auto-custom-field mapping, recognise cell patterns that signal procedural cruft from legacy systems — long `Field&&Visibility` concatenations (Wild Apricot `Access to profile by others`), structured key-value strings, enormous bundled metadata — and default those columns to unmapped with a banner explaining why. User can still opt in.
 - **Per-source skip-header list.** Extend `FieldMapper::SKIPPED_HEADERS` into per-source arrays, seeded for the three built-in presets (Generic / Wild Apricot / Bloomerang). Known noise headers (`Details to show`, `Subscription source`, `Photo albums enabled`, `Member bundle ID or email`, etc.) default to ignored when the matching preset is selected. Admin can override.
 - **Downloadable CSV templates per content type.** Generate a skeleton CSV with our canonical column names — one per importable content type (contacts, events/registrations, donations, memberships). Users fill the template and re-import, guaranteeing clean mappings and no noise.
+- **Update-existing strategy for events (and all non-contact content types).** The contacts importer has skip/update/duplicate. Events, registrations, and transactions currently only "reuse-if-matched, create-if-not" — there's no path to update a matched Event's fields with richer data from a second CSV. This is a hard requirement, not a nice-to-have: every real client has overlapping import cycles during a system migration. They import once to validate their data, then re-import weeks later with corrections, new columns mapped, or a fresher export. The importer must treat re-import-to-update as the default customer cadence, not an edge case. Same fill-blanks-only / stage-for-review semantics as contact updates. Applies to Events, Registrations, and Transactions uniformly.
 - **Assorted polish** captured during UAT of 188/189/190 but not urgent — copy tweaks, edge-case handling, performance tuning for very large imports if it surfaced.
 
 ### 192 — Theme Colors Refactor *(stub)*
@@ -242,6 +226,17 @@ Complete the theme/template split started in session 182 by moving colour-relate
 ### Event Ticket Tiers *(stub — pre-Beta 1)*
 
 Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
+
+### Organizations Model Overhaul *(stub — pre-Beta 1)*
+
+Surface-level, Organization is a real entity in the CRM; below the surface, it is a placeholder — a row with a name and not much else. Testers noticing this gap will have valid questions. Session should define what Organizations actually are and how they relate to the rest of the model:
+
+- **Relationships**: Contact `belongsTo` Organization (today — employer/member org) is one role; Events may have Sponsor/Host Organizations (many-to-many with role); EventRegistration may carry a distinct "registering organization" for corporate group sign-ups. Donations & memberships may also originate from an Organization rather than a Contact.
+- **Importer implications**: session 189 added a narrow `__org_contact__` sentinel that fills `Contact.organization_id` only when blank. That's a pragmatic stopgap, not a real model. Once this session lands, the events importer can offer richer Org destinations (sponsor on Event, employer on Contact, registrant on Registration) without ambiguity.
+- **UI**: Organization admin resource today is minimal. Needs an "Events sponsored" / "Members" / "Donations" panel so the entity pays its own way in the nav.
+- **Migration**: existing Contacts with `organization_id` set keep their link; new role-scoped pivot tables added; Event's string `company` field on registrations becomes a FK when resolvable.
+
+Priority: before Beta 1 demo — prospects testing the import flows will hit the gap, and the answer shouldn't be "yeah, it's a placeholder."
 
 ---
 

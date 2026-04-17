@@ -51,6 +51,7 @@ class Event extends Model implements HasMedia
         'custom_fields',
         'starts_at',
         'ends_at',
+        'import_session_id', // system-managed: set by events importer
     ];
 
     protected $casts = [

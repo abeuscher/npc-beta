@@ -3,9 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Models\Contact;
+use App\Models\Event;
+use App\Models\EventRegistration;
+use App\Models\ImportIdMap;
 use App\Models\ImportSession;
 use App\Models\ImportStagedUpdate;
 use App\Models\Note;
+use App\Models\Transaction;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -57,7 +61,6 @@ class ImporterPage extends Page implements HasTable
         return $table
             ->query(
                 ImportSession::query()
-                    ->whereIn('status', ['pending', 'reviewing'])
                     ->with(['importSource', 'importer'])
                     ->latest()
             )
@@ -86,6 +89,7 @@ class ImporterPage extends Page implements HasTable
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'reviewing' => 'warning',
+                        'approved'  => 'success',
                         default     => 'gray',
                     }),
 
@@ -98,6 +102,20 @@ class ImporterPage extends Page implements HasTable
                     ->dateTime()
                     ->sortable(),
             ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'pending'   => 'Pending',
+                        'reviewing' => 'Reviewing',
+                        'approved'  => 'Approved',
+                    ]),
+                Tables\Filters\SelectFilter::make('model_type')
+                    ->label('Type')
+                    ->options([
+                        'contact' => 'Contact',
+                        'event'   => 'Event',
+                    ]),
+            ])
             ->actions([
                 Tables\Actions\Action::make('preview')
                     ->label('Preview')
@@ -105,6 +123,27 @@ class ImporterPage extends Page implements HasTable
                     ->color('gray')
                     ->modalHeading(fn (ImportSession $record): string => "Preview — " . ($record->session_label ?: $record->filename))
                     ->modalContent(function (ImportSession $record) {
+                        if ($record->model_type === 'event') {
+                            $events = Event::where('import_session_id', $record->id)
+                                ->limit(20)
+                                ->get(['id', 'title', 'starts_at', 'ends_at', 'status']);
+
+                            $eventsTotal = Event::where('import_session_id', $record->id)->count();
+
+                            $registrations = EventRegistration::where('import_session_id', $record->id)
+                                ->with(['event:id,title', 'contact:id,first_name,last_name,email'])
+                                ->limit(20)
+                                ->get();
+
+                            $registrationsTotal = EventRegistration::where('import_session_id', $record->id)->count();
+
+                            $transactionsTotal = Transaction::where('import_session_id', $record->id)->count();
+
+                            return view('filament.pages.import-events-review-preview', compact(
+                                'events', 'eventsTotal', 'registrations', 'registrationsTotal', 'transactionsTotal'
+                            ));
+                        }
+
                         $contacts = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->limit(20)
@@ -133,12 +172,22 @@ class ImporterPage extends Page implements HasTable
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->hidden(fn () => ! auth()->user()?->can('review_imports'))
+                    ->hidden(fn (ImportSession $record): bool =>
+                        ! auth()->user()?->can('review_imports')
+                        || ! in_array($record->status, ['pending', 'reviewing'], true)
+                    )
                     ->requiresConfirmation()
                     ->modalHeading('Approve import?')
-                    ->modalDescription(fn (ImportSession $record): string =>
-                        "This will make all {$record->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone."
-                    )
+                    ->modalDescription(function (ImportSession $record): string {
+                        if ($record->model_type === 'event') {
+                            $events = Event::where('import_session_id', $record->id)->count();
+                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
+
+                            return "This will mark {$events} event(s) and {$regs} registration(s) as approved. This cannot be undone.";
+                        }
+
+                        return "This will make all {$record->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone.";
+                    })
                     ->modalSubmitActionLabel('Approve')
                     ->action(function (ImportSession $record): void {
                         abort_unless(auth()->user()?->can('review_imports'), 403);
@@ -147,6 +196,12 @@ class ImporterPage extends Page implements HasTable
                             'approved_by' => auth()->id(),
                             'approved_at' => now(),
                         ]);
+
+                        if ($record->model_type === 'event') {
+                            // Events / registrations / transactions are already
+                            // in place — approval just flips the session flag.
+                            return;
+                        }
 
                         $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
                         $sourceName    = $record->importSource?->name;
@@ -185,12 +240,23 @@ class ImporterPage extends Page implements HasTable
 
                 Tables\Actions\Action::make('rollback')
                     ->label('Rollback')
-                    ->icon('heroicon-o-trash')
+                    ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
-                    ->hidden(fn () => ! auth()->user()?->can('review_imports'))
+                    ->hidden(fn (ImportSession $record): bool =>
+                        ! auth()->user()?->can('review_imports')
+                        || ! in_array($record->status, ['pending', 'reviewing'], true)
+                    )
                     ->requiresConfirmation()
                     ->modalHeading('Roll back import?')
                     ->modalDescription(function (ImportSession $record): string {
+                        if ($record->model_type === 'event') {
+                            $events = Event::where('import_session_id', $record->id)->count();
+                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
+                            $tx     = Transaction::where('import_session_id', $record->id)->count();
+
+                            return "This will permanently delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s) created by this import. This cannot be undone.";
+                        }
+
                         $count = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->count();
@@ -205,9 +271,15 @@ class ImporterPage extends Page implements HasTable
 
                         return implode(' ', $parts) . '. This cannot be undone.';
                     })
-                    ->modalSubmitActionLabel('Delete contacts and roll back')
+                    ->modalSubmitActionLabel('Delete and roll back')
                     ->action(function (ImportSession $record): void {
                         abort_unless(auth()->user()?->can('review_imports'), 403);
+
+                        if ($record->model_type === 'event') {
+                            $this->rollBackEventSession($record);
+                            $record->delete();
+                            return;
+                        }
 
                         $contactIds = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
@@ -251,9 +323,96 @@ class ImporterPage extends Page implements HasTable
                         // Delete the session itself — import_id_maps are preserved
                         $record->delete();
                     }),
+
+                Tables\Actions\Action::make('delete')
+                    ->label('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->hidden(fn () => ! auth()->user()?->can('review_imports'))
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete import session?')
+                    ->modalDescription(function (ImportSession $record): string {
+                        if ($record->model_type === 'event') {
+                            $events = Event::where('import_session_id', $record->id)->count();
+                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
+                            $tx     = Transaction::where('import_session_id', $record->id)->count();
+
+                            return "Permanently delete this session and cascade-delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s). ImportIdMap rows created by this session are also removed. This cannot be undone.";
+                        }
+
+                        $count = Contact::withoutGlobalScopes()
+                            ->where('import_session_id', $record->id)
+                            ->count();
+
+                        return "Permanently delete this session and {$count} contact(s) created by it. Any staged updates are discarded. This cannot be undone.";
+                    })
+                    ->modalSubmitActionLabel('Delete session and data')
+                    ->action(function (ImportSession $record): void {
+                        abort_unless(auth()->user()?->can('review_imports'), 403);
+
+                        if ($record->model_type === 'event') {
+                            $this->rollBackEventSession($record);
+                            $record->delete();
+                            return;
+                        }
+
+                        $contactIds = Contact::withoutGlobalScopes()
+                            ->where('import_session_id', $record->id)
+                            ->pluck('id')
+                            ->toArray();
+
+                        if (! empty($contactIds)) {
+                            DB::table('taggables')
+                                ->whereIn('taggable_id', $contactIds)
+                                ->where('taggable_type', Contact::class)
+                                ->delete();
+
+                            Contact::withoutGlobalScopes()
+                                ->whereIn('id', $contactIds)
+                                ->forceDelete();
+                        }
+
+                        ImportStagedUpdate::where('import_session_id', $record->id)->delete();
+
+                        $record->delete();
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
-            ->emptyStateHeading('No imports awaiting review')
-            ->emptyStateDescription('When a new import is processed, it will appear here for approval.');
+            ->emptyStateHeading('No imports yet')
+            ->emptyStateDescription('New imports appear here for review or cleanup.');
+    }
+
+    /**
+     * Cascade rollback for an events import session: registrations → transactions
+     * → events → id_maps. Order matters — registrations hold FKs to both
+     * transactions and events. ImportIdMap rows for events and transactions
+     * created by this session are removed so the next import starts clean.
+     */
+    private function rollBackEventSession(ImportSession $record): void
+    {
+        $eventIds = Event::where('import_session_id', $record->id)->pluck('id')->toArray();
+        $txIds    = Transaction::where('import_session_id', $record->id)->pluck('id')->toArray();
+
+        EventRegistration::where('import_session_id', $record->id)->delete();
+
+        if (! empty($txIds)) {
+            Transaction::whereIn('id', $txIds)->delete();
+        }
+
+        if (! empty($eventIds)) {
+            Event::whereIn('id', $eventIds)->delete();
+
+            ImportIdMap::where('import_source_id', $record->import_source_id)
+                ->where('model_type', 'event')
+                ->whereIn('model_uuid', $eventIds)
+                ->delete();
+        }
+
+        if (! empty($txIds)) {
+            ImportIdMap::where('import_source_id', $record->import_source_id)
+                ->where('model_type', 'transaction')
+                ->whereIn('model_uuid', $txIds)
+                ->delete();
+        }
     }
 }

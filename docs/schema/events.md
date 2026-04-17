@@ -20,7 +20,7 @@ Events with dates, registration, and venue information.
 | meeting_url | string(2048) | yes | |
 | meeting_label | string | yes | |
 | meeting_details | text | yes | |
-| starts_at | timestamp | yes | |
+| starts_at | timestamp | no | |
 | ends_at | timestamp | yes | |
 | price | decimal(8,2) | no | default: 0 |
 | capacity | unsignedInteger | yes | |
@@ -31,5 +31,6 @@ Events with dates, registration, and venue information.
 | landing_page_id | uuid | yes | FK→pages, nullOnDelete; system-managed by EventObserver |
 | registrants_deleted_at | timestamp | yes | Set when staff runs Delete Registrant Contacts action |
 | custom_fields | jsonb | yes | |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for events created by the events importer so rollback can cascade correctly. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
