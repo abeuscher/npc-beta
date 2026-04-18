@@ -202,7 +202,7 @@ class ImporterPage extends Page implements HasTable
                             ->count();
 
                         $stagedUpdates = ImportStagedUpdate::where('import_session_id', $record->id)
-                            ->with('contact')
+                            ->with('subject')
                             ->limit(20)
                             ->get();
 
@@ -260,11 +260,6 @@ class ImporterPage extends Page implements HasTable
                             'approved_at' => now(),
                         ]);
 
-                        if (in_array($record->model_type, ['event', 'donation', 'membership', 'invoice_detail'], true)) {
-                            // Data is already in place — approval just flips the session flag.
-                            return;
-                        }
-
                         $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
                         $sourceName    = $record->importSource?->name;
                         $sourceId      = $record->importSource?->id;
@@ -273,28 +268,30 @@ class ImporterPage extends Page implements HasTable
                         $approverName  = auth()->user()->name;
 
                         foreach ($staged as $update) {
-                            $contact = Contact::withoutGlobalScopes()->find($update->contact_id);
+                            $subject = $this->resolveStagedSubject($update);
 
-                            if (! $contact) {
+                            if (! $subject) {
                                 continue;
                             }
 
                             if (! empty($update->attributes)) {
-                                $contact->fill($update->attributes)->save();
+                                $subject->fill($update->attributes)->save();
                             }
 
-                            if (! empty($update->tag_ids)) {
-                                $contact->tags()->syncWithoutDetaching($update->tag_ids);
-                            }
+                            if ($subject instanceof Contact) {
+                                if (! empty($update->tag_ids)) {
+                                    $subject->tags()->syncWithoutDetaching($update->tag_ids);
+                                }
 
-                            Note::create([
-                                'notable_type'     => Contact::class,
-                                'notable_id'       => $contact->id,
-                                'author_id'        => auth()->id(),
-                                'body'             => "Changes applied from import from {$sourceDisplay} (session: {$sessionLabel}) — approved by {$approverName}",
-                                'occurred_at'      => now(),
-                                'import_source_id' => $sourceId,
-                            ]);
+                                Note::create([
+                                    'notable_type'     => Contact::class,
+                                    'notable_id'       => $subject->id,
+                                    'author_id'        => auth()->id(),
+                                    'body'             => "Changes applied from import from {$sourceDisplay} (session: {$sessionLabel}) — approved by {$approverName}",
+                                    'occurred_at'      => now(),
+                                    'import_source_id' => $sourceId,
+                                ]);
+                            }
                         }
 
                         $staged->each->delete();
@@ -376,12 +373,12 @@ class ImporterPage extends Page implements HasTable
                         $sourceDisplay = $sourceName ?: 'unknown source';
 
                         foreach ($staged as $update) {
-                            $contact = Contact::withoutGlobalScopes()->find($update->contact_id);
+                            $subject = $this->resolveStagedSubject($update);
 
-                            if ($contact) {
+                            if ($subject instanceof Contact) {
                                 Note::create([
                                     'notable_type'     => Contact::class,
-                                    'notable_id'       => $contact->id,
+                                    'notable_id'       => $subject->id,
                                     'author_id'        => auth()->id(),
                                     'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
                                     'occurred_at'      => now(),
@@ -462,6 +459,27 @@ class ImporterPage extends Page implements HasTable
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No imports yet')
             ->emptyStateDescription('New imports appear here for review or cleanup.');
+    }
+
+    private function resolveStagedSubject(ImportStagedUpdate $update): ?\Illuminate\Database\Eloquent\Model
+    {
+        $class = $update->subject_type;
+
+        if (! class_exists($class)) {
+            return null;
+        }
+
+        $query = $class::query();
+
+        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($class), true)) {
+            $query->withTrashed();
+        }
+
+        if ($class === Contact::class) {
+            $query->withoutGlobalScopes();
+        }
+
+        return $query->find($update->subject_id);
     }
 
     /**

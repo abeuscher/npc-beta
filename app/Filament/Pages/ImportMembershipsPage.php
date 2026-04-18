@@ -205,6 +205,8 @@ class ImportMembershipsPage extends Page
             ->required()
             ->live();
 
+        $schema[] = $this->duplicateStrategyRadio('membership');
+
         return $schema;
     }
 
@@ -243,8 +245,9 @@ class ImportMembershipsPage extends Page
             customFieldMap: $customFieldMap,
             relationalMap: $relationalMap,
             extraLogFields: [
-                'match_key'         => $data['contact_match_key'] ?? 'contact:email',
-                'contact_match_key' => $data['contact_match_key'] ?? 'contact:email',
+                'duplicate_strategy' => $data['duplicate_strategy'] ?? 'skip',
+                'match_key'          => $data['contact_match_key'] ?? 'contact:email',
+                'contact_match_key'  => $data['contact_match_key'] ?? 'contact:email',
             ],
         );
 

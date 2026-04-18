@@ -200,14 +200,75 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 191 | CRM Importer — Polish, Shared Code & Source Templates |
 | 192 | CRM Importer — Data Review Step |
 | 193 | CRM Importer — Commit Progress, Loading States & Large-Import Handling |
+| 194 | CRM Importer — Update-Existing Strategy for All Content Types |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### Theme Colors Refactor *(stub)*
+*Ordered by priority. The importer is the primary customer-acquisition vector and cannot remain hand-testable — the first three sessions address testability before extending features further.*
 
-Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
+### Playwright E2E Harness & Contacts Importer Coverage *(stub — pre-Beta 1)*
+
+Stand up a Playwright end-to-end test harness for admin UI flows and prove it out against the single most critical tool in the stack: the CRM importer. The importer is multi-step, file-driven, async via Livewire, and has user-visible states (progress bar, approval modals, wizard navigation) that are unreachable from Pest tests. A whole category of bug is effectively uncovered today — the "stuck-at-20%" batched-poll issue surfaced during session 194 UAT is an example.
+
+Scope:
+
+- Add `@playwright/test` as a dev dependency + `playwright.config.ts` pointing at the local dev server (`http://localhost`), Chromium headless, screenshot-on-failure, video-on-failure optional.
+- `tests/e2e/` directory with shared fixtures: admin login + storageState reuse, DB reset helper (`migrate:fresh --seed` per spec file is acceptable for the first pass; revisit if suite time becomes a problem).
+- Retrofit `data-testid` attributes onto the **contacts import wizard** (Next/Back buttons, per-column Map selects, custom-field sub-form controls, collision resolver, Commit button, progress bar, stat cells, approve/rollback modals). Most invasive part of the session — deliberately scoped to one wizard to contain the diff.
+- First spec: **contacts happy-path** — upload fixture CSV → walk Upload / Review / Map Columns / Preview → Stage Import → wait for dry-run summary → Commit → wait for done → assert contact count via DB snapshot.
+- Second spec: **contacts update-strategy regression** — re-import same file with `update` strategy → navigate to review queue → Approve → assert staged change applied. This covers the session 194 work end-to-end through the UI.
+- `npm run test:e2e` runs from the WSL2 host (Chromium is already installed globally for thumbnail generation; no containerized browser needed).
+- Not in the fast Pest suite. Own group, runs on demand and before merges.
+
+Fixtures: small handcrafted CSVs committed under `tests/e2e/fixtures/` for this session. Better synthetic fixtures come from the "Random Data Generator — CSV Export for Import Testing" session below.
+
+Pairs with: the next session (extends the harness to the other four importers) and the CSV generator session (provides realistic fixtures).
+
+---
+
+### Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details *(stub — pre-Beta 1)*
+
+Extend the Playwright harness from the previous session to cover the four non-contact importers, giving full regression coverage of the tool that is the primary client-acquisition vector.
+
+Scope:
+
+- Retrofit `data-testid` attributes onto the events, donations, memberships, and invoice details wizards (same pattern as contacts).
+- Per-importer **happy-path spec**: upload fixture CSV → walk wizard → Commit → assert expected rows in DB.
+- Per-importer **update-strategy spec**: re-import with `update` strategy → approve via review queue → assert staged change applied. Locks in session 194 behaviour.
+- **Invoice details additional spec**: multi-row-per-invoice grouping, fill-blanks-only enrichment under skip strategy (the default), stage-updates under update strategy.
+- **PII rejection spec**: upload CSV with detectable PII, assert rejection UI and downloadable report.
+- **Duplicate-header review spec**: upload CSV with colliding headers, assert review step surfaces the finding and ignore choices propagate through to mapping.
+- **Error-report spec**: upload CSV with malformed rows, assert error table and downloadable errored-rows CSV.
+
+Maintenance note: selectors stay `data-testid` only — no Filament auto-generated ID dependencies. Deliverable is a regression net that catches any future wizard/commit/approve regression across all five importers without the current ~30-minute manual click-through.
+
+---
+
+### Widget Toolset Tightening — Per-Widget Pass *(stub — pre-Beta 1)*
+
+Every existing widget gets a pass to bring its config schema up to the current standard, so the designer can start authoring presets against stable, fully-featured widget tools.
+
+Scope per widget:
+
+- Replace legacy `color`-as-text-input fields with the proper ColorPicker primitive (swatches + theme palette, session 169).
+- Add `alignment` (9-point picker) where layout allows.
+- Add `gradient` controls where a color is the current option.
+- Review for missing appearance primitives now available in the schema library.
+- Confirm each widget renders correctly against the Appearance layer (background, spacing, full-width) from sessions 161–166.
+
+Why this blocks external work: the designer collaborator is building preset libraries for the widgets (Stage 5d+ work, post-Beta 1). Presets are only valuable if the widget's configurable surface is stable — otherwise every schema change invalidates their drafts. This session locks that surface. Priority position: right after the Playwright sessions so that the importer (customer acquisition) is locked in first, then the widget tools (designer work) unblocks parallel effort.
+
+Scope estimate: likely 2–3 sessions batched across the widget catalogue. Each batch ships a cluster of related widgets (hero family, content listings, media, chart/calendar/video, etc.). Out of scope for each batch: new widgets, behaviour changes, template/theme interaction — purely tightening the existing config surface.
+
+Related: the font control primitive also needs a tightening pass before being adopted as a `font` field type for widget-level typography controls (compact trigger ergonomics, swatch behaviour, sensible defaults). May be bundled into one of these batches or scheduled as its own session.
+
+---
+
+### Random Data Generator — CSV Export for Import Testing *(stub — pre-Beta 1)*
+
+Extend the existing random data generator to produce CSV exports shaped like each content type's expected import format (contacts, events, donations, memberships, invoice details). Currently the importer can only be tested against real client data (WCG) which contains PII and cannot leave the local machine — this blocks any deploy-server or CI-based import testing, and blocks using the importer in demos. The generator already knows how to produce plausible contacts/events/etc as database rows; this session adds a CSV-serializing layer that mirrors the canonical template headers (see `CsvTemplateService` from session 191) and writes N synthetic rows per content type. Deliverable: an artisan command that outputs a set of fake-but-realistic CSVs to a configurable directory, suitable for dropping into the importer on any environment without PII concerns. Also valuable: seed a "demo import source" entry so repeat runs exercise the saved-mapping path. Feeds the Playwright importer specs as better fixtures.
 
 ---
 
@@ -225,25 +286,11 @@ Expand the seeded importer source presets beyond Generic / Wild Apricot / Bloome
 8. **Kindful** (now Bloomerang) — legacy installs still export in Kindful format.
 9. **QuickBooks export** — not a CRM, but many small nonprofits track donors in QB and need to import that history.
 
-Competitive value: demonstrating fast, low-friction migration off a prospect's current platform is a core sales story. Each preset added reduces onboarding friction and strengthens the pitch against competitors on time-to-live. Pairs with the CSV template download feature from session 191 (covers the long tail of unknown formats).
+Competitive value: demonstrating fast, low-friction migration off a prospect's current platform is a core sales story. Each preset added reduces onboarding friction and strengthens the pitch against competitors on time-to-live. Pairs with the CSV template download feature from session 191 (covers the long tail of unknown formats). Likely splits across 2–3 sessions, batched by shared export shape.
 
 Approach: obtain sample exports (anonymised) for each platform, map their column conventions into `guessDestination()` heuristics and `FieldMapper::sourceSkippedHeaders()`, seed the preset. No schema changes — the preset infrastructure from sessions 188–191 handles everything.
 
-### Importer — Update-Existing Strategy for All Content Types *(stub — pre-Beta 1)*
-
-The contacts importer has skip/update/duplicate strategies. Events, registrations, donations, memberships, and transactions currently only "reuse-if-matched, create-if-not" — there's no path to update a matched record's fields with richer data from a second CSV. This is a hard requirement: every real client has overlapping import cycles during a system migration. They import once to validate, then re-import weeks later with corrections, new columns mapped, or a fresher export. The importer must treat re-import-to-update as the default customer cadence, not an edge case. Same fill-blanks-only / stage-for-review semantics as contact updates. Applies to Events, Registrations, Donations, Memberships, and Transactions uniformly. Benefits from the shared trait structure delivered in session 191.
-
-### Event Ticket Tiers *(stub — pre-Beta 1)*
-
-Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
-
-### Random Data Generator — CSV Export for Import Testing *(stub — pre-Beta 1)*
-
-Extend the existing random data generator to produce CSV exports shaped like each content type's expected import format (contacts, events, donations, memberships, invoice details). Currently the importer can only be tested against real client data (WCG) which contains PII and cannot leave the local machine — this blocks any deploy-server or CI-based import testing, and blocks using the importer in demos. The generator already knows how to produce plausible contacts/events/etc as database rows; this session adds a CSV-serializing layer that mirrors the canonical template headers (see `CsvTemplateService` from session 191) and writes N synthetic rows per content type. Deliverable: an artisan command that outputs a set of fake-but-realistic CSVs to a configurable directory, suitable for dropping into the importer on any environment without PII concerns. Also valuable: seed a "demo import source" entry so repeat runs exercise the saved-mapping path.
-
-### Rich Text Custom Fields *(stub — pre-Beta 1)*
-
-Custom fields currently support `text`, `number`, `date`, `boolean`, and `select` types. Add a `rich_text` type so admins can capture formatted content (bios, descriptions, multi-paragraph notes) as a custom field. Uses the existing Filament rich editor primitive on admin forms; renders HTML on detail views and in widget output. Importer treats rich-text cells as plain strings (no HTML parsing) — same shape as `textarea` today.
+---
 
 ### Organizations Model Overhaul *(stub — pre-Beta 1)*
 
@@ -258,17 +305,29 @@ Priority: before Beta 1 demo — prospects testing the import flows will hit the
 
 ---
 
+### Event Ticket Tiers *(stub — pre-Beta 1)*
+
+Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
+
+---
+
+### Theme Colors Refactor *(stub — pre-Beta 1)*
+
+Complete the theme/template split started in session 182 by moving colour-related template columns into the theme (`SiteSetting`). `primary_color` is clearly theme-level; `header_bg_color` / `footer_bg_color` / `nav_*_color` are ambiguous (template-level header/footer chrome vs site-wide branding). Decide per-column placement with the benefit of lived experience from session 182 and migrate accordingly.
+
+---
+
+### Rich Text Custom Fields *(stub — pre-Beta 1)*
+
+Custom fields currently support `text`, `number`, `date`, `boolean`, and `select` types. Add a `rich_text` type so admins can capture formatted content (bios, descriptions, multi-paragraph notes) as a custom field. Uses the existing Filament rich editor primitive on admin forms; renders HTML on detail views and in widget output. Importer treats rich-text cells as plain strings (no HTML parsing) — same shape as `textarea` today.
+
+---
+
 ## Infrastructure & Ops — Beta 1 Scope
 
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
 
 - `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
-
-### Code Housekeeping Notes
-
-- **Widget toolset tightening (session 169).** Session 169 expanded the config field type system with `alignment` (9-point picker), `gradient`, and `color` (the full ColorPicker primitive with swatches and theme palette). Every existing widget needs a pass to replace legacy `color`-as-text-input fields with the proper ColorPicker, and to add gradient/alignment controls where appropriate. This is per-widget work — tedious but necessary to get each widget's inspector into shape.
-
-- **Font control primitive (built; tightening pending).** Initial font control primitive shipped and in use in the theme editor — covers family, weight, size, line height, letter spacing, case. Needs a tightening pass before being adopted as a `font` field type for widget-level typography controls (compact trigger ergonomics, swatch behaviour, sensible defaults). Schedule when widget typography work is up next.
 
 ---
 
@@ -307,26 +366,6 @@ The Widget Definition Class, registry, config resolver, per-widget colocation, m
 - **Stage 7 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
 - **Stage 8 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from.
 - **Animated Thumbnails.** Originally planned as Stage 4.5 Phase 2. Revisit after Stage 6 ships, once there is real evidence of whether motion is missed in the browser grid. Static thumbnails remain the committed artifact; `scripts/generate-thumbnails.js` is positioned to grow `--animated` if/when we come back.
-
-### Playwright E2E Test Harness *(stub — post-Beta 1)*
-
-Stand up a Playwright test harness for admin UI flows that are tedious to retest manually — the importer wizard being the motivating case. Playwright is already installed globally (in use by `scripts/generate-thumbnails.js`); this session formalizes it as a test runner.
-
-Scope:
-
-- Add `tests/e2e/` with a `playwright.config.ts` (base URL → the local Laravel dev server, Chromium headless, sensible timeouts for Livewire wire:click latency).
-- Login fixture that logs in as an admin user once per test run and reuses the session cookie.
-- Spec: Import Contacts happy path — upload sample CSV, pass through Review / Map Columns / Preview, Stage Import, approve dry-run on progress page, confirm expected contact count in DB.
-- Spec per content type (events, donations, memberships, invoice details) exercising their specific sentinels/fields.
-- Spec: duplicate-header review — upload a CSV with `Email` + `email`, confirm the review step surfaces a finding and that the user's ignore choices propagate to mapping.
-- Run via `npm run test:e2e` in the host (not Docker), since Chromium runs on the WSL2 host alongside the thumbnail script.
-- Seed sample CSVs (from the synthetic CSV generator stub) so specs don't depend on real client data.
-
-Benefits: fast, deterministic regression coverage for UI changes that would otherwise require manual click-through on every session touching the importer. The contacts wizard alone has 12+ distinct clickable states across Upload / Review / Map Columns / Preview / Progress / Review Queue, and each importer gets its own variant — manual coverage is expensive and slips easily.
-
-Edges: test maintenance cost when selectors change; flakiness around Livewire polling requires `expect(locator).toBeVisible()` style waits, not `sleep()`; needs a stable local URL the host can reach (already exposed by Docker). Not attempting to cover public-facing UX in v1 — admin flows only.
-
-Pairs naturally with the synthetic-CSV generator stub: that feeds this, so both become useful together.
 
 ### Vue Page Builder Test Coverage
 

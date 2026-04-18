@@ -1065,6 +1065,26 @@ trait InteractsWithImportWizard
         return true;
     }
 
+    // ─── Duplicate-strategy Radio (4 non-contact wizards) ────────────────
+
+    protected function duplicateStrategyRadio(string $entityLabel): Forms\Components\Radio
+    {
+        $title = ucfirst($entityLabel);
+
+        return Forms\Components\Radio::make('duplicate_strategy')
+            ->label("When an imported row matches an existing {$entityLabel}")
+            ->options([
+                'skip'   => 'Skip',
+                'update' => 'Stage updates',
+            ])
+            ->descriptions([
+                'skip'   => "Leave the existing {$entityLabel} unchanged and move on.",
+                'update' => "Stage non-blank imported values as an update to the existing {$entityLabel}; blank imported cells are ignored. Updates apply on reviewer approval.",
+            ])
+            ->default('skip')
+            ->required();
+    }
+
     // ─── Mapping step banners ────────────────────────────────────────────
 
     protected function savedMappingBanner(string $entityLabel): ?Forms\Components\Placeholder

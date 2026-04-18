@@ -33,7 +33,8 @@ it('applies staged attribute updates to contacts on approval', function () {
 
     ImportStagedUpdate::create([
         'import_session_id' => $session->id,
-        'contact_id'        => $contact->id,
+        'subject_type'      => Contact::class,
+        'subject_id'        => $contact->id,
         'attributes'        => ['city' => 'NewCity'],
     ]);
 
@@ -49,7 +50,7 @@ it('applies staged attribute updates to contacts on approval', function () {
     $staged = ImportStagedUpdate::where('import_session_id', $session->id)->get();
 
     foreach ($staged as $update) {
-        $c = Contact::withoutGlobalScopes()->find($update->contact_id);
+        $c = Contact::withoutGlobalScopes()->find($update->subject_id);
         if ($c && ! empty($update->attributes)) {
             $c->fill($update->attributes)->save();
         }
@@ -87,7 +88,8 @@ it('applies tags to contacts on approval', function () {
 
     ImportStagedUpdate::create([
         'import_session_id' => $session->id,
-        'contact_id'        => $contact->id,
+        'subject_type'      => Contact::class,
+        'subject_id'        => $contact->id,
         'attributes'        => [],
         'tag_ids'           => [$tag->id],
     ]);
@@ -98,7 +100,7 @@ it('applies tags to contacts on approval', function () {
     $staged = ImportStagedUpdate::where('import_session_id', $session->id)->get();
 
     foreach ($staged as $update) {
-        $c = Contact::withoutGlobalScopes()->find($update->contact_id);
+        $c = Contact::withoutGlobalScopes()->find($update->subject_id);
         if ($c && ! empty($update->tag_ids)) {
             $c->tags()->syncWithoutDetaching($update->tag_ids);
         }
@@ -124,7 +126,8 @@ it('discards staged updates on rollback without modifying contacts', function ()
 
     ImportStagedUpdate::create([
         'import_session_id' => $session->id,
-        'contact_id'        => $contact->id,
+        'subject_type'      => Contact::class,
+        'subject_id'        => $contact->id,
         'attributes'        => ['city' => 'ShouldNotApply'],
     ]);
 

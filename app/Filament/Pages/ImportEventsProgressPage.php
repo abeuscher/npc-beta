@@ -98,9 +98,10 @@ class ImportEventsProgressPage extends Page
                 'blank_event_id'    => 0,
                 'blank_contact_key' => 0,
                 'contact_not_found' => 0,
+                'duplicate_skipped' => 0,
             ],
             'entities' => [
-                'events'        => ['would_create' => 0, 'would_match' => 0],
+                'events'        => ['would_create' => 0, 'would_match' => 0, 'would_update' => 0],
                 'registrations' => ['would_create' => 0],
                 'transactions'  => ['would_create' => 0, 'would_match' => 0],
             ],
@@ -111,6 +112,7 @@ class ImportEventsProgressPage extends Page
     {
         match ($outcome['outcome']) {
             'imported' => $report['imported']++,
+            'updated'  => $report['updated']++,
             'skipped'  => $report['skipped']++,
             'error'    => null,
         };
@@ -137,11 +139,12 @@ class ImportEventsProgressPage extends Page
         $contactMatchKey  = $log->contact_match_key ?: 'contact:email';
 
         return [
-            'columnMap'        => $columnMap,
-            'customFieldMap'   => $customFieldMap,
-            'relationalMap'    => $relationalMap,
-            'eventMatchKey'    => $eventMatchKey,
-            'contactMatchKey'  => $contactMatchKey,
+            'columnMap'         => $columnMap,
+            'customFieldMap'    => $customFieldMap,
+            'relationalMap'     => $relationalMap,
+            'eventMatchKey'     => $eventMatchKey,
+            'contactMatchKey'   => $contactMatchKey,
+            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
         ];
     }
 
@@ -300,6 +303,28 @@ class ImportEventsProgressPage extends Page
                 if ($idMap) {
                     $event = Event::find($idMap->model_uuid);
                 }
+            }
+
+            if ($event && $context['duplicateStrategy'] === 'update') {
+                $stageAttrs = array_filter($eventAttrs, fn ($v) => $v !== null);
+
+                foreach (['starts_at', 'ends_at'] as $dateField) {
+                    if (! empty($stageAttrs[$dateField])) {
+                        $stageAttrs[$dateField] = $this->parseDate($stageAttrs[$dateField]);
+                    }
+                }
+
+                if (! empty($eventCustomFields)) {
+                    $stageAttrs['custom_fields'] = array_merge($event->custom_fields ?? [], $eventCustomFields);
+                }
+
+                $this->stageSubjectUpdate($event, $stageAttrs);
+
+                return [
+                    'outcome'  => 'updated',
+                    'row'      => $rowNumber,
+                    'entities' => ['events' => ['would_update' => 1]],
+                ];
             }
 
             if (! $event) {
@@ -590,11 +615,15 @@ class ImportEventsProgressPage extends Page
 
     private function accumulateEntityCounts(array &$report, array $entities): void
     {
-        foreach (['events', 'transactions'] as $bucket) {
-            foreach (['would_create', 'would_match'] as $state) {
-                if (! empty($entities[$bucket][$state])) {
-                    $report['entities'][$bucket][$state] += $entities[$bucket][$state];
-                }
+        foreach (['would_create', 'would_match', 'would_update'] as $state) {
+            if (! empty($entities['events'][$state])) {
+                $report['entities']['events'][$state] += $entities['events'][$state];
+            }
+        }
+
+        foreach (['would_create', 'would_match'] as $state) {
+            if (! empty($entities['transactions'][$state])) {
+                $report['entities']['transactions'][$state] += $entities['transactions'][$state];
             }
         }
 

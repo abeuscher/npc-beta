@@ -112,9 +112,10 @@ class ImportInvoiceDetailsProgressPage extends Page
                 'blank_contact_key'    => 0,
                 'contact_not_found'    => 0,
                 'blank_invoice_number' => 0,
+                'duplicate_skipped'    => 0,
             ],
             'entities' => [
-                'transactions' => ['would_create' => 0, 'would_match' => 0],
+                'transactions' => ['would_create' => 0, 'would_match' => 0, 'would_update' => 0],
                 'line_items'   => ['count' => 0],
                 'contacts'     => ['would_create' => 0],
             ],
@@ -129,9 +130,11 @@ class ImportInvoiceDetailsProgressPage extends Page
     protected function buildRowContext(ImportLog $log): array
     {
         return [
-            'columnMap'       => $log->column_map ?? [],
-            'relationalMap'   => $log->relational_map ?? [],
-            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
+            'columnMap'         => $log->column_map ?? [],
+            'customFieldMap'    => $log->custom_field_map ?? [],
+            'relationalMap'     => $log->relational_map ?? [],
+            'contactMatchKey'   => $log->contact_match_key ?: 'contact:email',
+            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
         ];
     }
 
@@ -291,13 +294,21 @@ class ImportInvoiceDetailsProgressPage extends Page
                 foreach ($this->invoiceGroups as $invoiceNum => $group) {
                     $result = $this->processInvoiceGroup($invoiceNum, $group, $context);
 
-                    $report['imported'] += count($group['rows']);
+                    $rowCount = count($group['rows']);
+
+                    match ($result['outcome']) {
+                        'imported' => $report['imported'] += $rowCount,
+                        'updated'  => $report['updated']  += $rowCount,
+                    };
+
                     $report['entities']['line_items']['count'] += count($group['items']);
 
-                    if ($result['txCreated']) {
-                        $report['entities']['transactions']['would_create']++;
-                    } else {
+                    if ($result['outcome'] === 'updated') {
+                        $report['entities']['transactions']['would_update']++;
+                    } elseif ($result['matched']) {
                         $report['entities']['transactions']['would_match']++;
+                    } else {
+                        $report['entities']['transactions']['would_create']++;
                     }
 
                     if ($group['contactCreated']) {
@@ -401,8 +412,12 @@ class ImportInvoiceDetailsProgressPage extends Page
 
         foreach ($invoiceGroups as $invoiceNum => $group) {
             try {
-                $this->processInvoiceGroup($invoiceNum, $group, $context);
-                $this->imported += count($group['rows']);
+                $result   = $this->processInvoiceGroup($invoiceNum, $group, $context);
+                $rowCount = count($group['rows']);
+                match ($result['outcome']) {
+                    'imported' => $this->imported += $rowCount,
+                    'updated'  => $this->updated  += $rowCount,
+                };
             } catch (\Throwable $e) {
                 $this->errorCount++;
             }
@@ -415,6 +430,7 @@ class ImportInvoiceDetailsProgressPage extends Page
             'status'         => 'complete',
             'completed_at'   => now(),
             'imported_count' => $this->imported,
+            'updated_count'  => $this->updated,
             'skipped_count'  => $this->skipped,
             'error_count'    => $this->errorCount,
         ]);
@@ -630,7 +646,23 @@ class ImportInvoiceDetailsProgressPage extends Page
         }
 
         if ($existing) {
-            // Fill-blanks-only enrichment.
+            $strategy = $context['duplicateStrategy'] ?? 'skip';
+
+            if ($strategy === 'update') {
+                $stageAttrs = $this->buildInvoiceStageAttrs(
+                    $invoiceNumber,
+                    $meta,
+                    $items,
+                    $customFields,
+                    $existing,
+                );
+
+                $this->stageSubjectUpdate($existing, $stageAttrs);
+
+                return ['outcome' => 'updated', 'matched' => true, 'transaction' => $existing];
+            }
+
+            // skip: today's fill-blanks-only enrichment.
             $fillable = [];
 
             if (blank($existing->invoice_number)) {
@@ -640,7 +672,6 @@ class ImportInvoiceDetailsProgressPage extends Page
             if (blank($existing->line_items) && ! empty($items)) {
                 $fillable['line_items'] = $items;
             } elseif (! empty($items)) {
-                // Append new line items.
                 $existingItems = $existing->line_items ?? [];
                 $fillable['line_items'] = array_merge($existingItems, $items);
             }
@@ -656,7 +687,6 @@ class ImportInvoiceDetailsProgressPage extends Page
                 }
             }
 
-            // Merge custom fields (fill-blanks-only on existing handles).
             if (! empty($customFields)) {
                 $existingCustom = $existing->custom_fields ?? [];
                 $merged = $existingCustom;
@@ -674,7 +704,7 @@ class ImportInvoiceDetailsProgressPage extends Page
                 $existing->fill($fillable)->save();
             }
 
-            return ['txCreated' => false, 'transaction' => $existing];
+            return ['outcome' => 'imported', 'matched' => true, 'transaction' => $existing];
         }
 
         // Create new Transaction.
@@ -699,6 +729,41 @@ class ImportInvoiceDetailsProgressPage extends Page
 
         $transaction = Transaction::create($payload);
 
-        return ['txCreated' => true, 'transaction' => $transaction];
+        return ['outcome' => 'imported', 'matched' => false, 'transaction' => $transaction];
+    }
+
+    private function buildInvoiceStageAttrs(
+        string $invoiceNumber,
+        array $meta,
+        array $items,
+        array $customFields,
+        Transaction $existing,
+    ): array {
+        $stage = [
+            'invoice_number' => $invoiceNumber,
+        ];
+
+        if (! empty($items)) {
+            $stage['line_items'] = array_merge($existing->line_items ?? [], $items);
+        }
+
+        if (! blank($meta['payment_type'] ?? null)) {
+            $stage['payment_method'] = $meta['payment_type'];
+        }
+
+        $mappedStatus = $this->mapPaymentStatus($meta['status'] ?? null);
+        if ($mappedStatus !== 'pending') {
+            $stage['status'] = $mappedStatus;
+        }
+
+        if (! empty($customFields)) {
+            $merged = $existing->custom_fields ?? [];
+            foreach ($customFields as $handle => $val) {
+                $merged[$handle] = $val;
+            }
+            $stage['custom_fields'] = $merged;
+        }
+
+        return $stage;
     }
 }

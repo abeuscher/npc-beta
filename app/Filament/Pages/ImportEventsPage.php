@@ -233,6 +233,8 @@ class ImportEventsPage extends Page
             ->required()
             ->live();
 
+        $schema[] = $this->duplicateStrategyRadio('event');
+
         return $schema;
     }
 
@@ -358,7 +360,7 @@ class ImportEventsPage extends Page
             customFieldMap: $customFieldMap,
             relationalMap: $relationalMap,
             extraLogFields: [
-                'duplicate_strategy' => 'skip',
+                'duplicate_strategy' => $data['duplicate_strategy'] ?? 'skip',
                 'match_key'          => $data['event_match_key'] ?? EventImportFieldRegistry::defaultEventMatchKey(),
                 'contact_match_key'  => $data['contact_match_key'] ?? 'contact:email',
             ],

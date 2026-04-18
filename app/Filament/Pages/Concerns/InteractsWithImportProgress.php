@@ -8,9 +8,11 @@ use App\Models\ImportIdMap;
 use App\Models\ImportLog;
 use App\Models\ImportSession;
 use App\Models\ImportSource;
+use App\Models\ImportStagedUpdate;
 use App\Models\Note;
 use App\Models\Organization;
 use App\Models\Tag;
+use Illuminate\Database\Eloquent\Model;
 use App\Services\PiiScanner;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -811,6 +813,24 @@ trait InteractsWithImportProgress
             ->update(['organization_id' => $org->id]);
 
         $contact->organization_id = $org->id;
+    }
+
+    // ─── Staged-update helper (polymorphic, used by 4 non-contact pages) ──
+
+    protected function stageSubjectUpdate(Model $subject, array $attributes): void
+    {
+        if (! $this->importSessionId) {
+            return;
+        }
+
+        $nonNull = array_filter($attributes, fn ($v) => $v !== null);
+
+        ImportStagedUpdate::create([
+            'import_session_id' => $this->importSessionId,
+            'subject_type'      => $subject::class,
+            'subject_id'        => $subject->getKey(),
+            'attributes'        => $nonNull ?: null,
+        ]);
     }
 
     // ─── Parsing helpers ─────────────────────────────────────────────────

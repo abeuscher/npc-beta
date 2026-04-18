@@ -58,9 +58,9 @@
                 @foreach ($stagedUpdates as $update)
                 <tr class="border-b border-gray-100 align-top">
                     <td class="py-1 pr-3">
-                        {{ trim(($update->contact->first_name ?? '') . ' ' . ($update->contact->last_name ?? '')) ?: '—' }}
-                        @if ($update->contact?->email)
-                            <br><span class="text-gray-400 text-xs">{{ $update->contact->email }}</span>
+                        {{ trim(($update->subject->first_name ?? '') . ' ' . ($update->subject->last_name ?? '')) ?: '—' }}
+                        @if ($update->subject?->email)
+                            <br><span class="text-gray-400 text-xs">{{ $update->subject->email }}</span>
                         @endif
                     </td>
                     <td class="py-1 pr-3">

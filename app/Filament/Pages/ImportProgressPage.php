@@ -440,7 +440,8 @@ class ImportProgressPage extends Page
 
                 ImportStagedUpdate::create([
                     'import_session_id' => $this->importSessionId,
-                    'contact_id'        => $existing->id,
+                    'subject_type'      => Contact::class,
+                    'subject_id'        => $existing->id,
                     'attributes'        => $nonNull ?: null,
                     'tag_ids'           => $this->tagIds ?: null,
                 ]);

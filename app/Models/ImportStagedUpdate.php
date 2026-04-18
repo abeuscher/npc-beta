@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ImportStagedUpdate extends Model
 {
     protected $fillable = [
         'import_session_id',
-        'contact_id',
+        'subject_type',
+        'subject_id',
         'attributes',
         'tag_ids',
     ];
@@ -24,8 +26,8 @@ class ImportStagedUpdate extends Model
         return $this->belongsTo(ImportSession::class);
     }
 
-    public function contact(): BelongsTo
+    public function subject(): MorphTo
     {
-        return $this->belongsTo(Contact::class);
+        return $this->morphTo();
     }
 }

@@ -71,9 +71,10 @@ class ImportDonationsProgressPage extends Page
         'skipReasons' => [
             'blank_contact_key' => 0,
             'contact_not_found' => 0,
+            'duplicate_skipped' => 0,
         ],
         'entities' => [
-            'donations'    => ['would_create' => 0],
+            'donations'    => ['would_create' => 0, 'would_update' => 0],
             'transactions' => ['would_create' => 0, 'would_match' => 0],
             'contacts'     => ['would_create' => 0],
         ],
@@ -134,9 +135,10 @@ class ImportDonationsProgressPage extends Page
             'skipReasons' => [
                 'blank_contact_key' => 0,
                 'contact_not_found' => 0,
+                'duplicate_skipped' => 0,
             ],
             'entities' => [
-                'donations'    => ['would_create' => 0],
+                'donations'    => ['would_create' => 0, 'would_update' => 0],
                 'transactions' => ['would_create' => 0, 'would_match' => 0],
                 'contacts'     => ['would_create' => 0],
             ],
@@ -267,6 +269,37 @@ class ImportDonationsProgressPage extends Page
                 }
             }
 
+            // Match existing Donation by external_id.
+            $existingDonation = null;
+            $donationExternalId = $donationAttrs['external_id'] ?? null;
+
+            if (! blank($donationExternalId) && $this->importSourceId) {
+                $existingDonation = Donation::where('import_source_id', $this->importSourceId)
+                    ->where('external_id', $donationExternalId)
+                    ->first();
+            }
+
+            if ($existingDonation) {
+                if ($context['duplicateStrategy'] === 'skip') {
+                    return [
+                        'outcome'    => 'skipped',
+                        'row'        => $rowNumber,
+                        'skipReason' => 'duplicate_skipped',
+                    ];
+                }
+
+                if ($context['duplicateStrategy'] === 'update') {
+                    $stageAttrs = $this->buildDonationStageAttrs($donationAttrs, $donationCustomFields, $existingDonation);
+                    $this->stageSubjectUpdate($existingDonation, $stageAttrs);
+
+                    return [
+                        'outcome'  => 'updated',
+                        'row'      => $rowNumber,
+                        'entities' => ['donations' => ['would_update' => 1]],
+                    ];
+                }
+            }
+
             // Create Donation.
             $donation = $this->createDonation($donationAttrs, $contact, $donationCustomFields);
 
@@ -342,6 +375,7 @@ class ImportDonationsProgressPage extends Page
     {
         match ($outcome['outcome']) {
             'imported' => $report['imported']++,
+            'updated'  => $report['updated']++,
             'skipped'  => $report['skipped']++,
             'error'    => null,
         };
@@ -369,10 +403,11 @@ class ImportDonationsProgressPage extends Page
         $contactMatchKey = $log->contact_match_key ?: 'contact:email';
 
         return [
-            'columnMap'       => $columnMap,
-            'customFieldMap'  => $customFieldMap,
-            'relationalMap'   => $relationalMap,
-            'contactMatchKey' => $contactMatchKey,
+            'columnMap'         => $columnMap,
+            'customFieldMap'    => $customFieldMap,
+            'relationalMap'     => $relationalMap,
+            'contactMatchKey'   => $contactMatchKey,
+            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
         ];
     }
 
@@ -398,21 +433,55 @@ class ImportDonationsProgressPage extends Page
 
     private function accumulateEntityCounts(array &$report, array $entities): void
     {
-        foreach (['transactions'] as $bucket) {
-            foreach (['would_create', 'would_match'] as $state) {
-                if (! empty($entities[$bucket][$state])) {
-                    $report['entities'][$bucket][$state] += $entities[$bucket][$state];
-                }
+        foreach (['would_create', 'would_match'] as $state) {
+            if (! empty($entities['transactions'][$state])) {
+                $report['entities']['transactions'][$state] += $entities['transactions'][$state];
             }
         }
 
-        if (! empty($entities['donations']['would_create'])) {
-            $report['entities']['donations']['would_create'] += $entities['donations']['would_create'];
+        foreach (['would_create', 'would_update'] as $state) {
+            if (! empty($entities['donations'][$state])) {
+                $report['entities']['donations'][$state] += $entities['donations'][$state];
+            }
         }
 
         if (! empty($entities['contacts']['would_create'])) {
             $report['entities']['contacts']['would_create'] += $entities['contacts']['would_create'];
         }
+    }
+
+    private function buildDonationStageAttrs(array $donationAttrs, array $donationCustomFields, Donation $existing): array
+    {
+        $attrs = [];
+
+        foreach ($donationAttrs as $field => $value) {
+            if ($value === null || $field === 'external_id') {
+                continue;
+            }
+
+            if ($field === 'amount') {
+                $attrs['amount'] = $this->parseDecimal($value) ?? 0;
+                continue;
+            }
+
+            if ($field === 'donated_at') {
+                $attrs['started_at'] = $this->parseDate($value);
+                continue;
+            }
+
+            if ($field === 'status') {
+                $attrs['status'] = $this->mapDonationStatus($value);
+                continue;
+            }
+
+            $attrs[$field] = $value;
+        }
+
+        if (! empty($donationCustomFields)) {
+            $attrs['custom_fields'] = array_merge($existing->custom_fields ?? [], $donationCustomFields);
+        }
+
+        return $attrs;
     }
 
     private function createDonation(array $attrs, Contact $contact, array $customFields = []): Donation

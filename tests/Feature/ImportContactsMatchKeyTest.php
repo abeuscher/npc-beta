@@ -93,7 +93,7 @@ it('matches existing contact by email when match_key is email', function () {
 
     // Existing contact untouched; staged update created.
     expect($existing->fresh()->first_name)->toBe('Old')
-        ->and(\App\Models\ImportStagedUpdate::where('contact_id', $existing->id)->count())->toBe(1);
+        ->and(\App\Models\ImportStagedUpdate::where('subject_type', Contact::class)->where('subject_id', $existing->id)->count())->toBe(1);
 });
 
 // ── match by external_id via ImportIdMap ──────────────────────────────────────
@@ -127,7 +127,7 @@ it('matches existing contact by external_id through import_id_maps', function ()
 
     runTick($log, makeSession($this->admin, $source->id), $source->id);
 
-    expect(\App\Models\ImportStagedUpdate::where('contact_id', $contact->id)->count())->toBe(1)
+    expect(\App\Models\ImportStagedUpdate::where('subject_type', Contact::class)->where('subject_id', $contact->id)->count())->toBe(1)
         ->and(Contact::count())->toBe(1);
 });
 
@@ -165,7 +165,7 @@ it('matches existing contact by custom field handle', function () {
 
     runTick($log, makeSession($this->admin));
 
-    expect(\App\Models\ImportStagedUpdate::where('contact_id', $existing->id)->count())->toBe(1)
+    expect(\App\Models\ImportStagedUpdate::where('subject_type', Contact::class)->where('subject_id', $existing->id)->count())->toBe(1)
         ->and(Contact::count())->toBe(1);
 });
 

@@ -61,10 +61,14 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-green-600">{{ number_format($dryRunReport['imported']) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Would import rows</p>
+                </div>
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold text-blue-600">{{ number_format($dryRunReport['updated']) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Would update</p>
                 </div>
                 <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-amber-500">{{ number_format($dryRunReport['skipped']) }}</p>
@@ -245,10 +249,14 @@
                          style="width: {{ $this->percent() }}%">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-green-600">{{ number_format($imported) }}</p>
                         <p class="mt-1 text-sm text-gray-500">Imported</p>
+                    </div>
+                    <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                        <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Staged</p>
                     </div>
                     <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                         <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>
@@ -284,10 +292,14 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-green-600">{{ number_format($imported) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Imported</p>
+                </div>
+                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">Staged</p>
                 </div>
                 <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>

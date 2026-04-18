@@ -98,7 +98,7 @@ it('strategy "update" stages non-blank changes against the existing match', func
 
     runCollisionCommit(collisionLog($path, 'update'), $this->admin);
 
-    expect(ImportStagedUpdate::where('contact_id', $existing->id)->count())->toBe(1)
+    expect(ImportStagedUpdate::where('subject_type', Contact::class)->where('subject_id', $existing->id)->count())->toBe(1)
         ->and(Contact::withoutGlobalScopes()->where('email', 'b@example.com')->count())->toBe(1);
 });
 

@@ -71,9 +71,10 @@ class ImportMembershipsProgressPage extends Page
         'skipReasons' => [
             'blank_contact_key' => 0,
             'contact_not_found' => 0,
+            'duplicate_skipped' => 0,
         ],
         'entities' => [
-            'memberships' => ['would_create' => 0],
+            'memberships' => ['would_create' => 0, 'would_update' => 0],
             'tiers'       => ['would_create' => 0, 'would_match' => 0],
             'contacts'    => ['would_create' => 0],
         ],
@@ -122,9 +123,10 @@ class ImportMembershipsProgressPage extends Page
             'skipReasons' => [
                 'blank_contact_key' => 0,
                 'contact_not_found' => 0,
+                'duplicate_skipped' => 0,
             ],
             'entities' => [
-                'memberships' => ['would_create' => 0],
+                'memberships' => ['would_create' => 0, 'would_update' => 0],
                 'tiers'       => ['would_create' => 0, 'would_match' => 0],
                 'contacts'    => ['would_create' => 0],
             ],
@@ -134,10 +136,11 @@ class ImportMembershipsProgressPage extends Page
     protected function buildRowContext(ImportLog $log): array
     {
         return [
-            'columnMap'       => $log->column_map ?? [],
-            'customFieldMap'  => $log->custom_field_map ?? [],
-            'relationalMap'   => $log->relational_map ?? [],
-            'contactMatchKey' => $log->contact_match_key ?: 'contact:email',
+            'columnMap'         => $log->column_map ?? [],
+            'customFieldMap'    => $log->custom_field_map ?? [],
+            'relationalMap'     => $log->relational_map ?? [],
+            'contactMatchKey'   => $log->contact_match_key ?: 'contact:email',
+            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
         ];
     }
 
@@ -145,6 +148,7 @@ class ImportMembershipsProgressPage extends Page
     {
         match ($outcome['outcome']) {
             'imported' => $report['imported']++,
+            'updated'  => $report['updated']++,
             'skipped'  => $report['skipped']++,
             'error'    => null,
         };
@@ -161,15 +165,15 @@ class ImportMembershipsProgressPage extends Page
 
         $entities = $outcome['entities'] ?? [];
 
-        if (! empty($entities['memberships']['would_create'])) {
-            $report['entities']['memberships']['would_create'] += $entities['memberships']['would_create'];
+        foreach (['would_create', 'would_update'] as $state) {
+            if (! empty($entities['memberships'][$state])) {
+                $report['entities']['memberships'][$state] += $entities['memberships'][$state];
+            }
         }
 
-        foreach (['tiers'] as $bucket) {
-            foreach (['would_create', 'would_match'] as $state) {
-                if (! empty($entities[$bucket][$state])) {
-                    $report['entities'][$bucket][$state] += $entities[$bucket][$state];
-                }
+        foreach (['would_create', 'would_match'] as $state) {
+            if (! empty($entities['tiers'][$state])) {
+                $report['entities']['tiers'][$state] += $entities['tiers'][$state];
             }
         }
 
@@ -322,6 +326,30 @@ class ImportMembershipsProgressPage extends Page
                 [$tier, $tierCreated] = $this->resolveTier($tierName);
             }
 
+            // Match existing Membership by external_id; fall back to (contact + tier + starts_on).
+            $existingMembership = $this->findExistingMembership($memberAttrs, $contact, $tier);
+
+            if ($existingMembership) {
+                if ($context['duplicateStrategy'] === 'skip') {
+                    return [
+                        'outcome'    => 'skipped',
+                        'row'        => $rowNumber,
+                        'skipReason' => 'duplicate_skipped',
+                    ];
+                }
+
+                if ($context['duplicateStrategy'] === 'update') {
+                    $stageAttrs = $this->buildMembershipStageAttrs($memberAttrs, $tier, $membershipCustomFields, $existingMembership);
+                    $this->stageSubjectUpdate($existingMembership, $stageAttrs);
+
+                    return [
+                        'outcome'  => 'updated',
+                        'row'      => $rowNumber,
+                        'entities' => ['memberships' => ['would_update' => 1]],
+                    ];
+                }
+            }
+
             // Create Membership.
             $membership = $this->createMembership($memberAttrs, $contact, $tier, $membershipCustomFields);
 
@@ -374,6 +402,65 @@ class ImportMembershipsProgressPage extends Page
     }
 
     // ─── Entity-specific helpers ────────────────────────────────────────
+
+    private function findExistingMembership(array $attrs, Contact $contact, ?MembershipTier $tier): ?Membership
+    {
+        $externalId = $attrs['external_id'] ?? null;
+
+        if (! blank($externalId) && $this->importSourceId) {
+            $existing = Membership::where('import_source_id', $this->importSourceId)
+                ->where('external_id', $externalId)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+        }
+
+        $startsOn = $this->parseDate($attrs['starts_on'] ?? null);
+
+        if (! $tier || ! $startsOn) {
+            return null;
+        }
+
+        return Membership::where('contact_id', $contact->id)
+            ->where('tier_id', $tier->id)
+            ->whereDate('starts_on', $startsOn)
+            ->first();
+    }
+
+    private function buildMembershipStageAttrs(array $attrs, ?MembershipTier $tier, array $customFields, Membership $existing): array
+    {
+        $stage = [];
+
+        if ($tier) {
+            $stage['tier_id'] = $tier->id;
+        }
+
+        if (array_key_exists('status', $attrs) && $attrs['status'] !== null) {
+            $stage['status'] = $this->mapMembershipStatus($attrs['status']);
+        }
+
+        foreach (['starts_on', 'expires_on'] as $dateField) {
+            if (! empty($attrs[$dateField])) {
+                $stage[$dateField] = $this->parseDate($attrs[$dateField]);
+            }
+        }
+
+        if (array_key_exists('amount_paid', $attrs) && $attrs['amount_paid'] !== null) {
+            $stage['amount_paid'] = $this->parseDecimal($attrs['amount_paid']);
+        }
+
+        if (array_key_exists('notes', $attrs) && $attrs['notes'] !== null) {
+            $stage['notes'] = $attrs['notes'];
+        }
+
+        if (! empty($customFields)) {
+            $stage['custom_fields'] = array_merge($existing->custom_fields ?? [], $customFields);
+        }
+
+        return $stage;
+    }
 
     private function resolveTier(string $name): array
     {
