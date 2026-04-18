@@ -216,15 +216,15 @@
                 <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950">
                     <h3 class="font-semibold text-amber-800 dark:text-amber-300 mb-2">Why rows would skip</h3>
                     <ul class="space-y-1 text-xs text-amber-700 dark:text-amber-400">
-                        @if (($dryRunReport['skipReasons']['no_identifier'] ?? 0) > 0)
+                        @if (($dryRunReport['skipReasons']['missing_identifier'] ?? 0) > 0)
                             <li class="flex items-start gap-2">
-                                <span class="font-mono font-semibold tabular-nums">{{ number_format($dryRunReport['skipReasons']['no_identifier']) }}</span>
+                                <span class="font-mono font-semibold tabular-nums">{{ number_format($dryRunReport['skipReasons']['missing_identifier']) }}</span>
                                 <span>— row had no value in the mapped <strong>Email</strong> or <strong>First name</strong> columns. Common cause: more than one column maps to the same field and one of them is blank in these rows.</span>
                             </li>
                         @endif
-                        @if (($dryRunReport['skipReasons']['match_skip'] ?? 0) > 0)
+                        @if (($dryRunReport['skipReasons']['duplicate_skipped'] ?? 0) > 0)
                             <li class="flex items-start gap-2">
-                                <span class="font-mono font-semibold tabular-nums">{{ number_format($dryRunReport['skipReasons']['match_skip']) }}</span>
+                                <span class="font-mono font-semibold tabular-nums">{{ number_format($dryRunReport['skipReasons']['duplicate_skipped']) }}</span>
                                 <span>— row matched an existing contact via the match key, and the collision strategy is <strong>Skip</strong>. Change it to <strong>Update</strong> to stage these rows instead.</span>
                             </li>
                         @endif

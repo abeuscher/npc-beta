@@ -409,6 +409,16 @@ trait InteractsWithImportWizard
             return $schema;
         }
 
+        $rowCount      = $this->countCsvRows($this->uploadedFilePath);
+        $rowCountLabel = number_format($rowCount);
+        $rowWord       = $rowCount === 1 ? 'row' : 'rows';
+
+        $schema[] = Forms\Components\Placeholder::make('review_row_count')
+            ->label('')
+            ->content(new \Illuminate\Support\HtmlString(
+                "<p class='text-sm text-gray-700 dark:text-gray-200'><strong>{$rowCountLabel} {$rowWord} detected</strong> in the uploaded file.</p>"
+            ));
+
         if (empty($this->duplicateFindings)) {
             $schema[] = Forms\Components\Placeholder::make('review_empty_state')
                 ->label('')

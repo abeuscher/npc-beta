@@ -165,7 +165,7 @@ it('commit omits rows that errored during dry-run and applies the rest', functio
 
 // ── save mapping persists to source ──────────────────────────────────────────
 
-it('saveMapping persists field_map, custom_field_map, match_key, and match_key_column to the source', function () {
+it('saveMapping persists contacts_field_map, contacts_custom_field_map, contacts_match_key, and contacts_match_key_column to the source', function () {
     $source = ImportSource::create(['name' => 'Save Me']);
 
     $path = dryCsv([
@@ -193,14 +193,14 @@ it('saveMapping persists field_map, custom_field_map, match_key, and match_key_c
 
     $source->refresh();
 
-    expect($source->field_map)->toBe([
+    expect($source->contacts_field_map)->toBe([
         'first name'    => 'first_name',
         'email address' => 'email',
     ])
-        ->and($source->custom_field_map)->toHaveKey('member id')
-        ->and($source->custom_field_map['member id']['handle'])->toBe('member_id')
-        ->and($source->match_key)->toBe('email')
-        ->and($source->match_key_column)->toBe('Email Address');
+        ->and($source->contacts_custom_field_map)->toHaveKey('member id')
+        ->and($source->contacts_custom_field_map['member id']['handle'])->toBe('member_id')
+        ->and($source->contacts_match_key)->toBe('email')
+        ->and($source->contacts_match_key_column)->toBe('Email Address');
 });
 
 // ── save mapping cannot run before commit finishes ────────────────────────────
@@ -221,6 +221,6 @@ it('saveMapping is a no-op before commit completes', function () {
     $page->saveMapping();
     $source->refresh();
 
-    expect($source->field_map)->toBe([])
+    expect($source->contacts_field_map)->toBe([])
         ->and($page->mappingSaved)->toBeFalse();
 });

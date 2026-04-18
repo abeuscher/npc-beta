@@ -198,7 +198,7 @@ it('errors out when two existing contacts share the same match key value', funct
     $page->mount();
 
     expect($page->dryRunReport['errorCount'])->toBe(1)
-        ->and($page->dryRunReport['errors'][0]['message'])->toContain('Ambiguous match on email = dup@example.com')
+        ->and($page->dryRunReport['errors'][0]['message'])->toContain('Ambiguous contact match on email = dup@example.com')
         ->and($page->skipRowNumbers)->toBe([2]);
 });
 

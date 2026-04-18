@@ -89,9 +89,9 @@ it('auto_create strategy links rows to an existing Organization and creates miss
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org_contact__'],
         2,
-        ['Organization' => ['type' => 'organization', 'strategy' => 'auto_create']],
+        ['Organization' => ['type' => 'contact_organization', 'strategy' => 'auto_create']],
     );
 
     runRelImport($log, $this->admin);
@@ -117,9 +117,9 @@ it('match_only strategy does not create new Organizations and leaves unmatched r
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org_contact__'],
         2,
-        ['Organization' => ['type' => 'organization', 'strategy' => 'match_only']],
+        ['Organization' => ['type' => 'contact_organization', 'strategy' => 'match_only']],
     );
 
     runRelImport($log, $this->admin);
@@ -146,9 +146,9 @@ it('dry-run reports organizations that would be created, matched, or left unmatc
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Organization' => '__org_contact__'],
         4,
-        ['Organization' => ['type' => 'organization', 'strategy' => 'auto_create']],
+        ['Organization' => ['type' => 'contact_organization', 'strategy' => 'auto_create']],
     );
 
     $session = ImportSession::create([
@@ -173,9 +173,9 @@ it('dry-run reports organizations that would be created, matched, or left unmatc
         ->and(Organization::count())->toBe(1);
 });
 
-// ── Notes: one note per row when delimiter is blank ───────────────────────────
+// ── Notes: one note per row when split_mode = 'none' ──────────────────────────
 
-it('maps a column as __note__ and creates one note record per row by default', function () {
+it('maps a column as __note_contact__ and creates one note record per row by default', function () {
     $path = relCsv([
         ['first_name', 'email',         'Notes'],
         ['Alice',      'a@example.com', 'Prefers email contact'],
@@ -184,9 +184,9 @@ it('maps a column as __note__ and creates one note record per row by default', f
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note_contact__'],
         2,
-        ['Notes' => ['type' => 'note', 'delimiter' => '', 'skip_blanks' => true]],
+        ['Notes' => ['type' => 'contact_note', 'split_mode' => 'none', 'split_regex' => '']],
     );
 
     runRelImport($log, $this->admin);
@@ -201,9 +201,9 @@ it('maps a column as __note__ and creates one note record per row by default', f
         ->and(Note::where('notable_id', $bob->id)->count())->toBe(1);
 });
 
-// ── Notes: delimiter splits a cell into multiple notes ────────────────────────
+// ── Notes: regex split divides a cell into multiple notes ─────────────────────
 
-it('splits a __note__ cell by delimiter and creates one note per non-blank piece', function () {
+it('splits a __note_contact__ cell by regex and creates one note per non-blank piece', function () {
     $path = relCsv([
         ['first_name', 'email',         'Notes'],
         ['Alice',      'a@example.com', 'First|Second||Third'],
@@ -211,9 +211,9 @@ it('splits a __note__ cell by delimiter and creates one note per non-blank piece
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note_contact__'],
         1,
-        ['Notes' => ['type' => 'note', 'delimiter' => '|', 'skip_blanks' => true]],
+        ['Notes' => ['type' => 'contact_note', 'split_mode' => 'regex', 'split_regex' => '\\|']],
     );
 
     runRelImport($log, $this->admin);
@@ -225,32 +225,36 @@ it('splits a __note__ cell by delimiter and creates one note per non-blank piece
         ->and(Note::where('notable_id', $alice->id)->whereIn('body', ['First', 'Second', 'Third'])->count())->toBe(3);
 });
 
-// ── Notes: skip_blanks = false keeps empty splits ─────────────────────────────
+// ── Notes: date_prefix split captures occurred_at per fragment ────────────────
 
-it('skip_blanks = false retains blank pieces as empty-body notes', function () {
+it('date_prefix split mode parses the leading date into occurred_at for each fragment', function () {
     $path = relCsv([
         ['first_name', 'email',         'Notes'],
-        ['Alice',      'a@example.com', 'a||b'],
+        ['Alice',      'a@example.com', "7 Apr 2018: Joined the board\n12 Jan 2019: Stepped down"],
     ]);
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Notes' => '__note_contact__'],
         1,
-        ['Notes' => ['type' => 'note', 'delimiter' => '|', 'skip_blanks' => false]],
+        ['Notes' => ['type' => 'contact_note', 'split_mode' => 'date_prefix', 'split_regex' => '']],
     );
 
     runRelImport($log, $this->admin);
 
-    $alice = Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first();
+    $alice  = Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first();
+    $bodies = Note::where('notable_id', $alice->id)->pluck('body')->all();
 
-    // 3 per-row notes (a, '', b) + 1 imported-from
-    expect(Note::where('notable_id', $alice->id)->count())->toBe(4);
+    expect($bodies)->toContain('Joined the board')
+        ->and($bodies)->toContain('Stepped down');
+
+    $joined = Note::where('notable_id', $alice->id)->where('body', 'Joined the board')->first();
+    expect($joined->occurred_at->format('Y-m-d'))->toBe('2018-04-07');
 });
 
 // ── Tags: delimiter splits into N tags, missing ones auto-created ─────────────
 
-it('maps a column as __tag__, splits by delimiter, and auto-creates missing tags', function () {
+it('maps a column as __tag_contact__, splits by delimiter, and auto-creates missing tags', function () {
     Tag::create(['name' => 'board', 'type' => 'contact']);
 
     $path = relCsv([
@@ -260,9 +264,9 @@ it('maps a column as __tag__, splits by delimiter, and auto-creates missing tags
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Roles' => '__tag__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Roles' => '__tag_contact__'],
         1,
-        ['Roles' => ['type' => 'tag', 'delimiter' => '|']],
+        ['Roles' => ['type' => 'contact_tag', 'delimiter' => '|']],
     );
 
     runRelImport($log, $this->admin);
@@ -287,9 +291,9 @@ it('dry-run tag preview distinguishes tags that would be matched vs created', fu
 
     $log = relLog(
         $path,
-        ['first_name' => 'first_name', 'email' => 'email', 'Roles' => '__tag__'],
+        ['first_name' => 'first_name', 'email' => 'email', 'Roles' => '__tag_contact__'],
         2,
-        ['Roles' => ['type' => 'tag', 'delimiter' => '|']],
+        ['Roles' => ['type' => 'contact_tag', 'delimiter' => '|']],
     );
 
     $session = ImportSession::create([

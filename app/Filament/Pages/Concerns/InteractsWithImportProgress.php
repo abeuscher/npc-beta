@@ -526,11 +526,76 @@ trait InteractsWithImportProgress
         return $out;
     }
 
-    // ─── Contact resolution (shared by 4 non-contact pages) ──────────────
+    // ─── Contact resolution helpers (shared by all five pages) ───────────
 
     /**
-     * Resolve a contact by namespaced match key. Returns null when not found.
-     * The $registryClass must have a static split() method.
+     * Look up a contact by its ImportIdMap entry for the current import source.
+     */
+    protected function resolveContactByIdMap(?string $externalId): ?Contact
+    {
+        if (blank($externalId) || ! $this->importSourceId) {
+            return null;
+        }
+
+        $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
+            ->where('model_type', 'contact')
+            ->where('source_id', $externalId)
+            ->first();
+
+        return $idMap ? Contact::withoutGlobalScopes()->find($idMap->model_uuid) : null;
+    }
+
+    /**
+     * Look up a contact by a single field value. Email is matched
+     * case-insensitively; custom fields go through the JSONB path.
+     * Throws on >1 matching row.
+     */
+    protected function resolveContactByField(string $field, mixed $value, bool $customField = false): ?Contact
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        $query = Contact::withoutGlobalScopes();
+
+        if ($customField) {
+            $query->whereRaw('custom_fields->>? = ?', [$field, $value]);
+        } elseif ($field === 'email') {
+            $query->whereRaw('LOWER(email) = LOWER(?)', [$value]);
+        } else {
+            $query->where($field, $value);
+        }
+
+        $matches = $query->limit(2)->get();
+
+        if ($matches->count() > 1) {
+            throw new \RuntimeException("Ambiguous contact match on {$field} = {$value}");
+        }
+
+        return $matches->first();
+    }
+
+    /**
+     * Resolve a contact by a bare match key (contacts importer) — either
+     * 'external_id' (looked up via ImportIdMap) or any other field on the
+     * Contact model / a custom-field handle.
+     */
+    protected function resolveContactByMatchKey(
+        string $matchKey,
+        mixed $matchValue,
+        bool $matchKeyIsCustom,
+        ?string $externalId,
+    ): ?Contact {
+        if ($matchKey === 'external_id') {
+            return $this->resolveContactByIdMap($externalId);
+        }
+
+        return $this->resolveContactByField($matchKey, $matchValue, $matchKeyIsCustom);
+    }
+
+    /**
+     * Resolve a contact by a namespaced match key (e.g. 'contact:email') used
+     * by the four non-contact importers. $registryClass must expose split().
      */
     protected function resolveContactByNamespacedKey(
         string $matchKey,
@@ -544,40 +609,12 @@ trait InteractsWithImportProgress
             return null;
         }
 
-        if ($field === 'external_id') {
-            if (blank($externalId) || ! $this->importSourceId) {
-                return null;
-            }
-
-            $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
-                ->where('model_type', 'contact')
-                ->where('source_id', $externalId)
-                ->first();
-
-            return $idMap ? Contact::withoutGlobalScopes()->find($idMap->model_uuid) : null;
-        }
-
-        $value = $contactLookup[$field] ?? null;
-
-        if (blank($value)) {
-            return null;
-        }
-
-        $query = Contact::withoutGlobalScopes();
-
-        if ($field === 'email') {
-            $query->whereRaw('LOWER(email) = LOWER(?)', [$value]);
-        } else {
-            $query->where($field, $value);
-        }
-
-        $matches = $query->limit(2)->get();
-
-        if ($matches->count() > 1) {
-            throw new \RuntimeException("Ambiguous contact match on {$field} = {$value}");
-        }
-
-        return $matches->first();
+        return $this->resolveContactByMatchKey(
+            $field,
+            $contactLookup[$field] ?? null,
+            false,
+            $externalId,
+        );
     }
 
     /**
@@ -627,8 +664,10 @@ trait InteractsWithImportProgress
 
     // ─── Relational helpers ──────────────────────────────────────────────
 
-    protected function applyPerRowNotes(Contact $contact, array $entries): void
+    protected function applyPerRowNotes(Contact $contact, array $entries): int
     {
+        $created = 0;
+
         foreach ($entries as $entry) {
             $fragments = $this->splitNoteBody(
                 $entry['body'],
@@ -645,8 +684,12 @@ trait InteractsWithImportProgress
                     'occurred_at'      => $fragment['occurred_at'] ?? now(),
                     'import_source_id' => $this->importSourceId ?: null,
                 ]);
+
+                $created++;
             }
         }
+
+        return $created;
     }
 
     private const DATE_PREFIX_PATTERN = '/(?=\d{1,2}\s+\w{3,9}\s+\d{4}:)/';

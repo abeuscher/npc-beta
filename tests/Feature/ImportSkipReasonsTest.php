@@ -36,15 +36,15 @@ function skipCsv(array $rows): string
 }
 
 it('dry-run report breaks skip counts down by reason', function () {
-    // Existing contact to trigger match_skip
+    // Existing contact to trigger duplicate_skipped
     Contact::factory()->create(['email' => 'existing@example.com']);
 
     $path = skipCsv([
         ['first_name', 'email'],
         ['New',        'new1@example.com'],
-        ['',           ''],                       // no_identifier
-        ['',           ''],                       // no_identifier
-        ['Dup',        'existing@example.com'],   // match_skip (strategy=skip)
+        ['',           ''],                       // missing_identifier
+        ['',           ''],                       // missing_identifier
+        ['Dup',        'existing@example.com'],   // duplicate_skipped (strategy=skip)
     ]);
 
     $log = ImportLog::create([
@@ -72,7 +72,7 @@ it('dry-run report breaks skip counts down by reason', function () {
     $page->mount();
 
     expect($page->dryRunReport['skipped'])->toBe(3)
-        ->and($page->dryRunReport['skipReasons']['no_identifier'])->toBe(2)
-        ->and($page->dryRunReport['skipReasons']['match_skip'])->toBe(1)
+        ->and($page->dryRunReport['skipReasons']['missing_identifier'])->toBe(2)
+        ->and($page->dryRunReport['skipReasons']['duplicate_skipped'])->toBe(1)
         ->and($page->dryRunReport['imported'])->toBe(1);
 });

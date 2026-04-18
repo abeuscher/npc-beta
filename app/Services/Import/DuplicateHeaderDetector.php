@@ -11,7 +11,14 @@ namespace App\Services\Import;
  * Rules (in priority order):
  *   1. exact_match_normalized  — lowercase + strip non-alphanumeric
  *   2. trailing_digit_suffix   — "Address" / "Address 2", "Name_1" / "Name_2"
- *   3. word_subset             — "Email" / "Email address"
+ *
+ * Word-subset / prefix-subset rules were intentionally removed: compound
+ * CSV headers like "Item" / "Item quantity" / "Item price" or "First Name"
+ * / "Last Name" follow a common <noun> <attribute> pattern that is almost
+ * never a duplicate. The high-signal cases (variant spellings, numbered
+ * duplicates) are covered by the two remaining rules; synonym pairs like
+ * Email / Email address still surface during mapping via collision
+ * detection when both map to the same destination field.
  *
  * A header is only ever reported in the highest-priority finding it
  * qualifies for. Header text is the only signal; cell values are out
@@ -43,19 +50,6 @@ class DuplicateHeaderDetector
         }
 
         foreach (static::detectTrailingDigitSuffixes($headers) as $group) {
-            if ($filtered = static::subtractClaimed($group, $claimed)) {
-                if (static::isKnownLegitimateGroup($filtered['headers'])) {
-                    continue;
-                }
-
-                $findings[] = $filtered;
-                foreach ($filtered['indices'] as $i) {
-                    $claimed[$i] = true;
-                }
-            }
-        }
-
-        foreach (static::detectWordSubsets($headers) as $group) {
             if ($filtered = static::subtractClaimed($group, $claimed)) {
                 if (static::isKnownLegitimateGroup($filtered['headers'])) {
                     continue;
@@ -192,88 +186,6 @@ class DuplicateHeaderDetector
         return $groups;
     }
 
-    private static function detectWordSubsets(array $headers): array
-    {
-        $tokenized = [];
-
-        foreach ($headers as $idx => $header) {
-            $tokens = static::tokenize($header);
-
-            if (empty($tokens)) {
-                continue;
-            }
-
-            $tokenized[$idx] = ['header' => $header, 'tokens' => $tokens];
-        }
-
-        $indices = array_keys($tokenized);
-        $parent  = array_combine($indices, $indices);
-
-        $find = function (int $x) use (&$parent, &$find): int {
-            while ($parent[$x] !== $x) {
-                $parent[$x] = $parent[$parent[$x]];
-                $x          = $parent[$x];
-            }
-
-            return $x;
-        };
-
-        $union = function (int $a, int $b) use (&$parent, $find): void {
-            $ra = $find($a);
-            $rb = $find($b);
-
-            if ($ra !== $rb) {
-                $parent[$ra] = $rb;
-            }
-        };
-
-        $count = count($indices);
-
-        for ($i = 0; $i < $count; $i++) {
-            for ($j = $i + 1; $j < $count; $j++) {
-                $a = $indices[$i];
-                $b = $indices[$j];
-
-                $tokensA = $tokenized[$a]['tokens'];
-                $tokensB = $tokenized[$b]['tokens'];
-
-                if ($tokensA === $tokensB) {
-                    continue;
-                }
-
-                if (static::isPrefixSubset($tokensA, $tokensB)
-                    || static::isPrefixSubset($tokensB, $tokensA)) {
-                    $union($a, $b);
-                }
-            }
-        }
-
-        $components = [];
-        foreach ($indices as $idx) {
-            $root               = $find($idx);
-            $components[$root][] = $idx;
-        }
-
-        $groups = [];
-
-        foreach ($components as $members) {
-            if (count($members) < 2) {
-                continue;
-            }
-
-            sort($members);
-
-            $groups[] = [
-                'rule'    => 'word_subset',
-                'headers' => array_map(fn ($i) => $tokenized[$i]['header'], $members),
-                'indices' => $members,
-                'summary' => 'Columns share overlapping word patterns.',
-            ];
-        }
-
-        return $groups;
-    }
-
     private static function normalizeExact(string $header): string
     {
         return preg_replace('/[^a-z0-9]/', '', strtolower(trim($header))) ?? '';
@@ -298,36 +210,4 @@ class DuplicateHeaderDetector
         return $value;
     }
 
-    private static function tokenize(string $header): array
-    {
-        $withSpaces = preg_replace('/([a-z])([A-Z])/', '$1 $2', $header) ?? $header;
-        $lower      = strtolower($withSpaces);
-        $parts      = preg_split('/[\s_\-,.;:|\/\\\\()\[\]]+/', $lower) ?: [];
-
-        return array_values(array_filter($parts, fn ($t) => $t !== ''));
-    }
-
-    /**
-     * True when $a's tokens are a proper prefix of $b's tokens (order-sensitive).
-     * This is intentionally stricter than set-subset: it lets us group
-     * "Email" with "Email address" without bridging "Address" into the
-     * same group via the shared "address" token.
-     */
-    private static function isPrefixSubset(array $a, array $b): bool
-    {
-        $countA = count($a);
-        $countB = count($b);
-
-        if ($countA === 0 || $countA >= $countB) {
-            return false;
-        }
-
-        for ($i = 0; $i < $countA; $i++) {
-            if ($a[$i] !== $b[$i]) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }

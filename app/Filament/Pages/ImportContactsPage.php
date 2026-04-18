@@ -168,7 +168,7 @@ class ImportContactsPage extends Page
                 ])
                     ->submitAction(
                         \Filament\Actions\Action::make('runImport')
-                            ->label('Run Import')
+                            ->label('Stage Import')
                             ->icon('heroicon-o-play')
                             ->action('runImport')
                     ),
@@ -190,8 +190,8 @@ class ImportContactsPage extends Page
         }
 
         $savedSource = $this->resolvedSourceId ? ImportSource::find($this->resolvedSourceId) : null;
-        $savedFieldMap        = $savedSource?->field_map ?? [];
-        $savedCustomFieldMap  = $savedSource?->custom_field_map ?? [];
+        $savedFieldMap        = $savedSource?->contacts_field_map ?? [];
+        $savedCustomFieldMap  = $savedSource?->contacts_custom_field_map ?? [];
 
         $autoCustom     = (bool) ($this->data['auto_create_custom_fields'] ?? false);
         $ignoredColumns = $this->data['ignored_columns'] ?? [];
@@ -233,7 +233,7 @@ class ImportContactsPage extends Page
 
             $this->data['column_map']         = $columnMap;
             $this->data['duplicate_strategy'] = $this->data['duplicate_strategy'] ?? 'skip';
-            $this->data['match_key_field']    = $savedSource->match_key ?: $this->deriveDefaultMatchKey($columnMap);
+            $this->data['match_key_field']    = $savedSource->contacts_match_key ?: $this->deriveDefaultMatchKey($columnMap);
 
             return;
         }
@@ -279,7 +279,7 @@ class ImportContactsPage extends Page
 
     private function deriveDefaultMatchKey(array $columnMap): string
     {
-        $special = ['__custom__', '__org__', '__note__', '__tag__'];
+        $special = ['__custom__', '__org_contact__', '__note_contact__', '__tag_contact__'];
         $fields  = array_values(array_filter(
             $columnMap,
             fn ($v) => filled($v) && ! in_array($v, $special, true)
@@ -418,10 +418,10 @@ class ImportContactsPage extends Page
 
         $contactFields = array_merge(
             [
-                '__custom__' => '— Create as custom field —',
-                '__org__'    => '— Link to Organization —',
-                '__note__'   => '— Create as contact note —',
-                '__tag__'    => '— Apply as contact tag —',
+                '__custom__'        => '— Create as custom field —',
+                '__org_contact__'   => '— Link to Organization —',
+                '__note_contact__'  => '— Create as contact note —',
+                '__tag_contact__'   => '— Apply as contact tag —',
             ],
             ContactFieldRegistry::options()
         );
@@ -595,20 +595,29 @@ class ImportContactsPage extends Page
             ])
             ->default('auto_create')
             ->required()
-            ->visible(fn (Forms\Get $get) => $get($key) === '__org__');
+            ->visible(fn (Forms\Get $get) => $get($key) === '__org_contact__');
 
         $noteSubForm = Forms\Components\Grid::make(2)
             ->schema([
-                Forms\Components\TextInput::make("note_delimiter_{$n}")
-                    ->label('Delimiter (optional)')
-                    ->helperText('Leave blank to create one note per row. Set to split a cell into multiple notes — e.g. `|`, `;`, or `\\n` for newlines.')
-                    ->maxLength(10),
+                Forms\Components\Select::make("note_split_{$n}")
+                    ->label('Note splitting')
+                    ->options([
+                        'none'        => 'Whole cell as one note',
+                        'date_prefix' => 'Split by date prefix (e.g. "7 Apr 2018:")',
+                        'regex'       => 'Split by custom regex',
+                    ])
+                    ->default('none')
+                    ->live()
+                    ->columnSpan(1),
 
-                Forms\Components\Toggle::make("note_skip_blanks_{$n}")
-                    ->label('Skip blank pieces after splitting')
-                    ->default(true),
+                Forms\Components\TextInput::make("note_regex_{$n}")
+                    ->label('Regex pattern')
+                    ->helperText('Lookahead split pattern. Each match boundary starts a new note.')
+                    ->placeholder('e.g. (?=\\d{1,2}\\s+\\w{3,9}\\s+\\d{4}:)')
+                    ->visible(fn (Forms\Get $get) => $get("note_split_{$n}") === 'regex')
+                    ->columnSpan(1),
             ])
-            ->visible(fn (Forms\Get $get) => $get($key) === '__note__');
+            ->visible(fn (Forms\Get $get) => $get($key) === '__note_contact__');
 
         $tagSubForm = Forms\Components\Grid::make(1)
             ->schema([
@@ -617,7 +626,7 @@ class ImportContactsPage extends Page
                     ->helperText('Leave blank to treat the whole cell as one tag name. Set to split a cell into multiple tags. Tags are namespaced to contacts and auto-created if missing.')
                     ->maxLength(10),
             ])
-            ->visible(fn (Forms\Get $get) => $get($key) === '__tag__');
+            ->visible(fn (Forms\Get $get) => $get($key) === '__tag_contact__');
 
         return [$select, $customSubForm, $orgSubForm, $noteSubForm, $tagSubForm];
     }
@@ -625,7 +634,7 @@ class ImportContactsPage extends Page
     private function detectCollisions(array $columnMap): array
     {
         $byDest  = [];
-        $special = ['__custom__', '__org__', '__note__', '__tag__'];
+        $special = ['__custom__', '__org_contact__', '__note_contact__', '__tag_contact__'];
 
         foreach ($this->parsedHeaders as $header) {
             $n    = $this->headerIndex($header);
@@ -900,7 +909,7 @@ class ImportContactsPage extends Page
                     'label'      => $data["cf_label_{$n}"] ?? $header,
                     'field_type' => $data["cf_type_{$n}"] ?? 'text',
                 ];
-            } elseif ($destField === '__org__') {
+            } elseif ($destField === '__org_contact__') {
                 $strategy = $data["org_strategy_{$n}"] ?? 'auto_create';
 
                 if ($strategy === 'as_custom') {
@@ -911,23 +920,24 @@ class ImportContactsPage extends Page
                         'field_type' => 'text',
                     ];
                 } else {
-                    $namedMap[$header] = '__org__';
+                    $namedMap[$header] = '__org_contact__';
                     $relationalMap[$header] = [
-                        'type'     => 'organization',
+                        'type'     => 'contact_organization',
                         'strategy' => $strategy,
                     ];
                 }
-            } elseif ($destField === '__note__') {
-                $namedMap[$header] = '__note__';
+            } elseif ($destField === '__note_contact__') {
+                $splitMode = $data["note_split_{$n}"] ?? 'none';
+                $namedMap[$header] = '__note_contact__';
                 $relationalMap[$header] = [
-                    'type'        => 'note',
-                    'delimiter'   => $data["note_delimiter_{$n}"]   ?? '',
-                    'skip_blanks' => (bool) ($data["note_skip_blanks_{$n}"] ?? true),
+                    'type'        => 'contact_note',
+                    'split_mode'  => $splitMode,
+                    'split_regex' => $splitMode === 'regex' ? ($data["note_regex_{$n}"] ?? '') : '',
                 ];
-            } elseif ($destField === '__tag__') {
-                $namedMap[$header] = '__tag__';
+            } elseif ($destField === '__tag_contact__') {
+                $namedMap[$header] = '__tag_contact__';
                 $relationalMap[$header] = [
-                    'type'      => 'tag',
+                    'type'      => 'contact_tag',
                     'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
                 ];
             } else {

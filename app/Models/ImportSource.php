@@ -13,10 +13,10 @@ class ImportSource extends Model
     protected $fillable = [
         'name',
         'notes',
-        'field_map',
-        'custom_field_map',
-        'match_key',
-        'match_key_column',
+        'contacts_field_map',
+        'contacts_custom_field_map',
+        'contacts_match_key',
+        'contacts_match_key_column',
         'events_field_map',
         'events_custom_field_map',
         'events_match_key',
@@ -34,8 +34,8 @@ class ImportSource extends Model
     ];
 
     protected $casts = [
-        'field_map'                    => 'array',
-        'custom_field_map'             => 'array',
+        'contacts_field_map'           => 'array',
+        'contacts_custom_field_map'    => 'array',
         'events_field_map'             => 'array',
         'events_custom_field_map'      => 'array',
         'donations_field_map'          => 'array',

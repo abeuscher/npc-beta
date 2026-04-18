@@ -119,7 +119,7 @@ class ImportEventsPage extends Page
                 ])
                     ->submitAction(
                         \Filament\Actions\Action::make('runImport')
-                            ->label('Run Import')
+                            ->label('Stage Import')
                             ->icon('heroicon-o-play')
                             ->action('runImport')
                     ),

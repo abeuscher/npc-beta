@@ -69,8 +69,8 @@ class ImportProgressPage extends Page
         'errorCount'  => 0,
         'errors'      => [],
         'skipReasons' => [
-            'no_identifier' => 0,
-            'match_skip'    => 0,
+            'missing_identifier' => 0,
+            'duplicate_skipped'  => 0,
         ],
         'updatePreview' => [],
         'relationalPreview' => [
@@ -128,8 +128,8 @@ class ImportProgressPage extends Page
             'errorCount'  => 0,
             'errors'      => [],
             'skipReasons' => [
-                'no_identifier' => 0,
-                'match_skip'    => 0,
+                'missing_identifier' => 0,
+                'duplicate_skipped'  => 0,
             ],
             'updatePreview' => [],
             'relationalPreview' => [
@@ -216,10 +216,10 @@ class ImportProgressPage extends Page
         }
 
         $source->update([
-            'field_map'        => $fieldMap,
-            'custom_field_map' => $customFieldMap,
-            'match_key'        => $matchKey,
-            'match_key_column' => is_string($matchKeyColumn) ? $matchKeyColumn : null,
+            'contacts_field_map'        => $fieldMap,
+            'contacts_custom_field_map' => $customFieldMap,
+            'contacts_match_key'        => $matchKey,
+            'contacts_match_key_column' => is_string($matchKeyColumn) ? $matchKeyColumn : null,
         ]);
     }
 
@@ -269,7 +269,7 @@ class ImportProgressPage extends Page
             $customFields  = [];
             $externalId    = null;
             $orgName       = null;
-            $noteBodies    = [];
+            $noteEntries   = [];
             $tagNames      = [];
 
             foreach ($row as $index => $value) {
@@ -282,27 +282,26 @@ class ImportProgressPage extends Page
                     continue;
                 }
 
-                if ($destField === '__org__') {
+                if ($destField === '__org_contact__') {
                     if ($rawValue !== null) {
                         $orgName = trim((string) $rawValue);
                     }
                     continue;
                 }
 
-                if ($destField === '__note__') {
+                if ($destField === '__note_contact__') {
                     if ($rawValue !== null) {
-                        $cfg       = $context['relationalMap'][$header] ?? [];
-                        $delim     = $cfg['delimiter'] ?? '';
-                        $skipBlank = $cfg['skip_blanks'] ?? true;
-
-                        foreach ($this->splitDelimited($rawValue, $delim, $skipBlank) as $body) {
-                            $noteBodies[] = $body;
-                        }
+                        $cfg           = $context['relationalMap'][$header] ?? [];
+                        $noteEntries[] = [
+                            'body'        => $rawValue,
+                            'split_mode'  => $cfg['split_mode']  ?? 'none',
+                            'split_regex' => $cfg['split_regex'] ?? '',
+                        ];
                     }
                     continue;
                 }
 
-                if ($destField === '__tag__') {
+                if ($destField === '__tag_contact__') {
                     if ($rawValue !== null) {
                         $cfg   = $context['relationalMap'][$header] ?? [];
                         $delim = $cfg['delimiter'] ?? '';
@@ -351,7 +350,7 @@ class ImportProgressPage extends Page
             $firstName = $attributes['first_name'] ?? null;
 
             if (! $email && ! $firstName) {
-                return ['outcome' => 'skipped', 'row' => $rowNumber, 'skipReason' => 'no_identifier'];
+                return ['outcome' => 'skipped', 'row' => $rowNumber, 'skipReason' => 'missing_identifier'];
             }
 
             $matchValue = match (true) {
@@ -369,7 +368,7 @@ class ImportProgressPage extends Page
                 $context['matchKeyIsCustom'],
                 $context['duplicateStrategy'],
                 $orgName,
-                $noteBodies,
+                $noteEntries,
                 $tagNames,
                 $context,
                 $rowNumber
@@ -378,7 +377,7 @@ class ImportProgressPage extends Page
             $out = ['outcome' => $result['outcome'], 'row' => $rowNumber];
 
             if ($result['outcome'] === 'skipped') {
-                $out['skipReason'] = 'match_skip';
+                $out['skipReason'] = 'duplicate_skipped';
             }
 
             if (isset($result['match'])) {
@@ -417,14 +416,14 @@ class ImportProgressPage extends Page
         bool $matchKeyIsCustom,
         string $duplicateStrategy,
         ?string $orgName,
-        array $noteBodies,
+        array $noteEntries,
         array $tagNames,
         array $context,
         int $rowNumber
     ): array {
         $existing = $duplicateStrategy === 'duplicate'
             ? null
-            : $this->findExistingMatch($matchKey, $matchValue, $matchKeyIsCustom, $externalId);
+            : $this->resolveContactByMatchKey($matchKey, $matchValue, $matchKeyIsCustom, $externalId);
 
         if ($existing) {
             if ($duplicateStrategy === 'update') {
@@ -455,7 +454,7 @@ class ImportProgressPage extends Page
                     'import_source_id' => $this->importSourceId ?: null,
                 ]);
 
-                $noteCount  = $this->applyContactPerRowNotes($existing, $noteBodies);
+                $noteCount  = $this->applyPerRowNotes($existing, $noteEntries);
                 $tagOutcome = $this->applyContactPerRowTags($existing, $tagNames, $context);
 
                 return [
@@ -514,7 +513,7 @@ class ImportProgressPage extends Page
             'import_source_id' => $this->importSourceId ?: null,
         ]);
 
-        $noteCount  = $this->applyContactPerRowNotes($contact, $noteBodies);
+        $noteCount  = $this->applyPerRowNotes($contact, $noteEntries);
         $tagOutcome = $this->applyContactPerRowTags($contact, $tagNames, $context);
 
         if ($externalId && $this->importSourceId) {
@@ -552,7 +551,7 @@ class ImportProgressPage extends Page
 
         $strategy = 'auto_create';
         foreach ($context['relationalMap'] as $cfg) {
-            if (($cfg['type'] ?? null) === 'organization') {
+            if (($cfg['type'] ?? null) === 'contact_organization') {
                 $strategy = $cfg['strategy'] ?? 'auto_create';
                 break;
             }
@@ -579,26 +578,6 @@ class ImportProgressPage extends Page
             'id'      => $org->id,
             'preview' => ['name' => $orgName, 'status' => $existedBefore ? 'match' : 'create'],
         ];
-    }
-
-    private function applyContactPerRowNotes(Contact $contact, array $noteBodies): int
-    {
-        if (empty($noteBodies)) {
-            return 0;
-        }
-
-        foreach ($noteBodies as $body) {
-            Note::create([
-                'notable_type'     => Contact::class,
-                'notable_id'       => $contact->id,
-                'author_id'        => $this->importerUserId ?: null,
-                'body'             => $body,
-                'occurred_at'      => now(),
-                'import_source_id' => $this->importSourceId ?: null,
-            ]);
-        }
-
-        return count($noteBodies);
     }
 
     private function applyContactPerRowTags(Contact $contact, array $tagNames, array $context): array
@@ -652,46 +631,6 @@ class ImportProgressPage extends Page
             $report['relationalPreview']['tags'][$bucket][$name]
                 = ($report['relationalPreview']['tags'][$bucket][$name] ?? 0) + 1;
         }
-    }
-
-    private function findExistingMatch(
-        string $matchKey,
-        ?string $matchValue,
-        bool $matchKeyIsCustom,
-        ?string $externalId
-    ): ?Contact {
-        if ($matchKey === 'external_id') {
-            if (! $externalId || ! $this->importSourceId) {
-                return null;
-            }
-
-            $idMap = ImportIdMap::where('import_source_id', $this->importSourceId)
-                ->where('model_type', 'contact')
-                ->where('source_id', $externalId)
-                ->first();
-
-            return $idMap ? Contact::withoutGlobalScopes()->find($idMap->model_uuid) : null;
-        }
-
-        if (blank($matchValue)) {
-            return null;
-        }
-
-        $query = Contact::withoutGlobalScopes();
-
-        if ($matchKeyIsCustom) {
-            $query->whereRaw("custom_fields->>? = ?", [$matchKey, $matchValue]);
-        } else {
-            $query->where($matchKey, $matchValue);
-        }
-
-        $matches = $query->limit(2)->get();
-
-        if ($matches->count() > 1) {
-            throw new \RuntimeException("Ambiguous match on {$matchKey} = {$matchValue}");
-        }
-
-        return $matches->first();
     }
 
     private function importNoteBody(string $kind): string

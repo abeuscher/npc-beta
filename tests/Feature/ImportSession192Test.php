@@ -71,36 +71,24 @@ it('is case- and whitespace-insensitive in exact matches', function () {
     expect($findings[0]['headers'])->toHaveCount(3);
 });
 
-// ─── Rule 2: word-subset overlap ─────────────────────────────────────────
+// ─── Compound-header non-grouping (prefix-subset intentionally omitted) ──
 
-it('groups headers whose token sets are in a proper subset relationship', function () {
-    $headers  = ['Email', 'Email address', 'Phone'];
-    $findings = DuplicateHeaderDetector::detect($headers);
-
-    expect($findings)->toHaveCount(1);
-    expect($findings[0]['rule'])->toBe('word_subset');
-    expect($findings[0]['headers'])->toBe(['Email', 'Email address']);
-    expect($findings[0]['indices'])->toBe([0, 1]);
-});
-
-it('does not group unrelated headers via word-subset', function () {
-    $headers  = ['Email', 'Phone', 'City'];
+it('does not group compound line-item headers sharing a prefix word', function () {
+    $headers  = ['Item', 'Item quantity', 'Item price', 'Item amount'];
     $findings = DuplicateHeaderDetector::detect($headers);
 
     expect($findings)->toBe([]);
 });
 
-it('groups multi-word subset pairs via word-subset', function () {
-    $headers  = ['Phone', 'Phone Number'];
+it('does not group single-word header with a two-word header sharing its prefix', function () {
+    $headers  = ['Email', 'Email address', 'Phone', 'Phone number'];
     $findings = DuplicateHeaderDetector::detect($headers);
 
-    expect($findings)->toHaveCount(1);
-    expect($findings[0]['rule'])->toBe('word_subset');
-    expect($findings[0]['headers'])->toContain('Phone');
-    expect($findings[0]['headers'])->toContain('Phone Number');
+    // Downstream mapping-step collision detection is responsible for these.
+    expect($findings)->toBe([]);
 });
 
-// ─── Rule 3: trailing digit / suffix ─────────────────────────────────────
+// ─── Rule 2: trailing digit / suffix ─────────────────────────────────────
 
 it('groups headers that differ only by a trailing number', function () {
     $headers  = ['Nickname', 'Nickname 2'];
@@ -179,29 +167,15 @@ it('still flags duplicates when address-like headers appear alongside true dupli
     expect($findings[0]['headers'])->toBe(['Email', 'email']);
 });
 
-// ─── Regression: prefix-only subset prevents over-bridging ───────────────
+// ─── Regression: the original WCG contacts export scenario ──────────────
 
-it('does not bridge unrelated headers via a shared trailing token', function () {
+it('does not produce any findings for a mixed set of unrelated CRM headers', function () {
     $headers  = ['Email', 'Address', 'Address 2', 'Email address', 'Member bundle ID or email'];
     $findings = DuplicateHeaderDetector::detect($headers);
 
-    // Address / Address 2 are carved out. Only Email / Email address should
-    // remain as a word-subset pair, via prefix match on "email".
-    $rules = array_column($findings, 'rule');
-    expect($rules)->not->toContain('exact_match_normalized');
-
-    foreach ($findings as $finding) {
-        expect($finding['headers'])->not->toContain('Address');
-        expect($finding['headers'])->not->toContain('Address 2');
-        expect($finding['headers'])->not->toContain('Member bundle ID or email');
-    }
-});
-
-it('word-subset does not fire when the smaller header is a suffix, not prefix', function () {
-    // "Address" is a suffix of "Email address", not a prefix — do not group.
-    $headers  = ['Address', 'Email address'];
-    $findings = DuplicateHeaderDetector::detect($headers);
-
+    // Address / Address 2 are carved out. No prefix-subset rule runs now, so
+    // Email / Email address are not grouped at this stage either. All other
+    // pairs are distinct.
     expect($findings)->toBe([]);
 });
 

@@ -198,16 +198,23 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 189 | CRM Importer — Events, Registrations & Transaction Linking |
 | 190 | CRM Importer — Donations, Memberships & Invoice Details |
 | 191 | CRM Importer — Polish, Shared Code & Source Templates |
+| 192 | CRM Importer — Data Review Step |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-### 192 — CRM Importer — Data Review Step *(next)*
+### 193 — CRM Importer — Commit Progress, Loading States & Large-Import Handling *(next)*
 
-Insert a dedicated wizard step between Upload and Map Columns that assesses inbound CSV health and flags issues for the user to resolve *before* mapping begins. First rule: duplicate / similar column headers (catches the WA "bundle admin email" pattern that silently corrupted contact records in session 191 UAT). Designed as a pluggable rule pipeline so future data-quality checks slot in without UI rework.
+Three related problems surfaced during session 192 UAT on real ~1k-row imports:
 
-Prompt: `sessions/192. CRM Importer — Data Review Step.md`.
+1. **Commit-button action appears hung.** The approve-and-commit flow, "Save this mapping", and "Go to review queue" buttons all execute meaningful DB work inline via Livewire `wire:click` without a loading indicator. Users see nothing for the 5–30s the action takes. Add a page-wide `wire:loading` overlay (or per-button spinner) so the page visibly enters a busy state.
+2. **Chrome timeout on medium-size imports.** The commit phase does enough inline work before returning that Chrome hits the Livewire request timeout around ~1k rows. Dry-run already uses a chunked `tick()` polling pattern for exactly this reason — approve-and-commit should mirror it: the button flips the session status to `approved` and redirects to a progress page that ticks through rows with visible progress, identical in shape to the dry-run page.
+3. **Save-mapping + review-queue latency.** Post-import landing buttons have the same loading-state gap as (1). Cover them with the same overlay / spinner pattern — no architectural change needed beyond the UI layer.
+
+First importer session focused on the commit side of the flow rather than the wizard side. Benefits from the shared `InteractsWithImportProgress` trait: the tick-based progress pattern is already in place for dry-run, so extending it to commit is a relocation of existing work, not a new pattern. Same UX across all five importers.
+
+Prompt: `sessions/193. CRM Importer — Commit Progress, Loading States & Large-Import Handling.md`.
 
 ### Theme Colors Refactor *(stub)*
 
@@ -311,6 +318,26 @@ The Widget Definition Class, registry, config resolver, per-widget colocation, m
 - **Stage 7 — Install/Uninstall Mechanics.** Widgets become runtime-installable. Package format (zip with manifest + definition + assets). Install/uninstall commands and UI. Cleanup logic for orphaned instances.
 - **Stage 8 — External Registry.** A remote registry service (first-party or Packagist-style) the app browses and installs from.
 - **Animated Thumbnails.** Originally planned as Stage 4.5 Phase 2. Revisit after Stage 6 ships, once there is real evidence of whether motion is missed in the browser grid. Static thumbnails remain the committed artifact; `scripts/generate-thumbnails.js` is positioned to grow `--animated` if/when we come back.
+
+### Playwright E2E Test Harness *(stub — post-Beta 1)*
+
+Stand up a Playwright test harness for admin UI flows that are tedious to retest manually — the importer wizard being the motivating case. Playwright is already installed globally (in use by `scripts/generate-thumbnails.js`); this session formalizes it as a test runner.
+
+Scope:
+
+- Add `tests/e2e/` with a `playwright.config.ts` (base URL → the local Laravel dev server, Chromium headless, sensible timeouts for Livewire wire:click latency).
+- Login fixture that logs in as an admin user once per test run and reuses the session cookie.
+- Spec: Import Contacts happy path — upload sample CSV, pass through Review / Map Columns / Preview, Stage Import, approve dry-run on progress page, confirm expected contact count in DB.
+- Spec per content type (events, donations, memberships, invoice details) exercising their specific sentinels/fields.
+- Spec: duplicate-header review — upload a CSV with `Email` + `email`, confirm the review step surfaces a finding and that the user's ignore choices propagate to mapping.
+- Run via `npm run test:e2e` in the host (not Docker), since Chromium runs on the WSL2 host alongside the thumbnail script.
+- Seed sample CSVs (from the synthetic CSV generator stub) so specs don't depend on real client data.
+
+Benefits: fast, deterministic regression coverage for UI changes that would otherwise require manual click-through on every session touching the importer. The contacts wizard alone has 12+ distinct clickable states across Upload / Review / Map Columns / Preview / Progress / Review Queue, and each importer gets its own variant — manual coverage is expensive and slips easily.
+
+Edges: test maintenance cost when selectors change; flakiness around Livewire polling requires `expect(locator).toBeVisible()` style waits, not `sleep()`; needs a stable local URL the host can reach (already exposed by Docker). Not attempting to cover public-facing UX in v1 — admin flows only.
+
+Pairs naturally with the synthetic-CSV generator stub: that feeds this, so both become useful together.
 
 ### Vue Page Builder Test Coverage
 

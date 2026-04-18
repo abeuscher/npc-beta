@@ -20,11 +20,11 @@ class ImportSourceSeeder extends Seeder
             ImportSource::firstOrCreate(
                 ['name' => $name],
                 [
-                    'notes'            => "Built-in preset: {$preset}. Maps common {$name} export columns.",
-                    'field_map'        => FieldMapper::presetMap($preset),
-                    'custom_field_map' => [],
-                    'match_key'        => 'email',
-                    'match_key_column' => 'email',
+                    'notes'                     => "Built-in preset: {$preset}. Maps common {$name} export columns.",
+                    'contacts_field_map'        => FieldMapper::presetMap($preset),
+                    'contacts_custom_field_map' => [],
+                    'contacts_match_key'        => 'email',
+                    'contacts_match_key_column' => 'email',
                 ]
             );
         }

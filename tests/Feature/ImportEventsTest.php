@@ -500,12 +500,12 @@ it('fills Contact.organization_id when blank using __org_contact__, never overwr
 
 it('saveMapping writes to events_* columns without touching contact-scoped columns', function () {
     $source = ImportSource::create([
-        'name'             => 'Multi Source',
+        'name'                      => 'Multi Source',
         // Simulate a previously-saved contacts preset — we must not clobber it.
-        'field_map'        => ['email' => 'email'],
-        'custom_field_map' => [],
-        'match_key'        => 'email',
-        'match_key_column' => 'email',
+        'contacts_field_map'        => ['email' => 'email'],
+        'contacts_custom_field_map' => [],
+        'contacts_match_key'        => 'email',
+        'contacts_match_key_column' => 'email',
     ]);
     Contact::factory()->create(['email' => 'alice@example.com']);
 
@@ -541,6 +541,6 @@ it('saveMapping writes to events_* columns without touching contact-scoped colum
         ->and($source->events_match_key)->toBe('event:external_id')
         ->and($source->events_contact_match_key)->toBe('contact:email')
         // Contact-scoped preset untouched.
-        ->and($source->field_map)->toBe(['email' => 'email'])
-        ->and($source->match_key)->toBe('email');
+        ->and($source->contacts_field_map)->toBe(['email' => 'email'])
+        ->and($source->contacts_match_key)->toBe('email');
 });
