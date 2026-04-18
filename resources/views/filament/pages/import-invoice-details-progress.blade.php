@@ -117,9 +117,17 @@
                         </h3>
                         <button type="button"
                                 wire:click="downloadErrors"
-                                class="inline-flex items-center gap-2 rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50">
-                            <x-heroicon-o-arrow-down-tray class="h-4 w-4" />
-                            Download errored rows
+                                wire:loading.attr="disabled"
+                                wire:target="downloadErrors"
+                                class="inline-flex items-center gap-2 rounded border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="downloadErrors" class="inline-flex items-center gap-2">
+                                <x-heroicon-o-arrow-down-tray class="h-4 w-4" />
+                                Download errored rows
+                            </span>
+                            <span wire:loading wire:target="downloadErrors" class="inline-flex items-center gap-2">
+                                <x-loading-spinner />
+                                Preparing…
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -128,19 +136,35 @@
             <div class="flex flex-wrap gap-3">
                 <button type="button"
                         wire:click="runCommit"
-                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
-                    <x-heroicon-o-check class="h-4 w-4" />
-                    @if ($dryRunReport['errorCount'] > 0)
-                        Commit (omit errored rows)
-                    @else
-                        Commit
-                    @endif
+                        wire:loading.attr="disabled"
+                        wire:target="runCommit"
+                        class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-60">
+                    <span wire:loading.remove wire:target="runCommit" class="inline-flex items-center gap-2">
+                        <x-heroicon-o-check class="h-4 w-4" />
+                        @if ($dryRunReport['errorCount'] > 0)
+                            Commit (omit errored rows)
+                        @else
+                            Commit
+                        @endif
+                    </span>
+                    <span wire:loading wire:target="runCommit" class="inline-flex items-center gap-2">
+                        <x-loading-spinner />
+                        Starting commit…
+                    </span>
                 </button>
                 <button type="button"
                         wire:click="cancel"
-                        class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <x-heroicon-o-x-mark class="h-4 w-4" />
-                    Cancel
+                        wire:loading.attr="disabled"
+                        wire:target="cancel"
+                        class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-60 dark:hover:bg-gray-800">
+                    <span wire:loading.remove wire:target="cancel" class="inline-flex items-center gap-2">
+                        <x-heroicon-o-x-mark class="h-4 w-4" />
+                        Cancel
+                    </span>
+                    <span wire:loading wire:target="cancel" class="inline-flex items-center gap-2">
+                        <x-loading-spinner />
+                        Cancelling…
+                    </span>
                 </button>
             </div>
 
@@ -197,9 +221,17 @@
                         </div>
                         <button type="button"
                                 wire:click="saveMapping"
-                                class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
-                            <x-heroicon-o-bookmark class="h-4 w-4" />
-                            Save mapping
+                                wire:loading.attr="disabled"
+                                wire:target="saveMapping"
+                                class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="saveMapping" class="inline-flex items-center gap-2">
+                                <x-heroicon-o-bookmark class="h-4 w-4" />
+                                Save mapping
+                            </span>
+                            <span wire:loading wire:target="saveMapping" class="inline-flex items-center gap-2">
+                                <x-loading-spinner />
+                                Saving…
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -213,10 +245,11 @@
 
             <div class="flex gap-3">
                 @if ($importSessionId && auth()->user()?->can('review_imports'))
-                    <a href="{{ \App\Filament\Pages\ImporterPage::getUrl() }}"
-                       class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                    <x-loading-link :href="\App\Filament\Pages\ImporterPage::getUrl()"
+                                    class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
+                        <x-slot:icon><x-heroicon-o-clipboard-document-check class="h-4 w-4" /></x-slot:icon>
                         Go to review queue
-                    </a>
+                    </x-loading-link>
                 @elseif ($importSessionId)
                     <p class="text-sm text-gray-500 self-center">A reviewer will approve this import.</p>
                 @endif

@@ -199,22 +199,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 190 | CRM Importer — Donations, Memberships & Invoice Details |
 | 191 | CRM Importer — Polish, Shared Code & Source Templates |
 | 192 | CRM Importer — Data Review Step |
+| 193 | CRM Importer — Commit Progress, Loading States & Large-Import Handling |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
-
-### 193 — CRM Importer — Commit Progress, Loading States & Large-Import Handling *(next)*
-
-Three related problems surfaced during session 192 UAT on real ~1k-row imports:
-
-1. **Commit-button action appears hung.** The approve-and-commit flow, "Save this mapping", and "Go to review queue" buttons all execute meaningful DB work inline via Livewire `wire:click` without a loading indicator. Users see nothing for the 5–30s the action takes. Add a page-wide `wire:loading` overlay (or per-button spinner) so the page visibly enters a busy state.
-2. **Chrome timeout on medium-size imports.** The commit phase does enough inline work before returning that Chrome hits the Livewire request timeout around ~1k rows. Dry-run already uses a chunked `tick()` polling pattern for exactly this reason — approve-and-commit should mirror it: the button flips the session status to `approved` and redirects to a progress page that ticks through rows with visible progress, identical in shape to the dry-run page.
-3. **Save-mapping + review-queue latency.** Post-import landing buttons have the same loading-state gap as (1). Cover them with the same overlay / spinner pattern — no architectural change needed beyond the UI layer.
-
-First importer session focused on the commit side of the flow rather than the wizard side. Benefits from the shared `InteractsWithImportProgress` trait: the tick-based progress pattern is already in place for dry-run, so extending it to commit is a relocation of existing work, not a new pattern. Same UX across all five importers.
-
-Prompt: `sessions/193. CRM Importer — Commit Progress, Loading States & Large-Import Handling.md`.
 
 ### Theme Colors Refactor *(stub)*
 

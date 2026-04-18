@@ -93,11 +93,11 @@
 
         @if (auth()->user()?->can('import_data'))
         <div class="pt-2 flex items-center gap-4">
-            <a href="{{ \App\Filament\Pages\ImportHistoryPage::getUrl() }}"
-               class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
-                <x-heroicon-o-clock class="h-4 w-4" />
+            <x-loading-link :href="\App\Filament\Pages\ImportHistoryPage::getUrl()"
+                            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                <x-slot:icon><x-heroicon-o-clock class="h-4 w-4" /></x-slot:icon>
                 View Import History
-            </a>
+            </x-loading-link>
         </div>
 
         <div class="pt-4">

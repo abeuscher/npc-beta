@@ -27,6 +27,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 trait InteractsWithImportProgress
 {
+    /**
+     * Set after the final chunk is processed so the phase transition to
+     * 'done' happens on the next tick request, not on the heavy response
+     * that processed the last batch. Isolates DOM morphing from row-work.
+     */
+    public bool $finalizing = false;
+
     // ─── Abstract methods each page must implement ──────���────────────────
 
     /**
@@ -197,6 +204,7 @@ trait InteractsWithImportProgress
 
         $this->phase      = 'committing';
         $this->done       = false;
+        $this->finalizing = false;
         $this->processed  = 0;
         $this->imported   = 0;
         $this->updated    = 0;
@@ -225,7 +233,17 @@ trait InteractsWithImportProgress
             return;
         }
 
-        $log      = ImportLog::findOrFail($this->importLogId);
+        $log = ImportLog::findOrFail($this->importLogId);
+
+        if ($this->finalizing) {
+            $this->done  = true;
+            $this->phase = 'done';
+            $log->update(['status' => 'complete', 'completed_at' => now()]);
+            $this->finaliseSession();
+
+            return;
+        }
+
         $fullPath = Storage::disk('local')->path($log->storage_path);
 
         if (! file_exists($fullPath)) {
@@ -249,12 +267,13 @@ trait InteractsWithImportProgress
         $skipped     = 0;
         $errors      = [];
         $rowsInChunk = 0;
+        $eofReached  = false;
 
         for ($i = 0; $i < $chunk; $i++) {
             $row = fgetcsv($handle);
 
             if ($row === false) {
-                $this->done = true;
+                $eofReached = true;
                 break;
             }
 
@@ -301,11 +320,8 @@ trait InteractsWithImportProgress
             'errors'         => array_merge($existingErrors, $errors),
         ]);
 
-        if ($this->done || $this->processed >= $this->total) {
-            $this->done  = true;
-            $this->phase = 'done';
-            $log->update(['status' => 'complete', 'completed_at' => now()]);
-            $this->finaliseSession();
+        if ($eofReached || $this->processed >= $this->total) {
+            $this->finalizing = true;
         }
     }
 

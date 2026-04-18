@@ -77,12 +77,19 @@ class ImporterPage extends Page implements HasTable
 
     public function getBlockedTypes(): array
     {
-        return ImportSession::whereIn('status', ['pending', 'reviewing'])
+        if ($this->blockedTypesCache !== null) {
+            return $this->blockedTypesCache;
+        }
+
+        return $this->blockedTypesCache = ImportSession::whereIn('status', ['pending', 'reviewing'])
+            ->select('model_type')
+            ->distinct()
             ->pluck('model_type')
-            ->unique()
             ->values()
             ->all();
     }
+
+    protected ?array $blockedTypesCache = null;
 
     public function table(Table $table): Table
     {
