@@ -39,6 +39,10 @@ Specs that need a clean mid-run state call `resetDatabase()` from `helpers/db.ts
 2. Use fixtures under `tests/e2e/fixtures/{area}/`. Keep them small and PII-free.
 3. Add any new UI affordances to the relevant Blade/Filament file as `data-testid` attributes before writing selectors against them.
 
+## Importer coverage
+
+All five CSV importers (contacts, events, donations, memberships, invoice details) have happy-path and update-strategy regression coverage — 10 specs total under `tests/e2e/importer/`. Each importer has its own fixture folder `tests/e2e/fixtures/{importer}/` containing `happy-path.csv`, `update-second-pass.csv`, and `happy-path.expected.json`. Fixtures are handcrafted, small (3–6 rows), PII-free, and use canonical header names so the wizard's field mapper auto-resolves most columns. The eight non-contact specs complement `tests/Feature/ImportSession194Test.php` — that Pest suite covers update-strategy logic at the service layer; these specs cover it end-to-end through the UI.
+
 ## Debugging a failure
 
 Outputs land under `test-results/` (traces, videos, screenshots) and `playwright-report/` (HTML). All gitignored.

@@ -1,5 +1,6 @@
 <x-filament-panels::page>
     <div
+        data-testid="import-invoice-details-wizard"
         x-data="{ uploading: false }"
         x-on:livewire-upload-start="uploading = true"
         x-on:livewire-upload-finish="uploading = false"

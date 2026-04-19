@@ -1,0 +1,6 @@
+Email,Amount,Donation Date,External ID,Number,Payment State
+don1@example.com,25.00,2026-01-15,DON-E2E-1,RCPT-DON-1,Paid
+don2@example.com,50.00,2026-01-22,DON-E2E-2,RCPT-DON-2,Paid
+don3@example.com,100.00,2026-02-01,DON-E2E-3,RCPT-DON-3,Paid
+don4@example.com,75.00,2026-02-14,DON-E2E-4,RCPT-DON-4,Paid
+don5@example.com,200.00,2026-03-03,DON-E2E-5,RCPT-DON-5,Paid

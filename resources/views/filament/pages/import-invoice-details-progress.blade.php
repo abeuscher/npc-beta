@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-3xl space-y-6">
 
         @if ($phase === 'rejected')
-            <div class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-950">
+            <div data-testid="import-progress-phase-rejected" class="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-800 dark:bg-red-950">
                 <div class="flex items-center gap-3">
                     <x-heroicon-o-shield-exclamation class="h-7 w-7 text-red-600 dark:text-red-400" />
                     <h2 class="text-lg font-semibold text-red-800 dark:text-red-300">Import rejected</h2>
@@ -21,7 +21,7 @@
 
         @elseif ($phase === 'awaitingDecision')
 
-            <div class="rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-950">
+            <div data-testid="import-progress-phase-awaiting" class="rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-950">
                 <div class="flex items-center gap-3">
                     <x-heroicon-o-beaker class="h-7 w-7 text-blue-600 dark:text-blue-400" />
                     <h2 class="text-lg font-semibold text-blue-800 dark:text-blue-300">Dry-run complete</h2>
@@ -32,19 +32,19 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-imported" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-green-600">{{ number_format($dryRunReport['imported']) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Rows processed</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-updated" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-blue-600">{{ number_format($dryRunReport['updated']) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Would update</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-skipped" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-amber-500">{{ number_format($dryRunReport['skipped']) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Would skip</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-errors" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold {{ $dryRunReport['errorCount'] > 0 ? 'text-red-600' : 'text-gray-400' }}">
                         {{ number_format($dryRunReport['errorCount']) }}
                     </p>
@@ -139,6 +139,7 @@
 
             <div class="flex flex-wrap gap-3">
                 <button type="button"
+                        data-testid="import-progress-commit-button"
                         wire:click="runCommit"
                         wire:loading.attr="disabled"
                         wire:target="runCommit"
@@ -157,6 +158,7 @@
                     </span>
                 </button>
                 <button type="button"
+                        data-testid="import-progress-cancel-button"
                         wire:click="cancel"
                         wire:loading.attr="disabled"
                         wire:target="cancel"
@@ -173,13 +175,14 @@
             </div>
 
         @elseif ($phase === 'committing')
-            <div class="space-y-5">
+            <div data-testid="import-progress-phase-committing" class="space-y-5">
                 <div class="rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-950">
                     <p class="text-sm text-blue-700 dark:text-blue-400">Committing invoice details… please wait.</p>
                 </div>
             </div>
 
         @elseif ($phase === 'done')
+            <div data-testid="import-progress-phase-done" class="space-y-6">
             @if ($importSessionId)
                 <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950">
                     <div class="flex items-center gap-3">
@@ -200,19 +203,19 @@
             @endif
 
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-imported" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-green-600">{{ number_format($imported) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Rows imported</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-updated" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-blue-600">{{ number_format($updated) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Staged</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-skipped" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold text-amber-500">{{ number_format($skipped) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Skipped</p>
                 </div>
-                <div class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div data-testid="import-stat-errors" class="rounded-lg border bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <p class="text-2xl font-bold {{ $errorCount > 0 ? 'text-red-600' : 'text-gray-400' }}">{{ number_format($errorCount) }}</p>
                     <p class="mt-1 text-sm text-gray-500">Errors</p>
                 </div>
@@ -228,6 +231,7 @@
                             </p>
                         </div>
                         <button type="button"
+                                data-testid="import-save-mapping"
                                 wire:click="saveMapping"
                                 wire:loading.attr="disabled"
                                 wire:target="saveMapping"
@@ -254,6 +258,7 @@
             <div class="flex gap-3">
                 @if ($importSessionId && auth()->user()?->can('review_imports'))
                     <x-loading-link :href="\App\Filament\Pages\ImporterPage::getUrl()"
+                                    data-testid="import-go-to-review"
                                     class="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-500">
                         <x-slot:icon><x-heroicon-o-clipboard-document-check class="h-4 w-4" /></x-slot:icon>
                         Go to review queue
@@ -261,6 +266,7 @@
                 @elseif ($importSessionId)
                     <p class="text-sm text-gray-500 self-center">A reviewer will approve this import.</p>
                 @endif
+            </div>
             </div>
 
         @endif

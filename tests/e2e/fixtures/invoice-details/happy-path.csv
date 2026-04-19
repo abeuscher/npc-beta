@@ -1,0 +1,7 @@
+Email,Invoice #,Invoice Date,Item,Item Quantity,Item Price,Item Amount,Status,Currency
+inv1@example.com,INV-E2E-A,2026-03-01,Annual Ticket,1,100.00,100.00,Paid,USD
+inv1@example.com,INV-E2E-A,2026-03-01,Processing Fee,1,5.00,5.00,Paid,USD
+inv2@example.com,INV-E2E-B,2026-03-10,Gala Dinner,2,75.00,150.00,Paid,USD
+inv2@example.com,INV-E2E-B,2026-03-10,Beverage Pack,1,20.00,20.00,Paid,USD
+inv3@example.com,INV-E2E-C,2026-03-20,Workshop Pass,1,40.00,40.00,Paid,USD
+inv3@example.com,INV-E2E-C,2026-03-20,Materials Kit,1,15.00,15.00,Paid,USD

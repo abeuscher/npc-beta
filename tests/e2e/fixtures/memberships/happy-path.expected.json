@@ -1,0 +1,22 @@
+{
+    "membershipCount": 5,
+    "contactCount": 5,
+    "externalIds": [
+        "MEM-E2E-1",
+        "MEM-E2E-2",
+        "MEM-E2E-3",
+        "MEM-E2E-4",
+        "MEM-E2E-5"
+    ],
+    "initialNotes": {
+        "MEM-E2E-1": "Joined via e2e test",
+        "MEM-E2E-2": "Welcome note",
+        "MEM-E2E-3": "Test member"
+    },
+    "updatedNotes": {
+        "MEM-E2E-1": "Renewed via e2e update",
+        "MEM-E2E-2": "Updated note",
+        "MEM-E2E-3": "Reviewed in second pass"
+    },
+    "externalIdColumnIndex": 4
+}

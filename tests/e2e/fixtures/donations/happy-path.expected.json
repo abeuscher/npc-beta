@@ -1,0 +1,25 @@
+{
+    "donationCount": 5,
+    "transactionCount": 5,
+    "contactCount": 5,
+    "externalIds": [
+        "DON-E2E-1",
+        "DON-E2E-2",
+        "DON-E2E-3",
+        "DON-E2E-4",
+        "DON-E2E-5"
+    ],
+    "initialAmounts": {
+        "DON-E2E-1": "25.00",
+        "DON-E2E-2": "50.00",
+        "DON-E2E-3": "100.00",
+        "DON-E2E-4": "75.00",
+        "DON-E2E-5": "200.00"
+    },
+    "updatedAmounts": {
+        "DON-E2E-1": "50.00",
+        "DON-E2E-3": "150.00",
+        "DON-E2E-5": "250.00"
+    },
+    "externalIdColumnIndex": 3
+}

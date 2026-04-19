@@ -1,0 +1,20 @@
+{
+    "eventCount": 3,
+    "registrationCount": 3,
+    "transactionCount": 3,
+    "preCreatedContactEmails": [
+        "ev1@example.com",
+        "ev2@example.com",
+        "ev3@example.com"
+    ],
+    "eventTitles": [
+        "Spring Gala",
+        "Summer Workshop",
+        "Fall Benefit Dinner"
+    ],
+    "updatedTitles": {
+        "EV-E2E-1": "Spring Gala (Rescheduled)",
+        "EV-E2E-2": "Summer Workshop 2026",
+        "EV-E2E-3": "Autumn Benefit Dinner"
+    }
+}

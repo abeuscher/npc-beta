@@ -533,6 +533,7 @@ trait InteractsWithImportWizard
             ->placeholder('— ignore —')
             ->nullable()
             ->live()
+            ->extraAttributes(['data-testid' => "map-column-{$n}"])
             ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n, $customSentinels) {
                 if (in_array($state, $customSentinels, true)) {
                     $set("cf_label_{$n}", $header);
@@ -1085,6 +1086,7 @@ trait InteractsWithImportWizard
                 'update' => "Stage non-blank imported values as an update to the existing {$entityLabel}; blank imported cells are ignored. Updates apply on reviewer approval.",
             ])
             ->default('skip')
+            ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
             ->required();
     }
 

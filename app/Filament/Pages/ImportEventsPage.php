@@ -121,6 +121,7 @@ class ImportEventsPage extends Page
                         \Filament\Actions\Action::make('runImport')
                             ->label('Stage Import')
                             ->icon('heroicon-o-play')
+                            ->extraAttributes(['data-testid' => 'import-commit-button'])
                             ->action('runImport')
                     ),
             ])
@@ -222,6 +223,7 @@ class ImportEventsPage extends Page
             ->options(fn (Forms\Get $get) => $this->eventMatchKeyOptions($get))
             ->default(EventImportFieldRegistry::defaultEventMatchKey())
             ->selectablePlaceholder(false)
+            ->extraAttributes(['data-testid' => 'import-match-key'])
             ->required()
             ->live();
 
@@ -230,6 +232,7 @@ class ImportEventsPage extends Page
             ->helperText('Column used to look up the contact for each row. Rows whose contact cannot be found will error — this session does not create contacts.')
             ->options(fn (Forms\Get $get) => $this->contactMatchKeyOptions($get, EventImportFieldRegistry::class))
             ->selectablePlaceholder(false)
+            ->extraAttributes(['data-testid' => 'import-contact-match-key'])
             ->required()
             ->live();
 

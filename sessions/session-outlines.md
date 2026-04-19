@@ -202,6 +202,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 193 | CRM Importer — Commit Progress, Loading States & Large-Import Handling |
 | 194 | CRM Importer — Update-Existing Strategy for All Content Types |
 | 195 | Playwright E2E Harness & Contacts Importer Coverage |
+| 196 | Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details |
 
 ---
 
@@ -209,21 +210,18 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 *Ordered by priority. The importer is the primary customer-acquisition vector and cannot remain hand-testable — the first three sessions address testability before extending features further.*
 
-### Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details *(stub — pre-Beta 1)*
+### Playwright Importer — Deferred Edge-Case Specs *(stub — pre-Beta 1)*
 
-Extend the Playwright harness from the previous session to cover the four non-contact importers, giving full regression coverage of the tool that is the primary client-acquisition vector.
+Follow-up to session 196, which delivered happy-path + update-strategy specs for all five importers (10 specs total). Four additional spec scenarios were explicitly scoped out of that session and remain to be written:
 
-Scope:
+- **PII rejection spec** — upload CSV with detectable PII (SSN / credit-card / flagged header), assert rejection UI, PII violations table, and downloadable report.
+- **Duplicate-header review spec** — upload CSV with colliding headers, assert the review step surfaces the finding and that ignore choices propagate through to the mapping step.
+- **Error-report spec** — upload CSV with malformed rows (bad dates, non-numeric amounts, etc.), assert error table rendering and the downloadable errored-rows CSV.
+- **Invoice-details multi-row grouping edge cases** beyond the basic fill-blanks-under-skip — e.g. partial matches, conflicting parent-invoice fields across rows in the same group, line-item ordering under update strategy.
 
-- Retrofit `data-testid` attributes onto the events, donations, memberships, and invoice details wizards (same pattern as contacts).
-- Per-importer **happy-path spec**: upload fixture CSV → walk wizard → Commit → assert expected rows in DB.
-- Per-importer **update-strategy spec**: re-import with `update` strategy → approve via review queue → assert staged change applied. Locks in session 194 behaviour.
-- **Invoice details additional spec**: multi-row-per-invoice grouping, fill-blanks-only enrichment under skip strategy (the default), stage-updates under update strategy.
-- **PII rejection spec**: upload CSV with detectable PII, assert rejection UI and downloadable report.
-- **Duplicate-header review spec**: upload CSV with colliding headers, assert review step surfaces the finding and ignore choices propagate through to mapping.
-- **Error-report spec**: upload CSV with malformed rows, assert error table and downloadable errored-rows CSV.
+Also flagged by session 196 for a future product-level decision (not a test gap): the progress-page `buildStageAttrs` helpers currently stage every matched row regardless of whether values differ from the existing record. As a result `import-stat-updated` and `import_staged_updates` count matches rather than diffs. Whether that should filter to true diffs is a product question worth a pass during importer polish.
 
-Maintenance note: selectors stay `data-testid` only — no Filament auto-generated ID dependencies. Deliverable is a regression net that catches any future wizard/commit/approve regression across all five importers without the current ~30-minute manual click-through.
+Likely bundled with the Random Data Generator session once fixture generation is in place so each spec can exercise a wider variety of row shapes without handcrafting CSVs per scenario.
 
 ---
 

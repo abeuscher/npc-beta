@@ -1,0 +1,15 @@
+{
+    "transactionCount": 3,
+    "contactCount": 3,
+    "invoiceNumbers": [
+        "INV-E2E-A",
+        "INV-E2E-B",
+        "INV-E2E-C"
+    ],
+    "initialLineItemAmounts": {
+        "INV-E2E-B": ["150.00", "20.00"]
+    },
+    "updatedLineItemAmounts": {
+        "INV-E2E-B": ["160.00", "25.00"]
+    }
+}

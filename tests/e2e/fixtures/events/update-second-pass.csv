@@ -1,0 +1,4 @@
+Event ID,Event Title,Start Date,End Date,Email,Ticket Type,Ticket Fee,Invoice #,Payment State
+EV-E2E-1,Spring Gala (Rescheduled),2026-05-15 18:00:00,2026-05-15 22:00:00,ev1@example.com,General,50.00,INV-E2E-101,Paid
+EV-E2E-2,Summer Workshop 2026,2026-06-10 10:00:00,2026-06-10 16:00:00,ev2@example.com,Standard,25.00,INV-E2E-102,Paid
+EV-E2E-3,Autumn Benefit Dinner,2026-09-20 19:00:00,2026-09-20 23:00:00,ev3@example.com,VIP,150.00,INV-E2E-103,Paid

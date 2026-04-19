@@ -1,0 +1,6 @@
+Email,Membership Level,Membership Status,Member Since,External ID,Notes
+mem1@example.com,Standard,active,2026-01-01,MEM-E2E-1,Joined via e2e test
+mem2@example.com,Standard,active,2026-01-05,MEM-E2E-2,Welcome note
+mem3@example.com,Standard,active,2026-01-10,MEM-E2E-3,Test member
+mem4@example.com,Standard,active,2026-02-01,MEM-E2E-4,Import fixture
+mem5@example.com,Standard,active,2026-02-15,MEM-E2E-5,Test row

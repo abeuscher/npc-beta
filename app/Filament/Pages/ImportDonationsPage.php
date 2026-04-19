@@ -132,6 +132,7 @@ class ImportDonationsPage extends Page
                         \Filament\Actions\Action::make('runImport')
                             ->label('Stage Import')
                             ->icon('heroicon-o-play')
+                            ->extraAttributes(['data-testid' => 'import-commit-button'])
                             ->action('runImport')
                     ),
             ])
@@ -209,6 +210,7 @@ class ImportDonationsPage extends Page
             ->helperText('Column used to look up the contact for each row.')
             ->options(fn (Forms\Get $get) => $this->contactMatchKeyOptions($get, DonationImportFieldRegistry::class))
             ->selectablePlaceholder(false)
+            ->extraAttributes(['data-testid' => 'import-contact-match-key'])
             ->required()
             ->live();
 
