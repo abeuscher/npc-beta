@@ -5,16 +5,26 @@
         "dev": "vite",
         "build": "vite build",
         "generate-thumbnails": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-presets",
-        "generate-presets": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-static"
+        "generate-presets": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-static",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui",
+        "test:e2e:headed": "playwright test --headed",
+        "test:e2e:stress": "playwright test --project=stress",
+        "test:e2e:show-report": "playwright show-report"
     },
     "devDependencies": {
+        "@playwright/test": "1.49.1",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/typography": "^0.5.19",
+        "@types/node": "22.10.5",
+        "@types/pg": "8.11.10",
         "@vitejs/plugin-vue": "^6.0.5",
         "autoprefixer": "^10.4",
         "cssnano": "^7.0",
+        "dotenv": "16.4.7",
         "laravel-vite-plugin": "^1.0",
         "lucide-static": "^1.7.0",
+        "pg": "8.13.1",
         "sass": "^1.70",
         "tailwindcss": "^3.4.19",
         "vite": "^5.0"

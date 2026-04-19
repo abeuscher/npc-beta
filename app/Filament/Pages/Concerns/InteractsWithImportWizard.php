@@ -43,10 +43,10 @@ trait InteractsWithImportWizard
     protected function topNav(int $currentIndex, bool $isFirst, bool $isLast): Forms\Components\Placeholder
     {
         $back = $isFirst ? '<span></span>'
-            : "<button type='button' class='text-sm text-gray-600 hover:text-gray-900 hover:underline underline-offset-4 dark:text-gray-400 dark:hover:text-gray-200' x-on:click=\"\$wire.dispatchFormEvent('wizard::previousStep', 'data', {$currentIndex})\">← Back</button>";
+            : "<button type='button' data-testid='import-step-back-{$currentIndex}' class='text-sm text-gray-600 hover:text-gray-900 hover:underline underline-offset-4 dark:text-gray-400 dark:hover:text-gray-200' x-on:click=\"\$wire.dispatchFormEvent('wizard::previousStep', 'data', {$currentIndex})\">← Back</button>";
 
         $next = $isLast ? '<span></span>'
-            : "<button type='button' class='inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500' x-on:click=\"\$wire.dispatchFormEvent('wizard::nextStep', 'data', {$currentIndex})\">Next →</button>";
+            : "<button type='button' data-testid='import-step-next-{$currentIndex}' class='inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500' x-on:click=\"\$wire.dispatchFormEvent('wizard::nextStep', 'data', {$currentIndex})\">Next →</button>";
 
         $html = "<div class='flex items-center justify-between gap-3'>{$back}{$next}</div>";
 
@@ -330,6 +330,7 @@ trait InteractsWithImportWizard
                         ->placeholder('e.g. Old CRM, Wild Apricot')
                         ->required(fn (Forms\Get $get) => ! $get('import_source_id'))
                         ->disabled(fn (Forms\Get $get) => filled($get('import_source_id')))
+                        ->extraAttributes(['data-testid' => 'import-source-name'])
                         ->columnSpan(2),
 
                     Forms\Components\Placeholder::make('or_separator')
@@ -351,6 +352,7 @@ trait InteractsWithImportWizard
                                 $set('import_source_name', '');
                             }
                         })
+                        ->extraAttributes(['data-testid' => 'import-source-select'])
                         ->columnSpan(2),
                 ]),
             ]);
@@ -366,6 +368,7 @@ trait InteractsWithImportWizard
             ->maxSize(10240)
             ->live()
             ->helperText('Max 10 MB. CSV or plain text only.' . ($helperSuffix ? " {$helperSuffix}" : ''))
+            ->extraAttributes(['data-testid' => 'import-file-upload'])
             ->required();
     }
 

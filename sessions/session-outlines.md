@@ -201,32 +201,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 192 | CRM Importer — Data Review Step |
 | 193 | CRM Importer — Commit Progress, Loading States & Large-Import Handling |
 | 194 | CRM Importer — Update-Existing Strategy for All Content Types |
+| 195 | Playwright E2E Harness & Contacts Importer Coverage |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
 *Ordered by priority. The importer is the primary customer-acquisition vector and cannot remain hand-testable — the first three sessions address testability before extending features further.*
-
-### Playwright E2E Harness & Contacts Importer Coverage *(stub — pre-Beta 1)*
-
-Stand up a Playwright end-to-end test harness for admin UI flows and prove it out against the single most critical tool in the stack: the CRM importer. The importer is multi-step, file-driven, async via Livewire, and has user-visible states (progress bar, approval modals, wizard navigation) that are unreachable from Pest tests. A whole category of bug is effectively uncovered today — the "stuck-at-20%" batched-poll issue surfaced during session 194 UAT is an example.
-
-Scope:
-
-- Add `@playwright/test` as a dev dependency + `playwright.config.ts` pointing at the local dev server (`http://localhost`), Chromium headless, screenshot-on-failure, video-on-failure optional.
-- `tests/e2e/` directory with shared fixtures: admin login + storageState reuse, DB reset helper (`migrate:fresh --seed` per spec file is acceptable for the first pass; revisit if suite time becomes a problem).
-- Retrofit `data-testid` attributes onto the **contacts import wizard** (Next/Back buttons, per-column Map selects, custom-field sub-form controls, collision resolver, Commit button, progress bar, stat cells, approve/rollback modals). Most invasive part of the session — deliberately scoped to one wizard to contain the diff.
-- First spec: **contacts happy-path** — upload fixture CSV → walk Upload / Review / Map Columns / Preview → Stage Import → wait for dry-run summary → Commit → wait for done → assert contact count via DB snapshot.
-- Second spec: **contacts update-strategy regression** — re-import same file with `update` strategy → navigate to review queue → Approve → assert staged change applied. This covers the session 194 work end-to-end through the UI.
-- `npm run test:e2e` runs from the WSL2 host (Chromium is already installed globally for thumbnail generation; no containerized browser needed).
-- Not in the fast Pest suite. Own group, runs on demand and before merges.
-
-Fixtures: small handcrafted CSVs committed under `tests/e2e/fixtures/` for this session. Better synthetic fixtures come from the "Random Data Generator — CSV Export for Import Testing" session below.
-
-Pairs with: the next session (extends the harness to the other four importers) and the CSV generator session (provides realistic fixtures).
-
----
 
 ### Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details *(stub — pre-Beta 1)*
 

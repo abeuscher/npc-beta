@@ -1,0 +1,38 @@
+{
+    "contactCount": 5,
+    "emails": [
+        "alice.anderson@example.com",
+        "bob.brown@example.com",
+        "carol.carter@example.com",
+        "david.davis@example.com",
+        "eva.evans@example.com"
+    ],
+    "spotChecks": {
+        "alice.anderson@example.com": {
+            "first_name": "Alice",
+            "last_name": "Anderson",
+            "phone": "555-100-1001",
+            "city": "Portland",
+            "state": "OR"
+        },
+        "carol.carter@example.com": {
+            "first_name": "Carol",
+            "last_name": "Carter",
+            "phone": "555-100-1003",
+            "city": "Denver",
+            "state": "CO"
+        }
+    },
+    "updatedSpotChecks": {
+        "alice.anderson@example.com": {
+            "phone": "555-200-2001"
+        },
+        "bob.brown@example.com": {
+            "phone": "555-200-2002"
+        },
+        "carol.carter@example.com": {
+            "phone": "555-200-2003",
+            "city": "Boulder"
+        }
+    }
+}

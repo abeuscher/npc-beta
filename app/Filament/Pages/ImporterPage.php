@@ -99,6 +99,7 @@ class ImporterPage extends Page implements HasTable
                     ->with(['importSource', 'importer'])
                     ->latest()
             )
+            ->recordClasses(fn (ImportSession $record): string => "importer-row-{$record->id}")
             ->columns([
                 Tables\Columns\TextColumn::make('session_label')
                     ->label('Session')
@@ -159,6 +160,9 @@ class ImporterPage extends Page implements HasTable
                     ->label('Preview')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
+                    ->extraAttributes(fn (ImportSession $record): array => [
+                        'data-testid' => "importer-action-preview-{$record->id}",
+                    ])
                     ->modalHeading(fn (ImportSession $record): string => "Preview — " . ($record->session_label ?: $record->filename))
                     ->modalContent(function (ImportSession $record) {
                         if ($record->model_type === 'event') {
@@ -220,11 +224,15 @@ class ImporterPage extends Page implements HasTable
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
+                    ->extraAttributes(fn (ImportSession $record): array => [
+                        'data-testid' => "importer-action-approve-{$record->id}",
+                    ])
                     ->hidden(fn (ImportSession $record): bool =>
                         ! auth()->user()?->can('review_imports')
                         || ! in_array($record->status, ['pending', 'reviewing'], true)
                     )
                     ->requiresConfirmation()
+                    ->modalSubmitAction(fn ($action) => $action->extraAttributes(['data-testid' => 'importer-modal-approve-submit']))
                     ->modalHeading('Approve import?')
                     ->modalDescription(function (ImportSession $record): string {
                         if ($record->model_type === 'event') {
@@ -301,11 +309,15 @@ class ImporterPage extends Page implements HasTable
                     ->label('Rollback')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('danger')
+                    ->extraAttributes(fn (ImportSession $record): array => [
+                        'data-testid' => "importer-action-rollback-{$record->id}",
+                    ])
                     ->hidden(fn (ImportSession $record): bool =>
                         ! auth()->user()?->can('review_imports')
                         || ! in_array($record->status, ['pending', 'reviewing'], true)
                     )
                     ->requiresConfirmation()
+                    ->modalSubmitAction(fn ($action) => $action->extraAttributes(['data-testid' => 'importer-modal-rollback-submit']))
                     ->modalHeading('Roll back import?')
                     ->modalDescription(function (ImportSession $record): string {
                         if ($record->model_type === 'event') {

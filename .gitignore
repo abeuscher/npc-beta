@@ -20,3 +20,7 @@ yarn-error.log
 *.log
 /resources/views/custom/
 /local/
+/tests/e2e/.auth/
+/test-results/
+/playwright-report/
+/blob-report/

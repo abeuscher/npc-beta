@@ -99,15 +99,18 @@ class ImportContactsPage extends Page
                                             ->options(fn () => Tag::where('type', 'contact')->orderBy('name')->pluck('name', 'id')->toArray())
                                             ->searchable()
                                             ->preload()
+                                            ->extraAttributes(['data-testid' => 'import-tag-select'])
                                             ->nullable(),
 
                                         Forms\Components\TextInput::make('_new_tag')
                                             ->label('Create new tag')
                                             ->placeholder('New tag label…')
                                             ->dehydrated(false)
+                                            ->extraAttributes(['data-testid' => 'import-new-tag-input'])
                                             ->suffixAction(
                                                 Action::make('add_tag')
                                                     ->icon('heroicon-o-plus')
+                                                    ->extraAttributes(['data-testid' => 'import-new-tag-add'])
                                                     ->action(function (Forms\Get $get, Forms\Set $set): void {
                                                         $name = trim($get('_new_tag') ?? '');
 
@@ -131,6 +134,7 @@ class ImportContactsPage extends Page
                             Forms\Components\Toggle::make('auto_create_custom_fields')
                                 ->label('By default, create custom fields for unrecognized columns')
                                 ->helperText('When on, any CSV column that doesn\'t match a standard contact field or saved mapping becomes a new custom field automatically. Field type is guessed from a sample of rows. Skipped headers (e.g. "password") are always ignored.')
+                                ->extraAttributes(['data-testid' => 'import-auto-custom-toggle'])
                                 ->default(false),
 
                             $this->buildFileUpload('Wait for the field above to turn green before advancing to the next stage.'),
@@ -170,6 +174,7 @@ class ImportContactsPage extends Page
                         \Filament\Actions\Action::make('runImport')
                             ->label('Stage Import')
                             ->icon('heroicon-o-play')
+                            ->extraAttributes(['data-testid' => 'import-commit-button'])
                             ->action('runImport')
                     ),
             ])
@@ -478,6 +483,7 @@ class ImportContactsPage extends Page
             ->options(fn (Forms\Get $get) => $this->matchKeyOptions($get))
             ->default(fn (Forms\Get $get) => $this->deriveDefaultMatchKey($get('column_map') ?? []))
             ->selectablePlaceholder(false)
+            ->extraAttributes(['data-testid' => 'import-match-key'])
             ->required()
             ->live();
 
@@ -494,6 +500,7 @@ class ImportContactsPage extends Page
                 'duplicate' => 'Ignore the match key — every row becomes a new contact. May create multiple records for the same person.',
             ])
             ->default('skip')
+            ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
             ->required();
 
         if (! empty($collisions)) {
@@ -537,6 +544,7 @@ class ImportContactsPage extends Page
             ->placeholder('— ignore —')
             ->nullable()
             ->live()
+            ->extraAttributes(['data-testid' => "map-column-{$n}"])
             ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n) {
                 if ($state === '__custom__') {
                     $set("cf_label_{$n}", $header);
