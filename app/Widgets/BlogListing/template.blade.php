@@ -3,7 +3,7 @@
     $blogPrefix = config('site.blog_prefix', 'news');
 
     $heading         = $config['heading'] ?? '';
-    $defaultTemplate = '<p>{{image}}</p><h3><a href="{{url}}">{{title}}</a></h3><h4>{{date}}</h4><p>{{excerpt}}</p>';
+    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>{{item.excerpt}}</p>';
     $rawTemplate = $config['content_template'] ?? '';
     $contentTemplate = trim(strip_tags($rawTemplate)) !== '' ? $rawTemplate : $defaultTemplate;
     $columns         = max(1, min(6, (int) ($config['columns'] ?? 3)));
@@ -38,9 +38,9 @@
         foreach ($item as $key => $value) {
             if ($key === 'image') {
                 $imgHtml = $value ? '<img src="' . e($value) . '" alt="' . e($item['title']) . '" loading="lazy">' : '';
-                $card = str_replace('{{image}}', $imgHtml, $card);
+                $card = str_replace('{{item.image}}', $imgHtml, $card);
             } else {
-                $card = str_replace('{{' . $key . '}}', e((string) $value), $card);
+                $card = str_replace('{{item.' . $key . '}}', e((string) $value), $card);
             }
         }
         $card = preg_replace('/\{\{[^}]+\}\}/', '', $card);

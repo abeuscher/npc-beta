@@ -11,7 +11,7 @@ Widgets placed on a widget stack, ordered by sort_order. The stack is owned poly
 | column_index | smallint unsigned | yes | Slot index within layout; null for root widgets |
 | widget_type_id | uuid | no | FK→widget_types, restrictOnDelete |
 | label | string | yes | |
-| config | jsonb | no | default: {} |
+| config | jsonb | no | default: {}. Listing-widget template fields (`content_template` on events_listing / blog_listing; `caption_template` on carousel) use a two-namespace token grammar: `{{item.key}}` is substituted per row by the widget's blade template, while bare `{{key}}` is substituted once by `PageContextTokens` against the owning page (title, date, excerpt, author, starts_at, location). Session 201 split the grammars; earlier rows were rewritten by migration `2026_04_20_120000_rewrite_listing_widget_per_item_tokens`. |
 | query_config | jsonb | no | default: {} |
 | appearance_config | jsonb | no | default: {}; nested per-instance appearance bag (background, text, layout) applied as inline styles by the renderer. See "Appearance config shape" below. |
 | sort_order | integer | no | default: 0 |

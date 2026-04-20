@@ -3,7 +3,7 @@
     $events = $pageContext->upcomingEvents();
 
     $heading         = $config['heading'] ?? '';
-    $defaultTemplate = '<p>{{image}}</p><h3><a href="{{url}}">{{title}}</a></h3><h4>{{date}}</h4><p>{{location}}</p><p>{{price_badge}}</p>';
+    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>{{item.location}}</p><p>{{item.price_badge}}</p>';
     $rawTemplate = $config['content_template'] ?? '';
     $contentTemplate = trim(strip_tags($rawTemplate)) !== '' ? $rawTemplate : $defaultTemplate;
     $columns         = max(1, min(6, (int) ($config['columns'] ?? 3)));
@@ -48,11 +48,11 @@
         foreach ($item as $key => $value) {
             if ($key === 'image') {
                 $imgHtml = $value ? '<img src="' . e($value) . '" alt="' . e($item['title']) . '" loading="lazy">' : '';
-                $card = str_replace('{{image}}', $imgHtml, $card);
+                $card = str_replace('{{item.image}}', $imgHtml, $card);
             } elseif ($key === 'price_badge') {
-                $card = str_replace('{{price_badge}}', $value, $card);
+                $card = str_replace('{{item.price_badge}}', $value, $card);
             } elseif (is_string($value)) {
-                $card = str_replace('{{' . $key . '}}', e($value), $card);
+                $card = str_replace('{{item.' . $key . '}}', e($value), $card);
             }
         }
         $card = preg_replace('/\{\{[^}]+\}\}/', '', $card);

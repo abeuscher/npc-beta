@@ -207,6 +207,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 198 | Notes — Structured Interactions Schema & Timeline Surfaces |
 | 199 | Admin Secondary Button Colour & Header-Action Polish |
 | 200 | Admin CSS Consolidation — Tightening Pass |
+| 201 | Widget Template Tokens — Per-Item Namespace Split |
 
 ---
 
@@ -529,14 +530,6 @@ Allow the background image in the universal Appearance layer to have a user-cont
 ### Page-Level Style Settings
 
 Page-level settings for background color, content width, and chrome outside the widget space on sides. Header and footer should be affected by these styles. Needs design on where these live (page record, template, or a new config column) and how they interact with the existing template system.
-
-### Design System Editor — Typography & Buttons
-
-Move the design system editor inside the page editor as a separate view accessible from within it. Typography controls for H1–H6, P, UL/OL with per-element settings: font family, font variant, font size, line height, case transform (all-caps, small-caps, lowercase), letter spacing, margin (top/bottom only), padding (top/bottom only), border, outline, and bullet type/position where relevant. Button controls already built (session 134). Relationship to templates and themes needs defining. Start with text and buttons, expand to context-specific styles (captions, form labels, etc.) later.
-
-### Widget Portability & Distribution
-
-Each widget becomes a self-describing class: handle, config schema, render logic, JS/CSS asset manifest, optional collection type definitions. Foundation for future widget distribution.
 
 ### Image & Media Handling — Carousels & Galleries
 

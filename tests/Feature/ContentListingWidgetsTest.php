@@ -97,7 +97,7 @@ it('blog listing widget renders with default content template', function () {
         [
             'config'      => [
                 'heading'          => 'Latest Posts',
-                'content_template' => '<h3>{{title}}</h3><time>{{date}}</time>',
+                'content_template' => '<h3>{{item.title}}</h3><time>{{item.date}}</time>',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -128,7 +128,7 @@ it('blog listing widget applies token replacement correctly', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '<span class="test-title">{{title}}</span><span class="test-url">{{url}}</span>',
+                'content_template' => '<span class="test-title">{{item.title}}</span><span class="test-url">{{item.url}}</span>',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -142,8 +142,8 @@ it('blog listing widget applies token replacement correctly', function () {
     expect($html)
         ->toContain('Token Test Post')
         ->toContain('token-test')
-        ->not->toContain('{{title}}')
-        ->not->toContain('{{url}}');
+        ->not->toContain('{{item.title}}')
+        ->not->toContain('{{item.url}}');
 });
 
 it('blog listing renders empty state when no posts exist', function () {
@@ -152,7 +152,7 @@ it('blog listing renders empty state when no posts exist', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -172,7 +172,7 @@ it('blog listing renders search input when show_search is enabled', function () 
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -205,7 +205,7 @@ it('events listing widget renders with default content template', function () {
         [
             'config'      => [
                 'heading'          => 'Upcoming Events',
-                'content_template' => '<h3>{{title}}</h3><time>{{date}}</time>',
+                'content_template' => '<h3>{{item.title}}</h3><time>{{item.date}}</time>',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -239,7 +239,7 @@ it('events listing widget applies token replacement correctly', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '<span class="test-title">{{title}}</span><span class="test-loc">{{location}}</span>{{price_badge}}',
+                'content_template' => '<span class="test-title">{{item.title}}</span><span class="test-loc">{{item.location}}</span>{{item.price_badge}}',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -254,8 +254,8 @@ it('events listing widget applies token replacement correctly', function () {
         ->toContain('Token Event')
         ->toContain('123 Main St')
         ->toContain('Free')
-        ->not->toContain('{{title}}')
-        ->not->toContain('{{location}}');
+        ->not->toContain('{{item.title}}')
+        ->not->toContain('{{item.location}}');
 });
 
 it('events listing renders empty state when no upcoming events', function () {
@@ -264,7 +264,7 @@ it('events listing renders empty state when no upcoming events', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -284,7 +284,7 @@ it('events listing renders search input when show_search is enabled', function (
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
 
                 'columns'          => 3,
                 'items_per_page'   => 10,
@@ -316,7 +316,7 @@ it('blog listing renders Swiper container with slides', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
                 'columns'          => 4,
                 'items_per_page'   => 10,
                 'show_search'      => false,
@@ -351,7 +351,7 @@ it('blog listing renders default spaceBetween when gap is not set', function () 
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
                 'columns'          => 3,
                 'items_per_page'   => 10,
                 'show_search'      => false,
@@ -378,7 +378,7 @@ it('blog listing renders custom spaceBetween from gap config', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
                 'columns'          => 3,
                 'items_per_page'   => 10,
                 'show_search'      => false,
@@ -409,7 +409,7 @@ it('events listing renders default spaceBetween when gap is not set', function (
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
                 'columns'          => 3,
                 'items_per_page'   => 10,
                 'show_search'      => false,
@@ -437,7 +437,7 @@ it('events listing renders custom spaceBetween from gap config', function () {
         [
             'config'      => [
                 'heading'          => '',
-                'content_template' => '{{title}}',
+                'content_template' => '{{item.title}}',
                 'columns'          => 3,
                 'items_per_page'   => 10,
                 'show_search'      => false,

@@ -1,7 +1,7 @@
 @php
     $slides = $collectionData['slides'] ?? [];
     $imageField = $config['image_field'] ?? '';
-    $captionTemplate = $config['caption_template'] ?? '{{title}}';
+    $captionTemplate = $config['caption_template'] ?? '{{item.title}}';
     $objectFit = in_array($config['object_fit'] ?? '', ['cover', 'contain']) ? $config['object_fit'] : 'cover';
     $autoplay = $config['autoplay'] ?? true;
     $interval = (int) ($config['interval'] ?? 5000);
@@ -74,7 +74,7 @@
                         $caption = $captionTemplate;
                         foreach ($slide as $key => $value) {
                             if ($key === '_media' || !is_string($value)) continue;
-                            $caption = str_replace('{{' . $key . '}}', e($value), $caption);
+                            $caption = str_replace('{{item.' . $key . '}}', e($value), $caption);
                         }
                         // Remove any unmatched tokens
                         $caption = preg_replace('/\{\{[^}]+\}\}/', '', $caption);

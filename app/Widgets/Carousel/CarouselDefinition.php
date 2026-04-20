@@ -41,7 +41,7 @@ class CarouselDefinition extends WidgetDefinition
         return [
             ['key' => 'collection_handle', 'type' => 'select',  'label' => 'Collection', 'options_from' => 'collections', 'group' => 'content'],
             ['key' => 'image_field',       'type' => 'select',  'label' => 'Image field', 'options_from' => 'collection_fields:image', 'depends_on' => 'collection_handle', 'group' => 'content'],
-            ['key' => 'caption_template',  'type' => 'text',    'label' => 'Caption template', 'default' => '{{title}}', 'group' => 'content'],
+            ['key' => 'caption_template',  'type' => 'text',    'label' => 'Caption template', 'default' => '{{item.title}}', 'group' => 'content'],
             ['key' => 'object_fit',        'type' => 'select',  'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain'], 'group' => 'appearance'],
             ['key' => 'autoplay',          'type' => 'toggle',  'label' => 'Autoplay',           'default' => true,    'advanced' => true, 'group' => 'appearance'],
             ['key' => 'interval',          'type' => 'number',  'label' => 'Interval (ms)',       'default' => 5000,    'advanced' => true, 'group' => 'appearance'],
@@ -61,7 +61,7 @@ class CarouselDefinition extends WidgetDefinition
         return [
             'collection_handle'  => '',
             'image_field'        => '',
-            'caption_template'   => '{{title}}',
+            'caption_template'   => '{{item.title}}',
             'object_fit'         => 'cover',
             'autoplay'           => true,
             'interval'           => 5000,
