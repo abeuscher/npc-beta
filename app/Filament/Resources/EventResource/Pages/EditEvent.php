@@ -65,7 +65,7 @@ class EditEvent extends ReadOnlyAwareEditRecord
             Actions\Action::make('editLandingPage')
                 ->label('View landing page')
                 ->icon('heroicon-o-pencil-square')
-                ->color('gray')
+                ->color('secondary')
                 ->visible(fn () => $this->getRecord()->landing_page_id !== null)
                 ->url(fn () => \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $this->getRecord()->landing_page_id])),
 
@@ -117,7 +117,7 @@ class EditEvent extends ReadOnlyAwareEditRecord
             Actions\Action::make('editLandingPage')
                 ->label('Edit landing page')
                 ->icon('heroicon-o-pencil-square')
-                ->color('gray')
+                ->color('secondary')
                 ->visible(fn () => $this->getRecord()->landing_page_id !== null)
                 ->url(fn () => \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $this->getRecord()->landing_page_id])),
 

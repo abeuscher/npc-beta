@@ -32,7 +32,7 @@ class EditMailingList extends ReadOnlyAwareEditRecord
             Actions\Action::make('export')
                 ->label('Export CSV')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->color('gray')
+                ->color('secondary')
                 ->action(function (): \Symfony\Component\HttpFoundation\StreamedResponse {
                     return MailingListResource::streamCsvExport($this->record);
                 }),
@@ -40,7 +40,7 @@ class EditMailingList extends ReadOnlyAwareEditRecord
             Actions\Action::make('syncMailchimp')
                 ->label('Sync to MailChimp')
                 ->icon('heroicon-o-arrow-path')
-                ->color('gray')
+                ->color('secondary')
                 ->requiresConfirmation()
                 ->modalHeading('Sync to MailChimp')
                 ->modalDescription('This will push all contactable members of this list to your MailChimp audience and apply the list tag. The sync runs in the background — large lists may take a minute to appear in MailChimp.')

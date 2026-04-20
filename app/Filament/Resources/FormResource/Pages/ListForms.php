@@ -28,7 +28,7 @@ class ListForms extends ListRecords
             Actions\Action::make('import_json')
                 ->label('Import JSON')
                 ->icon('heroicon-o-arrow-up-tray')
-                ->color('gray')
+                ->color('secondary')
                 ->hidden(fn () => ! auth()->user()?->can('create_form'))
                 ->modalHeading('Import Form from JSON')
                 ->modalWidth('3xl')

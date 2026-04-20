@@ -41,6 +41,7 @@ class GeneralSettingsPage extends Page
             'site_url'            => SiteSetting::get('base_url', 'http://localhost'),
             'admin_brand_name'    => SiteSetting::get('admin_brand_name', ''),
             'admin_primary_color' => SiteSetting::get('admin_primary_color', '#f59e0b'),
+            'admin_secondary_color' => SiteSetting::get('admin_secondary_color', '#73bbbb'),
             'admin_logo_upload'   => null,
             'dashboard_welcome'   => SiteSetting::get('dashboard_welcome', ''),
             'horizon_enabled'     => SiteSetting::get('horizon_enabled', 'false') === 'true',
@@ -85,6 +86,11 @@ class GeneralSettingsPage extends Page
                         Forms\Components\ColorPicker::make('admin_primary_color')
                             ->label('Primary colour')
                             ->helperText('The accent colour used throughout the admin panel. Default: #f59e0b')
+                            ->columnSpanFull(),
+
+                        Forms\Components\ColorPicker::make('admin_secondary_color')
+                            ->label('Secondary colour')
+                            ->helperText('A muted accent for secondary header actions in the admin panel. Default: #73bbbb')
                             ->columnSpanFull(),
 
                         QuillEditor::make('dashboard_welcome')
@@ -287,6 +293,7 @@ class GeneralSettingsPage extends Page
             SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
             SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
             SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
+            SiteSetting::set('admin_secondary_color', $data['admin_secondary_color'] ?? '#73bbbb');
             SiteSetting::set('horizon_enabled', ($data['horizon_enabled'] ?? false) ? 'true' : 'false');
         }
 

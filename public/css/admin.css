@@ -269,14 +269,32 @@ html.dark .confirm-delete-modal__confirm                { background: rgb(220 38
  *
  * -------------------------------------------------------------------------*/
 
-/* Form field input wrappers */
-html:not(.dark) .fi-input-wrp {
-    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+/* Form field input wrappers — color controlled by --np-control-border */
+.fi-input-wrp {
+    --tw-ring-color: var(--np-control-border);
+}
+
+/* Form field labels — color controlled by --np-form-label */
+.fi-fo-field-wrp-label > span {
+    color: var(--np-form-label);
+}
+
+/* Form field value text size — controlled by --np-form-input-size */
+.fi-input-wrp input,
+.fi-input-wrp textarea,
+.fi-input-wrp select {
+    font-size: var(--np-form-input-size);
 }
 
 /* Section / card outlines */
 html:not(.dark) .fi-section {
     --tw-ring-color: rgb(156 163 175); /* gray-400 */
+}
+
+.fi-section-header {
+    background: var(--np-control-bar-bg);
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
 }
 
 /* Table outer container outline */
@@ -294,10 +312,10 @@ html:not(.dark) .fi-ta-header-cell {
     border-bottom-color: rgb(209 213 219); /* gray-300 */
 }
 
-/* Fieldset / repeater borders */
-html:not(.dark) .fi-fo-fieldset,
-html:not(.dark) .fi-fo-repeater-item {
-    --tw-ring-color: rgb(156 163 175); /* gray-400 */
+/* Fieldset / repeater borders — color controlled by --np-control-border */
+.fi-fo-fieldset,
+.fi-fo-repeater-item {
+    --tw-ring-color: var(--np-control-border);
 }
 
 /* Start Time fieldset — flex layout for precise field sizing */
@@ -848,7 +866,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 :root {
     --np-control-bar-bg:            #eceff3;
     --np-control-group-bg:          #fafbfc;
-    --np-control-border:            #d1d5db;
+    --np-control-border:            #d9d9d9;
     --np-control-chip-border:       #d1d5db;
     --np-control-border-hover:      #9ca3af;
     --np-control-border-active:     #6b7280;
@@ -865,6 +883,8 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     --np-control-radius:            4px;
     --np-control-radius-sm:         3px;
     --np-control-transition:        background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    --np-form-label:                #7fa6cd; /* gray-700 */
+    --np-form-input-size:           1.3rem; /* 14px — Filament default at sm: viewport */
 }
 
 .dark {
@@ -884,6 +904,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     --np-control-chip-text-active:  rgb(243 244 246);
     --np-control-menu-bg:           rgb(31 41 55);
     --np-control-menu-shadow:       0 4px 12px rgba(0, 0, 0, 0.4);
+    --np-form-label:                rgb(229 231 235); /* gray-200 */
 }
 
 /* ── Quill toolbar visual language (session 197) ──────────────────────────*/

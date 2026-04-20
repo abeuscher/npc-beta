@@ -205,6 +205,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 196 | Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details |
 | 197 | Quill Toolbar Visual Language — Reference-Image Pilot |
 | 198 | Notes — Structured Interactions Schema & Timeline Surfaces |
+| 199 | Admin Secondary Button Colour & Header-Action Polish |
 
 ---
 
@@ -256,6 +257,62 @@ Extend the existing random data generator to produce CSV exports shaped like eac
 ### Importer — Custom Field Mapping for Notes / Interactions *(stub — pre-Beta 1)*
 
 Follow-up to session 198 (Notes → structured interactions schema). Once the `notes` table carries a `meta` JSONB catch-all for source-specific fields, the importer needs a pass to make those fields authorable from a CSV import. The contact importer already maps user-defined custom fields into `contacts.custom_fields` via the Custom Fields admin page; notes need an analogous surface: (1) a notes-importer wizard path with its own field-detection heuristics, (2) destination options including the 10 canonical columns plus "custom → meta.{source_key}" per unmapped column, (3) contact-lookup logic so each CSV row can be tied to the right Contact (likely by email + name + a `source_contact_id` key via `import_id_maps` for relational CRM exports where Contact and Activity are separate files). Harder than the contact importer because notes are a child relationship — each CSV row produces one note attached to one pre-existing contact, so the lookup + create + meta-mapping chain has to handle unresolved contacts gracefully (reject row, stage for manual resolution, or auto-create stub contact — TBD). Not urgent until 198 lands and we actually know what shape the 10 canonical columns settled into. Scope estimate: 1-2 sessions.
+
+---
+
+### Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save *(stub — pre-Beta 1)*
+
+Batched polish session against the page builder, the admin left nav, and the settings pages. All items are independent UX bugs surfaced during designer review of the admin panel; none change data shape, just behaviour and chrome.
+
+**Page builder — default + auto-selection:**
+
+- On opening any page edit view, the **top widget should be selected by default** (inspector panel populated, no empty-state placeholder).
+- After **Add Widget**, the newly added widget becomes the selected one.
+- After **Add Columns** (the column layout primitive), the new column container becomes the selected one.
+
+**Page builder — sticky inspector tab across widget switches:**
+
+- The inspector currently has multiple tabs (Content, Margin & Padding, etc. — verify exact tab set during scoping). When switching from one widget to another, the inspector should **stay on whichever tab the user was on**. Example: editing margin on Widget A, click Widget B → land on margin for Widget B.
+- If there is no prior tab state (i.e. first widget selected after page open), default to the **Content** tab.
+- Persistence is conversation-local — no need to round-trip to the server. Pinia store likely owns the active-tab state already; this is a "don't reset on widget switch" change rather than new persistence.
+
+**Page builder — focus scroll behaviour:**
+
+- A focused widget should scroll to the **middle of the screen** when first selected.
+- It should **not be possible to scroll the focused widget off screen**. The viewport locks at the top of the currently selected widget when the user tries to scroll past it.
+- **Exception for tall widgets** (taller than the viewport): the focused widget effectively becomes the scroll container — the page locks to the top of the widget on up-scroll and to the bottom on down-scroll, allowing the user to see the widget's full content but never escape it via wheel/touch.
+- **Complexity escape hatch:** if the lock-and-clamp behaviour proves extraordinarily difficult to implement cleanly (e.g. wheel/touch event interception fights browser inertial scrolling, or the column-widget nested-scroll case turns into a tar pit), pause and surface the trade-off before pushing forward. The "scroll to middle on selection" piece is the easy win and ships first regardless.
+
+**Admin left nav — expand-into-view:**
+
+- When a collapsible nav heading is clicked open, its newly-revealed contents should **scroll into view** if the expansion would push items below the viewport fold. Currently the items expand downward and disappear off-screen when the nav is long.
+- Probable implementation surface: a Filament render hook or a small Alpine listener on `.fi-sidebar-group` toggle events.
+
+**Settings pages — save button after each section:**
+
+- The General Settings page (and likely Finance / CMS / Notifications / etc.) currently has a single Save button at the bottom of the page, which means scrolling past every section to commit a change to one. Add a **Save button after each `Forms\Components\Section`** so admins can save in place.
+- Each per-section save should commit only that section's fields (or, if the form-state model makes per-section commits awkward, save the whole form but stay on the page anchored at the section). Pick the least-surprising behaviour during scoping.
+- Audit which settings pages use the multi-section pattern and apply consistently. Consider whether a shared `SectionWithSave` helper component is worth introducing or whether duplicating the action is simpler.
+
+**Out of scope for this session:** schema changes, new widgets, new settings, anything that touches the public site. Pure admin-side UX polish.
+
+---
+
+### Code Review & Cleanup *(stub — pre-Beta 1)*
+
+Periodic codebase sweep in the pattern of sessions 101, 116, 141, and 178/179 (audit → apply). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Likely splits into an audit session (produces a punch list) and an apply session (executes it) if the list is large.
+
+---
+
+### Migration Squash & Code Optimization *(stub — pre-Beta 1)*
+
+Follow-up to sessions 062, 082, 108, 142, and 181. Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces.
+
+---
+
+### Notes Permissions & Permissions Audit *(stub — pre-Beta 1)*
+
+Two linked concerns. First: session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. Second: a full coverage audit in the pattern of sessions 114 and 117, walking every admin action (Filament resources, pages, actions, bulk actions, header actions) and confirming each has a permission gate and that the gate is enforced at both UI and controller layers. Reference the 114/117 logs for the audit methodology; this pass catches drift introduced since 117 landed.
 
 ---
 

@@ -136,7 +136,7 @@ class ContactNotes extends Page implements HasActions
         return [
             Actions\Action::make('back_to_contact')
                 ->label('← Back to contact')
-                ->color('gray')
+                ->color('secondary')
                 ->url(ContactResource::getUrl('edit', ['record' => $this->record])),
 
             Actions\Action::make('create_note')

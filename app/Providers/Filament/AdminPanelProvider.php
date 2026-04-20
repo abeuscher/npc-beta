@@ -29,13 +29,15 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         try {
-            $brandName    = SiteSetting::get('admin_brand_name', '');
-            $logoPath     = SiteSetting::get('admin_logo_path', '');
-            $primaryColor = SiteSetting::get('admin_primary_color', '#f59e0b');
+            $brandName      = SiteSetting::get('admin_brand_name', '');
+            $logoPath       = SiteSetting::get('admin_logo_path', '');
+            $primaryColor   = SiteSetting::get('admin_primary_color', '#f59e0b');
+            $secondaryColor = SiteSetting::get('admin_secondary_color', '#73bbbb');
         } catch (\Throwable $e) {
-            $brandName    = '';
-            $logoPath     = '';
-            $primaryColor = '#f59e0b';
+            $brandName      = '';
+            $logoPath       = '';
+            $primaryColor   = '#f59e0b';
+            $secondaryColor = '#73bbbb';
         }
         $logoSrc   = $logoPath !== ''
             ? Storage::disk('public')->url($logoPath)
@@ -82,7 +84,8 @@ class AdminPanelProvider extends PanelProvider
                     });
             })
             ->colors([
-                'primary' => Color::hex($primaryColor),
+                'primary'   => Color::hex($primaryColor),
+                'secondary' => Color::hex($secondaryColor),
             ])
             ->navigationGroups([
                 NavigationGroup::make('CRM')->collapsed(),

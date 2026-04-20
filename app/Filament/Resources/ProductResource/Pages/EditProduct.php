@@ -14,14 +14,15 @@ class EditProduct extends ReadOnlyAwareEditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('view_transactions')
-                ->label('View transactions →')
-                ->color('gray')
-                ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
-                ->url(fn () => TransactionResource::getUrl('index')
-                    . '?tableFilters[product_id][value]=' . $this->record->getKey()),
-
             Actions\DeleteAction::make(),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('view_transactions')
+                    ->label('View transactions →')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
+                    ->url(fn () => TransactionResource::getUrl('index')
+                        . '?tableFilters[product_id][value]=' . $this->record->getKey()),
+            ]),
         ];
     }
 

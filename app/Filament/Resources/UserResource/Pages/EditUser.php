@@ -75,7 +75,7 @@ class EditUser extends ReadOnlyAwareEditRecord
             )
                 ->label('Resend Invitation')
                 ->icon('heroicon-o-arrow-path')
-                ->color('gray')
+                ->color('secondary')
                 ->visible(fn () => auth()->user()?->can('update_user') && (bool) $this->record->pendingInvitationToken()),
 
             Actions\Action::make('revoke')

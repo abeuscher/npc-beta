@@ -83,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
                 'services.stripe.webhook_secret'     => SiteSetting::get('stripe_webhook_secret', ''),
                 'services.quickbooks.key'            => SiteSetting::get('quickbooks_api_key', ''),
                 'site.admin_primary_color'           => $settings->get('admin_primary_color')?->value        ?? '#f59e0b',
+                'site.admin_secondary_color'         => $settings->get('admin_secondary_color')?->value      ?? '#73bbbb',
             ]);
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults

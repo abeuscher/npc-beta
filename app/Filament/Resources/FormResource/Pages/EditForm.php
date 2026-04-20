@@ -25,7 +25,7 @@ class EditForm extends ReadOnlyAwareEditRecord
             Actions\Action::make('download_json')
                 ->label('Download JSON')
                 ->icon('heroicon-o-arrow-down-tray')
-                ->color('gray')
+                ->color('secondary')
                 ->hidden(fn () => ! auth()->user()?->can('update_form'))
                 ->action(fn () => $this->downloadJson()),
 

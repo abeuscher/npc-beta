@@ -202,7 +202,7 @@ class DonorsPage extends Page implements HasTable
             )
                 ->label('Send System Emails to Pending Recipients')
                 ->icon('heroicon-o-paper-airplane')
-                ->color('gray')
+                ->color('secondary')
                 ->visible(fn () => $this->donorQuery()->exists()),
 
             EmailPreviewWizardAction::make(
