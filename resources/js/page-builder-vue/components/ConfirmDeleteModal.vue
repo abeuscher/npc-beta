@@ -121,4 +121,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .modal-fade-leave-to {
   opacity: 0;
 }
+
+html.dark .confirm-delete-overlay          { background: rgba(0, 0, 0, 0.7); }
+html.dark .confirm-delete-modal            { background: rgb(31 41 55); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .confirm-delete-modal__message   { color: rgb(209 213 219); }
 </style>

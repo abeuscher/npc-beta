@@ -299,4 +299,19 @@ function confirmReset() {
 .inspector-header__cancel-btn:hover {
   background: #f3f4f6;
 }
+
+html.dark .inspector-header                { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+html.dark .inspector-header__type-badge    { background: rgb(55 65 81); color: rgb(165 180 252); }
+html.dark .inspector-header__icon          { color: rgb(156 163 175); }
+html.dark .inspector-header__label         { color: rgb(229 231 235); }
+html.dark .inspector-header__display       { color: rgb(229 231 235); }
+html.dark .inspector-header__input         { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .inspector-header__edit-btn,
+html.dark .inspector-header__ok-btn,
+html.dark .inspector-header__cancel-btn,
+html.dark .inspector-header__delete-btn    { color: rgb(156 163 175); }
+html.dark .inspector-header__edit-btn:hover,
+html.dark .inspector-header__ok-btn:hover,
+html.dark .inspector-header__cancel-btn:hover { color: rgb(229 231 235); }
+html.dark .inspector-header__delete-btn:hover { color: rgb(248 113 113); }
 </style>

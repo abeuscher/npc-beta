@@ -89,4 +89,9 @@ const emit = defineEmits<{
   align-items: center;
   padding: 0 0.25rem 0.25rem;
 }
+
+html.dark .inspector-tabs              { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .inspector-tabs__btn         { color: rgb(156 163 175); }
+html.dark .inspector-tabs__btn:hover,
+html.dark .inspector-tabs__btn--active { color: rgb(229 231 235); background-color: rgb(55 65 81); border-bottom-color: rgb(55 65 81); }
 </style>

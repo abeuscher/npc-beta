@@ -230,4 +230,13 @@ function updateField(index: number, key: string, value: string) {
   border-color: var(--c-primary-400, #818cf8);
   color: var(--c-primary-600, #4f46e5);
 }
+
+html.dark .button-list                         { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .button-list__item                   { background: rgb(17 24 39); border-color: rgb(75 85 99); }
+html.dark .button-list__header                 { color: rgb(209 213 219); }
+html.dark .button-list__index                  { color: rgb(156 163 175); }
+html.dark .button-list__input                  { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
+html.dark .button-list__action                 { color: rgb(156 163 175); }
+html.dark .button-list__action--remove:hover   { color: rgb(248 113 113); }
+html.dark .button-list__add                    { background: rgb(31 41 55); color: rgb(165 180 252); border-color: rgb(75 85 99); }
 </style>

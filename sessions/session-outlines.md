@@ -206,6 +206,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 197 | Quill Toolbar Visual Language — Reference-Image Pilot |
 | 198 | Notes — Structured Interactions Schema & Timeline Surfaces |
 | 199 | Admin Secondary Button Colour & Header-Action Polish |
+| 200 | Admin CSS Consolidation — Tightening Pass |
 
 ---
 

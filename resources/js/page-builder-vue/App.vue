@@ -85,6 +85,12 @@ onUnmounted(() => {
   background: #fff;
 }
 
+html.dark .vue-editor {
+  background: rgb(17 24 39);
+  border-color: rgb(55 65 81);
+  color: rgb(229 231 235);
+}
+
 .vue-editor__layout {
   display: grid;
   grid-template-columns: minmax(0, 3fr) min(28rem, 25%);

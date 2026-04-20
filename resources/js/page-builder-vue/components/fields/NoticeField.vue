@@ -76,4 +76,6 @@ const isWarning = computed(() => props.field.variant === 'warning')
 .inspector-notice__content :deep(a) {
   text-decoration: underline;
 }
+
+html.dark .inspector-notice { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
 </style>

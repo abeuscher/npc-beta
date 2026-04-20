@@ -239,4 +239,10 @@ const cells = computed(() => {
   opacity: 0.5;
   pointer-events: none;
 }
+
+html.dark .nine-point__bg                              { fill: rgb(31 41 55); stroke: rgb(75 85 99); }
+html.dark .nine-point__grid-line                       { stroke: rgb(55 65 81); }
+html.dark .nine-point__dot                             { fill: rgb(107 114 128); }
+html.dark .nine-point__cell:hover .nine-point__dot     { fill: rgb(156 163 175); }
+html.dark .nine-point__cell--selected .nine-point__dot { fill: var(--c-primary-400, #818cf8); }
 </style>

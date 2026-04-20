@@ -403,4 +403,7 @@ function triggerFileInput() {
   cursor: wait;
   opacity: 0.6;
 }
+
+html.dark .bg-panel__heading  { color: rgb(229 231 235); }
+html.dark .bg-panel__override { color: rgb(209 213 219); }
 </style>

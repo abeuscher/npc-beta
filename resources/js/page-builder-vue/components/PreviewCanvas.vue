@@ -596,4 +596,11 @@ watch(
   color: #9ca3af;
   flex-shrink: 0;
 }
+
+html.dark .preview-canvas__viewport-label      { color: rgb(156 163 175); }
+html.dark .preview-canvas__viewport-btn        { color: rgb(156 163 175); }
+html.dark .preview-canvas__viewport-btn:hover  { color: rgb(229 231 235); background-color: rgb(55 65 81); }
+html.dark .preview-canvas__viewport-size       { color: rgb(107 114 128); }
+html.dark .preview-canvas__container           { background: rgb(31 41 55); border-color: rgb(55 65 81); }
+html.dark .preview-canvas__empty               { color: rgb(156 163 175); }
 </style>

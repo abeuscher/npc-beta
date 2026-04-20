@@ -497,4 +497,23 @@ function clearAll(): void {
   border-color: var(--c-primary-400, #818cf8);
   color: var(--c-primary-600, #4f46e5);
 }
+
+html.dark .gradient-picker__trigger               { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .gradient-picker__trigger:hover         { border-color: rgb(107 114 128); }
+html.dark .gradient-picker__trigger--open         { border-color: var(--c-primary-400, #818cf8); }
+html.dark .gradient-picker__trigger-swatch        { border-color: rgb(75 85 99); }
+html.dark .gradient-picker__trigger-swatch--empty { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 4px, rgb(75 85 99) 4px, rgb(75 85 99) 8px); }
+html.dark .gradient-picker__trigger-empty         { color: rgb(107 114 128); }
+html.dark .gradient-picker__trigger-caret         { color: rgb(107 114 128); }
+
+html.dark .gradient-picker__panel                 { background: rgb(31 41 55); border-color: rgb(75 85 99); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+html.dark .gradient-picker__section--editor       { background: rgb(17 24 39); border-color: rgb(75 85 99); }
+html.dark .gradient-picker__preset                { border-color: rgb(75 85 99); }
+html.dark .gradient-picker__preset:hover          { border-color: var(--c-primary-400, #818cf8); }
+html.dark .gradient-picker__preset--none          { background: rgb(31 41 55); }
+html.dark .gradient-picker__preset--none:hover    { border-color: rgb(107 114 128); }
+html.dark .gradient-picker__remove                { background: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .gradient-picker__remove:hover          { background: rgb(220 38 38); color: #fff; }
+html.dark .gradient-picker__add                   { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .gradient-picker__add:hover             { border-color: var(--c-primary-400, #818cf8); color: var(--c-primary-400, #818cf8); }
 </style>

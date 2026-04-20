@@ -296,4 +296,6 @@ function setBottomTab(id: BottomTab) {
   color: var(--np-control-icon-active);
   box-shadow: var(--np-control-active-shadow);
 }
+
+html.dark .inspector-panel__placeholder { border-color: rgb(75 85 99); color: rgb(107 114 128); }
 </style>

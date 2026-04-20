@@ -97,3 +97,17 @@ select.inspector-control {
   cursor: pointer;
   accent-color: var(--c-primary-500, #6366f1);
 }
+
+/* ── Dark-mode overrides ─────────────────────────────────────────────────── */
+
+html.dark .inspector-label              { color: rgb(209 213 219); }
+html.dark .inspector-section-title      { color: rgb(156 163 175); }
+html.dark .inspector-control {
+  background: rgb(17 24 39);
+  color: rgb(229 231 235);
+  border-color: rgb(75 85 99);
+}
+html.dark .inspector-control::placeholder { color: rgb(107 114 128); }
+html.dark .inspector-hint               { color: rgb(107 114 128); }
+html.dark .inspector-toggle-label       { color: rgb(229 231 235); }
+html.dark .inspector-checkbox           { border-color: rgb(75 85 99); }

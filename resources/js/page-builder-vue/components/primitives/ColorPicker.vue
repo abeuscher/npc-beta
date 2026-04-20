@@ -458,4 +458,25 @@ onBeforeUnmount(() => {
 .color-picker__hex {
   flex: 1;
 }
+
+html.dark .color-picker__trigger                      { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
+html.dark .color-picker__trigger:hover                { border-color: rgb(107 114 128); }
+html.dark .color-picker__trigger--open                { border-color: var(--c-primary-400, #818cf8); }
+html.dark .color-picker__trigger-swatch               { border-color: rgb(75 85 99); }
+html.dark .color-picker__trigger-swatch--empty        { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 4px, rgb(75 85 99) 4px, rgb(75 85 99) 8px); }
+html.dark .color-picker__trigger-text                 { color: rgb(209 213 219); }
+html.dark .color-picker__trigger-empty                { color: rgb(107 114 128); }
+html.dark .color-picker__trigger-caret                { color: rgb(107 114 128); }
+
+html.dark .color-picker__popover                      { background: rgb(31 41 55); border-color: rgb(75 85 99); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+html.dark .color-picker__swatch                       { border-color: rgb(75 85 99); }
+html.dark .color-picker__swatch--add                  { border-color: rgb(75 85 99); color: rgb(107 114 128); }
+html.dark .color-picker__swatch--add:hover:not(:disabled) { border-color: var(--c-primary-400, #818cf8); color: var(--c-primary-400, #818cf8); }
+html.dark .color-picker__swatch--unset                { background: repeating-linear-gradient(45deg, rgb(55 65 81), rgb(55 65 81) 3px, rgb(75 85 99) 3px, rgb(75 85 99) 6px); }
+html.dark .color-picker__swatch--no-color             { background: rgb(31 41 55); border-color: rgb(75 85 99); }
+html.dark .color-picker__swatch--no-color:hover       { border-color: rgb(107 114 128); }
+html.dark .color-picker__swatch-remove                { background: rgb(220 38 38); }
+html.dark .color-picker__swatch-remove:hover          { background: rgb(248 113 113); }
+html.dark .color-picker__divider                      { border-top-color: rgb(75 85 99); }
+html.dark .color-picker__wheel                        { border-color: rgb(75 85 99); }
 </style>

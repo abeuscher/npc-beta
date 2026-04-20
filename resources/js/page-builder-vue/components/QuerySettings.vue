@@ -261,4 +261,17 @@ function toggleTag(collHandle: string, key: string, tagSlug: string) {
   border-radius: 0.25rem;
   border: 1px solid #d1d5db;
 }
+
+html.dark .query-settings {
+  background: rgb(31 41 55);
+  border-color: rgb(75 85 99);
+  color: rgb(229 231 235);
+}
+
+html.dark .query-settings input,
+html.dark .query-settings select {
+  background: rgb(17 24 39);
+  color: rgb(229 231 235);
+  border-color: rgb(75 85 99);
+}
 </style>

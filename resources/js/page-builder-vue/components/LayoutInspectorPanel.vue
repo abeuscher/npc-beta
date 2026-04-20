@@ -907,4 +907,8 @@ function confirmDelete() {
   border-color: var(--c-primary-400, #818cf8);
   box-shadow: 0 0 0 1px var(--c-primary-400, #818cf8);
 }
+
+html.dark .layout-inspector { color: rgb(229 231 235); }
+html.dark .layout-inspector input,
+html.dark .layout-inspector select { background: rgb(17 24 39); color: rgb(229 231 235); border-color: rgb(75 85 99); }
 </style>

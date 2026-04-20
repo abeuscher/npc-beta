@@ -85,4 +85,34 @@ class CarouselDefinition extends WidgetDefinition
     {
         return DemoSeeder::class;
     }
+
+public function defaultAppearanceConfig(): array
+{
+    return [
+        'background' => [
+            'color'                   => '#ffffff',
+            'use_current_page_header' => false,
+        ],
+        'text'       => [
+            'color' => '#000000',
+        ],
+        'layout'     => [
+            'full_width' => false,
+            'padding'    => [
+                'top'    => 50,
+                'right'  => 0,
+                'bottom' => 100,
+                'left'   => 0,
+            ],
+            'margin'     => [
+                'top'    => 0,
+                'right'  => 0,
+                'bottom' => 0,
+                'left'   => 0,
+            ],
+        ],
+    ];
+}
+
+
 }

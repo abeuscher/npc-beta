@@ -125,4 +125,9 @@ async function handleRemove() {
   font-size: 0.75rem;
   color: var(--c-primary-600, #4f46e5);
 }
+
+html.dark .image-upload          { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(156 163 175); }
+html.dark .image-upload__preview { border-color: rgb(75 85 99); }
+html.dark .image-upload__status  { color: rgb(156 163 175); }
+html.dark .image-upload__remove  { color: rgb(248 113 113); }
 </style>
