@@ -8,12 +8,14 @@ const props = withDefaults(
     label?: string
     placeholder?: string
     compact?: boolean
+    panelOnly?: boolean
   }>(),
   {
     modelValue: '',
     label: '',
     placeholder: 'Transparent',
     compact: false,
+    panelOnly: false,
   }
 )
 
@@ -25,6 +27,8 @@ const store = useEditorStore()
 
 const isOpen = ref(false)
 const rootEl = ref<HTMLElement | null>(null)
+
+defineExpose({ isOpen })
 
 const hasValue = computed(() => !!props.modelValue)
 
@@ -88,42 +92,48 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  document.addEventListener('click', onDocumentClick)
-  document.addEventListener('keydown', onKeydown)
+  if (!props.panelOnly) {
+    document.addEventListener('click', onDocumentClick)
+    document.addEventListener('keydown', onKeydown)
+  }
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocumentClick)
-  document.removeEventListener('keydown', onKeydown)
+  if (!props.panelOnly) {
+    document.removeEventListener('click', onDocumentClick)
+    document.removeEventListener('keydown', onKeydown)
+  }
 })
 </script>
 
 <template>
   <div ref="rootEl" class="color-picker">
-    <label v-if="label" class="inspector-label">{{ label }}</label>
-    <button
-      type="button"
-      class="color-picker__trigger"
-      :class="{
-        'color-picker__trigger--compact': compact,
-      }"
-      @click="togglePopover"
-    >
-      <span
-        class="color-picker__trigger-swatch"
-        :class="{ 'color-picker__trigger-swatch--empty': !hasValue }"
-        :style="hasValue ? { backgroundColor: modelValue } : undefined"
+    <template v-if="!panelOnly">
+      <label v-if="label" class="inspector-label">{{ label }}</label>
+      <button
+        type="button"
+        class="color-picker__trigger"
+        :class="{
+          'color-picker__trigger--compact': compact,
+        }"
+        @click="togglePopover"
       >
-        <slot name="icon" />
-        <span v-if="!hasValue" class="color-picker__trigger-empty">?</span>
-      </span>
-      <span v-if="!compact" class="color-picker__trigger-text">
-        {{ hasValue ? modelValue : placeholder }}
-      </span>
-      <span v-if="!compact" class="color-picker__trigger-caret" aria-hidden="true">▾</span>
-    </button>
+        <span
+          class="color-picker__trigger-swatch"
+          :class="{ 'color-picker__trigger-swatch--empty': !hasValue }"
+          :style="hasValue ? { backgroundColor: modelValue } : undefined"
+        >
+          <slot name="icon" />
+          <span v-if="!hasValue" class="color-picker__trigger-empty">?</span>
+        </span>
+        <span v-if="!compact" class="color-picker__trigger-text">
+          {{ hasValue ? modelValue : placeholder }}
+        </span>
+        <span v-if="!compact" class="color-picker__trigger-caret" aria-hidden="true">▾</span>
+      </button>
+    </template>
 
-    <div v-if="isOpen" class="color-picker__popover" role="dialog" aria-label="Color picker">
+    <div v-if="panelOnly || isOpen" class="color-picker__popover" role="dialog" aria-label="Color picker">
       <div v-if="store.themePalette.length > 0" class="color-picker__group">
         <p class="inspector-section-title">Theme colors</p>
         <div class="color-picker__swatches">
@@ -222,16 +232,17 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   width: 100%;
   padding: 0.375rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  background: #fff;
+  border: 1px solid var(--np-control-border-hover);
+  border-radius: var(--np-control-radius);
+  background: var(--np-control-chip-bg);
   font-size: 0.875rem;
-  color: #1f2937;
+  color: var(--np-control-chip-text-active);
   cursor: pointer;
+  transition: var(--np-control-transition);
 }
 
 .color-picker__trigger:hover {
-  border-color: #9ca3af;
+  border-color: var(--np-control-border-active);
 }
 
 .color-picker__trigger--compact {
@@ -251,8 +262,8 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   width: 1.5rem;
   height: 1.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -271,7 +282,7 @@ onBeforeUnmount(() => {
 .color-picker__trigger-empty {
   font-size: 0.625rem;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--np-control-chip-text);
 }
 
 .color-picker__trigger-text {
@@ -283,22 +294,17 @@ onBeforeUnmount(() => {
 
 .color-picker__trigger-caret {
   flex-shrink: 0;
-  color: #9ca3af;
+  color: var(--np-control-icon-default);
   font-size: 0.65rem;
   margin-left: -8px;
 }
 
 .color-picker__popover {
-  position: absolute;
-  top: calc(100% + 0.25rem);
-  left: 0;
-  right: 0;
-  z-index: 50;
+  margin-top: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
+  background: var(--np-control-group-bg);
 }
 
 .color-picker__group + .color-picker__group {
@@ -315,11 +321,16 @@ onBeforeUnmount(() => {
   position: relative;
   width: 1.5rem;
   height: 1.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius-sm);
   cursor: pointer;
   padding: 0;
-  background: #fff;
+  background: var(--np-control-chip-bg);
+  transition: var(--np-control-transition);
+}
+
+.color-picker__swatch:hover {
+  border-color: var(--np-control-border-hover);
 }
 
 .color-picker__swatch--theme {
@@ -355,7 +366,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   border-style: dashed;
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--np-control-icon-default);
 }
 
 .color-picker__swatch--add:hover:not(:disabled) {
@@ -391,12 +402,13 @@ onBeforeUnmount(() => {
 .color-picker__divider {
   margin: 0.625rem 0;
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--np-control-border);
+  opacity: 0.5;
 }
 
 .color-picker__swatch--no-color {
-  background: #fff;
-  border-color: #d1d5db;
+  background: var(--np-control-chip-bg);
+  border-color: var(--np-control-border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -409,7 +421,7 @@ onBeforeUnmount(() => {
 }
 
 .color-picker__swatch--no-color:hover {
-  border-color: #9ca3af;
+  border-color: var(--np-control-border-hover);
 }
 
 .color-picker__freeform {
@@ -423,8 +435,8 @@ onBeforeUnmount(() => {
   height: 1.5rem;
   flex-shrink: 0;
   padding: 0;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius-sm);
   cursor: pointer;
   background: none;
 }

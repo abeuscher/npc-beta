@@ -106,7 +106,6 @@ html.dark .add-block-dropdown__heading                  { color: rgb(156 163 175
 
 /* Inspector panel */
 html.dark .inspector-panel__placeholder                 { border-color: rgb(75 85 99); color: rgb(107 114 128); }
-html.dark .inspector-panel__body                        { background: rgb(55 65 81); border-color: rgb(75 85 99); }
 
 /* Inspector header */
 html.dark .inspector-header                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
@@ -144,6 +143,7 @@ html.dark .inspector-checkbox                           { border-color: rgb(75 8
 
 /* Background panel heading */
 html.dark .bg-panel__heading                            { color: rgb(229 231 235); }
+html.dark .bg-panel__override                           { color: rgb(209 213 219); }
 
 /* Notice field */
 html.dark .inspector-notice                             { background: rgb(31 41 55); border-color: rgb(75 85 99); color: rgb(229 231 235); }
@@ -839,24 +839,238 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 }
 .inline-editable--text { min-width: 2rem; }
 
-/* ── Quill editor dark mode ─────────────────────────────────────────────────*/
+/* ── Control-bar visual tokens (session 197) ──────────────────────────────*/
+/* Shared vocabulary for compact admin control surfaces: the Quill toolbar,
+ * the ColorPicker primitive, and any future toolbars/chip groups. Consume
+ * via var(--np-control-*). Light values are the base; dark overrides live
+ * in the .dark block below.                                                */
 
-.dark .ql-toolbar.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
-.dark .ql-container.ql-snow { border-color: rgb(55 65 81); background: rgb(31 41 55); }
+:root {
+    --np-control-bar-bg:            #eceff3;
+    --np-control-group-bg:          #fafbfc;
+    --np-control-border:            #d1d5db;
+    --np-control-chip-border:       #d1d5db;
+    --np-control-border-hover:      #9ca3af;
+    --np-control-border-active:     #6b7280;
+    --np-control-hover-tint:        rgba(17, 24, 39, 0.06);
+    --np-control-active-bg:         #e5e7eb;
+    --np-control-active-shadow:     inset 0 1px 2px rgba(0, 0, 0, 0.08);
+    --np-control-icon-default:      #4b5563;
+    --np-control-icon-active:       #1f2937;
+    --np-control-chip-bg:           #ffffff;
+    --np-control-chip-text:         #374151;
+    --np-control-chip-text-active:  #111827;
+    --np-control-menu-bg:           #ffffff;
+    --np-control-menu-shadow:       0 4px 12px rgba(0, 0, 0, 0.08);
+    --np-control-radius:            4px;
+    --np-control-radius-sm:         3px;
+    --np-control-transition:        background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.dark {
+    --np-control-bar-bg:            rgb(17 24 39);
+    --np-control-group-bg:          rgb(31 41 55);
+    --np-control-border:            rgb(55 65 81);
+    --np-control-chip-border:       rgb(75 85 99);
+    --np-control-border-hover:      rgb(99 102 241);
+    --np-control-border-active:     rgb(129 140 248);
+    --np-control-hover-tint:        rgba(255, 255, 255, 0.06);
+    --np-control-active-bg:         rgb(55 65 81);
+    --np-control-active-shadow:     inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    --np-control-icon-default:      rgb(209 213 219);
+    --np-control-icon-active:       rgb(243 244 246);
+    --np-control-chip-bg:           rgb(31 41 55);
+    --np-control-chip-text:         rgb(209 213 219);
+    --np-control-chip-text-active:  rgb(243 244 246);
+    --np-control-menu-bg:           rgb(31 41 55);
+    --np-control-menu-shadow:       0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Quill toolbar visual language (session 197) ──────────────────────────*/
+/* Reference: /mnt/e/Clients/nonprofitcrm/test_import_data/wysiwyg toolbar.jpg
+ * Two-row compact toolbar, light-grey chrome, grouped buttons, chip-shaped
+ * header dropdown. Maps Quill's DOM to the control-bar token vocabulary
+ * above — all colour/radius/transition values route through --np-control-*. */
+
+.ql-toolbar.ql-snow {
+    background: var(--np-control-bar-bg);
+    border-color: var(--np-control-border);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    padding: 5px 4px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 4px;
+}
+
+.ql-container.ql-snow {
+    border-color: var(--np-control-border);
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.ql-toolbar.ql-snow .ql-formats {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Group frames — lighter fill than the toolbar strip, thin border, small
+ * radius. Covers:
+ *   • multi-button groups  (B/I/U/S, lists, link+image)
+ *   • single-button groups (blockquote, clean)
+ *   • icon-picker groups   (colour + background, align)
+ * Text-based picker groups (header) keep their own chip chrome — no frame.  */
+.ql-toolbar.ql-snow .ql-formats:not(:has(> .ql-header, > .ql-font, > .ql-size)) {
+    background: var(--np-control-group-bg);
+    border: 1px solid var(--np-control-border);
+    border-radius: var(--np-control-radius);
+    padding: 1px;
+}
+
+.ql-toolbar.ql-snow button {
+    width: 28px;
+    height: 24px;
+    padding: 3px 5px;
+    border: none;
+    border-radius: var(--np-control-radius-sm);
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--np-control-transition);
+}
+
+.ql-toolbar.ql-snow button:hover {
+    background: var(--np-control-hover-tint);
+}
+
+.ql-toolbar.ql-snow button.ql-active {
+    background: var(--np-control-active-bg);
+    box-shadow: var(--np-control-active-shadow);
+}
+
+.ql-toolbar.ql-snow .ql-stroke { stroke: var(--np-control-icon-default); }
+.ql-toolbar.ql-snow .ql-fill   { fill:   var(--np-control-icon-default); }
+.ql-toolbar.ql-snow button:hover .ql-stroke,
+.ql-toolbar.ql-snow button.ql-active .ql-stroke { stroke: var(--np-control-icon-active); }
+.ql-toolbar.ql-snow button:hover .ql-fill,
+.ql-toolbar.ql-snow button.ql-active .ql-fill { fill: var(--np-control-icon-active); }
+
+/* Text-picker chip — Format / Styles dropdown trigger. */
+.ql-toolbar.ql-snow .ql-picker {
+    color: var(--np-control-chip-text);
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label {
+    padding: 0 22px 0 10px;
+    border: 1px solid var(--np-control-chip-border);
+    border-radius: var(--np-control-radius);
+    background: var(--np-control-chip-bg);
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    position: relative;
+    transition: var(--np-control-transition);
+}
+
+.ql-toolbar.ql-snow .ql-picker-label:hover {
+    border-color: var(--np-control-border-hover);
+    color: var(--np-control-chip-text-active);
+}
+
+.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label,
+.ql-toolbar.ql-snow .ql-picker.ql-active .ql-picker-label {
+    border-color: var(--np-control-border-active);
+    color: var(--np-control-chip-text-active);
+    box-shadow: var(--np-control-active-shadow);
+}
+
+/* Replace Quill's default two-triangle caret with a single chevron — scoped
+ * to text-based pickers (header / font / size) only. Uses currentColor so
+ * it tracks the chip's text colour across rest / hover / expanded.          */
+.ql-toolbar.ql-snow .ql-header .ql-picker-label svg,
+.ql-toolbar.ql-snow .ql-font .ql-picker-label svg,
+.ql-toolbar.ql-snow .ql-size .ql-picker-label svg { display: none; }
+
+.ql-toolbar.ql-snow .ql-header .ql-picker-label::after,
+.ql-toolbar.ql-snow .ql-font .ql-picker-label::after,
+.ql-toolbar.ql-snow .ql-size .ql-picker-label::after {
+    content: '';
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translate(0, -75%) rotate(45deg);
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.ql-toolbar.ql-snow .ql-header.ql-picker { width: auto; min-width: 96px; }
+
+/* Icon-based pickers (align, colour, background) sit inside a framed group,
+ * so their labels behave like buttons — transparent fill, subtle hover tint,
+ * pressed fill when expanded. No own chip chrome.                           */
+.ql-toolbar.ql-snow .ql-align.ql-picker .ql-picker-label,
+.ql-toolbar.ql-snow .ql-color-picker .ql-picker-label,
+.ql-toolbar.ql-snow .ql-icon-picker .ql-picker-label {
+    width: 28px;
+    height: 24px;
+    padding: 0 4px;
+    background: transparent;
+    border: none;
+    border-radius: var(--np-control-radius-sm);
+    box-shadow: none;
+}
+.ql-toolbar.ql-snow .ql-align.ql-picker .ql-picker-label:hover,
+.ql-toolbar.ql-snow .ql-color-picker .ql-picker-label:hover,
+.ql-toolbar.ql-snow .ql-icon-picker .ql-picker-label:hover {
+    background: var(--np-control-hover-tint);
+}
+.ql-toolbar.ql-snow .ql-align.ql-picker.ql-expanded .ql-picker-label,
+.ql-toolbar.ql-snow .ql-color-picker.ql-expanded .ql-picker-label,
+.ql-toolbar.ql-snow .ql-icon-picker.ql-expanded .ql-picker-label {
+    background: var(--np-control-active-bg);
+    box-shadow: var(--np-control-active-shadow);
+}
+
+.ql-toolbar.ql-snow .ql-picker-options {
+    background: var(--np-control-menu-bg);
+    border-color: var(--np-control-border);
+    border-radius: var(--np-control-radius);
+    box-shadow: var(--np-control-menu-shadow);
+}
+
+/* ── Quill editor dark mode — residuals that don't flow through tokens ──*/
+/* Most dark-mode behaviour comes free via the token overrides. These rules
+ * cover editor-body colours and Quill tooltip (link-edit) which sit outside
+ * the control-bar vocabulary.                                              */
+
+.dark .ql-container.ql-snow { background: var(--np-control-group-bg); }
 .dark .ql-editor { color: rgb(229 231 235); }
-.dark .ql-snow .ql-stroke { stroke: rgb(209 213 219); }
-.dark .ql-snow .ql-fill { fill: rgb(209 213 219); }
-.dark .ql-snow .ql-picker { color: rgb(209 213 219); }
-.dark .ql-snow .ql-picker-options { background: rgb(31 41 55); border-color: rgb(55 65 81); }
-.dark .ql-snow .ql-picker-label:hover,
-.dark .ql-snow .ql-picker-label.ql-active,
+.dark .ql-editor.ql-blank::before { color: rgb(107 114 128); }
+
 .dark .ql-snow .ql-picker-item:hover,
 .dark .ql-snow .ql-picker-item.ql-selected { color: rgb(165 180 252); }
-.dark .ql-snow button:hover .ql-stroke,
-.dark .ql-snow .ql-picker-label:hover .ql-stroke,
-.dark .ql-snow button.ql-active .ql-stroke { stroke: rgb(165 180 252); }
-.dark .ql-snow button:hover .ql-fill,
-.dark .ql-snow button.ql-active .ql-fill { fill: rgb(165 180 252); }
-.dark .ql-editor.ql-blank::before { color: rgb(107 114 128); }
-.dark .ql-snow .ql-tooltip { background: rgb(31 41 55); border-color: rgb(55 65 81); color: rgb(209 213 219); box-shadow: 0 1px 3px rgba(0,0,0,.4); }
-.dark .ql-snow .ql-tooltip input[type=text] { background: rgb(17 24 39); border-color: rgb(55 65 81); color: rgb(229 231 235); }
+
+.dark .ql-snow .ql-tooltip {
+    background: var(--np-control-menu-bg);
+    border-color: var(--np-control-border);
+    color: rgb(209 213 219);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.dark .ql-snow .ql-tooltip input[type=text] {
+    background: var(--np-control-bar-bg);
+    border-color: var(--np-control-border);
+    color: rgb(229 231 235);
+}

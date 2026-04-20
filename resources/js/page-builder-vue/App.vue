@@ -95,8 +95,7 @@ onUnmounted(() => {
 .vue-editor__inspector {
   position: sticky;
   top: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+  height: calc(100vh - 2rem);
 }
 
 .vue-editor__footer {

@@ -135,32 +135,23 @@ function handleImageUpload() {
 
 <style scoped>
 .inspector-richtext {
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
   position: relative;
 }
 
 .inspector-richtext__theme-link {
   display: block;
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.25rem 0.375rem;
   font-size: 0.6875rem;
   color: #6b7280;
   text-align: right;
   text-decoration: none;
-  border-bottom: 1px solid #f3f4f6;
 }
 
 .inspector-richtext__theme-link:hover {
   color: #2563eb;
 }
 
-.inspector-richtext :deep(.ql-toolbar) {
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-}
-
 .inspector-richtext :deep(.ql-container) {
-  border: none;
   font-size: 0.875rem;
 }
 

@@ -7,15 +7,20 @@ import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
 import { composeGradientCss } from '../../helpers/gradient'
 
+type BgTab = 'color' | 'gradient' | 'image' | null
+
 const props = defineProps<{
   widget: Widget
 }>()
 
 const store = useEditorStore()
 const uploading = ref(false)
-const gradientPickerRef = ref<InstanceType<typeof GradientPicker> | null>(null)
 
-const backgroundColor = computed(() => props.widget.appearance_config?.background?.color ?? '#ffffff')
+const backgroundColor = computed(() => props.widget.appearance_config?.background?.color ?? '')
+const hasColor = computed(() => !!backgroundColor.value)
+const colorSwatchStyle = computed(() =>
+  hasColor.value ? { backgroundColor: backgroundColor.value } : undefined
+)
 const gradient = computed(() => props.widget.appearance_config?.background?.gradient ?? null)
 const alignment = computed(() => props.widget.appearance_config?.background?.alignment ?? 'center')
 const fit = computed(() => props.widget.appearance_config?.background?.fit ?? 'cover')
@@ -30,15 +35,24 @@ const gradientSwatchStyle = computed(() => {
   if (!hasGradient.value || gradientPreviewCss.value === '') return undefined
   return { backgroundImage: gradientPreviewCss.value }
 })
+const imageSwatchStyle = computed(() =>
+  hasImage.value ? { backgroundImage: `url(${imageUrl.value})` } : undefined
+)
+
+// Tab state — image wins, then gradient, then color as default.
+function initialTab(): BgTab {
+  if (hasImage.value) return 'image'
+  if (hasGradient.value) return 'gradient'
+  return 'color'
+}
+const openPanel = ref<BgTab>(initialTab())
+
+function togglePanel(panel: Exclude<BgTab, null>) {
+  openPanel.value = openPanel.value === panel ? null : panel
+}
 
 function updateAppearance(path: string, value: any) {
   store.updateLocalAppearanceConfig(props.widget.id, path, value)
-}
-
-function toggleGradientPanel() {
-  if (gradientPickerRef.value) {
-    gradientPickerRef.value.isOpen = !gradientPickerRef.value.isOpen
-  }
 }
 
 async function handleImageUpload(event: Event) {
@@ -69,14 +83,19 @@ function triggerFileInput() {
   <div class="bg-panel">
     <p class="bg-panel__heading">Background</p>
 
-    <!-- Top row: Color, Gradient, Image -->
+    <!-- Handle row: three tabs (Color / Gradient / Image) -->
     <div class="bg-panel__row">
       <div class="bg-panel__row-cell">
         <label class="inspector-label">Color</label>
-        <ColorPicker
-          :model-value="backgroundColor"
-          compact
-          @update:model-value="updateAppearance('background.color', $event)"
+        <button
+          type="button"
+          class="bg-panel__swatch bg-panel__swatch--color"
+          :class="{
+            'bg-panel__swatch--empty': !hasColor,
+            'bg-panel__swatch--active': openPanel === 'color',
+          }"
+          :style="colorSwatchStyle"
+          @click.stop="togglePanel('color')"
         />
       </div>
 
@@ -84,83 +103,111 @@ function triggerFileInput() {
         <label class="inspector-label">Gradient</label>
         <button
           type="button"
-          class="bg-panel__gradient-swatch"
-          :class="{ 'bg-panel__gradient-swatch--empty': !hasGradient }"
+          class="bg-panel__swatch bg-panel__swatch--gradient"
+          :class="{
+            'bg-panel__swatch--empty': !hasGradient,
+            'bg-panel__swatch--active': openPanel === 'gradient',
+          }"
           :style="gradientSwatchStyle"
-          @click.stop="toggleGradientPanel"
+          @click.stop="togglePanel('gradient')"
         />
       </div>
 
       <div class="bg-panel__row-cell">
         <label class="inspector-label">Image</label>
-        <input
-          :id="`bg-upload-${widget.id}`"
-          type="file"
-          accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
-          class="bg-panel__file-input"
-          @change="handleImageUpload"
-        >
-        <div v-if="hasImage" class="bg-panel__image-thumb" @click="triggerFileInput">
-          <img :src="imageUrl!" alt="Background image" />
-          <button
-            type="button"
-            class="bg-panel__image-remove"
-            title="Remove image"
-            @click.stop="handleImageRemove"
-          >&times;</button>
-        </div>
         <button
-          v-else
           type="button"
-          class="bg-panel__upload-tile"
-          :disabled="uploading"
-          @click="triggerFileInput"
+          class="bg-panel__swatch bg-panel__swatch--image"
+          :class="{
+            'bg-panel__swatch--empty': !hasImage,
+            'bg-panel__swatch--active': openPanel === 'image',
+          }"
+          :style="imageSwatchStyle"
+          @click.stop="togglePanel('image')"
         >
-          <span v-if="uploading">…</span>
-          <span v-else class="bg-panel__upload-icon">+</span>
+          <span v-if="!hasImage" class="bg-panel__swatch-icon">+</span>
         </button>
-      </div>
-
-      <div class="bg-panel__row-cell">
-        <label class="inspector-label">&nbsp;</label>
-        <NinePointAlignment
-          :model-value="alignment"
-          :disabled="imageControlsDisabled"
-          @update:model-value="updateAppearance('background.alignment', $event)"
-        />
-      </div>
-
-      <div class="bg-panel__row-cell">
-        <label class="inspector-label">Fit</label>
-        <select
-          :value="fit"
-          class="inspector-control inspector-control--sm"
-          :disabled="imageControlsDisabled"
-          @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="cover">Cover</option>
-          <option value="contain">Contain</option>
-        </select>
       </div>
     </div>
 
-    <!-- Override: use current page's header image instead of the uploaded image -->
-    <label class="bg-panel__override">
-      <input
-        type="checkbox"
-        :checked="useCurrentPageHeader"
-        @change="updateAppearance('background.use_current_page_header', ($event.target as HTMLInputElement).checked)"
-      >
-      <span>Use current page's header image</span>
-    </label>
+    <!-- Color panel -->
+    <ColorPicker
+      v-if="openPanel === 'color'"
+      :model-value="backgroundColor"
+      panel-only
+      @update:model-value="updateAppearance('background.color', $event)"
+    />
 
-    <!-- Gradient panel (full width, normal flow below the row) -->
+    <!-- Gradient panel -->
     <GradientPicker
-      ref="gradientPickerRef"
+      v-if="openPanel === 'gradient'"
       :model-value="gradient"
       compact
       @update:model-value="updateAppearance('background.gradient', $event)"
     />
+
+    <!-- Image panel -->
+    <div v-if="openPanel === 'image'" class="bg-panel__image-panel">
+      <div class="bg-panel__image-row">
+        <div class="bg-panel__image-row-cell">
+          <label class="inspector-label">Fit</label>
+          <select
+            :value="fit"
+            class="inspector-control inspector-control--sm"
+            :disabled="imageControlsDisabled"
+            @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="cover">Cover</option>
+            <option value="contain">Contain</option>
+          </select>
+        </div>
+        <div class="bg-panel__image-row-cell">
+          <label class="inspector-label">Alignment</label>
+          <NinePointAlignment
+            :model-value="alignment"
+            :disabled="imageControlsDisabled"
+            @update:model-value="updateAppearance('background.alignment', $event)"
+          />
+        </div>
+      </div>
+
+      <label class="bg-panel__override">
+        <input
+          type="checkbox"
+          :checked="useCurrentPageHeader"
+          @change="updateAppearance('background.use_current_page_header', ($event.target as HTMLInputElement).checked)"
+        >
+        <span>Use current page's header image</span>
+      </label>
+
+      <input
+        :id="`bg-upload-${widget.id}`"
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+        class="bg-panel__file-input"
+        @change="handleImageUpload"
+      >
+
+      <div v-if="hasImage" class="bg-panel__image-preview" @click="triggerFileInput">
+        <img :src="imageUrl!" alt="Background image" />
+        <button
+          type="button"
+          class="bg-panel__image-remove"
+          title="Remove image"
+          @click.stop="handleImageRemove"
+        >&times;</button>
+      </div>
+      <button
+        v-else
+        type="button"
+        class="bg-panel__upload-block"
+        :disabled="uploading"
+        @click="triggerFileInput"
+      >
+        <span v-if="uploading">Uploading…</span>
+        <span v-else>Click to upload an image</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -180,11 +227,11 @@ function triggerFileInput() {
   color: #1f2937;
 }
 
-/* ── Top row: color, gradient, image ─────────────────────────────────────── */
+/* ── Handle row ──────────────────────────────────────────────────────────── */
 
 .bg-panel__row {
   display: grid;
-  grid-template-columns: auto auto auto auto 1fr;
+  grid-template-columns: repeat(3, auto);
   gap: 0.5rem;
   align-items: start;
 }
@@ -196,24 +243,23 @@ function triggerFileInput() {
   min-width: 0;
 }
 
-/* Make color picker popover break out of the narrow grid cell */
-.bg-panel__row-cell :deep(.color-picker__popover) {
-  min-width: 14rem;
-}
+/* ── Swatches (Color / Gradient / Image handles) ─────────────────────────── */
 
-/* ── Gradient swatch (manual trigger in the row) ─────────────────────────── */
-
-.bg-panel__gradient-swatch {
+.bg-panel__swatch {
+  position: relative;
   width: 2rem;
   height: 2rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
   cursor: pointer;
   padding: 0;
-  background: #fff;
+  background: var(--np-control-chip-bg);
+  transition: var(--np-control-transition);
+  background-size: cover;
+  background-position: center;
 }
 
-.bg-panel__gradient-swatch--empty {
+.bg-panel__swatch--empty {
   background: repeating-linear-gradient(
     45deg,
     #f3f4f6,
@@ -223,89 +269,56 @@ function triggerFileInput() {
   );
 }
 
-.bg-panel__gradient-swatch:hover {
-  border-color: #9ca3af;
+.bg-panel__swatch:hover {
+  border-color: var(--np-control-border-hover);
 }
 
-/* ── Hidden file input ───────────────────────────────────────────────────── */
-
-.bg-panel__file-input {
-  display: none;
+/* Active state — connects visually to the open panel below. */
+.bg-panel__swatch--active {
+  border-color: var(--np-control-border-active);
+  box-shadow: 0 0 0 1px var(--np-control-border-active);
 }
 
-/* ── Image thumbnail with delete button ──────────────────────────────────── */
-
-.bg-panel__image-thumb {
-  position: relative;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.bg-panel__image-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.bg-panel__image-remove {
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 0.875rem;
-  height: 0.875rem;
-  border: none;
-  border-radius: 50%;
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.625rem;
-  line-height: 0.875rem;
-  text-align: center;
-  cursor: pointer;
-  padding: 0;
-  display: none;
-}
-
-.bg-panel__image-thumb:hover .bg-panel__image-remove {
-  display: block;
-}
-
-/* ── Upload tile (no image state) ────────────────────────────────────────── */
-
-.bg-panel__upload-tile {
-  display: flex;
+.bg-panel__swatch-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 2px dashed #d1d5db;
-  border-radius: 0.25rem;
-  background: #f9fafb;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  cursor: pointer;
-  padding: 0;
-}
-
-.bg-panel__upload-tile:hover {
-  border-color: var(--c-primary-400, #818cf8);
-  color: var(--c-primary-600, #4f46e5);
-}
-
-.bg-panel__upload-tile:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-.bg-panel__upload-icon {
-  font-weight: 300;
+  width: 100%;
+  height: 100%;
   font-size: 1rem;
+  font-weight: 300;
+  color: var(--np-control-icon-default);
   line-height: 1;
 }
+
+/* ── Image panel body ────────────────────────────────────────────────────── */
+
+.bg-panel__image-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
+  background: var(--np-control-group-bg);
+}
+
+.bg-panel__image-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.bg-panel__image-row-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* ── Override checkbox (moved into Image panel) ──────────────────────────── */
 
 .bg-panel__override {
   display: flex;
@@ -320,4 +333,74 @@ function triggerFileInput() {
   margin: 0;
 }
 
+/* ── Hidden file input ───────────────────────────────────────────────────── */
+
+.bg-panel__file-input {
+  display: none;
+}
+
+/* ── Image preview inside Image panel ────────────────────────────────────── */
+
+.bg-panel__image-preview {
+  position: relative;
+  width: 100%;
+  min-height: 6rem;
+  max-height: 10rem;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.bg-panel__image-preview img {
+  width: 100%;
+  height: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  display: block;
+}
+
+.bg-panel__image-remove {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: none;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ── Upload block (full-width button in Image panel) ─────────────────────── */
+
+.bg-panel__upload-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 4rem;
+  border: 2px dashed var(--np-control-border);
+  border-radius: var(--np-control-radius);
+  background: var(--np-control-chip-bg);
+  color: var(--np-control-icon-default);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 0.75rem;
+}
+
+.bg-panel__upload-block:hover {
+  border-color: var(--c-primary-400, #818cf8);
+  color: var(--c-primary-600, #4f46e5);
+}
+
+.bg-panel__upload-block:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
 </style>

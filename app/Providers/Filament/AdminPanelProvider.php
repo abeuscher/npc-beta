@@ -118,13 +118,6 @@ class AdminPanelProvider extends PanelProvider
                 '<img src="' . e($logoSrc) . '">' .
                 '<h1>' . e($brandName) . '</h1>'
             ))
-            // Admin panel style overrides (form borders, Trix toolbar).
-            ->renderHook(
-                'panels::head.end',
-                fn (): HtmlString => new HtmlString(
-                    '<link rel="stylesheet" href="/css/admin.css">'
-                )
-            )
             // Admin Alpine components — helpSearch, buttonPreview, fullscreenToggle,
             // widgetPickerModal, permissionTable, quillEditor, customSelect.
             ->renderHook(
@@ -191,7 +184,9 @@ class AdminPanelProvider extends PanelProvider
             )
             // Load Quill v2 on all admin pages — used by the page builder and any
             // QuillEditor form fields (e.g. event description, meeting details).
-            // Quill dark mode + inline editable styles live in public/css/admin.css.
+            // Quill toolbar visual language + dark mode overrides live in
+            // public/css/admin.css and must load AFTER quill.snow.css to win
+            // cascade ties against Quill's default chrome.
             ->renderHook(
                 'panels::head.end',
                 fn (): HtmlString => new HtmlString('
@@ -199,6 +194,15 @@ class AdminPanelProvider extends PanelProvider
                     <style>.ql-editor { min-height: 16rem; }</style>
                     <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
                 ')
+            )
+            // Admin panel style overrides (form borders, Trix toolbar, Quill
+            // toolbar visual language). Loaded last among admin-side stylesheets
+            // so its rules win equal-specificity cascade ties.
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => new HtmlString(
+                    '<link rel="stylesheet" href="/css/admin.css">'
+                )
             )
             // Site-wide Livewire loading bar — fixed top bar that appears on any
             // server round-trip after a 200 ms delay (so instant clicks don't flash).

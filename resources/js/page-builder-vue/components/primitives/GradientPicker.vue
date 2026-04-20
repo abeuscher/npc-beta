@@ -67,13 +67,17 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  document.addEventListener('click', onDocumentClick)
-  document.addEventListener('keydown', onKeydown)
+  if (!props.compact) {
+    document.addEventListener('click', onDocumentClick)
+    document.addEventListener('keydown', onKeydown)
+  }
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocumentClick)
-  document.removeEventListener('keydown', onKeydown)
+  if (!props.compact) {
+    document.removeEventListener('click', onDocumentClick)
+    document.removeEventListener('keydown', onKeydown)
+  }
 })
 
 const gradients = computed<GradientLayer[]>(() => {
@@ -153,7 +157,7 @@ function clearAll(): void {
       </button>
     </template>
 
-    <div v-if="isOpen" class="gradient-picker__panel">
+    <div v-if="compact || isOpen" class="gradient-picker__panel">
       <div class="gradient-picker__body">
         <section class="gradient-picker__section">
           <p class="inspector-section-title">Presets</p>
@@ -270,17 +274,6 @@ function clearAll(): void {
             </div>
           </div>
 
-          <!-- Row 4: CSS override (full width) -->
-          <div class="gradient-picker__field">
-            <label class="inspector-label">CSS override</label>
-            <input
-              type="text"
-              :value="gradient.css_override ?? ''"
-              placeholder="linear-gradient(...)"
-              class="inspector-control inspector-control--sm inspector-control--mono"
-              @input="updateLayer(index, { css_override: ($event.target as HTMLInputElement).value })"
-            >
-          </div>
         </section>
 
         <div class="gradient-picker__actions">

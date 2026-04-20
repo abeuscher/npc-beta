@@ -203,6 +203,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 194 | CRM Importer — Update-Existing Strategy for All Content Types |
 | 195 | Playwright E2E Harness & Contacts Importer Coverage |
 | 196 | Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details |
+| 197 | Quill Toolbar Visual Language — Reference-Image Pilot |
 
 ---
 
@@ -248,6 +249,12 @@ Related: the font control primitive also needs a tightening pass before being ad
 ### Random Data Generator — CSV Export for Import Testing *(stub — pre-Beta 1)*
 
 Extend the existing random data generator to produce CSV exports shaped like each content type's expected import format (contacts, events, donations, memberships, invoice details). Currently the importer can only be tested against real client data (WCG) which contains PII and cannot leave the local machine — this blocks any deploy-server or CI-based import testing, and blocks using the importer in demos. The generator already knows how to produce plausible contacts/events/etc as database rows; this session adds a CSV-serializing layer that mirrors the canonical template headers (see `CsvTemplateService` from session 191) and writes N synthetic rows per content type. Deliverable: an artisan command that outputs a set of fake-but-realistic CSVs to a configurable directory, suitable for dropping into the importer on any environment without PII concerns. Also valuable: seed a "demo import source" entry so repeat runs exercise the saved-mapping path. Feeds the Playwright importer specs as better fixtures.
+
+---
+
+### Importer — Custom Field Mapping for Notes / Interactions *(stub — pre-Beta 1)*
+
+Follow-up to session 198 (Notes → structured interactions schema). Once the `notes` table carries a `meta` JSONB catch-all for source-specific fields, the importer needs a pass to make those fields authorable from a CSV import. The contact importer already maps user-defined custom fields into `contacts.custom_fields` via the Custom Fields admin page; notes need an analogous surface: (1) a notes-importer wizard path with its own field-detection heuristics, (2) destination options including the 10 canonical columns plus "custom → meta.{source_key}" per unmapped column, (3) contact-lookup logic so each CSV row can be tied to the right Contact (likely by email + name + a `source_contact_id` key via `import_id_maps` for relational CRM exports where Contact and Activity are separate files). Harder than the contact importer because notes are a child relationship — each CSV row produces one note attached to one pre-existing contact, so the lookup + create + meta-mapping chain has to handle unresolved contacts gracefully (reject row, stage for manual resolution, or auto-create stub contact — TBD). Not urgent until 198 lands and we actually know what shape the 10 canonical columns settled into. Scope estimate: 1-2 sessions.
 
 ---
 
@@ -436,6 +443,8 @@ A "kitchen sink" preview page for theme editing that exposes all major headings,
 
 Per-widget `style_schema` declaration: each widget type defines a constrained set of CSS properties exposed as configurable controls beyond the universal Appearance layer. Plus arbitrary scoped CSS per widget instance, scoped to `[data-widget="{uuid}"]` at render time. The universal Appearance layer is fully delivered (sessions 161–166): background color, gradient, image with alignment/fit, text color, full-width, padding, and margin — all stored in `appearance_config` and rendered by `AppearanceStyleComposer`. This stub covers only the remaining ambition: per-widget `style_schema` for widget-specific CSS properties beyond what every widget gets for free, and a freeform scoped CSS editor for advanced users.
 
+**Flagged during session 197 — unified CSS override mechanism:** the `GradientPicker` per-layer `css_override` input was removed as a UI surface because layer-level CSS can't be resolved predictably against other background layers or the universal Appearance stack. The broader question — whether user-authored CSS escape hatches belong as per-primitive fields or as a single widget-scoped mechanism rendered server-side — belongs in this session. When scoping, evaluate: (1) should the `[data-widget="{uuid}"]`-scoped approach be the single sanctioned path for freeform CSS, replacing any legacy per-feature inputs? (2) sweep the orphaned `css_override` field on gradient layers — still present in the `GradientLayer` TS interface and `GradientComposer::compose()` for backward compatibility, but no UI creates new values — deciding whether to migrate-and-remove or leave as a back-door for advanced users.
+
 ### Hero Full-Bleed Promotion to Universal Layer
 
 Promote the hero-specific `overlap_nav` / `nav_link_color` / `nav_hover_color` config fields into the universal `appearance_config` layer so any widget can go full-bleed behind the navigation bar. Today the feature is coupled to the literal string `'hero'` in `PageController` and `PagePreviewController`. This session genericizes the check, migrates existing hero instances, and moves the SCSS rules from `_hero.scss` to a wrapper-level partial. Originally scoped as session 162a during the Appearance Controls project; deferred because it is an architectural change rather than a Beta 1 requirement.
@@ -473,6 +482,10 @@ Each widget becomes a self-describing class: handle, config schema, render logic
 ### Image & Media Handling — Carousels & Galleries
 
 Full carousel and gallery widget types beyond the basic image slider added in Beta 1. Lightbox, captions, reorder controls.
+
+### Inspector Column — Drag-Resize Splitter
+
+Add a vertical drag-resize splitter between the preview canvas and the inspector column in the page builder (`App.vue` — currently `grid-template-columns: minmax(0, 3fr) min(28rem, 25%)`). Trades canvas width for inspector width at the user's discretion. Motivated by session 197: the dual-pane inspector's tab labels ("Widget Settings", "Margin & Padding") truncate with ellipsis in the default ~260px column, and widening the column is the clean fix once a draggable splitter exists. Should persist per-user via localStorage or site settings. Minimal scope — purely a layout ergonomic, no schema or widget changes.
 
 ---
 
