@@ -17,13 +17,23 @@ class Note extends Model
         'notable_type',
         'notable_id',
         'author_id',
+        'type',
+        'subject',
+        'status',
         'body',
         'occurred_at',
+        'follow_up_at',
+        'outcome',
+        'duration_minutes',
+        'meta',
         'import_source_id',
     ];
 
     protected $casts = [
-        'occurred_at' => 'datetime',
+        'occurred_at'      => 'datetime',
+        'follow_up_at'     => 'datetime',
+        'duration_minutes' => 'integer',
+        'meta'             => 'array',
     ];
 
     public function notable(): MorphTo

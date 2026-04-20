@@ -204,6 +204,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 195 | Playwright E2E Harness & Contacts Importer Coverage |
 | 196 | Playwright Importer Regression Coverage — Events, Donations, Memberships & Invoice Details |
 | 197 | Quill Toolbar Visual Language — Reference-Image Pilot |
+| 198 | Notes — Structured Interactions Schema & Timeline Surfaces |
 
 ---
 

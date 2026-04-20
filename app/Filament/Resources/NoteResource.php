@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\NoteResource\Pages;
+use App\Forms\Components\QuillEditor;
 use App\Models\Note;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -23,10 +24,28 @@ class NoteResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public const TYPE_OPTIONS = [
+        'call'    => 'Call',
+        'meeting' => 'Meeting',
+        'email'   => 'Email',
+        'note'    => 'Note',
+        'task'    => 'Task',
+        'letter'  => 'Letter',
+        'sms'     => 'SMS',
+    ];
+
+    public const STATUS_OPTIONS = [
+        'completed'    => 'Completed',
+        'scheduled'    => 'Scheduled',
+        'cancelled'    => 'Cancelled',
+        'left_message' => 'Left message',
+        'no_show'      => 'No show',
+    ];
+
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make()->schema([
+            Forms\Components\Section::make('Attachment')->schema([
                 Forms\Components\Select::make('notable_type')
                     ->label('Attached To')
                     ->options([
@@ -59,18 +78,69 @@ class NoteResource extends Resource
                     ->searchable()
                     ->preload()
                     ->nullable(),
+            ])->columns(2),
+
+            ...static::coreFormSchema(),
+        ]);
+    }
+
+    public static function coreFormSchema(): array
+    {
+        return [
+            Forms\Components\Section::make()->schema([
+                Forms\Components\Select::make('type')
+                    ->label('Type')
+                    ->options(self::TYPE_OPTIONS)
+                    ->default('note')
+                    ->selectablePlaceholder(false)
+                    ->required()
+                    ->native(false)
+                    ->columnSpan(6),
 
                 Forms\Components\DateTimePicker::make('occurred_at')
                     ->label('Occurred At')
-                    ->default(now()),
+                    ->default(now())
+                    ->required()
+                    ->columnSpan(6),
 
-                Forms\Components\Textarea::make('body')
+                Forms\Components\TextInput::make('subject')
+                    ->label('Title')
+                    ->maxLength(255)
+                    ->placeholder('Optional short title')
+                    ->columnSpan(12),
+
+                QuillEditor::make('body')
                     ->label('Note')
                     ->required()
-                    ->rows(5)
-                    ->columnSpanFull(),
-            ])->columns(2),
-        ]);
+                    ->columnSpan(12),
+
+                Forms\Components\TextInput::make('status')
+                    ->label('Status')
+                    ->default('completed')
+                    ->required()
+                    ->maxLength(255)
+                    ->columnSpan(4),
+
+                Forms\Components\DateTimePicker::make('follow_up_at')
+                    ->label('Next action')
+                    ->nullable()
+                    ->columnSpan(4),
+
+                Forms\Components\TextInput::make('duration_minutes')
+                    ->label('Duration')
+                    ->numeric()
+                    ->suffix('min')
+                    ->nullable()
+                    ->columnSpan(4),
+
+                Forms\Components\Textarea::make('outcome')
+                    ->label('Result / outcome')
+                    ->placeholder('Short summary of what happened')
+                    ->rows(3)
+                    ->nullable()
+                    ->columnSpan(12),
+            ])->columns(12),
+        ];
     }
 
     public static function table(Table $table): Table

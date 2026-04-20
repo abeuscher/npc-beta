@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OrganizationResource\RelationManagers;
 
+use App\Filament\Resources\NoteResource;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -17,15 +18,7 @@ class NotesRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Textarea::make('body')
-                ->label('Note')
-                ->required()
-                ->rows(4)
-                ->columnSpanFull(),
-
-            Forms\Components\DateTimePicker::make('occurred_at')
-                ->label('Occurred At')
-                ->default(now()),
+            ...NoteResource::coreFormSchema(),
 
             Forms\Components\Hidden::make('author_id')
                 ->default(fn () => Auth::id()),
