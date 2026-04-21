@@ -17,8 +17,14 @@ type BottomTab = 'background' | 'text' | 'spacing'
 
 const store = useEditorStore()
 
-const topTab = ref<TopTab>('content')
-const bottomTab = ref<BottomTab>('background')
+const topTab = computed({
+  get: () => store.inspectorTopTab as TopTab,
+  set: (v: TopTab) => { store.inspectorTopTab = v },
+})
+const bottomTab = computed({
+  get: () => store.inspectorBottomTab as BottomTab,
+  set: (v: BottomTab) => { store.inspectorBottomTab = v },
+})
 // Each pane has an independent collapse state. Collapsed = body hidden,
 // tab bar still visible. Both can be collapsed simultaneously (edge case —
 // inspector becomes just two tab strips).

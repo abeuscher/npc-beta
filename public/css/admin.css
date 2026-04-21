@@ -684,7 +684,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
  * in the .dark block below.                                                */
 
 :root {
-    --np-control-bar-bg:            #ffffff;
+    --np-control-bar-bg:            #ededee;
     --np-control-group-bg:          #fafbfc;
     --np-control-border:            #d9d9d9;
     --np-control-chip-border:       #d1d5db;
@@ -703,8 +703,8 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     --np-control-radius:            4px;
     --np-control-radius-sm:         3px;
     --np-control-transition:        background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
-    --np-form-label:                #7fa6cd; /* gray-700 */
-    --np-form-input-size:           1.2rem; /* 14px — Filament default at sm: viewport */
+    --np-form-label:                #95b7d9; /* gray-700 */
+    --np-form-input-size:           1rem; /* 14px — Filament default at sm: viewport */
 }
 
 .dark {

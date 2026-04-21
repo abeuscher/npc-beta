@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useEditorStore } from '../stores/editor'
+import { scrollSelectionIntoCentre } from '../utils/focusScroll'
 import { useViewport, viewportPresets } from '../composables/useViewport'
 import { loadLibs, reinitAlpine } from '../composables/useLibraryLoader'
 import PreviewRegion from './PreviewRegion.vue'
@@ -219,6 +220,19 @@ onUnmounted(() => {
   document.removeEventListener('click', closeDropdowns)
   resizeObserver?.disconnect()
 })
+
+// Scroll the selected widget/layout to the viewport centre when selection
+// changes. Uses nextTick so the selection class has a chance to render before
+// the scroll fires; bails silently if the element is not in the DOM yet
+// (e.g. during a tree reload).
+watch(
+  () => [store.selectedItemId, store.selectedItemType] as const,
+  async ([id, type]) => {
+    if (!id || !type) return
+    await nextTick()
+    scrollSelectionIntoCentre(id, type)
+  }
+)
 
 // Re-init Alpine when any widget's preview HTML changes (root or inside layouts)
 watch(

@@ -31,6 +31,8 @@ class ContactNotes extends Page implements HasActions
 
     public string $typeFilter = 'all';
 
+    public string $viewMode = 'collapsed';
+
     public function mount(Contact|int|string $record): void
     {
         $this->record = $record instanceof Contact ? $record : Contact::findOrFail($record);
@@ -131,6 +133,11 @@ class ContactNotes extends Page implements HasActions
             ->all();
     }
 
+    public function toggleViewMode(): void
+    {
+        $this->viewMode = $this->viewMode === 'collapsed' ? 'expanded' : 'collapsed';
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -138,6 +145,14 @@ class ContactNotes extends Page implements HasActions
                 ->label('← Back to contact')
                 ->color('secondary')
                 ->url(ContactResource::getUrl('edit', ['record' => $this->record])),
+
+            Actions\Action::make('toggle_view_mode')
+                ->label(fn () => $this->viewMode === 'collapsed' ? 'Expand all' : 'Collapse all')
+                ->icon(fn () => $this->viewMode === 'collapsed'
+                    ? 'heroicon-o-arrows-pointing-out'
+                    : 'heroicon-o-arrows-pointing-in')
+                ->color('gray')
+                ->action(fn () => $this->toggleViewMode()),
 
             Actions\Action::make('create_note')
                 ->label('Create note')

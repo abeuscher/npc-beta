@@ -210,6 +210,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 201 | Widget Template Tokens — Per-Item Namespace Split |
 | 202 | Importer CSV Generator & Playwright Edge-Case Coverage |
 | 203 | CRM Importer — Notes & Interactions (Standalone Path) |
+| 204 | Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save |
 
 ---
 
@@ -217,58 +218,14 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 *Ordered by priority.*
 
-### Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save *(stub — pre-Beta 1)*
+### Page Builder Focus-Scroll Clamp *(stub — pre-Beta 1, successor to session 204)*
 
-Batched polish session against the page builder, the admin left nav, and the settings pages. All items are independent UX bugs surfaced during designer review of the admin panel; none change data shape, just behaviour and chrome.
+Session 204 shipped the scroll-to-viewport-centre-on-selection behaviour but descoped the stretch clamp before implementation. Stretch items still open:
 
-**Page builder — default + auto-selection:**
+- **Scroll lock:** once a widget is focused, the viewport cannot scroll past it on wheel / touch. Implementation path: listen to `wheel` / `touchmove` on the canvas container and short-circuit events that would move the focused widget out of view.
+- **Tall-widget exception:** if the focused widget is taller than the viewport, the clamp behaves as a scroll container for that widget only — up-scroll locks at the widget top, down-scroll locks at the widget bottom; the rest of the page is inaccessible while focus holds.
 
-- On opening any page edit view, the **top widget should be selected by default** (inspector panel populated, no empty-state placeholder).
-- After **Add Widget**, the newly added widget becomes the selected one.
-- After **Add Columns** (the column layout primitive), the new column container becomes the selected one.
-
-**Page builder — sticky inspector tab across widget switches:**
-
-- The inspector currently has multiple tabs (Content, Margin & Padding, etc. — verify exact tab set during scoping). When switching from one widget to another, the inspector should **stay on whichever tab the user was on**. Example: editing margin on Widget A, click Widget B → land on margin for Widget B.
-- If there is no prior tab state (i.e. first widget selected after page open), default to the **Content** tab.
-- Persistence is conversation-local — no need to round-trip to the server. Pinia store likely owns the active-tab state already; this is a "don't reset on widget switch" change rather than new persistence.
-
-**Page builder — focus scroll behaviour:**
-
-- A focused widget should scroll to the **middle of the screen** when first selected.
-- It should **not be possible to scroll the focused widget off screen**. The viewport locks at the top of the currently selected widget when the user tries to scroll past it.
-- **Exception for tall widgets** (taller than the viewport): the focused widget effectively becomes the scroll container — the page locks to the top of the widget on up-scroll and to the bottom on down-scroll, allowing the user to see the widget's full content but never escape it via wheel/touch.
-- **Complexity escape hatch:** if the lock-and-clamp behaviour proves extraordinarily difficult to implement cleanly (e.g. wheel/touch event interception fights browser inertial scrolling, or the column-widget nested-scroll case turns into a tar pit), pause and surface the trade-off before pushing forward. The "scroll to middle on selection" piece is the easy win and ships first regardless.
-
-**Admin left nav — expand-into-view:**
-
-- When a collapsible nav heading is clicked open, its newly-revealed contents should **scroll into view** if the expansion would push items below the viewport fold. Currently the items expand downward and disappear off-screen when the nav is long.
-- Probable implementation surface: a Filament render hook or a small Alpine listener on `.fi-sidebar-group` toggle events.
-
-**Settings pages — save button after each section:**
-
-- The General Settings page (and likely Finance / CMS / Notifications / etc.) currently has a single Save button at the bottom of the page, which means scrolling past every section to commit a change to one. Add a **Save button after each `Forms\Components\Section`** so admins can save in place.
-- Each per-section save should commit only that section's fields (or, if the form-state model makes per-section commits awkward, save the whole form but stay on the page anchored at the section). Pick the least-surprising behaviour during scoping.
-- Audit which settings pages use the multi-section pattern and apply consistently. Consider whether a shared `SectionWithSave` helper component is worth introducing or whether duplicating the action is simpler.
-
-**Importer field registries — import_session_id leaking into templates:**
-
-- `Event::$fillable` includes `import_session_id`, but `EventFieldRegistry::$excluded` does not list it — so the canonical events CSV template emits an `"Event Import Session Id"` column. Users downloading the template see a meaningless column. Same leak may exist for other registries (donation/membership/transaction/invoice) that derive fields from model fillables — audit all `*FieldRegistry` classes for `import_session_id` / `import_source_id` / `external_id` (where `external_id` already gets special handling) and add the missing exclusions.
-- Surfaced in session 202 (importer CSV generator) when cross-checking the composer's output against `CsvTemplateService` headers.
-
-**Importer Preview button — unhelpful summary:**
-
-- On the Contacts list (and likely the other content-type lists), the "Preview" button attached to staged import sessions only shows a count of rows. The name implies you'd see the actual staged rows / proposed changes. Either rename it to "Summary" or wire it up to show the staged records (first N rows + field diffs for updates). Surfaced during session 202 manual testing.
-
-**Notes Timeline — expanded-view toggle:**
-
-- The Contact Timeline's notes list (and likely the Notes admin list) currently renders every note's full body inline. With the structured-interactions work from session 198 and the importer in session 203, real-world lists can easily reach hundreds of entries per contact — the full-body rendering dominates the viewport.
-- Add a top-right **Expand / Collapse** toggle to the list header. **Collapsed is default:** show the type badge, subject (or body preview), status pill, relative timestamp, and follow-up/overdue pill — no body. **Expanded:** the current full-body treatment (body HTML, outcome, `meta` Source-fields disclosure).
-- Design the expanded card treatment as the canonical "full note" surface (likely reused by click-to-expand on individual cards later); the collapsed one-liner is the new default.
-- Persistence of the toggle state is conversation-local for v1 (Livewire/Alpine state); promoting to a per-user preference can be a later follow-up if it comes up.
-- Editability note: some deployments will want notes to be **editable only by the original creator** (`author_id`). Flag this during scoping — the permission shape lives in the Notes Permissions stub below; this session owns only the view toggle and expanded/collapsed layouts, not the gate.
-
-**Out of scope for this session:** schema changes, new widgets, new settings, anything that touches the public site. Pure admin-side UX polish.
+Descoped in 204 on the grounds that wheel/touch interception fights browser inertial scrolling and the nested-scroll case inside column widgets is adversarial. Reopen only if user testing confirms the must-have scroll-to-centre isn't enough.
 
 ---
 

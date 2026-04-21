@@ -40,6 +40,7 @@ function handleTemplateSaved(e: Event) {
 onMounted(() => {
   configure(props.bootstrap.csrf_token, props.bootstrap.api_base_url, props.bootstrap.api_lookup_url)
   store.loadTree(props.bootstrap)
+  store.selectFirstRootItemIfNone()
 
   // Event bridge: listen for Livewire mutations
   window.addEventListener('widget-created', handleWidgetCreated)

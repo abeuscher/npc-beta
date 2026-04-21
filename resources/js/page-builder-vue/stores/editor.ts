@@ -39,6 +39,12 @@ export const useEditorStore = defineStore('editor', () => {
   const selectedItemId = ref<string | null>(null)
   const selectedItemType = ref<'widget' | 'layout' | null>(null)
 
+  // Inspector tab state — lives on the store so it persists across widget
+  // selection changes within a single page-builder session. First load lands
+  // on 'content' / 'background' (index-0 tabs in InspectorPanel).
+  const inspectorTopTab = ref<'content' | 'presets' | 'widget-settings'>('content')
+  const inspectorBottomTab = ref<'background' | 'text' | 'spacing'>('background')
+
   // Preview state
   const dirtyWidgets = ref<Set<string>>(new Set())
   const requiredLibs = ref<string[]>([])
@@ -200,6 +206,19 @@ export const useEditorStore = defineStore('editor', () => {
     pageItems.value = orderedItems
     rootOrder.value = rootIds
     dirtyWidgets.value = new Set()
+
+    if (selectedItemId.value && !widgetMap[selectedItemId.value] && !layoutMap[selectedItemId.value]) {
+      selectedItemId.value = null
+      selectedItemType.value = null
+    }
+  }
+
+  function selectFirstRootItemIfNone(): void {
+    if (selectedItemId.value) return
+    const first = pageItems.value[0]
+    if (!first) return
+    selectedItemId.value = first.id
+    selectedItemType.value = first.type === 'layout' ? 'layout' : 'widget'
   }
 
   function selectItem(id: string | null, type: 'widget' | 'layout' | null = null): void {
@@ -776,6 +795,8 @@ export const useEditorStore = defineStore('editor', () => {
     rootOrder,
     selectedItemId,
     selectedItemType,
+    inspectorTopTab,
+    inspectorBottomTab,
     dirtyWidgets,
     requiredLibs,
     widgetTypes,
@@ -809,6 +830,7 @@ export const useEditorStore = defineStore('editor', () => {
     reloadTree,
     selectItem,
     selectBlock,
+    selectFirstRootItemIfNone,
     createWidget,
     updateWidget,
     updateLocalConfig,

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Pages\Concerns\InteractsWithSectionedSettings;
 use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
 use App\Services\QuickBooks\QuickBooksAuth;
@@ -18,6 +19,8 @@ use Illuminate\Support\HtmlString;
 
 class FinanceSettingsPage extends Page
 {
+    use InteractsWithSectionedSettings;
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('manage_financial_settings') ?? false;
@@ -80,6 +83,8 @@ class FinanceSettingsPage extends Page
                             ->nullable()
                             ->helperText('Starts with pk_live_ or pk_test_. This is a public key — safe to display and store in plaintext.')
                             ->columnSpanFull(),
+
+                        $this->sectionSaveAction('stripe-public-key', 'Stripe Publishable Key')->columnSpanFull(),
                     ]),
 
                 $this->secretKeySection(
@@ -116,6 +121,8 @@ class FinanceSettingsPage extends Page
                                 $component->state($values);
                             })
                             ->helperText('Card payments are always enabled. Methods marked "one-time only" are automatically excluded from recurring donation checkout.'),
+
+                        $this->sectionSaveAction('payment-methods', 'Payment Methods'),
                     ]),
 
                 ...$this->quickBooksSection(),
@@ -422,6 +429,8 @@ class FinanceSettingsPage extends Page
                             $this->redirect(static::getUrl());
                         }),
                 ]),
+
+                $this->sectionSaveAction('qb-sync', 'QuickBooks Transaction Sync'),
             ]);
     }
 
@@ -469,6 +478,25 @@ class FinanceSettingsPage extends Page
             ]);
         }
         Cache::forget('site_setting:stripe_payment_method_types');
+    }
+
+    protected function persistSection(string $id): void
+    {
+        $data = $this->form->getState();
+
+        match ($id) {
+            'stripe-public-key' => (function () use ($data) {
+                SiteSetting::set('stripe_publishable_key', $data['stripe_publishable_key'] ?? '');
+                Artisan::call('config:clear');
+            })(),
+            'payment-methods' => (function () use ($data) {
+                $this->savePaymentMethodTypes($data['stripe_payment_method_types'] ?? ['card']);
+                Artisan::call('config:clear');
+            })(),
+            'qb-sync' => (function () {
+                $this->saveAccountMap();
+            })(),
+        };
     }
 
     private function saveAccountMap(): void

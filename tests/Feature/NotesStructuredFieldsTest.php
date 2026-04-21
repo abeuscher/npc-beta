@@ -234,6 +234,48 @@ it('surfaces non-canonical imported types for the More filter submenu', function
 
 // ── Backwards-compat rendering ──────────────────────────────────────────────
 
+// ── View mode toggle ───────────────────────────────────────────────────────
+
+it('ContactNotes defaults to collapsed view mode', function () {
+    $page = new ContactNotes();
+    $page->mount($this->contact);
+
+    expect($page->viewMode)->toBe('collapsed');
+});
+
+it('toggleViewMode flips between collapsed and expanded', function () {
+    $page = new ContactNotes();
+    $page->mount($this->contact);
+
+    $page->toggleViewMode();
+    expect($page->viewMode)->toBe('expanded');
+
+    $page->toggleViewMode();
+    expect($page->viewMode)->toBe('collapsed');
+});
+
+it('Timeline projection returns full structured fields regardless of view mode', function () {
+    $this->contact->notes()->create([
+        'author_id' => $this->admin->id,
+        'type'      => 'call',
+        'subject'   => 'Big pledge conversation',
+        'body'      => 'Long body content that only shows in expanded mode.',
+        'outcome'   => 'Closed a gift.',
+    ]);
+
+    $page = new ContactNotes();
+    $page->mount($this->contact);
+
+    foreach (['collapsed', 'expanded'] as $mode) {
+        $page->viewMode = $mode;
+        $item = $page->getTimeline()->firstWhere('_type', 'note');
+
+        expect($item)->not->toBeNull()
+            ->and($item->subject)->toBe('Big pledge conversation')
+            ->and($item->outcome)->toBe('Closed a gift.');
+    }
+});
+
 it('renders a bare pre-structured note without errors', function () {
     $this->contact->notes()->create([
         'author_id'   => $this->admin->id,

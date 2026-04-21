@@ -35,7 +35,7 @@ class HeroDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'content',          'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
+            ['key' => 'content',          'type' => 'richtext', 'label' => '', 'group' => 'content'],
             ['key' => 'background_video', 'type' => 'video',   'label' => 'Background Video', 'helper' => 'MP4 or WebM — plays on loop', 'group' => 'content'],
             ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
                 'top-left'       => 'Top Left',

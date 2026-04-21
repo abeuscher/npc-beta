@@ -30,6 +30,8 @@ class EventFieldRegistry
         'meeting_url',
         'meeting_label',
         'meeting_details',
+        'import_source_id',
+        'import_session_id',
     ];
 
     /**

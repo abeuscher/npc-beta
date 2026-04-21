@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Pages\Concerns\InteractsWithSectionedSettings;
 use App\Mail\TestMail;
 use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
@@ -16,6 +17,8 @@ use Illuminate\Support\HtmlString;
 
 class MailSettingsPage extends Page
 {
+    use InteractsWithSectionedSettings;
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('manage_mail_settings') ?? false;
@@ -71,6 +74,8 @@ class MailSettingsPage extends Page
                             ->label('From address')
                             ->email()
                             ->required(),
+
+                        $this->sectionSaveAction('sending', 'Sending')->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -97,6 +102,8 @@ class MailSettingsPage extends Page
                             ->nullable()
                             ->helperText('The path segment after /webhooks/ — use a random string in production for security.')
                             ->columnSpanFull(),
+
+                        $this->sectionSaveAction('mailchimp', 'MailChimp Configuration')->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -296,5 +303,23 @@ class MailSettingsPage extends Page
             ->send();
 
         $this->redirect(static::getUrl());
+    }
+
+    protected function persistSection(string $id): void
+    {
+        $data = $this->form->getState();
+
+        match ($id) {
+            'sending' => (function () use ($data) {
+                SiteSetting::set('mail_driver',       $data['mail_driver']);
+                SiteSetting::set('mail_from_name',    trim($data['mail_from_name']));
+                SiteSetting::set('mail_from_address', trim($data['mail_from_address']));
+            })(),
+            'mailchimp' => (function () use ($data) {
+                SiteSetting::set('mailchimp_server_prefix', trim($data['mailchimp_server_prefix'] ?? ''));
+                SiteSetting::set('mailchimp_audience_id',   trim($data['mailchimp_audience_id'] ?? ''));
+                SiteSetting::set('mailchimp_webhook_path',  trim($data['mailchimp_webhook_path'] ?? 'mailchimp'));
+            })(),
+        };
     }
 }

@@ -103,7 +103,7 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
     </template>
 
     <template v-else-if="fieldComponent">
-      <label class="inspector-label">{{ field.label }}</label>
+      <label v-if="field.label" class="inspector-label">{{ field.label }}</label>
       <component
         :is="fieldComponent"
         :field="field"

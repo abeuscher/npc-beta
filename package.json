@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build-styles": "docker compose exec app php artisan build:public",
         "generate-thumbnails": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-presets",
         "generate-presets": "NODE_PATH=\"$(npm root -g)\" node scripts/generate-thumbnails.js --no-static",
         "test:e2e": "playwright test",

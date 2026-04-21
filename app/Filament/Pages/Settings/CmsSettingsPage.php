@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Pages\Concerns\InteractsWithSectionedSettings;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Rules\ValidHtmlSnippet;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Http;
 
 class CmsSettingsPage extends Page
 {
+    use InteractsWithSectionedSettings;
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('manage_cms_settings') ?? false;
@@ -112,6 +115,8 @@ class CmsSettingsPage extends Page
                             ->label('Auto-publish new blog posts')
                             ->helperText('When enabled, newly created blog posts default to Published.')
                             ->columnSpan(4),
+
+                        $this->sectionSaveAction('general', 'General')->columnSpan(12),
                     ])
                     ->columns(12),
 
@@ -132,6 +137,8 @@ class CmsSettingsPage extends Page
                             ->label('Events')
                             ->options(fn () => collect(['' => 'None'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
                             ->columnSpan(4),
+
+                        $this->sectionSaveAction('default-content-templates', 'Default Content Templates')->columnSpan(12),
                     ])
                     ->columns(12),
 
@@ -200,6 +207,8 @@ class CmsSettingsPage extends Page
                                     }
                                 }),
                         ]),
+
+                        $this->sectionSaveAction('build-server', 'Build Server')->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Header & Footer Code Snippets')
@@ -274,6 +283,8 @@ class CmsSettingsPage extends Page
                             ->image()
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
                             ->columnSpanFull(),
+
+                        $this->sectionSaveAction('header-footer', 'Header & Footer Code Snippets')->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Image Sizes')
@@ -295,6 +306,8 @@ class CmsSettingsPage extends Page
                             ->reorderable()
                             ->addActionLabel('Add breakpoint')
                             ->columnSpanFull(),
+
+                        $this->sectionSaveAction('image-sizes', 'Image Sizes')->columnSpanFull(),
                     ]),
             ])
             ->statePath('data');
@@ -376,5 +389,76 @@ class CmsSettingsPage extends Page
             ->title('Settings saved')
             ->success()
             ->send();
+    }
+
+    protected function persistSection(string $id): void
+    {
+        $data = $this->form->getState();
+
+        match ($id) {
+            'general' => (function () use ($data) {
+                SiteSetting::set('site_name', $data['site_name']);
+                SiteSetting::set('site_description', $data['site_description'] ?? '');
+                SiteSetting::set('timezone', $data['timezone'] ?? 'America/Chicago');
+                SiteSetting::set('contact_email', $data['contact_email'] ?? '');
+                SiteSetting::set('event_auto_publish',  $data['event_auto_publish'] ? 'true' : 'false');
+                SiteSetting::set('auto_publish_pages',   $data['auto_publish_pages'] ? 'true' : 'false');
+                SiteSetting::set('auto_publish_posts',   $data['auto_publish_posts'] ? 'true' : 'false');
+            })(),
+            'default-content-templates' => (function () use ($data) {
+                SiteSetting::set('default_content_template_default', $data['default_content_template_default'] ?? '');
+                SiteSetting::set('default_content_template_post', $data['default_content_template_post'] ?? '');
+                SiteSetting::set('default_content_template_event', $data['default_content_template_event'] ?? '');
+            })(),
+            'build-server' => (function () use ($data) {
+                SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
+
+                if (filled($data['build_server_api_key'] ?? '')) {
+                    $setting = SiteSetting::where('key', 'build_server_api_key')->first();
+                    if ($setting) {
+                        $setting->update(['value' => \Illuminate\Support\Facades\Crypt::encryptString($data['build_server_api_key'])]);
+                    } else {
+                        SiteSetting::create([
+                            'key'   => 'build_server_api_key',
+                            'value' => \Illuminate\Support\Facades\Crypt::encryptString($data['build_server_api_key']),
+                            'type'  => 'encrypted',
+                        ]);
+                    }
+                    \Illuminate\Support\Facades\Cache::forget('site_setting:build_server_api_key');
+                }
+            })(),
+            'header-footer' => (function () use ($data) {
+                if (! empty($data['favicon_upload'])) {
+                    SiteSetting::set('favicon_path', $data['favicon_upload']);
+                }
+                SiteSetting::set('site_head_snippet', $data['site_head_snippet'] ?? '');
+                SiteSetting::set('site_body_open_snippet', $data['site_body_open_snippet'] ?? '');
+                SiteSetting::set('site_body_snippet', $data['site_body_snippet'] ?? '');
+                if (! empty($data['site_default_og_image'])) {
+                    SiteSetting::set('site_default_og_image', $data['site_default_og_image']);
+                }
+            })(),
+            'image-sizes' => (function () use ($data) {
+                $breakpoints = collect($data['image_breakpoints'] ?? [])
+                    ->pluck('width')
+                    ->map(fn ($v) => (int) $v)
+                    ->filter(fn ($v) => $v >= 64)
+                    ->sortDesc()
+                    ->values()
+                    ->all();
+
+                $setting = SiteSetting::where('key', 'image_breakpoints')->first();
+                if ($setting) {
+                    $setting->update(['value' => json_encode($breakpoints)]);
+                } else {
+                    SiteSetting::create([
+                        'key'   => 'image_breakpoints',
+                        'value' => json_encode($breakpoints),
+                        'type'  => 'json',
+                    ]);
+                }
+                \Illuminate\Support\Facades\Cache::forget('site_setting:image_breakpoints');
+            })(),
+        };
     }
 }

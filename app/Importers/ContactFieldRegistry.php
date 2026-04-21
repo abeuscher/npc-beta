@@ -16,6 +16,7 @@ class ContactFieldRegistry
         'custom_data',
         'custom_fields',
         'source',
+        'import_source_id',
         'import_session_id',
     ];
 

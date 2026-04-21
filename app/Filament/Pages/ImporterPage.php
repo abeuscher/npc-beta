@@ -193,8 +193,40 @@ class ImporterPage extends Page implements HasTable
                         }
 
                         if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+                            $donations = $record->model_type === 'donation'
+                                ? Donation::where('import_session_id', $record->id)
+                                    ->with(['contact:id,first_name,last_name,email'])
+                                    ->latest('created_at')
+                                    ->limit(20)
+                                    ->get()
+                                : collect();
+
+                            $memberships = $record->model_type === 'membership'
+                                ? Membership::where('import_session_id', $record->id)
+                                    ->with(['contact:id,first_name,last_name,email'])
+                                    ->latest('starts_on')
+                                    ->limit(20)
+                                    ->get()
+                                : collect();
+
+                            $transactions = $record->model_type === 'invoice_detail'
+                                ? Transaction::where('import_session_id', $record->id)
+                                    ->latest('occurred_at')
+                                    ->limit(20)
+                                    ->get()
+                                : collect();
+
+                            $contacts = Contact::withoutGlobalScopes()
+                                ->where('import_session_id', $record->id)
+                                ->limit(20)
+                                ->get(['id', 'first_name', 'last_name', 'email']);
+
                             return view('filament.pages.import-financial-review-preview', [
-                                'record' => $record,
+                                'record'            => $record,
+                                'donations'         => $donations,
+                                'memberships'       => $memberships,
+                                'transactions'      => $transactions,
+                                'contacts'          => $contacts,
                                 'donationsCount'    => $record->model_type === 'donation' ? Donation::where('import_session_id', $record->id)->count() : 0,
                                 'membershipsCount'  => $record->model_type === 'membership' ? Membership::where('import_session_id', $record->id)->count() : 0,
                                 'transactionsCount' => Transaction::where('import_session_id', $record->id)->count(),

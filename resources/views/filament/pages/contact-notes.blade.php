@@ -72,6 +72,26 @@
                         }
                         $metaKeys = is_array($item->meta) ? array_keys($item->meta) : [];
                     @endphp
+                    @if ($this->viewMode === 'collapsed')
+                        <div class="np-timeline-row">
+                            <span class="np-timeline-badge np-timeline-row__type" title="{{ $label }}">
+                                <x-dynamic-component :component="$icon" class="np-timeline-badge__icon" />
+                                <span>{{ $label }}</span>
+                            </span>
+                            <span class="np-timeline-row__title">{{ $title }}</span>
+                            <span class="np-timeline-row__meta">
+                                @if ($status !== 'completed')
+                                    <span class="np-timeline-badge np-timeline-badge--muted">{{ \Illuminate\Support\Str::of($status)->replace('_', ' ')->title() }}</span>
+                                @endif
+                                <span class="np-timeline-timestamp">{{ $relativeTime($item->occurred_at) }}</span>
+                                @if ($followUpState === 'pending')
+                                    <span class="np-timeline-pill np-timeline-pill--pending">Follow up: {{ $relativeTime($followUp) }}</span>
+                                @elseif ($followUpState === 'overdue')
+                                    <span class="np-timeline-pill np-timeline-pill--overdue">Overdue: {{ $relativeTime($followUp) }}</span>
+                                @endif
+                            </span>
+                        </div>
+                    @else
                     <div class="np-timeline-card">
                         <div class="np-timeline-card__header">
                             <div class="np-timeline-card__title">{{ $title }}</div>
@@ -139,6 +159,7 @@
                             </details>
                         @endif
                     </div>
+                    @endif
                 @else
                     <div class="np-timeline-log">
                         <x-heroicon-m-cog-6-tooth class="np-timeline-log__icon" />
@@ -173,6 +194,33 @@
             border: 1px solid var(--np-control-border);
             border-radius: var(--np-control-radius);
             padding: 1rem;
+        }
+        .np-timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--np-control-chip-bg);
+            border: 1px solid var(--np-control-border);
+            border-radius: var(--np-control-radius);
+        }
+        .np-timeline-row__type {
+            flex-shrink: 0;
+        }
+        .np-timeline-row__title {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 500;
+            color: var(--np-control-chip-text-active);
+        }
+        .np-timeline-row__meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
         }
         .np-timeline-card__header {
             display: flex;

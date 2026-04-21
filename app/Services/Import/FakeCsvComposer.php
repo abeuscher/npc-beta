@@ -68,7 +68,6 @@ class FakeCsvComposer
                 'Event Ends At'        => $endsAt->format('Y-m-d H:i:s'),
                 'Event Price'              => $price,
                 'Event Capacity'           => $capacity,
-                'Event Import Session Id'  => null,
                 'Event External ID'        => $eventExternalId,
             ];
 

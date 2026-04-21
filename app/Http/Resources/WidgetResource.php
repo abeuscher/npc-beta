@@ -9,6 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class WidgetResource extends JsonResource
 {
+    public $preserveKeys = true;
+
     public array $requiredHandles = [];
 
     public function withRequiredHandles(array $handles): static

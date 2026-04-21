@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Filament\Pages\Concerns\InteractsWithSectionedSettings;
 use App\Forms\Components\QuillEditor;
 use App\Models\Page as CmsPage;
 use App\Models\SiteSetting;
@@ -16,6 +17,8 @@ use Illuminate\Support\HtmlString;
 
 class GeneralSettingsPage extends Page
 {
+    use InteractsWithSectionedSettings;
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('manage_routing_prefixes') ?? false;
@@ -72,6 +75,8 @@ class GeneralSettingsPage extends Page
                         Forms\Components\Toggle::make('horizon_enabled')
                             ->label('Enable Horizon dashboard')
                             ->helperText('When enabled, the queue monitoring dashboard is available at /horizon for super admins. Disabled by default.'),
+
+                        $this->sectionSaveAction('site', 'Site'),
                     ])
                     ->visible($isSuperAdmin),
 
@@ -120,6 +125,7 @@ class GeneralSettingsPage extends Page
                             ->columnSpanFull()
                             ->helperText('Replaces the current logo on save.'),
 
+                        $this->sectionSaveAction('admin-panel', 'Admin Panel')->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->visible($isSuperAdmin),
@@ -188,6 +194,8 @@ class GeneralSettingsPage extends Page
                             ])
                             ->helperText("Optional URL prefix for system pages (login, signup, etc.). Leave blank for root-level paths: /login, /signup. Set to e.g. 'system' for /system/login.")
                             ->columnSpanFull(),
+
+                        $this->sectionSaveAction('routing', 'Routing')->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -205,6 +213,8 @@ class GeneralSettingsPage extends Page
                             ->nullable()
                             ->columnSpanFull()
                             ->helperText('Rendered above the email address and logout button on the verification notice.'),
+
+                        $this->sectionSaveAction('system-page-content', 'System Page Content')->columnSpanFull(),
                     ])
                     ->visible($isSuperAdmin),
 
@@ -305,5 +315,96 @@ class GeneralSettingsPage extends Page
             ->send();
 
         $this->redirect(static::getUrl());
+    }
+
+    protected function persistSection(string $id): void
+    {
+        $data = $this->form->getState();
+        $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
+
+        match ($id) {
+            'site' => (function () use ($data, $isSuperAdmin) {
+                if (! $isSuperAdmin) return;
+                SiteSetting::set('base_url', rtrim($data['site_url'], '/'));
+                SiteSetting::set('horizon_enabled', ($data['horizon_enabled'] ?? false) ? 'true' : 'false');
+                Artisan::call('config:clear');
+            })(),
+            'admin-panel' => (function () use ($data, $isSuperAdmin) {
+                if (! $isSuperAdmin) return;
+                SiteSetting::set('admin_brand_name', trim($data['admin_brand_name'] ?? ''));
+                if (! empty($data['admin_logo_upload'])) {
+                    SiteSetting::set('admin_logo_path', $data['admin_logo_upload']);
+                }
+                SiteSetting::set('dashboard_welcome', $data['dashboard_welcome'] ?? '');
+                SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
+                SiteSetting::set('admin_secondary_color', $data['admin_secondary_color'] ?? '#73bbbb');
+            })(),
+            'routing' => $this->persistRoutingSection($data),
+            'system-page-content' => (function () use ($data, $isSuperAdmin) {
+                if (! $isSuperAdmin) return;
+                SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
+                SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
+            })(),
+        };
+    }
+
+    private function persistRoutingSection(array $data): void
+    {
+        if (isDemoMode()) {
+            return;
+        }
+
+        $oldBlogPrefix   = SiteSetting::get('blog_prefix', 'news');
+        $newBlogPrefix   = $data['blog_prefix'] ?? 'news';
+        $oldEventsPrefix = SiteSetting::get('events_prefix', 'events');
+        $newEventsPrefix = $data['events_prefix'] ?? 'events';
+        $oldSystemPrefix = SiteSetting::get('system_prefix', '');
+        $newSystemPrefix = $data['system_prefix'] ?? '';
+
+        SiteSetting::set('blog_prefix', $newBlogPrefix);
+        SiteSetting::set('events_prefix', $newEventsPrefix);
+        SiteSetting::set('portal_prefix', $data['portal_prefix'] ?? 'members');
+        SiteSetting::set('system_prefix', $newSystemPrefix);
+        SiteSetting::set('donations_prefix', $data['donations_prefix'] ?? 'donate');
+
+        if ($newBlogPrefix !== $oldBlogPrefix) {
+            CmsPage::where('type', 'post')
+                ->where('slug', 'like', $oldBlogPrefix . '/%')
+                ->each(function (CmsPage $page) use ($oldBlogPrefix, $newBlogPrefix) {
+                    $page->updateQuietly([
+                        'slug' => $newBlogPrefix . '/' . substr($page->slug, strlen($oldBlogPrefix) + 1),
+                    ]);
+                });
+
+            $blogIndexPage = CmsPage::where('slug', $oldBlogPrefix)->first();
+            if ($blogIndexPage) {
+                $blogIndexPage->updateQuietly(['slug' => $newBlogPrefix]);
+            }
+        }
+
+        if ($newEventsPrefix !== $oldEventsPrefix) {
+            CmsPage::where('type', 'event')
+                ->where('slug', 'like', $oldEventsPrefix . '/%')
+                ->each(function (CmsPage $page) use ($oldEventsPrefix, $newEventsPrefix) {
+                    $page->updateQuietly([
+                        'slug' => $newEventsPrefix . '/' . substr($page->slug, strlen($oldEventsPrefix) + 1),
+                    ]);
+                });
+        }
+
+        if ($newSystemPrefix !== $oldSystemPrefix) {
+            CmsPage::where('type', 'system')
+                ->each(function (CmsPage $page) use ($oldSystemPrefix, $newSystemPrefix) {
+                    if ($oldSystemPrefix !== '' && str_starts_with($page->slug, $oldSystemPrefix . '/')) {
+                        $bareSlug = substr($page->slug, strlen($oldSystemPrefix) + 1);
+                    } else {
+                        $bareSlug = $page->slug;
+                    }
+                    $newSlug = $newSystemPrefix !== '' ? $newSystemPrefix . '/' . $bareSlug : $bareSlug;
+                    $page->updateQuietly(['slug' => $newSlug]);
+                });
+        }
+
+        Artisan::call('config:clear');
     }
 }
