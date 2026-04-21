@@ -2,17 +2,10 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Contact;
-use App\Models\Donation;
-use App\Models\Event;
-use App\Models\EventRegistration;
 use App\Models\ImportSession;
-use App\Models\ImportStagedUpdate;
-use App\Models\Membership;
-use App\Models\Note;
-use App\Models\Transaction;
 use App\Services\Import\CsvTemplateService;
 use App\Services\Import\ImportSessionActions;
+use App\Services\Import\ImportSessionPreview;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -169,106 +162,7 @@ class ImporterPage extends Page implements HasTable
                         'data-testid' => "importer-action-preview-{$record->id}",
                     ])
                     ->modalHeading(fn (ImportSession $record): string => "Preview — " . ($record->session_label ?: $record->filename))
-                    ->modalContent(function (ImportSession $record) {
-                        if ($record->model_type === 'event') {
-                            $events = Event::where('import_session_id', $record->id)
-                                ->limit(20)
-                                ->get(['id', 'title', 'starts_at', 'ends_at', 'status']);
-
-                            $eventsTotal = Event::where('import_session_id', $record->id)->count();
-
-                            $registrations = EventRegistration::where('import_session_id', $record->id)
-                                ->with(['event:id,title', 'contact:id,first_name,last_name,email'])
-                                ->limit(20)
-                                ->get();
-
-                            $registrationsTotal = EventRegistration::where('import_session_id', $record->id)->count();
-
-                            $transactionsTotal = Transaction::where('import_session_id', $record->id)->count();
-
-                            return view('filament.pages.import-events-review-preview', compact(
-                                'events', 'eventsTotal', 'registrations', 'registrationsTotal', 'transactionsTotal'
-                            ));
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            $donations = $record->model_type === 'donation'
-                                ? Donation::where('import_session_id', $record->id)
-                                    ->with(['contact:id,first_name,last_name,email'])
-                                    ->latest('created_at')
-                                    ->limit(20)
-                                    ->get()
-                                : collect();
-
-                            $memberships = $record->model_type === 'membership'
-                                ? Membership::where('import_session_id', $record->id)
-                                    ->with(['contact:id,first_name,last_name,email'])
-                                    ->latest('starts_on')
-                                    ->limit(20)
-                                    ->get()
-                                : collect();
-
-                            $transactions = $record->model_type === 'invoice_detail'
-                                ? Transaction::where('import_session_id', $record->id)
-                                    ->latest('occurred_at')
-                                    ->limit(20)
-                                    ->get()
-                                : collect();
-
-                            $contacts = Contact::withoutGlobalScopes()
-                                ->where('import_session_id', $record->id)
-                                ->limit(20)
-                                ->get(['id', 'first_name', 'last_name', 'email']);
-
-                            return view('filament.pages.import-financial-review-preview', [
-                                'record'            => $record,
-                                'donations'         => $donations,
-                                'memberships'       => $memberships,
-                                'transactions'      => $transactions,
-                                'contacts'          => $contacts,
-                                'donationsCount'    => $record->model_type === 'donation' ? Donation::where('import_session_id', $record->id)->count() : 0,
-                                'membershipsCount'  => $record->model_type === 'membership' ? Membership::where('import_session_id', $record->id)->count() : 0,
-                                'transactionsCount' => Transaction::where('import_session_id', $record->id)->count(),
-                                'contactsCount'     => Contact::withoutGlobalScopes()->where('import_session_id', $record->id)->count(),
-                            ]);
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $notes = Note::where('import_session_id', $record->id)
-                                ->with(['notable' => function ($q) {
-                                    $q->select('id', 'first_name', 'last_name', 'email');
-                                }])
-                                ->latest('occurred_at')
-                                ->limit(20)
-                                ->get();
-
-                            $notesTotal   = Note::where('import_session_id', $record->id)->count();
-                            $stagedTotal  = ImportStagedUpdate::where('import_session_id', $record->id)->count();
-
-                            return view('filament.pages.import-notes-review-preview', compact('notes', 'notesTotal', 'stagedTotal'));
-                        }
-
-                        $contacts = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->limit(20)
-                            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'city', 'state']);
-
-                        $total = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->count();
-
-                        $stagedUpdates = ImportStagedUpdate::where('import_session_id', $record->id)
-                            ->with('subject')
-                            ->limit(20)
-                            ->get();
-
-                        $stagedTotal = ImportStagedUpdate::where('import_session_id', $record->id)
-                            ->count();
-
-                        return view('filament.pages.import-review-preview', compact(
-                            'contacts', 'total', 'stagedUpdates', 'stagedTotal'
-                        ));
-                    })
+                    ->modalContent(fn (ImportSession $record) => app(ImportSessionPreview::class)->render($record))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Close'),
 
