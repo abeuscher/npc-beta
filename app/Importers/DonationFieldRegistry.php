@@ -2,11 +2,13 @@
 
 namespace App\Importers;
 
+use App\Importers\Concerns\FieldRegistry;
+
 /**
  * Importable Donation fields. Keys are raw column names; the aggregate
  * DonationImportFieldRegistry namespaces them to `donation:*`.
  */
-class DonationFieldRegistry
+class DonationFieldRegistry extends FieldRegistry
 {
     public static function fields(): array
     {
@@ -19,10 +21,5 @@ class DonationFieldRegistry
             'invoice_number' => ['label' => 'Invoice / Receipt Number', 'type' => 'text'],
             'comment'        => ['label' => 'Comment / Notes', 'type' => 'textarea'],
         ];
-    }
-
-    public static function options(): array
-    {
-        return array_map(fn ($def) => $def['label'], static::fields());
     }
 }

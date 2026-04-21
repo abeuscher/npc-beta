@@ -2,11 +2,13 @@
 
 namespace App\Importers;
 
+use App\Importers\Concerns\FieldRegistry;
+
 /**
  * Importable Membership fields. Keys are raw column names; the aggregate
  * MembershipImportFieldRegistry namespaces them to `membership:*`.
  */
-class MembershipFieldRegistry
+class MembershipFieldRegistry extends FieldRegistry
 {
     public static function fields(): array
     {
@@ -19,10 +21,5 @@ class MembershipFieldRegistry
             'notes'       => ['label' => 'Notes', 'type' => 'textarea'],
             'external_id' => ['label' => 'External ID', 'type' => 'external_id'],
         ];
-    }
-
-    public static function options(): array
-    {
-        return array_map(fn ($def) => $def['label'], static::fields());
     }
 }

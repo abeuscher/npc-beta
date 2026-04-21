@@ -2,11 +2,13 @@
 
 namespace App\Importers;
 
+use App\Importers\Concerns\FieldRegistry;
+
 /**
  * Importable Invoice Detail fields. Keys are raw column names; the aggregate
  * InvoiceImportFieldRegistry namespaces them to `invoice:*`.
  */
-class InvoiceDetailFieldRegistry
+class InvoiceDetailFieldRegistry extends FieldRegistry
 {
     public static function fields(): array
     {
@@ -26,10 +28,5 @@ class InvoiceDetailFieldRegistry
             'item_amount'     => ['label' => 'Item Amount', 'type' => 'decimal'],
             'internal_notes'  => ['label' => 'Internal Notes', 'type' => 'textarea'],
         ];
-    }
-
-    public static function options(): array
-    {
-        return array_map(fn ($def) => $def['label'], static::fields());
     }
 }

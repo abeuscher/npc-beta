@@ -2,11 +2,13 @@
 
 namespace App\Importers;
 
+use App\Importers\Concerns\FieldRegistry;
+
 /**
  * Importable Note fields. Keys are raw column names; the aggregate
  * NoteImportFieldRegistry namespaces them to `note:*`.
  */
-class NoteFieldRegistry
+class NoteFieldRegistry extends FieldRegistry
 {
     public static function fields(): array
     {
@@ -21,10 +23,5 @@ class NoteFieldRegistry
             'duration_minutes' => ['label' => 'Duration (minutes)', 'type' => 'integer'],
             'external_id'      => ['label' => 'External ID', 'type' => 'external_id'],
         ];
-    }
-
-    public static function options(): array
-    {
-        return array_map(fn ($def) => $def['label'], static::fields());
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Importers;
 
+use App\Importers\Concerns\FieldRegistry;
+
 /**
  * Importable EventRegistration fields. Hand-curated — the fillable list on
  * EventRegistration includes many columns populated by the public registration
@@ -9,7 +11,7 @@ namespace App\Importers;
  * importer. Keys are raw column names; EventImportFieldRegistry namespaces them
  * to `registration:*`.
  */
-class RegistrationFieldRegistry
+class RegistrationFieldRegistry extends FieldRegistry
 {
     public static function fields(): array
     {
@@ -21,10 +23,5 @@ class RegistrationFieldRegistry
             'registered_at'  => ['label' => 'Registered At', 'type' => 'datetime'],
             'notes'          => ['label' => 'Registration Notes', 'type' => 'textarea'],
         ];
-    }
-
-    public static function options(): array
-    {
-        return array_map(fn ($def) => $def['label'], static::fields());
     }
 }
