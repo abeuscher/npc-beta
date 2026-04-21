@@ -6,19 +6,18 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\ImportIdMap;
 use App\Models\ImportSession;
 use App\Models\ImportStagedUpdate;
 use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Transaction;
 use App\Services\Import\CsvTemplateService;
+use App\Services\Import\ImportSessionActions;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\DB;
 
 class ImporterPage extends Page implements HasTable
 {
@@ -287,88 +286,13 @@ class ImporterPage extends Page implements HasTable
                     ->requiresConfirmation()
                     ->modalSubmitAction(fn ($action) => $action->extraAttributes(['data-testid' => 'importer-modal-approve-submit']))
                     ->modalHeading('Approve import?')
-                    ->modalDescription(function (ImportSession $record): string {
-                        if ($record->model_type === 'event') {
-                            $events = Event::where('import_session_id', $record->id)->count();
-                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
-
-                            return "This will mark {$events} event(s) and {$regs} registration(s) as approved. This cannot be undone.";
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            $label = match ($record->model_type) {
-                                'donation'       => 'donation(s)',
-                                'membership'     => 'membership(s)',
-                                'invoice_detail' => 'transaction(s)',
-                            };
-                            $count = match ($record->model_type) {
-                                'donation'       => Donation::where('import_session_id', $record->id)->count(),
-                                'membership'     => Membership::where('import_session_id', $record->id)->count(),
-                                'invoice_detail' => Transaction::where('import_session_id', $record->id)->count(),
-                            };
-
-                            return "This will approve {$count} {$label} from this import. This cannot be undone.";
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $count  = Note::where('import_session_id', $record->id)->count();
-                            $staged = ImportStagedUpdate::where('import_session_id', $record->id)->count();
-
-                            $parts = ["This will approve {$count} note(s) from this import"];
-
-                            if ($staged > 0) {
-                                $parts[] = "and apply {$staged} staged update(s) to existing notes";
-                            }
-
-                            return implode(' ', $parts) . '. This cannot be undone.';
-                        }
-
-                        return "This will make all {$record->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone.";
-                    })
+                    ->modalDescription(fn (ImportSession $record): string =>
+                        app(ImportSessionActions::class)->approveDescription($record)
+                    )
                     ->modalSubmitActionLabel('Approve')
                     ->action(function (ImportSession $record): void {
                         abort_unless(auth()->user()?->can('review_imports'), 403);
-                        $record->update([
-                            'status'      => 'approved',
-                            'approved_by' => auth()->id(),
-                            'approved_at' => now(),
-                        ]);
-
-                        $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
-                        $sourceName    = $record->importSource?->name;
-                        $sourceId      = $record->importSource?->id;
-                        $sessionLabel  = $record->session_label ?: $record->filename;
-                        $sourceDisplay = $sourceName ?: 'unknown source';
-                        $approverName  = auth()->user()->name;
-
-                        foreach ($staged as $update) {
-                            $subject = $this->resolveStagedSubject($update);
-
-                            if (! $subject) {
-                                continue;
-                            }
-
-                            if (! empty($update->attributes)) {
-                                $subject->fill($update->attributes)->save();
-                            }
-
-                            if ($subject instanceof Contact) {
-                                if (! empty($update->tag_ids)) {
-                                    $subject->tags()->syncWithoutDetaching($update->tag_ids);
-                                }
-
-                                Note::create([
-                                    'notable_type'     => Contact::class,
-                                    'notable_id'       => $subject->id,
-                                    'author_id'        => auth()->id(),
-                                    'body'             => "Changes applied from import from {$sourceDisplay} (session: {$sessionLabel}) — approved by {$approverName}",
-                                    'occurred_at'      => now(),
-                                    'import_source_id' => $sourceId,
-                                ]);
-                            }
-                        }
-
-                        $staged->each->delete();
+                        app(ImportSessionActions::class)->approve($record);
                     }),
 
                 Tables\Actions\Action::make('rollback')
@@ -385,109 +309,13 @@ class ImporterPage extends Page implements HasTable
                     ->requiresConfirmation()
                     ->modalSubmitAction(fn ($action) => $action->extraAttributes(['data-testid' => 'importer-modal-rollback-submit']))
                     ->modalHeading('Roll back import?')
-                    ->modalDescription(function (ImportSession $record): string {
-                        if ($record->model_type === 'event') {
-                            $events = Event::where('import_session_id', $record->id)->count();
-                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
-                            $tx     = Transaction::where('import_session_id', $record->id)->count();
-
-                            return "This will permanently delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s) created by this import. This cannot be undone.";
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            return $this->financialRollbackDescription($record);
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $count       = Note::where('import_session_id', $record->id)->count();
-                            $stagedCount = ImportStagedUpdate::where('import_session_id', $record->id)->count();
-
-                            $parts = ["This will permanently delete {$count} note(s) created by this import"];
-
-                            if ($stagedCount > 0) {
-                                $parts[] = "and discard {$stagedCount} staged update(s) to existing notes";
-                            }
-
-                            return implode(' ', $parts) . '. This cannot be undone.';
-                        }
-
-                        $count = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->count();
-
-                        $stagedCount = ImportStagedUpdate::where('import_session_id', $record->id)->count();
-
-                        $parts = ["This will permanently delete all {$count} new contacts from this import"];
-
-                        if ($stagedCount > 0) {
-                            $parts[] = "and discard {$stagedCount} staged update(s) to existing contacts";
-                        }
-
-                        return implode(' ', $parts) . '. This cannot be undone.';
-                    })
+                    ->modalDescription(fn (ImportSession $record): string =>
+                        app(ImportSessionActions::class)->rollbackDescription($record)
+                    )
                     ->modalSubmitActionLabel('Delete and roll back')
                     ->action(function (ImportSession $record): void {
                         abort_unless(auth()->user()?->can('review_imports'), 403);
-
-                        if ($record->model_type === 'event') {
-                            $this->rollBackEventSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            $this->rollBackFinancialSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $this->rollBackNoteSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        $contactIds = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->pluck('id')
-                            ->toArray();
-
-                        if (! empty($contactIds)) {
-                            DB::table('taggables')
-                                ->whereIn('taggable_id', $contactIds)
-                                ->where('taggable_type', Contact::class)
-                                ->delete();
-
-                            Contact::withoutGlobalScopes()
-                                ->whereIn('id', $contactIds)
-                                ->forceDelete();
-                        }
-
-                        $staged        = ImportStagedUpdate::where('import_session_id', $record->id)->get();
-                        $sourceName    = $record->importSource?->name;
-                        $sourceId      = $record->importSource?->id;
-                        $sessionLabel  = $record->session_label ?: $record->filename;
-                        $sourceDisplay = $sourceName ?: 'unknown source';
-
-                        foreach ($staged as $update) {
-                            $subject = $this->resolveStagedSubject($update);
-
-                            if ($subject instanceof Contact) {
-                                Note::create([
-                                    'notable_type'     => Contact::class,
-                                    'notable_id'       => $subject->id,
-                                    'author_id'        => auth()->id(),
-                                    'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
-                                    'occurred_at'      => now(),
-                                    'import_source_id' => $sourceId,
-                                ]);
-                            }
-                        }
-
-                        $staged->each->delete();
-
-                        // Delete the session itself — import_id_maps are preserved
-                        $record->delete();
+                        app(ImportSessionActions::class)->rollback($record);
                     }),
 
                 Tables\Actions\Action::make('delete')
@@ -497,211 +325,17 @@ class ImporterPage extends Page implements HasTable
                     ->hidden(fn () => ! auth()->user()?->can('review_imports'))
                     ->requiresConfirmation()
                     ->modalHeading('Delete import session?')
-                    ->modalDescription(function (ImportSession $record): string {
-                        if ($record->model_type === 'event') {
-                            $events = Event::where('import_session_id', $record->id)->count();
-                            $regs   = EventRegistration::where('import_session_id', $record->id)->count();
-                            $tx     = Transaction::where('import_session_id', $record->id)->count();
-
-                            return "Permanently delete this session and cascade-delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s). ImportIdMap rows created by this session are also removed. This cannot be undone.";
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            return $this->financialRollbackDescription($record);
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $count = Note::where('import_session_id', $record->id)->count();
-
-                            return "Permanently delete this session and {$count} note(s) created by it. Any staged updates are discarded. This cannot be undone.";
-                        }
-
-                        $count = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->count();
-
-                        return "Permanently delete this session and {$count} contact(s) created by it. Any staged updates are discarded. This cannot be undone.";
-                    })
+                    ->modalDescription(fn (ImportSession $record): string =>
+                        app(ImportSessionActions::class)->deleteDescription($record)
+                    )
                     ->modalSubmitActionLabel('Delete session and data')
                     ->action(function (ImportSession $record): void {
                         abort_unless(auth()->user()?->can('review_imports'), 403);
-
-                        if ($record->model_type === 'event') {
-                            $this->rollBackEventSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
-                            $this->rollBackFinancialSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        if ($record->model_type === 'note') {
-                            $this->rollBackNoteSession($record);
-                            $record->delete();
-                            return;
-                        }
-
-                        $contactIds = Contact::withoutGlobalScopes()
-                            ->where('import_session_id', $record->id)
-                            ->pluck('id')
-                            ->toArray();
-
-                        if (! empty($contactIds)) {
-                            DB::table('taggables')
-                                ->whereIn('taggable_id', $contactIds)
-                                ->where('taggable_type', Contact::class)
-                                ->delete();
-
-                            Contact::withoutGlobalScopes()
-                                ->whereIn('id', $contactIds)
-                                ->forceDelete();
-                        }
-
-                        ImportStagedUpdate::where('import_session_id', $record->id)->delete();
-
-                        $record->delete();
+                        app(ImportSessionActions::class)->delete($record);
                     }),
             ])
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No imports yet')
             ->emptyStateDescription('New imports appear here for review or cleanup.');
-    }
-
-    private function resolveStagedSubject(ImportStagedUpdate $update): ?\Illuminate\Database\Eloquent\Model
-    {
-        $class = $update->subject_type;
-
-        if (! class_exists($class)) {
-            return null;
-        }
-
-        $query = $class::query();
-
-        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($class), true)) {
-            $query->withTrashed();
-        }
-
-        if ($class === Contact::class) {
-            $query->withoutGlobalScopes();
-        }
-
-        return $query->find($update->subject_id);
-    }
-
-    /**
-     * Cascade rollback for an events import session: registrations → transactions
-     * → events → id_maps. Order matters — registrations hold FKs to both
-     * transactions and events. ImportIdMap rows for events and transactions
-     * created by this session are removed so the next import starts clean.
-     */
-    private function rollBackEventSession(ImportSession $record): void
-    {
-        $eventIds = Event::where('import_session_id', $record->id)->pluck('id')->toArray();
-        $txIds    = Transaction::where('import_session_id', $record->id)->pluck('id')->toArray();
-
-        EventRegistration::where('import_session_id', $record->id)->delete();
-
-        if (! empty($txIds)) {
-            Transaction::whereIn('id', $txIds)->delete();
-        }
-
-        if (! empty($eventIds)) {
-            Event::whereIn('id', $eventIds)->delete();
-
-            ImportIdMap::where('import_source_id', $record->import_source_id)
-                ->where('model_type', 'event')
-                ->whereIn('model_uuid', $eventIds)
-                ->delete();
-        }
-
-        if (! empty($txIds)) {
-            ImportIdMap::where('import_source_id', $record->import_source_id)
-                ->where('model_type', 'transaction')
-                ->whereIn('model_uuid', $txIds)
-                ->delete();
-        }
-    }
-
-    private function financialRollbackDescription(ImportSession $record): string
-    {
-        $parts = [];
-
-        if ($record->model_type === 'donation') {
-            $donations = Donation::where('import_session_id', $record->id)->count();
-            $parts[]   = "{$donations} donation(s)";
-        }
-
-        if ($record->model_type === 'membership') {
-            $memberships = Membership::where('import_session_id', $record->id)->count();
-            $parts[]     = "{$memberships} membership(s)";
-        }
-
-        $tx = Transaction::where('import_session_id', $record->id)->count();
-        if ($tx > 0) {
-            $parts[] = "{$tx} transaction(s)";
-        }
-
-        $contacts = Contact::withoutGlobalScopes()
-            ->where('import_session_id', $record->id)
-            ->count();
-        if ($contacts > 0) {
-            $parts[] = "{$contacts} auto-created contact(s)";
-        }
-
-        return "This will permanently delete " . implode(', ', $parts) . " created by this import. This cannot be undone.";
-    }
-
-    private function rollBackNoteSession(ImportSession $record): void
-    {
-        Note::where('import_session_id', $record->id)->forceDelete();
-
-        ImportStagedUpdate::where('import_session_id', $record->id)->delete();
-    }
-
-    private function rollBackFinancialSession(ImportSession $record): void
-    {
-        if ($record->model_type === 'donation') {
-            $donationIds = Donation::where('import_session_id', $record->id)->pluck('id')->toArray();
-
-            // Delete transactions linked to these donations.
-            if (! empty($donationIds)) {
-                Transaction::where('subject_type', Donation::class)
-                    ->whereIn('subject_id', $donationIds)
-                    ->delete();
-
-                Donation::whereIn('id', $donationIds)->delete();
-            }
-
-            // Also delete any transactions directly created by this session.
-            Transaction::where('import_session_id', $record->id)->delete();
-        }
-
-        if ($record->model_type === 'membership') {
-            Membership::where('import_session_id', $record->id)->forceDelete();
-        }
-
-        if ($record->model_type === 'invoice_detail') {
-            Transaction::where('import_session_id', $record->id)->delete();
-        }
-
-        // Delete auto-created contacts.
-        $contactIds = Contact::withoutGlobalScopes()
-            ->where('import_session_id', $record->id)
-            ->pluck('id')
-            ->toArray();
-
-        if (! empty($contactIds)) {
-            DB::table('taggables')
-                ->whereIn('taggable_id', $contactIds)
-                ->where('taggable_type', Contact::class)
-                ->delete();
-
-            Contact::withoutGlobalScopes()
-                ->whereIn('id', $contactIds)
-                ->forceDelete();
-        }
     }
 }
