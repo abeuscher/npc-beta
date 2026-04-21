@@ -27,6 +27,8 @@ class Note extends Model
         'duration_minutes',
         'meta',
         'import_source_id',
+        'import_session_id',
+        'external_id',
     ];
 
     protected $casts = [

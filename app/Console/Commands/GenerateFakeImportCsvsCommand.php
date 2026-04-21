@@ -14,7 +14,7 @@ class GenerateFakeImportCsvsCommand extends Command
         {--out=storage/app/fake-csvs : Output directory relative to project base_path}
         {--seed= : PRNG seed for reproducibility}';
 
-    protected $description = 'Emit a self-consistent bundle of fake import CSVs (contacts, events, donations, memberships, invoice_details) to a directory.';
+    protected $description = 'Emit a self-consistent bundle of fake import CSVs (contacts, events, donations, memberships, invoice_details, notes) to a directory.';
 
     public function handle(): int
     {
@@ -41,6 +41,7 @@ class GenerateFakeImportCsvsCommand extends Command
         $donationCount  = $faker->numberBetween(300, 500);
         $membershipCount = $faker->numberBetween(50, 100);
         $invoiceRows    = $faker->numberBetween(100, 300);
+        $noteCount      = $faker->numberBetween(300, 600);
 
         $contacts = $composer->composeContacts($contactCount);
         $emails   = $composer->extractContactEmails($contacts);
@@ -49,12 +50,14 @@ class GenerateFakeImportCsvsCommand extends Command
         $donations = $composer->composeDonations($donationCount, $emails);
         $memberships = $composer->composeMemberships($membershipCount, $emails);
         $invoices  = $composer->composeInvoiceDetails($invoiceRows, $emails);
+        $notes     = $composer->composeNotes($noteCount, $emails);
 
         $this->writeCsv($out . '/contacts.csv', CsvTemplateService::contactHeaders(), $contacts, 'contacts');
         $this->writeCsv($out . '/events.csv', CsvTemplateService::eventHeaders(), $events, 'events');
         $this->writeCsv($out . '/donations.csv', CsvTemplateService::donationHeaders(), $donations, 'donations');
         $this->writeCsv($out . '/memberships.csv', CsvTemplateService::membershipHeaders(), $memberships, 'memberships');
         $this->writeCsv($out . '/invoice_details.csv', CsvTemplateService::invoiceDetailHeaders(), $invoices, 'invoice_details');
+        $this->writeCsv($out . '/notes.csv', CsvTemplateService::noteHeaders(), $notes, 'notes');
 
         $this->info("Wrote fake import CSVs to {$out}");
         $this->line("  contacts.csv:         " . count($contacts) . ' rows');
@@ -62,6 +65,7 @@ class GenerateFakeImportCsvsCommand extends Command
         $this->line("  donations.csv:        " . count($donations) . ' rows');
         $this->line("  memberships.csv:      " . count($memberships) . ' rows');
         $this->line("  invoice_details.csv:  " . count($invoices) . ' rows');
+        $this->line("  notes.csv:            " . count($notes) . ' rows');
 
         return self::SUCCESS;
     }

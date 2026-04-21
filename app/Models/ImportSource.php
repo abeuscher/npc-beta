@@ -31,6 +31,9 @@ class ImportSource extends Model
         'invoices_field_map',
         'invoices_custom_field_map',
         'invoices_contact_match_key',
+        'notes_field_map',
+        'notes_custom_field_map',
+        'notes_contact_match_key',
     ];
 
     protected $casts = [
@@ -44,6 +47,8 @@ class ImportSource extends Model
         'memberships_custom_field_map' => 'array',
         'invoices_field_map'           => 'array',
         'invoices_custom_field_map'    => 'array',
+        'notes_field_map'              => 'array',
+        'notes_custom_field_map'       => 'array',
     ];
 
     public function sessions(): HasMany

@@ -209,18 +209,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 200 | Admin CSS Consolidation — Tightening Pass |
 | 201 | Widget Template Tokens — Per-Item Namespace Split |
 | 202 | Importer CSV Generator & Playwright Edge-Case Coverage |
+| 203 | CRM Importer — Notes & Interactions (Standalone Path) |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
 *Ordered by priority.*
-
-### Importer — Custom Field Mapping for Notes / Interactions *(stub — pre-Beta 1)*
-
-Follow-up to session 198 (Notes → structured interactions schema). Once the `notes` table carries a `meta` JSONB catch-all for source-specific fields, the importer needs a pass to make those fields authorable from a CSV import. The contact importer already maps user-defined custom fields into `contacts.custom_fields` via the Custom Fields admin page; notes need an analogous surface: (1) a notes-importer wizard path with its own field-detection heuristics, (2) destination options including the 10 canonical columns plus "custom → meta.{source_key}" per unmapped column, (3) contact-lookup logic so each CSV row can be tied to the right Contact (likely by email + name + a `source_contact_id` key via `import_id_maps` for relational CRM exports where Contact and Activity are separate files). Harder than the contact importer because notes are a child relationship — each CSV row produces one note attached to one pre-existing contact, so the lookup + create + meta-mapping chain has to handle unresolved contacts gracefully (reject row, stage for manual resolution, or auto-create stub contact — TBD). Not urgent until 198 lands and we actually know what shape the 10 canonical columns settled into. Scope estimate: 1-2 sessions.
-
----
 
 ### Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save *(stub — pre-Beta 1)*
 
@@ -265,6 +260,14 @@ Batched polish session against the page builder, the admin left nav, and the set
 
 - On the Contacts list (and likely the other content-type lists), the "Preview" button attached to staged import sessions only shows a count of rows. The name implies you'd see the actual staged rows / proposed changes. Either rename it to "Summary" or wire it up to show the staged records (first N rows + field diffs for updates). Surfaced during session 202 manual testing.
 
+**Notes Timeline — expanded-view toggle:**
+
+- The Contact Timeline's notes list (and likely the Notes admin list) currently renders every note's full body inline. With the structured-interactions work from session 198 and the importer in session 203, real-world lists can easily reach hundreds of entries per contact — the full-body rendering dominates the viewport.
+- Add a top-right **Expand / Collapse** toggle to the list header. **Collapsed is default:** show the type badge, subject (or body preview), status pill, relative timestamp, and follow-up/overdue pill — no body. **Expanded:** the current full-body treatment (body HTML, outcome, `meta` Source-fields disclosure).
+- Design the expanded card treatment as the canonical "full note" surface (likely reused by click-to-expand on individual cards later); the collapsed one-liner is the new default.
+- Persistence of the toggle state is conversation-local for v1 (Livewire/Alpine state); promoting to a per-user preference can be a later follow-up if it comes up.
+- Editability note: some deployments will want notes to be **editable only by the original creator** (`author_id`). Flag this during scoping — the permission shape lives in the Notes Permissions stub below; this session owns only the view toggle and expanded/collapsed layouts, not the gate.
+
 **Out of scope for this session:** schema changes, new widgets, new settings, anything that touches the public site. Pure admin-side UX polish.
 
 ---
@@ -283,7 +286,7 @@ Follow-up to sessions 062, 082, 108, 142, and 181. Consolidate accumulated migra
 
 ### Notes Permissions & Permissions Audit *(stub — pre-Beta 1)*
 
-Two linked concerns. First: session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. Second: a full coverage audit in the pattern of sessions 114 and 117, walking every admin action (Filament resources, pages, actions, bulk actions, header actions) and confirming each has a permission gate and that the gate is enforced at both UI and controller layers. Reference the 114/117 logs for the audit methodology; this pass catches drift introduced since 117 landed.
+Two linked concerns. First: session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. A specific shape surfaced during session 203 manual testing: **edit-only-by-creator** (the authenticated user must equal `notes.author_id` to edit) as an opt-in tenant-level setting, with a separate override permission for managers. Second: a full coverage audit in the pattern of sessions 114 and 117, walking every admin action (Filament resources, pages, actions, bulk actions, header actions) and confirming each has a permission gate and that the gate is enforced at both UI and controller layers. Reference the 114/117 logs for the audit methodology; this pass catches drift introduced since 117 landed.
 
 ---
 
@@ -305,7 +308,7 @@ Competitive value: demonstrating fast, low-friction migration off a prospect's c
 
 Approach: obtain sample exports (anonymised) for each platform, map their column conventions into `guessDestination()` heuristics and `FieldMapper::sourceSkippedHeaders()`, seed the preset. No schema changes — the preset infrastructure from sessions 188–191 handles everything.
 
-Note: session 202's label disambiguation (`Donation Amount` / `Transaction Amount`) plus the composer's strict header contract against `CsvTemplateService` means preset field maps now have a stable, unambiguous column vocabulary to target. Any preset written here can assume the canonical template shape as the destination and focus solely on source-column-name heuristics. Session 203 will add notes/interactions presets to the mix (Raiser's Edge Actions, Bloomerang Interactions, Salesforce Task/Event) once the standalone Notes importer lands.
+Note: session 202's label disambiguation (`Donation Amount` / `Transaction Amount`) plus the composer's strict header contract against `CsvTemplateService` means preset field maps now have a stable, unambiguous column vocabulary to target. Any preset written here can assume the canonical template shape as the destination and focus solely on source-column-name heuristics. Session 203 landed the standalone Notes importer with free-text-column heuristics covering the common activity-export shapes; per-platform note presets (Raiser's Edge Actions, Bloomerang Interactions, Salesforce Task/Event, CiviCRM Activities) still want a dedicated pass here using real sample exports.
 
 ---
 

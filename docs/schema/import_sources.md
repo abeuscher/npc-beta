@@ -25,6 +25,9 @@ Named external systems that imports originate from (e.g. "Old CRM", "Wild Aprico
 | invoices_field_map | jsonb | no | default: `{}`; invoices-scoped equivalent of `field_map`. |
 | invoices_custom_field_map | jsonb | no | default: `{}`; invoices-scoped equivalent of `custom_field_map`. |
 | invoices_contact_match_key | string | yes | Contact match key for the invoice details importer. |
+| notes_field_map | jsonb | no | default: `{}`; notes-scoped equivalent of `field_map`. |
+| notes_custom_field_map | jsonb | no | default: `{}`; notes-scoped equivalent of `custom_field_map`. Values are `{handle, label, field_type}` but there is no CustomFieldDef surface — these columns are written into `notes.meta` at import time. |
+| notes_contact_match_key | string | yes | Contact match key for the notes importer. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

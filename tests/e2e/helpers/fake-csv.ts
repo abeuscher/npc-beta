@@ -14,6 +14,7 @@ export const FAKE_SOURCE_LABELS = {
     donations:      'Demo Fake Data — Donations',
     memberships:    'Demo Fake Data — Memberships',
     invoiceDetails: 'Demo Fake Data — Invoice Details',
+    notes:          'Demo Fake Data — Notes',
 } as const;
 
 let generated = false;
@@ -43,7 +44,7 @@ export function primeFakeFixtures(seed?: number): void {
     seedFakeImportSources(true);
 }
 
-export type CsvName = 'contacts.csv' | 'events.csv' | 'donations.csv' | 'memberships.csv' | 'invoice_details.csv';
+export type CsvName = 'contacts.csv' | 'events.csv' | 'donations.csv' | 'memberships.csv' | 'invoice_details.csv' | 'notes.csv';
 
 export function cleanCsvPath(name: CsvName): string {
     const p = path.join(HOST_OUT_DIR, name);

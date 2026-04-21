@@ -7,6 +7,7 @@ use App\Importers\DonationFieldRegistry;
 use App\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
+use App\Importers\NoteFieldRegistry;
 use App\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -117,6 +118,22 @@ class CsvTemplateService
         return $headers;
     }
 
+    public static function noteHeaders(): array
+    {
+        $headers = [];
+
+        foreach (NoteFieldRegistry::options() as $label) {
+            $headers[] = "Note {$label}";
+        }
+
+        // Contact match columns
+        $headers[] = 'Email';
+        $headers[] = 'User ID';
+        $headers[] = 'Phone';
+
+        return $headers;
+    }
+
     public static function stream(string $type): StreamedResponse
     {
         $headers = match ($type) {
@@ -125,6 +142,7 @@ class CsvTemplateService
             'donations'       => static::donationHeaders(),
             'memberships'     => static::membershipHeaders(),
             'invoice_details' => static::invoiceDetailHeaders(),
+            'notes'           => static::noteHeaders(),
             default           => throw new \InvalidArgumentException("Unknown template type: {$type}"),
         };
 

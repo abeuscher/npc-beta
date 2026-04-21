@@ -118,6 +118,20 @@ export async function countTransactionsInSession(sessionId: string): Promise<num
     return countInSession('transactions', sessionId);
 }
 
+export async function countNotesInSession(sessionId: string): Promise<number> {
+    return countInSession('notes', sessionId);
+}
+
+export async function findNoteByExternalId(sourceId: string, externalId: string): Promise<Record<string, unknown> | null> {
+    return withClient(async (client) => {
+        const res = await client.query<Record<string, unknown>>(
+            'SELECT * FROM notes WHERE import_source_id = $1 AND external_id = $2 LIMIT 1',
+            [sourceId, externalId],
+        );
+        return res.rows[0] ?? null;
+    });
+}
+
 async function findByExternalId(modelTable: string, sourceId: string, modelType: string, externalId: string): Promise<Record<string, unknown> | null> {
     return withClient(async (client) => {
         const res = await client.query<Record<string, unknown>>(

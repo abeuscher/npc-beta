@@ -39,11 +39,11 @@ function readCsv(string $path): array
     return ['headers' => $headers, 'rows' => $rows];
 }
 
-it('writes all five CSVs to the configured output directory', function () {
+it('writes all six CSVs to the configured output directory', function () {
     $code = runFakeImportGenerator($this->outDir);
     expect($code)->toBe(0);
 
-    foreach (['contacts.csv', 'events.csv', 'donations.csv', 'memberships.csv', 'invoice_details.csv'] as $f) {
+    foreach (['contacts.csv', 'events.csv', 'donations.csv', 'memberships.csv', 'invoice_details.csv', 'notes.csv'] as $f) {
         expect(file_exists($this->outDir . '/' . $f))->toBeTrue("missing {$f}");
     }
 });
@@ -57,6 +57,7 @@ it('each CSV emits headers matching CsvTemplateService exactly', function () {
         'donations.csv'       => CsvTemplateService::donationHeaders(),
         'memberships.csv'     => CsvTemplateService::membershipHeaders(),
         'invoice_details.csv' => CsvTemplateService::invoiceDetailHeaders(),
+        'notes.csv'           => CsvTemplateService::noteHeaders(),
     ];
 
     foreach ($pairs as $file => $canonical) {
@@ -74,6 +75,7 @@ it('row counts fall within the declared ranges', function () {
         'donations.csv'       => [300, 500],
         'memberships.csv'     => [50, 100],
         'invoice_details.csv' => [100, 300],
+        'notes.csv'           => [300, 600],
     ];
 
     foreach ($ranges as $file => [$min, $max]) {
@@ -97,6 +99,7 @@ it('cross-file email references resolve back to contacts.csv', function () {
         'memberships.csv'     => 'Email',
         'invoice_details.csv' => 'Email',
         'events.csv'          => 'Contact Email',
+        'notes.csv'           => 'Email',
     ];
 
     foreach ($references as $file => $emailColumn) {
@@ -167,7 +170,7 @@ it('same seed produces identical output (reproducibility)', function () {
     runFakeImportGenerator($dir1, 999);
     runFakeImportGenerator($dir2, 999);
 
-    foreach (['contacts.csv', 'events.csv', 'donations.csv', 'memberships.csv', 'invoice_details.csv'] as $f) {
+    foreach (['contacts.csv', 'events.csv', 'donations.csv', 'memberships.csv', 'invoice_details.csv', 'notes.csv'] as $f) {
         expect(file_get_contents("{$dir1}/{$f}"))->toEqual(file_get_contents("{$dir2}/{$f}"), "{$f} differs between two --seed=999 runs");
     }
 

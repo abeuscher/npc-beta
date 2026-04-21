@@ -14,9 +14,10 @@ const FAKE_SOURCE_NAMES = [
     'Demo Fake Data — Donations',
     'Demo Fake Data — Memberships',
     'Demo Fake Data — Invoice Details',
+    'Demo Fake Data — Notes',
 ];
 
-it('creates five demo sources on first run', function () {
+it('creates six demo sources on first run', function () {
     $code = Artisan::call('seed:fake-import-sources');
     expect($code)->toBe(0);
 
@@ -39,6 +40,7 @@ it('each seeded field map covers every canonical CSV header', function () {
         'Demo Fake Data — Donations'       => ['donations_field_map',   CsvTemplateService::donationHeaders(),       []],
         'Demo Fake Data — Memberships'     => ['memberships_field_map', CsvTemplateService::membershipHeaders(),     []],
         'Demo Fake Data — Invoice Details' => ['invoices_field_map',    CsvTemplateService::invoiceDetailHeaders(),  []],
+        'Demo Fake Data — Notes'           => ['notes_field_map',       CsvTemplateService::noteHeaders(),           []],
     ];
 
     foreach ($pairs as $name => [$column, $canonical, $allowedMissing]) {
@@ -88,6 +90,7 @@ it('sets contact match key to email for non-contact sources', function () {
         'Demo Fake Data — Donations'       => 'donations_contact_match_key',
         'Demo Fake Data — Memberships'     => 'memberships_contact_match_key',
         'Demo Fake Data — Invoice Details' => 'invoices_contact_match_key',
+        'Demo Fake Data — Notes'           => 'notes_contact_match_key',
     ];
 
     foreach ($names as $name => $column) {

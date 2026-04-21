@@ -75,6 +75,11 @@ class ImporterPage extends Page implements HasTable
         return CsvTemplateService::stream('invoice_details');
     }
 
+    public function downloadNotesTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('notes');
+    }
+
     public function getBlockedTypes(): array
     {
         if ($this->blockedTypesCache !== null) {
@@ -153,6 +158,7 @@ class ImporterPage extends Page implements HasTable
                         'donation'       => 'Donation',
                         'membership'     => 'Membership',
                         'invoice_detail' => 'Invoice Detail',
+                        'note'           => 'Note',
                     ]),
             ])
             ->actions([
@@ -194,6 +200,21 @@ class ImporterPage extends Page implements HasTable
                                 'transactionsCount' => Transaction::where('import_session_id', $record->id)->count(),
                                 'contactsCount'     => Contact::withoutGlobalScopes()->where('import_session_id', $record->id)->count(),
                             ]);
+                        }
+
+                        if ($record->model_type === 'note') {
+                            $notes = Note::where('import_session_id', $record->id)
+                                ->with(['notable' => function ($q) {
+                                    $q->select('id', 'first_name', 'last_name', 'email');
+                                }])
+                                ->latest('occurred_at')
+                                ->limit(20)
+                                ->get();
+
+                            $notesTotal   = Note::where('import_session_id', $record->id)->count();
+                            $stagedTotal  = ImportStagedUpdate::where('import_session_id', $record->id)->count();
+
+                            return view('filament.pages.import-notes-review-preview', compact('notes', 'notesTotal', 'stagedTotal'));
                         }
 
                         $contacts = Contact::withoutGlobalScopes()
@@ -255,6 +276,19 @@ class ImporterPage extends Page implements HasTable
                             };
 
                             return "This will approve {$count} {$label} from this import. This cannot be undone.";
+                        }
+
+                        if ($record->model_type === 'note') {
+                            $count  = Note::where('import_session_id', $record->id)->count();
+                            $staged = ImportStagedUpdate::where('import_session_id', $record->id)->count();
+
+                            $parts = ["This will approve {$count} note(s) from this import"];
+
+                            if ($staged > 0) {
+                                $parts[] = "and apply {$staged} staged update(s) to existing notes";
+                            }
+
+                            return implode(' ', $parts) . '. This cannot be undone.';
                         }
 
                         return "This will make all {$record->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone.";
@@ -332,6 +366,19 @@ class ImporterPage extends Page implements HasTable
                             return $this->financialRollbackDescription($record);
                         }
 
+                        if ($record->model_type === 'note') {
+                            $count       = Note::where('import_session_id', $record->id)->count();
+                            $stagedCount = ImportStagedUpdate::where('import_session_id', $record->id)->count();
+
+                            $parts = ["This will permanently delete {$count} note(s) created by this import"];
+
+                            if ($stagedCount > 0) {
+                                $parts[] = "and discard {$stagedCount} staged update(s) to existing notes";
+                            }
+
+                            return implode(' ', $parts) . '. This cannot be undone.';
+                        }
+
                         $count = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->count();
@@ -358,6 +405,12 @@ class ImporterPage extends Page implements HasTable
 
                         if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
                             $this->rollBackFinancialSession($record);
+                            $record->delete();
+                            return;
+                        }
+
+                        if ($record->model_type === 'note') {
+                            $this->rollBackNoteSession($record);
                             $record->delete();
                             return;
                         }
@@ -425,6 +478,12 @@ class ImporterPage extends Page implements HasTable
                             return $this->financialRollbackDescription($record);
                         }
 
+                        if ($record->model_type === 'note') {
+                            $count = Note::where('import_session_id', $record->id)->count();
+
+                            return "Permanently delete this session and {$count} note(s) created by it. Any staged updates are discarded. This cannot be undone.";
+                        }
+
                         $count = Contact::withoutGlobalScopes()
                             ->where('import_session_id', $record->id)
                             ->count();
@@ -443,6 +502,12 @@ class ImporterPage extends Page implements HasTable
 
                         if (in_array($record->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
                             $this->rollBackFinancialSession($record);
+                            $record->delete();
+                            return;
+                        }
+
+                        if ($record->model_type === 'note') {
+                            $this->rollBackNoteSession($record);
                             $record->delete();
                             return;
                         }
@@ -555,6 +620,13 @@ class ImporterPage extends Page implements HasTable
         }
 
         return "This will permanently delete " . implode(', ', $parts) . " created by this import. This cannot be undone.";
+    }
+
+    private function rollBackNoteSession(ImportSession $record): void
+    {
+        Note::where('import_session_id', $record->id)->forceDelete();
+
+        ImportStagedUpdate::where('import_session_id', $record->id)->delete();
     }
 
     private function rollBackFinancialSession(ImportSession $record): void

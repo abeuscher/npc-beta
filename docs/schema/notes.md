@@ -18,6 +18,8 @@ User-authored interactions attached to any model via polymorphic relationship (c
 | duration_minutes | integer | yes | Interaction length in minutes. |
 | meta | jsonb | yes | Source-specific fields not captured by the ten structured columns (priority, location, multiple participants, custom CSV columns, etc.). Write-once from the importer; read-displayed on the Timeline. Not user-authorable via the admin forms. |
 | import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set on notes created by the contact importer so the timeline can deep-link to the source. |
+| import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set on notes created by the standalone notes importer so the review/approve/rollback flow can scope to the session. |
+| external_id | string | yes | Source-system identifier. Set by the standalone notes importer for dedupe on re-import. Null for admin-authored notes and for notes created by the contacts-importer `__note_contact__` appendage. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 | deleted_at | timestamp | yes | Soft delete |
@@ -28,3 +30,4 @@ Indexes:
 - `notes_notable_occurred_at_index` on `(notable_type, notable_id, occurred_at DESC)` — Timeline queries.
 - `notes_type_index` on `(type)` — Timeline type-filter queries.
 - `notes_follow_up_at_index` on `(follow_up_at) WHERE follow_up_at IS NOT NULL` — partial index for future follow-up dashboard.
+- `notes_import_external_idx` on `(import_source_id, external_id)` — dedupe lookup for the notes importer on re-import.

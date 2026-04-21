@@ -7,6 +7,7 @@ use App\Importers\DonationFieldRegistry;
 use App\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
+use App\Importers\NoteFieldRegistry;
 use App\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use App\Models\ImportSource;
@@ -16,13 +17,14 @@ class SeedFakeImportSourcesCommand extends Command
 {
     protected $signature = 'seed:fake-import-sources {--force : Replace existing demo sources with fresh field maps}';
 
-    protected $description = 'Seed five demo import sources (one per content type) whose saved field maps bind to the canonical CSV headers.';
+    protected $description = 'Seed six demo import sources (one per content type) whose saved field maps bind to the canonical CSV headers.';
 
     private const CONTACTS_LABEL    = 'Demo Fake Data — Contacts';
     private const EVENTS_LABEL      = 'Demo Fake Data — Events';
     private const DONATIONS_LABEL   = 'Demo Fake Data — Donations';
     private const MEMBERSHIPS_LABEL = 'Demo Fake Data — Memberships';
     private const INVOICES_LABEL    = 'Demo Fake Data — Invoice Details';
+    private const NOTES_LABEL       = 'Demo Fake Data — Notes';
 
     public function handle(): int
     {
@@ -59,6 +61,12 @@ class SeedFakeImportSourcesCommand extends Command
             'invoices_field_map'         => $this->invoicesFieldMap(),
             'invoices_custom_field_map'  => [],
             'invoices_contact_match_key' => 'contact:email',
+        ], $force);
+
+        $this->upsert(self::NOTES_LABEL, [
+            'notes_field_map'         => $this->notesFieldMap(),
+            'notes_custom_field_map'  => [],
+            'notes_contact_match_key' => 'contact:email',
         ], $force);
 
         $this->info('Seeded demo import sources.');
@@ -145,6 +153,18 @@ class SeedFakeImportSourcesCommand extends Command
         $map = [];
         foreach (InvoiceDetailFieldRegistry::fields() as $key => $def) {
             $map[strtolower($def['label'])] = "invoice:{$key}";
+        }
+        $map['email']   = 'contact:email';
+        $map['user id'] = 'contact:external_id';
+        $map['phone']   = 'contact:phone';
+        return $map;
+    }
+
+    private function notesFieldMap(): array
+    {
+        $map = [];
+        foreach (NoteFieldRegistry::fields() as $key => $def) {
+            $map[strtolower('Note ' . $def['label'])] = "note:{$key}";
         }
         $map['email']   = 'contact:email';
         $map['user id'] = 'contact:external_id';

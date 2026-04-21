@@ -14,13 +14,14 @@ export type NonContactWizardOptions = WizardOptions & {
     extraColumnMappings?: Record<number, string>;
 };
 
-type ImporterKey = 'events' | 'donations' | 'memberships' | 'invoice-details';
+type ImporterKey = 'events' | 'donations' | 'memberships' | 'invoice-details' | 'notes';
 
 const WIZARD_URL: Record<ImporterKey, string> = {
     'events': '/admin/import-events-page',
     'donations': '/admin/import-donations-page',
     'memberships': '/admin/import-memberships-page',
     'invoice-details': '/admin/import-invoice-details-page',
+    'notes': '/admin/import-notes-page',
 };
 
 const WIZARD_TESTID: Record<ImporterKey, string> = {
@@ -28,6 +29,7 @@ const WIZARD_TESTID: Record<ImporterKey, string> = {
     'donations': 'import-donations-wizard',
     'memberships': 'import-memberships-wizard',
     'invoice-details': 'import-invoice-details-wizard',
+    'notes': 'import-notes-wizard',
 };
 
 export async function openContactsWizard(page: Page): Promise<void> {
@@ -133,7 +135,7 @@ async function driveNonContactHappyPath(page: Page, key: ImporterKey, opts: NonC
     await openNonContactWizard(page, key);
     await fillUploadStep(page, opts);
 
-    if (opts.contactMissingStrategy && key !== 'events') {
+    if (opts.contactMissingStrategy && key !== 'events' && key !== 'notes') {
         await applyContactMissingStrategy(page, opts.contactMissingStrategy);
     }
 
@@ -155,6 +157,10 @@ export async function driveMembershipsHappyPath(page: Page, opts: NonContactWiza
 
 export async function driveInvoiceDetailsHappyPath(page: Page, opts: NonContactWizardOptions): Promise<void> {
     await driveNonContactHappyPath(page, 'invoice-details', opts);
+}
+
+export async function driveNotesHappyPath(page: Page, opts: NonContactWizardOptions): Promise<void> {
+    await driveNonContactHappyPath(page, 'notes', opts);
 }
 
 export async function approveSessionViaImporter(page: Page, sessionId: string): Promise<void> {

@@ -185,6 +185,76 @@ class FakeCsvComposer
     /**
      * @return array<int,array<string,string|null>>
      */
+    public function composeNotes(int $count, array $contactEmails): array
+    {
+        $pool = $this->pickReferencePool($contactEmails);
+        $rows = [];
+
+        $types      = ['call', 'meeting', 'email', 'note', 'task', 'letter', 'sms'];
+        $subjects   = [
+            'Intro call', 'Follow-up', 'Gift confirmation', 'Event RSVP',
+            'Volunteer check-in', 'Annual renewal', 'Board outreach',
+            'Sponsorship discussion', 'Thank-you letter', 'Welcome package',
+        ];
+        $bodies     = [
+            'Left a voicemail; will try again next week.',
+            'Discussed upcoming gala and ticket count.',
+            'Confirmed recurring gift start date.',
+            'Reviewed pledge schedule for the capital campaign.',
+            'Shared program updates and scheduled a site visit.',
+            'Received thank-you note from constituent.',
+            'Met briefly to discuss board nomination.',
+            'Walked through online donation flow — no issues reported.',
+        ];
+        $outcomes   = [
+            'Left message', 'Connected', 'Declined', 'Will follow up',
+            'Committed to pledge', 'Scheduled next meeting',
+        ];
+
+        for ($i = 0; $i < $count; $i++) {
+            $type       = $this->faker->randomElement($types);
+            $subject    = $this->faker->randomElement($subjects);
+            $status     = $this->faker->boolean(80)
+                ? 'completed'
+                : $this->faker->randomElement(['scheduled', 'no_show', 'cancelled']);
+            $body       = $this->faker->randomElement($bodies);
+            $occurredAt = $this->faker->dateTimeBetween('-2 years', 'now');
+
+            $followUpAt = null;
+            if ($status !== 'completed' && $this->faker->boolean(50)) {
+                $followUpAt = $this->faker->dateTimeBetween('now', '+6 months');
+            } elseif ($status === 'completed' && $this->faker->boolean(10)) {
+                $followUpAt = $this->faker->dateTimeBetween('now', '+3 months');
+            }
+
+            $isInteraction = in_array($type, ['call', 'meeting'], true);
+            $outcome       = $isInteraction ? $this->faker->randomElement($outcomes) : null;
+            $duration      = $isInteraction ? (string) $this->faker->numberBetween(5, 90) : null;
+
+            $email = $pool ? $this->faker->randomElement($pool) : null;
+
+            $rows[] = [
+                'Note Type'               => $type,
+                'Note Subject'            => $subject,
+                'Note Status'             => $status,
+                'Note Body'               => $body,
+                'Note Occurred At'        => $occurredAt->format('Y-m-d H:i:s'),
+                'Note Follow-up At'       => $followUpAt ? $followUpAt->format('Y-m-d H:i:s') : null,
+                'Note Outcome'            => $outcome,
+                'Note Duration (minutes)' => $duration,
+                'Note External ID'        => 'N-' . $this->faker->unique()->numerify('######'),
+                'Email'                   => $email,
+                'User ID'                 => null,
+                'Phone'                   => null,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int,array<string,string|null>>
+     */
     public function composeInvoiceDetails(int $totalRows, array $contactEmails): array
     {
         $pool = $this->pickReferencePool($contactEmails);
