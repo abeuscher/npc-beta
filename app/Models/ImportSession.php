@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ImportModelType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,7 @@ class ImportSession extends Model
     protected $casts = [
         'approved_at' => 'datetime',
         'tag_ids'     => 'array',
+        'model_type'  => ImportModelType::class,
     ];
 
     public function importSource(): BelongsTo

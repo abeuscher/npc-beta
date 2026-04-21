@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Models\ImportSession;
 use App\Services\Import\CsvTemplateService;
 use App\Services\Import\ImportSessionActions;
@@ -82,6 +83,7 @@ class ImporterPage extends Page implements HasTable
             ->select('model_type')
             ->distinct()
             ->pluck('model_type')
+            ->map(fn (ImportModelType $type): string => $type->value)
             ->values()
             ->all();
     }
@@ -116,7 +118,7 @@ class ImporterPage extends Page implements HasTable
                 Tables\Columns\TextColumn::make('model_type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn (string $state) => ucfirst($state)),
+                    ->formatStateUsing(fn (ImportModelType $state): string => $state->label()),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -144,14 +146,10 @@ class ImporterPage extends Page implements HasTable
                     ]),
                 Tables\Filters\SelectFilter::make('model_type')
                     ->label('Type')
-                    ->options([
-                        'contact'        => 'Contact',
-                        'event'          => 'Event',
-                        'donation'       => 'Donation',
-                        'membership'     => 'Membership',
-                        'invoice_detail' => 'Invoice Detail',
-                        'note'           => 'Note',
-                    ]),
+                    ->options(collect(ImportModelType::cases())
+                        ->mapWithKeys(fn (ImportModelType $case): array => [$case->value => $case->label()])
+                        ->all()
+                    ),
             ])
             ->actions([
                 Tables\Actions\Action::make('preview')

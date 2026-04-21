@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\EventImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -357,7 +358,7 @@ class ImportEventsPage extends Page
         );
 
         [$session, $importLog] = $this->createSessionAndLog(
-            modelType: 'event',
+            modelType: ImportModelType::Event,
             data: $data,
             namedMap: $namedMap,
             customFieldMap: $customFieldMap,

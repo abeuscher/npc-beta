@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\MembershipImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -241,7 +242,7 @@ class ImportMembershipsPage extends Page
         [$namedMap, $customFieldMap, $relationalMap] = $this->serializeColumnMaps($data, ['__custom_membership__']);
 
         [$session, $importLog] = $this->createSessionAndLog(
-            modelType: 'membership',
+            modelType: ImportModelType::Membership,
             data: $data,
             namedMap: $namedMap,
             customFieldMap: $customFieldMap,

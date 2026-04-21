@@ -2,6 +2,7 @@
 
 namespace App\Services\Import;
 
+use App\Enums\ImportModelType;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
@@ -78,19 +79,19 @@ class ImportSessionActions
 
     public function rollback(ImportSession $session): void
     {
-        if ($session->model_type === 'event') {
+        if ($session->model_type === ImportModelType::Event) {
             $this->rollBackEventSession($session);
             $session->delete();
             return;
         }
 
-        if (in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             $this->rollBackFinancialSession($session);
             $session->delete();
             return;
         }
 
-        if ($session->model_type === 'note') {
+        if ($session->model_type === ImportModelType::Note) {
             $this->rollBackNoteSession($session);
             $session->delete();
             return;
@@ -142,19 +143,19 @@ class ImportSessionActions
 
     public function delete(ImportSession $session): void
     {
-        if ($session->model_type === 'event') {
+        if ($session->model_type === ImportModelType::Event) {
             $this->rollBackEventSession($session);
             $session->delete();
             return;
         }
 
-        if (in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             $this->rollBackFinancialSession($session);
             $session->delete();
             return;
         }
 
-        if ($session->model_type === 'note') {
+        if ($session->model_type === ImportModelType::Note) {
             $this->rollBackNoteSession($session);
             $session->delete();
             return;
@@ -184,29 +185,29 @@ class ImportSessionActions
 
     public function approveDescription(ImportSession $session): string
     {
-        if ($session->model_type === 'event') {
+        if ($session->model_type === ImportModelType::Event) {
             $events = Event::where('import_session_id', $session->id)->count();
             $regs   = EventRegistration::where('import_session_id', $session->id)->count();
 
             return "This will mark {$events} event(s) and {$regs} registration(s) as approved. This cannot be undone.";
         }
 
-        if (in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             $label = match ($session->model_type) {
-                'donation'       => 'donation(s)',
-                'membership'     => 'membership(s)',
-                'invoice_detail' => 'transaction(s)',
+                ImportModelType::Donation      => 'donation(s)',
+                ImportModelType::Membership    => 'membership(s)',
+                ImportModelType::InvoiceDetail => 'transaction(s)',
             };
             $count = match ($session->model_type) {
-                'donation'       => Donation::where('import_session_id', $session->id)->count(),
-                'membership'     => Membership::where('import_session_id', $session->id)->count(),
-                'invoice_detail' => Transaction::where('import_session_id', $session->id)->count(),
+                ImportModelType::Donation      => Donation::where('import_session_id', $session->id)->count(),
+                ImportModelType::Membership    => Membership::where('import_session_id', $session->id)->count(),
+                ImportModelType::InvoiceDetail => Transaction::where('import_session_id', $session->id)->count(),
             };
 
             return "This will approve {$count} {$label} from this import. This cannot be undone.";
         }
 
-        if ($session->model_type === 'note') {
+        if ($session->model_type === ImportModelType::Note) {
             $count  = Note::where('import_session_id', $session->id)->count();
             $staged = ImportStagedUpdate::where('import_session_id', $session->id)->count();
 
@@ -224,7 +225,7 @@ class ImportSessionActions
 
     public function rollbackDescription(ImportSession $session): string
     {
-        if ($session->model_type === 'event') {
+        if ($session->model_type === ImportModelType::Event) {
             $events = Event::where('import_session_id', $session->id)->count();
             $regs   = EventRegistration::where('import_session_id', $session->id)->count();
             $tx     = Transaction::where('import_session_id', $session->id)->count();
@@ -232,11 +233,11 @@ class ImportSessionActions
             return "This will permanently delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s) created by this import. This cannot be undone.";
         }
 
-        if (in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             return $this->financialRollbackDescription($session);
         }
 
-        if ($session->model_type === 'note') {
+        if ($session->model_type === ImportModelType::Note) {
             $count       = Note::where('import_session_id', $session->id)->count();
             $stagedCount = ImportStagedUpdate::where('import_session_id', $session->id)->count();
 
@@ -266,7 +267,7 @@ class ImportSessionActions
 
     public function deleteDescription(ImportSession $session): string
     {
-        if ($session->model_type === 'event') {
+        if ($session->model_type === ImportModelType::Event) {
             $events = Event::where('import_session_id', $session->id)->count();
             $regs   = EventRegistration::where('import_session_id', $session->id)->count();
             $tx     = Transaction::where('import_session_id', $session->id)->count();
@@ -274,11 +275,11 @@ class ImportSessionActions
             return "Permanently delete this session and cascade-delete {$events} event(s), {$regs} registration(s), and {$tx} transaction(s). ImportIdMap rows created by this session are also removed. This cannot be undone.";
         }
 
-        if (in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true)) {
+        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             return $this->financialRollbackDescription($session);
         }
 
-        if ($session->model_type === 'note') {
+        if ($session->model_type === ImportModelType::Note) {
             $count = Note::where('import_session_id', $session->id)->count();
 
             return "Permanently delete this session and {$count} note(s) created by it. Any staged updates are discarded. This cannot be undone.";
@@ -354,7 +355,7 @@ class ImportSessionActions
 
     private function rollBackFinancialSession(ImportSession $session): void
     {
-        if ($session->model_type === 'donation') {
+        if ($session->model_type === ImportModelType::Donation) {
             $donationIds = Donation::where('import_session_id', $session->id)->pluck('id')->toArray();
 
             // Delete transactions linked to these donations.
@@ -370,11 +371,11 @@ class ImportSessionActions
             Transaction::where('import_session_id', $session->id)->delete();
         }
 
-        if ($session->model_type === 'membership') {
+        if ($session->model_type === ImportModelType::Membership) {
             Membership::where('import_session_id', $session->id)->forceDelete();
         }
 
-        if ($session->model_type === 'invoice_detail') {
+        if ($session->model_type === ImportModelType::InvoiceDetail) {
             Transaction::where('import_session_id', $session->id)->delete();
         }
 
@@ -400,12 +401,12 @@ class ImportSessionActions
     {
         $parts = [];
 
-        if ($session->model_type === 'donation') {
+        if ($session->model_type === ImportModelType::Donation) {
             $donations = Donation::where('import_session_id', $session->id)->count();
             $parts[]   = "{$donations} donation(s)";
         }
 
-        if ($session->model_type === 'membership') {
+        if ($session->model_type === ImportModelType::Membership) {
             $memberships = Membership::where('import_session_id', $session->id)->count();
             $parts[]     = "{$memberships} membership(s)";
         }

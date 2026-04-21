@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\NoteImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -241,7 +242,7 @@ class ImportNotesPage extends Page
         [$namedMap, $customFieldMap, $relationalMap] = $this->serializeColumnMaps($data, ['__custom_note__']);
 
         [$session, $importLog] = $this->createSessionAndLog(
-            modelType: 'note',
+            modelType: ImportModelType::Note,
             data: $data,
             namedMap: $namedMap,
             customFieldMap: $customFieldMap,

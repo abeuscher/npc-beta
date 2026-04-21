@@ -957,7 +957,7 @@ trait InteractsWithImportWizard
      * Returns [ImportSession, ImportLog].
      */
     protected function createSessionAndLog(
-        string $modelType,
+        \App\Enums\ImportModelType $modelType,
         array $data,
         array $namedMap,
         ?array $customFieldMap,
@@ -986,7 +986,7 @@ trait InteractsWithImportWizard
 
         $logData = array_merge([
             'user_id'            => auth()->id(),
-            'model_type'         => $modelType,
+            'model_type'         => $modelType->value,
             'filename'           => $filename,
             'storage_path'       => $this->uploadedFilePath,
             'column_map'         => $namedMap,

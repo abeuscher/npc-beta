@@ -29,7 +29,7 @@
     </div>
 
     {{-- ── Donations ── --}}
-    @if ($record->model_type === 'donation')
+    @if ($record->model_type === \App\Enums\ImportModelType::Donation)
     <div class="space-y-3">
         <h3 class="font-semibold text-gray-700 dark:text-gray-300">Donations</h3>
 
@@ -73,7 +73,7 @@
     @endif
 
     {{-- ── Memberships ── --}}
-    @if ($record->model_type === 'membership')
+    @if ($record->model_type === \App\Enums\ImportModelType::Membership)
     <div class="space-y-3">
         <h3 class="font-semibold text-gray-700 dark:text-gray-300">Memberships</h3>
 
@@ -117,7 +117,7 @@
     @endif
 
     {{-- ── Invoice-detail → Transactions ── --}}
-    @if ($record->model_type === 'invoice_detail')
+    @if ($record->model_type === \App\Enums\ImportModelType::InvoiceDetail)
     <div class="space-y-3">
         <h3 class="font-semibold text-gray-700 dark:text-gray-300">Transactions</h3>
 

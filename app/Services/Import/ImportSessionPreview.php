@@ -2,6 +2,7 @@
 
 namespace App\Services\Import;
 
+use App\Enums\ImportModelType;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
@@ -31,10 +32,14 @@ class ImportSessionPreview
     public function render(ImportSession $session): View
     {
         return match (true) {
-            $session->model_type === 'event'                                         => $this->eventPreview($session),
-            in_array($session->model_type, ['donation', 'membership', 'invoice_detail'], true) => $this->financialPreview($session),
-            $session->model_type === 'note'                                          => $this->notePreview($session),
-            default                                                                  => $this->contactPreview($session),
+            $session->model_type === ImportModelType::Event => $this->eventPreview($session),
+            in_array($session->model_type, [
+                ImportModelType::Donation,
+                ImportModelType::Membership,
+                ImportModelType::InvoiceDetail,
+            ], true) => $this->financialPreview($session),
+            $session->model_type === ImportModelType::Note => $this->notePreview($session),
+            default => $this->contactPreview($session),
         };
     }
 
@@ -62,7 +67,7 @@ class ImportSessionPreview
 
     private function financialPreview(ImportSession $session): View
     {
-        $donations = $session->model_type === 'donation'
+        $donations = $session->model_type === ImportModelType::Donation
             ? Donation::where('import_session_id', $session->id)
                 ->with(['contact:id,first_name,last_name,email'])
                 ->latest('created_at')
@@ -70,7 +75,7 @@ class ImportSessionPreview
                 ->get()
             : collect();
 
-        $memberships = $session->model_type === 'membership'
+        $memberships = $session->model_type === ImportModelType::Membership
             ? Membership::where('import_session_id', $session->id)
                 ->with(['contact:id,first_name,last_name,email'])
                 ->latest('starts_on')
@@ -78,7 +83,7 @@ class ImportSessionPreview
                 ->get()
             : collect();
 
-        $transactions = $session->model_type === 'invoice_detail'
+        $transactions = $session->model_type === ImportModelType::InvoiceDetail
             ? Transaction::where('import_session_id', $session->id)
                 ->latest('occurred_at')
                 ->limit(20)
@@ -96,8 +101,8 @@ class ImportSessionPreview
             'memberships'       => $memberships,
             'transactions'      => $transactions,
             'contacts'          => $contacts,
-            'donationsCount'    => $session->model_type === 'donation' ? Donation::where('import_session_id', $session->id)->count() : 0,
-            'membershipsCount'  => $session->model_type === 'membership' ? Membership::where('import_session_id', $session->id)->count() : 0,
+            'donationsCount'    => $session->model_type === ImportModelType::Donation ? Donation::where('import_session_id', $session->id)->count() : 0,
+            'membershipsCount'  => $session->model_type === ImportModelType::Membership ? Membership::where('import_session_id', $session->id)->count() : 0,
             'transactionsCount' => Transaction::where('import_session_id', $session->id)->count(),
             'contactsCount'     => Contact::withoutGlobalScopes()->where('import_session_id', $session->id)->count(),
         ]);

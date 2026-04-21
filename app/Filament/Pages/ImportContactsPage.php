@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\ContactFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -940,7 +941,7 @@ class ImportContactsPage extends Page
         }
 
         [$session, $importLog] = $this->createSessionAndLog(
-            modelType: 'contact',
+            modelType: ImportModelType::Contact,
             data: $data,
             namedMap: $namedMap,
             customFieldMap: $customFieldMap,

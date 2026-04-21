@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\InvoiceImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
@@ -267,7 +268,7 @@ class ImportInvoiceDetailsPage extends Page
         [$namedMap, $customFieldMap, $relationalMap] = $this->serializeColumnMaps($data, ['__custom_invoice__']);
 
         [$session, $importLog] = $this->createSessionAndLog(
-            modelType: 'invoice_detail',
+            modelType: ImportModelType::InvoiceDetail,
             data: $data,
             namedMap: $namedMap,
             customFieldMap: $customFieldMap,
