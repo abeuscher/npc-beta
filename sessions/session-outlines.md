@@ -212,6 +212,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 203 | CRM Importer — Notes & Interactions (Standalone Path) |
 | 204 | Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save |
 | 205 | Code Review & Cleanup (Audit) |
+| 206 | Code Review & Cleanup (Apply) |
 
 ---
 
@@ -230,15 +231,31 @@ Descoped in 204 on the grounds that wheel/touch interception fights browser iner
 
 ---
 
-### Code Review & Cleanup *(stub — pre-Beta 1)*
+### Code Review & Cleanup *(stub — pre-Beta 1; 205/206 pair completed)*
 
-Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Splits into an audit session (produces the W6 / W7 tables and open flags) followed by an apply session (walks the flags, picks a subset, and applies in iteration-sliced branches).
+Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply; both complete). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Splits into an audit session (produces the W6 / W7 tables and open flags) followed by an apply session (walks the flags, picks a subset, and applies in iteration-sliced branches).
 
 ---
 
-### Migration Squash & Code Optimization *(stub — pre-Beta 1, queued as session 207)*
+### Column Layout Inspector — Appearance Unification *(stub — pre-Beta 1, queued as session 207)*
 
-Follow-up to sessions 062, 082, 108, 142, and 181, and immediate successor to the 205/206 code-review pair. Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces. If 206's Flag A resolves to path (b) — adding `page_layouts.appearance_config` — that migration coordinates with this squash baseline.
+Carved out of session 206's Open Flag A (LayoutInspectorPanel architectural divergence) because the scope proved too large for 206's apply session. Gives column layouts a parallel `appearance_config` column and a three-tab inspector built from two of the widget universal appearance panels (Background + Margin & Padding), so layouts gain gradients, background images, and the unified spacing grid without dissolving the distinction between columns and widgets.
+
+Key design decisions already locked in during the 206 walkthrough:
+
+- Column layouts (`page_layouts`) and widgets (`page_widgets`) remain as separate constructs with separate tables, contracts, and rendering paths. This session shares two *panels* across the two inspectors via data-driven props — it does not blur the construct boundary.
+- Three inspector tabs: **Column Settings | Margin & Padding | Background**. No Text panel, no Presets tab.
+- Full-width toggle lives at the top of the Column Settings tab (not inside Margin & Padding) — it's the most important layout-behavior control.
+- New column `page_layouts.appearance_config jsonb NOT NULL DEFAULT '{}'`, with a data migration moving existing `layout_config.background_color` / padding / margin keys into it. `layout_config` retains only genuinely layout-behavior keys (`full_width`, display, columns, grid/flex settings).
+- Session 208 (squash) must fold this migration into its baseline.
+
+Full spec: `sessions/207. Column Layout Inspector — Appearance Unification.md`.
+
+---
+
+### Migration Squash & Code Optimization *(stub — pre-Beta 1, queued as session 208)*
+
+Follow-up to sessions 062, 082, 108, 142, and 181. Queued as session 208 (displaced one slot from 207 by the Column Layout Inspector carve-out from session 206). Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces. **The squash baseline must absorb `page_layouts.appearance_config` from session 207 without resurrecting the pre-migration `layout_config.background_color` / padding / margin keys.**
 
 ---
 
@@ -423,9 +440,9 @@ Scope estimate when it lands: 2–3 sessions batched across the widget catalogue
 
 Add a layer explorer: a simple text-node tree of the page's widget structure (like a DOM inspector outline) — collapsible, sits above or alongside the widget list. Helps users locate deeply nested blocks inside column slots. (Builder-mode auto-collapse and the full-width toggle were delivered admin-wide in session 156's topbar fullscreen button — no longer needs a builder-specific implementation.)
 
-### Column Widget UI Improvements
+### Column Layout UI Improvements
 
-UX improvements to the column widget: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system.
+UX improvements to the column layout construct: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system. **Note: column layouts (`page_layouts`) are a distinct construct from widgets (`page_widgets`) — the two were deliberately separated because the variance in behaviour required a different model. This stub covers refinements to the layout construct; it does not propose re-unifying columns with widgets.**
 
 ### Page Copy with Guardrails
 
@@ -488,6 +505,69 @@ Full carousel and gallery widget types beyond the basic image slider added in Be
 ### Inspector Column — Drag-Resize Splitter
 
 Add a vertical drag-resize splitter between the preview canvas and the inspector column in the page builder (`App.vue` — currently `grid-template-columns: minmax(0, 3fr) min(28rem, 25%)`). Trades canvas width for inspector width at the user's discretion. Motivated by session 197: the dual-pane inspector's tab labels ("Widget Settings", "Margin & Padding") truncate with ellipsis in the default ~260px column, and widening the column is the clean fix once a draggable splitter exists. Should persist per-user via localStorage or site settings. Minimal scope — purely a layout ergonomic, no schema or widget changes.
+
+---
+
+### Google Docs Integration — Import, Widget, and Folder-Backed Authoring
+
+Multi-layered feature converging several user-facing needs, all rooted in the pain of "professional writers draft in Google Docs and want their words on the site without learning a CMS." Discussed in planning conversations on 2026-04-21. Three concrete value cases named by the user:
+
+1. **Legal / counsel authored documents.** Attorneys publish policy docs, bylaws, authoritative references into a Google Doc. Staff never edit — their only role is pressing a refresh button. Single-source-of-truth model: Google Docs is the canonical surface; the CMS is a rendering layer. Quote: *"A huge portion of my life has been spent in service of this problem."*
+2. **On-demand team blogging.** A writing team manages blog entries in a Google Docs folder. Each doc becomes a post on the site, with nice typography inherited from the theme, without the team ever touching Filament. Eliminates the CMS learning curve for occasional bloggers.
+3. **Ad-hoc long-form authoring.** A "Populate from Google Doc" button on any richtext field lets any widget's long-text content be imported from a Doc. Covers the blog-post body, Hero content, any widget with a richtext field.
+
+#### Four architectural shapes, increasing effort
+
+- **Shape A — "Publish to web" iframe widget.** Google Docs has a built-in "File → Share → Publish to web" feature that produces a public URL. The widget wraps that URL in an `<iframe>`. ~1 session. Automatic sync from Google's side (whatever's published shows up instantly). No OAuth, no API, no dependencies. Trade-off: iframe chrome, typography doesn't match site theme, content not SEO-countable toward the hosting page.
+- **Shape B — Google Doc Import button + persistent-doc-id widget.** Full OAuth-based import (per-admin Google credentials, `drive.file` scope + Google Picker API for non-scary consent), Markdown export from Drive API (cleaner than Google's HTML export), content cleanup, image migration to Spatie media library. The widget stores a doc ID + a cached content blob + a manual "Sync now" button. Native rendering in site typography, SEO-countable. ~2–3 sessions (OAuth plumbing + import + image migration + widget wrapper). The QuickBooks OAuth model (sessions 102–105) is the nearest precedent for per-connection token storage.
+- **Shape C — Scheduled sync.** Adds cron-driven refresh on top of Shape B. Per-widget cadence config — `manual only` / `hourly` / `daily` / `on-page-load-if-stale` — not a site-wide setting. Staleness badge in the inspector ("Last synced 14 min ago · Sync now") is the load-bearing UX: without it, every admin assumes the widget is live and gets confused when it isn't. ~2 additional sessions atop B (scheduler + sync state model + retry/backoff + UI). Rate-limit budget: Drive API default ~1000 requests per 100s per user, so hourly-on-50-widgets is trivial; per-minute cadence is not.
+- **Shape D — Webhook-driven push sync.** Drive API change-notification channels push to the app on doc edit. Near-real-time (seconds-latency). ~3 additional sessions atop C: channel registration, 7-day channel renewal cron, HMAC verification, delivery-failure handling. Cool but mostly a latency improvement, not a new capability.
+
+**Folder-backed blog ingestion** is a parallel shape: a Google Drive folder is watched; each doc in it becomes a `Page` with `type = post`. Same pipeline as Shape B/C but the consumer is blog ingestion, not a widget. `files.list` on a folder ID is the watcher; rest is the existing transform. Maps directly onto the existing post model and media library.
+
+#### Image slot routing via alt-text convention
+
+Google Docs images support alt text (right-click → All image options → Alt text). If an image's alt text starts with a keyword, the sync pipeline extracts the image out of the flowing content and routes it into the named slot on the widget or post:
+
+```
+@header       → goes into the header image slot
+@thumb        → goes into the thumbnail slot
+@hero         → goes into the hero/cover slot
+@card         → goes into the card/preview slot
+@header Photo by J. Smith  → slot = header, alt text = "Photo by J. Smith"
+```
+
+Format: `@<slot>[ <real alt text>]`. Untagged images stay inline in the body. Fallback: first untagged image → `thumb` when no `@thumb` tag exists (helps writers who don't know the convention). Extensible — new slots land as new `@xxx` keywords with no schema change on the Docs side. Implementation is a ~20-line transform step in the import pipeline atop whatever's already handling inline image migration.
+
+#### Paradigm questions to resolve before building past Shape A
+
+- **Source of truth.** Is Google Docs canonical (CMS renders) or is the CMS canonical (Docs is a drafting tool)? Determines whether post-import CMS edits get blown away on the next sync. Likely answer for legal docs: Docs-canonical. For ad-hoc blogging: could go either way.
+- **Auth identity.** Per-admin OAuth breaks when admins leave — their token was the only way to read the doc. Long-term answer is a Google Workspace service account that owns doc connections; users share docs with the service account email. Changes onboarding story but solves turnover. Per-admin is acceptable for V1.
+- **Multi-doc rate limits.** A page with many doc widgets hits quotas fast on the same admin's token. Sync-job coalescing (one sync per doc regardless of how many widgets reference it) matters once Shape B is in place.
+- **Image migration vs proxy.** Migrating images to the media library makes the cached content self-contained but decouples from doc updates to those images. Proxying keeps them coupled but adds a request + auth hop on every page load. Migration is the right call; the sync refresh re-migrates changed images.
+
+#### Paste-and-clean as an orthogonal complement
+
+Improving Quill's paste handler to recognize and sanitize Google-Docs-flavored HTML is a one-session feature that solves ~70% of the "I wrote this in Docs" use case with no infrastructure — no OAuth, no API, no new dependency. Writer copies from Google Docs, pastes into Quill, Quill's paste handler detects Google-Docs-flavored HTML and cleans it inline. Stays useful even after the full button ships. Consider as an early quick-win.
+
+#### Recommended sequencing
+
+1. **Paste-and-clean** (1 session, zero infrastructure) — independent utility, buys time on the rest.
+2. **Shape A iframe widget** (1 session, zero infrastructure) — quick win for the legal-doc use case where iframe chrome is acceptable because it signals "official document" anyway.
+3. **Shape B import + widget** (2–3 sessions, one-time OAuth investment) — unlocks native-rendering imports and persistent-doc-ID widgets for ad-hoc authoring. Bundles the editor button (previous question) with the widget shape — most infrastructure is shared.
+4. **Folder-backed blog ingestion** (1–2 sessions atop B) — the on-demand blogging paradigm. Reuses 90% of B's infrastructure.
+5. **Shape C scheduled sync** (2 sessions atop B) — for customers who want "live-ish" cadences.
+6. **Shape D webhooks** (3 sessions atop C) — only when someone asks for sub-minute latency.
+
+Items 1–2 are pre-Beta safe if scope allows; 3+ are genuinely post-Beta territory (OAuth, image migration, scheduling infrastructure). The whole feature stack is mentioned by the user as a "nice paradigm if achievable at some point" and is positioned here as a deliberate post-Beta investment.
+
+#### Dependencies and related work
+
+- Requires adding `google/apiclient` (or equivalent) to `composer.json`.
+- OAuth token storage patterned on the QuickBooks connection model (sessions 102–105).
+- Content cleanup leans on an existing or new Markdown-to-HTML library (`league/commonmark` would be the natural choice).
+- Image migration reuses the Spatie media library already in place.
+- No schema changes until Shape B (doc-id-and-cached-content columns on `page_widgets` for the widget variant, or a new `google_doc_connections` model for the folder-backed variant).
 
 ---
 
