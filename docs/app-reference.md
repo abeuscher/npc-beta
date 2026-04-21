@@ -82,8 +82,18 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 |---------------------------|----------------------|
 | Importer | `Filament/Pages/ImporterPage.php` |
 | Import Contacts | `Filament/Pages/ImportContactsPage.php` |
+| Import Events | `Filament/Pages/ImportEventsPage.php` |
+| Import Donations | `Filament/Pages/ImportDonationsPage.php` |
+| Import Memberships | `Filament/Pages/ImportMembershipsPage.php` |
+| Import Invoice Details | `Filament/Pages/ImportInvoiceDetailsPage.php` |
+| Import Notes | `Filament/Pages/ImportNotesPage.php` |
 | Import History | `Filament/Pages/ImportHistoryPage.php` |
-| Import Progress | `Filament/Pages/ImportProgressPage.php` |
+| Import Progress (contacts) | `Filament/Pages/ImportProgressPage.php` |
+| Import Progress (events) | `Filament/Pages/ImportEventsProgressPage.php` |
+| Import Progress (donations) | `Filament/Pages/ImportDonationsProgressPage.php` |
+| Import Progress (memberships) | `Filament/Pages/ImportMembershipsProgressPage.php` |
+| Import Progress (invoice details) | `Filament/Pages/ImportInvoiceDetailsProgressPage.php` |
+| Import Progress (notes) | `Filament/Pages/ImportNotesProgressPage.php` |
 | Media Library | `Filament/Pages/MediaLibraryPage.php` |
 | Mailing Lists (list) | `MailingListResource.php` |
 | Tag Manager (list) | `TagResource.php` |

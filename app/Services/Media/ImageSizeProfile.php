@@ -15,11 +15,6 @@ class ImageSizeProfile
         public readonly array $breakpoints = [],
     ) {}
 
-    public function hasBreakpoints(): bool
-    {
-        return count($this->breakpoints) > 0;
-    }
-
     public static function configuredBreakpoints(): array
     {
         $stored = SiteSetting::get('image_breakpoints');

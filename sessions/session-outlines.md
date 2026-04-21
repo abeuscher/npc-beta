@@ -211,6 +211,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 202 | Importer CSV Generator & Playwright Edge-Case Coverage |
 | 203 | CRM Importer — Notes & Interactions (Standalone Path) |
 | 204 | Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save |
+| 205 | Code Review & Cleanup (Audit) |
 
 ---
 
@@ -231,13 +232,13 @@ Descoped in 204 on the grounds that wheel/touch interception fights browser iner
 
 ### Code Review & Cleanup *(stub — pre-Beta 1)*
 
-Periodic codebase sweep in the pattern of sessions 101, 116, 141, and 178/179 (audit → apply). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Likely splits into an audit session (produces a punch list) and an apply session (executes it) if the list is large.
+Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Splits into an audit session (produces the W6 / W7 tables and open flags) followed by an apply session (walks the flags, picks a subset, and applies in iteration-sliced branches).
 
 ---
 
-### Migration Squash & Code Optimization *(stub — pre-Beta 1)*
+### Migration Squash & Code Optimization *(stub — pre-Beta 1, queued as session 207)*
 
-Follow-up to sessions 062, 082, 108, 142, and 181. Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces.
+Follow-up to sessions 062, 082, 108, 142, and 181, and immediate successor to the 205/206 code-review pair. Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces. If 206's Flag A resolves to path (b) — adding `page_layouts.appearance_config` — that migration coordinates with this squash baseline.
 
 ---
 

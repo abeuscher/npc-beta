@@ -16,12 +16,15 @@ The Importer is the central entry point for bringing data into the CRM from exte
 ## Available Importers
 
 - **Import Contacts** — import a CSV file of contacts from a spreadsheet or another CRM. See the Import Contacts help article for the full workflow.
-- **Import Events** — coming soon.
-- **Import Financial Data** — coming soon.
+- **Import Events** — import events, registrations, and (optionally) linked transactions from one CSV. One row per registration.
+- **Import Donations** — import donations and matching transaction rows. Contacts must already exist (or be auto-created via the row's contact columns).
+- **Import Memberships** — import membership records against existing contacts.
+- **Import Invoice Details** — import historical transactions, grouped into invoices by a shared invoice number.
+- **Import Notes** — import structured interactions (calls, meetings, emails, tasks) from an activities CSV. See the Import Notes help article for the full workflow.
 
 ## Queue lock — one active import per content type
 
-Only one import of each content type (e.g. contacts) may be in the pending or reviewing state at a time. If a previous import is awaiting review, the Import Contacts card is shown as disabled with an explanation. You must approve or roll back the outstanding import before starting a new one.
+Only one import of each content type (e.g. contacts) may be in the pending or reviewing state at a time. If a previous import of that type is awaiting review, its card is shown as disabled with an explanation. You must approve or roll back the outstanding import before starting a new one of the same type.
 
 ## Review Queue
 
