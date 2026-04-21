@@ -6,7 +6,7 @@ import {
     parseCsv,
     primeFakeFixtures,
 } from '../helpers/fake-csv.js';
-import { driveNotesHappyPath } from '../helpers/wizard.js';
+import { approveSessionViaImporter, driveNotesHappyPath } from '../helpers/wizard.js';
 import {
     countNotesInSession,
     findLatestImportSessionId,
@@ -58,5 +58,11 @@ test.describe('Notes importer — happy path', () => {
         const firstNote = await findNoteByExternalId(sourceId!, firstExternalId);
         expect(firstNote).not.toBeNull();
         expect(firstNote!.external_id).toBe(firstExternalId);
+
+        // Approve the session so the suite leaves no pending import behind —
+        // notes-happy-path runs last alphabetically and its final DB state
+        // persists after the run. Doubles as the only e2e exercise of the
+        // Notes approve path.
+        await approveSessionViaImporter(page, sessionId!);
     });
 });
