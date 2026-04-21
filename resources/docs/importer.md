@@ -13,14 +13,16 @@ category: tools
 
 The Importer is the central entry point for bringing data into the CRM from external systems. It also serves as the **Review Queue** for users who have the `review_imports` permission.
 
+For the full cross-cutting workflow — source selection, CSV upload, column mapping, duplicate handling, approval, and rollback — see the [Data Imports](import-contacts) reference. Notes interactions are covered separately in [Import Notes](import-notes).
+
 ## Available Importers
 
-- **Import Contacts** — import a CSV file of contacts from a spreadsheet or another CRM. See the Import Contacts help article for the full workflow.
-- **Import Events** — import events, registrations, and (optionally) linked transactions from one CSV. One row per registration.
-- **Import Donations** — import donations and matching transaction rows. Contacts must already exist (or be auto-created via the row's contact columns).
-- **Import Memberships** — import membership records against existing contacts.
-- **Import Invoice Details** — import historical transactions, grouped into invoices by a shared invoice number.
-- **Import Notes** — import structured interactions (calls, meetings, emails, tasks) from an activities CSV. See the Import Notes help article for the full workflow.
+- **Import Contacts** — people and organisations. Run this first; other importers match against existing contacts.
+- **Import Events** — events, registrations, and (optionally) linked transactions from one CSV. One row per registration.
+- **Import Donations** — donations and matching transaction rows. Contacts must already exist or be auto-created from row columns.
+- **Import Memberships** — membership records against existing contacts.
+- **Import Invoice Details** — historical transactions, grouped into invoices by a shared invoice number.
+- **Import Notes** — structured interactions (calls, meetings, emails, tasks) from an activities CSV. See [Import Notes](import-notes).
 
 ## Queue lock — one active import per content type
 
@@ -33,6 +35,10 @@ Users with the `review_imports` permission see a **Review Queue** section at the
 - **Preview** the first 20 new contacts and the first 20 staged updates to existing contacts.
 - **Approve** — makes all new contacts visible, applies all staged field changes to existing contacts, and adds an audit note to each affected contact.
 - **Roll back** — permanently deletes all new contacts from the import, discards all staged updates (adding a note to each affected contact), and removes the import session. Source ID mappings are preserved.
+
+### Session-level approval scope
+
+Approve, roll back, and delete all act at the **import session** level — not the individual staged-update level. A reviewer with `review_imports` permission can approve, roll back, or delete the full session and every staged update it contains, regardless of which user authored the import or any individual row inside it. The import session is the unit of review by design: staged updates cannot be approved, rolled back, or deleted one-at-a-time, and no per-row ownership check is applied.
 
 ## Import History
 

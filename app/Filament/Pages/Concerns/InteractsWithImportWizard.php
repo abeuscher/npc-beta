@@ -1070,22 +1070,29 @@ trait InteractsWithImportWizard
         return true;
     }
 
-    // ─── Duplicate-strategy Radio (4 non-contact wizards) ────────────────
+    // ─── Duplicate-strategy Radio (shared across every wizard) ───────────
 
-    protected function duplicateStrategyRadio(string $entityLabel): Forms\Components\Radio
+    protected function duplicateStrategyRadio(string $entityLabel, bool $includeDuplicate = false): Forms\Components\Radio
     {
-        $title = ucfirst($entityLabel);
+        $options = [
+            'skip'   => 'Skip',
+            'update' => 'Stage updates',
+        ];
+
+        $descriptions = [
+            'skip'   => "Leave the existing {$entityLabel} unchanged and move on.",
+            'update' => "Stage non-blank imported values as an update to the existing {$entityLabel}; blank imported cells are ignored. Updates apply on reviewer approval.",
+        ];
+
+        if ($includeDuplicate) {
+            $options['duplicate']      = "Create a new {$entityLabel} anyway";
+            $descriptions['duplicate'] = "Ignore the match and create a new {$entityLabel} from the CSV row. May create multiple records for the same input.";
+        }
 
         return Forms\Components\Radio::make('duplicate_strategy')
             ->label("When an imported row matches an existing {$entityLabel}")
-            ->options([
-                'skip'   => 'Skip',
-                'update' => 'Stage updates',
-            ])
-            ->descriptions([
-                'skip'   => "Leave the existing {$entityLabel} unchanged and move on.",
-                'update' => "Stage non-blank imported values as an update to the existing {$entityLabel}; blank imported cells are ignored. Updates apply on reviewer approval.",
-            ])
+            ->options($options)
+            ->descriptions($descriptions)
             ->default('skip')
             ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
             ->required();

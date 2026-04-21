@@ -209,21 +209,7 @@ class ImportNotesPage extends Page
             ->required()
             ->live();
 
-        $schema[] = Forms\Components\Radio::make('duplicate_strategy')
-            ->label('When an imported row matches an existing note')
-            ->options([
-                'skip'      => 'Skip',
-                'update'    => 'Stage updates',
-                'duplicate' => 'Create a new note anyway',
-            ])
-            ->descriptions([
-                'skip'      => 'Leave the existing note unchanged and move on.',
-                'update'    => 'Stage non-blank imported values as an update to the existing note; blank imported cells are ignored. Updates apply on reviewer approval.',
-                'duplicate' => 'Ignore the existing match and create a new note from the CSV row.',
-            ])
-            ->default('skip')
-            ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
-            ->required();
+        $schema[] = $this->duplicateStrategyRadio('note', includeDuplicate: true);
 
         return $schema;
     }

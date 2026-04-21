@@ -110,12 +110,6 @@ html:not(.dark) .fi-section {
     --tw-ring-color: rgb(156 163 175); /* gray-400 */
 }
 
-.fi-section-header {
-    background: var(--np-control-bar-bg);
-    border-top-left-radius: 0.75rem;
-    border-top-right-radius: 0.75rem;
-}
-
 /* Table outer container outline */
 html:not(.dark) .fi-ta-ctn {
     --tw-ring-color: rgb(156 163 175); /* gray-400 */
@@ -684,7 +678,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
  * in the .dark block below.                                                */
 
 :root {
-    --np-control-bar-bg:            #ededee;
+    --np-control-bar-bg:            #fafbfc;
     --np-control-group-bg:          #fafbfc;
     --np-control-border:            #d9d9d9;
     --np-control-chip-border:       #d1d5db;
@@ -734,10 +728,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
  * above — all colour/radius/transition values route through --np-control-*. */
 
 .ql-toolbar.ql-snow {
-    background: var(--np-control-bar-bg);
-    border-color: var(--np-control-border);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+
     padding: 5px 4px;
     display: flex;
     flex-wrap: wrap;

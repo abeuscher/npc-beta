@@ -40,6 +40,7 @@ class ThemeTypographyController extends Controller
 
     public function export(Request $request): Response
     {
+        // Gated on manage_cms_settings (same as update()). Theme SCSS export is a theme operation, but manage_cms_settings is the de-facto theme permission today; a separate edit_theme_scss permission would add role-matrix churn with no practical benefit.
         abort_unless(auth()->user()?->can('manage_cms_settings'), 403);
 
         $typography = TypographyResolver::load();

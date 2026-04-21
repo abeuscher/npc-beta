@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
     countStagedUpdatesForSession,
     findLatestImportSessionId,
-    insertContactsForImport,
+    insertContactsFromCsv,
 } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { approveSessionViaImporter, driveEventsHappyPath } from '../helpers/wizard.js';
@@ -16,6 +16,7 @@ const __dirname = path.dirname(__filename);
 const FIXTURE_DIR = path.resolve(__dirname, '../fixtures/events');
 const HAPPY_PATH_CSV = path.join(FIXTURE_DIR, 'happy-path.csv');
 const UPDATE_CSV = path.join(FIXTURE_DIR, 'update-second-pass.csv');
+const PRE_CREATED_CONTACTS_CSV = path.join(FIXTURE_DIR, 'happy-path-contacts.csv');
 const EXPECTED = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, 'happy-path.expected.json'), 'utf8'));
 
 test.describe.configure({ mode: 'serial' });
@@ -23,7 +24,7 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Events importer — update strategy', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
-        await insertContactsForImport(EXPECTED.preCreatedContactEmails);
+        await insertContactsFromCsv(PRE_CREATED_CONTACTS_CSV);
     });
 
     test('re-import with update strategy stages title changes; approval applies them', async ({ page }) => {

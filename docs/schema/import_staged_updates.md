@@ -16,3 +16,7 @@ Staged field changes for existing records matched during an import. Polymorphic 
 Indexes:
 - `(subject_type, subject_id)` — `import_staged_updates_subject_type_subject_id_index`.
 - `(import_session_id)` — `import_staged_updates_import_session_id_index`.
+
+### Approval scope
+
+Staged updates are acted on at the **session** level, not the row level. A reviewer with the `review_imports` permission can approve, roll back, or delete the full `import_session` and every `import_staged_update` it contains, regardless of which user authored the import or the individual row. No per-row ownership check is applied. Per-row approval is intentionally out of scope — the import session is the unit of review.

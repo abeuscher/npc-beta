@@ -479,7 +479,7 @@ class ImportContactsPage extends Page
 
         $schema[] = Forms\Components\Select::make('match_key_field')
             ->label('Match contacts by')
-            ->helperText('The field used to match an imported row against existing contacts. Changing this affects Skip/Update behaviour; "Create duplicate anyway" bypasses it.')
+            ->helperText('The field used to match an imported row against existing contacts. Changing this affects Skip/Update behaviour; "Create a new contact anyway" bypasses it.')
             ->options(fn (Forms\Get $get) => $this->matchKeyOptions($get))
             ->default(fn (Forms\Get $get) => $this->deriveDefaultMatchKey($get('column_map') ?? []))
             ->selectablePlaceholder(false)
@@ -487,21 +487,7 @@ class ImportContactsPage extends Page
             ->required()
             ->live();
 
-        $schema[] = Forms\Components\Radio::make('duplicate_strategy')
-            ->label('When an imported row matches an existing contact')
-            ->options([
-                'skip'      => 'Skip',
-                'update'    => 'Update',
-                'duplicate' => 'Create duplicate anyway',
-            ])
-            ->descriptions([
-                'skip'      => 'Leave the existing contact unchanged and move on.',
-                'update'    => 'Stage non-blank imported values as an update to the existing contact; blank imported cells are ignored.',
-                'duplicate' => 'Ignore the match key — every row becomes a new contact. May create multiple records for the same person.',
-            ])
-            ->default('skip')
-            ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
-            ->required();
+        $schema[] = $this->duplicateStrategyRadio('contact', includeDuplicate: true);
 
         if (! empty($collisions)) {
             $this->seedCollisionDefaults($collisions);
@@ -785,8 +771,8 @@ class ImportContactsPage extends Page
 
         $content .= "<p class='font-medium'>Duplicate strategy: <span class='text-primary-600'>" .
             match ($strategy) {
-                'update'    => 'Update existing contacts',
-                'duplicate' => 'Create duplicate anyway',
+                'update'    => 'Stage updates to existing contacts',
+                'duplicate' => 'Create a new contact anyway',
                 default     => 'Skip duplicates',
             } .
             "</span></p>";

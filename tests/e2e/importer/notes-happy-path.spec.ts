@@ -12,7 +12,7 @@ import {
     findLatestImportSessionId,
     findNoteByExternalId,
     findImportSourceIdByName,
-    insertContactsForImport,
+    insertContactsFromCsv,
 } from '../helpers/db.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -24,16 +24,8 @@ test.describe('Notes importer — happy path', () => {
 
         // Notes import looks up contacts by email and errors on miss.
         // Seed contacts directly from the generated contacts.csv so every
-        // note row resolves without running the full contacts wizard.
-        const contacts = parseCsv(cleanCsvPath('contacts.csv'));
-        const emailIdx = contacts.headers.indexOf('Email');
-        expect(emailIdx).toBeGreaterThanOrEqual(0);
-
-        const emails = contacts.rows
-            .map((r) => r[emailIdx])
-            .filter((e): e is string => typeof e === 'string' && e !== '');
-
-        await insertContactsForImport(emails);
+        // note row resolves with realistic partial-fill data.
+        await insertContactsFromCsv(cleanCsvPath('contacts.csv'));
     });
 
     test('imports every note from the generated notes.csv and attaches each to its contact', async ({ page }) => {

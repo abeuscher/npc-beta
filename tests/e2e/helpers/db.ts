@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as dotenv from 'dotenv';
+import { parseCsv } from './fake-csv.js';
 
 const { Client } = pg;
 
@@ -189,14 +190,54 @@ export async function findImportSourceIdByName(name: string): Promise<string | n
     });
 }
 
-export async function insertContactsForImport(emails: string[]): Promise<void> {
+const CONTACT_CSV_HEADER_TO_COLUMN: Record<string, string> = {
+    'Prefix':         'prefix',
+    'First Name':     'first_name',
+    'Last Name':      'last_name',
+    'Email':          'email',
+    'Phone':          'phone',
+    'Address Line 1': 'address_line_1',
+    'Address Line 2': 'address_line_2',
+    'City':           'city',
+    'State':          'state',
+    'Postal Code':    'postal_code',
+    'Country':        'country',
+};
+
+export async function insertContactsFromCsv(csvPath: string): Promise<void> {
+    const { headers, rows } = parseCsv(csvPath);
+
+    const mapped: Array<{ csvIdx: number; col: string }> = [];
+    headers.forEach((h, i) => {
+        const col = CONTACT_CSV_HEADER_TO_COLUMN[h];
+        if (col) mapped.push({ csvIdx: i, col });
+    });
+
+    const emailMapping = mapped.find((m) => m.col === 'email');
+    if (!emailMapping) {
+        throw new Error(`insertContactsFromCsv: CSV at ${csvPath} has no "Email" column`);
+    }
+
     return withClient(async (client) => {
-        for (const email of emails) {
+        for (const row of rows) {
+            const email = row[emailMapping.csvIdx];
+            if (!email) continue;
+
+            const values: Record<string, string> = {};
+            for (const m of mapped) {
+                const v = row[m.csvIdx];
+                if (v !== undefined && v !== '') values[m.col] = v;
+            }
+
+            const cols = Object.keys(values);
+            const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+            const colList = cols.join(', ');
+
             await client.query(
-                `INSERT INTO contacts (id, email, source, created_at, updated_at)
-                 VALUES (gen_random_uuid(), $1, 'manual', NOW(), NOW())
+                `INSERT INTO contacts (id, source, created_at, updated_at, ${colList})
+                 VALUES (gen_random_uuid(), 'manual', NOW(), NOW(), ${placeholders})
                  ON CONFLICT DO NOTHING`,
-                [email],
+                cols.map((c) => values[c]),
             );
         }
     });

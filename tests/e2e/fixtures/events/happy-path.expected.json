@@ -2,11 +2,6 @@
     "eventCount": 3,
     "registrationCount": 3,
     "transactionCount": 3,
-    "preCreatedContactEmails": [
-        "ev1@example.com",
-        "ev2@example.com",
-        "ev3@example.com"
-    ],
     "eventTitles": [
         "Spring Gala",
         "Summer Workshop",

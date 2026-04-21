@@ -8,7 +8,7 @@ import {
     countTransactionsInSession,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
-    insertContactsForImport,
+    insertContactsFromCsv,
 } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { driveEventsHappyPath } from '../helpers/wizard.js';
@@ -18,6 +18,7 @@ const __dirname = path.dirname(__filename);
 
 const FIXTURE_DIR = path.resolve(__dirname, '../fixtures/events');
 const HAPPY_PATH_CSV = path.join(FIXTURE_DIR, 'happy-path.csv');
+const PRE_CREATED_CONTACTS_CSV = path.join(FIXTURE_DIR, 'happy-path-contacts.csv');
 const EXPECTED = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, 'happy-path.expected.json'), 'utf8'));
 
 test.describe.configure({ mode: 'serial' });
@@ -25,7 +26,7 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Events importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
-        await insertContactsForImport(EXPECTED.preCreatedContactEmails);
+        await insertContactsFromCsv(PRE_CREATED_CONTACTS_CSV);
     });
 
     test('imports 3 events with registrations and transactions', async ({ page }) => {
