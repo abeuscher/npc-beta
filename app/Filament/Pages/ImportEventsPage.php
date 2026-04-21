@@ -172,7 +172,7 @@ class ImportEventsPage extends Page
             'event registration date'                  => 'registration:registered_at',
 
             'invoice #', 'invoice number', 'transaction id' => 'transaction:external_id',
-            'total fee incl. extra costs and guests registration fees' => 'transaction:amount',
+            'total fee incl. extra costs and guests registration fees', 'transaction amount' => 'transaction:amount',
             'payment state'                                            => 'transaction:payment_state',
             'payment type'                                             => 'transaction:payment_method',
             'online/offline'                                           => 'transaction:payment_channel',

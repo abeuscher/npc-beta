@@ -13,7 +13,7 @@ class TransactionFieldRegistry
     {
         return [
             'external_id'     => ['label' => 'Transaction ID (external)', 'type' => 'text'],
-            'amount'          => ['label' => 'Amount', 'type' => 'decimal'],
+            'amount'          => ['label' => 'Transaction Amount', 'type' => 'decimal'],
             'payment_state'   => ['label' => 'Payment State', 'type' => 'text'],
             'payment_method'  => ['label' => 'Payment Method', 'type' => 'text'],
             'payment_channel'  => ['label' => 'Payment Channel (online/offline)', 'type' => 'text'],

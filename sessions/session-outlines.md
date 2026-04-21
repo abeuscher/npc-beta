@@ -208,53 +208,13 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 199 | Admin Secondary Button Colour & Header-Action Polish |
 | 200 | Admin CSS Consolidation — Tightening Pass |
 | 201 | Widget Template Tokens — Per-Item Namespace Split |
+| 202 | Importer CSV Generator & Playwright Edge-Case Coverage |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
-*Ordered by priority. The importer is the primary customer-acquisition vector and cannot remain hand-testable — the first three sessions address testability before extending features further.*
-
-### Playwright Importer — Deferred Edge-Case Specs *(stub — pre-Beta 1)*
-
-Follow-up to session 196, which delivered happy-path + update-strategy specs for all five importers (10 specs total). Four additional spec scenarios were explicitly scoped out of that session and remain to be written:
-
-- **PII rejection spec** — upload CSV with detectable PII (SSN / credit-card / flagged header), assert rejection UI, PII violations table, and downloadable report.
-- **Duplicate-header review spec** — upload CSV with colliding headers, assert the review step surfaces the finding and that ignore choices propagate through to the mapping step.
-- **Error-report spec** — upload CSV with malformed rows (bad dates, non-numeric amounts, etc.), assert error table rendering and the downloadable errored-rows CSV.
-- **Invoice-details multi-row grouping edge cases** beyond the basic fill-blanks-under-skip — e.g. partial matches, conflicting parent-invoice fields across rows in the same group, line-item ordering under update strategy.
-
-Also flagged by session 196 for a future product-level decision (not a test gap): the progress-page `buildStageAttrs` helpers currently stage every matched row regardless of whether values differ from the existing record. As a result `import-stat-updated` and `import_staged_updates` count matches rather than diffs. Whether that should filter to true diffs is a product question worth a pass during importer polish.
-
-Likely bundled with the Random Data Generator session once fixture generation is in place so each spec can exercise a wider variety of row shapes without handcrafting CSVs per scenario.
-
----
-
-### Widget Toolset Tightening — Per-Widget Pass *(stub — pre-Beta 1)*
-
-Every existing widget gets a pass to bring its config schema up to the current standard, so the designer can start authoring presets against stable, fully-featured widget tools.
-
-Scope per widget:
-
-- Replace legacy `color`-as-text-input fields with the proper ColorPicker primitive (swatches + theme palette, session 169).
-- Add `alignment` (9-point picker) where layout allows.
-- Add `gradient` controls where a color is the current option.
-- Review for missing appearance primitives now available in the schema library.
-- Confirm each widget renders correctly against the Appearance layer (background, spacing, full-width) from sessions 161–166.
-
-Why this blocks external work: the designer collaborator is building preset libraries for the widgets (Stage 5d+ work, post-Beta 1). Presets are only valuable if the widget's configurable surface is stable — otherwise every schema change invalidates their drafts. This session locks that surface. Priority position: right after the Playwright sessions so that the importer (customer acquisition) is locked in first, then the widget tools (designer work) unblocks parallel effort.
-
-Scope estimate: likely 2–3 sessions batched across the widget catalogue. Each batch ships a cluster of related widgets (hero family, content listings, media, chart/calendar/video, etc.). Out of scope for each batch: new widgets, behaviour changes, template/theme interaction — purely tightening the existing config surface.
-
-Related: the font control primitive also needs a tightening pass before being adopted as a `font` field type for widget-level typography controls (compact trigger ergonomics, swatch behaviour, sensible defaults). May be bundled into one of these batches or scheduled as its own session.
-
----
-
-### Random Data Generator — CSV Export for Import Testing *(stub — pre-Beta 1)*
-
-Extend the existing random data generator to produce CSV exports shaped like each content type's expected import format (contacts, events, donations, memberships, invoice details). Currently the importer can only be tested against real client data (WCG) which contains PII and cannot leave the local machine — this blocks any deploy-server or CI-based import testing, and blocks using the importer in demos. The generator already knows how to produce plausible contacts/events/etc as database rows; this session adds a CSV-serializing layer that mirrors the canonical template headers (see `CsvTemplateService` from session 191) and writes N synthetic rows per content type. Deliverable: an artisan command that outputs a set of fake-but-realistic CSVs to a configurable directory, suitable for dropping into the importer on any environment without PII concerns. Also valuable: seed a "demo import source" entry so repeat runs exercise the saved-mapping path. Feeds the Playwright importer specs as better fixtures.
-
----
+*Ordered by priority.*
 
 ### Importer — Custom Field Mapping for Notes / Interactions *(stub — pre-Beta 1)*
 
@@ -296,6 +256,15 @@ Batched polish session against the page builder, the admin left nav, and the set
 - Each per-section save should commit only that section's fields (or, if the form-state model makes per-section commits awkward, save the whole form but stay on the page anchored at the section). Pick the least-surprising behaviour during scoping.
 - Audit which settings pages use the multi-section pattern and apply consistently. Consider whether a shared `SectionWithSave` helper component is worth introducing or whether duplicating the action is simpler.
 
+**Importer field registries — import_session_id leaking into templates:**
+
+- `Event::$fillable` includes `import_session_id`, but `EventFieldRegistry::$excluded` does not list it — so the canonical events CSV template emits an `"Event Import Session Id"` column. Users downloading the template see a meaningless column. Same leak may exist for other registries (donation/membership/transaction/invoice) that derive fields from model fillables — audit all `*FieldRegistry` classes for `import_session_id` / `import_source_id` / `external_id` (where `external_id` already gets special handling) and add the missing exclusions.
+- Surfaced in session 202 (importer CSV generator) when cross-checking the composer's output against `CsvTemplateService` headers.
+
+**Importer Preview button — unhelpful summary:**
+
+- On the Contacts list (and likely the other content-type lists), the "Preview" button attached to staged import sessions only shows a count of rows. The name implies you'd see the actual staged rows / proposed changes. Either rename it to "Summary" or wire it up to show the staged records (first N rows + field diffs for updates). Surfaced during session 202 manual testing.
+
 **Out of scope for this session:** schema changes, new widgets, new settings, anything that touches the public site. Pure admin-side UX polish.
 
 ---
@@ -335,6 +304,8 @@ Expand the seeded importer source presets beyond Generic / Wild Apricot / Bloome
 Competitive value: demonstrating fast, low-friction migration off a prospect's current platform is a core sales story. Each preset added reduces onboarding friction and strengthens the pitch against competitors on time-to-live. Pairs with the CSV template download feature from session 191 (covers the long tail of unknown formats). Likely splits across 2–3 sessions, batched by shared export shape.
 
 Approach: obtain sample exports (anonymised) for each platform, map their column conventions into `guessDestination()` heuristics and `FieldMapper::sourceSkippedHeaders()`, seed the preset. No schema changes — the preset infrastructure from sessions 188–191 handles everything.
+
+Note: session 202's label disambiguation (`Donation Amount` / `Transaction Amount`) plus the composer's strict header contract against `CsvTemplateService` means preset field maps now have a stable, unambiguous column vocabulary to target. Any preset written here can assume the canonical template shape as the destination and focus solely on source-column-name heuristics. Session 203 will add notes/interactions presets to the mix (Raiser's Edge Actions, Bloomerang Interactions, Salesforce Task/Event) once the standalone Notes importer lands.
 
 ---
 
@@ -468,6 +439,24 @@ Core household model built in session 071 (self-referential `contacts.household_
 ---
 
 ## CMS & Page Builder — Post-Beta 1
+
+### Widget Toolset Tightening — Per-Widget Pass
+
+Every existing widget gets a pass to bring its config schema up to the current standard, so the designer can author preset libraries against stable, fully-featured widget tools.
+
+Scope per widget:
+
+- Replace legacy `color`-as-text-input fields with the proper ColorPicker primitive (swatches + theme palette, session 169).
+- Add `alignment` (9-point picker) where layout allows.
+- Add `gradient` controls where a color is the current option.
+- Review for missing appearance primitives now available in the schema library.
+- Confirm each widget renders correctly against the Appearance layer (background, spacing, full-width) from sessions 161–166.
+
+Status at Beta 1: the widget edit surface got substantial structural work during sessions 139–180 (unified preview/edit layout, properties panel split, defaults authoring), which left the widget config tooling presentable without an exhaustive per-widget sweep. Remaining work is mostly paper-cut replacement of legacy text-color inputs and alignment pickers. Deferred until post-Beta 1 because presets (Stage 5d+) are themselves post-Beta, and preset authoring against a 90%-tightened toolset is fine — the last-mile tightening can happen per-widget as presets ship.
+
+Scope estimate when it lands: 2–3 sessions batched across the widget catalogue. Related: the font control primitive needs a tightening pass before being adopted as a `font` field type (compact trigger ergonomics, swatch behaviour, sensible defaults). May be bundled with one of these batches.
+
+---
 
 ### Layer Explorer
 

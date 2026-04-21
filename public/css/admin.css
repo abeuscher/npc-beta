@@ -684,7 +684,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
  * in the .dark block below.                                                */
 
 :root {
-    --np-control-bar-bg:            #f3f0f0;
+    --np-control-bar-bg:            #ffffff;
     --np-control-group-bg:          #fafbfc;
     --np-control-border:            #d9d9d9;
     --np-control-chip-border:       #d1d5db;

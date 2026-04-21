@@ -51,9 +51,11 @@ class CsvTemplateService
         $headers[] = 'Contact External ID';
         $headers[] = 'Contact Phone';
 
-        // Transaction columns
+        // Transaction columns — labels are already self-disambiguating
+        // ('Transaction ID (external)', 'Transaction Amount') so no prefix
+        // is applied here.
         foreach (TransactionFieldRegistry::options() as $label) {
-            $headers[] = "Transaction {$label}";
+            $headers[] = $label;
         }
 
         return $headers;

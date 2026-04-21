@@ -49,7 +49,8 @@ it('events template includes event, registration, contact, and transaction colum
 it('donations template includes donation and transaction columns', function () {
     $headers = CsvTemplateService::donationHeaders();
 
-    expect($headers)->toContain('Amount');
+    expect($headers)->toContain('Donation Amount');
+    expect($headers)->toContain('Transaction Amount');
     expect($headers)->toContain('Donation Date');
     expect($headers)->toContain('Email');
     // Invoice/Receipt Number appears once (deduped from transaction)

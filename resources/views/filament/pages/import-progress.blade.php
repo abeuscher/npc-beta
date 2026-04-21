@@ -21,10 +21,11 @@
             @if (! $piiHeaderBlocked && count($piiViolations) > 0)
                 <div class="rounded-xl border border-red-200 bg-white shadow-sm dark:border-red-800 dark:bg-gray-900">
                     <div class="flex items-center justify-between border-b border-red-200 px-5 py-3 dark:border-red-800">
-                        <h3 class="text-sm font-semibold text-red-800 dark:text-red-300">
+                        <h3 data-testid="import-pii-count" class="text-sm font-semibold text-red-800 dark:text-red-300">
                             {{ count($piiViolations) }} flagged row{{ count($piiViolations) === 1 ? '' : 's' }}@if ($piiTruncated) (scanner stopped at {{ \App\Services\PiiScanner::DEFAULT_LIMIT }})@endif
                         </h3>
                         <button type="button"
+                                data-testid="import-download-pii"
                                 wire:click="downloadPiiErrors"
                                 wire:loading.attr="disabled"
                                 wire:target="downloadPiiErrors"

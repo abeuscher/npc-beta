@@ -11,7 +11,7 @@ class DonationFieldRegistry
     public static function fields(): array
     {
         return [
-            'amount'         => ['label' => 'Amount', 'type' => 'decimal'],
+            'amount'         => ['label' => 'Donation Amount', 'type' => 'decimal'],
             'donated_at'     => ['label' => 'Donation Date', 'type' => 'datetime'],
             'type'           => ['label' => 'Type (one_off / recurring)', 'type' => 'text'],
             'status'         => ['label' => 'Status', 'type' => 'text'],

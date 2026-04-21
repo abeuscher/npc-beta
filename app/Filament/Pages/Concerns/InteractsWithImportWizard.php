@@ -427,6 +427,7 @@ trait InteractsWithImportWizard
 
         $schema[] = Forms\Components\Placeholder::make('review_summary')
             ->label('')
+            ->extraAttributes(['data-testid' => 'import-review-findings'])
             ->content(new \Illuminate\Support\HtmlString(
                 "<p class='text-sm text-amber-700 dark:text-amber-400'><strong>{$count} {$noun} to review.</strong> Multiple columns in the uploaded CSV appear to hold the same kind of data. Pick which columns to keep and which to drop before mapping.</p>"
             ));

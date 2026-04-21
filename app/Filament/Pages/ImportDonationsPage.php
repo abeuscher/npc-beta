@@ -162,10 +162,11 @@ class ImportDonationsPage extends Page
             'phone', 'phone number'            => 'contact:phone',
 
             'donation date'                    => 'donation:donated_at',
-            'amount'                           => 'donation:amount',
+            'amount', 'donation amount'        => 'donation:amount',
             'number'                           => 'donation:invoice_number',
             'comment', 'comments for payer'    => 'donation:comment',
 
+            'transaction amount'               => 'transaction:amount',
             'payment state'                    => 'transaction:payment_state',
             'payment type'                     => 'transaction:payment_method',
             'online/offline'                   => 'transaction:payment_channel',
