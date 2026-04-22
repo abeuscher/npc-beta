@@ -1,28 +1,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Widget } from '../../types'
-import { useEditorStore } from '../../stores/editor'
 import SpacingInput, { type SpacingValue } from '../primitives/SpacingInput.vue'
 
-const props = defineProps<{
-  widget: Widget
+const props = withDefaults(
+  defineProps<{
+    config: Record<string, any>
+    showFullWidth?: boolean
+    fullWidthDisabled?: boolean
+    fullWidthDisabledReason?: string | null
+  }>(),
+  {
+    showFullWidth: true,
+    fullWidthDisabled: false,
+    fullWidthDisabledReason: null,
+  },
+)
+
+const emit = defineEmits<{
+  update: [path: string, value: any]
 }>()
 
-const store = useEditorStore()
+const fullWidth = computed(() => !!props.config?.layout?.full_width)
+const padding = computed(() => props.config?.layout?.padding ?? {})
+const margin  = computed(() => props.config?.layout?.margin ?? {})
 
-const fullWidth = computed(() => !!props.widget.appearance_config?.layout?.full_width)
-const isColumnChild = computed(() => props.widget.layout_id !== null)
-
-const padding = computed(() => props.widget.appearance_config?.layout?.padding ?? {})
-const margin  = computed(() => props.widget.appearance_config?.layout?.margin ?? {})
-
-function updateAppearance(path: string, value: any) {
-  store.updateLocalAppearanceConfig(props.widget.id, path, value)
+function update(path: string, value: any) {
+  emit('update', path, value)
 }
 
 function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
   for (const side of ['top', 'right', 'bottom', 'left'] as const) {
-    updateAppearance(`layout.${box}.${side}`, value[side])
+    update(`${box}.${side}`, value[side])
   }
 }
 </script>
@@ -31,18 +39,18 @@ function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
   <div class="layout-panel">
     <p class="layout-panel__heading">Section Layout</p>
 
-    <div class="layout-panel__section">
+    <div v-if="showFullWidth" class="layout-panel__section">
       <label
         class="layout-panel__toggle"
-        :class="{ 'layout-panel__toggle--disabled': isColumnChild }"
-        :title="isColumnChild ? 'The parent column controls width for column widgets' : undefined"
+        :class="{ 'layout-panel__toggle--disabled': fullWidthDisabled }"
+        :title="fullWidthDisabled ? (fullWidthDisabledReason ?? undefined) : undefined"
       >
         <input
           type="checkbox"
           :checked="fullWidth"
-          :disabled="isColumnChild"
+          :disabled="fullWidthDisabled"
           class="inspector-checkbox"
-          @change="updateAppearance('layout.full_width', ($event.target as HTMLInputElement).checked)"
+          @change="update('full_width', ($event.target as HTMLInputElement).checked)"
         >
         <span>Full width</span>
       </label>

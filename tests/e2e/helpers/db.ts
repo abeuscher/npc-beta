@@ -250,3 +250,46 @@ export function resetDatabase(): void {
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
 }
+
+export async function findPageIdBySlug(slug: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id FROM pages WHERE slug = $1 LIMIT 1',
+            [slug],
+        );
+        return res.rows[0]?.id ?? null;
+    });
+}
+
+export async function createLayoutOnPage(pageId: string): Promise<string> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            `INSERT INTO page_layouts
+                (id, owner_type, owner_id, label, display, columns, layout_config, appearance_config, sort_order, created_at, updated_at)
+             VALUES
+                (gen_random_uuid(), 'App\\Models\\Page', $1, 'E2E Layout', 'grid', 2,
+                 '{"grid_template_columns":"1fr 1fr","gap":"1rem"}',
+                 '{}',
+                 0, NOW(), NOW())
+             RETURNING id`,
+            [pageId],
+        );
+        return res.rows[0].id;
+    });
+}
+
+export async function getLayoutAppearanceConfig(layoutId: string): Promise<Record<string, unknown>> {
+    return withClient(async (client) => {
+        const res = await client.query<{ appearance_config: Record<string, unknown> }>(
+            'SELECT appearance_config FROM page_layouts WHERE id = $1',
+            [layoutId],
+        );
+        return res.rows[0]?.appearance_config ?? {};
+    });
+}
+
+export async function deleteLayout(layoutId: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query('DELETE FROM page_layouts WHERE id = $1', [layoutId]);
+    });
+}

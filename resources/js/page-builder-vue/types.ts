@@ -46,6 +46,19 @@ export interface Widget {
   preview_html: string
 }
 
+export interface LayoutAppearanceConfig {
+  background?: {
+    color?: string
+    gradient?: any
+    alignment?: string
+    fit?: string
+  }
+  layout?: {
+    padding?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
+    margin?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
+  }
+}
+
 export interface PageLayout {
   id: string
   page_id: string
@@ -53,6 +66,7 @@ export interface PageLayout {
   display: 'flex' | 'grid'
   columns: number
   layout_config: Record<string, any>
+  appearance_config: LayoutAppearanceConfig
   sort_order: number
   slots: Record<number, Widget[]>
 }
@@ -193,6 +207,7 @@ export interface UpdateLayoutPayload {
   display?: 'flex' | 'grid'
   columns?: number
   layout_config?: Record<string, any>
+  appearance_config?: LayoutAppearanceConfig
 }
 
 export type ReorderItem =

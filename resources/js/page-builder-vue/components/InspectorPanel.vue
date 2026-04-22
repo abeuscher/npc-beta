@@ -79,6 +79,26 @@ function setBottomTab(id: BottomTab) {
   bottomTab.value = id
   if (bottomCollapsed.value) bottomCollapsed.value = false
 }
+
+function onWidgetBackgroundUpdate(path: string, value: any) {
+  if (!widget.value) return
+  store.updateLocalAppearanceConfig(widget.value.id, `background.${path}`, value)
+}
+
+function onWidgetLayoutUpdate(path: string, value: any) {
+  if (!widget.value) return
+  store.updateLocalAppearanceConfig(widget.value.id, `layout.${path}`, value)
+}
+
+function onWidgetUploadImage(file: File) {
+  if (!widget.value) return
+  store.uploadAppearanceImage(widget.value.id, file)
+}
+
+function onWidgetRemoveImage() {
+  if (!widget.value) return
+  store.removeAppearanceImage(widget.value.id)
+}
 </script>
 
 <template>
@@ -181,13 +201,25 @@ function setBottomTab(id: BottomTab) {
 
         <div class="inspector-pane__body">
           <div v-show="bottomTab === 'background'" class="inspector-pane__scroll">
-            <BackgroundPanel :widget="widget" />
+            <BackgroundPanel
+              :config="widget.appearance_config"
+              :image-url="widget.appearance_image_url"
+              :id-prefix="widget.id"
+              @update="onWidgetBackgroundUpdate"
+              @upload-image="onWidgetUploadImage"
+              @remove-image="onWidgetRemoveImage"
+            />
           </div>
           <div v-show="bottomTab === 'text'" class="inspector-pane__scroll">
             <TextPanel :widget="widget" />
           </div>
           <div v-show="bottomTab === 'spacing'" class="inspector-pane__scroll">
-            <SectionLayoutPanel :widget="widget" />
+            <SectionLayoutPanel
+              :config="widget.appearance_config"
+              :full-width-disabled="widget.layout_id !== null"
+              full-width-disabled-reason="The parent column controls width for column widgets"
+              @update="onWidgetLayoutUpdate"
+            />
           </div>
         </div>
       </section>

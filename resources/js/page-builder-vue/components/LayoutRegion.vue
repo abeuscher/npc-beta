@@ -23,6 +23,7 @@ const isSelected = computed(
 
 const containerStyle = computed(() => {
   const config = props.layout.layout_config ?? {}
+  const appearance = props.layout.appearance_config ?? {}
   const display = props.layout.display ?? 'grid'
   const styles: Record<string, string> = { display }
 
@@ -40,24 +41,28 @@ const containerStyle = computed(() => {
   if (config.gap) styles.gap = config.gap
   if (config.align_items) styles.alignItems = config.align_items
 
-  // New container style fields (mirrors PageController + ChromeRenderer renderLayoutBlock)
-  const spacingMap: Record<string, string> = {
-    padding_top: 'paddingTop',
-    padding_right: 'paddingRight',
-    padding_bottom: 'paddingBottom',
-    padding_left: 'paddingLeft',
-    margin_top: 'marginTop',
-    margin_right: 'marginRight',
-    margin_bottom: 'marginBottom',
-    margin_left: 'marginLeft',
-  }
-  for (const [key, cssProp] of Object.entries(spacingMap)) {
-    const v = config[key]
+  // Background + spacing live on appearance_config after session 207.
+  // Mirrors AppearanceStyleComposer::composeForLayout on the PHP side.
+  const bgColor = appearance.background?.color
+  if (bgColor) styles.backgroundColor = bgColor
+
+  const sideMap = {
+    top: 'Top', right: 'Right', bottom: 'Bottom', left: 'Left',
+  } as const
+  const padding = appearance.layout?.padding ?? {}
+  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+    const v = (padding as Record<string, any>)[side]
     if (v !== undefined && v !== null && v !== '') {
-      styles[cssProp] = `${parseInt(v, 10)}px`
+      styles[`padding${suffix}`] = `${parseInt(v, 10)}px`
     }
   }
-  if (config.background_color) styles.backgroundColor = config.background_color
+  const margin = appearance.layout?.margin ?? {}
+  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+    const v = (margin as Record<string, any>)[side]
+    if (v !== undefined && v !== null && v !== '') {
+      styles[`margin${suffix}`] = `${parseInt(v, 10)}px`
+    }
+  }
 
   return styles
 })
@@ -198,14 +203,18 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   margin: 0.5rem 0;
 }
 
-.layout-region--selected > .layout-region__container:hover {
-  outline: 2px solid #282cfc;
+/* Selection outline lives on .layout-region (not the inner container) so it
+   always spans the full horizontal claim of the layout, regardless of whether
+   the content is contained (90%) or full-width. Contained-ness is conveyed
+   by the inner container / widget placeholders shrinking within the outline.
+   .layout-region has no border-radius, so the outline is a hard rectangle. */
+.layout-region--selected {
+  outline: 2px solid #6366f1;
   outline-offset: -1px;
 }
 
-.layout-region--selected > .layout-region__container {
-  outline: 2px solid #6366f1;
-  outline-offset: -1px;
+.layout-region--selected:hover {
+  outline: 2px solid #282cfc;
 }
 
 .layout-region--selected > .layout-region__selector {
@@ -267,7 +276,8 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.layout-region__handle:hover {
+.layout-region__handle:hover,
+.layout-region--selected > .layout-region__handle {
   opacity: 1;
 }
 
@@ -300,6 +310,11 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
 
 .layout-region__slot {
   min-height: 9rem;
+  /* Grid items default to min-width:auto, which prevents them from shrinking
+     below the min-content width of their children. Wide widgets (carousels,
+     images) would then blow out the grid column track and push the container
+     wider than its parent. Allow the slot to shrink to its track size. */
+  min-width: 0;
 }
 
 .layout-region__slot-list {
@@ -307,6 +322,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   flex-direction: column;
   gap: 0.5rem;
   min-height: 9rem;
+  min-width: 0;
 }
 
 .layout-region__add-widget {

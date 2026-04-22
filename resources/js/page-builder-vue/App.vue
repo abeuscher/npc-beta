@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { configure } from './api'
 import type { BootstrapData } from './types'
 import { useEditorStore } from './stores/editor'
 import EditorToolbar from './components/EditorToolbar.vue'
@@ -38,7 +37,7 @@ function handleTemplateSaved(e: Event) {
 }
 
 onMounted(() => {
-  configure(props.bootstrap.csrf_token, props.bootstrap.api_base_url, props.bootstrap.api_lookup_url)
+  store.configureApi(props.bootstrap)
   store.loadTree(props.bootstrap)
   store.selectFirstRootItemIfNone()
 

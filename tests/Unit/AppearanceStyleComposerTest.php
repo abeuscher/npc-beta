@@ -275,3 +275,154 @@ it('skips background-image props when no gradient and no image', function () {
         ->not->toContain('background-position')
         ->not->toContain('background-size');
 });
+
+// ── composeForLayout (session 207) ──────────────────────────────────────────
+
+function makeLayout(Page $page, array $ac = []): PageLayout
+{
+    return $page->layouts()->create([
+        'label'             => 'Test Layout',
+        'display'           => 'grid',
+        'columns'           => 2,
+        'layout_config'     => [],
+        'appearance_config' => $ac,
+        'sort_order'        => 0,
+    ]);
+}
+
+it('returns empty style for an empty layout appearance_config', function () {
+    $layout = makeLayout($this->page, []);
+    expect($this->composer->composeForLayout($layout))->toBe('');
+});
+
+it('emits background-color on a layout for a valid hex', function () {
+    $layout = makeLayout($this->page, [
+        'background' => ['color' => '#ff0000'],
+    ]);
+    expect($this->composer->composeForLayout($layout))->toContain('background-color:#ff0000');
+});
+
+it('rejects invalid hex for layout background-color', function () {
+    $layout = makeLayout($this->page, [
+        'background' => ['color' => 'notahex'],
+    ]);
+    expect($this->composer->composeForLayout($layout))->not->toContain('background-color');
+});
+
+it('emits layout padding and margin per side for present non-zero values', function () {
+    $layout = makeLayout($this->page, [
+        'layout' => [
+            'padding' => ['top' => '12', 'left' => '24', 'right' => '24', 'bottom' => '12'],
+            'margin'  => ['top' => '8'],
+        ],
+    ]);
+    $style = $this->composer->composeForLayout($layout);
+    expect($style)
+        ->toContain('padding-top:12px')
+        ->toContain('padding-right:24px')
+        ->toContain('padding-bottom:12px')
+        ->toContain('padding-left:24px')
+        ->toContain('margin-top:8px')
+        ->not->toContain('margin-right')
+        ->not->toContain('margin-bottom')
+        ->not->toContain('margin-left');
+});
+
+it('emits gradient with position, size, repeat on a layout', function () {
+    $layout = makeLayout($this->page, [
+        'background' => [
+            'gradient' => [
+                'gradients' => [
+                    ['type' => 'linear', 'from' => '#000000', 'to' => '#ffffff'],
+                ],
+            ],
+            'alignment' => 'top-left',
+            'fit'       => 'contain',
+        ],
+    ]);
+    $style = $this->composer->composeForLayout($layout);
+    expect($style)
+        ->toContain('background-image:linear-gradient(')
+        ->toContain('background-position:0% 0%')
+        ->toContain('background-size:contain')
+        ->toContain('background-repeat:no-repeat');
+});
+
+it('does not emit text color, text shadow, or full_width on layouts', function () {
+    // These keys either belong to widgets only (text) or to layout_config (full_width).
+    // Passing them via appearance_config should have no effect on composeForLayout output.
+    $layout = makeLayout($this->page, [
+        'text'   => ['color' => '#00ff00', 'shadow' => true],
+        'layout' => ['full_width' => true],
+    ]);
+    $style = $this->composer->composeForLayout($layout);
+    expect($style)
+        ->not->toContain('color:')
+        ->not->toContain('text-shadow');
+});
+
+// ── Migration round-trip (session 207) ─────────────────────────────────────
+
+it('produces byte-equivalent CSS for pre-207 layout_config after data migration', function () {
+    // Pre-207, the renderer emitted layout container CSS from layout_config keys
+    // (background_color, padding_*, margin_*). Post-207, those values live on
+    // appearance_config under the new nested shape and composeForLayout
+    // produces the equivalent CSS. This locks in round-trip equivalence for
+    // the data migration.
+    $preMigration = [
+        'background_color' => '#ff0000',
+        'padding_top'      => '20',
+        'padding_right'    => '10',
+        'padding_bottom'   => '15',
+        'padding_left'     => '5',
+        'margin_top'       => '8',
+        'margin_bottom'    => '4',
+    ];
+
+    // Reproduce the pre-207 renderer logic.
+    $preStyle = '';
+    $spacingKeys = [
+        'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
+        'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
+        'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
+        'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+    ];
+    foreach ($spacingKeys as $key => $cssProp) {
+        $val = isset($preMigration[$key]) && $preMigration[$key] !== '' ? (int) $preMigration[$key] : null;
+        if ($val !== null) {
+            $preStyle .= $cssProp . ':' . $val . 'px;';
+        }
+    }
+    if (! empty($preMigration['background_color'])) {
+        $preStyle .= 'background-color:' . $preMigration['background_color'] . ';';
+    }
+
+    // Simulate the 207 data migration.
+    $postMigration = [
+        'background' => ['color' => $preMigration['background_color']],
+        'layout'     => [
+            'padding' => [
+                'top'    => $preMigration['padding_top'],
+                'right'  => $preMigration['padding_right'],
+                'bottom' => $preMigration['padding_bottom'],
+                'left'   => $preMigration['padding_left'],
+            ],
+            'margin' => [
+                'top'    => $preMigration['margin_top'],
+                'bottom' => $preMigration['margin_bottom'],
+            ],
+        ],
+    ];
+    $layout = makeLayout($this->page, $postMigration);
+    $postStyle = $this->composer->composeForLayout($layout);
+
+    // Normalize both sides to a sorted set of "prop:value" decls so we compare
+    // semantic equivalence, not declaration order.
+    $normalize = function (string $style): array {
+        $decls = array_filter(array_map('trim', explode(';', $style)));
+        sort($decls);
+        return $decls;
+    };
+
+    expect($normalize($postStyle))->toEqual($normalize($preStyle));
+});

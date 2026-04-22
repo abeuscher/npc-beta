@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 
 class AppearanceStyleComposer
@@ -84,6 +85,59 @@ class AppearanceStyleComposer
             'inline_style'  => implode(';', $styleProps),
             'is_full_width' => $isFullWidth,
         ];
+    }
+
+    /**
+     * Compose inline style for a page layout from its appearance_config.
+     *
+     * Layouts support background color, gradient, padding, and margin.
+     * Layouts do not support background image, text color, text shadow, or
+     * a full_width override on appearance_config (full_width lives on
+     * layout_config for layouts).
+     */
+    public function composeForLayout(PageLayout $layout): string
+    {
+        $ac = $layout->appearance_config ?? [];
+        $styleProps = [];
+
+        $bgColor = $ac['background']['color'] ?? null;
+        if (! empty($bgColor) && preg_match(self::HEX_PATTERN, $bgColor)) {
+            $styleProps[] = 'background-color:' . $bgColor;
+        }
+
+        $gradientCss = app(GradientComposer::class)->compose($ac['background']['gradient'] ?? null);
+        if ($gradientCss !== '') {
+            $styleProps[] = 'background-image:' . $gradientCss;
+
+            $alignment = $ac['background']['alignment'] ?? 'center';
+            $position = self::ALIGNMENT_MAP[$alignment] ?? '50% 50%';
+            $styleProps[] = 'background-position:' . $position;
+
+            $fit = $ac['background']['fit'] ?? 'cover';
+            if (! in_array($fit, self::ALLOWED_FIT, true)) {
+                $fit = 'cover';
+            }
+            $styleProps[] = 'background-size:' . $fit;
+            $styleProps[] = 'background-repeat:no-repeat';
+        }
+
+        $padding = $ac['layout']['padding'] ?? [];
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : 0;
+            if ($val !== 0) {
+                $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
+            }
+        }
+
+        $margin = $ac['layout']['margin'] ?? [];
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : 0;
+            if ($val !== 0) {
+                $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
+            }
+        }
+
+        return implode(';', $styleProps);
     }
 
     private function composeBackgroundImage(PageWidget $pw, array $ac, array &$styleProps): void

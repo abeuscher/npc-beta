@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useEditorStore } from '../stores/editor'
-import * as api from '../api'
 import type { Widget, WidgetPreset, WidgetDraftPreset } from '../types'
 
 const props = defineProps<{
@@ -113,7 +112,7 @@ const defaultsExported = ref(false)
 async function exportDefaultsToClipboard(): Promise<void> {
   try {
     await store.flushPendingSaves()
-    const res = await api.exportDefaults(props.widget.id)
+    const res = await store.requireApi().exportDefaults(props.widget.id)
     await navigator.clipboard.writeText(res.php)
     defaultsExported.value = true
     setTimeout(() => { defaultsExported.value = false }, 2000)

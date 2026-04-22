@@ -22,6 +22,20 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Column layout slots
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Grid and flex items default to min-width:auto, which forbids shrinking below
+// the min-content width of their children. Wide widgets (carousels, images)
+// then blow out the column track and push the whole layout past its parent's
+// max-width. Allow the slot to shrink to its track size. Mirrors the same fix
+// applied to .layout-region__slot in the admin preview (LayoutRegion.vue).
+
+.layout-column {
+    min-width: 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Site nav wrapper — overlay mode for hero full-bleed
 // ─────────────────────────────────────────────────────────────────────────────
 

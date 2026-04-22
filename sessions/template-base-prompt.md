@@ -25,10 +25,13 @@ Before doing anything else:
 - **Update `docs/schema/`** after writing any migration — add, modify, or remove the relevant table file(s) under `docs/schema/` to reflect the final column state. If adding a new table, create a new file and add it to `docs/schema/README.md`.
 - **If the PostgreSQL container becomes unresponsive** (500/exec errors), ask the user to restart it rather than retrying.
 - **When implementation is complete**, run the fast test suite: `docker compose exec app php artisan test --exclude-group=slow`. Fix any failures before proceeding. If the session prompt specifies slow test groups to run, run those separately as well.
-  - If the session touched any code under `resources/js/`, also run `npm run build` and confirm it succeeds. Vue/JS build failures are silent to the Pest suite.
-  - If the session touched widget SCSS/CSS/JS (anything under `resources/scss/widgets/`, the `css` or `js` columns of any `widget_types` row, or any file referenced in a `WidgetType.assets` array), also run `docker compose exec app php artisan build:public` so the public widget asset bundle is rebuilt.
+- **Front-end builds — when to run which:** Pest does not catch Vue/TS errors or SCSS compile failures, so any change to front-end source must be built before announcing completion. Match the touched path to its build command:
+  - `resources/js/**` or `resources/scss/**` (including `public.scss` and any partial it imports) → `npm run build`. The admin bundle, the public site CSS, and the page-builder Vue app all compile through Vite, so this one command covers all three surfaces.
+  - `resources/scss/widgets/**`, the `css` / `js` columns of any `widget_types` row, or any file referenced in a `WidgetType.assets` array → `docker compose exec app php artisan build:public`. This rebuilds the public widget asset bundle on the build server.
+  - `public/css/admin.css` is hand-edited and served directly — **no build** required.
 - **Tests for new behaviour:** every session that changes application behaviour (new models, controllers, routes, scopes, or logic changes) should include tests unless the session prompt explicitly says otherwise. Pure CSS, template, or copy sessions may skip tests. Follow existing test conventions — Pest syntax, `RefreshDatabase`, factory-based setup.
 - **Fast vs slow classification:** tests that individually take >5 seconds belong in a Pest `->group('slow')`. Everything else stays in the default (fast) suite. The fast suite should complete in under 5 minutes.
+- **Playwright artifact hygiene:** `resetDatabase()` fires once per spec in `beforeAll`; anything a test creates after that point persists into the next manual-test session. Delete out-of-band rows in `afterAll` — standalone layouts, test-only pages, ad-hoc records not tied to the feature being exercised. Rows that are the natural output of the feature under test (e.g. contacts imported by a happy-path importer spec, notes created by a notes spec) may stay.
 - **Pause for manual testing.** Announce that testing is ready. Then stop. Do not suggest closing the session or take any further action.
 
 ---

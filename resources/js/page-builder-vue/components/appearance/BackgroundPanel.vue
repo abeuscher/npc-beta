@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { Widget } from '../../types'
-import { useEditorStore } from '../../stores/editor'
 import ColorPicker from '../primitives/ColorPicker.vue'
 import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
@@ -9,24 +7,37 @@ import { composeGradientCss } from '../../helpers/gradient'
 
 type BgTab = 'color' | 'gradient' | 'image' | null
 
-const props = defineProps<{
-  widget: Widget
+const props = withDefaults(
+  defineProps<{
+    config: Record<string, any>
+    imageUrl?: string | null
+    idPrefix: string
+    showImage?: boolean
+  }>(),
+  {
+    imageUrl: null,
+    showImage: true,
+  },
+)
+
+const emit = defineEmits<{
+  update: [path: string, value: any]
+  uploadImage: [file: File]
+  removeImage: []
 }>()
 
-const store = useEditorStore()
 const uploading = ref(false)
 
-const backgroundColor = computed(() => props.widget.appearance_config?.background?.color ?? '')
+const backgroundColor = computed(() => props.config?.background?.color ?? '')
 const hasColor = computed(() => !!backgroundColor.value)
 const colorSwatchStyle = computed(() =>
   hasColor.value ? { backgroundColor: backgroundColor.value } : undefined
 )
-const gradient = computed(() => props.widget.appearance_config?.background?.gradient ?? null)
-const alignment = computed(() => props.widget.appearance_config?.background?.alignment ?? 'center')
-const fit = computed(() => props.widget.appearance_config?.background?.fit ?? 'cover')
-const imageUrl = computed(() => props.widget.appearance_image_url ?? null)
-const useCurrentPageHeader = computed(() => props.widget.appearance_config?.background?.use_current_page_header ?? false)
-const hasImage = computed(() => imageUrl.value !== null)
+const gradient = computed(() => props.config?.background?.gradient ?? null)
+const alignment = computed(() => props.config?.background?.alignment ?? 'center')
+const fit = computed(() => props.config?.background?.fit ?? 'cover')
+const useCurrentPageHeader = computed(() => props.config?.background?.use_current_page_header ?? false)
+const hasImage = computed(() => props.imageUrl !== null && props.imageUrl !== '')
 const imageControlsDisabled = computed(() => useCurrentPageHeader.value || !hasImage.value)
 
 const hasGradient = computed(() => Array.isArray(gradient.value?.gradients) && gradient.value!.gradients.length > 0)
@@ -36,12 +47,11 @@ const gradientSwatchStyle = computed(() => {
   return { backgroundImage: gradientPreviewCss.value }
 })
 const imageSwatchStyle = computed(() =>
-  hasImage.value ? { backgroundImage: `url(${imageUrl.value})` } : undefined
+  hasImage.value ? { backgroundImage: `url(${props.imageUrl})` } : undefined
 )
 
-// Tab state — image wins, then gradient, then color as default.
 function initialTab(): BgTab {
-  if (hasImage.value) return 'image'
+  if (props.showImage && hasImage.value) return 'image'
   if (hasGradient.value) return 'gradient'
   return 'color'
 }
@@ -51,8 +61,8 @@ function togglePanel(panel: Exclude<BgTab, null>) {
   openPanel.value = openPanel.value === panel ? null : panel
 }
 
-function updateAppearance(path: string, value: any) {
-  store.updateLocalAppearanceConfig(props.widget.id, path, value)
+function update(path: string, value: any) {
+  emit('update', path, value)
 }
 
 async function handleImageUpload(event: Event) {
@@ -62,19 +72,19 @@ async function handleImageUpload(event: Event) {
 
   uploading.value = true
   try {
-    await store.uploadAppearanceImage(props.widget.id, file)
+    emit('uploadImage', file)
   } finally {
     uploading.value = false
     input.value = ''
   }
 }
 
-async function handleImageRemove() {
-  await store.removeAppearanceImage(props.widget.id)
+function handleImageRemove() {
+  emit('removeImage')
 }
 
 function triggerFileInput() {
-  const input = document.getElementById(`bg-upload-${props.widget.id}`) as HTMLInputElement | null
+  const input = document.getElementById(`bg-upload-${props.idPrefix}`) as HTMLInputElement | null
   input?.click()
 }
 </script>
@@ -83,7 +93,7 @@ function triggerFileInput() {
   <div class="bg-panel">
     <p class="bg-panel__heading">Background</p>
 
-    <!-- Handle row: three tabs (Color / Gradient / Image) -->
+    <!-- Handle row: two or three tabs (Color / Gradient [/ Image]) -->
     <div class="bg-panel__row">
       <div class="bg-panel__row-cell">
         <label class="inspector-label">Color</label>
@@ -113,7 +123,7 @@ function triggerFileInput() {
         />
       </div>
 
-      <div class="bg-panel__row-cell">
+      <div v-if="showImage" class="bg-panel__row-cell">
         <label class="inspector-label">Image</label>
         <button
           type="button"
@@ -135,7 +145,7 @@ function triggerFileInput() {
       v-if="openPanel === 'color'"
       :model-value="backgroundColor"
       panel-only
-      @update:model-value="updateAppearance('background.color', $event)"
+      @update:model-value="update('color', $event)"
     />
 
     <!-- Gradient panel -->
@@ -143,11 +153,11 @@ function triggerFileInput() {
       v-if="openPanel === 'gradient'"
       :model-value="gradient"
       compact
-      @update:model-value="updateAppearance('background.gradient', $event)"
+      @update:model-value="update('gradient', $event)"
     />
 
     <!-- Image panel -->
-    <div v-if="openPanel === 'image'" class="bg-panel__image-panel">
+    <div v-if="showImage && openPanel === 'image'" class="bg-panel__image-panel">
       <div class="bg-panel__image-row">
         <div class="bg-panel__image-row-cell">
           <label class="inspector-label">Fit</label>
@@ -155,7 +165,7 @@ function triggerFileInput() {
             :value="fit"
             class="inspector-control inspector-control--sm"
             :disabled="imageControlsDisabled"
-            @change="updateAppearance('background.fit', ($event.target as HTMLSelectElement).value)"
+            @change="update('fit', ($event.target as HTMLSelectElement).value)"
           >
             <option value="cover">Cover</option>
             <option value="contain">Contain</option>
@@ -166,7 +176,7 @@ function triggerFileInput() {
           <NinePointAlignment
             :model-value="alignment"
             :disabled="imageControlsDisabled"
-            @update:model-value="updateAppearance('background.alignment', $event)"
+            @update:model-value="update('alignment', $event)"
           />
         </div>
       </div>
@@ -175,13 +185,13 @@ function triggerFileInput() {
         <input
           type="checkbox"
           :checked="useCurrentPageHeader"
-          @change="updateAppearance('background.use_current_page_header', ($event.target as HTMLInputElement).checked)"
+          @change="update('use_current_page_header', ($event.target as HTMLInputElement).checked)"
         >
         <span>Use current page's header image</span>
       </label>
 
       <input
-        :id="`bg-upload-${widget.id}`"
+        :id="`bg-upload-${idPrefix}`"
         type="file"
         accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
         class="bg-panel__file-input"

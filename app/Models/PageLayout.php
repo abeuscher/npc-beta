@@ -19,11 +19,13 @@ class PageLayout extends Model
         'display',
         'columns',
         'layout_config',
+        'appearance_config',
         'sort_order',
     ];
 
     protected $casts = [
-        'layout_config' => 'array',
+        'layout_config'     => 'array',
+        'appearance_config' => 'array',
     ];
 
     public function scopeForOwner($query, Model $owner)

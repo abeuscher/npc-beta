@@ -134,10 +134,16 @@ class SystemPageSeeder extends Seeder
                 'gap'                   => '1rem',
                 'align_items'           => 'center',
                 'full_width'            => true,
-                'padding_top'           => '12',
-                'padding_bottom'        => '12',
-                'padding_left'          => '24',
-                'padding_right'         => '24',
+            ],
+            'appearance_config' => [
+                'layout' => [
+                    'padding' => [
+                        'top'    => '12',
+                        'right'  => '24',
+                        'bottom' => '12',
+                        'left'   => '24',
+                    ],
+                ],
             ],
             'sort_order'    => 0,
         ]);

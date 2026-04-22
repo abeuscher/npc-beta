@@ -537,7 +537,10 @@ it('merges partial layout_config updates with existing keys', function () {
     expect($layout->layout_config['grid_template_columns'])->toBe('1fr 1fr');
 });
 
-it('accepts new container appearance keys on layout_config', function () {
+it('accepts full_width on layout_config and strips pre-207 appearance keys', function () {
+    // After session 207, layout_config keeps only layout-behavior keys.
+    // background_color / padding_* / margin_* moved to appearance_config and
+    // are no longer accepted on layout_config.
     $page = apiPage();
     $layout = apiLayout($page);
 
@@ -554,9 +557,52 @@ it('accepts new container appearance keys on layout_config', function () {
 
     $layout->refresh();
     expect($layout->layout_config['full_width'])->toBe(true);
-    expect($layout->layout_config['background_color'])->toBe('#ff0000');
-    expect($layout->layout_config['padding_top'])->toBe('20');
-    expect($layout->layout_config['margin_left'])->toBe('10');
+    expect($layout->layout_config)->not->toHaveKey('background_color');
+    expect($layout->layout_config)->not->toHaveKey('padding_top');
+    expect($layout->layout_config)->not->toHaveKey('margin_left');
+});
+
+it('accepts appearance_config on layouts and round-trips background + spacing', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'appearance_config' => [
+                'background' => ['color' => '#ff0000'],
+                'layout'     => [
+                    'padding' => ['top' => '20', 'left' => '10'],
+                    'margin'  => ['bottom' => '15'],
+                ],
+            ],
+        ])
+        ->assertOk();
+
+    $layout->refresh();
+    expect($layout->appearance_config['background']['color'])->toBe('#ff0000');
+    expect($layout->appearance_config['layout']['padding']['top'])->toBe('20');
+    expect($layout->appearance_config['layout']['padding']['left'])->toBe('10');
+    expect($layout->appearance_config['layout']['margin']['bottom'])->toBe('15');
+});
+
+it('strips text and unknown top-level keys from layout appearance_config', function () {
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'appearance_config' => [
+                'background' => ['color' => '#abcdef'],
+                'text'       => ['color' => '#ffffff'],
+                'rogue_key'  => 'drop me',
+            ],
+        ])
+        ->assertOk();
+
+    $layout->refresh();
+    expect($layout->appearance_config)->toHaveKey('background');
+    expect($layout->appearance_config)->not->toHaveKey('text');
+    expect($layout->appearance_config)->not->toHaveKey('rogue_key');
 });
 
 it('deletes a layout and cascades to its widgets', function () {

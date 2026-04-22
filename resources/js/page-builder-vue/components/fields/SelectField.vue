@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import type { FieldDef, Widget } from '../../types'
-import * as api from '../../api'
+import { useEditorStore } from '../../stores/editor'
+
+const store = useEditorStore()
 
 const props = defineProps<{
   field: FieldDef
@@ -36,7 +38,7 @@ async function resolveOptions() {
         resolvedOptions.value = {}
         return
       }
-      const res = await api.getCollectionFields(handle)
+      const res = await store.requireApi().getCollectionFields(handle)
       const filterType = source.replace('collection_fields:', '')
       const filtered = filterType
         ? res.fields.filter((f) => f.type === filterType)
@@ -47,7 +49,7 @@ async function resolveOptions() {
       }
       resolvedOptions.value = opts
     } else {
-      const res = await api.getDataSource(source)
+      const res = await store.requireApi().getDataSource(source)
       resolvedOptions.value = res.options
     }
   } catch (e) {

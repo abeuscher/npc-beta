@@ -47,6 +47,10 @@ html.np-fullscreen .fi-main {
     --tw-ring-shadow: 0 0 #0000;
     --tw-ring-offset-shadow: 0 0 #0000;
 }
+.fi-logo img {
+    margin-right:0.5rem;
+}
+
 html.dark .fi-sidebar-header {
     background: transparent;
 }
@@ -581,6 +585,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 .widget-preview-scope.np-site {
     min-height: auto;
     display: block;
+    padding-bottom:50vh;
 }
 .widget-preview-region {
     position: relative;

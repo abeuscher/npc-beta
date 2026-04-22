@@ -213,6 +213,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 204 | Admin UX Polish — Page Builder Selection, Focus Scroll & Settings Save |
 | 205 | Code Review & Cleanup (Audit) |
 | 206 | Code Review & Cleanup (Apply) |
+| 207 | Column Layout Inspector — Appearance Unification |
 
 ---
 
@@ -237,23 +238,7 @@ Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and t
 
 ---
 
-### Column Layout Inspector — Appearance Unification *(stub — pre-Beta 1, queued as session 207)*
-
-Carved out of session 206's Open Flag A (LayoutInspectorPanel architectural divergence) because the scope proved too large for 206's apply session. Gives column layouts a parallel `appearance_config` column and a three-tab inspector built from two of the widget universal appearance panels (Background + Margin & Padding), so layouts gain gradients, background images, and the unified spacing grid without dissolving the distinction between columns and widgets.
-
-Key design decisions already locked in during the 206 walkthrough:
-
-- Column layouts (`page_layouts`) and widgets (`page_widgets`) remain as separate constructs with separate tables, contracts, and rendering paths. This session shares two *panels* across the two inspectors via data-driven props — it does not blur the construct boundary.
-- Three inspector tabs: **Column Settings | Margin & Padding | Background**. No Text panel, no Presets tab.
-- Full-width toggle lives at the top of the Column Settings tab (not inside Margin & Padding) — it's the most important layout-behavior control.
-- New column `page_layouts.appearance_config jsonb NOT NULL DEFAULT '{}'`, with a data migration moving existing `layout_config.background_color` / padding / margin keys into it. `layout_config` retains only genuinely layout-behavior keys (`full_width`, display, columns, grid/flex settings).
-- Session 208 (squash) must fold this migration into its baseline.
-
-Full spec: `sessions/207. Column Layout Inspector — Appearance Unification.md`.
-
----
-
-### Migration Squash & Code Optimization *(stub — pre-Beta 1, queued as session 208)*
+### Migration Squash & Code Optimization *(queued as session 208 — prompts drafted)*
 
 Follow-up to sessions 062, 082, 108, 142, and 181. Queued as session 208 (displaced one slot from 207 by the Column Layout Inspector carve-out from session 206). Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces. **The squash baseline must absorb `page_layouts.appearance_config` from session 207 without resurrecting the pre-migration `layout_config.background_color` / padding / margin keys.**
 
@@ -315,6 +300,69 @@ Complete the theme/template split started in session 182 by moving colour-relate
 ### Rich Text Custom Fields *(stub — pre-Beta 1)*
 
 Custom fields currently support `text`, `number`, `date`, `boolean`, and `select` types. Add a `rich_text` type so admins can capture formatted content (bios, descriptions, multi-paragraph notes) as a custom field. Uses the existing Filament rich editor primitive on admin forms; renders HTML on detail views and in widget output. Importer treats rich-text cells as plain strings (no HTML parsing) — same shape as `textarea` today.
+
+---
+
+### Housekeeping *(stub — pre-Beta 1)*
+
+Collector for small, scope-bounded UI and polish items that surface during other sessions' manual-test passes but don't justify a dedicated session each. Each item should fit in well under a session's worth of work; the session exists to batch them. Keep items crisp — if one grows to design-level discussion, lift it out into its own stub.
+
+- **Text widget vertical alignment.** The `text_block` widget currently renders with text aligned to the vertical middle of its container, which doesn't fit all column-layout use cases. Add a vertical alignment control (top / middle / bottom) to the widget's inspector. Design call to resolve during the session: whether this lives on the widget itself (`align-self` on the wrapper) or as a generalized "widget vertical alignment" control that all widgets inherit — the latter is probably the right shape but the former is the narrower change.
+- **Events Playwright specs leave artifact rows.** The events importer specs create events during their happy-path run and never clean them up, so the admin Events list accumulates test rows after each e2e run. Follow the same pattern applied to the layout-inspector spec in 207 (track created IDs in a spec-local variable, delete in `afterAll`). May apply to donations / memberships / invoice-details / notes specs too — audit all importer specs and add teardown to any that leave persisted records beyond the import session itself.
+- **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager.
+
+---
+
+### Test Suite Audit — Cost, Coverage, and Shape *(stub — pre-Beta 1)*
+
+The Pest + Playwright suite has grown organically and takes ~5 minutes on the fast Pest pass + ~7 minutes on Playwright. Runtime itself is not the concern; the question is whether the time is **earned** — whether each slow test guards something worth the cost, whether coverage maps to real risk, whether test shapes match their subjects. This has been attempted before and produced mediocre findings because the judgment calls don't reduce cleanly to measurement.
+
+**Why it's difficult, and how this session works around it.** Claude is strong at measuring (timing, counts, grep) and weak at judging ("is this test worth its runtime") without explicit rubrics. Previous audits failed because they asked Claude to audit itself — open-ended "find what's wrong." This session flips the pattern: measurement-first, then apply explicit rubrics, then human review of a findings table. The coverage-gap phase is the one Claude underperforms on, so it runs as "Claude checks a user-supplied surface list" rather than "Claude identifies the gaps."
+
+**Three rubrics that convert opinion into measurement:**
+
+1. **Runtime budget per test shape.** Unit: <50ms. Feature: <1s. Integration / DB-heavy: <3s. Anything exceeding its budget is auto-flagged as a finding — not auto-cut, flagged for human judgment.
+2. **Assertion density.** Tests with fewer than ~3 assertions are flagged for review against siblings (possible redundancy). Tests with 20+ assertions are flagged the other way (doing too much, candidate for split).
+3. **Setup-to-assertion ratio.** Tests where setup is >50% of the body are candidates for extracting setup into a shared factory/helper. Reducing shared setup often reveals N sibling tests that could collapse.
+
+**Phases:**
+
+1. **Measurement.** Run `pest --profile` (or Pest's equivalent timing output) and save as a baseline snapshot committed to the repo. Classify every test by shape (unit / feature / e2e) and subject area (admin / portal / importer / widgets / page builder / chrome / finance / auth).
+2. **Rubric application.** Build a findings table — one row per flagged test — with columns: file, shape, runtime, assertion count, setup:assertion ratio, rubric(s) triggered. Add a "notes" column for Claude to flag obvious redundancy or shape mismatch (e.g. "Feature test that could be a unit test — has no DB, no HTTP call").
+3. **Coverage gap pass.** User supplies a list of feature surfaces (admin pages, public routes, portal routes, importer services, widgets, page builder, chrome, finance flows). For each, walk through what would break if it regressed and whether a test exists that would catch it. **Claude scaffolds the table but cannot fill it alone — this is a collaborative phase.**
+4. **User review.** Present findings + gaps. User picks which to act on: delete, speed up, extract helper, add missing coverage.
+5. **Apply picks.** Each pick as its own commit. Re-run `pest --profile` to confirm the baseline shifted in the expected direction and capture the new snapshot.
+
+**Deliverable:** committed baseline timing snapshot, a findings-and-gaps report in `sessions/NNN-test-audit-findings.md` (or similar), a set of applied picks, and measurably improved runtime or coverage (ideally both).
+
+Out of scope: parallel-test infrastructure (Pest parallel with `--parallel`) unless a pick specifically calls for it. Docker-exec overhead investigation (persistent shell vs fresh-exec-per-run) is fair game if it's an obvious win, otherwise defer.
+
+---
+
+### Template Editor — Record Sub-Navigation Refactor & Column-Layout Mobile Collapse *(stub — pre-Beta 1)*
+
+Two pieces of "column-layout admin UX at narrow viewports" that pair naturally.
+
+**Part A — Template editor record sub-navigation.** Replace the tab pattern on `EditPageTemplate` and `EditContentTemplate` with Filament v3's **record sub-navigation** (`getRecordSubNavigation()`). Rationale:
+
+- The current tabs pattern on `EditPageTemplate` mounts both header and footer page-builder Livewire components simultaneously, which surfaces bugs tied to the one-Vue-app-per-page implicit assumption (see the module-global `api.ts` fragility noted in the 207 log — resolved in 207 but the pattern that triggered it remains). Sub-navigation renders only one `EditRecord` per request, killing that class of bug at the usage site.
+- Sub-pages get their own URLs, so deep-linking to "Edit Template X → Header" works. Today the tab state is in-memory and bookmarks can't target it.
+- The tab pattern is buried — some of these views are hard to find. A sidebar that lists the facets of the record you're editing is more discoverable.
+- While the structure is being reshaped, **unify Themes and Templates into a single top-level nav item**. They're closely related and currently split across two nav entries without a strong reason.
+
+Scope for Part A: convert `EditPageTemplate` to a hub with sub-pages (General / Header / Footer / SCSS / Colors as appropriate), same for `EditContentTemplate` if it has similar facets, and merge the Themes nav slot into Templates.
+
+**Part B — Column-layout mobile collapse.** Column layouts don't collapse at narrow viewport widths today, which causes widget content to overflow its track (addressed partially in 207 with `min-width: 0` but the root cause — columns stay side-by-side at mobile widths regardless of layout — remains). Add a per-layout toggle for mobile-collapse behavior, defaulting to **on** but explicitly overridable to **off** for patterns that genuinely want to keep columns at every viewport (e.g. small side-by-side logo+nav header bars, icon-and-label rows).
+
+Implementation notes captured while fresh:
+
+- **Use container queries, not media queries.** The page-builder preview uses a simulated viewport width (`.widget-preview-scope` has `container-type: inline-size` as of 207's LayoutRegion work). A container query on `.page-layout` at some threshold will correctly collapse the layout in the preview at mobile preset, while a media query would only fire off the real browser viewport and miss the simulation. Same container the handle-chrome shrinking already targets.
+- **Toggle placement.** The toggle belongs on the Column Settings tab of the layout inspector, near the full-width toggle. Probably a third checkbox: "Collapse columns on mobile". Default checked.
+- **Schema.** Add `layout_config.collapse_mobile: bool` (default true). `layout_config`, not `appearance_config` — this is a layout-behavior concern, parallel to `full_width`.
+- **Breakpoint.** Pick one value for now (768px is reasonable, matching the tablet/desktop boundary). Don't make it configurable per-layout in this session; if demand emerges, revisit.
+- **Public-side parity.** The public site emits `<div class="page-layout" style="...">` inline. The inline style approach doesn't play nicely with container queries. Two options: (a) emit a `data-collapse-mobile` attribute and let a static `@container` rule in `_layout.scss` key off it; (b) switch to a stylesheet rule keyed off the class and a data attribute. Option (a) is cleaner — implementation detail for the session.
+
+Out of scope: introducing Clusters, sub-navigating anything outside of Templates/Themes, per-layout-configurable breakpoints, per-column (as opposed to per-layout) collapse control, reordering columns on collapse (columns stack in authoring order — whatever the user arranged is what they get on mobile).
 
 ---
 

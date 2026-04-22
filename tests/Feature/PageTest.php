@@ -150,13 +150,17 @@ it('contains a layout in .site-container by default and emits new style fields',
     ]);
 
     $layout = $page->layouts()->create([
-        'display'       => 'grid',
-        'columns'       => 1,
-        'layout_config' => [
+        'display'           => 'grid',
+        'columns'           => 1,
+        'layout_config'     => [
             'grid_template_columns' => '1fr',
-            'background_color'      => '#abcdef',
-            'padding_top'           => '12',
-            'margin_left'           => '8',
+        ],
+        'appearance_config' => [
+            'background' => ['color' => '#abcdef'],
+            'layout'     => [
+                'padding' => ['top' => '12'],
+                'margin'  => ['left' => '8'],
+            ],
         ],
         'sort_order'    => 0,
     ]);

@@ -19,7 +19,7 @@ import type {
   UpdateLayoutPayload,
   ReorderItem,
 } from '../types'
-import * as api from '../api'
+import { ApiError, createApiClient, type ApiClient } from '../api'
 
 export const useEditorStore = defineStore('editor', () => {
   // Core data
@@ -44,6 +44,21 @@ export const useEditorStore = defineStore('editor', () => {
   // on 'content' / 'background' (index-0 tabs in InspectorPanel).
   const inspectorTopTab = ref<'content' | 'presets' | 'widget-settings'>('content')
   const inspectorBottomTab = ref<'background' | 'text' | 'spacing'>('background')
+  const layoutInspectorTab = ref<'column-settings' | 'margin-padding' | 'background'>('column-settings')
+
+  // Per-instance API client. Each Vue app creates its own client so the
+  // owner-scoped baseUrl can't collide when two page-builders live on the
+  // same page load (e.g. template header + footer tabs). See api.ts.
+  const apiClient = ref<ApiClient | null>(null)
+
+  function configureApi(bootstrap: BootstrapData): void {
+    apiClient.value = createApiClient(bootstrap.csrf_token, bootstrap.api_base_url, bootstrap.api_lookup_url)
+  }
+
+  function requireApi(): ApiClient {
+    if (!apiClient.value) throw new Error('editor store: api client not configured — call configureApi(bootstrap) first')
+    return apiClient.value
+  }
 
   // Preview state
   const dirtyWidgets = ref<Set<string>>(new Set())
@@ -241,7 +256,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function createWidget(payload: CreateWidgetPayload): Promise<Widget | null> {
     saving.value = true
     try {
-      const res = await api.createWidget(pageId.value, payload)
+      const res = await requireApi().createWidget(payload)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       return res.widget
@@ -253,7 +268,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function updateWidget(id: string, changes: UpdateWidgetPayload): Promise<Widget | null> {
     saving.value = true
     try {
-      const res = await api.updateWidget(id, changes)
+      const res = await requireApi().updateWidget(id, changes)
       const updated = res.widget
       const local = widgets.value[id]
       if (local) {
@@ -282,7 +297,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function deleteWidget(id: string): Promise<void> {
     saving.value = true
     try {
-      const res = await api.deleteWidget(id)
+      const res = await requireApi().deleteWidget(id)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       if (selectedItemId.value === id) {
@@ -297,7 +312,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function copyWidget(id: string): Promise<Widget | null> {
     saving.value = true
     try {
-      const res = await api.copyWidget(id)
+      const res = await requireApi().copyWidget(id)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       return res.widget
@@ -309,7 +324,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function reorderWidgets(items: ReorderItem[]): Promise<void> {
     saving.value = true
     try {
-      const res = await api.reorderWidgets(pageId.value, items)
+      const res = await requireApi().reorderWidgets(items)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
     } finally {
@@ -322,7 +337,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function createLayout(payload: CreateLayoutPayload = {}): Promise<PageLayout | null> {
     saving.value = true
     try {
-      const res = await api.createLayout(pageId.value, payload)
+      const res = await requireApi().createLayout(payload)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       return res.layout
@@ -334,7 +349,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function updateLayout(id: string, changes: UpdateLayoutPayload): Promise<PageLayout | null> {
     saving.value = true
     try {
-      const res = await api.updateLayout(id, changes)
+      const res = await requireApi().updateLayout(id, changes)
       const updated = res.layout
       if (layouts.value[id]) {
         Object.assign(layouts.value[id], updated)
@@ -348,7 +363,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function deleteLayout(id: string): Promise<void> {
     saving.value = true
     try {
-      const res = await api.deleteLayout(id)
+      const res = await requireApi().deleteLayout(id)
       populateFromItems(res.items)
       requiredLibs.value = res.required_libs
       if (selectedItemId.value === id) {
@@ -367,7 +382,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   async function reloadTree(): Promise<void> {
     try {
-      const res = await api.getWidgets(pageId.value)
+      const res = await requireApi().getWidgets()
       replaceTree(res)
     } catch (e) {
       console.error('Failed to reload widget tree:', e)
@@ -457,7 +472,7 @@ export const useEditorStore = defineStore('editor', () => {
     incrementRefreshCount(id)
 
     try {
-      const res = await api.getPreview(id, controller.signal)
+      const res = await requireApi().getPreview(id, controller.signal)
       if (widgets.value[id]) {
         widgets.value[id].preview_html = res.html
       }
@@ -469,7 +484,7 @@ export const useEditorStore = defineStore('editor', () => {
         return
       }
       const message =
-        e instanceof api.ApiError
+        e instanceof ApiError
           ? e.message
           : e?.message
             ? e.message
@@ -578,6 +593,9 @@ export const useEditorStore = defineStore('editor', () => {
     if (changes.layout_config !== undefined) {
       l.layout_config = { ...l.layout_config, ...changes.layout_config }
     }
+    if (changes.appearance_config !== undefined) {
+      l.appearance_config = changes.appearance_config as any
+    }
 
     // Merge pending changes for this layout
     const pending = pendingLayoutChanges.value[layoutId] ?? {}
@@ -591,9 +609,35 @@ export const useEditorStore = defineStore('editor', () => {
         ...changes.layout_config,
       }
     }
+    if (changes.appearance_config !== undefined) {
+      merged.appearance_config = changes.appearance_config
+    }
     pendingLayoutChanges.value[layoutId] = merged
 
     flushPendingLayoutSaves()
+  }
+
+  /**
+   * Update a single nested path inside a layout's appearance_config and queue
+   * a debounced save. Path is dot-separated (e.g. 'background.color',
+   * 'layout.padding.top'). Mirrors updateLocalAppearanceConfig for widgets.
+   */
+  function updateLocalLayoutAppearance(layoutId: string, path: string, value: any): void {
+    const l = layouts.value[layoutId]
+    if (!l) return
+
+    const segments = path.split('.')
+    const next: Record<string, any> = { ...(l.appearance_config ?? {}) }
+
+    let cursor: Record<string, any> = next
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i]
+      cursor[seg] = { ...(cursor[seg] ?? {}) }
+      cursor = cursor[seg]
+    }
+    cursor[segments[segments.length - 1]] = value
+
+    updateLocalLayout(layoutId, { appearance_config: next as any })
   }
 
   const flushPendingLayoutSaves = useDebounceFn(() => {
@@ -601,7 +645,7 @@ export const useEditorStore = defineStore('editor', () => {
     pendingLayoutChanges.value = {}
 
     for (const [id, payload] of Object.entries(toSave)) {
-      api.updateLayout(id, payload).catch((e) =>
+      requireApi().updateLayout(id, payload).catch((e) =>
         console.error('Debounced layout save failed:', e)
       )
     }
@@ -610,7 +654,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
     saving.value = true
     try {
-      const res = await api.uploadImage(widgetId, key, file)
+      const res = await requireApi().uploadImage(widgetId, key, file)
       if (widgets.value[widgetId]) {
         const w = widgets.value[widgetId]
         w.config = { ...w.config, [key]: res.media_id }
@@ -627,7 +671,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function removeImage(widgetId: string, key: string): Promise<void> {
     saving.value = true
     try {
-      await api.removeImage(widgetId, key)
+      await requireApi().removeImage(widgetId, key)
       if (widgets.value[widgetId]) {
         const w = widgets.value[widgetId]
         w.config = { ...w.config, [key]: null }
@@ -643,7 +687,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function uploadAppearanceImage(widgetId: string, file: File): Promise<string | null> {
     saving.value = true
     try {
-      const res = await api.uploadAppearanceImage(widgetId, file)
+      const res = await requireApi().uploadAppearanceImage(widgetId, file)
       if (widgets.value[widgetId]) {
         widgets.value[widgetId].appearance_image_url = res.url
       }
@@ -658,7 +702,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function removeAppearanceImage(widgetId: string): Promise<void> {
     saving.value = true
     try {
-      await api.removeAppearanceImage(widgetId)
+      await requireApi().removeAppearanceImage(widgetId)
       if (widgets.value[widgetId]) {
         widgets.value[widgetId].appearance_image_url = null
       }
@@ -700,7 +744,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     await flushPendingSaves()
 
-    const res = await api.createDraftPreset(w.widget_type_id, widgetId)
+    const res = await requireApi().createDraftPreset(w.widget_type_id, widgetId)
     const wt = widgetTypes.value.find((t) => t.id === w.widget_type_id)
     if (wt) {
       const next = [...(wt.draft_presets ?? []), res.preset]
@@ -712,7 +756,7 @@ export const useEditorStore = defineStore('editor', () => {
     presetId: string,
     payload: { label?: string; description?: string | null; handle?: string }
   ): Promise<void> {
-    const res = await api.updateDraftPreset(presetId, payload)
+    const res = await requireApi().updateDraftPreset(presetId, payload)
     for (const wt of widgetTypes.value) {
       const drafts = wt.draft_presets ?? []
       const idx = drafts.findIndex((d) => d.id === presetId)
@@ -726,7 +770,7 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   async function deleteDraftPreset(presetId: string): Promise<void> {
-    await api.deleteDraftPreset(presetId)
+    await requireApi().deleteDraftPreset(presetId)
     for (const wt of widgetTypes.value) {
       const drafts = wt.draft_presets ?? []
       const idx = drafts.findIndex((d) => d.id === presetId)
@@ -771,7 +815,7 @@ export const useEditorStore = defineStore('editor', () => {
   async function saveColorSwatchesAction(swatches: string[]): Promise<void> {
     colorSwatches.value = swatches
     try {
-      const res = await api.saveColorSwatches(swatches)
+      const res = await requireApi().saveColorSwatches(swatches)
       colorSwatches.value = res.swatches
     } catch (e) {
       console.error('Failed to save color swatches:', e)
@@ -797,6 +841,7 @@ export const useEditorStore = defineStore('editor', () => {
     selectedItemType,
     inspectorTopTab,
     inspectorBottomTab,
+    layoutInspectorTab,
     dirtyWidgets,
     requiredLibs,
     widgetTypes,
@@ -825,6 +870,8 @@ export const useEditorStore = defineStore('editor', () => {
     widgetPreviewError,
 
     // Actions
+    configureApi,
+    requireApi,
     loadTree,
     replaceTree,
     reloadTree,
@@ -841,6 +888,7 @@ export const useEditorStore = defineStore('editor', () => {
     createLayout,
     updateLayout,
     updateLocalLayout,
+    updateLocalLayoutAppearance,
     deleteLayout,
     refreshPreview,
     flushPendingSaves,

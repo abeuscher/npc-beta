@@ -452,10 +452,11 @@ class PageBuilderApiController extends Controller
         abort_unless(auth()->user()?->can('update_page'), 403);
 
         $validated = $request->validate([
-            'label'         => 'nullable|string|max:255',
-            'display'       => 'nullable|string|in:flex,grid',
-            'columns'       => 'nullable|integer|min:1|max:12',
-            'layout_config' => 'nullable|array',
+            'label'             => 'nullable|string|max:255',
+            'display'           => 'nullable|string|in:flex,grid',
+            'columns'           => 'nullable|integer|min:1|max:12',
+            'layout_config'     => 'nullable|array',
+            'appearance_config' => 'nullable|array',
         ]);
 
         $updates = [];
@@ -472,15 +473,16 @@ class PageBuilderApiController extends Controller
             $allowed = [
                 'grid_template_columns', 'gap', 'align_items', 'justify_items',
                 'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
-                'full_width', 'background_color',
-                'padding_top', 'padding_right', 'padding_bottom', 'padding_left',
-                'margin_top', 'margin_right', 'margin_bottom', 'margin_left',
+                'full_width',
             ];
             $sanitized = array_intersect_key(
                 $validated['layout_config'],
                 array_flip($allowed)
             );
             $updates['layout_config'] = array_merge($layout->layout_config ?? [], $sanitized);
+        }
+        if (array_key_exists('appearance_config', $validated)) {
+            $updates['appearance_config'] = $this->filterLayoutAppearanceConfig($validated['appearance_config'] ?? []);
         }
 
         if (! empty($updates)) {
@@ -574,16 +576,17 @@ class PageBuilderApiController extends Controller
     private function formatLayout(PageLayout $layout): array
     {
         return [
-            'type'          => 'layout',
-            'id'            => $layout->id,
-            'owner_type'    => $layout->owner_type,
-            'owner_id'      => $layout->owner_id,
-            'label'         => $layout->label ?? '',
-            'display'       => $layout->display,
-            'columns'       => $layout->columns,
-            'layout_config' => $layout->layout_config ?? [],
-            'sort_order'    => $layout->sort_order ?? 0,
-            'slots'         => (object) [],
+            'type'              => 'layout',
+            'id'                => $layout->id,
+            'owner_type'        => $layout->owner_type,
+            'owner_id'          => $layout->owner_id,
+            'label'             => $layout->label ?? '',
+            'display'           => $layout->display,
+            'columns'           => $layout->columns,
+            'layout_config'     => $layout->layout_config ?? [],
+            'appearance_config' => (object) ($layout->appearance_config ?? []),
+            'sort_order'        => $layout->sort_order ?? 0,
+            'slots'             => (object) [],
         ];
     }
 
@@ -649,6 +652,11 @@ class PageBuilderApiController extends Controller
     private function filterAppearanceConfig(array $appearance): array
     {
         return array_intersect_key($appearance, array_flip(['background', 'text', 'layout']));
+    }
+
+    private function filterLayoutAppearanceConfig(array $appearance): array
+    {
+        return array_intersect_key($appearance, array_flip(['background', 'layout']));
     }
 
     private function filterQueryConfig(PageWidget $widget, array $query): array

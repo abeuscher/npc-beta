@@ -71,20 +71,9 @@ class PageBlockRenderer
             $containerStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
         }
 
-        $spacingKeys = [
-            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
-        ];
-        foreach ($spacingKeys as $key => $cssProp) {
-            $val = isset($config[$key]) && $config[$key] !== '' ? (int) $config[$key] : null;
-            if ($val !== null) {
-                $containerStyle .= $cssProp . ':' . $val . 'px;';
-            }
-        }
-        if (! empty($config['background_color'])) {
-            $containerStyle .= 'background-color:' . $config['background_color'] . ';';
+        $appearanceStyle = $this->styleComposer->composeForLayout($layout);
+        if ($appearanceStyle !== '') {
+            $containerStyle .= $appearanceStyle . ';';
         }
 
         $slots = [];
