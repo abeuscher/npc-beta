@@ -62,7 +62,7 @@ Admin dashboard as the inaugural non-page-builder slot. Rendered inside Filament
 
 ### Phase 4 — Retrofit existing widgets onto contracts (5–8 sessions)
 
-~20 widgets in `app/Widgets/*` migrated to declared contracts. Templates stop walking relationships. The resolver becomes the only data path. Tests updated.
+~20 widgets in `app/Widgets/*` migrated to declared contracts. Templates stop walking relationships. The resolver becomes the only data path. Tests updated. Also within this phase: migrate existing `collection_items` rows under widget-declared content type ownership per the Content shapes decision below, and retire the admin UI for creating arbitrary Collections.
 
 ### Phase 5 — Record-detail slot + ambient context refactor (4–6 sessions)
 
@@ -116,6 +116,20 @@ Filament stays for CRUD. The pragmatic version is the decision. Specifically:
 - The widget primitive and its slots sit **alongside** Filament, not inside or over it.
 - New slot surfaces (dashboard, record-detail sidebar) are hosted inside Filament's admin chrome via lightweight mount points but consume the widget primitive, not Filament's own widget/form/table abstractions.
 - The only scenario that re-opens the Filament question: if the Phase 1 prototype shows the contract layer cannot coexist with Filament's Livewire model. Low probability, worth naming.
+
+## Content shapes — how users get new content types
+
+Complementary to the Filament decision, resolved during scoping conversations for session 209. The widget primitive implicitly retires today's half-built "user creates an arbitrary Collection with whatever fields" capability. What replaces it is a three-way carve-up:
+
+- **Widget-declared content types (the default).** Every widget that consumes collection-shaped content declares the content type it owns. Installing a widget registers its content type. Users populate items within that typed shape. Binding is by construction — no runtime validation step, no field-mapping UI, no schema drift.
+- **Custom fields on system models (the augmentation path).** Data that augments existing entities — additional fields on Contact, Event, Organization — goes through the existing `custom_field_defs` / `custom_fields` pattern, extended outward from today's Contact-only implementation.
+- **LLM-assisted widget authoring (the escape hatch).** Genuinely custom content shapes that no stock widget declares and no system-model augmentation fits: user describes the shape to an LLM, gets a scaffolded widget, installs it. The escape hatch is itself a widget — the architecture stays uniform. On-brand with the LLM-assisted data-prep path already on the roadmap.
+
+The admin UI for creating arbitrary Collections is a half-built feature that was never delivered as a full self-service capability. Retiring it costs nothing the user could have done anyway. The `collections` / `collection_items` tables stay; their ownership migrates to widget-declared content types during Phase 4.
+
+### Revenue model alignment
+
+The three paths map onto three revenue surfaces. Stock widgets are product value. Custom widgets for paying clients are consulting revenue, contributable back to core without licensing friction because widgets are just code implementing an open primitive. LLM-assisted self-service handles the long tail at zero marginal cost. The primitive is the pricing surface, not the individual widgets — customization flows out to the broader audience without contractual or licensing entanglement.
 
 ## Known risks and open questions
 

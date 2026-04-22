@@ -214,6 +214,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 205 | Code Review & Cleanup (Audit) |
 | 206 | Code Review & Cleanup (Apply) |
 | 207 | Column Layout Inspector — Appearance Unification |
+| 208 | Migration Squash & Code Optimization |
 
 ---
 
@@ -235,12 +236,6 @@ Descoped in 204 on the grounds that wheel/touch interception fights browser iner
 ### Code Review & Cleanup *(stub — pre-Beta 1; 205/206 pair completed)*
 
 Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply; both complete). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Splits into an audit session (produces the W6 / W7 tables and open flags) followed by an apply session (walks the flags, picks a subset, and applies in iteration-sliced branches).
-
----
-
-### Migration Squash & Code Optimization *(queued as session 208 — prompts drafted)*
-
-Follow-up to sessions 062, 082, 108, 142, and 181. Queued as session 208 (displaced one slot from 207 by the Column Layout Inspector carve-out from session 206). Consolidate accumulated migrations into a fresh baseline so first-install schema bootstrap stays fast, and fold in any performance optimization opportunities surfaced since the last squash (slow queries, N+1s, oversized payloads, unused indexes). Uses the same squash procedure established in prior sessions: snapshot current schema, collapse migrations into a single baseline, verify `migrate:fresh --seed` produces an identical schema, archive the old migrations. Optimization pass is opportunistic — not a dedicated perf session, just picks up what the review surfaces. **The squash baseline must absorb `page_layouts.appearance_config` from session 207 without resurrecting the pre-migration `layout_config.background_color` / padding / margin keys.**
 
 ---
 
@@ -308,7 +303,6 @@ Custom fields currently support `text`, `number`, `date`, `boolean`, and `select
 Collector for small, scope-bounded UI and polish items that surface during other sessions' manual-test passes but don't justify a dedicated session each. Each item should fit in well under a session's worth of work; the session exists to batch them. Keep items crisp — if one grows to design-level discussion, lift it out into its own stub.
 
 - **Text widget vertical alignment.** The `text_block` widget currently renders with text aligned to the vertical middle of its container, which doesn't fit all column-layout use cases. Add a vertical alignment control (top / middle / bottom) to the widget's inspector. Design call to resolve during the session: whether this lives on the widget itself (`align-self` on the wrapper) or as a generalized "widget vertical alignment" control that all widgets inherit — the latter is probably the right shape but the former is the narrower change.
-- **Events Playwright specs leave artifact rows.** The events importer specs create events during their happy-path run and never clean them up, so the admin Events list accumulates test rows after each e2e run. Follow the same pattern applied to the layout-inspector spec in 207 (track created IDs in a spec-local variable, delete in `afterAll`). May apply to donations / memberships / invoice-details / notes specs too — audit all importer specs and add teardown to any that leave persisted records beyond the import session itself.
 - **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager.
 
 ---
