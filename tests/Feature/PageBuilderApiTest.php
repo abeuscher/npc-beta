@@ -837,3 +837,26 @@ it('includes appearance_image_url when image is uploaded', function () {
     $widgetData = collect($response->json('items'))->firstWhere('id', $widget->id);
     expect($widgetData['appearance_image_url'])->not->toBeNull();
 });
+
+it('buildTree eager-loads owner so widget count does not drive query count', function () {
+    $page = apiPage();
+    for ($i = 0; $i < 8; $i++) {
+        apiWidget($page, 'text_block', $i);
+    }
+    $layout = apiLayout($page, 10);
+    for ($i = 0; $i < 6; $i++) {
+        apiChildWidget($page, $layout, $i % 2, $i);
+    }
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+
+    $this->actingAs(apiUser())
+        ->getJson(apiPrefix() . "/pages/{$page->id}/widgets")
+        ->assertOk();
+
+    $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    expect(count($queries))->toBeLessThan(32);
+});

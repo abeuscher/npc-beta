@@ -522,12 +522,12 @@ class PageBuilderApiController extends Controller
         $rootWidgets = PageWidget::forOwner($owner)
             ->whereNull('layout_id')
             ->where('is_active', true)
-            ->with('widgetType')
+            ->with(['widgetType', 'owner'])
             ->orderBy('sort_order')
             ->get();
 
         $layouts = PageLayout::forOwner($owner)
-            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with('widgetType')->orderBy('sort_order')])
+            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with(['widgetType', 'owner'])->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 

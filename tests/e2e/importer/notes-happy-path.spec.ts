@@ -8,6 +8,7 @@ import {
 } from '../helpers/fake-csv.js';
 import { approveSessionViaImporter, driveNotesHappyPath } from '../helpers/wizard.js';
 import {
+    cleanupAllImportSessionsOfType,
     countNotesInSession,
     findLatestImportSessionId,
     findNoteByExternalId,
@@ -26,6 +27,10 @@ test.describe('Notes importer — happy path', () => {
         // Seed contacts directly from the generated contacts.csv so every
         // note row resolves with realistic partial-fill data.
         await insertContactsFromCsv(cleanCsvPath('contacts.csv'));
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('note');
     });
 
     test('imports every note from the generated notes.csv and attaches each to its contact', async ({ page }) => {

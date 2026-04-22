@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
     findTransactionByInvoiceNumber,
@@ -23,6 +24,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Invoice Details importer — update strategy', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('invoice_detail');
     });
 
     test('re-import with update strategy stages line-item changes; approval applies them', async ({ page }) => {

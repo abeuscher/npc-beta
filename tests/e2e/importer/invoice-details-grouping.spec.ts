@@ -9,7 +9,7 @@ import {
     writeCsv,
 } from '../helpers/fake-csv.js';
 import { driveInvoiceDetailsHappyPath } from '../helpers/wizard.js';
-import { findTransactionByInvoiceNumber } from '../helpers/db.js';
+import { cleanupAllImportSessionsOfType, findTransactionByInvoiceNumber } from '../helpers/db.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -17,6 +17,10 @@ test.describe('Invoice-details importer — line-item ordering under update stra
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
         primeFakeFixtures(4204);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('invoice_detail');
     });
 
     test('line-item ordering is preserved for a 3+ line-item invoice group', async ({ page }) => {

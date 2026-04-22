@@ -13,7 +13,6 @@ use App\Models\ImportStagedUpdate;
 use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Transaction;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -41,6 +40,7 @@ class ImportSessionActions
         ]);
 
         $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
+        $subjects      = $this->preloadStagedSubjects($staged);
         $sourceName    = $session->importSource?->name;
         $sourceId      = $session->importSource?->id;
         $sessionLabel  = $session->session_label ?: $session->filename;
@@ -48,7 +48,7 @@ class ImportSessionActions
         $approverName  = auth()->user()?->name;
 
         foreach ($staged as $update) {
-            $subject = $this->resolveStagedSubject($update);
+            $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
 
             if (! $subject) {
                 continue;
@@ -115,13 +115,14 @@ class ImportSessionActions
         }
 
         $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
+        $subjects      = $this->preloadStagedSubjects($staged);
         $sourceName    = $session->importSource?->name;
         $sourceId      = $session->importSource?->id;
         $sessionLabel  = $session->session_label ?: $session->filename;
         $sourceDisplay = $sourceName ?: 'unknown source';
 
         foreach ($staged as $update) {
-            $subject = $this->resolveStagedSubject($update);
+            $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
 
             if ($subject instanceof Contact) {
                 Note::create([
@@ -292,25 +293,36 @@ class ImportSessionActions
         return "Permanently delete this session and {$count} contact(s) created by it. Any staged updates are discarded. This cannot be undone.";
     }
 
-    private function resolveStagedSubject(ImportStagedUpdate $update): ?Model
+    private function preloadStagedSubjects($staged): array
     {
-        $class = $update->subject_type;
-
-        if (! class_exists($class)) {
-            return null;
+        $idsByType = [];
+        foreach ($staged as $update) {
+            $class = $update->subject_type;
+            if (! class_exists($class)) {
+                continue;
+            }
+            $idsByType[$class] ??= [];
+            $idsByType[$class][] = $update->subject_id;
         }
 
-        $query = $class::query();
-
-        if (in_array(SoftDeletes::class, class_uses_recursive($class), true)) {
-            $query->withTrashed();
+        $map = [];
+        foreach ($idsByType as $class => $ids) {
+            $query = $class::query();
+            if (in_array(SoftDeletes::class, class_uses_recursive($class), true)) {
+                $query->withTrashed();
+            }
+            if ($class === Contact::class) {
+                $query->withoutGlobalScopes();
+            }
+            $keyName = (new $class)->getKeyName();
+            $rows    = $query->whereIn($keyName, array_values(array_unique($ids)))->get();
+            $map[$class] = [];
+            foreach ($rows as $row) {
+                $map[$class][$row->getKey()] = $row;
+            }
         }
 
-        if ($class === Contact::class) {
-            $query->withoutGlobalScopes();
-        }
-
-        return $query->find($update->subject_id);
+        return $map;
     }
 
     /**

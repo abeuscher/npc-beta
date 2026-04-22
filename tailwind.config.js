@@ -1,28 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+// Inert root config. Tailwind runs via PostCSS on every Vite CSS input, but
+// the public pipeline uses pure SCSS (no @tailwind directives) and Filament's
+// theme pins its own config via @config → tailwind.config.filament.js.
 export default {
-  content: [
-    'resources/views/**/*.blade.php',
-    'app/Livewire/**/*.php',
-  ],
-  darkMode: ['class', '[data-theme="dark"]'],
-  theme: {
-    extend: {
-      colors: {
-        primary: 'var(--color-primary, #0172ad)',
-      },
-      fontFamily: {
-        heading: 'var(--font-family-heading, system-ui, sans-serif)',
-        body: 'var(--font-family-body, system-ui, sans-serif)',
-      },
-      borderRadius: {
-        DEFAULT: '0.25rem',
-      },
-      maxWidth: {
-        container: '80rem',
-      },
-    },
-  },
-  plugins: [
-    require('@tailwindcss/forms'),
-  ],
+  content: [],
 }

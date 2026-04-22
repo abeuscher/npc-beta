@@ -325,3 +325,27 @@ it('rollbackDescription and deleteDescription surface correct counts per type', 
         ->toContain('2 event(s)')
         ->toContain('ImportIdMap');
 });
+
+it('approve batches subject loads so staged count does not drive query count', function () {
+    $session  = makeActionsSession('contact');
+    $contacts = Contact::factory()->count(25)->create();
+
+    foreach ($contacts as $contact) {
+        ImportStagedUpdate::create([
+            'import_session_id' => $session->id,
+            'subject_type'      => Contact::class,
+            'subject_id'        => $contact->id,
+            'attributes'        => ['city' => 'BatchCity'],
+        ]);
+    }
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+
+    $this->actions->approve($session);
+
+    $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    expect(count($queries))->toBeLessThan(110);
+});

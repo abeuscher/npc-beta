@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { countStagedUpdatesForSession, findContactByEmail, findLatestImportSessionId } from '../helpers/db.js';
+import { cleanupAllImportSessionsOfType, countStagedUpdatesForSession, findContactByEmail, findLatestImportSessionId } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { approveSessionViaImporter, driveHappyPathImport } from '../helpers/wizard.js';
 
@@ -19,6 +19,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Contacts importer — update strategy', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('contact');
     });
 
     test('re-import with update strategy stages 5 changes and approve applies them', async ({ page }) => {

@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countTransactionsInSession,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
@@ -23,6 +24,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Invoice Details importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('invoice_detail');
     });
 
     test('imports 6 rows into 3 transactions with grouped line items', async ({ page }) => {

@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.events.index
   - filament.admin.resources.events.create
   - filament.admin.resources.events.edit
+  - filament.admin.resources.events.registrations
 category: cms
 ---
 

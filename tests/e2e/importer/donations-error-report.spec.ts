@@ -12,6 +12,7 @@ import {
     writeCsv,
 } from '../helpers/fake-csv.js';
 import { driveDonationsHappyPath } from '../helpers/wizard.js';
+import { cleanupAllImportSessionsOfType, deleteContactsByEmails } from '../helpers/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,17 @@ test.describe('Donations importer — error report edge case', () => {
         await resetAndLogin(browser);
         primeFakeFixtures(4203);
         insertAmbiguousContacts();
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('donation');
+        await deleteContactsByEmails([
+            'ambig1@example.com',
+            'ambig2@example.com',
+            'ambig3@example.com',
+            'ambig4@example.com',
+            'ambig5@example.com',
+        ]);
     });
 
     test('donations CSV with 5 ambiguous-email rows surfaces 5-row error table and downloads errored-rows CSV', async ({ page }) => {

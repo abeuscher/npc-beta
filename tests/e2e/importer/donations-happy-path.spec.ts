@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countDonationsInSession,
     countTransactionsInSession,
     countStagedUpdatesForSession,
@@ -23,6 +24,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Donations importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('donation');
     });
 
     test('imports 5 donations with transactions and auto-creates contacts', async ({ page }) => {

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { countContactsInSession, countStagedUpdatesForSession, findContactByEmail, findLatestImportSessionId } from '../helpers/db.js';
+import { cleanupAllImportSessionsOfType, countContactsInSession, countStagedUpdatesForSession, findContactByEmail, findLatestImportSessionId } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { driveHappyPathImport } from '../helpers/wizard.js';
 
@@ -18,6 +18,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Contacts importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('contact');
     });
 
     test('imports 5 contacts end-to-end and lands in pending-review', async ({ page }) => {

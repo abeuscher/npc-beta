@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countEventsInSession,
     countEventRegistrationsInSession,
     countTransactionsInSession,
@@ -27,6 +28,10 @@ test.describe('Events importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
         await insertContactsFromCsv(PRE_CREATED_CONTACTS_CSV);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('event');
     });
 
     test('imports 3 events with registrations and transactions', async ({ page }) => {

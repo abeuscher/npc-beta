@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countMembershipsInSession,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
@@ -22,6 +23,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Memberships importer — happy path', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('membership');
     });
 
     test('imports 5 memberships and auto-creates contacts', async ({ page }) => {

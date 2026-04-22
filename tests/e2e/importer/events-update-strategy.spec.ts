@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
     insertContactsFromCsv,
@@ -25,6 +26,10 @@ test.describe('Events importer — update strategy', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
         await insertContactsFromCsv(PRE_CREATED_CONTACTS_CSV);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('event');
     });
 
     test('re-import with update strategy stages title changes; approval applies them', async ({ page }) => {

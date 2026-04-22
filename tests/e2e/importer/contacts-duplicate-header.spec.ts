@@ -10,6 +10,7 @@ import {
 } from '../helpers/fake-csv.js';
 import { fillUploadStep, openContactsWizard } from '../helpers/wizard.js';
 import {
+    cleanupAllImportSessionsOfType,
     findLatestImportSessionId,
     countContactsInSession,
 } from '../helpers/db.js';
@@ -20,6 +21,10 @@ test.describe('Contacts importer — duplicate header review edge case', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
         primeFakeFixtures(4202);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('contact');
     });
 
     test('duplicate Email header surfaces in review step and import proceeds with default ignore', async ({ page }) => {

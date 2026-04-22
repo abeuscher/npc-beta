@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+    cleanupAllImportSessionsOfType,
     countStagedUpdatesForSession,
     findImportSourceIdByName,
     findLatestImportSessionId,
@@ -26,6 +27,10 @@ test.describe.configure({ mode: 'serial' });
 test.describe('Memberships importer — update strategy', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
+    });
+
+    test.afterAll(async () => {
+        await cleanupAllImportSessionsOfType('membership');
     });
 
     test('re-import with update strategy stages notes changes; approval applies them', async ({ page }) => {

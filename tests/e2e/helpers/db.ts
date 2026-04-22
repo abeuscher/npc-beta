@@ -293,3 +293,43 @@ export async function deleteLayout(layoutId: string): Promise<void> {
         await client.query('DELETE FROM page_layouts WHERE id = $1', [layoutId]);
     });
 }
+
+export function cleanupImportSession(sessionId: string): void {
+    execFileSync(
+        'docker',
+        ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'importer:cleanup-session', sessionId],
+        { cwd: PROJECT_ROOT, stdio: 'inherit' },
+    );
+}
+
+export async function cleanupAllImportSessionsOfType(modelType: string): Promise<void> {
+    const ids = await withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id FROM import_sessions WHERE model_type = $1',
+            [modelType],
+        );
+        return res.rows.map((r) => r.id);
+    });
+
+    for (const id of ids) {
+        cleanupImportSession(id);
+    }
+}
+
+export async function deleteContactsByEmails(emails: string[]): Promise<void> {
+    if (emails.length === 0) return;
+    await withClient(async (client) => {
+        const ids = await client.query<{ id: string }>(
+            'SELECT id FROM contacts WHERE LOWER(email) = ANY($1::text[])',
+            [emails.map((e) => e.toLowerCase())],
+        );
+        const contactIds = ids.rows.map((r) => r.id);
+        if (contactIds.length === 0) return;
+
+        await client.query(
+            `DELETE FROM taggables WHERE taggable_type = 'App\\Models\\Contact' AND taggable_id = ANY($1::uuid[])`,
+            [contactIds],
+        );
+        await client.query('DELETE FROM contacts WHERE id = ANY($1::uuid[])', [contactIds]);
+    });
+}
