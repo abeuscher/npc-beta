@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict b7mM7R8I8ubYwsclCr6DzliBKiEPkYMKeoYePKewMs2ILnIrpMsP4IeRsH5IUkC
+\restrict 05BkKqnyCtPIJUhqwcO3OjKptZLieFa8VmJQ1SdOdZFh70IkypSOHrr3BKLGEyY
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -285,7 +285,11 @@ CREATE TABLE public.donations (
     stripe_customer_id character varying(255),
     started_at timestamp(0) without time zone,
     ended_at timestamp(0) without time zone,
-    fund_id uuid
+    fund_id uuid,
+    import_source_id uuid,
+    import_session_id uuid,
+    external_id character varying(255),
+    custom_fields jsonb
 );
 
 
@@ -355,6 +359,12 @@ CREATE TABLE public.event_registrations (
     event_id uuid NOT NULL,
     mailing_list_opt_in boolean DEFAULT false NOT NULL,
     stripe_session_id character varying(255),
+    ticket_type character varying(255),
+    ticket_fee numeric(10,2),
+    payment_state character varying(255),
+    transaction_id uuid,
+    import_session_id uuid,
+    custom_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY['pending'::text, 'registered'::text, 'waitlisted'::text, 'cancelled'::text, 'attended'::text])))
 );
 
@@ -399,6 +409,7 @@ CREATE TABLE public.events (
     ends_at timestamp(0) without time zone,
     registrants_deleted_at timestamp(0) without time zone,
     author_id bigint NOT NULL,
+    import_session_id uuid,
     CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
     CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
 );
@@ -636,7 +647,12 @@ CREATE TABLE public.import_logs (
     storage_path character varying(255),
     column_map jsonb,
     custom_field_map jsonb,
-    custom_field_log jsonb
+    custom_field_log jsonb,
+    match_key character varying(255) DEFAULT 'email'::character varying NOT NULL,
+    import_source_id uuid,
+    column_preferences jsonb DEFAULT '{}'::jsonb NOT NULL,
+    relational_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    contact_match_key character varying(255)
 );
 
 
@@ -670,7 +686,28 @@ CREATE TABLE public.import_sources (
     name character varying(255) NOT NULL,
     notes text,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    contacts_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    contacts_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    contacts_match_key character varying(255),
+    contacts_match_key_column character varying(255),
+    events_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    events_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    events_match_key character varying(255),
+    events_match_key_column character varying(255),
+    events_contact_match_key character varying(255),
+    donations_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    donations_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    donations_contact_match_key character varying(255),
+    memberships_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    memberships_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    memberships_contact_match_key character varying(255),
+    invoices_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    invoices_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    invoices_contact_match_key character varying(255),
+    notes_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    notes_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
+    notes_contact_match_key character varying(255)
 );
 
 
@@ -681,11 +718,12 @@ CREATE TABLE public.import_sources (
 CREATE TABLE public.import_staged_updates (
     id bigint NOT NULL,
     import_session_id uuid NOT NULL,
-    contact_id uuid NOT NULL,
     attributes jsonb,
     tag_ids jsonb,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    subject_type character varying(255) NOT NULL,
+    subject_id uuid NOT NULL
 );
 
 
@@ -890,7 +928,11 @@ CREATE TABLE public.memberships (
     deleted_at timestamp(0) without time zone,
     tier_id uuid,
     stripe_session_id character varying(255),
-    stripe_subscription_id character varying(255)
+    stripe_subscription_id character varying(255),
+    import_source_id uuid,
+    import_session_id uuid,
+    external_id character varying(255),
+    custom_fields jsonb
 );
 
 
@@ -992,7 +1034,17 @@ CREATE TABLE public.notes (
     occurred_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    deleted_at timestamp(0) without time zone,
+    import_source_id uuid,
+    type character varying(255) DEFAULT 'note'::character varying NOT NULL,
+    subject character varying(255),
+    status character varying(255) DEFAULT 'completed'::character varying NOT NULL,
+    follow_up_at timestamp(0) without time zone,
+    outcome text,
+    duration_minutes integer,
+    meta jsonb,
+    import_session_id uuid,
+    external_id character varying(255)
 );
 
 
@@ -1025,14 +1077,16 @@ CREATE TABLE public.organizations (
 
 CREATE TABLE public.page_layouts (
     id uuid NOT NULL,
-    page_id uuid NOT NULL,
     label character varying(255),
     display character varying(255) DEFAULT 'grid'::character varying NOT NULL,
     columns integer DEFAULT 2 NOT NULL,
     layout_config jsonb DEFAULT '{}'::jsonb NOT NULL,
     sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    owner_type character varying(255) NOT NULL,
+    owner_id uuid NOT NULL,
+    appearance_config jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -1042,7 +1096,6 @@ CREATE TABLE public.page_layouts (
 
 CREATE TABLE public.page_widgets (
     id uuid NOT NULL,
-    page_id uuid NOT NULL,
     label character varying(255),
     config jsonb DEFAULT '{}'::jsonb NOT NULL,
     sort_order integer DEFAULT 0 NOT NULL,
@@ -1053,7 +1106,9 @@ CREATE TABLE public.page_widgets (
     query_config jsonb DEFAULT '{}'::jsonb NOT NULL,
     column_index smallint,
     appearance_config jsonb DEFAULT '{}'::jsonb NOT NULL,
-    layout_id uuid
+    layout_id uuid,
+    owner_type character varying(255) NOT NULL,
+    owner_id uuid NOT NULL
 );
 
 
@@ -1291,6 +1346,37 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 
 
 --
+-- Name: sample_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sample_images (
+    id bigint NOT NULL,
+    category character varying(255) NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: sample_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sample_images_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sample_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.sample_images_id_seq OWNED BY public.sample_images.id;
+
+
+--
 -- Name: sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1373,7 +1459,6 @@ CREATE TABLE public.templates (
     type character varying(255) NOT NULL,
     description text,
     is_default boolean DEFAULT false NOT NULL,
-    definition jsonb DEFAULT '{}'::jsonb NOT NULL,
     primary_color character varying(255),
     header_bg_color character varying(255),
     footer_bg_color character varying(255),
@@ -1408,7 +1493,15 @@ CREATE TABLE public.transactions (
     subject_id character varying(255),
     contact_id uuid,
     qb_sync_error text,
-    qb_synced_at timestamp(0) without time zone
+    qb_synced_at timestamp(0) without time zone,
+    import_source_id uuid,
+    import_session_id uuid,
+    external_id character varying(255),
+    payment_method character varying(255),
+    payment_channel character varying(255),
+    invoice_number character varying(255),
+    line_items jsonb,
+    custom_fields jsonb
 );
 
 
@@ -1618,6 +1711,13 @@ ALTER TABLE ONLY public.portal_accounts ALTER COLUMN id SET DEFAULT nextval('pub
 --
 
 ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
+
+
+--
+-- Name: sample_images id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sample_images ALTER COLUMN id SET DEFAULT nextval('public.sample_images_id_seq'::regclass);
 
 
 --
@@ -2235,6 +2335,22 @@ ALTER TABLE ONLY public.roles
 
 
 --
+-- Name: sample_images sample_images_category_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sample_images
+    ADD CONSTRAINT sample_images_category_unique UNIQUE (category);
+
+
+--
+-- Name: sample_images sample_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sample_images
+    ADD CONSTRAINT sample_images_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2440,6 +2556,13 @@ CREATE INDEX donations_fund_id_index ON public.donations USING btree (fund_id);
 
 
 --
+-- Name: donations_import_external_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX donations_import_external_idx ON public.donations USING btree (import_source_id, external_id);
+
+
+--
 -- Name: events_landing_page_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2496,17 +2619,17 @@ CREATE INDEX import_sessions_imported_by_index ON public.import_sessions USING b
 
 
 --
--- Name: import_staged_updates_contact_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX import_staged_updates_contact_id_index ON public.import_staged_updates USING btree (contact_id);
-
-
---
 -- Name: import_staged_updates_import_session_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX import_staged_updates_import_session_id_index ON public.import_staged_updates USING btree (import_session_id);
+
+
+--
+-- Name: import_staged_updates_subject_type_subject_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX import_staged_updates_subject_type_subject_id_index ON public.import_staged_updates USING btree (subject_type, subject_id);
 
 
 --
@@ -2552,6 +2675,13 @@ CREATE INDEX memberships_contact_id_index ON public.memberships USING btree (con
 
 
 --
+-- Name: memberships_import_external_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX memberships_import_external_idx ON public.memberships USING btree (import_source_id, external_id);
+
+
+--
 -- Name: model_has_permissions_model_id_model_type_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2594,10 +2724,52 @@ CREATE INDEX notes_author_id_index ON public.notes USING btree (author_id);
 
 
 --
+-- Name: notes_follow_up_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notes_follow_up_at_index ON public.notes USING btree (follow_up_at) WHERE (follow_up_at IS NOT NULL);
+
+
+--
+-- Name: notes_import_external_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notes_import_external_idx ON public.notes USING btree (import_source_id, external_id);
+
+
+--
+-- Name: notes_notable_occurred_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notes_notable_occurred_at_index ON public.notes USING btree (notable_type, notable_id, occurred_at DESC);
+
+
+--
 -- Name: notes_notable_type_notable_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX notes_notable_type_notable_id_index ON public.notes USING btree (notable_type, notable_id);
+
+
+--
+-- Name: notes_type_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notes_type_index ON public.notes USING btree (type);
+
+
+--
+-- Name: page_layouts_owner_type_owner_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX page_layouts_owner_type_owner_id_index ON public.page_layouts USING btree (owner_type, owner_id);
+
+
+--
+-- Name: page_widgets_owner_type_owner_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX page_widgets_owner_type_owner_id_index ON public.page_widgets USING btree (owner_type, owner_id);
 
 
 --
@@ -2668,6 +2840,13 @@ CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING
 --
 
 CREATE INDEX transactions_contact_id_index ON public.transactions USING btree (contact_id);
+
+
+--
+-- Name: transactions_import_external_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX transactions_import_external_idx ON public.transactions USING btree (import_source_id, external_id);
 
 
 --
@@ -2796,6 +2975,22 @@ ALTER TABLE ONLY public.donations
 
 
 --
+-- Name: donations donations_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donations
+    ADD CONSTRAINT donations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: donations donations_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donations
+    ADD CONSTRAINT donations_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
+
+
+--
 -- Name: event_registrations event_registrations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2812,11 +3007,35 @@ ALTER TABLE ONLY public.event_registrations
 
 
 --
+-- Name: event_registrations event_registrations_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_registrations
+    ADD CONSTRAINT event_registrations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_registrations event_registrations_transaction_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_registrations
+    ADD CONSTRAINT event_registrations_transaction_id_foreign FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON DELETE SET NULL;
+
+
+--
 -- Name: events events_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_author_id_foreign FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: events events_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
 
 
 --
@@ -2860,6 +3079,14 @@ ALTER TABLE ONLY public.import_id_maps
 
 
 --
+-- Name: import_logs import_logs_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.import_logs
+    ADD CONSTRAINT import_logs_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
+
+
+--
 -- Name: import_logs import_logs_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2892,14 +3119,6 @@ ALTER TABLE ONLY public.import_sessions
 
 
 --
--- Name: import_staged_updates import_staged_updates_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.import_staged_updates
-    ADD CONSTRAINT import_staged_updates_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
-
-
---
 -- Name: import_staged_updates import_staged_updates_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2929,6 +3148,22 @@ ALTER TABLE ONLY public.mailing_list_filters
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT memberships_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: memberships memberships_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: memberships memberships_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
 
 
 --
@@ -2988,11 +3223,19 @@ ALTER TABLE ONLY public.notes
 
 
 --
--- Name: page_layouts page_layouts_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: notes notes_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.page_layouts
-    ADD CONSTRAINT page_layouts_page_id_foreign FOREIGN KEY (page_id) REFERENCES public.pages(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.notes
+    ADD CONSTRAINT notes_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notes notes_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notes
+    ADD CONSTRAINT notes_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
 
 
 --
@@ -3001,14 +3244,6 @@ ALTER TABLE ONLY public.page_layouts
 
 ALTER TABLE ONLY public.page_widgets
     ADD CONSTRAINT page_widgets_layout_id_foreign FOREIGN KEY (layout_id) REFERENCES public.page_layouts(id) ON DELETE CASCADE;
-
-
---
--- Name: page_widgets page_widgets_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.page_widgets
-    ADD CONSTRAINT page_widgets_page_id_foreign FOREIGN KEY (page_id) REFERENCES public.pages(id) ON DELETE CASCADE;
 
 
 --
@@ -3140,6 +3375,22 @@ ALTER TABLE ONLY public.transactions
 
 
 --
+-- Name: transactions transactions_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: transactions transactions_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
+
+
+--
 -- Name: waitlist_entries waitlist_entries_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3167,13 +3418,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict b7mM7R8I8ubYwsclCr6DzliBKiEPkYMKeoYePKewMs2ILnIrpMsP4IeRsH5IUkC
+\unrestrict 05BkKqnyCtPIJUhqwcO3OjKptZLieFa8VmJQ1SdOdZFh70IkypSOHrr3BKLGEyY
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict FOyd1ee9kPHFgLz2hOu51OOFtv3OYcjEbImUe9pZRu5rACcJhY2dXFVXVQRz9ck
+\restrict bc2Yy8Fcrz5sTfo47j3deNbO2Vd8XaOfeeHXfGU3gfal8biPdUD6oq57d1kSiho
 
 -- Dumped from database version 16.13
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3248,6 +3499,33 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 51	2026_04_11_000000_rename_style_config_to_appearance_config_on_page_widgets	13
 52	2026_04_13_025417_create_widget_presets_table	13
 53	2026_04_14_100000_add_typography_and_drop_template_fonts	14
+54	2026_04_14_120000_create_sample_images_table	15
+55	2026_04_15_040103_backfill_page_widget_use_current_page_header	15
+56	2026_04_15_120000_polymorphic_widget_owner	15
+57	2026_04_16_120000_add_preset_fields_to_import_sources	15
+58	2026_04_16_120100_add_match_key_to_import_logs	15
+59	2026_04_16_120200_add_import_source_id_to_notes	15
+60	2026_04_16_120300_add_import_source_id_to_import_logs	15
+61	2026_04_16_120400_add_column_preferences_to_import_logs	15
+62	2026_04_16_120500_add_relational_map_to_import_logs	15
+63	2026_04_17_120000_add_event_import_fields_to_event_registrations	15
+64	2026_04_17_120100_add_import_fields_to_transactions	15
+65	2026_04_17_120200_add_events_scope_to_import_sources	15
+66	2026_04_17_120300_add_contact_match_key_to_import_logs	15
+67	2026_04_17_120400_add_custom_fields_to_event_registrations	15
+68	2026_04_17_120500_add_import_session_id_to_events	15
+69	2026_04_17_120600_add_invoice_fields_to_transactions	15
+70	2026_04_17_120700_add_import_fields_to_donations	15
+71	2026_04_17_120800_add_import_fields_to_memberships	15
+72	2026_04_17_120900_add_financial_scope_to_import_sources	15
+73	2026_04_17_121000_add_custom_fields_to_financial_models	15
+74	2026_04_17_130000_rename_contact_columns_on_import_sources	15
+75	2026_04_18_120000_polymorphic_subject_on_import_staged_updates	15
+76	2026_04_19_120000_add_structured_fields_to_notes	15
+77	2026_04_20_120000_rewrite_listing_widget_per_item_tokens	15
+78	2026_04_20_120100_add_external_id_to_notes	15
+79	2026_04_20_120200_add_notes_scope_to_import_sources	15
+80	2026_04_21_120000_add_appearance_config_to_page_layouts	15
 \.
 
 
@@ -3255,12 +3533,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 53, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 80, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict FOyd1ee9kPHFgLz2hOu51OOFtv3OYcjEbImUe9pZRu5rACcJhY2dXFVXVQRz9ck
+\unrestrict bc2Yy8Fcrz5sTfo47j3deNbO2Vd8XaOfeeHXfGU3gfal8biPdUD6oq57d1kSiho
 
