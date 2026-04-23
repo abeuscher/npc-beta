@@ -22,6 +22,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CollectionResource\Pages;
 use App\Filament\Resources\CollectionResource\RelationManagers\CollectionItemsRelationManager;
 use App\Models\Collection;
+use App\WidgetPrimitive\Source;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -103,6 +104,25 @@ class CollectionResource extends Resource
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
                     ->default(true),
+
+                Forms\Components\CheckboxList::make('accepted_sources')
+                    ->label('This collection accepts data from:')
+                    ->helperText('Human authors are always accepted. Check additional sources as needed.')
+                    ->options(collect(Source::KNOWN)
+                        ->reject(fn (string $source): bool => $source === Source::HUMAN)
+                        ->mapWithKeys(fn (string $source): array => [
+                            $source => Str::of($source)->replace('_', ' ')->title()->toString(),
+                        ])
+                        ->all())
+                    ->formatStateUsing(fn ($state): array => collect((array) $state)
+                        ->reject(fn ($source) => $source === Source::HUMAN)
+                        ->values()
+                        ->all())
+                    ->dehydrateStateUsing(fn ($state): array => array_values(array_unique(array_merge(
+                        [Source::HUMAN],
+                        array_values((array) ($state ?? [])),
+                    ))))
+                    ->columnSpanFull(),
             ])->columns(2),
 
             Forms\Components\Section::make('Fields')

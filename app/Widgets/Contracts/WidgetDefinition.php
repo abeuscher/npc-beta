@@ -3,6 +3,7 @@
 namespace App\Widgets\Contracts;
 
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\Source;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -65,6 +66,19 @@ abstract class WidgetDefinition
     public function allowedSlots(): array
     {
         return ['page_builder_canvas'];
+    }
+
+    /**
+     * Sources this widget accepts data from. Default is [Source::HUMAN] —
+     * widgets that consume synthetic preview/LLM/etc. data override this.
+     * Pattern-parallel to allowedSlots(); declaration-only for now (the
+     * resolver / data-sink surface will consume it as later phases land).
+     *
+     * @return array<int, string>
+     */
+    public function acceptedSources(): array
+    {
+        return [Source::HUMAN];
     }
 
     public function renderMode(): string

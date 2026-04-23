@@ -16,6 +16,8 @@ use App\Models\WidgetType;
 use App\Services\DemoDataService;
 use App\Services\SampleImageLibrary;
 use App\Services\WidgetRegistry;
+use App\WidgetPrimitive\DataSink;
+use App\WidgetPrimitive\Source;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Artisan;
@@ -62,13 +64,16 @@ class DashboardDebugGeneratorWidget extends Widget
 
     protected function generateContacts(int $count): void
     {
-        $factory = Contact::factory()->count($count);
+        $sink = app(DataSink::class);
+        $factory = Contact::factory();
 
         if (trim($this->gmailBase) !== '') {
             $factory = $factory->withGmailBase(trim($this->gmailBase));
         }
 
-        $factory->create();
+        for ($i = 0; $i < $count; $i++) {
+            $sink->write(Contact::class, Source::DEMO, $factory->raw());
+        }
     }
 
     protected function generateEvents(int $count): void
@@ -154,8 +159,10 @@ class DashboardDebugGeneratorWidget extends Widget
 
     protected function generateMembers(int $count): void
     {
+        $sink = app(DataSink::class);
+
         for ($i = 0; $i < $count; $i++) {
-            $contact = Contact::factory()->create([
+            $contact = $sink->write(Contact::class, Source::DEMO, Contact::factory()->raw([
                 'email'               => fake()->unique()->safeEmail(),
                 'address_line_1'      => fake()->streetAddress(),
                 'address_line_2'      => fake()->optional(0.2)->secondaryAddress(),
@@ -164,7 +171,7 @@ class DashboardDebugGeneratorWidget extends Widget
                 'postal_code'         => fake()->postcode(),
                 'date_of_birth'       => fake()->dateTimeBetween('-70 years', '-18 years')->format('Y-m-d'),
                 'mailing_list_opt_in' => true,
-            ]);
+            ]));
 
             Membership::factory()->create(['contact_id' => $contact->id]);
 
@@ -180,6 +187,7 @@ class DashboardDebugGeneratorWidget extends Widget
 
     protected function generateBlogPosts(int $count): void
     {
+        $sink          = app(DataSink::class);
         $blogPrefix    = config('site.blog_prefix', 'news');
         $userIds       = \App\Models\User::pluck('id')->toArray();
         $textBlockType = WidgetType::where('handle', 'text_block')->first();
@@ -190,7 +198,7 @@ class DashboardDebugGeneratorWidget extends Widget
             $baseSlug    = \Illuminate\Support\Str::slug($title) . '-' . fake()->unique()->randomNumber(4);
             $publishedAt = fake()->dateTimeBetween('-2 years', 'now');
 
-            $page = Page::create([
+            $page = $sink->write(Page::class, Source::DEMO, [
                 'author_id'    => fake()->randomElement($userIds),
                 'title'        => $title,
                 'slug'         => $blogPrefix . '/' . $baseSlug,

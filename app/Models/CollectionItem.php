@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Services\Media\ImageSizeProfile;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +17,20 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class CollectionItem extends Model implements HasMedia
 {
-    use HasFactory, HasUuids, InteractsWithMedia, SoftDeletes;
+    use HasFactory, HasSourcePolicy, HasUuids, InteractsWithMedia, SoftDeletes;
+
+    public function acceptsSource(string $source): bool
+    {
+        if ($source === Source::HUMAN) {
+            return true;
+        }
+
+        if (! Source::isKnown($source)) {
+            return false;
+        }
+
+        return $this->collection?->acceptsSource($source) === true;
+    }
 
     protected $fillable = [
         'collection_id',

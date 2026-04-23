@@ -4,6 +4,7 @@ namespace App\Widgets\BarChart;
 
 use App\Models\Collection;
 use App\Models\CollectionItem;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -20,8 +21,9 @@ class DemoSeeder extends Seeder
                     ['key' => 'label', 'label' => 'Label', 'type' => 'text', 'required' => true, 'helpText' => '', 'options' => []],
                     ['key' => 'value', 'label' => 'Value', 'type' => 'text', 'required' => true, 'helpText' => 'Numeric value', 'options' => []],
                 ],
-                'is_public' => true,
-                'is_active' => true,
+                'is_public'        => true,
+                'is_active'        => true,
+                'accepted_sources' => [Source::HUMAN, Source::DEMO],
             ]
         );
 

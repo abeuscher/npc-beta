@@ -19,6 +19,8 @@ namespace App\Models;
  * machine identifier used to reference a collection in widgets — not a URL segment.
  */
 
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Filament\Forms;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,23 +34,38 @@ use Spatie\Sluggable\SlugOptions;
 
 class Collection extends Model
 {
-    use HasFactory, HasSlug, HasUuids, SoftDeletes;
+    use HasFactory, HasSlug, HasSourcePolicy, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'name',
         'handle',
         'description',
         'fields',
+        'accepted_sources',
         'source_type',
         'is_public',
         'is_active',
     ];
 
     protected $casts = [
-        'fields'     => 'array',
-        'is_public'  => 'boolean',
-        'is_active'  => 'boolean',
+        'fields'           => 'array',
+        'accepted_sources' => 'array',
+        'is_public'        => 'boolean',
+        'is_active'        => 'boolean',
     ];
+
+    public function acceptsSource(string $source): bool
+    {
+        if ($source === Source::HUMAN) {
+            return true;
+        }
+
+        if (! Source::isKnown($source)) {
+            return false;
+        }
+
+        return in_array($source, (array) ($this->accepted_sources ?? []), true);
+    }
 
     // Reserved handles that map to system source types.
     // Users cannot create custom collections with these handles.

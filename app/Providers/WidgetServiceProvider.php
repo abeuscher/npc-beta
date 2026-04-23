@@ -6,6 +6,7 @@ use App\Services\PageContextTokens;
 use App\Services\WidgetAssetResolver;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
+use App\WidgetPrimitive\DataSink;
 use App\WidgetPrimitive\SlotRegistry;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
 use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
@@ -52,6 +53,7 @@ class WidgetServiceProvider extends ServiceProvider
         $this->app->singleton(PageContextTokens::class, fn () => new PageContextTokens());
         $this->app->singleton(SlotRegistry::class, fn () => new SlotRegistry());
         $this->app->singleton(WidgetAssetResolver::class, fn () => new WidgetAssetResolver());
+        $this->app->singleton(DataSink::class, fn () => new DataSink());
     }
 
     public function boot(): void

@@ -6,6 +6,7 @@ use App\Models\Collection;
 use App\Models\CollectionItem;
 use App\Models\SampleImage;
 use App\Services\SampleImageLibrary;
+use App\WidgetPrimitive\Source;
 use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Database\Seeder;
 
@@ -24,8 +25,9 @@ class DemoSeeder extends Seeder
                     ['key' => 'description', 'label' => 'Description', 'type' => 'textarea', 'required' => false, 'helpText' => '', 'options' => []],
                     ['key' => 'image',       'label' => 'Image',       'type' => 'image',    'required' => false, 'helpText' => '', 'options' => []],
                 ],
-                'is_public' => true,
-                'is_active' => true,
+                'is_public'        => true,
+                'is_active'        => true,
+                'accepted_sources' => [Source::HUMAN, Source::DEMO],
             ]
         );
 

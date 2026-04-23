@@ -6,10 +6,12 @@ final class ContentType
 {
     /**
      * @param  array<int, array{key: string, type: string, label?: string}>  $fields
+     * @param  array<int, string>  $accepts
      */
     public function __construct(
         public readonly string $handle,
         public readonly array $fields,
+        public readonly array $accepts = [Source::HUMAN],
     ) {}
 
     public function fieldKeys(): array

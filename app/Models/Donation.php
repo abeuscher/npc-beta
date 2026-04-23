@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +12,12 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Donation extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasSourcePolicy, HasUuids;
+
+    public const ACCEPTED_SOURCES = [
+        Source::IMPORT,
+        Source::STRIPE_WEBHOOK,
+    ];
 
     protected $fillable = [
         'contact_id',

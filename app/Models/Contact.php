@@ -12,12 +12,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Support\Facades\DB;
 use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 
 class Contact extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+
+    public const ACCEPTED_SOURCES = [
+        Source::IMPORT,
+        Source::DEMO,
+    ];
 
     protected static function booted(): void
     {

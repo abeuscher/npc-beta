@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Models\User;
 use App\Observers\PageObserver;
 use App\Services\Media\ImageSizeProfile;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +26,13 @@ use Spatie\Sluggable\SlugOptions;
 #[ObservedBy(PageObserver::class)]
 class Page extends Model implements HasMedia
 {
-    use HasFactory, HasSlug, HasUuids, InteractsWithMedia, SoftDeletes;
+    use HasFactory, HasSlug, HasSourcePolicy, HasUuids, InteractsWithMedia, SoftDeletes;
+
+    public const ACCEPTED_SOURCES = [
+        Source::DEMO,
+        Source::GOOGLE_DOCS,
+        Source::LLM_SYNTHESIS,
+    ];
 
     protected $fillable = [
         'title',
