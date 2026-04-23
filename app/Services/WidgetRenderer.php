@@ -8,7 +8,7 @@ use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\DataContract;
-use App\WidgetPrimitive\SlotContext;
+use App\WidgetPrimitive\SlotRegistry;
 use Illuminate\Support\Facades\Blade;
 
 class WidgetRenderer
@@ -71,7 +71,7 @@ class WidgetRenderer
                     && ! self::configHasTokens($config);
 
                 if (! $skip) {
-                    $slot = new SlotContext($pageContext, $tokenPage);
+                    $slot = app(SlotRegistry::class)->find('page_builder_canvas')->ambientContext($pageContext, $tokenPage);
                     $widgetData = app(ContractResolver::class)->resolve([$contract], $slot, $fallbackCollectionData)[0];
                 }
             }

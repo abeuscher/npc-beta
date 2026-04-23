@@ -55,6 +55,18 @@ abstract class WidgetDefinition
         return null;
     }
 
+    /**
+     * Slot handles this widget can render in. Defaults to the page-builder
+     * canvas — the one live slot today. Override when a widget is added to
+     * the dashboard grid, record-detail sidebar, or any future slot.
+     *
+     * @return array<int, string>
+     */
+    public function allowedSlots(): array
+    {
+        return ['page_builder_canvas'];
+    }
+
     public function renderMode(): string
     {
         return 'server';

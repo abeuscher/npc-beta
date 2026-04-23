@@ -5,6 +5,10 @@ namespace App\Providers;
 use App\Services\PageContextTokens;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
+use App\WidgetPrimitive\SlotRegistry;
+use App\WidgetPrimitive\Slots\DashboardGridSlot;
+use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
+use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
 use App\Widgets\BarChart\BarChartDefinition;
 use App\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BlogPager\BlogPagerDefinition;
@@ -45,11 +49,17 @@ class WidgetServiceProvider extends ServiceProvider
         $this->app->singleton(WidgetRegistry::class, fn () => new WidgetRegistry());
         $this->app->singleton(WidgetConfigResolver::class, fn ($app) => new WidgetConfigResolver($app->make(WidgetRegistry::class)));
         $this->app->singleton(PageContextTokens::class, fn () => new PageContextTokens());
+        $this->app->singleton(SlotRegistry::class, fn () => new SlotRegistry());
     }
 
     public function boot(): void
     {
         View::addNamespace('widgets', app_path('Widgets'));
+
+        $slots = $this->app->make(SlotRegistry::class);
+        $slots->register(new PageBuilderCanvasSlot());
+        $slots->register(new DashboardGridSlot());
+        $slots->register(new RecordDetailSidebarSlot());
 
         $registry = $this->app->make(WidgetRegistry::class);
 

@@ -39,9 +39,8 @@ class AdminPanelProvider extends PanelProvider
             $primaryColor   = '#f59e0b';
             $secondaryColor = '#73bbbb';
         }
-        $logoSrc   = $logoPath !== ''
-            ? Storage::disk('public')->url($logoPath)
-            : asset('images/admin-logo.png');
+        $hasLogo = is_string($logoPath) && trim($logoPath) !== '';
+        $logoSrc = $hasLogo ? Storage::disk('public')->url($logoPath) : '';
 
 
         return $panel
@@ -118,7 +117,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(new HtmlString(
-                '<img src="' . e($logoSrc) . '">' .
+                ($hasLogo ? '<img src="' . e($logoSrc) . '">' : '') .
                 '<h1>' . e($brandName) . '</h1>'
             ))
             // Admin Alpine components — helpSearch, buttonPreview, fullscreenToggle,
