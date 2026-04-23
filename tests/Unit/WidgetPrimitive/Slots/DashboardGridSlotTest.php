@@ -1,6 +1,11 @@
 <?php
 
+use App\WidgetPrimitive\SlotContext;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
 
 it('declares the dashboard-grid identity and null config surface', function () {
     $slot = new DashboardGridSlot();
@@ -21,6 +26,9 @@ it('reports grid-cell dimensions and bounded appearance', function () {
     ]);
 });
 
-it('throws when ambientContext is called — wiring lands in Phase 3', function () {
-    (new DashboardGridSlot())->ambientContext();
-})->throws(RuntimeException::class, 'Slot ambient context not yet wired — lands with Phase 3');
+it('builds a SlotContext with a null current page', function () {
+    $ctx = (new DashboardGridSlot())->ambientContext();
+
+    expect($ctx)->toBeInstanceOf(SlotContext::class)
+        ->and($ctx->currentPage())->toBeNull();
+});

@@ -911,3 +911,21 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     border-color: var(--np-control-border);
     color: rgb(229 231 235);
 }
+
+/* ── Dashboard widget-primitive slot grid ────────────────────────────── */
+/* Container for widget-primitive widgets rendered inside the Filament
+ * admin dashboard via DashboardSlotGridWidget. Two-column layout on wide
+ * viewports, single-column on narrow.                                    */
+.np-dashboard-slot-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+@media (min-width: 960px) {
+    .np-dashboard-slot-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+.np-dashboard-slot-grid__cell {
+    min-width: 0;
+}

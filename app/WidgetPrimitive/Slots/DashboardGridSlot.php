@@ -2,8 +2,9 @@
 
 namespace App\WidgetPrimitive\Slots;
 
+use App\Services\PageContext;
 use App\WidgetPrimitive\Slot;
-use RuntimeException;
+use App\WidgetPrimitive\SlotContext;
 
 final class DashboardGridSlot extends Slot
 {
@@ -17,9 +18,9 @@ final class DashboardGridSlot extends Slot
         return 'Dashboard Grid';
     }
 
-    public function ambientContext(): object
+    public function ambientContext(): SlotContext
     {
-        throw new RuntimeException('Slot ambient context not yet wired — lands with Phase 3');
+        return new SlotContext(app(PageContext::class), null);
     }
 
     public function layoutConstraints(): array

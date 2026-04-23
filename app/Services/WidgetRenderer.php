@@ -19,13 +19,15 @@ class WidgetRenderer
      * @param  array<string, array>  $fallbackCollectionData  Optional pre-resolved collection data (e.g. demo data for admin preview). Keyed by collection slot name.
      * @return array{html: string|null, styles: string, scripts: string}
      */
-    public static function render(PageWidget $pw, array $columnChildren = [], array $fallbackCollectionData = []): array
+    public static function render(PageWidget $pw, array $columnChildren = [], array $fallbackCollectionData = [], string $slotHandle = 'page_builder_canvas'): array
     {
         $widgetType = $pw->widgetType;
 
         if (! $widgetType) {
             return ['html' => null, 'styles' => '', 'scripts' => ''];
         }
+
+        $isCanvas = $slotHandle === 'page_builder_canvas';
 
         $config  = app(WidgetConfigResolver::class)->resolve($pw);
         $styles  = '';
@@ -57,9 +59,14 @@ class WidgetRenderer
 
         $pageContext = app(PageContext::class);
         $tokens = app(PageContextTokens::class);
-        $ctxPage = $pageContext->currentPage;
-        $ownerPage = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
-        $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $ownerPage;
+
+        if ($isCanvas) {
+            $ctxPage = $pageContext->currentPage;
+            $ownerPage = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
+            $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $ownerPage;
+        } else {
+            $tokenPage = null;
+        }
 
         $widgetData = null;
         $contract = null;
@@ -71,32 +78,36 @@ class WidgetRenderer
                     && ! self::configHasTokens($config);
 
                 if (! $skip) {
-                    $slot = app(SlotRegistry::class)->find('page_builder_canvas')->ambientContext($pageContext, $tokenPage);
+                    $slot = $isCanvas
+                        ? app(SlotRegistry::class)->find('page_builder_canvas')->ambientContext($pageContext, $tokenPage)
+                        : app(SlotRegistry::class)->find($slotHandle)->ambientContext();
                     $widgetData = app(ContractResolver::class)->resolve([$contract], $slot, $fallbackCollectionData)[0];
                 }
             }
         }
 
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            $type = $field['type'] ?? '';
-            $key = $field['key'] ?? '';
-            if (! $key || ! isset($config[$key]) || ! is_string($config[$key])) {
-                continue;
-            }
-            if ($type !== 'richtext' && $type !== 'text') {
-                continue;
-            }
-            $escape = $type === 'richtext';
-
-            if ($contract !== null && $contract->source === DataContract::SOURCE_PAGE_CONTEXT && is_array($widgetData)) {
-                $text = $config[$key];
-                foreach ($widgetData as $token => $value) {
-                    $replacement = $escape ? e((string) $value) : (string) $value;
-                    $text = str_replace('{{' . $token . '}}', $replacement, $text);
+        if ($isCanvas) {
+            foreach ($widgetType->config_schema ?? [] as $field) {
+                $type = $field['type'] ?? '';
+                $key = $field['key'] ?? '';
+                if (! $key || ! isset($config[$key]) || ! is_string($config[$key])) {
+                    continue;
                 }
-                $config[$key] = $text;
-            } else {
-                $config[$key] = $tokens->substitute($config[$key], $tokenPage, $escape);
+                if ($type !== 'richtext' && $type !== 'text') {
+                    continue;
+                }
+                $escape = $type === 'richtext';
+
+                if ($contract !== null && $contract->source === DataContract::SOURCE_PAGE_CONTEXT && is_array($widgetData)) {
+                    $text = $config[$key];
+                    foreach ($widgetData as $token => $value) {
+                        $replacement = $escape ? e((string) $value) : (string) $value;
+                        $text = str_replace('{{' . $token . '}}', $replacement, $text);
+                    }
+                    $config[$key] = $text;
+                } else {
+                    $config[$key] = $tokens->substitute($config[$key], $tokenPage, $escape);
+                }
             }
         }
 

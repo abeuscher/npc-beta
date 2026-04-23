@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Services\HelpArticleService;
+use App\Services\WidgetAssetResolver;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -100,7 +101,9 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([])
+            ->widgets([
+                \App\Filament\Widgets\DashboardSlotGridWidget::class,
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -133,14 +136,9 @@ class AdminPanelProvider extends PanelProvider
             // per-library bundles on demand when a widget preview renders.
             ->renderHook(
                 'panels::head.end',
-                function (): HtmlString {
-                    $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
-                    $libs = $widgetManifest['libs'] ?? [];
-
-                    return new HtmlString(
-                        '<script>window.__widgetLibs = ' . json_encode($libs, JSON_FORCE_OBJECT) . ';</script>'
-                    );
-                }
+                fn (): HtmlString => new HtmlString(
+                    '<script>window.__widgetLibs = ' . json_encode(app(WidgetAssetResolver::class)->allLibs(), JSON_FORCE_OBJECT) . ';</script>'
+                )
             )
             // Public site CSS for widget preview in the page builder.
             // The build server bundle includes ALL public styles (base + widgets).
@@ -151,12 +149,8 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
-                    $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
-                    $widgetCss = $widgetManifest['css'] ?? null;
-
-                    return $widgetCss
-                        ? new HtmlString('<link rel="stylesheet" href="/build/widgets/' . $widgetCss . '">')
-                        : new HtmlString('');
+                    $url = app(WidgetAssetResolver::class)->widgetCss();
+                    return $url ? new HtmlString('<link rel="stylesheet" href="' . e($url) . '">') : new HtmlString('');
                 }
             )
             // Public widget JS bundle — exposes per-widget Alpine factories
@@ -167,12 +161,33 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
-                    $widgetManifest = json_decode(@file_get_contents(public_path('build/widgets/manifest.json')) ?: '{}', true);
-                    $widgetJs = $widgetManifest['js'] ?? null;
-
-                    return $widgetJs
-                        ? new HtmlString('<script src="/build/widgets/' . $widgetJs . '"></script>')
-                        : new HtmlString('');
+                    $url = app(WidgetAssetResolver::class)->widgetJs();
+                    return $url ? new HtmlString('<script src="' . e($url) . '"></script>') : new HtmlString('');
+                }
+            )
+            // Per-widget library bundles (swiper, chart.js, jcalendar). Emitted
+            // synchronously in the admin head so widget-primitive slots rendered
+            // inside Livewire (e.g. DashboardSlotGridWidget) find window.Swiper
+            // et al. already defined when their Alpine x-data init() fires —
+            // external <script src> injected via Livewire morph would load
+            // asynchronously and race the Alpine init tick.
+            // Interim: all manifest libs load on every admin page. A future
+            // session narrows this to the libs a page's slots actually need
+            // via a page-level required-libs registry; the resolver already
+            // supports the narrower call via libsForWidgets().
+            ->renderHook(
+                'panels::head.end',
+                function (): HtmlString {
+                    $html = '';
+                    foreach (app(WidgetAssetResolver::class)->allLibs() as $lib => $entry) {
+                        if (! empty($entry['css'])) {
+                            $html .= '<link rel="stylesheet" href="' . e($entry['css']) . '" data-widget-lib="' . e($lib) . '">';
+                        }
+                        if (! empty($entry['js'])) {
+                            $html .= '<script src="' . e($entry['js']) . '" data-widget-lib="' . e($lib) . '"></script>';
+                        }
+                    }
+                    return new HtmlString($html);
                 }
             )
             // Fullscreen mode bootstrap — set the html class from localStorage before

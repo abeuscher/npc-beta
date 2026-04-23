@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\PageContextTokens;
+use App\Services\WidgetAssetResolver;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\SlotRegistry;
@@ -50,6 +51,7 @@ class WidgetServiceProvider extends ServiceProvider
         $this->app->singleton(WidgetConfigResolver::class, fn ($app) => new WidgetConfigResolver($app->make(WidgetRegistry::class)));
         $this->app->singleton(PageContextTokens::class, fn () => new PageContextTokens());
         $this->app->singleton(SlotRegistry::class, fn () => new SlotRegistry());
+        $this->app->singleton(WidgetAssetResolver::class, fn () => new WidgetAssetResolver());
     }
 
     public function boot(): void
