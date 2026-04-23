@@ -1,5 +1,5 @@
 @php
-    $slides = $collectionData['slides'] ?? [];
+    $slides = $widgetData['items'] ?? [];
     $imageField = $config['image_field'] ?? '';
     $captionTemplate = $config['caption_template'] ?? '{{item.title}}';
     $objectFit = in_array($config['object_fit'] ?? '', ['cover', 'contain']) ? $config['object_fit'] : 'cover';

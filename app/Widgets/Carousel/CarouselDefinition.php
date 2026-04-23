@@ -3,6 +3,8 @@
 namespace App\Widgets\Carousel;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\ContentType;
+use App\WidgetPrimitive\DataContract;
 
 class CarouselDefinition extends WidgetDefinition
 {
@@ -84,6 +86,26 @@ class CarouselDefinition extends WidgetDefinition
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        $contentType = new ContentType(
+            handle: 'carousel.slide',
+            fields: [
+                ['key' => 'title',       'type' => 'text'],
+                ['key' => 'description', 'type' => 'text'],
+                ['key' => 'image',       'type' => 'image'],
+            ],
+        );
+
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_WIDGET_CONTENT_TYPE,
+            fields: ['title', 'description'],
+            resourceHandle: $config['collection_handle'] ?? null,
+            contentType: $contentType,
+        );
     }
 
 public function defaultAppearanceConfig(): array

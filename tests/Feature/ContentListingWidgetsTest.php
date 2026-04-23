@@ -4,10 +4,20 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\PageContext;
+use App\Widgets\BlogListing\BlogListingDefinition;
+use App\WidgetPrimitive\ContractResolver;
+use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
+
+function blogListingWidgetData(array $config = []): array
+{
+    $contract = (new BlogListingDefinition())->dataContract($config);
+    $slot = new SlotContext(new PageContext());
+    return app(ContractResolver::class)->resolve([$contract], $slot)[0];
+}
 
 // ── Page model media collections ─────────────────────────────────────────────
 
@@ -104,7 +114,7 @@ it('blog listing widget renders with default content template', function () {
                 'show_search'      => false,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -135,7 +145,7 @@ it('blog listing widget applies token replacement correctly', function () {
                 'show_search'      => false,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -159,7 +169,7 @@ it('blog listing renders empty state when no posts exist', function () {
                 'show_search'      => false,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -179,7 +189,7 @@ it('blog listing renders search input when show_search is enabled', function () 
                 'show_search'      => true,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -322,7 +332,7 @@ it('blog listing renders Swiper container with slides', function () {
                 'show_search'      => false,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -357,7 +367,7 @@ it('blog listing renders default spaceBetween when gap is not set', function () 
                 'show_search'      => false,
                 'sort_default'     => 'newest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 
@@ -385,7 +395,7 @@ it('blog listing renders custom spaceBetween from gap config', function () {
                 'sort_default'     => 'newest',
                 'gap'              => 32,
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => blogListingWidgetData(),
         ]
     );
 

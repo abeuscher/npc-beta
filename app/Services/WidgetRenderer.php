@@ -5,6 +5,10 @@ namespace App\Services;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
 use App\Services\WidgetConfigResolver;
+use App\Services\WidgetRegistry;
+use App\WidgetPrimitive\ContractResolver;
+use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\SlotContext;
 use Illuminate\Support\Facades\Blade;
 
 class WidgetRenderer
@@ -51,28 +55,57 @@ class WidgetRenderer
             }
         }
 
-        // Substitute {{title}}, {{date}}, etc. in text/richtext fields using the
-        // widget's owning page. Richtext fields get HTML-escaped values since
-        // they're rendered raw; text fields keep raw values (Blade escapes on
-        // output).
         $pageContext = app(PageContext::class);
         $tokens = app(PageContextTokens::class);
-        // Laravel's container auto-injects an empty Page instance when
-        // PageContext is resolved without an explicit binding, so test for
-        // `exists` (true once loaded from DB) rather than null.
         $ctxPage = $pageContext->currentPage;
         $ownerPage = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
         $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $ownerPage;
+
+        $widgetData = null;
+        $contract = null;
+        $definition = app(WidgetRegistry::class)->find($widgetType->handle);
+        if ($definition !== null) {
+            $contract = $definition->dataContract($config);
+            if ($contract !== null) {
+                $skip = $contract->source === DataContract::SOURCE_PAGE_CONTEXT
+                    && ! self::configHasTokens($config);
+
+                if (! $skip) {
+                    $slot = new SlotContext($pageContext, $tokenPage);
+                    $widgetData = app(ContractResolver::class)->resolve([$contract], $slot)[0];
+
+                    if ($contract->source === DataContract::SOURCE_WIDGET_CONTENT_TYPE && empty($widgetData['items'] ?? null)) {
+                        foreach ($widgetType->collections ?? [] as $collSlot) {
+                            if (! empty($collectionData[$collSlot])) {
+                                $widgetData['items'] = $collectionData[$collSlot];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         foreach ($widgetType->config_schema ?? [] as $field) {
             $type = $field['type'] ?? '';
             $key = $field['key'] ?? '';
             if (! $key || ! isset($config[$key]) || ! is_string($config[$key])) {
                 continue;
             }
-            if ($type === 'richtext') {
-                $config[$key] = $tokens->substitute($config[$key], $tokenPage, true);
-            } elseif ($type === 'text') {
-                $config[$key] = $tokens->substitute($config[$key], $tokenPage, false);
+            if ($type !== 'richtext' && $type !== 'text') {
+                continue;
+            }
+            $escape = $type === 'richtext';
+
+            if ($contract !== null && $contract->source === DataContract::SOURCE_PAGE_CONTEXT && is_array($widgetData)) {
+                $text = $config[$key];
+                foreach ($widgetData as $token => $value) {
+                    $replacement = $escape ? e((string) $value) : (string) $value;
+                    $text = str_replace('{{' . $token . '}}', $replacement, $text);
+                }
+                $config[$key] = $text;
+            } else {
+                $config[$key] = $tokens->substitute($config[$key], $tokenPage, $escape);
             }
         }
 
@@ -86,6 +119,7 @@ class WidgetRenderer
                 'collectionData'     => $collectionData,
                 'pageContext'        => $pageContext,
                 'pageContextTokens'  => $tokens,
+                'widgetData'         => $widgetData,
             ];
 
             if (! empty($columnChildren)) {
@@ -113,6 +147,16 @@ class WidgetRenderer
         }
 
         return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts];
+    }
+
+    private static function configHasTokens(array $config): bool
+    {
+        foreach ($config as $value) {
+            if (is_string($value) && str_contains($value, '{{')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

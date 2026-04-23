@@ -2,7 +2,9 @@
 
 namespace App\Widgets\TextBlock;
 
+use App\Services\PageContextTokens;
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class TextBlockDefinition extends WidgetDefinition
 {
@@ -43,6 +45,15 @@ class TextBlockDefinition extends WidgetDefinition
         return [
             'content' => '',
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_PAGE_CONTEXT,
+            fields: PageContextTokens::TOKENS,
+        );
     }
 
     public function defaultAppearanceConfig(): array

@@ -3,6 +3,7 @@
 namespace App\Widgets\BlogListing;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class BlogListingDefinition extends WidgetDefinition
 {
@@ -66,5 +67,15 @@ class BlogListingDefinition extends WidgetDefinition
             'effect'           => 'slide',
             'gap'              => 24,
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['title', 'slug', 'url', 'date', 'date_iso', 'excerpt', 'image'],
+            model: 'post',
+        );
     }
 }

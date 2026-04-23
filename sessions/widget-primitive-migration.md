@@ -141,6 +141,12 @@ Carried from the premise document and scoping conversations, worth naming withou
 - **Upgrade safety.** When a widget contract changes between versions, what happens to configured instances? Versioning is the answer; the operational details aren't worked out.
 - **Performance budget.** Twelve-widget dashboards cannot fire twelve query cascades. Batching has to be real from day one, not added later.
 
+## Forward hooks — elective, not required
+
+Options the architecture makes available but that no phase currently commits to. Named so the phases downstream know they exist and can reach for them if a concrete pain surfaces.
+
+- **Appearance as a shared contract.** The typed-contract shape currently describes widget data only. `WidgetDefinition::defaultAppearanceConfig()` is already an informal declaration — a map of "which appearance fields this widget honors, with these defaults." Formalizing it into a versioned `AppearanceContract` inherited from the base class (overridable per widget) would give appearance the same auditability, slot-level enforcement, and feature-gating story the data contract has. "Which widgets honor `border_radius`?" becomes a grep across declared contracts. Phase 2 slots could declare "this slot forbids full-width" or "this slot overrides `background.color` from the grid theme" and enforce against the contract. Does not buy security (appearance isn't sensitive) or performance (`AppearanceStyleComposer` is already cheap). The right moment to formalize is when slot taxonomy (Phase 2) surfaces a slot-level appearance constraint the informal declaration can't express. Until then: elective.
+
 ## The honest framing
 
 This is a digression, not a pivot. The product does not get better for users because of this work — it gets better for the solo developer maintaining it. The reason to do it is long-term maintainability and security posture, not feature velocity in any individual quarter. If Phase 1 succeeds, the payoff compounds over years. If it fails or the contract proves intractable, the preparation work done in v1 was cheap enough to absorb.

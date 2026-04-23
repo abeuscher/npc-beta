@@ -1,7 +1,4 @@
 @php
-    $posts = $pageContext->posts();
-    $blogPrefix = config('site.blog_prefix', 'news');
-
     $heading         = $config['heading'] ?? '';
     $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>{{item.excerpt}}</p>';
     $rawTemplate = $config['content_template'] ?? '';
@@ -13,23 +10,7 @@
     $effect          = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
     $gap             = (int) ($config['gap'] ?? 24);
 
-    // Serialize posts for Alpine
-    $items = $posts->map(function ($post) use ($blogPrefix) {
-        $excerpt = \Illuminate\Support\Str::limit(strip_tags($post->meta_description ?? ''), 160);
-
-        $thumbnailUrl = $post->getFirstMediaUrl('post_thumbnail', 'webp')
-            ?: $post->getFirstMediaUrl('post_thumbnail');
-
-        return [
-            'title'       => $post->title,
-            'slug'        => $post->slug,
-            'url'         => url('/' . $post->slug),
-            'date'        => $post->published_at?->format('F j, Y') ?? '',
-            'date_iso'    => $post->published_at?->toIso8601String() ?? '',
-            'excerpt'     => $excerpt,
-            'image'       => $thumbnailUrl,
-        ];
-    })->values()->all();
+    $items = $widgetData['items'] ?? [];
 
     // Pre-render cards server-side using token replacement
     $renderedCards = [];

@@ -215,12 +215,29 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 206 | Code Review & Cleanup (Apply) |
 | 207 | Column Layout Inspector — Appearance Unification |
 | 208 | Migration Squash & Code Optimization |
+| 209 | Widget Primitive — Data Contract Prototype |
 
 ---
 
 ## Housekeeping & Review — Beta 1 Scope
 
 *Ordered by priority.*
+
+### Widget Primitive — Remaining Phases *(stub — track spans pre- and post-Beta 1)*
+
+Architectural track introduced in session 209. Track-level framing lives in `sessions/widget-primitive.md` (premise) and `sessions/widget-primitive-migration.md` (the phased migration sketch, including the stance, design decisions, content-shapes carve-up, security posture, and forward hooks). Refer to those docs rather than duplicating their content here.
+
+Status as of 2026-04-22:
+
+- **Phase 1 — Data contract prototype** (session 209): complete. Verdict "proceed with refinements." Findings in `sessions/209. Widget Primitive — Data Contract Prototype — Findings.md`.
+- **Contract Refinements** (session 210, drafted): resolves the four refinements named in the 209 findings — fallback-data semantics into the resolver, `SOURCE_PAGE_CONTEXT` batching, projector extraction, and documenting the richtext-consumer pattern. Prompt at `sessions/210. Widget Primitive — Contract Refinements.md`. Pre-Phase-2 cleanup; no new widgets migrate, no slot work starts.
+- **Phase 2 — Slot taxonomy** (next after 210): declare slots formally — ambient context, layout constraints, config surface. Minimum v2.0 set per the migration doc: dashboard grid, record-detail sidebar, public page-builder canvas retrofit. 1–2 sessions per the migration doc.
+- **Phases 3–6** (dashboard grid, retrofit remaining widgets, record-detail slot + `SlotContext` generalization, page-builder convergence): each detailed in `sessions/widget-primitive-migration.md`. Total ≈ 20–30 sessions, interleavable with feature work after 1.0 ships.
+- **Forward hook (elective):** appearance as a shared contract, reachable if slot taxonomy surfaces a slot-level appearance-constraint the informal `defaultAppearanceConfig()` declaration can't express.
+
+The track is framed as a 2.0 initiative in the migration doc but its preparation and Phase 1 are happening pre-Beta 1 as architectural prep. How far through the phases this track progresses before Beta 1 is a scope decision to revisit when slot taxonomy lands.
+
+---
 
 ### Page Builder Focus-Scroll Clamp *(stub — pre-Beta 1, successor to session 204)*
 

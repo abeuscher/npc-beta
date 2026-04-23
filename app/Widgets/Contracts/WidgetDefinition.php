@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Contracts;
 
+use App\WidgetPrimitive\DataContract;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -60,6 +61,11 @@ abstract class WidgetDefinition
     }
 
     public function requiredConfig(): ?array
+    {
+        return null;
+    }
+
+    public function dataContract(array $config): ?DataContract
     {
         return null;
     }

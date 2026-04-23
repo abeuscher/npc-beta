@@ -174,7 +174,7 @@ it('carousel widget reads caption_text_color and caption_link_color', function (
                 'caption_text_color' => '#112233',
                 'caption_link_color' => '#445566',
             ],
-            'collectionData' => ['slides' => [['title' => 'Slide A', '_media' => []]]],
+            'widgetData' => ['items' => [['title' => 'Slide A', '_media' => []]]],
             'configMedia' => [],
         ]
     );
