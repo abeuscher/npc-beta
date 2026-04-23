@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\PageContextTokens;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
 use App\Widgets\BarChart\BarChartDefinition;
@@ -43,6 +44,7 @@ class WidgetServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WidgetRegistry::class, fn () => new WidgetRegistry());
         $this->app->singleton(WidgetConfigResolver::class, fn ($app) => new WidgetConfigResolver($app->make(WidgetRegistry::class)));
+        $this->app->singleton(PageContextTokens::class, fn () => new PageContextTokens());
     }
 
     public function boot(): void

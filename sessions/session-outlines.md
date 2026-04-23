@@ -216,6 +216,7 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 | 207 | Column Layout Inspector — Appearance Unification |
 | 208 | Migration Squash & Code Optimization |
 | 209 | Widget Primitive — Data Contract Prototype |
+| 210 | Widget Primitive — Contract Refinements |
 
 ---
 
@@ -227,11 +228,11 @@ A **Beta One** milestone is planned as the first shippable, demonstrable version
 
 Architectural track introduced in session 209. Track-level framing lives in `sessions/widget-primitive.md` (premise) and `sessions/widget-primitive-migration.md` (the phased migration sketch, including the stance, design decisions, content-shapes carve-up, security posture, and forward hooks). Refer to those docs rather than duplicating their content here.
 
-Status as of 2026-04-22:
+Status as of 2026-04-23:
 
-- **Phase 1 — Data contract prototype** (session 209): complete. Verdict "proceed with refinements." Findings in `sessions/209. Widget Primitive — Data Contract Prototype — Findings.md`.
-- **Contract Refinements** (session 210, drafted): resolves the four refinements named in the 209 findings — fallback-data semantics into the resolver, `SOURCE_PAGE_CONTEXT` batching, projector extraction, and documenting the richtext-consumer pattern. Prompt at `sessions/210. Widget Primitive — Contract Refinements.md`. Pre-Phase-2 cleanup; no new widgets migrate, no slot work starts.
-- **Phase 2 — Slot taxonomy** (next after 210): declare slots formally — ambient context, layout constraints, config surface. Minimum v2.0 set per the migration doc: dashboard grid, record-detail sidebar, public page-builder canvas retrofit. 1–2 sessions per the migration doc.
+- **Phase 1 — Data contract prototype** (session 209): complete. Verdict "proceed with refinements." Findings in `sessions/209. Widget Primitive — Data Contract Prototype — Findings.md` (archived after 210 close).
+- **Contract Refinements** (session 210): complete. Projector extraction, fallback semantics into the resolver, `PageContextTokens` singleton + per-page memoization, richtext-consumer pattern documented — then superseded mid-session by a source-level-capability simplification: `SOURCE_PAGE_CONTEXT` contracts declare no fields and the resolver returns the full (small, bounded, reviewed) `PageContextTokens::TOKENS` map. The other two sources keep per-field fail-closed discipline. Decision captured in the migration doc's "Design decisions locked in" section.
+- **Phase 2 — Slot taxonomy** (session 211, drafted): declare the `Slot` primitive formally — one class per slot with ambient context, layout constraints, config surface — and retrofit the page-builder rendering path to consume `PageBuilderCanvasSlot`. The other two slots (`dashboard_grid`, `record_detail_sidebar`) are declaration-only this session; their consumers land in Phases 3 and 5. Prompt at `sessions/211. Widget Primitive — Phase 2 (Slot Taxonomy).md`. Base prompt at `sessions/211. base-prompt.md`. 1 session shape per the migration doc's 1–2 range.
 - **Phases 3–6** (dashboard grid, retrofit remaining widgets, record-detail slot + `SlotContext` generalization, page-builder convergence): each detailed in `sessions/widget-primitive-migration.md`. Total ≈ 20–30 sessions, interleavable with feature work after 1.0 ships.
 - **Forward hook (elective):** appearance as a shared contract, reachable if slot taxonomy surfaces a slot-level appearance-constraint the informal `defaultAppearanceConfig()` declaration can't express.
 

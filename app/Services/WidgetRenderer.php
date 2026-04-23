@@ -72,16 +72,7 @@ class WidgetRenderer
 
                 if (! $skip) {
                     $slot = new SlotContext($pageContext, $tokenPage);
-                    $widgetData = app(ContractResolver::class)->resolve([$contract], $slot)[0];
-
-                    if ($contract->source === DataContract::SOURCE_WIDGET_CONTENT_TYPE && empty($widgetData['items'] ?? null)) {
-                        foreach ($widgetType->collections ?? [] as $collSlot) {
-                            if (! empty($collectionData[$collSlot])) {
-                                $widgetData['items'] = $collectionData[$collSlot];
-                                break;
-                            }
-                        }
-                    }
+                    $widgetData = app(ContractResolver::class)->resolve([$contract], $slot, $fallbackCollectionData)[0];
                 }
             }
         }

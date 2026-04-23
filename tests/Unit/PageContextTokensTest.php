@@ -99,3 +99,33 @@ it('returns a values map with concrete strings', function () {
     expect($values['date'])->toBe('');
     expect($values['excerpt'])->toBe('');
 });
+
+it('memoizes computed values by page id within the same instance', function () {
+    $page = Page::factory()->create(['title' => 'Original']);
+
+    $first = $this->tokens->values($page);
+
+    $page->title = 'Mutated in memory';
+    $second = $this->tokens->values($page);
+
+    expect($second)->toBe($first)
+        ->and($second['title'])->toBe('Original');
+});
+
+it('computes distinct values for different page ids', function () {
+    $a = Page::factory()->create(['title' => 'Alpha']);
+    $b = Page::factory()->create(['title' => 'Bravo']);
+
+    $aVals = $this->tokens->values($a);
+    $bVals = $this->tokens->values($b);
+
+    expect($aVals['title'])->toBe('Alpha')
+        ->and($bVals['title'])->toBe('Bravo');
+});
+
+it('is bound as a container singleton so the cache is shared across callers', function () {
+    $a = app(PageContextTokens::class);
+    $b = app(PageContextTokens::class);
+
+    expect($a)->toBe($b);
+});

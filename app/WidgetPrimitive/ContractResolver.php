@@ -5,13 +5,16 @@ namespace App\WidgetPrimitive;
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Page;
-use App\Services\PageContextTokens;
-use Illuminate\Support\Str;
+use App\WidgetPrimitive\Projectors\PageContextProjector;
+use App\WidgetPrimitive\Projectors\SystemModelProjector;
+use App\WidgetPrimitive\Projectors\WidgetContentTypeProjector;
 
 final class ContractResolver
 {
     public function __construct(
-        private readonly PageContextTokens $pageContextTokens,
+        private readonly PageContextProjector $pageContextProjector,
+        private readonly SystemModelProjector $systemModelProjector,
+        private readonly WidgetContentTypeProjector $widgetContentTypeProjector,
     ) {}
 
     /**
@@ -26,19 +29,27 @@ final class ContractResolver
      * DTO. Missing data yields an empty string for scalars, an empty array for
      * row-sets.
      *
+     * Fallback: for SOURCE_WIDGET_CONTENT_TYPE contracts that resolve to an
+     * empty item-set, the resolver looks up fallback rows in $fallback —
+     * keyed by resourceHandle first, then by any non-empty entry for
+     * back-compat with the widget-type-slot keying (e.g. 'slides'). Fallback
+     * rows are projected through the same field filter as live items, so
+     * undeclared fields never leak into the DTO.
+     *
      * @param  array<int, DataContract>  $contracts
+     * @param  array<string, array<int, array<string, mixed>>>  $fallback
      * @return array<int, array<string, mixed>>
      */
-    public function resolve(array $contracts, SlotContext $context): array
+    public function resolve(array $contracts, SlotContext $context, array $fallback = []): array
     {
         $cache = [];
         $results = [];
 
         foreach ($contracts as $i => $contract) {
             $results[$i] = match ($contract->source) {
-                DataContract::SOURCE_PAGE_CONTEXT        => $this->resolvePageContext($contract, $context),
-                DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $context, $cache),
-                DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $context, $cache),
+                DataContract::SOURCE_PAGE_CONTEXT        => $this->pageContextProjector->project($contract, $context->currentPage()),
+                DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache),
+                DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $cache, $fallback),
                 default                                  => [],
             };
         }
@@ -47,30 +58,10 @@ final class ContractResolver
     }
 
     /**
-     * Scalar-map DTO of page-context tokens, restricted to declared fields.
-     *
-     * @return array<string, string>
-     */
-    private function resolvePageContext(DataContract $contract, SlotContext $context): array
-    {
-        $page = $context->currentPage();
-
-        $all = $page ? $this->pageContextTokens->values($page) : [];
-
-        $dto = [];
-        foreach ($contract->fields as $field) {
-            $dto[$field] = (string) ($all[$field] ?? '');
-        }
-        return $dto;
-    }
-
-    /**
-     * Row-set DTO of a typed system model. Only 'post' is wired up in this prototype.
-     *
      * @param  array<string, mixed>  $cache
      * @return array{items: array<int, array<string, mixed>>}
      */
-    private function resolveSystemModel(DataContract $contract, SlotContext $context, array &$cache): array
+    private function resolveSystemModel(DataContract $contract, array &$cache): array
     {
         if ($contract->model !== 'post') {
             return ['items' => []];
@@ -90,52 +81,15 @@ final class ContractResolver
             $cache[$key] = $query->get();
         }
 
-        $blogPrefix = config('site.blog_prefix', 'news');
-        $rows = $cache[$key]->map(function (Page $post) use ($contract, $blogPrefix) {
-            $full = $this->projectPost($post, $blogPrefix);
-
-            $row = [];
-            foreach ($contract->fields as $field) {
-                $row[$field] = $full[$field] ?? '';
-            }
-            return $row;
-        })->values()->all();
-
-        return ['items' => $rows];
+        return $this->systemModelProjector->project($contract, $cache[$key]);
     }
 
     /**
-     * Flat row shape derived from a Page model. Each row-field is a value the
-     * contract may request; fields outside this map are not exposed.
-     *
-     * @return array<string, mixed>
-     */
-    private function projectPost(Page $post, string $blogPrefix): array
-    {
-        $thumb = $post->getFirstMediaUrl('post_thumbnail', 'webp')
-            ?: $post->getFirstMediaUrl('post_thumbnail');
-
-        return [
-            'id'       => $post->id,
-            'title'    => $post->title,
-            'slug'     => $post->slug,
-            'url'      => url('/' . $post->slug),
-            'date'     => $post->published_at?->format('F j, Y') ?? '',
-            'date_iso' => $post->published_at?->toIso8601String() ?? '',
-            'excerpt'  => Str::limit(strip_tags($post->meta_description ?? ''), 160),
-            'image'    => $thumb,
-        ];
-    }
-
-    /**
-     * Row-set DTO for a widget-declared content type. The widget owns the
-     * schema; the resolver reads rows from the named collection and projects
-     * them through the widget's declared fields.
-     *
      * @param  array<string, mixed>  $cache
+     * @param  array<string, array<int, array<string, mixed>>>  $fallback
      * @return array{items: array<int, array<string, mixed>>}
      */
-    private function resolveWidgetContentType(DataContract $contract, SlotContext $context, array &$cache): array
+    private function resolveWidgetContentType(DataContract $contract, array &$cache, array $fallback): array
     {
         $handle = $contract->resourceHandle;
         if ($handle === null || $handle === '' || $contract->contentType === null) {
@@ -156,24 +110,39 @@ final class ContractResolver
             }
         }
 
-        $imageKeys = $contract->contentType->imageFieldKeys();
+        $dto = $this->widgetContentTypeProjector->project($contract, $cache[$key]);
 
-        $rows = $cache[$key]->map(function (CollectionItem $item) use ($contract, $imageKeys) {
-            $data = $item->data ?? [];
-            $row = [];
-            foreach ($contract->fields as $field) {
-                $row[$field] = $data[$field] ?? '';
+        if (empty($dto['items'])) {
+            $fallbackRows = $this->fallbackRowsFor($contract, $fallback);
+            if ($fallbackRows !== []) {
+                $dto = $this->widgetContentTypeProjector->projectFallback($contract, $fallbackRows);
             }
-            if ($imageKeys !== []) {
-                $media = [];
-                foreach ($imageKeys as $imageKey) {
-                    $media[$imageKey] = $item->getFirstMedia($imageKey);
-                }
-                $row['_media'] = $media;
-            }
-            return $row;
-        })->values()->all();
+        }
 
-        return ['items' => $rows];
+        return $dto;
+    }
+
+    /**
+     * Pick fallback rows for a contract: match by resourceHandle first, then
+     * the first non-empty entry in $fallback for back-compat with the
+     * widget-type slot-name keying the renderer used before Phase 2 of 210.
+     *
+     * @param  array<string, array<int, array<string, mixed>>>  $fallback
+     * @return array<int, array<string, mixed>>
+     */
+    private function fallbackRowsFor(DataContract $contract, array $fallback): array
+    {
+        $handle = $contract->resourceHandle;
+        if ($handle !== null && $handle !== '' && isset($fallback[$handle]) && is_array($fallback[$handle]) && $fallback[$handle] !== []) {
+            return $fallback[$handle];
+        }
+
+        foreach ($fallback as $rows) {
+            if (is_array($rows) && $rows !== []) {
+                return $rows;
+            }
+        }
+
+        return [];
     }
 }

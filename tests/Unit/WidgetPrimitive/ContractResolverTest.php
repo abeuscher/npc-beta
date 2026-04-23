@@ -27,7 +27,7 @@ it('returns DTOs indexed to match the input contract list', function () {
     $contracts = [
         new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT, ['title']),
         new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT, ['title', 'date']),
-        new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT, []),
+        new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT),
     ];
 
     $page = Page::factory()->create(['title' => 'Hello', 'published_at' => '2026-04-22 00:00:00']);
@@ -37,7 +37,8 @@ it('returns DTOs indexed to match the input contract list', function () {
     expect($dtos)->toHaveCount(3)
         ->and($dtos[0])->toBe(['title' => 'Hello'])
         ->and($dtos[1])->toBe(['title' => 'Hello', 'date' => 'April 22, 2026'])
-        ->and($dtos[2])->toBe([]);
+        ->and($dtos[2])->toHaveKeys(['title', 'date', 'excerpt', 'author', 'starts_at', 'location'])
+        ->and($dtos[2]['title'])->toBe('Hello');
 });
 
 it('omits fields not declared on the contract', function () {

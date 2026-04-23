@@ -2,7 +2,6 @@
 
 namespace App\Widgets\TextBlock;
 
-use App\Services\PageContextTokens;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
 
@@ -52,7 +51,6 @@ class TextBlockDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_PAGE_CONTEXT,
-            fields: PageContextTokens::TOKENS,
         );
     }
 

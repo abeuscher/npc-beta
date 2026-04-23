@@ -19,6 +19,16 @@ class PageContextTokens
         'location',
     ];
 
+    /**
+     * Per-page-id memoization of computed token values. Populated on first
+     * values() call for a given page id and reused for subsequent calls in
+     * the same request. Bound as a container singleton so every widget on a
+     * page shares the cache.
+     *
+     * @var array<int|string, array<string,string>>
+     */
+    private array $cache = [];
+
     public function substitute(string $text, ?Page $currentPage, bool $escapeHtml = false): string
     {
         if ($text === '' || $currentPage === null) {
@@ -43,13 +53,23 @@ class PageContextTokens
      * Resolve every supported token into a concrete string. Missing data yields
      * an empty string; unknown tokens are never injected by this method.
      *
+     * Memoized per request by page id — twelve widgets on one page compute
+     * token values once, not twelve times. Pages without an id (unsaved,
+     * admin preview) fall back to object identity.
+     *
      * @return array<string,string>
      */
     public function values(Page $page): array
     {
+        $key = $page->id !== null ? 'id:' . $page->id : 'obj:' . spl_object_id($page);
+
+        if (array_key_exists($key, $this->cache)) {
+            return $this->cache[$key];
+        }
+
         $event = $page->event;
 
-        return [
+        return $this->cache[$key] = [
             'title'     => (string) ($page->title ?? ''),
             'date'      => $page->published_at?->format('F j, Y') ?? '',
             'excerpt'   => (string) ($page->meta_description ?? ''),

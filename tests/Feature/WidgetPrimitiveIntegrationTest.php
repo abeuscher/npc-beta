@@ -49,7 +49,7 @@ it('renders a carousel widget through a widget-declared content type contract', 
     expect($html)->toContain('Contract Slide One');
 });
 
-it('falls back to fallbackCollectionData when a carousel contract resolves to no items', function () {
+it('falls back to fallbackCollectionData when a carousel contract resolves to no items, projected through the contract fields', function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     $wt = WidgetType::where('handle', 'carousel')->firstOrFail();
 
@@ -68,16 +68,18 @@ it('falls back to fallbackCollectionData when a carousel contract resolves to no
 
     $fallback = [
         'slides' => [
-            ['title' => 'Fallback Slide A', '_media' => []],
+            ['title' => 'Fallback Slide A', 'secret_internal' => 'leak-attempt', '_media' => []],
             ['title' => 'Fallback Slide B', '_media' => []],
         ],
     ];
 
-    $html = WidgetRenderer::render($pw, [], $fallback)['html'];
+    $result = WidgetRenderer::render($pw, [], $fallback);
+    $html = $result['html'];
 
     expect($html)
         ->toContain('Fallback Slide A')
-        ->toContain('Fallback Slide B');
+        ->toContain('Fallback Slide B')
+        ->not->toContain('leak-attempt');
 });
 
 it('renders a text block widget with page-context tokens substituted via the contract', function () {

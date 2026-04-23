@@ -858,5 +858,5 @@ it('buildTree eager-loads owner so widget count does not drive query count', fun
     $queries = \Illuminate\Support\Facades\DB::getQueryLog();
     \Illuminate\Support\Facades\DB::disableQueryLog();
 
-    expect(count($queries))->toBeLessThan(32);
+    expect(count($queries))->toBeLessThan(29);
 });

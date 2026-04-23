@@ -11,7 +11,7 @@ final class DataContract
     /**
      * @param  string  $version  Contract version. Every contract carries one from day one.
      * @param  string  $source  One of the SOURCE_* constants.
-     * @param  array<int, string>  $fields  Field names the widget declares it consumes. Fail-closed: anything not declared is not populated.
+     * @param  array<int, string>  $fields  Field names the widget declares it consumes. Fail-closed: anything not declared is not populated. Omit or pass an empty array for SOURCE_PAGE_CONTEXT contracts — the source itself is the capability boundary (see PageContextTokens::TOKENS).
      * @param  array<string, mixed>  $filters  Query-shape options (limit, order_by, etc.).
      * @param  string|null  $model  For SOURCE_SYSTEM_MODEL: which model ('post' for now).
      * @param  string|null  $resourceHandle  For SOURCE_WIDGET_CONTENT_TYPE: the collection handle to read items from.
@@ -20,7 +20,7 @@ final class DataContract
     public function __construct(
         public readonly string $version,
         public readonly string $source,
-        public readonly array $fields,
+        public readonly array $fields = [],
         public readonly array $filters = [],
         public readonly ?string $model = null,
         public readonly ?string $resourceHandle = null,

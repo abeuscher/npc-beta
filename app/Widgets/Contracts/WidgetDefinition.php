@@ -65,6 +65,22 @@ abstract class WidgetDefinition
         return null;
     }
 
+    /**
+     * Declare the widget's typed data contract. Default returns null — the
+     * widget opts out of the contract path and its template continues to read
+     * pageContext / collectionData as before.
+     *
+     * Capability grain varies by source. SOURCE_PAGE_CONTEXT treats the source
+     * itself as the boundary: the contract does not declare `fields`, and the
+     * resolver returns the full PageContextTokens::TOKENS map. The token set
+     * is a bounded, reviewed artifact of public page metadata — adding a token
+     * is a grep-visible change to PageContextTokens, not a per-widget update.
+     * See TextBlock for the canonical shape.
+     *
+     * SOURCE_SYSTEM_MODEL and SOURCE_WIDGET_CONTENT_TYPE keep per-field
+     * declaration because they can expose walkable relationships and arbitrary
+     * model columns — fail-closed per-field is load-bearing there.
+     */
     public function dataContract(array $config): ?DataContract
     {
         return null;
