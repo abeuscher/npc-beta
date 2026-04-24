@@ -15,7 +15,6 @@ class PageContext
 
     private ?Collection $postsCache    = null;
     private ?Collection $pagesCache    = null;
-    private ?Collection $eventsCache   = null;
     private array $collectionCache     = [];
     private array $eventCache          = [];
     private array $productCache        = [];
@@ -50,19 +49,6 @@ class PageContext
         }
 
         return $limit !== null ? $this->pagesCache->take($limit) : $this->pagesCache;
-    }
-
-    public function upcomingEvents(?int $limit = null): Collection
-    {
-        if ($this->eventsCache === null) {
-            $this->eventsCache = Event::published()
-                ->upcoming()
-                ->with(['media', 'landingPage'])
-                ->orderBy('starts_at')
-                ->get();
-        }
-
-        return $limit !== null ? $this->eventsCache->take($limit) : $this->eventsCache;
     }
 
     public function collection(string $handle, ?int $limit = null): array

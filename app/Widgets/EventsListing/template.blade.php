@@ -1,9 +1,6 @@
 @php
-    $eventsPrefix = config('site.events_prefix', 'events');
-    $events = $pageContext->upcomingEvents();
-
     $heading         = $config['heading'] ?? '';
-    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>{{item.location}}</p><p>{{item.price_badge}}</p>';
+    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.starts_at_label}}</h4><p>{{item.location}}</p><p>{{item.price_badge}}</p>';
     $rawTemplate = $config['content_template'] ?? '';
     $contentTemplate = trim(strip_tags($rawTemplate)) !== '' ? $rawTemplate : $defaultTemplate;
     $columns         = max(1, min(6, (int) ($config['columns'] ?? 3)));
@@ -13,33 +10,7 @@
     $effect          = in_array($config['effect'] ?? '', ['slide', 'fade']) ? $config['effect'] : 'slide';
     $gap             = (int) ($config['gap'] ?? 24);
 
-    // Serialize events for Alpine
-    $items = $events->map(function ($event) use ($eventsPrefix) {
-        $locationParts = array_filter([
-            $event->address_line_1,
-            $event->city,
-            $event->state,
-        ]);
-        $location = implode(', ', $locationParts);
-
-        $thumbnailUrl = $event->getFirstMediaUrl('event_thumbnail', 'webp')
-            ?: $event->getFirstMediaUrl('event_thumbnail');
-
-        return [
-            'title'       => $event->title,
-            'slug'        => $event->slug,
-            'url'         => $event->landingPage
-                ? url('/' . $event->landingPage->slug)
-                : url('/' . $eventsPrefix),
-            'date'        => $event->starts_at?->format('D, F j, Y \a\t g:i A') ?? '',
-            'date_iso'    => $event->starts_at?->toIso8601String() ?? '',
-            'ends_at'     => $event->ends_at?->format('g:i A') ?? '',
-            'location'    => $location,
-            'is_free'     => $event->is_free,
-            'price_badge' => $event->is_free ? '<span class="content-card__badge">Free</span>' : '',
-            'image'       => $thumbnailUrl,
-        ];
-    })->values()->all();
+    $items = $widgetData['items'] ?? [];
 
     // Pre-render cards server-side using token replacement
     $renderedCards = [];
@@ -49,12 +20,14 @@
             if ($key === 'image') {
                 $imgHtml = $value ? '<img src="' . e($value) . '" alt="' . e($item['title']) . '" loading="lazy">' : '';
                 $card = str_replace('{{item.image}}', $imgHtml, $card);
-            } elseif ($key === 'price_badge') {
-                $card = str_replace('{{item.price_badge}}', $value, $card);
-            } elseif (is_string($value)) {
-                $card = str_replace('{{item.' . $key . '}}', e($value), $card);
+            } elseif ($key === 'is_free') {
+                continue;
+            } elseif (is_scalar($value)) {
+                $card = str_replace('{{item.' . $key . '}}', e((string) $value), $card);
             }
         }
+        $priceBadge = ! empty($item['is_free']) ? '<span class="content-card__badge">Free</span>' : '';
+        $card = str_replace('{{item.price_badge}}', $priceBadge, $card);
         $card = preg_replace('/\{\{[^}]+\}\}/', '', $card);
         $renderedCards[] = trim($card);
     }

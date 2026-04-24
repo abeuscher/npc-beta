@@ -68,16 +68,16 @@ window.NPWidgets.eventsListing = function () {
                     const item = this.cfg.items[i];
                     return item.title.toLowerCase().includes(q)
                         || (item.location || '').toLowerCase().includes(q)
-                        || item.date.toLowerCase().includes(q);
+                        || item.starts_at_label.toLowerCase().includes(q);
                 });
             }
             indices.sort((a, b) => {
                 const ia = this.cfg.items[a], ib = this.cfg.items[b];
                 switch (sortBy) {
-                    case 'furthest':  return (ib.date_iso || '').localeCompare(ia.date_iso || '');
+                    case 'furthest':  return (ib.starts_at || '').localeCompare(ia.starts_at || '');
                     case 'title_az':  return ia.title.localeCompare(ib.title);
                     case 'title_za':  return ib.title.localeCompare(ia.title);
-                    default:          return (ia.date_iso || '').localeCompare(ib.date_iso || '');
+                    default:          return (ia.starts_at || '').localeCompare(ib.starts_at || '');
                 }
             });
             return indices;

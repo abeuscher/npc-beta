@@ -59,7 +59,7 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
-            fields: ['id', 'title', 'slug', 'starts_at', 'ends_at', 'address_line_1', 'city', 'state', 'meeting_label'],
+            fields: ['id', 'title', 'slug', 'starts_at', 'address_line_1', 'city', 'state', 'meeting_label'],
             filters: [
                 'date_range' => ['from' => 'now', 'to' => '+' . $daysAhead . ' days'],
                 'order_by'   => 'starts_at asc',

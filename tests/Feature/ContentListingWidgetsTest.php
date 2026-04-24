@@ -5,6 +5,7 @@ use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\PageContext;
 use App\Widgets\BlogListing\BlogListingDefinition;
+use App\Widgets\EventsListing\EventsListingDefinition;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,6 +16,13 @@ uses(TestCase::class, RefreshDatabase::class);
 function blogListingWidgetData(array $config = []): array
 {
     $contract = (new BlogListingDefinition())->dataContract($config);
+    $slot = new SlotContext(new PageContext());
+    return app(ContractResolver::class)->resolve([$contract], $slot)[0];
+}
+
+function eventsListingWidgetData(array $config = []): array
+{
+    $contract = (new EventsListingDefinition())->dataContract($config);
     $slot = new SlotContext(new PageContext());
     return app(ContractResolver::class)->resolve([$contract], $slot)[0];
 }
@@ -222,7 +230,7 @@ it('events listing widget renders with default content template', function () {
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 
@@ -256,7 +264,7 @@ it('events listing widget applies token replacement correctly', function () {
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 
@@ -281,7 +289,7 @@ it('events listing renders empty state when no upcoming events', function () {
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 
@@ -301,7 +309,7 @@ it('events listing renders search input when show_search is enabled', function (
                 'show_search'      => true,
                 'sort_default'     => 'soonest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 
@@ -425,7 +433,7 @@ it('events listing renders default spaceBetween when gap is not set', function (
                 'show_search'      => false,
                 'sort_default'     => 'soonest',
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 
@@ -454,7 +462,7 @@ it('events listing renders custom spaceBetween from gap config', function () {
                 'sort_default'     => 'soonest',
                 'gap'              => 40,
             ],
-            'pageContext' => new PageContext(),
+            'widgetData'  => eventsListingWidgetData(),
         ]
     );
 

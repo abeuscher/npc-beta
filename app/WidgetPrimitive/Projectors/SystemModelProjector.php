@@ -56,14 +56,14 @@ final class SystemModelProjector
             ?: $post->getFirstMediaUrl('post_thumbnail');
 
         return [
-            'id'       => $post->id,
-            'title'    => $post->title,
-            'slug'     => $post->slug,
-            'url'      => url('/' . $post->slug),
-            'date'     => $post->published_at?->format('F j, Y') ?? '',
-            'date_iso' => $post->published_at?->toIso8601String() ?? '',
-            'excerpt'  => Str::limit(strip_tags($post->meta_description ?? ''), 160),
-            'image'    => $thumb,
+            'id'                 => $post->id,
+            'title'              => $post->title,
+            'slug'               => $post->slug,
+            'url'                => url('/' . $post->slug),
+            'published_at'       => $post->published_at?->toIso8601String() ?? '',
+            'published_at_label' => $post->published_at?->format('F j, Y') ?? '',
+            'excerpt'            => Str::limit(strip_tags($post->meta_description ?? ''), 160),
+            'image'              => $thumb,
         ];
     }
 
@@ -75,16 +75,36 @@ final class SystemModelProjector
      */
     private function projectEvent(Event $event): array
     {
+        $thumb = $event->getFirstMediaUrl('event_thumbnail', 'webp')
+            ?: $event->getFirstMediaUrl('event_thumbnail');
+
+        $locationParts = array_filter([
+            $event->getAttribute('address_line_1'),
+            $event->getAttribute('city'),
+            $event->getAttribute('state'),
+        ]);
+
+        $eventsPrefix = config('site.events_prefix', 'events');
+        $url = $event->landingPage
+            ? url('/' . $event->landingPage->slug)
+            : url('/' . $eventsPrefix);
+
         return [
-            'id'             => $event->id,
-            'title'          => $event->title,
-            'slug'           => $event->slug,
-            'starts_at'      => $event->starts_at?->toIso8601String() ?? '',
-            'ends_at'        => $event->ends_at?->toIso8601String() ?? '',
-            'address_line_1' => $event->getAttribute('address_line_1') ?? '',
-            'city'           => $event->getAttribute('city') ?? '',
-            'state'          => $event->getAttribute('state') ?? '',
-            'meeting_label'  => $event->getAttribute('meeting_label') ?? '',
+            'id'               => $event->id,
+            'title'            => $event->title,
+            'slug'             => $event->slug,
+            'url'              => $url,
+            'starts_at'        => $event->starts_at?->toIso8601String() ?? '',
+            'starts_at_label'  => $event->starts_at?->format('D, F j, Y \a\t g:i A') ?? '',
+            'ends_at'          => $event->ends_at?->toIso8601String() ?? '',
+            'ends_at_label'    => $event->ends_at?->format('g:i A') ?? '',
+            'address_line_1'   => $event->getAttribute('address_line_1') ?? '',
+            'city'             => $event->getAttribute('city') ?? '',
+            'state'            => $event->getAttribute('state') ?? '',
+            'meeting_label'    => $event->getAttribute('meeting_label') ?? '',
+            'location'         => implode(', ', $locationParts),
+            'is_free'          => (bool) $event->is_free,
+            'image'            => $thumb,
         ];
     }
 }

@@ -68,16 +68,16 @@ window.NPWidgets.blogListing = function () {
                     const item = this.cfg.items[i];
                     return item.title.toLowerCase().includes(q)
                         || item.excerpt.toLowerCase().includes(q)
-                        || item.date.toLowerCase().includes(q);
+                        || item.published_at_label.toLowerCase().includes(q);
                 });
             }
             indices.sort((a, b) => {
                 const ia = this.cfg.items[a], ib = this.cfg.items[b];
                 switch (sortBy) {
-                    case 'oldest':   return (ia.date_iso || '').localeCompare(ib.date_iso || '');
+                    case 'oldest':   return (ia.published_at || '').localeCompare(ib.published_at || '');
                     case 'title_az': return ia.title.localeCompare(ib.title);
                     case 'title_za': return ib.title.localeCompare(ia.title);
-                    default:         return (ib.date_iso || '').localeCompare(ia.date_iso || '');
+                    default:         return (ib.published_at || '').localeCompare(ia.published_at || '');
                 }
             });
             return indices;

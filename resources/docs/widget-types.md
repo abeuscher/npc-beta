@@ -108,7 +108,6 @@ Stream methods return collections of records. All accept an optional `$limit` pa
 |---|---|---|
 | `posts(?int $limit)` | `Collection<Page>` | Published pages of type `post`, ordered by `COALESCE(published_at, created_at) DESC`. |
 | `pages(?int $limit)` | `Collection<Page>` | Published pages of all types except `post`, ordered by `title ASC`. Useful for nav and search widgets. |
-| `upcomingEvents(?int $limit)` | `Collection<Event>` | Published events where `starts_at >= now()`, ordered ascending. Returns full Eloquent models. |
 | `collection(string $handle, ?int $limit)` | `array` | Resolves a named collection by handle via `WidgetDataResolver`. Returns an array of data arrays. Returns `[]` for unknown or non-public handles. See System Collections table below. |
 
 ### Record Methods
@@ -151,7 +150,7 @@ The following handles are built in and resolved by `WidgetDataResolver`. Use the
 
 Custom collections defined in the Collections admin are also resolvable by their handle, provided they are marked public and active.
 
-Note: `blog_posts` and `events` are also accessible as typed Eloquent collections via `$pageContext->posts()` and `$pageContext->upcomingEvents()` respectively. Prefer those methods when you need model properties or relationships; use `collection()` when you need the flat array format.
+Note: `blog_posts` is also accessible as a typed Eloquent collection via `$pageContext->posts()`. Prefer that method when you need model properties or relationships; use `collection()` when you need the flat array format.
 
 ---
 

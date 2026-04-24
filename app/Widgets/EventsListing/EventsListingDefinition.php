@@ -3,6 +3,7 @@
 namespace App\Widgets\EventsListing;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class EventsListingDefinition extends WidgetDefinition
 {
@@ -44,7 +45,7 @@ class EventsListingDefinition extends WidgetDefinition
     {
         return [
             ['key' => 'heading',          'type' => 'text',     'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
-            ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>Ends: {{item.ends_at}}</p><p>{{item.location}}</p><p>{{item.price_badge}}</p><p>{{item.slug}}</p><p>{{item.date_iso}}</p>', 'group' => 'content'],
+            ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.starts_at_label}}</h4><p>Ends: {{item.ends_at_label}}</p><p>{{item.location}}</p><p>{{item.price_badge}}</p><p>{{item.slug}}</p><p>{{item.starts_at}}</p>', 'group' => 'content'],
             ['key' => 'columns',          'type' => 'select',   'label' => 'Columns per row', 'options' => ['1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6'], 'default' => '3', 'group' => 'appearance'],
             ['key' => 'items_per_page',   'type' => 'number',   'label' => 'Items per page', 'default' => 6, 'group' => 'content'],
             ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
@@ -58,7 +59,7 @@ class EventsListingDefinition extends WidgetDefinition
     {
         return [
             'heading'          => '',
-            'content_template' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>Ends: {{item.ends_at}}</p><p>{{item.location}}</p><p>{{item.price_badge}}</p><p>{{item.slug}}</p><p>{{item.date_iso}}</p>',
+            'content_template' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.starts_at_label}}</h4><p>Ends: {{item.ends_at_label}}</p><p>{{item.location}}</p><p>{{item.price_badge}}</p><p>{{item.slug}}</p><p>{{item.starts_at}}</p>',
             'columns'          => '3',
             'items_per_page'   => 6,
             'show_search'      => false,
@@ -66,5 +67,19 @@ class EventsListingDefinition extends WidgetDefinition
             'effect'           => 'slide',
             'gap'              => 24,
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['title', 'slug', 'url', 'starts_at', 'starts_at_label', 'ends_at', 'ends_at_label', 'location', 'is_free', 'image'],
+            filters: [
+                'date_range' => ['from' => 'now'],
+                'order_by'   => 'starts_at asc',
+            ],
+            model: 'event',
+        );
     }
 }

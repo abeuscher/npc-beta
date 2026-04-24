@@ -1,6 +1,6 @@
 @php
     $heading         = $config['heading'] ?? '';
-    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.date}}</h4><p>{{item.excerpt}}</p>';
+    $defaultTemplate = '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.published_at_label}}</h4><p>{{item.excerpt}}</p>';
     $rawTemplate = $config['content_template'] ?? '';
     $contentTemplate = trim(strip_tags($rawTemplate)) !== '' ? $rawTemplate : $defaultTemplate;
     $columns         = max(1, min(6, (int) ($config['columns'] ?? 3)));
