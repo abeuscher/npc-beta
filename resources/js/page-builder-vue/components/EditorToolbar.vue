@@ -6,7 +6,13 @@ const store = useEditorStore()
 
 <template>
   <div class="editor-toolbar">
-    <div class="editor-toolbar__left">
+    <div v-if="store.mode === 'dashboard'" class="editor-toolbar__left">
+      <div class="editor-toolbar__row1">
+        <span class="editor-toolbar__title">Dashboard arrangement</span>
+        <span v-if="store.roleLabel" class="editor-toolbar__author">for {{ store.roleLabel }}</span>
+      </div>
+    </div>
+    <div v-else class="editor-toolbar__left">
       <div class="editor-toolbar__row1">
         <span class="editor-toolbar__title">{{ store.pageTitle }}</span>
         <span v-if="store.pageAuthor" class="editor-toolbar__author">by {{ store.pageAuthor }}</span>

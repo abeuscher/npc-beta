@@ -74,6 +74,11 @@ class AdminPanelProvider extends PanelProvider
                     ->middleware(\Filament\Http\Middleware\Authenticate::class)
                     ->group(base_path('routes/admin-api.php'));
 
+                // Dashboard builder API (Vue editor, dashboard mode)
+                \Illuminate\Support\Facades\Route::prefix('api/dashboard-builder')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->group(base_path('routes/admin-dashboard-api.php'));
+
                 // Theme editor (Vue typography island + SCSS export)
                 \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
                     ->group(function () {

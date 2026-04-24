@@ -148,7 +148,10 @@ export interface ThemePaletteEntry {
   value: string | null
 }
 
+export type EditorMode = 'page' | 'dashboard'
+
 export interface BootstrapData {
+  mode?: EditorMode
   owner_id?: string
   owner_type?: string
   page_id: string
@@ -174,6 +177,9 @@ export interface BootstrapData {
   color_swatches: string[]
   theme_palette: ThemePaletteEntry[]
   theme_editor_url: string
+  allowed_appearance_fields?: string[]
+  allowed_widget_handles?: string[]
+  role_label?: string
 }
 
 export interface TreeResponse {

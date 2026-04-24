@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useEditorStore } from '../stores/editor'
 import type { FieldDef } from '../types'
 import InspectorHeader from './InspectorHeader.vue'
@@ -31,17 +31,27 @@ const bottomTab = computed({
 const topCollapsed = ref(false)
 const bottomCollapsed = ref(false)
 
-const topTabs = [
-  { id: 'content' as const, label: 'Content' },
-  { id: 'presets' as const, label: 'Presets' },
-  { id: 'widget-settings' as const, label: 'Widget Settings' },
-]
+const isDashboard = computed(() => store.mode === 'dashboard')
+const allowedAppearance = computed(() => store.allowedAppearanceFields ?? [])
 
-const bottomTabs = [
-  { id: 'background' as const, label: 'Background' },
-  { id: 'text' as const, label: 'Text' },
-  { id: 'spacing' as const, label: 'Margin & Padding' },
-]
+const topTabs = computed(() => {
+  const tabs: { id: TopTab; label: string }[] = [{ id: 'content', label: 'Content' }]
+  if (!isDashboard.value) {
+    tabs.push({ id: 'presets', label: 'Presets' })
+  }
+  tabs.push({ id: 'widget-settings', label: 'Widget Settings' })
+  return tabs
+})
+
+const bottomTabs = computed(() => {
+  const tabs: { id: BottomTab; label: string }[] = []
+  const allow = (field: string) => !isDashboard.value || allowedAppearance.value.includes(field)
+
+  if (allow('background')) tabs.push({ id: 'background', label: 'Background' })
+  if (allow('text')) tabs.push({ id: 'text', label: 'Text' })
+  if (allow('layout')) tabs.push({ id: 'spacing', label: 'Margin & Padding' })
+  return tabs
+})
 
 const widget = computed(() => store.selectedWidget)
 const layout = computed(() => store.selectedLayout)
@@ -99,6 +109,20 @@ function onWidgetRemoveImage() {
   if (!widget.value) return
   store.removeAppearanceImage(widget.value.id)
 }
+
+// If dashboard mode lands on a tab that was hidden, coerce to a valid one.
+watch(
+  [isDashboard, topTabs, bottomTabs],
+  () => {
+    if (!topTabs.value.some((t) => t.id === topTab.value)) {
+      topTab.value = topTabs.value[0]?.id ?? 'content'
+    }
+    if (bottomTabs.value.length > 0 && !bottomTabs.value.some((t) => t.id === bottomTab.value)) {
+      bottomTab.value = bottomTabs.value[0].id
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -152,7 +176,7 @@ function onWidgetRemoveImage() {
             <QuerySettings :widget="widget" />
           </div>
 
-          <div v-show="topTab === 'presets'" class="inspector-pane__scroll">
+          <div v-if="!isDashboard" v-show="topTab === 'presets'" class="inspector-pane__scroll">
             <InspectorPresetGallery :widget="widget" />
           </div>
 
@@ -213,7 +237,7 @@ function onWidgetRemoveImage() {
           <div v-show="bottomTab === 'text'" class="inspector-pane__scroll">
             <TextPanel :widget="widget" />
           </div>
-          <div v-show="bottomTab === 'spacing'" class="inspector-pane__scroll">
+          <div v-if="!isDashboard" v-show="bottomTab === 'spacing'" class="inspector-pane__scroll">
             <SectionLayoutPanel
               :config="widget.appearance_config"
               :full-width-disabled="widget.layout_id !== null"

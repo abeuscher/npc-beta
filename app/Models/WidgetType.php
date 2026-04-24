@@ -128,9 +128,13 @@ class WidgetType extends Model implements HasMedia
     /**
      * Return widget types formatted for the picker modal, filtered by page type.
      *
+     * When `$slotHandle` is provided, results are also filtered to widgets whose
+     * definition's `allowedSlots()` includes that slot — enforces slot-locality
+     * at the picker level (e.g. dashboard mode shows only `dashboard_grid` widgets).
+     *
      * @return array<int, array<string, mixed>>
      */
-    public static function forPicker(?string $pageType = 'default'): array
+    public static function forPicker(?string $pageType = 'default', ?string $slotHandle = null): array
     {
         $registry = app(\App\Services\WidgetRegistry::class);
 
@@ -138,6 +142,13 @@ class WidgetType extends Model implements HasMedia
             ->with(['media', 'draftPresets'])
             ->get()
             ->filter(fn ($wt) => $pageType === null || $wt->allowed_page_types === null || in_array($pageType, $wt->allowed_page_types, true))
+            ->filter(function ($wt) use ($registry, $slotHandle) {
+                if ($slotHandle === null) {
+                    return true;
+                }
+                $def = $registry->find($wt->handle);
+                return $def && in_array($slotHandle, $def->allowedSlots(), true);
+            })
             ->map(fn ($wt) => [
                 'id'              => $wt->id,
                 'handle'          => $wt->handle,

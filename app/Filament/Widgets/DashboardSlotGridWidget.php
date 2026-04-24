@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\DashboardConfig;
 use App\Models\PageWidget;
-use App\Models\WidgetType;
 use Filament\Widgets\Widget;
 
 class DashboardSlotGridWidget extends Widget
@@ -15,44 +15,21 @@ class DashboardSlotGridWidget extends Widget
     protected int | string | array $columnSpan = 'full';
 
     /**
-     * @return array<string, PageWidget>
+     * @return array<int, PageWidget>
      */
     protected function widgets(): array
     {
-        $widgets = [];
-
-        $memos = WidgetType::where('handle', 'memos')->first();
-        if ($memos) {
-            $widgets['memos'] = $this->makeWidget($memos, ['limit' => 5]);
+        $config = DashboardConfig::forUser(auth()->user());
+        if (! $config) {
+            return [];
         }
 
-        $quickActions = WidgetType::where('handle', 'quick_actions')->first();
-        if ($quickActions) {
-            $widgets['quick_actions'] = $this->makeWidget($quickActions, [
-                'actions' => ['new_contact', 'new_event', 'new_post'],
-            ]);
-        }
-
-        $thisWeeksEvents = WidgetType::where('handle', 'this_weeks_events')->first();
-        if ($thisWeeksEvents) {
-            $widgets['this_weeks_events'] = $this->makeWidget($thisWeeksEvents, ['days_ahead' => 7]);
-        }
-
-        return $widgets;
-    }
-
-    /**
-     * @param  array<string, mixed>  $configOverrides
-     */
-    private function makeWidget(WidgetType $widgetType, array $configOverrides): PageWidget
-    {
-        $pw = new PageWidget([
-            'widget_type_id' => $widgetType->id,
-            'config'         => $configOverrides,
-        ]);
-        $pw->setRelation('widgetType', $widgetType);
-
-        return $pw;
+        return $config->widgets()
+            ->where('is_active', true)
+            ->with('widgetType')
+            ->orderBy('sort_order')
+            ->get()
+            ->all();
     }
 
     /**
@@ -60,8 +37,11 @@ class DashboardSlotGridWidget extends Widget
      */
     protected function getViewData(): array
     {
+        $widgets = $this->widgets();
+
         return [
-            'widgets' => $this->widgets(),
+            'widgets'         => $widgets,
+            'hasArrangement'  => ! empty($widgets),
         ];
     }
 }

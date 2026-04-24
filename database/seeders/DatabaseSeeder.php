@@ -156,6 +156,9 @@ class DatabaseSeeder extends Seeder
         // ── Dashboard-native collections (memos) ────────────────────────────
         $this->call(MemosCollectionSeeder::class);
 
+        // ── Dashboard config (super_admin default arrangement) ──────────────
+        $this->call(DashboardConfigSeeder::class);
+
         // ── Transactions ─────────────────────────────────────────────────────
         $this->call(TransactionSeeder::class);
 

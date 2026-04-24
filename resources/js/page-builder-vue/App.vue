@@ -65,7 +65,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="store.rootWidgets.length > 0" class="vue-editor__footer">
+    <div v-if="store.mode !== 'dashboard' && store.rootWidgets.length > 0" class="vue-editor__footer">
       <button
         type="button"
         class="vue-editor__save-template-btn"

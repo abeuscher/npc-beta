@@ -18,11 +18,16 @@ import type {
   CreateLayoutPayload,
   UpdateLayoutPayload,
   ReorderItem,
+  EditorMode,
 } from '../types'
 import { ApiError, createApiClient, type ApiClient } from '../api'
 
 export const useEditorStore = defineStore('editor', () => {
   // Core data
+  const mode = ref<EditorMode>('page')
+  const allowedAppearanceFields = ref<string[]>([])
+  const allowedWidgetHandles = ref<string[]>([])
+  const roleLabel = ref('')
   const ownerId = ref('')
   const pageId = ref('')
   const pageType = ref('default')
@@ -157,6 +162,10 @@ export const useEditorStore = defineStore('editor', () => {
   // ── Actions ────────────────────────────────────────────────────────────
 
   function loadTree(data: BootstrapData): void {
+    mode.value = data.mode ?? 'page'
+    allowedAppearanceFields.value = data.allowed_appearance_fields ?? []
+    allowedWidgetHandles.value = data.allowed_widget_handles ?? []
+    roleLabel.value = data.role_label ?? ''
     ownerId.value = data.owner_id ?? data.page_id
     pageId.value = data.page_id
     pageType.value = data.page_type
@@ -824,6 +833,10 @@ export const useEditorStore = defineStore('editor', () => {
 
   return {
     // State
+    mode,
+    allowedAppearanceFields,
+    allowedWidgetHandles,
+    roleLabel,
     ownerId,
     pageId,
     pageType,

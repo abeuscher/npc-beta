@@ -12,15 +12,33 @@ uses(TestCase::class, RefreshDatabase::class);
 beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     (new \Database\Seeders\PermissionSeeder())->run();
+    (new \Database\Seeders\DashboardConfigSeeder())->run();
 });
 
-it('DashboardSlotGridWidget::widgets() registers the three dashboard-native widgets (memos, quick_actions, this_weeks_events)', function () {
+it('widgets() returns the super_admin config\'s three dashboard-native widgets in sort order', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('super_admin');
+    $this->actingAs($admin);
+
     $widget = new DashboardSlotGridWidget();
     $method = (new ReflectionClass($widget))->getMethod('widgets');
     $method->setAccessible(true);
     $instances = $method->invoke($widget);
 
-    expect(array_keys($instances))->toBe(['memos', 'quick_actions', 'this_weeks_events']);
+    $handles = array_map(fn ($pw) => $pw->widgetType->handle, $instances);
+
+    expect($handles)->toBe(['memos', 'quick_actions', 'this_weeks_events']);
+});
+
+it('widgets() returns an empty array when the acting user has no role', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $widget = new DashboardSlotGridWidget();
+    $method = (new ReflectionClass($widget))->getMethod('widgets');
+    $method->setAccessible(true);
+
+    expect($method->invoke($widget))->toBe([]);
 });
 
 it('the mounted Livewire widget renders the slot grid container with the three dashboard-native widgets', function () {
@@ -45,6 +63,15 @@ it('the mounted Livewire widget renders the slot grid container with the three d
         ->toContain('np-this-weeks-events');
 });
 
+it('renders the empty-state copy when the acting user has no dashboard config', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $rendered = Livewire::test(DashboardSlotGridWidget::class)->html();
+
+    expect($rendered)->toContain('No dashboard arrangement for your role');
+});
+
 it('dashboard page loads successfully for an authenticated super_admin', function () {
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');
@@ -52,14 +79,8 @@ it('dashboard page loads successfully for an authenticated super_admin', functio
     $response = $this->actingAs($admin)->get('/admin');
 
     $response->assertSuccessful();
-    // Widget content is lazily isolated by Livewire; assert the widget
-    // component is referenced by its view name in the dashboard payload.
     $response->assertSee('dashboard-slot-grid-widget', false);
 
-    // Per-widget lib bundles are emitted in the admin head so external scripts
-    // load synchronously before any Livewire widget mount (Alpine init races
-    // morph-inserted <script src> tags otherwise). Assert when the manifest
-    // publishes lib entries.
     $manifestPath = public_path('build/widgets/manifest.json');
     if (is_readable($manifestPath)) {
         $manifest = json_decode((string) file_get_contents($manifestPath), true) ?: [];

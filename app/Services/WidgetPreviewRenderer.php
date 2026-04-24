@@ -12,13 +12,13 @@ class WidgetPreviewRenderer
         private DemoDataService $demoService,
     ) {}
 
-    public function render(PageWidget $pw): string
+    public function render(PageWidget $pw, string $slotHandle = 'page_builder_canvas'): string
     {
         $widgetType = $pw->widgetType;
 
         try {
             $fallbackData = $this->demoCollectionData($pw);
-            $result = WidgetRenderer::render($pw, [], $fallbackData);
+            $result = WidgetRenderer::render($pw, [], $fallbackData, $slotHandle);
 
             if ($result['html'] === null) {
                 return '<div class="widget-preview-notice">No preview available</div>';

@@ -347,7 +347,7 @@ watch(
         >
           + Widget
         </button>
-        <div class="preview-canvas__columns-dropdown">
+        <div v-if="store.mode !== 'dashboard'" class="preview-canvas__columns-dropdown">
           <button
             type="button"
             class="preview-canvas__action-btn preview-canvas__action-btn--secondary"
