@@ -11,4 +11,9 @@ class DashboardQuickActionsWidget extends Widget
     protected static ?int $sort = 3;
 
     protected int | string | array $columnSpan = 1;
+
+    public static function canView(): bool
+    {
+        return false;
+    }
 }

@@ -26,6 +26,7 @@ use App\Widgets\Image\ImageDefinition;
 use App\Widgets\Logo\LogoDefinition;
 use App\Widgets\LogoGarden\LogoGardenDefinition;
 use App\Widgets\MapEmbed\MapEmbedDefinition;
+use App\Widgets\Memos\MemosDefinition;
 use App\Widgets\Nav\NavDefinition;
 use App\Widgets\PortalAccountDashboard\PortalAccountDashboardDefinition;
 use App\Widgets\PortalChangePassword\PortalChangePasswordDefinition;
@@ -35,9 +36,11 @@ use App\Widgets\PortalForgotPassword\PortalForgotPasswordDefinition;
 use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
+use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
+use App\Widgets\ThisWeeksEvents\ThisWeeksEventsDefinition;
 use App\Widgets\ThreeBuckets\ThreeBucketsDefinition;
 use App\Widgets\VideoEmbed\VideoEmbedDefinition;
 use App\Widgets\WebForm\WebFormDefinition;
@@ -97,5 +100,8 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new MapEmbedDefinition());
         $registry->register(new SocialSharingDefinition());
         $registry->register(new NavDefinition());
+        $registry->register(new MemosDefinition());
+        $registry->register(new QuickActionsDefinition());
+        $registry->register(new ThisWeeksEventsDefinition());
     }
 }

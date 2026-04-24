@@ -4,10 +4,12 @@ namespace App\WidgetPrimitive;
 
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
+use App\Models\Event;
 use App\Models\Page;
 use App\WidgetPrimitive\Projectors\PageContextProjector;
 use App\WidgetPrimitive\Projectors\SystemModelProjector;
 use App\WidgetPrimitive\Projectors\WidgetContentTypeProjector;
+use Illuminate\Support\Carbon;
 
 final class ContractResolver
 {
@@ -49,7 +51,7 @@ final class ContractResolver
             $results[$i] = match ($contract->source) {
                 DataContract::SOURCE_PAGE_CONTEXT        => $this->pageContextProjector->project($contract, $context->currentPage()),
                 DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache),
-                DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $cache, $fallback),
+                DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $context, $cache, $fallback),
                 default                                  => [],
             };
         }
@@ -63,10 +65,19 @@ final class ContractResolver
      */
     private function resolveSystemModel(DataContract $contract, array &$cache): array
     {
-        if ($contract->model !== 'post') {
-            return ['items' => []];
-        }
+        return match ($contract->model) {
+            'post'  => $this->resolvePost($contract, $cache),
+            'event' => $this->resolveEvent($contract, $cache),
+            default => ['items' => []],
+        };
+    }
 
+    /**
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolvePost(DataContract $contract, array &$cache): array
+    {
         $key = 'post:' . sha1(serialize($contract->filters));
         if (! array_key_exists($key, $cache)) {
             $query = Page::where('type', 'post')
@@ -86,19 +97,63 @@ final class ContractResolver
 
     /**
      * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveEvent(DataContract $contract, array &$cache): array
+    {
+        $key = 'event:' . sha1(serialize($contract->filters));
+        if (! array_key_exists($key, $cache)) {
+            $query = Event::published()->with('media');
+
+            $dateRange = $contract->filters['date_range'] ?? null;
+            if (is_array($dateRange)) {
+                $from = isset($dateRange['from']) ? Carbon::parse($dateRange['from']) : null;
+                $to   = isset($dateRange['to'])   ? Carbon::parse($dateRange['to'])   : null;
+                if ($from && $to) {
+                    $query->whereBetween('starts_at', [$from, $to]);
+                } elseif ($from) {
+                    $query->where('starts_at', '>=', $from);
+                } elseif ($to) {
+                    $query->where('starts_at', '<=', $to);
+                }
+            }
+
+            $order = $contract->filters['order_by'] ?? 'starts_at asc';
+            [$col, $dir] = array_pad(explode(' ', (string) $order, 2), 2, 'asc');
+            $col = in_array($col, ['starts_at', 'ends_at', 'created_at'], true) ? $col : 'starts_at';
+            $dir = strtolower($dir) === 'desc' ? 'desc' : 'asc';
+            $query->orderBy($col, $dir);
+
+            if (! empty($contract->filters['limit'])) {
+                $query->limit((int) $contract->filters['limit']);
+            }
+
+            $cache[$key] = $query->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $cache
      * @param  array<string, array<int, array<string, mixed>>>  $fallback
      * @return array{items: array<int, array<string, mixed>>}
      */
-    private function resolveWidgetContentType(DataContract $contract, array &$cache, array $fallback): array
+    private function resolveWidgetContentType(DataContract $contract, SlotContext $context, array &$cache, array $fallback): array
     {
         $handle = $contract->resourceHandle;
         if ($handle === null || $handle === '' || $contract->contentType === null) {
             return ['items' => []];
         }
 
-        $key = 'collection:' . $handle;
+        $cacheScope = $context->publicSurface ? 'public' : 'any';
+        $key = 'collection:' . $cacheScope . ':' . $handle;
         if (! array_key_exists($key, $cache)) {
-            $collection = CmsCollection::where('handle', $handle)->public()->first();
+            $query = CmsCollection::where('handle', $handle)->where('is_active', true);
+            if ($context->publicSurface) {
+                $query->where('is_public', true);
+            }
+            $collection = $query->first();
             if ($collection === null) {
                 $cache[$key] = collect();
             } else {
@@ -110,7 +165,12 @@ final class ContractResolver
             }
         }
 
-        $dto = $this->widgetContentTypeProjector->project($contract, $cache[$key]);
+        $items = $cache[$key];
+        if (! empty($contract->filters['limit'])) {
+            $items = $items->take((int) $contract->filters['limit']);
+        }
+
+        $dto = $this->widgetContentTypeProjector->project($contract, $items);
 
         if (empty($dto['items'])) {
             $fallbackRows = $this->fallbackRowsFor($contract, $fallback);

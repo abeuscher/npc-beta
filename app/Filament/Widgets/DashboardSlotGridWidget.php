@@ -20,24 +20,24 @@ class DashboardSlotGridWidget extends Widget
     protected function widgets(): array
     {
         $widgets = [];
-/*
-        $blogListingType = WidgetType::where('handle', 'blog_listing')->first();
-        if ($blogListingType) {
-            $widgets['blog_listing'] = $this->makeWidget($blogListingType, [
-                'heading'        => 'Recent Posts',
-                'items_per_page' => 3,
-                'columns'        => '3',
+
+        $memos = WidgetType::where('handle', 'memos')->first();
+        if ($memos) {
+            $widgets['memos'] = $this->makeWidget($memos, ['limit' => 5]);
+        }
+
+        $quickActions = WidgetType::where('handle', 'quick_actions')->first();
+        if ($quickActions) {
+            $widgets['quick_actions'] = $this->makeWidget($quickActions, [
+                'actions' => ['new_contact', 'new_event', 'new_post'],
             ]);
         }
 
-        $carouselType = WidgetType::where('handle', 'carousel')->first();
-        if ($carouselType) {
-            $widgets['carousel'] = $this->makeWidget($carouselType, [
-                'collection_handle' => 'carousel-demo',
-                'image_field'       => 'image',
-            ]);
+        $thisWeeksEvents = WidgetType::where('handle', 'this_weeks_events')->first();
+        if ($thisWeeksEvents) {
+            $widgets['this_weeks_events'] = $this->makeWidget($thisWeeksEvents, ['days_ahead' => 7]);
         }
-*/
+
         return $widgets;
     }
 

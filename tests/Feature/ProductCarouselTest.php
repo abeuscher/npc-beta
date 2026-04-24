@@ -183,5 +183,5 @@ it('seeder total widget count includes product_carousel', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $widgets = WidgetType::all();
-    expect($widgets)->toHaveCount(30);
+    expect($widgets)->toHaveCount(33);
 });

@@ -20,7 +20,7 @@ final class DashboardGridSlot extends Slot
 
     public function ambientContext(): SlotContext
     {
-        return new SlotContext(app(PageContext::class), null);
+        return new SlotContext(app(PageContext::class), null, publicSurface: false);
     }
 
     public function layoutConstraints(): array

@@ -153,6 +153,9 @@ class DatabaseSeeder extends Seeder
         // ── System collections (all environments) ────────────────────────────
         $this->seedSystemCollections();
 
+        // ── Dashboard-native collections (memos) ────────────────────────────
+        $this->call(MemosCollectionSeeder::class);
+
         // ── Transactions ─────────────────────────────────────────────────────
         $this->call(TransactionSeeder::class);
 

@@ -14,16 +14,18 @@ beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
 });
 
-it('DashboardSlotGridWidget::widgets() currently returns an empty array (hardcoded widget definitions commented out pending the dashboard config UI)', function () {
+it('DashboardSlotGridWidget::widgets() registers the three dashboard-native widgets (memos, quick_actions, this_weeks_events)', function () {
     $widget = new DashboardSlotGridWidget();
     $method = (new ReflectionClass($widget))->getMethod('widgets');
     $method->setAccessible(true);
     $instances = $method->invoke($widget);
 
-    expect($instances)->toBe([]);
+    expect(array_keys($instances))->toBe(['memos', 'quick_actions', 'this_weeks_events']);
 });
 
-it('the mounted Livewire widget renders the slot grid container when no widgets are registered', function () {
+it('the mounted Livewire widget renders the slot grid container with the three dashboard-native widgets', function () {
+    (new \Database\Seeders\MemosCollectionSeeder())->run();
+
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');
     $this->actingAs($admin);
@@ -38,8 +40,9 @@ it('the mounted Livewire widget renders the slot grid container when no widgets 
 
     expect($rendered)
         ->toContain('np-dashboard-slot-grid')
-        ->not->toContain('widget-blog-listing')
-        ->not->toContain('widget-carousel');
+        ->toContain('np-memos')
+        ->toContain('np-quick-actions')
+        ->toContain('np-this-weeks-events');
 });
 
 it('dashboard page loads successfully for an authenticated super_admin', function () {

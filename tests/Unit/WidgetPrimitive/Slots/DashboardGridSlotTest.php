@@ -32,3 +32,9 @@ it('builds a SlotContext with a null current page', function () {
     expect($ctx)->toBeInstanceOf(SlotContext::class)
         ->and($ctx->currentPage())->toBeNull();
 });
+
+it('builds a SlotContext marked publicSurface = false — admin-only surface', function () {
+    $ctx = (new DashboardGridSlot())->ambientContext();
+
+    expect($ctx->publicSurface)->toBeFalse();
+});

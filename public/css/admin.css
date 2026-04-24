@@ -929,3 +929,62 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 .np-dashboard-slot-grid__cell {
     min-width: 0;
 }
+
+/* Dashboard-native widgets — Memos, Quick Actions, This Week's Events.
+ * Minimal styling that reads cleanly inside a Filament section card;
+ * inherits colors from the Filament admin theme. */
+.np-memos__heading,
+.np-quick-actions__heading,
+.np-this-weeks-events__heading {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.np-memos__list,
+.np-quick-actions__list,
+.np-this-weeks-events__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.np-memos__item,
+.np-this-weeks-events__item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--np-control-border, #e5e7eb);
+}
+.np-memos__item:last-child,
+.np-this-weeks-events__item:last-child {
+    border-bottom: none;
+}
+.np-memos__title,
+.np-this-weeks-events__title {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.np-memos__date,
+.np-this-weeks-events__date,
+.np-this-weeks-events__location {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+.np-memos__body {
+    font-size: 0.9rem;
+}
+.np-memos__empty,
+.np-quick-actions__empty,
+.np-this-weeks-events__empty {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+.np-quick-actions__item {
+    padding: 0.4rem 0;
+}
+.np-quick-actions__link {
+    display: inline-block;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: underline;
+}

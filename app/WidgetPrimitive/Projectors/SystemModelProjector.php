@@ -2,6 +2,7 @@
 
 namespace App\WidgetPrimitive\Projectors;
 
+use App\Models\Event;
 use App\Models\Page;
 use App\WidgetPrimitive\DataContract;
 use Illuminate\Support\Collection;
@@ -10,30 +11,34 @@ use Illuminate\Support\Str;
 final class SystemModelProjector
 {
     /**
-     * Project a pre-fetched Eloquent collection of Pages into a row-set DTO.
+     * Project a pre-fetched Eloquent collection into a row-set DTO.
      *
-     * Only fields declared on the contract appear on each row. Only 'post' is
-     * wired up in this prototype; other model handles return an empty item set.
+     * Only fields declared on the contract appear on each row. Fail-closed:
+     * a contract that asks for an undeclared column gets an empty string back.
      *
-     * @param  Collection<int, Page>  $rows
+     * @param  Collection<int, mixed>  $rows
      * @return array{items: array<int, array<string, mixed>>}
      */
     public function project(DataContract $contract, Collection $rows): array
     {
-        if ($contract->model !== 'post') {
+        $projector = match ($contract->model) {
+            'post'  => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news')),
+            'event' => fn (Event $event) => $this->projectEvent($event),
+            default => null,
+        };
+
+        if ($projector === null) {
             return ['items' => []];
         }
 
-        $blogPrefix = config('site.blog_prefix', 'news');
+        $projected = $rows->map(function ($row) use ($contract, $projector) {
+            $full = $projector($row);
 
-        $projected = $rows->map(function (Page $post) use ($contract, $blogPrefix) {
-            $full = $this->projectPost($post, $blogPrefix);
-
-            $row = [];
+            $out = [];
             foreach ($contract->fields as $field) {
-                $row[$field] = $full[$field] ?? '';
+                $out[$field] = $full[$field] ?? '';
             }
-            return $row;
+            return $out;
         })->values()->all();
 
         return ['items' => $projected];
@@ -59,6 +64,27 @@ final class SystemModelProjector
             'date_iso' => $post->published_at?->toIso8601String() ?? '',
             'excerpt'  => Str::limit(strip_tags($post->meta_description ?? ''), 160),
             'image'    => $thumb,
+        ];
+    }
+
+    /**
+     * Flat row shape derived from an Event model. Fields outside this map are
+     * not exposed — a contract requesting `internal_notes` gets an empty string.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectEvent(Event $event): array
+    {
+        return [
+            'id'             => $event->id,
+            'title'          => $event->title,
+            'slug'           => $event->slug,
+            'starts_at'      => $event->starts_at?->toIso8601String() ?? '',
+            'ends_at'        => $event->ends_at?->toIso8601String() ?? '',
+            'address_line_1' => $event->getAttribute('address_line_1') ?? '',
+            'city'           => $event->getAttribute('city') ?? '',
+            'state'          => $event->getAttribute('state') ?? '',
+            'meeting_label'  => $event->getAttribute('meeting_label') ?? '',
         ];
     }
 }
