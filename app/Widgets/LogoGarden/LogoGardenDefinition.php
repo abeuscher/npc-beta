@@ -3,6 +3,8 @@
 namespace App\Widgets\LogoGarden;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\ContentType;
+use App\WidgetPrimitive\DataContract;
 
 class LogoGardenDefinition extends WidgetDefinition
 {
@@ -24,11 +26,6 @@ class LogoGardenDefinition extends WidgetDefinition
     public function category(): array
     {
         return ['content', 'media'];
-    }
-
-    public function collections(): array
-    {
-        return ['logos'];
     }
 
     public function assets(): array
@@ -81,5 +78,31 @@ class LogoGardenDefinition extends WidgetDefinition
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        $imageField = (string) ($config['image_field'] ?? '');
+        $nameField = (string) ($config['name_field'] ?? '');
+
+        $imageFields = $imageField !== '' ? [$imageField] : [];
+        $textFields = $nameField !== '' ? [$nameField] : [];
+        $allFields = array_values(array_merge($imageFields, $textFields));
+
+        $contentTypeFields = [];
+        foreach ($imageFields as $f) {
+            $contentTypeFields[] = ['key' => $f, 'type' => 'image'];
+        }
+        foreach ($textFields as $f) {
+            $contentTypeFields[] = ['key' => $f, 'type' => 'text'];
+        }
+
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_WIDGET_CONTENT_TYPE,
+            fields: $allFields,
+            resourceHandle: $config['collection_handle'] ?? null,
+            contentType: new ContentType(handle: 'logo_garden.logo', fields: $contentTypeFields),
+        );
     }
 }

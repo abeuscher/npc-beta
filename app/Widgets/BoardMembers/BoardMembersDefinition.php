@@ -3,6 +3,8 @@
 namespace App\Widgets\BoardMembers;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\ContentType;
+use App\WidgetPrimitive\DataContract;
 
 class BoardMembersDefinition extends WidgetDefinition
 {
@@ -24,11 +26,6 @@ class BoardMembersDefinition extends WidgetDefinition
     public function category(): array
     {
         return ['content'];
-    }
-
-    public function collections(): array
-    {
-        return ['members'];
     }
 
     public function assets(): array
@@ -94,6 +91,35 @@ class BoardMembersDefinition extends WidgetDefinition
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        $imageField = (string) ($config['image_field'] ?? '');
+        $textFieldKeys = ['name_field', 'title_field', 'department_field', 'description_field', 'linkedin_field', 'github_field', 'extra_url_field', 'extra_url_label_field'];
+        $textFields = array_values(array_filter(
+            array_map(fn ($k) => (string) ($config[$k] ?? ''), $textFieldKeys),
+            fn ($f) => $f !== '',
+        ));
+
+        $imageFields = $imageField !== '' ? [$imageField] : [];
+        $allFields = array_values(array_merge($imageFields, $textFields));
+
+        $contentTypeFields = [];
+        foreach ($imageFields as $f) {
+            $contentTypeFields[] = ['key' => $f, 'type' => 'image'];
+        }
+        foreach ($textFields as $f) {
+            $contentTypeFields[] = ['key' => $f, 'type' => 'text'];
+        }
+
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_WIDGET_CONTENT_TYPE,
+            fields: $allFields,
+            resourceHandle: $config['collection_handle'] ?? null,
+            contentType: new ContentType(handle: 'board_members.member', fields: $contentTypeFields),
+        );
     }
 
     public function demoConfig(): array

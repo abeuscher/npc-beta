@@ -21,7 +21,7 @@ it('seeder creates board_members widget with correct config schema', function ()
     expect($wt)->not->toBeNull()
         ->and($wt->label)->toBe('Board Members')
         ->and($wt->category)->toBe(['content'])
-        ->and($wt->collections)->toBe(['members']);
+        ->and($wt->collections)->toBe([]);
 
     $keys = collect($wt->config_schema)->pluck('key')->all();
     expect($keys)->toContain('heading')

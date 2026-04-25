@@ -1,5 +1,5 @@
 @php
-    $members = $collectionData['members'] ?? [];
+    $members = $widgetData['items'] ?? [];
     $heading = $config['heading'] ?? '';
     $imageField = $config['image_field'] ?? '';
     $nameField = $config['name_field'] ?? '';

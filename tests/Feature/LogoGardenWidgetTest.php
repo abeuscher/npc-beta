@@ -30,7 +30,7 @@ it('seeder creates logo_garden widget type with correct config and collections',
 
     expect($wt)->not->toBeNull()
         ->and($wt->label)->toBe('Logo Garden')
-        ->and($wt->collections)->toBe(['logos'])
+        ->and($wt->collections)->toBe([])
         ->and($wt->category)->toBe(['content', 'media']);
 
     $keys = collect($wt->config_schema)->pluck('key')->all();

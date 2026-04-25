@@ -1,5 +1,5 @@
 @php
-    $logos = $collectionData['logos'] ?? [];
+    $logos = $widgetData['items'] ?? [];
     $imageField = $config['image_field'] ?? '';
     $nameField = $config['name_field'] ?? '';
     $displayMode = in_array($config['display_mode'] ?? '', ['static', 'carousel', 'smooth', 'flipper']) ? $config['display_mode'] : 'static';
