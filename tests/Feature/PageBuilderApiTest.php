@@ -244,18 +244,18 @@ it('strips appearance_config keys outside the background/text/layout whitelist',
 
 it('strips query_config slots that are not declared on the widget type', function () {
     $page = apiPage();
-    $widget = apiWidget($page, 'carousel');
+    $widget = apiWidget($page, 'bar_chart');
 
     $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
             'query_config' => [
-                'slides'    => ['limit' => 5],
+                'data'      => ['limit' => 5],
                 'phantom'   => ['limit' => 99],
             ],
         ])->assertOk();
 
     $widget->refresh();
-    expect($widget->query_config)->toHaveKey('slides');
+    expect($widget->query_config)->toHaveKey('data');
     expect($widget->query_config)->not->toHaveKey('phantom');
 });
 
@@ -271,11 +271,11 @@ it('update endpoint contract that the JS selective merge depends on', function (
     //   - include the server-authoritative metadata fields that the client
     //     unconditionally merges.
     $page = apiPage();
-    $widget = apiWidget($page, 'carousel');
+    $widget = apiWidget($page, 'bar_chart');
 
     $sentConfig = ['collection_handle' => 'whatever'];
     $sentAppearance = ['background' => ['color' => '#abcdef']];
-    $sentQuery = ['slides' => ['limit' => 5]];
+    $sentQuery = ['data' => ['limit' => 5]];
 
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
@@ -291,7 +291,7 @@ it('update endpoint contract that the JS selective merge depends on', function (
     $response->assertJsonPath('widget.label', 'Echo Label');
     $response->assertJsonPath('widget.config.collection_handle', 'whatever');
     $response->assertJsonPath('widget.appearance_config.background.color', '#abcdef');
-    $response->assertJsonPath('widget.query_config.slides.limit', 5);
+    $response->assertJsonPath('widget.query_config.data.limit', 5);
 
     // Confirm no server-side merging — the returned config has exactly the
     // keys we sent (no leftover defaults from the original create).

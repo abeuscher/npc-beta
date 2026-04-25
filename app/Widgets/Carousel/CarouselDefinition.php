@@ -28,11 +28,6 @@ class CarouselDefinition extends WidgetDefinition
         return ['content', 'media', 'most_used'];
     }
 
-    public function collections(): array
-    {
-        return ['slides'];
-    }
-
     public function assets(): array
     {
         return ['libs' => ['swiper']];
