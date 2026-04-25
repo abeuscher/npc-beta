@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ref } from 'vue'
 import type { FieldDef, Widget } from '../types'
 import InspectorField from './InspectorField.vue'
 
@@ -17,8 +16,6 @@ const primaryFields = computed(() =>
 const advancedFields = computed(() =>
   props.fields.filter((f) => !!f.advanced)
 )
-
-const advancedOpen = ref(false)
 
 /**
  * Group consecutive fields with the same non-semantic `group` value
@@ -79,34 +76,15 @@ const primaryGrouped = computed(() => groupedFields(primaryFields.value))
       </template>
     </template>
 
-    <div v-if="advancedFields.length > 0" class="inspector-field-group__accordion">
-      <button
-        type="button"
-        class="inspector-field-group__accordion-btn"
-        @click="advancedOpen = !advancedOpen"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="inspector-field-group__chevron"
-          :class="{ 'inspector-field-group__chevron--open': advancedOpen }"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
-        Carousel Settings
-      </button>
-
-      <div v-show="advancedOpen" class="inspector-field-group__accordion-body">
-        <InspectorField
-          v-for="field in advancedFields"
-          :key="field.key"
-          :field="field"
-          :widget="widget"
-        />
-      </div>
+    <div v-if="advancedFields.length > 0" class="inspector-field-group__advanced">
+      <hr class="inspector-field-group__divider">
+      <h5 class="inspector-field-group__advanced-heading">Advanced</h5>
+      <InspectorField
+        v-for="field in advancedFields"
+        :key="field.key"
+        :field="field"
+        :widget="widget"
+      />
     </div>
   </div>
 </template>
@@ -141,41 +119,33 @@ const primaryGrouped = computed(() => groupedFields(primaryFields.value))
   min-width: 14rem;
 }
 
-.inspector-field-group__accordion {
-  margin-top: 0.25rem;
-}
-
-.inspector-field-group__accordion-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #4b5563;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.inspector-field-group__accordion-btn:hover {
-  color: #111827;
-}
-
-.inspector-field-group__chevron {
-  width: 0.875rem;
-  height: 0.875rem;
-  transition: transform 0.15s;
-}
-
-.inspector-field-group__chevron--open {
-  transform: rotate(90deg);
-}
-
-.inspector-field-group__accordion-body {
+.inspector-field-group__advanced {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.inspector-field-group__divider {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 0;
+}
+
+.inspector-field-group__advanced-heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4b5563;
+}
+
+html.dark .inspector-field-group__divider {
+  border-top-color: rgb(75 85 99);
+}
+
+html.dark .inspector-field-group__advanced-heading {
+  color: rgb(229 231 235);
 }
 </style>

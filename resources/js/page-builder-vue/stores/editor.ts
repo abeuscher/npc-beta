@@ -808,15 +808,13 @@ export const useEditorStore = defineStore('editor', () => {
 
   function updateLocalQueryConfig(
     widgetId: string,
-    collHandle: string,
     key: string,
     value: any
   ): void {
     const w = widgets.value[widgetId]
     if (!w) return
 
-    const collConfig = { ...(w.query_config[collHandle] ?? {}), [key]: value }
-    w.query_config = { ...w.query_config, [collHandle]: collConfig }
+    w.query_config = { ...w.query_config, [key]: value }
     dirtyWidgets.value.add(widgetId)
     flushDebouncedSave(widgetId, { query_config: { ...w.query_config } })
   }

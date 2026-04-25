@@ -5,6 +5,7 @@ namespace App\Widgets\Memos;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 use App\WidgetPrimitive\Source;
 
 class MemosDefinition extends WidgetDefinition
@@ -75,6 +76,16 @@ class MemosDefinition extends WidgetDefinition
             ],
             resourceHandle: 'memos',
             contentType: $contentType,
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: QuerySettings::swctOrderByOptions(['title', 'posted_at']),
+            supportsTags: true,
         );
     }
 }

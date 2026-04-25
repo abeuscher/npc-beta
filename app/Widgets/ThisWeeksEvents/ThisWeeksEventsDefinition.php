@@ -4,6 +4,7 @@ namespace App\Widgets\ThisWeeksEvents;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 use App\WidgetPrimitive\Source;
 
 class ThisWeeksEventsDefinition extends WidgetDefinition
@@ -65,6 +66,21 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
                 'order_by'   => 'starts_at asc',
             ],
             model: 'event',
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: [
+                'starts_at'  => 'Start date',
+                'ends_at'    => 'End date',
+                'created_at' => 'Created',
+                'title'      => 'Title',
+            ],
+            supportsTags: true,
         );
     }
 }

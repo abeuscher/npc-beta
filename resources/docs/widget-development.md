@@ -76,9 +76,9 @@ Built-in widgets are registered in `WidgetTypeSeeder` using `WidgetType::updateO
 2. **Rendering** (`WidgetRenderer::render()`):
    - Loads the associated `WidgetType`.
    - **Config media**: For `image` and `video` config fields, resolves the uploaded file from the media library into a Spatie `Media` object (`$configMedia`).
-   - **Collection data**: For each slot in `collections`, calls `WidgetDataResolver::resolve()` with the collection handle from config and any `query_config` parameters (`$collectionData`).
+   - **Widget data**: If the widget's `WidgetDefinition::dataContract($config)` returns a contract, the renderer merges any user-supplied `query_config` knobs (`limit`, `order_by`, `direction`, `include_tags`, `exclude_tags`) into the contract's filters and resolves the contract through `ContractResolver`. The resulting DTO is exposed to the template as `$widgetData`.
    - **Richtext processing**: Runs inline image replacement on richtext fields.
-   - **Blade render**: Compiles the template string with `Blade::render()`, passing `$config`, `$configMedia`, `$collectionData`, and optionally `$children` (for column layouts).
+   - **Blade render**: Compiles the template string with `Blade::render()`, passing `$config`, `$configMedia`, `$widgetData`, and optionally `$children` (for column layouts).
    - Returns `['html' => ..., 'styles' => ..., 'scripts' => ...]`.
 
 3. **Output** (`page-widgets.blade.php`):
@@ -93,7 +93,7 @@ Built-in widgets are registered in `WidgetTypeSeeder` using `WidgetType::updateO
 |----------|------|----------|
 | `$config` | `array` | Key-value pairs from the widget's config fields. |
 | `$configMedia` | `array` | Spatie `Media` objects keyed by field name, for `image`/`video` fields. |
-| `$collectionData` | `array` | Resolved collection data, keyed by collection slot name. |
+| `$widgetData` | `array\|null` | Contract-resolved DTO. Shape depends on the contract's source: `['items' => [...]]` for list-shaped sources (`SOURCE_SYSTEM_MODEL`, `SOURCE_WIDGET_CONTENT_TYPE`); a flat token map for `SOURCE_PAGE_CONTEXT`. Null when the widget declares no contract. |
 | `$children` | `array` | (Column widgets only) Rendered HTML of child widgets. |
 
 ### Direct data access (non-collection widgets)
@@ -315,13 +315,11 @@ Some widgets display data from content collections (carousel slides, logo garden
 
 ### How collections feed widgets
 
-1. The widget type declares collection slots in its `collections` array (e.g. `['slides']`).
-2. The widget's config includes a `collection_handle` select field pointing to a specific collection.
-3. At render time, `WidgetDataResolver::resolve()` is called for each slot, which:
-   - Looks up the `Collection` by handle.
-   - Based on `source_type`, calls the appropriate resolver (`resolveCustom`, `resolveBlogPosts`, `resolveEvents`, `resolveProducts`).
-   - Applies `query_config` parameters: `limit`, `order_by`, `direction`, `include_tags`, `exclude_tags`.
-4. The resolved data array is passed to the template as `$collectionData['{slot}']`.
+1. The widget's config includes a `collection_handle` select field pointing to a specific collection.
+2. The widget's `dataContract($config)` returns a `SOURCE_WIDGET_CONTENT_TYPE` contract carrying the collection handle plus a content-type schema (which fields the widget reads, image vs text).
+3. At render time, `ContractResolver::resolveWidgetContentType` looks up the `Collection` by handle, fetches published `CollectionItem` rows with eager-loaded media, and projects each row through the contract's field whitelist.
+4. User-supplied `query_config` knobs (`limit`, `order_by`, `direction`, `include_tags`, `exclude_tags`) are merged into the contract's filters before resolution. `order_by` is double-gated against the contract's `QuerySettings::orderByOptions` allowlist (UI dropdown + resolver re-validation).
+5. The resulting DTO is passed to the template as `$widgetData['items']`. Each item carries exactly the contract's declared fields plus, when the content type declares image fields, a `_media` map of resolved media models.
 
 ### Collection field types
 

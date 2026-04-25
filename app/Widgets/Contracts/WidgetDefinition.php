@@ -3,6 +3,7 @@
 namespace App\Widgets\Contracts;
 
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 use App\WidgetPrimitive\Source;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -108,6 +109,22 @@ abstract class WidgetDefinition
      * model columns — fail-closed per-field is load-bearing there.
      */
     public function dataContract(array $config): ?DataContract
+    {
+        return null;
+    }
+
+    /**
+     * Declare honored query knobs for this widget. List-shaped widgets override
+     * to opt into the QuerySettings inspector panel (limit / order_by /
+     * direction / include_tags / exclude_tags) — null means no panel renders
+     * and no user-supplied knob is honored.
+     *
+     * The orderByOptions allowlist is double-gated: the Vue panel renders only
+     * declared options (UX gate), and ContractResolver re-validates user input
+     * against the same set (security gate). Unknown values silently fall back
+     * to the contract's source-arm default.
+     */
+    public function querySettings(array $config): ?QuerySettings
     {
         return null;
     }

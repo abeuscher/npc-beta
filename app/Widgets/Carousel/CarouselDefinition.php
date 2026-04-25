@@ -5,6 +5,7 @@ namespace App\Widgets\Carousel;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class CarouselDefinition extends WidgetDefinition
 {
@@ -100,6 +101,16 @@ class CarouselDefinition extends WidgetDefinition
             fields: ['title', 'description'],
             resourceHandle: $config['collection_handle'] ?? null,
             contentType: $contentType,
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: QuerySettings::swctOrderByOptions(['title', 'description']),
+            supportsTags: true,
         );
     }
 

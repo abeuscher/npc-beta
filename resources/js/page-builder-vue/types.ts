@@ -21,12 +21,17 @@ export interface WidgetAppearanceConfig {
   }
 }
 
+export interface QuerySettingsDescriptor {
+  has_panel: boolean
+  order_by_options: Record<string, string>
+  supports_tags: boolean
+}
+
 export interface Widget {
   id: string
   widget_type_id: string
   widget_type_handle: string
   widget_type_label: string
-  widget_type_collections: string[]
   widget_type_config_schema: FieldDef[]
   widget_type_assets: Record<string, any>
   widget_type_default_open: boolean
@@ -37,6 +42,7 @@ export interface Widget {
   config: Record<string, any>
   resolved_defaults: Record<string, any>
   query_config: Record<string, any>
+  query_settings: QuerySettingsDescriptor | null
   appearance_config: WidgetAppearanceConfig
   sort_order: number
   is_active: boolean

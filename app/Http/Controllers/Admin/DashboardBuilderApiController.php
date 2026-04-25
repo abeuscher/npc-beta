@@ -105,10 +105,17 @@ class DashboardBuilderApiController extends Controller
         $this->assertOwnsWidget($dashboardConfig, $widget);
 
         $validated = $request->validate([
-            'label'             => 'nullable|string|max:255',
-            'config'            => 'nullable|array',
-            'appearance_config' => 'nullable|array',
-            'query_config'      => 'nullable|array',
+            'label'                       => 'nullable|string|max:255',
+            'config'                      => 'nullable|array',
+            'appearance_config'           => 'nullable|array',
+            'query_config'                => 'nullable|array',
+            'query_config.limit'          => 'nullable|integer|min:1|max:200',
+            'query_config.order_by'       => 'nullable|string|max:64',
+            'query_config.direction'      => 'nullable|in:asc,desc',
+            'query_config.include_tags'   => 'nullable|array',
+            'query_config.include_tags.*' => 'string|max:255',
+            'query_config.exclude_tags'   => 'nullable|array',
+            'query_config.exclude_tags.*' => 'string|max:255',
         ]);
 
         $updates = [];
@@ -122,8 +129,9 @@ class DashboardBuilderApiController extends Controller
         if (array_key_exists('appearance_config', $validated)) {
             $updates['appearance_config'] = $this->filterAppearanceToSlot($validated['appearance_config'] ?? []);
         }
-        if (array_key_exists('query_config', $validated)) {
-            $updates['query_config'] = $this->filterQueryConfig($widget, $validated['query_config'] ?? []);
+        if ($request->has('query_config')) {
+            $raw = $request->input('query_config', []);
+            $updates['query_config'] = $this->filterQueryConfig(is_array($raw) ? $raw : []);
         }
 
         if (! empty($updates)) {
@@ -307,14 +315,10 @@ class DashboardBuilderApiController extends Controller
         return array_intersect_key($appearance, array_flip($allowed));
     }
 
-    private function filterQueryConfig(PageWidget $widget, array $query): array
+    private function filterQueryConfig(array $query): array
     {
-        $slots = $widget->widgetType?->collections ?? [];
-
-        if (empty($slots)) {
-            return [];
-        }
-
-        return array_intersect_key($query, array_flip($slots));
+        return array_intersect_key($query, array_flip([
+            'limit', 'order_by', 'direction', 'include_tags', 'exclude_tags',
+        ]));
     }
 }

@@ -5,6 +5,7 @@ namespace App\Widgets\LogoGarden;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class LogoGardenDefinition extends WidgetDefinition
 {
@@ -83,10 +84,9 @@ class LogoGardenDefinition extends WidgetDefinition
     public function dataContract(array $config): ?DataContract
     {
         $imageField = (string) ($config['image_field'] ?? '');
-        $nameField = (string) ($config['name_field'] ?? '');
+        $textFields = $this->mappedTextFields($config);
 
         $imageFields = $imageField !== '' ? [$imageField] : [];
-        $textFields = $nameField !== '' ? [$nameField] : [];
         $allFields = array_values(array_merge($imageFields, $textFields));
 
         $contentTypeFields = [];
@@ -103,6 +103,25 @@ class LogoGardenDefinition extends WidgetDefinition
             fields: $allFields,
             resourceHandle: $config['collection_handle'] ?? null,
             contentType: new ContentType(handle: 'logo_garden.logo', fields: $contentTypeFields),
+            querySettings: $this->querySettings($config),
         );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: QuerySettings::swctOrderByOptions($this->mappedTextFields($config)),
+            supportsTags: true,
+        );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function mappedTextFields(array $config): array
+    {
+        $nameField = (string) ($config['name_field'] ?? '');
+        return $nameField !== '' ? [$nameField] : [];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Widgets\BoardMembers;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class BoardMembersDefinition extends WidgetDefinition
 {
@@ -96,11 +97,7 @@ class BoardMembersDefinition extends WidgetDefinition
     public function dataContract(array $config): ?DataContract
     {
         $imageField = (string) ($config['image_field'] ?? '');
-        $textFieldKeys = ['name_field', 'title_field', 'department_field', 'description_field', 'linkedin_field', 'github_field', 'extra_url_field', 'extra_url_label_field'];
-        $textFields = array_values(array_filter(
-            array_map(fn ($k) => (string) ($config[$k] ?? ''), $textFieldKeys),
-            fn ($f) => $f !== '',
-        ));
+        $textFields = $this->mappedTextFields($config);
 
         $imageFields = $imageField !== '' ? [$imageField] : [];
         $allFields = array_values(array_merge($imageFields, $textFields));
@@ -119,7 +116,29 @@ class BoardMembersDefinition extends WidgetDefinition
             fields: $allFields,
             resourceHandle: $config['collection_handle'] ?? null,
             contentType: new ContentType(handle: 'board_members.member', fields: $contentTypeFields),
+            querySettings: $this->querySettings($config),
         );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: QuerySettings::swctOrderByOptions($this->mappedTextFields($config)),
+            supportsTags: true,
+        );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function mappedTextFields(array $config): array
+    {
+        $textFieldKeys = ['name_field', 'title_field', 'department_field', 'description_field', 'linkedin_field', 'github_field', 'extra_url_field', 'extra_url_label_field'];
+        return array_values(array_filter(
+            array_map(fn ($k) => (string) ($config[$k] ?? ''), $textFieldKeys),
+            fn ($f) => $f !== '',
+        ));
     }
 
     public function demoConfig(): array

@@ -287,11 +287,11 @@ it('update endpoint contract that the JS selective merge depends on', function (
             'widget_type_id',
             'widget_type_handle',
             'widget_type_label',
-            'widget_type_collections',
             'widget_type_config_schema',
             'widget_type_assets',
             'widget_type_default_open',
             'widget_type_required_config',
+            'query_settings',
             'layout_id',
             'column_index',
             'sort_order',
@@ -300,6 +300,8 @@ it('update endpoint contract that the JS selective merge depends on', function (
             'image_urls',
         ],
     ]);
+
+    expect($response->json('widget'))->not->toHaveKey('widget_type_collections');
 
     // preview_html is intentionally NOT in the update response — the JS fetches
     // it via refreshPreview, and that round trip is what clears the dirty bit.

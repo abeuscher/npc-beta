@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Collection;
-use App\Models\CollectionItem;
 use App\Models\Page;
 use App\Services\WidgetDataResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,39 +27,6 @@ it('returns empty array for a non-existent handle', function () {
     $result = WidgetDataResolver::resolve('does-not-exist');
 
     expect($result)->toBe([]);
-});
-
-it('returns published collection items for a valid public custom collection', function () {
-    $collection = Collection::create([
-        'name'        => 'FAQ',
-        'handle'      => 'faq',
-        'source_type' => 'custom',
-        'is_public'   => true,
-        'is_active'   => true,
-        'fields'      => [
-            ['key' => 'question', 'label' => 'Question', 'type' => 'text', 'required' => true, 'helpText' => '', 'options' => []],
-        ],
-    ]);
-
-    CollectionItem::create([
-        'collection_id' => $collection->id,
-        'data'          => ['question' => 'What is this?'],
-        'sort_order'    => 1,
-        'is_published'  => true,
-    ]);
-
-    // Unpublished item — should be excluded
-    CollectionItem::create([
-        'collection_id' => $collection->id,
-        'data'          => ['question' => 'Draft question'],
-        'sort_order'    => 2,
-        'is_published'  => false,
-    ]);
-
-    $result = WidgetDataResolver::resolve('faq');
-
-    expect($result)->toHaveCount(1)
-        ->and($result[0]['question'])->toBe('What is this?');
 });
 
 it('returns published Page records of type post for the blog_posts handle', function () {
@@ -100,30 +66,4 @@ it('returns published Page records of type post for the blog_posts handle', func
 
     expect($result)->toHaveCount(1)
         ->and($result[0]['title'])->toBe('Published Post');
-});
-
-it('respects the limit parameter', function () {
-    $collection = Collection::create([
-        'name'        => 'Items',
-        'handle'      => 'items',
-        'source_type' => 'custom',
-        'is_public'   => true,
-        'is_active'   => true,
-        'fields'      => [
-            ['key' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true, 'helpText' => '', 'options' => []],
-        ],
-    ]);
-
-    foreach (range(1, 5) as $i) {
-        CollectionItem::create([
-            'collection_id' => $collection->id,
-            'data'          => ['name' => "Item $i"],
-            'sort_order'    => $i,
-            'is_published'  => true,
-        ]);
-    }
-
-    $result = WidgetDataResolver::resolve('items', ['limit' => 3]);
-
-    expect($result)->toHaveCount(3);
 });

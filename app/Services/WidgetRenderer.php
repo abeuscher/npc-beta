@@ -16,7 +16,7 @@ class WidgetRenderer
     /**
      * Render a single widget to HTML + inline styles + inline scripts.
      *
-     * @param  array<string, array>  $fallbackCollectionData  Optional pre-resolved collection data (e.g. demo data for admin preview). Keyed by collection slot name.
+     * @param  array<string, array>  $fallbackCollectionData  Optional pre-resolved collection data (e.g. demo data for admin preview). Keyed by collection handle.
      * @return array{html: string|null, styles: string, scripts: string}
      */
     public static function render(PageWidget $pw, array $columnChildren = [], array $fallbackCollectionData = [], string $slotHandle = 'page_builder_canvas'): array
@@ -39,15 +39,6 @@ class WidgetRenderer
             if (in_array($field['type'] ?? '', ['image', 'video']) && ! empty($config[$field['key']])) {
                 $configMedia[$field['key']] = $pw->getFirstMedia("config_{$field['key']}");
             }
-        }
-
-        // Resolve collection data (use fallback if real data is empty)
-        $collectionData = [];
-        foreach ($widgetType->collections ?? [] as $collSlot) {
-            $collHandle  = $config['collection_handle'] ?? $collSlot;
-            $queryConfig = $pw->query_config[$collSlot] ?? [];
-            $resolved = WidgetDataResolver::resolve($collHandle, $queryConfig);
-            $collectionData[$collSlot] = ! empty($resolved) ? $resolved : ($fallbackCollectionData[$collSlot] ?? []);
         }
 
         // Process inline images in richtext fields
@@ -74,6 +65,8 @@ class WidgetRenderer
         if ($definition !== null) {
             $contract = $definition->dataContract($config);
             if ($contract !== null) {
+                $contract = self::mergeUserQueryConfig($contract, $pw->query_config ?? []);
+
                 $skip = $contract->source === DataContract::SOURCE_PAGE_CONTEXT
                     && ! self::configHasTokens($config);
 
@@ -118,7 +111,6 @@ class WidgetRenderer
             $templateVars = [
                 'config'             => $config,
                 'configMedia'        => $configMedia,
-                'collectionData'     => $collectionData,
                 'pageContext'        => $pageContext,
                 'pageContextTokens'  => $tokens,
                 'widgetData'         => $widgetData,
@@ -159,6 +151,35 @@ class WidgetRenderer
             }
         }
         return false;
+    }
+
+    /**
+     * Merge user-supplied query_config into a copy of the contract's filters,
+     * restricted to the closed set of honored knobs. Non-honored keys
+     * (e.g. EventsListing's date_range) remain immutable contract defaults.
+     */
+    private static function mergeUserQueryConfig(DataContract $contract, array $userConfig): DataContract
+    {
+        if ($contract->querySettings === null || ! $contract->querySettings->hasPanel) {
+            return $contract;
+        }
+
+        $honoredKeys = ['limit', 'order_by', 'direction', 'include_tags', 'exclude_tags'];
+        $userFilters = array_intersect_key($userConfig, array_flip($honoredKeys));
+        if ($userFilters === []) {
+            return $contract;
+        }
+
+        return new DataContract(
+            version: $contract->version,
+            source: $contract->source,
+            fields: $contract->fields,
+            filters: array_merge($contract->filters, $userFilters),
+            model: $contract->model,
+            resourceHandle: $contract->resourceHandle,
+            contentType: $contract->contentType,
+            querySettings: $contract->querySettings,
+        );
     }
 
     /**

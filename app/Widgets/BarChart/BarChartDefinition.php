@@ -5,6 +5,7 @@ namespace App\Widgets\BarChart;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class BarChartDefinition extends WidgetDefinition
 {
@@ -89,6 +90,20 @@ class BarChartDefinition extends WidgetDefinition
             fields: $fields,
             resourceHandle: $config['collection_handle'] ?? null,
             contentType: $contentType,
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        $xField = (string) ($config['x_field'] ?? '');
+        $yField = (string) ($config['y_field'] ?? '');
+        $fields = array_values(array_filter([$xField, $yField], fn ($f) => $f !== ''));
+
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: QuerySettings::swctOrderByOptions($fields),
+            supportsTags: true,
         );
     }
     public function presets(): array

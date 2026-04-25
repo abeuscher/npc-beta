@@ -4,6 +4,7 @@ namespace App\Widgets\BlogListing;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class BlogListingDefinition extends WidgetDefinition
 {
@@ -76,6 +77,21 @@ class BlogListingDefinition extends WidgetDefinition
             source: DataContract::SOURCE_SYSTEM_MODEL,
             fields: ['title', 'slug', 'url', 'published_at', 'published_at_label', 'excerpt', 'image'],
             model: 'post',
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: [
+                'published_at' => 'Published date',
+                'created_at'   => 'Created',
+                'updated_at'   => 'Updated',
+                'title'        => 'Title',
+            ],
+            supportsTags: true,
         );
     }
 }

@@ -16,6 +16,7 @@ final class DataContract
      * @param  string|null  $model  For SOURCE_SYSTEM_MODEL: which model ('post' for now).
      * @param  string|null  $resourceHandle  For SOURCE_WIDGET_CONTENT_TYPE: the collection handle to read items from.
      * @param  ContentType|null  $contentType  For SOURCE_WIDGET_CONTENT_TYPE: the widget-declared content shape.
+     * @param  QuerySettings|null  $querySettings  Honored-knob declaration. List-shaped contracts carry one; PAGE_CONTEXT and single-row contracts pass null.
      */
     public function __construct(
         public readonly string $version,
@@ -25,5 +26,23 @@ final class DataContract
         public readonly ?string $model = null,
         public readonly ?string $resourceHandle = null,
         public readonly ?ContentType $contentType = null,
+        public readonly ?QuerySettings $querySettings = null,
     ) {}
+
+    /**
+     * Source-arm default for `order_by` when the user has not supplied one and
+     * the contract's filters carry no `order_by`. Read by ContractResolver.
+     */
+    public function orderByDefault(): string
+    {
+        return match ($this->source) {
+            self::SOURCE_WIDGET_CONTENT_TYPE => 'sort_order',
+            self::SOURCE_SYSTEM_MODEL => match ($this->model) {
+                'event' => 'starts_at',
+                'post'  => 'published_at',
+                default => 'created_at',
+            },
+            default => 'created_at',
+        };
+    }
 }
