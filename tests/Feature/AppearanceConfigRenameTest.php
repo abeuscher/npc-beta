@@ -150,8 +150,8 @@ it('bar_chart widget renders bar_fill_color into the chart config', function () 
                 'y_field'        => 'value',
                 'bar_fill_color' => '#abcdef',
             ],
-            'collectionData' => [
-                'data' => [
+            'widgetData' => [
+                'items' => [
                     ['label' => 'A', 'value' => 1],
                     ['label' => 'B', 'value' => 2],
                 ],

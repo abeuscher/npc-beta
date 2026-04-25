@@ -3,6 +3,8 @@
 namespace App\Widgets\BarChart;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\ContentType;
+use App\WidgetPrimitive\DataContract;
 
 class BarChartDefinition extends WidgetDefinition
 {
@@ -24,11 +26,6 @@ class BarChartDefinition extends WidgetDefinition
     public function category(): array
     {
         return ['content'];
-    }
-
-    public function collections(): array
-    {
-        return ['data'];
     }
 
     public function assets(): array
@@ -73,6 +70,26 @@ class BarChartDefinition extends WidgetDefinition
     public function demoSeeder(): ?string
     {
         return DemoSeeder::class;
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        $xField = (string) ($config['x_field'] ?? '');
+        $yField = (string) ($config['y_field'] ?? '');
+        $fields = array_values(array_filter([$xField, $yField], fn ($f) => $f !== ''));
+
+        $contentType = new ContentType(
+            handle: 'bar_chart.data',
+            fields: array_map(fn ($f) => ['key' => $f, 'type' => 'text'], $fields),
+        );
+
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_WIDGET_CONTENT_TYPE,
+            fields: $fields,
+            resourceHandle: $config['collection_handle'] ?? null,
+            contentType: $contentType,
+        );
     }
     public function presets(): array
     {

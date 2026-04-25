@@ -242,23 +242,6 @@ it('strips appearance_config keys outside the background/text/layout whitelist',
     expect($widget->appearance_config)->not->toHaveKey('rogue_key');
 });
 
-it('strips query_config slots that are not declared on the widget type', function () {
-    $page = apiPage();
-    $widget = apiWidget($page, 'bar_chart');
-
-    $this->actingAs(apiUser())
-        ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
-            'query_config' => [
-                'data'      => ['limit' => 5],
-                'phantom'   => ['limit' => 99],
-            ],
-        ])->assertOk();
-
-    $widget->refresh();
-    expect($widget->query_config)->toHaveKey('data');
-    expect($widget->query_config)->not->toHaveKey('phantom');
-});
-
 it('update endpoint contract that the JS selective merge depends on', function () {
     // Locks in the response shape that Fix 1.2 (session 163) relies on. The
     // editor store skips merging the user-mutable fields (config,
@@ -271,18 +254,17 @@ it('update endpoint contract that the JS selective merge depends on', function (
     //   - include the server-authoritative metadata fields that the client
     //     unconditionally merges.
     $page = apiPage();
-    $widget = apiWidget($page, 'bar_chart');
+    $widget = apiWidget($page, 'carousel');
 
     $sentConfig = ['collection_handle' => 'whatever'];
     $sentAppearance = ['background' => ['color' => '#abcdef']];
-    $sentQuery = ['data' => ['limit' => 5]];
 
     $response = $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/widgets/{$widget->id}", [
             'label'             => 'Echo Label',
             'config'            => $sentConfig,
             'appearance_config' => $sentAppearance,
-            'query_config'      => $sentQuery,
+            'query_config'      => [],
         ]);
 
     $response->assertOk();
@@ -291,7 +273,7 @@ it('update endpoint contract that the JS selective merge depends on', function (
     $response->assertJsonPath('widget.label', 'Echo Label');
     $response->assertJsonPath('widget.config.collection_handle', 'whatever');
     $response->assertJsonPath('widget.appearance_config.background.color', '#abcdef');
-    $response->assertJsonPath('widget.query_config.data.limit', 5);
+    expect($response->json('widget.query_config'))->toBe([]);
 
     // Confirm no server-side merging — the returned config has exactly the
     // keys we sent (no leftover defaults from the original create).

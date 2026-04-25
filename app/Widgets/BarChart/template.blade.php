@@ -6,7 +6,7 @@
     $yLabel   = $config['y_label'] ?? '';
     $barColor = $config['bar_fill_color'] ?? '';
 
-    $items  = $collectionData['data'] ?? [];
+    $items  = $widgetData['items'] ?? [];
     $labels = [];
     $values = [];
     foreach ($items as $item) {
