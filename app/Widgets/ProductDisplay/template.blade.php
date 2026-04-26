@@ -1,15 +1,15 @@
-@php $product = $pageContext->product($config['product_slug'] ?? null); @endphp
-@isset($product)
+@php $item = $widgetData['item'] ?? null; @endphp
+@if ($item)
     @php
-        $isAtCapacity   = $product->isAtCapacity();
+        $isAtCapacity   = $item['is_at_capacity'];
         $checkoutStatus = request()->query('checkout');
     @endphp
 
     <div>
-        <h2>{{ $product->name }}</h2>
+        <h2>{{ $item['name'] }}</h2>
 
-        @if ($product->description)
-            <p class="text-muted widget-product-display__description">{{ $product->description }}</p>
+        @if ($item['description'])
+            <p class="text-muted widget-product-display__description">{{ $item['description'] }}</p>
         @endif
 
         @if ($checkoutStatus === 'success')
@@ -40,7 +40,7 @@
 
             <form method="POST" action="{{ route('products.waitlist') }}" class="form-stack">
                 @csrf
-                <input type="hidden" name="product_id" value="{{ $product->id }}">
+                <input type="hidden" name="product_id" value="{{ $item['id'] }}">
 
                 <div>
                     <label for="waitlist_email" class="form-label">Email address <span aria-hidden="true" class="required-star">*</span></label>
@@ -64,12 +64,12 @@
             @endif
 
             <div>
-                @foreach ($product->prices as $price)
+                @foreach ($item['prices'] as $price)
                     <div class="price-card">
                         <span class="price-card__label">
-                            {{ $price->label }}
-                            @if ($price->amount > 0)
-                                — <span class="price-card__amount">${{ number_format($price->amount, 2) }}</span>
+                            {{ $price['label'] }}
+                            @if ($price['amount'] > 0)
+                                — <span class="price-card__amount">${{ number_format($price['amount'], 2) }}</span>
                             @else
                                 — <span class="price-card__free">Free</span>
                             @endif
@@ -77,10 +77,10 @@
 
                         <form method="POST" action="{{ route('products.checkout') }}">
                             @csrf
-                            <input type="hidden" name="product_price_id" value="{{ $price->id }}">
+                            <input type="hidden" name="product_price_id" value="{{ $price['id'] }}">
                             <button type="submit" class="btn btn--primary text-sm">
-                                @if ($price->amount > 0)
-                                    Buy — ${{ number_format($price->amount, 2) }}
+                                @if ($price['amount'] > 0)
+                                    Buy — ${{ number_format($price['amount'], 2) }}
                                 @else
                                     Get for free
                                 @endif
@@ -91,4 +91,4 @@
             </div>
         @endif
     </div>
-@endisset
+@endif

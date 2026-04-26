@@ -4,8 +4,9 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\WidgetType;
-use App\Services\WidgetDataResolver;
+use App\Services\WidgetRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -19,62 +20,6 @@ it('registers product_image media collection on Product model', function () {
     $names = collect($collections)->pluck('name')->all();
 
     expect($names)->toContain('product_image');
-});
-
-// ── WidgetDataResolver::resolveProducts ─────────────────────────────────────
-
-it('resolveProducts returns image_url and prices array', function () {
-    $product = Product::factory()->create([
-        'status'      => 'published',
-        'is_archived' => false,
-    ]);
-
-    ProductPrice::factory()->create([
-        'product_id' => $product->id,
-        'label'      => 'Standard',
-        'amount'     => 29.99,
-        'sort_order' => 0,
-    ]);
-
-    ProductPrice::factory()->create([
-        'product_id' => $product->id,
-        'label'      => 'Premium',
-        'amount'     => 59.99,
-        'sort_order' => 1,
-    ]);
-
-    $result = WidgetDataResolver::resolveProducts();
-
-    expect($result)->toHaveCount(1)
-        ->and($result[0])->toHaveKeys(['id', 'name', 'slug', 'description', 'capacity', 'available', 'image_url', 'prices'])
-        ->and($result[0]['prices'])->toHaveCount(2)
-        ->and($result[0]['prices'][0])->toHaveKeys(['id', 'label', 'amount', 'stripe_price_id'])
-        ->and($result[0]['prices'][0]['label'])->toBe('Standard')
-        ->and($result[0]['prices'][1]['label'])->toBe('Premium');
-});
-
-it('resolveProducts excludes draft and archived products', function () {
-    Product::factory()->create(['status' => 'draft', 'is_archived' => false]);
-    Product::factory()->create(['status' => 'published', 'is_archived' => true]);
-    Product::factory()->create(['status' => 'published', 'is_archived' => false]);
-
-    $result = WidgetDataResolver::resolveProducts();
-
-    expect($result)->toHaveCount(1);
-});
-
-it('resolveProducts respects limit parameter', function () {
-    foreach (range(1, 5) as $i) {
-        Product::factory()->create([
-            'status'      => 'published',
-            'is_archived' => false,
-            'sort_order'  => $i,
-        ]);
-    }
-
-    $result = WidgetDataResolver::resolveProducts(['limit' => 3]);
-
-    expect($result)->toHaveCount(3);
 });
 
 // ── ProductCheckoutController success_page ──────────────────────────────────
@@ -144,9 +89,11 @@ it('seeder creates product_carousel with correct config schema', function () {
         ->not->toContain('full_width');
 });
 
-// ── Blade template rendering ────────────────────────────────────────────────
+// ── Blade template rendering through the contract resolver ──────────────────
 
-it('product carousel blade renders slides with product data and buy forms', function () {
+it('product carousel renders slides with product data and buy forms', function () {
+    view()->share('errors', new ViewErrorBag());
+
     $product = Product::factory()->create([
         'name'        => 'Test Widget Product',
         'description' => 'A test description for the carousel.',
@@ -161,12 +108,19 @@ it('product carousel blade renders slides with product data and buy forms', func
         'sort_order' => 0,
     ]);
 
-    $html = view('widgets::ProductCarousel.template', [
-        'config'         => ['heading' => 'Our Products'],
-        'configMedia'    => [],
-        'collectionData' => [],
-        'pageContext'    => app(\App\Services\PageContext::class),
-    ])->render();
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $wt = WidgetType::where('handle', 'product_carousel')->firstOrFail();
+    $host = Page::factory()->create(['title' => 'Render Host', 'slug' => 'render-host', 'status' => 'published']);
+
+    $pw = $host->widgets()->create([
+        'widget_type_id' => $wt->id,
+        'config'         => array_merge($wt->getDefaultConfig(), ['heading' => 'Our Products']),
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $html = WidgetRenderer::render($pw)['html'];
 
     expect($html)->toContain('Our Products')
         ->toContain('Test Widget Product')
@@ -177,7 +131,7 @@ it('product carousel blade renders slides with product data and buy forms', func
         ->toContain('_token');
 });
 
-// ── Widget count update ──────────────────────────────────────────���──────────
+// ── Widget count update ────────────────────────────────────────────────────
 
 it('seeder total widget count includes product_carousel', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);

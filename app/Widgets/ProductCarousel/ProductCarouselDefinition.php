@@ -3,6 +3,8 @@
 namespace App\Widgets\ProductCarousel;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\QuerySettings;
 
 class ProductCarouselDefinition extends WidgetDefinition
 {
@@ -55,5 +57,37 @@ class ProductCarouselDefinition extends WidgetDefinition
             'interval'     => 5000,
             'success_page' => '',
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        $filters = ['order_by' => 'sort_order asc'];
+        $limit = $config['limit'] ?? null;
+        if ($limit !== null && $limit !== '' && (int) $limit > 0) {
+            $filters['limit'] = (int) $limit;
+        }
+
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['id', 'name', 'description', 'image_url', 'prices'],
+            filters: $filters,
+            model: 'product',
+            querySettings: $this->querySettings($config),
+        );
+    }
+
+    public function querySettings(array $config): ?QuerySettings
+    {
+        return new QuerySettings(
+            hasPanel: true,
+            orderByOptions: [
+                'sort_order' => 'Sort order',
+                'name'       => 'Name (A–Z)',
+                'created_at' => 'Created',
+                'updated_at' => 'Updated',
+            ],
+            supportsTags: false,
+        );
     }
 }

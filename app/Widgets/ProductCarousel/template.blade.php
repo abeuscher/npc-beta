@@ -1,7 +1,5 @@
 @php
-    $products = \App\Services\WidgetDataResolver::resolveProducts([
-        'limit' => $config['limit'] ?? null,
-    ]);
+    $products = $widgetData['items'] ?? [];
     $heading = $config['heading'] ?? '';
     $showNavigation = $config['navigation'] ?? false;
     $showPagination = $config['pagination'] ?? false;

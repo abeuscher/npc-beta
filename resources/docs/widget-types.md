@@ -100,51 +100,25 @@ The **CSS** field accepts scoped styles for this widget type. Styles are injecte
 | `currentPage` | `?Page` | The `Page` model currently being rendered. `null` outside a page render context. |
 | `currentUser` | `?PortalUser` | The authenticated portal (member) user, or `null` if not logged in. Never an admin user. |
 
-### Stream Methods
-
-Stream methods return collections of records. All accept an optional `$limit` parameter (integer or null).
-
-| Method | Returns | Description |
-|---|---|---|
-| `collection(string $handle, ?int $limit)` | `array` | Resolves a named collection by handle via `WidgetDataResolver`. Returns an array of data arrays. Returns `[]` for unknown or non-public handles. See System Collections table below. |
-
 ### Record Methods
 
 Record methods return a single model by key, cached per key for the remainder of the request.
 
 | Method | Returns | Description |
 |---|---|---|
-| `product(string $slug)` | `?Product` | Published product with the given slug, or `null`. Eager-loads `prices`. |
 | `form(string $handle)` | `?Form` | Active form with the given handle, or `null`. |
 
 ### Usage pattern
 
 ```blade
-{{-- Assign from config, then use --}}
-@php $product = $pageContext->product($config['product_slug'] ?? null); @endphp
-@isset($product)
-    <h2>{{ $product->name }}</h2>
+{{-- Resolve a form by handle --}}
+@php $form = $pageContext->form($config['form_handle'] ?? ''); @endphp
+@isset($form)
+    <h2>{{ $form->title }}</h2>
 @endisset
-
-{{-- Resolve a collection by handle --}}
-@php
-    $items = $pageContext->collection('blog_posts', 5);
-@endphp
 ```
 
----
-
-## System Collections
-
-The following handles are built in and resolved by `WidgetDataResolver`. Use them with `$pageContext->collection($handle)`.
-
-| Handle | Source | Data keys returned |
-|---|---|---|
-| `blog_posts` | Published pages of type `post` | `id`, `title`, `slug`, `published_at` |
-| `events` | Published upcoming events | `id`, `title`, `slug`, `starts_at`, `ends_at`, `is_virtual`, `is_free`, `url` |
-| `products` | Published products | `id`, `name`, `slug`, `description`, `capacity`, `available` |
-
-Custom collections defined in the Collections admin are also resolvable by their handle, provided they are marked public and active.
+Widgets that need record or list data declare a `dataContract($config)` and read from `$widgetData['item']` (single-row) or `$widgetData['items']` (list). See `widget-development.md` for the contract layer.
 
 ---
 

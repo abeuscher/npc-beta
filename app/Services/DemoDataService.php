@@ -39,7 +39,7 @@ class DemoDataService
     }
 
     /**
-     * Generate sample collection data matching the shape WidgetDataResolver produces.
+     * Generate sample collection data for preview/demo rendering.
      *
      * @return array<int, array<string, mixed>>
      */

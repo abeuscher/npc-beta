@@ -3,6 +3,7 @@
 namespace App\Widgets\ProductDisplay;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class ProductDisplayDefinition extends WidgetDefinition
 {
@@ -38,5 +39,17 @@ class ProductDisplayDefinition extends WidgetDefinition
         return [
             'product_slug' => '',
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['id', 'name', 'description', 'is_at_capacity', 'prices'],
+            filters: ['slug' => (string) ($config['product_slug'] ?? '')],
+            model: 'product',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

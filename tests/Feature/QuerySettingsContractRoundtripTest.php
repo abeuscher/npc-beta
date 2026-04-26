@@ -13,6 +13,8 @@ use App\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use App\Widgets\EventsListing\EventsListingDefinition;
+use App\Widgets\ProductCarousel\ProductCarouselDefinition;
+use App\Models\Product;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -389,6 +391,52 @@ it('does not add joins or subqueries when query_config is empty (SWCT no-filter 
     expect(count($itemQueries))->toBe(1)
         ->and($itemQueries[0]['query'])->not->toContain('whereExists')
         ->and($itemQueries[0]['query'])->not->toContain('exists (select');
+});
+
+it('honors order_by from query_config in the product contract resolver', function () {
+    foreach (['Charlie', 'Alpha', 'Bravo'] as $i => $name) {
+        Product::factory()->create([
+            'name'        => $name,
+            'slug'        => strtolower($name) . '-product',
+            'status'      => 'published',
+            'is_archived' => false,
+            'sort_order'  => $i,
+        ]);
+    }
+
+    $contract = (new ProductCarouselDefinition())->dataContract([]);
+
+    DB::enableQueryLog();
+    $dto = resolveContract($contract, ['order_by' => 'name', 'direction' => 'asc']);
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $productSelects = array_values(array_filter($queries, fn ($q) => str_contains($q['query'], 'from "products"')));
+
+    expect(array_column($dto['items'], 'name'))->toBe(['Alpha', 'Bravo', 'Charlie'])
+        ->and($productSelects[0]['query'])->toContain('order by "name"');
+});
+
+it('falls back to sort_order when product order_by is not allowlisted', function () {
+    Product::factory()->create([
+        'name'        => 'Lone Product',
+        'slug'        => 'lone-product',
+        'status'      => 'published',
+        'is_archived' => false,
+        'sort_order'  => 0,
+    ]);
+
+    $contract = (new ProductCarouselDefinition())->dataContract([]);
+
+    DB::enableQueryLog();
+    $dto = resolveContract($contract, ['order_by' => 'id']);
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $productSelects = array_values(array_filter($queries, fn ($q) => str_contains($q['query'], 'from "products"')));
+
+    expect($productSelects[0]['query'])->toContain('order by "sort_order"')
+        ->and($dto['items'])->toHaveCount(1);
 });
 
 it('adds exactly one whereExists subquery when include_tags is supplied (SWCT filter pin)', function () {

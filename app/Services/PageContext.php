@@ -4,49 +4,18 @@ namespace App\Services;
 
 use App\Models\Form;
 use App\Models\Page;
-use App\Models\Product;
 
 class PageContext
 {
     public readonly ?Page $currentPage;
     public readonly mixed $currentUser;
 
-    private array $collectionCache     = [];
-    private array $productCache        = [];
-    private array $formCache           = [];
+    private array $formCache = [];
 
     public function __construct(?Page $currentPage = null)
     {
         $this->currentPage = $currentPage;
         $this->currentUser = auth('portal')->user();
-    }
-
-    public function collection(string $handle, ?int $limit = null): array
-    {
-        $key = $handle . ':' . ($limit ?? '');
-
-        if (! array_key_exists($key, $this->collectionCache)) {
-            $config = $limit !== null ? ['limit' => $limit] : [];
-            $this->collectionCache[$key] = WidgetDataResolver::resolve($handle, $config);
-        }
-
-        return $this->collectionCache[$key];
-    }
-
-    public function product(?string $slug): ?Product
-    {
-        if ($slug === null) {
-            return null;
-        }
-
-        if (! array_key_exists($slug, $this->productCache)) {
-            $this->productCache[$slug] = Product::where('slug', $slug)
-                ->where('status', 'published')
-                ->with('prices')
-                ->first();
-        }
-
-        return $this->productCache[$slug];
     }
 
     public function form(string $handle): ?Form

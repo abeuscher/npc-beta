@@ -155,7 +155,7 @@ All public controllers live in `app/Http/Controllers/`. Portal routes are prefix
 | Widget folders (definition + template + optional SCSS) | `app/Widgets/{PascalName}/` |
 | Shared Blade fragments used by widgets | `resources/views/widget-shared/` |
 | Page context service (data for widget templates) | `App\Services\PageContext` — `app/Services/PageContext.php` |
-| Widget data resolver | `App\Services\WidgetDataResolver` — `app/Services/WidgetDataResolver.php` |
+| Widget contract resolver | `App\WidgetPrimitive\ContractResolver` — `app/WidgetPrimitive/ContractResolver.php` |
 | Widget registry (discovery of `app/Widgets/*`) | `App\Services\WidgetRegistry` — `app/Services/WidgetRegistry.php` |
 | Widget config resolver | `App\Services\WidgetConfigResolver` — `app/Services/WidgetConfigResolver.php` |
 | Appearance style composer | `App\Services\AppearanceStyleComposer` — `app/Services/AppearanceStyleComposer.php` |

@@ -4,6 +4,7 @@ namespace App\WidgetPrimitive\Projectors;
 
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\Product;
 use App\WidgetPrimitive\DataContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -74,9 +75,10 @@ final class SystemModelProjector
     private function projectorFor(DataContract $contract): ?callable
     {
         return match ($contract->model) {
-            'post'  => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news')),
-            'event' => fn (Event $event) => $this->projectEvent($event),
-            default => null,
+            'post'    => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news')),
+            'event'   => fn (Event $event) => $this->projectEvent($event),
+            'product' => fn (Product $product) => $this->projectProduct($product),
+            default   => null,
         };
     }
 
@@ -155,6 +157,41 @@ final class SystemModelProjector
             'external_registration_url'   => (string) ($event->getAttribute('external_registration_url') ?? ''),
             'price'                       => (string) ($event->getAttribute('price') ?? '0.00'),
             'status'                      => (string) ($event->getAttribute('status') ?? ''),
+        ];
+    }
+
+    /**
+     * Flat row shape derived from a Product model. `prices` is a nested DTO —
+     * an array of fixed-shape sub-rows (`id`, `label`, `amount`); the contract's
+     * flat `fields` whitelist treats `prices` as a single boolean. Fields outside
+     * this map are not exposed.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectProduct(Product $product): array
+    {
+        $thumb = $product->getFirstMediaUrl('product_image', 'webp')
+            ?: $product->getFirstMediaUrl('product_image');
+
+        $capacity = (int) ($product->getAttribute('capacity') ?? 0);
+        $activeCount = (int) ($product->getAttribute('active_purchases_count') ?? 0);
+        $isAtCapacity = $capacity > 0 && $activeCount >= $capacity;
+
+        $prices = $product->prices->map(fn ($price) => [
+            'id'     => $price->id,
+            'label'  => $price->label,
+            'amount' => $price->amount,
+        ])->all();
+
+        return [
+            'id'             => $product->id,
+            'name'           => $product->name,
+            'slug'           => $product->slug,
+            'description'    => (string) ($product->description ?? ''),
+            'image_url'      => $thumb,
+            'capacity'       => $capacity,
+            'is_at_capacity' => $isAtCapacity,
+            'prices'         => $prices,
         ];
     }
 }

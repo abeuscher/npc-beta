@@ -159,9 +159,6 @@ class DatabaseSeeder extends Seeder
         // ── Dashboard config (super_admin default arrangement) ──────────────
         $this->call(DashboardConfigSeeder::class);
 
-        // ── Transactions ─────────────────────────────────────────────────────
-        $this->call(TransactionSeeder::class);
-
         // ── Help articles ────────────────────────────────────────────────────
         Artisan::call('help:sync');
     }

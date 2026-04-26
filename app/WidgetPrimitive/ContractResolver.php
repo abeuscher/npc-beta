@@ -6,6 +6,7 @@ use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\Product;
 use App\WidgetPrimitive\Projectors\PageContextProjector;
 use App\WidgetPrimitive\Projectors\SystemModelProjector;
 use App\WidgetPrimitive\Projectors\WidgetContentTypeProjector;
@@ -68,15 +69,17 @@ final class ContractResolver
     {
         if ($contract->cardinality === DataContract::CARDINALITY_ONE) {
             return match ($contract->model) {
-                'event' => $this->resolveEventOne($contract, $cache),
-                default => ['item' => null],
+                'event'   => $this->resolveEventOne($contract, $cache),
+                'product' => $this->resolveProductOne($contract, $cache),
+                default   => ['item' => null],
             };
         }
 
         return match ($contract->model) {
-            'post'  => $this->resolvePost($contract, $cache),
-            'event' => $this->resolveEvent($contract, $cache),
-            default => ['items' => []],
+            'post'    => $this->resolvePost($contract, $cache),
+            'event'   => $this->resolveEvent($contract, $cache),
+            'product' => $this->resolveProduct($contract, $cache),
+            default   => ['items' => []],
         };
     }
 
@@ -178,6 +181,67 @@ final class ContractResolver
         }
 
         return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve a list of published, non-archived Products. Aggregate
+     * `is_at_capacity` derived via withCount on purchases — one coordinated
+     * query, no N+1. Eager-loads `media` and `prices` for the nested DTO
+     * projection.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveProduct(DataContract $contract, array &$cache): array
+    {
+        $key = 'product:list:' . sha1(serialize($contract->filters));
+        if (! array_key_exists($key, $cache)) {
+            $query = Product::where('status', 'published')
+                ->where('is_archived', false)
+                ->withCount(['purchases as active_purchases_count' => fn ($q) => $q->where('status', 'active')])
+                ->with(['media', 'prices']);
+
+            [$col, $dir] = $this->resolveOrderBy($contract);
+            $query->orderBy($col, $dir);
+
+            $this->applyTagFilters($query, $contract);
+
+            if (! empty($contract->filters['limit'])) {
+                $query->limit((int) $contract->filters['limit']);
+            }
+
+            $cache[$key] = $query->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve a single Product by slug. Aggregate `is_at_capacity` derived via
+     * withCount on purchases. Per-request slug-keyed cache so two ProductDisplay
+     * widgets targeting the same product hit one query.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveProductOne(DataContract $contract, array &$cache): array
+    {
+        $slug = (string) ($contract->filters['slug'] ?? '');
+        if ($slug === '') {
+            return ['item' => null];
+        }
+
+        $key = 'product:one:' . $slug;
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = Product::where('status', 'published')
+                ->where('is_archived', false)
+                ->where('slug', $slug)
+                ->withCount(['purchases as active_purchases_count' => fn ($q) => $q->where('status', 'active')])
+                ->with(['media', 'prices'])
+                ->first();
+        }
+
+        return $this->systemModelProjector->projectOne($contract, $cache[$key]);
     }
 
     /**

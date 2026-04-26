@@ -24,7 +24,6 @@ Technical reference for building and maintaining page builder widgets. This docu
 | `app/Models/WidgetType.php` | Widget type definition model |
 | `app/Models/PageWidget.php` | Widget instance model (per-page placement) |
 | `app/Services/WidgetRenderer.php` | Rendering pipeline |
-| `app/Services/WidgetDataResolver.php` | Collection/data resolution |
 | `app/Services/PageBuilderDataSources.php` | Dynamic select option sources |
 | `app/Services/AssetBuildService.php` | CSS/JS/SCSS bundling for public site |
 | `app/Livewire/PageBuilder.php` | Page builder host: bootstrap data, add-widget modal, save-as-template modal |
@@ -96,12 +95,10 @@ Built-in widgets are registered in `WidgetTypeSeeder` using `WidgetType::updateO
 | `$widgetData` | `array\|null` | Contract-resolved DTO. Shape depends on the contract's source: `['items' => [...]]` for list-shaped sources (`SOURCE_SYSTEM_MODEL`, `SOURCE_WIDGET_CONTENT_TYPE`); a flat token map for `SOURCE_PAGE_CONTEXT`. Null when the widget declares no contract. |
 | `$children` | `array` | (Column widgets only) Rendered HTML of child widgets. |
 
-### Direct data access (non-collection widgets)
+### Direct data access (non-contract widgets)
 
-Some widgets bypass the collection system and call services directly from their template:
+The Forms widget reads its model directly from `PageContext` rather than declaring a contract:
 
-- **Product display**: `$pageContext->product($slug)` — loads a single product by slug.
-- **Product carousel**: `WidgetDataResolver::resolveProducts($queryConfig)` — loads published products directly.
 - **Form widget**: `$pageContext->form($handle)` — loads a form by handle.
 
 ---
@@ -266,7 +263,7 @@ To get the URL in a data resolver or template: `$model->getFirstMediaUrl('collec
 
 ### Collection item images
 
-Collection items store images in named media collections matching the field key. The `WidgetDataResolver` includes them in resolved data as `$item['_media']['{fieldKey}']`, which is a Spatie `Media` object.
+Collection items store images in named media collections matching the field key. The contract resolver (`WidgetContentTypeProjector`) includes them in resolved data as `$item['_media']['{fieldKey}']`, which is a Spatie `Media` object.
 
 ---
 
@@ -328,12 +325,7 @@ Collections define their own field schema. Supported field types for collection 
 
 ### Source types
 
-| Source type | Data source |
-|------------|-------------|
-| `custom` | JSONB items stored in `collection_items` table. |
-| `blog_posts` | Published `Page` records with `type = 'post'`. |
-| `events` | Published upcoming `Event` records. |
-| `products` | Published, non-archived `Product` records. |
+`Collection.source_type` is dormant after Phase 4 — the column is set on existing rows but no production code reads it at render time. Widget data now flows through `ContractResolver` (system models via `SOURCE_SYSTEM_MODEL`, collection items via `SOURCE_WIDGET_CONTENT_TYPE`). A future cleanup session may drop the column.
 
 ---
 

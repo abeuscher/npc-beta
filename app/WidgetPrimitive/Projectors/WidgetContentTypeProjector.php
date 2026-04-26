@@ -37,9 +37,9 @@ final class WidgetContentTypeProjector
 
     /**
      * Project a list of fallback rows (plain associative arrays, typically
-     * demo-data payloads from WidgetDataResolver) through the same field
-     * projection used for live items. Pre-existing '_media' on each row is
-     * honoured; undeclared fields are stripped.
+     * demo-data payloads) through the same field projection used for live
+     * items. Pre-existing '_media' on each row is honoured; undeclared
+     * fields are stripped.
      *
      * @param  array<int, array<string, mixed>>  $rows
      * @return array{items: array<int, array<string, mixed>>}

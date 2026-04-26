@@ -43,9 +43,10 @@ final class DataContract
         return match ($this->source) {
             self::SOURCE_WIDGET_CONTENT_TYPE => 'sort_order',
             self::SOURCE_SYSTEM_MODEL => match ($this->model) {
-                'event' => 'starts_at',
-                'post'  => 'published_at',
-                default => 'created_at',
+                'event'   => 'starts_at',
+                'post'    => 'published_at',
+                'product' => 'sort_order',
+                default   => 'created_at',
             },
             default => 'created_at',
         };

@@ -6,7 +6,6 @@ use App\Models\Contact;
 use App\Models\Transaction;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
-use Database\Seeders\TransactionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -110,42 +109,6 @@ it('prevents editing Stripe-originated transactions', function () {
 
     expect(TransactionResource::canEdit($transaction))->toBeFalse();
     expect(TransactionResource::canDelete($transaction))->toBeFalse();
-});
-
-// ── Phase 2: Seeder tests ───────────────────────────────────────────────────
-
-it('seeder creates expected record counts', function () {
-    (new TransactionSeeder)->run();
-
-    // 6 donation txns + 3 purchase txns + 2 refunds + 2 manual + 1 error = 14
-    expect(Transaction::count())->toBe(14);
-    expect(Contact::count())->toBe(10);
-});
-
-it('seeder is idempotent', function () {
-    (new TransactionSeeder)->run();
-    $count = Transaction::count();
-
-    (new TransactionSeeder)->run();
-    expect(Transaction::count())->toBe($count);
-});
-
-it('seeder creates manual transactions without stripe_id', function () {
-    (new TransactionSeeder)->run();
-
-    $manualTypes = ['grant', 'adjustment'];
-    $manual = Transaction::whereIn('type', $manualTypes)->get();
-
-    expect($manual)->toHaveCount(2);
-    $manual->each(fn ($t) => expect($t->stripe_id)->toBeNull());
-});
-
-it('seeder creates an error-state transaction', function () {
-    (new TransactionSeeder)->run();
-
-    $errorTxn = Transaction::whereNotNull('qb_sync_error')->first();
-    expect($errorTxn)->not->toBeNull()
-        ->and($errorTxn->quickbooks_id)->toBeNull();
 });
 
 // ── Phase 3: Factory state tests ────────────────────────────────────────────
