@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Import\CsvTemplateService;
 use App\Services\Import\FakeCsvComposer;
+use DateTimeImmutable;
 use Faker\Factory as FakerFactory;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -20,10 +21,12 @@ class GenerateFakeImportCsvsCommand extends Command
     {
         $seed = $this->option('seed');
         $faker = FakerFactory::create();
+        $pinnedNow = null;
         if ($seed !== null && $seed !== '') {
             $seedInt = (int) $seed;
             $faker->seed($seedInt);
             mt_srand($seedInt);
+            $pinnedNow = new DateTimeImmutable('@1735689600');
         }
 
         $out = $this->option('out');
@@ -34,7 +37,7 @@ class GenerateFakeImportCsvsCommand extends Command
             mkdir($out, 0755, true);
         }
 
-        $composer = new FakeCsvComposer($faker);
+        $composer = new FakeCsvComposer($faker, $pinnedNow);
 
         $contactCount   = $faker->numberBetween(200, 250);
         $eventRows      = $faker->numberBetween(20, 40);

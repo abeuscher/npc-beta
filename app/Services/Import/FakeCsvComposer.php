@@ -3,11 +3,24 @@
 namespace App\Services\Import;
 
 use App\Data\SampleLibrary;
+use DateTime;
+use DateTimeImmutable;
 use Faker\Generator as Faker;
 
 class FakeCsvComposer
 {
-    public function __construct(private Faker $faker) {}
+    private DateTimeImmutable $now;
+
+    public function __construct(private Faker $faker, ?DateTimeImmutable $now = null)
+    {
+        $this->now = $now ?? new DateTimeImmutable();
+    }
+
+    private function rel(?string $modifier = null): DateTime
+    {
+        $immutable = $modifier === null ? $this->now : $this->now->modify($modifier);
+        return DateTime::createFromImmutable($immutable);
+    }
 
     /**
      * @return array<int,array<string,string|null>>
@@ -46,7 +59,7 @@ class FakeCsvComposer
         foreach ($groupSizes as $groupSize) {
             $eventTitle = $this->faker->randomElement(SampleLibrary::eventTitles())
                 . ' ' . $this->faker->numerify('##');
-            $startsAt        = $this->faker->dateTimeBetween('-1 year', '+6 months');
+            $startsAt        = $this->faker->dateTimeBetween($this->rel('-1 year'), $this->rel('+6 months'));
             $endsAt          = (clone $startsAt)->modify('+' . $this->faker->numberBetween(30, 240) . ' minutes');
             $eventExternalId = 'E-' . $this->faker->unique()->numerify('######');
             $isFree          = $this->faker->boolean(40);
@@ -82,7 +95,7 @@ class FakeCsvComposer
                         'Registration Ticket Fee'               => $registrationFee,
                         'Registration Status'                   => 'registered',
                         'Registration Payment State (snapshot)' => $isFree ? 'free' : 'paid',
-                        'Registration Registered At'            => $this->faker->dateTimeBetween('-60 days', 'now')->format('Y-m-d H:i:s'),
+                        'Registration Registered At'            => $this->faker->dateTimeBetween($this->rel('-60 days'), $this->rel())->format('Y-m-d H:i:s'),
                         'Registration Registration Notes'       => null,
                     ] : [
                         'Registration Ticket Type'              => null,
@@ -101,7 +114,7 @@ class FakeCsvComposer
                     'Payment State'                    => 'paid',
                     'Payment Method'                   => $this->faker->randomElement(['Card', 'Check', 'Cash']),
                     'Payment Channel (online/offline)' => $this->faker->randomElement(['online', 'offline']),
-                    'Paid At'                          => $this->faker->dateTimeBetween('-60 days', 'now')->format('Y-m-d H:i:s'),
+                    'Paid At'                          => $this->faker->dateTimeBetween($this->rel('-60 days'), $this->rel())->format('Y-m-d H:i:s'),
                     'Invoice / Receipt Number'         => 'INV-E-' . $this->faker->unique()->numerify('######'),
                 ] : [
                     'Transaction ID (external)'        => null,
@@ -127,7 +140,7 @@ class FakeCsvComposer
         $rows = [];
         for ($i = 0; $i < $count; $i++) {
             $amount    = number_format((float) $this->faker->randomFloat(2, 10, 5000), 2, '.', '');
-            $donatedAt = $this->faker->dateTimeBetween('-2 years', 'now');
+            $donatedAt = $this->faker->dateTimeBetween($this->rel('-2 years'), $this->rel());
             $type      = $this->faker->randomElement(['one_off', 'one_off', 'one_off', 'recurring']);
             $email     = $pool ? $this->faker->randomElement($pool) : null;
 
@@ -161,7 +174,7 @@ class FakeCsvComposer
         $pool = $this->pickReferencePool($contactEmails);
         $rows = [];
         for ($i = 0; $i < $count; $i++) {
-            $startsOn  = $this->faker->dateTimeBetween('-3 years', 'now');
+            $startsOn  = $this->faker->dateTimeBetween($this->rel('-3 years'), $this->rel());
             $expiresOn = (clone $startsOn)->modify('+1 year');
             $email     = $pool ? $this->faker->randomElement($pool) : null;
 
@@ -217,13 +230,13 @@ class FakeCsvComposer
                 ? 'completed'
                 : $this->faker->randomElement(['scheduled', 'no_show', 'cancelled']);
             $body       = $this->faker->randomElement($bodies);
-            $occurredAt = $this->faker->dateTimeBetween('-2 years', 'now');
+            $occurredAt = $this->faker->dateTimeBetween($this->rel('-2 years'), $this->rel());
 
             $followUpAt = null;
             if ($status !== 'completed' && $this->faker->boolean(50)) {
-                $followUpAt = $this->faker->dateTimeBetween('now', '+6 months');
+                $followUpAt = $this->faker->dateTimeBetween($this->rel(), $this->rel('+6 months'));
             } elseif ($status === 'completed' && $this->faker->boolean(10)) {
-                $followUpAt = $this->faker->dateTimeBetween('now', '+3 months');
+                $followUpAt = $this->faker->dateTimeBetween($this->rel(), $this->rel('+3 months'));
             }
 
             $isInteraction = in_array($type, ['call', 'meeting'], true);
@@ -266,7 +279,7 @@ class FakeCsvComposer
 
         foreach ($groupSizes as $groupSize) {
             $invoiceNumber = 'INV-I-' . $this->faker->unique()->numerify('######');
-            $invoiceDate   = $this->faker->dateTimeBetween('-2 years', 'now');
+            $invoiceDate   = $this->faker->dateTimeBetween($this->rel('-2 years'), $this->rel());
             $paymentDate   = (clone $invoiceDate)->modify('+' . $this->faker->numberBetween(0, 14) . ' days');
             $email         = $pool ? $this->faker->randomElement($pool) : null;
 
@@ -316,7 +329,7 @@ class FakeCsvComposer
             'City'                   => $this->faker->boolean(60) ? $this->faker->randomElement(SampleLibrary::cities()) : null,
             'State'                  => $this->faker->boolean(60) ? $this->faker->randomElement(SampleLibrary::states()) : null,
             'Postal Code'            => $this->faker->boolean(60) ? $this->faker->postcode() : null,
-            'Date Of Birth'          => $this->faker->boolean(40) ? $this->faker->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d') : null,
+            'Date Of Birth'          => $this->faker->boolean(40) ? $this->faker->dateTimeBetween($this->rel('-80 years'), $this->rel('-18 years'))->format('Y-m-d') : null,
             'Country'                => 'US',
             'Do Not Contact'         => null,
             'Mailing List Opt In'    => null,
