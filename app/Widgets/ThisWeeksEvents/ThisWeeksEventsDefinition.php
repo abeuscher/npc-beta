@@ -75,10 +75,11 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
         return new QuerySettings(
             hasPanel: true,
             orderByOptions: [
-                'starts_at'  => 'Start date',
-                'ends_at'    => 'End date',
-                'created_at' => 'Created',
-                'title'      => 'Title',
+                'starts_at'    => 'Start date',
+                'ends_at'      => 'End date',
+                'published_at' => 'Published',
+                'created_at'   => 'Created',
+                'title'        => 'Title',
             ],
             supportsTags: true,
         );

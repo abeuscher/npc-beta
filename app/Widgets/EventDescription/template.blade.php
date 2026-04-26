@@ -6,15 +6,15 @@
         @php
             $startsAt  = \Illuminate\Support\Carbon::parse($item['starts_at']);
             $endsAt    = ! empty($item['ends_at']) ? \Illuminate\Support\Carbon::parse($item['ends_at']) : null;
-            $startDate = $startsAt->format('F jS');
-            $startTime = $startsAt->format($startsAt->minute === 0 ? 'ga' : 'g:ia');
+            $startDate = \App\Support\DateFormat::format($startsAt, \App\Support\DateFormat::EVENT_LIST_DATE);
+            $startTime = \App\Support\DateFormat::format($startsAt, \App\Support\DateFormat::TIME_SMART);
 
             if ($endsAt) {
-                $endTime = $endsAt->format($endsAt->minute === 0 ? 'ga' : 'g:ia');
+                $endTime = \App\Support\DateFormat::format($endsAt, \App\Support\DateFormat::TIME_SMART);
                 if ($startsAt->isSameDay($endsAt)) {
                     $dateString = $startDate . ', ' . $startTime . ' – ' . $endTime;
                 } else {
-                    $endDate    = $endsAt->format('F jS');
+                    $endDate    = \App\Support\DateFormat::format($endsAt, \App\Support\DateFormat::EVENT_LIST_DATE);
                     $dateString = $startDate . ', ' . $startTime . ' – ' . $endDate . ', ' . $endTime;
                 }
             } else {

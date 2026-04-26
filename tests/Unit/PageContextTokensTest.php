@@ -70,7 +70,7 @@ it('substitutes event-specific tokens when the page has an associated event', fu
     $page->refresh();
 
     expect($this->tokens->substitute('{{starts_at}} in {{location}}', $page))
-        ->toBe('May 20, 2026 6:30 pm in Portland, OR');
+        ->toBe('May 20, 2026 at 6:30 pm in Portland, OR');
 });
 
 it('yields empty event tokens when the page has no event', function () {

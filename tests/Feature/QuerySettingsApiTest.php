@@ -76,14 +76,14 @@ it('returns query_settings.has_panel=true with order_by_options for list-shaped 
 
     expect($byHandle['events_listing']['query_settings']['has_panel'])->toBeTrue()
         ->and(array_keys($byHandle['events_listing']['query_settings']['order_by_options']))
-            ->toEqualCanonicalizing(['starts_at', 'ends_at', 'created_at', 'title']);
+            ->toEqualCanonicalizing(['starts_at', 'ends_at', 'published_at', 'created_at', 'title']);
 
     expect($byHandle['board_members']['query_settings']['has_panel'])->toBeTrue();
 
     expect($byHandle['product_carousel']['query_settings']['has_panel'])->toBeTrue()
         ->and($byHandle['product_carousel']['query_settings']['supports_tags'])->toBeFalse()
         ->and(array_keys($byHandle['product_carousel']['query_settings']['order_by_options']))
-            ->toEqualCanonicalizing(['sort_order', 'name', 'created_at', 'updated_at']);
+            ->toEqualCanonicalizing(['sort_order', 'name', 'published_at', 'created_at', 'updated_at']);
 });
 
 it('returns query_settings=null for non-list widgets (TextBlock)', function () {

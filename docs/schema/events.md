@@ -10,6 +10,7 @@ Events with dates, registration, and venue information.
 | author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
 | description | text | yes | |
 | status | enum | no | default: 'draft'; values: draft, published, cancelled |
+| published_at | timestamp | yes | Set by `EventObserver` on first transition to `status = 'published'` if currently null. Never overrides admin-set values. |
 | address_line_1 | string | yes | |
 | address_line_2 | string | yes | |
 | city | string(100) | yes | |

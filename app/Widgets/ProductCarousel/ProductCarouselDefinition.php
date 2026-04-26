@@ -82,10 +82,11 @@ class ProductCarouselDefinition extends WidgetDefinition
         return new QuerySettings(
             hasPanel: true,
             orderByOptions: [
-                'sort_order' => 'Sort order',
-                'name'       => 'Name (A–Z)',
-                'created_at' => 'Created',
-                'updated_at' => 'Updated',
+                'sort_order'   => 'Sort order',
+                'name'         => 'Name (A–Z)',
+                'published_at' => 'Published',
+                'created_at'   => 'Created',
+                'updated_at'   => 'Updated',
             ],
             supportsTags: false,
         );

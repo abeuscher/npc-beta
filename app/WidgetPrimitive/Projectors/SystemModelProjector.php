@@ -5,6 +5,7 @@ namespace App\WidgetPrimitive\Projectors;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\Product;
+use App\Support\DateFormat;
 use App\WidgetPrimitive\DataContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -99,7 +100,7 @@ final class SystemModelProjector
             'slug'               => $post->slug,
             'url'                => url('/' . $post->slug),
             'published_at'       => $post->published_at?->toIso8601String() ?? '',
-            'published_at_label' => $post->published_at?->format('F j, Y') ?? '',
+            'published_at_label' => DateFormat::format($post->published_at, DateFormat::LONG_DATE),
             'excerpt'            => Str::limit(strip_tags($post->meta_description ?? ''), 160),
             'image'              => $thumb,
             'author_name'        => $post->author?->name ?? '',
@@ -138,9 +139,9 @@ final class SystemModelProjector
             'slug'                        => $event->slug,
             'url'                         => $url,
             'starts_at'                   => $event->starts_at?->toIso8601String() ?? '',
-            'starts_at_label'             => $event->starts_at?->format('D, F j, Y \a\t g:i A') ?? '',
+            'starts_at_label'             => DateFormat::format($event->starts_at, DateFormat::EVENT_FULL),
             'ends_at'                     => $event->ends_at?->toIso8601String() ?? '',
-            'ends_at_label'               => $event->ends_at?->format('g:i A') ?? '',
+            'ends_at_label'               => DateFormat::format($event->ends_at, DateFormat::TIME_OF_DAY),
             'address_line_1'              => $event->getAttribute('address_line_1') ?? '',
             'city'                        => $event->getAttribute('city') ?? '',
             'state'                       => $event->getAttribute('state') ?? '',

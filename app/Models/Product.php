@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Observers\ProductObserver;
 use App\Services\Media\ImageSizeProfile;
 use App\Traits\Archivable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+#[ObservedBy(ProductObserver::class)]
 class Product extends Model implements HasMedia
 {
     use Archivable, HasFactory, HasUuids, InteractsWithMedia;
@@ -27,7 +30,8 @@ class Product extends Model implements HasMedia
     ];
 
     protected $casts = [
-        'is_archived' => 'boolean',
+        'is_archived'  => 'boolean',
+        'published_at' => 'datetime',
     ];
 
     public function prices(): HasMany

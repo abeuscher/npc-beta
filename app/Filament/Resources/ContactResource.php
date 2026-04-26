@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\CustomFieldDef;
 use App\Models\PortalAccount;
 use App\Services\QuickBooks\QuickBooksAuth;
+use App\Support\DateFormat;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -158,7 +159,7 @@ class ContactResource extends Resource
 
                         Forms\Components\Placeholder::make('portal_created_at')
                             ->label('Account Created')
-                            ->content($portal->created_at->format('F j, Y')),
+                            ->content(DateFormat::format($portal->created_at, DateFormat::LONG_DATE)),
                     ];
                 }),
 

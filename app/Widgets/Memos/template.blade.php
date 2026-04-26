@@ -13,7 +13,7 @@
                         <h4 class="np-memos__title">{{ $memo['title'] }}</h4>
                     @endif
                     @if (! empty($memo['posted_at']))
-                        <p class="np-memos__date">{{ \Illuminate\Support\Carbon::parse($memo['posted_at'])->format('F j, Y') }}</p>
+                        <p class="np-memos__date">{{ \App\Support\DateFormat::format(\Illuminate\Support\Carbon::parse($memo['posted_at']), \App\Support\DateFormat::LONG_DATE) }}</p>
                     @endif
                     @if (! empty($memo['body']))
                         <div class="np-memos__body">{!! $memo['body'] !!}</div>

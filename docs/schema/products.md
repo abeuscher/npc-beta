@@ -10,6 +10,7 @@ Named finite-inventory entitlements offered by the organisation (plots, slots, p
 | description | text | yes | |
 | capacity | integer | no | Total units available |
 | status | string | no | default: 'draft'; values: draft, published |
+| published_at | timestamp | yes | Set by `ProductObserver` on first transition to `status = 'published'` (and `is_archived = false`) if currently null. Never overrides admin-set values. |
 | sort_order | integer | no | default: 0 |
 | is_archived | boolean | no | default: false |
 | created_at | timestamp | no | |

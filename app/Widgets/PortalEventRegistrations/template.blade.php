@@ -23,7 +23,7 @@
                     @foreach ($regs as $reg)
                         <tr>
                             <td>{{ $reg->event->title ?? '—' }}</td>
-                            <td>{{ $reg->event?->starts_at?->format('F j, Y') ?? '—' }}</td>
+                            <td>{{ \App\Support\DateFormat::format($reg->event?->starts_at, \App\Support\DateFormat::LONG_DATE) ?: '—' }}</td>
                             <td>{{ ucfirst($reg->status) }}</td>
                         </tr>
                     @endforeach

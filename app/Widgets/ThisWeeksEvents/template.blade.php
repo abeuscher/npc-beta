@@ -23,7 +23,7 @@
                 @endphp
                 <li class="np-this-weeks-events__item">
                     @if ($startsAt)
-                        <p class="np-this-weeks-events__date">{{ $startsAt->format('D M j · g:i a') }}</p>
+                        <p class="np-this-weeks-events__date">{{ \App\Support\DateFormat::format($startsAt, \App\Support\DateFormat::EVENT_COMPACT) }}</p>
                     @endif
                     @if (! empty($event['title']))
                         <h4 class="np-this-weeks-events__title">{{ $event['title'] }}</h4>

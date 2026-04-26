@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Page;
+use App\Support\DateFormat;
 use Illuminate\Support\Str;
 
 class PageContextTokens
@@ -71,10 +72,10 @@ class PageContextTokens
 
         return $this->cache[$key] = [
             'title'     => (string) ($page->title ?? ''),
-            'date'      => $page->published_at?->format('F j, Y') ?? '',
+            'date'      => DateFormat::format($page->published_at, DateFormat::LONG_DATE),
             'excerpt'   => (string) ($page->meta_description ?? ''),
             'author'    => (string) ($page->author?->name ?? ''),
-            'starts_at' => $event?->starts_at?->format('F j, Y g:i a') ?? '',
+            'starts_at' => DateFormat::format($event?->starts_at, DateFormat::LONG_DATETIME),
             'location'  => $this->composeLocation($event),
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MemberResource\Pages;
 use App\Models\Contact;
 use App\Models\MembershipTier;
+use App\Support\DateFormat;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -73,7 +74,7 @@ class MemberResource extends Resource
 
                 Tables\Columns\TextColumn::make('member_since')
                     ->label('Member Since')
-                    ->getStateUsing(fn (Contact $record): ?string => $record->memberships->first()?->starts_on?->format('M j, Y'))
+                    ->getStateUsing(fn (Contact $record): string => DateFormat::format($record->memberships->first()?->starts_on, DateFormat::MEDIUM_DATE))
                     ->sortable(false),
             ])
             ->filters([

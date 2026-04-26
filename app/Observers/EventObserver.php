@@ -7,6 +7,23 @@ use App\Services\ActivityLogger;
 
 class EventObserver
 {
+    public function creating(Event $event): void
+    {
+        if ($event->status === 'published' && $event->published_at === null) {
+            $event->published_at = now();
+        }
+    }
+
+    public function updating(Event $event): void
+    {
+        if ($event->isDirty('status')
+            && $event->status === 'published'
+            && $event->published_at === null
+        ) {
+            $event->published_at = now();
+        }
+    }
+
     public function created(Event $event): void
     {
         ActivityLogger::log($event, 'created');

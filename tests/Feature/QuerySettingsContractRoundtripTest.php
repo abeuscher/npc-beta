@@ -393,6 +393,30 @@ it('does not add joins or subqueries when query_config is empty (SWCT no-filter 
         ->and($itemQueries[0]['query'])->not->toContain('exists (select');
 });
 
+it('honors order_by from query_config in the events contract resolver (published_at)', function () {
+    foreach (range(0, 2) as $i) {
+        Event::factory()->create([
+            'title'        => "Pub Event $i",
+            'slug'         => "pub-event-$i",
+            'status'       => 'published',
+            'starts_at'    => now()->addDays($i + 1),
+            'published_at' => now()->subDays($i + 1),
+        ]);
+    }
+
+    $contract = (new EventsListingDefinition())->dataContract([]);
+
+    DB::enableQueryLog();
+    $dto = resolveContract($contract, ['order_by' => 'published_at', 'direction' => 'desc']);
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    $eventSelects = array_values(array_filter($queries, fn ($q) => str_contains($q['query'], 'from "events"')));
+
+    expect($eventSelects[0]['query'])->toContain('order by "published_at"')
+        ->and($dto['items'])->toHaveCount(3);
+});
+
 it('honors order_by from query_config in the product contract resolver', function () {
     foreach (['Charlie', 'Alpha', 'Bravo'] as $i => $name) {
         Product::factory()->create([

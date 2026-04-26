@@ -10,6 +10,7 @@ use App\Services\Import\DuplicateHeaderDetector;
 use App\Services\Import\FieldMapper;
 use App\Services\Import\FieldTypeDetector;
 use App\Services\Import\NoiseDetector;
+use App\Support\DateFormat;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Notifications\Notification;
@@ -320,7 +321,7 @@ trait InteractsWithImportWizard
             ->schema([
                 Forms\Components\TextInput::make('session_label')
                     ->label('Session label')
-                    ->default(fn () => $defaultLabel . ' on ' . now()->format('F j, Y \a\t g:i A'))
+                    ->default(fn () => $defaultLabel . ' on ' . DateFormat::format(now(), DateFormat::LONG_DATETIME))
                     ->required()
                     ->maxLength(255),
 

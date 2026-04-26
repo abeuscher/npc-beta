@@ -63,6 +63,7 @@ class Event extends Model implements HasMedia
         'registrants_deleted_at'      => 'datetime',
         'starts_at'                   => 'datetime',
         'ends_at'                     => 'datetime',
+        'published_at'                => 'datetime',
     ];
 
     // ──────────────────────────────────────────────────────────

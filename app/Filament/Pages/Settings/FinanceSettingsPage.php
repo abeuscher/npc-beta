@@ -7,6 +7,7 @@ use App\Models\SiteSetting;
 use App\Services\ActivityLogger;
 use App\Services\QuickBooks\QuickBooksAuth;
 use App\Services\QuickBooks\QuickBooksClient;
+use App\Support\DateFormat;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -310,7 +311,7 @@ class FinanceSettingsPage extends Page
 
         if ($isConnected) {
             $expiresFormatted = $expiresAt
-                ? Carbon::parse($expiresAt)->format('M j, Y g:i A T')
+                ? DateFormat::format(Carbon::parse($expiresAt), DateFormat::MEDIUM_DATETIME) . ' ' . Carbon::parse($expiresAt)->format('T')
                 : 'Unknown';
 
             $sections[] = Forms\Components\Section::make('QuickBooks — Connection')

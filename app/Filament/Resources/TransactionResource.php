@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Transaction;
 use App\Services\QuickBooks\QuickBooksAuth;
+use App\Support\DateFormat;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -209,7 +210,7 @@ class TransactionResource extends Resource
                     })
                     ->tooltip(function (Transaction $record): ?string {
                         if (filled($record->qb_synced_at)) {
-                            $tip = 'Synced ' . $record->qb_synced_at->format('M j, Y g:i A');
+                            $tip = 'Synced ' . DateFormat::format($record->qb_synced_at, DateFormat::MEDIUM_DATETIME);
                             $qbCustId = $record->contact?->quickbooks_customer_id;
                             if (filled($qbCustId)) {
                                 $tip .= " — QB Customer #{$qbCustId}";
