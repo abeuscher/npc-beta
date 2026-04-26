@@ -3,6 +3,7 @@
 namespace App\Widgets\EventDescription;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class EventDescriptionDefinition extends WidgetDefinition
 {
@@ -43,5 +44,17 @@ class EventDescriptionDefinition extends WidgetDefinition
     public function requiredConfig(): ?array
     {
         return ['keys' => ['event_slug'], 'message' => 'Select an event to display its details.'];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['title', 'starts_at', 'ends_at', 'description', 'is_in_person', 'is_virtual', 'city', 'state'],
+            filters: ['slug' => (string) ($config['event_slug'] ?? '')],
+            model: 'event',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

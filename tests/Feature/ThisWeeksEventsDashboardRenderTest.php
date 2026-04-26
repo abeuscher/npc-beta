@@ -66,7 +66,7 @@ it('the ContractResolver returns only whitelisted Event fields (fail-closed on u
     $contract = new DataContract(
         version: '1.0.0',
         source: DataContract::SOURCE_SYSTEM_MODEL,
-        fields: ['title', 'internal_notes', 'price'],
+        fields: ['title', 'internal_notes', 'internal_email'],
         filters: ['date_range' => ['from' => 'now', 'to' => '+7 days']],
         model: 'event',
     );
@@ -77,10 +77,11 @@ it('the ContractResolver returns only whitelisted Event fields (fail-closed on u
     expect($dto['items'])->toHaveCount(1)
         ->and($dto['items'][0]['title'])->toBe('Gate Test')
         ->and($dto['items'][0]['internal_notes'])->toBe('')
-        ->and($dto['items'][0]['price'])->toBe('')
-        ->and($dto['items'][0])->toHaveKeys(['title', 'internal_notes', 'price'])
+        ->and($dto['items'][0]['internal_email'])->toBe('')
+        ->and($dto['items'][0])->toHaveKeys(['title', 'internal_notes', 'internal_email'])
         ->and($dto['items'][0])->not->toHaveKey('description')
-        ->and($dto['items'][0])->not->toHaveKey('author_id');
+        ->and($dto['items'][0])->not->toHaveKey('author_id')
+        ->and($dto['items'][0])->not->toHaveKey('price');
 });
 
 it('the ContractResolver date_range filter clips events outside the window', function () {

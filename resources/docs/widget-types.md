@@ -114,7 +114,6 @@ Record methods return a single model by key, cached per key for the remainder of
 
 | Method | Returns | Description |
 |---|---|---|
-| `event(string $slug)` | `?Event` | Published event with the given slug, or `null`. |
 | `product(string $slug)` | `?Product` | Published product with the given slug, or `null`. Eager-loads `prices`. |
 | `form(string $handle)` | `?Form` | Active form with the given handle, or `null`. |
 
@@ -122,9 +121,9 @@ Record methods return a single model by key, cached per key for the remainder of
 
 ```blade
 {{-- Assign from config, then use --}}
-@php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
-@isset($event)
-    <h2>{{ $event->title }}</h2>
+@php $product = $pageContext->product($config['product_slug'] ?? null); @endphp
+@isset($product)
+    <h2>{{ $product->name }}</h2>
 @endisset
 
 {{-- Resolve a collection by handle --}}

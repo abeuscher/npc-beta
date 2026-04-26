@@ -62,15 +62,51 @@ final class ContractResolver
 
     /**
      * @param  array<string, mixed>  $cache
-     * @return array{items: array<int, array<string, mixed>>}
+     * @return array<string, mixed>
      */
     private function resolveSystemModel(DataContract $contract, array &$cache): array
     {
+        if ($contract->cardinality === DataContract::CARDINALITY_ONE) {
+            return match ($contract->model) {
+                'event' => $this->resolveEventOne($contract, $cache),
+                default => ['item' => null],
+            };
+        }
+
         return match ($contract->model) {
             'post'  => $this->resolvePost($contract, $cache),
             'event' => $this->resolveEvent($contract, $cache),
             default => ['items' => []],
         };
+    }
+
+    /**
+     * Resolve a single Event by slug. Aggregate `is_at_capacity` derived via
+     * withCount on event_registrations — one coordinated query, no N+1.
+     *
+     * Per-request slug-keyed cache so EventDescription + EventRegistration
+     * targeting the same event landing page hit one query.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveEventOne(DataContract $contract, array &$cache): array
+    {
+        $slug = (string) ($contract->filters['slug'] ?? '');
+        if ($slug === '') {
+            return ['item' => null];
+        }
+
+        $key = 'event:one:' . $slug;
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = Event::published()
+                ->where('slug', $slug)
+                ->withCount(['registrations as registered_count' => fn ($q) => $q->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])])
+                ->with(['media', 'landingPage'])
+                ->first();
+        }
+
+        return $this->systemModelProjector->projectOne($contract, $cache[$key]);
     }
 
     /**

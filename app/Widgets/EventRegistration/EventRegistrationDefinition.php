@@ -3,6 +3,7 @@
 namespace App\Widgets\EventRegistration;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use App\WidgetPrimitive\DataContract;
 
 class EventRegistrationDefinition extends WidgetDefinition
 {
@@ -55,5 +56,17 @@ class EventRegistrationDefinition extends WidgetDefinition
     public function requiredConfig(): ?array
     {
         return ['keys' => ['event_slug'], 'message' => 'Select an event to display its registration form.'];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['slug', 'title', 'status', 'registration_mode', 'is_free', 'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url', 'price', 'is_at_capacity'],
+            filters: ['slug' => (string) ($config['event_slug'] ?? '')],
+            model: 'event',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

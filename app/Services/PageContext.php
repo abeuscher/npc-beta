@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Event;
 use App\Models\Form;
 use App\Models\Page;
 use App\Models\Product;
@@ -13,7 +12,6 @@ class PageContext
     public readonly mixed $currentUser;
 
     private array $collectionCache     = [];
-    private array $eventCache          = [];
     private array $productCache        = [];
     private array $formCache           = [];
 
@@ -33,21 +31,6 @@ class PageContext
         }
 
         return $this->collectionCache[$key];
-    }
-
-    public function event(?string $slug): ?Event
-    {
-        if ($slug === null) {
-            return null;
-        }
-
-        if (! array_key_exists($slug, $this->eventCache)) {
-            $this->eventCache[$slug] = Event::published()
-                ->where('slug', $slug)
-                ->first();
-        }
-
-        return $this->eventCache[$slug];
     }
 
     public function product(?string $slug): ?Product

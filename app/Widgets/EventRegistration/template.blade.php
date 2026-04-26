@@ -1,10 +1,10 @@
-@php $event = $pageContext->event($config['event_slug'] ?? null); @endphp
-@if (isset($event))
+@php $item = $widgetData['item'] ?? null; @endphp
+@if ($item)
     @php
-        $isCancelled  = $event->status === 'cancelled';
-        $isAtCapacity = $event->isAtCapacity();
-        $mode         = $event->registration_mode ?? 'open';
-        $isPaid       = ! $event->is_free;
+        $isCancelled  = $item['status'] === 'cancelled';
+        $isAtCapacity = (bool) $item['is_at_capacity'];
+        $mode         = $item['registration_mode'] ?? 'open';
+        $isPaid       = ! $item['is_free'];
         $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
         $portalUser   = auth('portal')->user();
         $portalContact = $portalUser?->contact;
@@ -30,8 +30,8 @@
         <p class="text-muted">This event is at capacity. Registration is closed.</p>
 
     @elseif ($mode === 'external')
-        @if (filled($event->external_registration_url))
-            <a href="{{ $event->external_registration_url }}" target="_blank" rel="noopener noreferrer" class="btn btn--primary">Register for this event &rarr;</a>
+        @if (filled($item['external_registration_url']))
+            <a href="{{ $item['external_registration_url'] }}" target="_blank" rel="noopener noreferrer" class="btn btn--primary">Register for this event &rarr;</a>
         @endif
 
     @elseif ($mode === 'closed')
@@ -48,11 +48,11 @@
         @endif
 
         @if ($isPaid)
-            <p class="text-muted" style="margin-bottom: 1rem;">Registration fee: <strong>${{ number_format((float) $event->price, 2) }}</strong></p>
+            <p class="text-muted" style="margin-bottom: 1rem;">Registration fee: <strong>${{ number_format((float) $item['price'], 2) }}</strong></p>
         @endif
 
         @if ($portalUser)
-            <form method="POST" action="{{ $isPaid ? route('portal.events.checkout', $event->slug) : route('portal.events.register', $event->slug) }}" style="margin-bottom: 0.5rem;">
+            <form method="POST" action="{{ $isPaid ? route('portal.events.checkout', $item['slug']) : route('portal.events.register', $item['slug']) }}" style="margin-bottom: 0.5rem;">
                 @csrf
                 <button type="submit" class="btn btn--primary">
                     {{ $isPaid ? 'Register & pay as member' : 'Register as member' }}
@@ -68,7 +68,7 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ $isPaid ? route('events.checkout', $event->slug) : route('events.register', $event->slug) }}" class="form-grid">
+            <form method="POST" action="{{ $isPaid ? route('events.checkout', $item['slug']) : route('events.register', $item['slug']) }}" class="form-grid">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -104,7 +104,7 @@
                            value="{{ old('company') }}" autocomplete="organization">
                 </div>
 
-                @if ($event->is_in_person)
+                @if ($item['is_in_person'])
                     <fieldset class="form-fieldset col-12">
                         <legend class="form-label">Mailing Address <span class="text-muted-light" style="font-weight: normal;">(optional)</span></legend>
                         <div class="form-grid">
@@ -140,7 +140,7 @@
                     </fieldset>
                 @endif
 
-                @if ($event->mailing_list_opt_in_enabled)
+                @if ($item['mailing_list_opt_in_enabled'])
                     <div class="col-12">
                         <label class="form-check-label">
                             <input type="checkbox" name="mailing_list_opt_in" value="1"

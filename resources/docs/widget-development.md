@@ -102,7 +102,6 @@ Some widgets bypass the collection system and call services directly from their 
 
 - **Product display**: `$pageContext->product($slug)` — loads a single product by slug.
 - **Product carousel**: `WidgetDataResolver::resolveProducts($queryConfig)` — loads published products directly.
-- **Event widgets**: `$pageContext->event($slug)` — loads a single event by slug.
 - **Form widget**: `$pageContext->form($handle)` — loads a form by handle.
 
 ---
