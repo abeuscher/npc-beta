@@ -64,6 +64,7 @@ final class SystemModelProjector
             'published_at_label' => $post->published_at?->format('F j, Y') ?? '',
             'excerpt'            => Str::limit(strip_tags($post->meta_description ?? ''), 160),
             'image'              => $thumb,
+            'author_name'        => $post->author?->name ?? '',
         ];
     }
 

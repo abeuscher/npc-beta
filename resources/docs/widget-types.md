@@ -91,7 +91,7 @@ The **CSS** field accepts scoped styles for this widget type. Styles are injecte
 
 ## `$pageContext` Reference
 
-`$pageContext` is a `App\Services\PageContext` instance available in every server-mode widget template on the current request. It provides typed, lazy, memoized access to page-level data. Queries run only on first access and are cached for the remainder of the request — calling `$pageContext->posts()` from two different widgets on the same page costs one query, not two.
+`$pageContext` is a `App\Services\PageContext` instance available in every server-mode widget template on the current request. It provides typed, lazy, memoized access to page-level data. Queries run only on first access and are cached for the remainder of the request.
 
 ### Properties
 
@@ -106,8 +106,6 @@ Stream methods return collections of records. All accept an optional `$limit` pa
 
 | Method | Returns | Description |
 |---|---|---|
-| `posts(?int $limit)` | `Collection<Page>` | Published pages of type `post`, ordered by `COALESCE(published_at, created_at) DESC`. |
-| `pages(?int $limit)` | `Collection<Page>` | Published pages of all types except `post`, ordered by `title ASC`. Useful for nav and search widgets. |
 | `collection(string $handle, ?int $limit)` | `array` | Resolves a named collection by handle via `WidgetDataResolver`. Returns an array of data arrays. Returns `[]` for unknown or non-public handles. See System Collections table below. |
 
 ### Record Methods
@@ -129,10 +127,9 @@ Record methods return a single model by key, cached per key for the remainder of
     <h2>{{ $event->title }}</h2>
 @endisset
 
-{{-- Stream with limit from config --}}
+{{-- Resolve a collection by handle --}}
 @php
-    $limit = isset($config['limit']) && $config['limit'] !== '' ? (int) $config['limit'] : null;
-    $posts = $pageContext->posts($limit);
+    $items = $pageContext->collection('blog_posts', 5);
 @endphp
 ```
 
@@ -149,8 +146,6 @@ The following handles are built in and resolved by `WidgetDataResolver`. Use the
 | `products` | Published products | `id`, `name`, `slug`, `description`, `capacity`, `available` |
 
 Custom collections defined in the Collections admin are also resolvable by their handle, provided they are marked public and active.
-
-Note: `blog_posts` is also accessible as a typed Eloquent collection via `$pageContext->posts()`. Prefer that method when you need model properties or relationships; use `collection()` when you need the flat array format.
 
 ---
 

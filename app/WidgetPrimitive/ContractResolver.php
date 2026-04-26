@@ -83,7 +83,7 @@ final class ContractResolver
         if (! array_key_exists($key, $cache)) {
             $query = Page::where('type', 'post')
                 ->published()
-                ->with('media');
+                ->with(['media', 'author']);
 
             $rawOrder = (string) ($contract->filters['order_by'] ?? '');
             $rawDirection = (string) ($contract->filters['direction'] ?? '');

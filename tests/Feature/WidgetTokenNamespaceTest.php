@@ -2,7 +2,9 @@
 
 use App\Models\Event;
 use App\Models\Page;
+use App\Models\User;
 use App\Models\WidgetType;
+use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -114,6 +116,59 @@ it('blog listing renders per-post title when the hosting page title would collid
     expect($cardRegion)
         ->toContain('Board Welcomes New Director')
         ->not->toContain('<h3>News</h3>');
+});
+
+// ── BlogPager — per-neighbor title survives page-context collision ─────────
+
+it('blog pager renders per-neighbor title when the hosting post title would collide', function () {
+    seedListingWidgetTypes();
+    $wt = WidgetType::where('handle', 'blog_pager')->firstOrFail();
+
+    $author = User::factory()->create(['name' => 'Author One']);
+
+    $newer = Page::factory()->create([
+        'type'         => 'post',
+        'title'        => 'Newer Post',
+        'slug'         => 'newer-post',
+        'status'       => 'published',
+        'published_at' => now()->subDay(),
+        'author_id'    => $author->id,
+    ]);
+
+    $host = Page::factory()->create([
+        'type'         => 'post',
+        'title'        => 'Host Post',
+        'slug'         => 'host-post',
+        'status'       => 'published',
+        'published_at' => now()->subDays(2),
+        'author_id'    => $author->id,
+    ]);
+
+    $older = Page::factory()->create([
+        'type'         => 'post',
+        'title'        => 'Older Post',
+        'slug'         => 'older-post',
+        'status'       => 'published',
+        'published_at' => now()->subDays(3),
+        'author_id'    => $author->id,
+    ]);
+
+    app()->instance(PageContext::class, new PageContext($host));
+
+    $pw = $host->widgets()->create([
+        'widget_type_id' => $wt->id,
+        'config'         => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $html = WidgetRenderer::render($pw)['html'];
+
+    expect($html)
+        ->toContain('Newer Post')
+        ->toContain('Older Post')
+        ->not->toContain('&larr; Host Post')
+        ->not->toContain('Host Post &rarr;');
 });
 
 // ── Carousel — per-slide caption survives page-context collision ────────────

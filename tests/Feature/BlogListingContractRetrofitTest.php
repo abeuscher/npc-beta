@@ -127,9 +127,17 @@ it('renders BlogListing through the contract resolver only, with a single pages 
 
     $mediaSelects = array_values(array_filter($queries, fn ($q) => str_starts_with($q['query'], 'select') && str_contains($q['query'], '"media"')));
 
+    $userBatchSelects = array_values(array_filter($queries, function ($q) {
+        $sql = $q['query'];
+        return str_starts_with($sql, 'select')
+            && str_contains($sql, 'from "users"')
+            && str_contains($sql, '"id" in');
+    }));
+
     expect(substr_count($html, '<article class="card">'))->toBe(3)
         ->and($html)->not->toContain('Draft Post Should Not Render')
         ->and(count($postSelects))->toBe(1)
         ->and($postSelects[0]['query'])->toContain('COALESCE(published_at, created_at)')
-        ->and(count($mediaSelects))->toBe(1);
+        ->and(count($mediaSelects))->toBe(1)
+        ->and(count($userBatchSelects))->toBe(1);
 });

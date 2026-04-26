@@ -6,15 +6,12 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\Page;
 use App\Models\Product;
-use Illuminate\Support\Collection;
 
 class PageContext
 {
     public readonly ?Page $currentPage;
     public readonly mixed $currentUser;
 
-    private ?Collection $postsCache    = null;
-    private ?Collection $pagesCache    = null;
     private array $collectionCache     = [];
     private array $eventCache          = [];
     private array $productCache        = [];
@@ -24,31 +21,6 @@ class PageContext
     {
         $this->currentPage = $currentPage;
         $this->currentUser = auth('portal')->user();
-    }
-
-    public function posts(?int $limit = null): Collection
-    {
-        if ($this->postsCache === null) {
-            $this->postsCache = Page::where('type', 'post')
-                ->published()
-                ->with('media')
-                ->orderByRaw('COALESCE(published_at, created_at) DESC')
-                ->get();
-        }
-
-        return $limit !== null ? $this->postsCache->take($limit) : $this->postsCache;
-    }
-
-    public function pages(?int $limit = null): Collection
-    {
-        if ($this->pagesCache === null) {
-            $this->pagesCache = Page::where('type', '!=', 'post')
-                ->published()
-                ->orderBy('title')
-                ->get();
-        }
-
-        return $limit !== null ? $this->pagesCache->take($limit) : $this->pagesCache;
     }
 
     public function collection(string $handle, ?int $limit = null): array
