@@ -1,10 +1,19 @@
 <?php
 
+use App\Models\Contact;
 use App\WidgetPrimitive\AmbientContext;
 use App\WidgetPrimitive\AmbientContexts\RecordDetailAmbientContext;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-it('constructs without args and is an instance of AmbientContext', function () {
-    $ambient = new RecordDetailAmbientContext();
+uses(TestCase::class, RefreshDatabase::class);
 
-    expect($ambient)->toBeInstanceOf(AmbientContext::class);
+it('round-trips an Eloquent record via its readonly record field', function () {
+    $contact = Contact::factory()->create();
+
+    $ambient = new RecordDetailAmbientContext($contact);
+
+    expect($ambient)->toBeInstanceOf(AmbientContext::class)
+        ->and($ambient->record)->toBe($contact)
+        ->and($ambient->record->id)->toBe($contact->id);
 });

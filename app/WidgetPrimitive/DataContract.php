@@ -5,6 +5,7 @@ namespace App\WidgetPrimitive;
 final class DataContract
 {
     public const SOURCE_PAGE_CONTEXT = 'page_context';
+    public const SOURCE_RECORD_CONTEXT = 'record_context';
     public const SOURCE_SYSTEM_MODEL = 'system_model';
     public const SOURCE_WIDGET_CONTENT_TYPE = 'widget_content_type';
 

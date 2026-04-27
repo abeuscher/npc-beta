@@ -9,6 +9,7 @@ use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\SlotRegistry;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Blade;
 
 class WidgetRenderer
@@ -19,11 +20,21 @@ class WidgetRenderer
      * @param  array<string, array>  $fallbackCollectionData  Optional pre-resolved collection data (e.g. demo data for admin preview). Keyed by collection handle.
      * @return array{html: string|null, styles: string, scripts: string}
      */
-    public static function render(PageWidget $pw, array $columnChildren = [], array $fallbackCollectionData = [], string $slotHandle = 'page_builder_canvas'): array
+    public static function render(
+        PageWidget $pw,
+        array $columnChildren = [],
+        array $fallbackCollectionData = [],
+        string $slotHandle = 'page_builder_canvas',
+        ?Model $record = null,
+    ): array
     {
         $widgetType = $pw->widgetType;
 
         if (! $widgetType) {
+            return ['html' => null, 'styles' => '', 'scripts' => ''];
+        }
+
+        if ($slotHandle === 'record_detail_sidebar' && $record === null) {
             return ['html' => null, 'styles' => '', 'scripts' => ''];
         }
 
@@ -71,9 +82,13 @@ class WidgetRenderer
                     && ! self::configHasTokens($config);
 
                 if (! $skip) {
-                    $slot = $isCanvas
-                        ? app(SlotRegistry::class)->find('page_builder_canvas')->ambientContext($pageContext, $tokenPage)
-                        : app(SlotRegistry::class)->find($slotHandle)->ambientContext();
+                    if ($isCanvas) {
+                        $slot = app(SlotRegistry::class)->find('page_builder_canvas')->ambientContext($pageContext, $tokenPage);
+                    } elseif ($slotHandle === 'record_detail_sidebar') {
+                        $slot = app(SlotRegistry::class)->find('record_detail_sidebar')->ambientContext($record);
+                    } else {
+                        $slot = app(SlotRegistry::class)->find($slotHandle)->ambientContext();
+                    }
                     $widgetData = app(ContractResolver::class)->resolve([$contract], $slot, $fallbackCollectionData)[0];
                 }
             }

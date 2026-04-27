@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ContactResource\Pages;
 
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\TransactionResource;
+use App\Filament\Widgets\RecordDetailViewWidget;
 use App\Mail\PortalEmailVerification;
 use App\Models\Contact;
 use App\Models\Membership;
@@ -26,6 +27,13 @@ class EditContact extends ReadOnlyAwareEditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('edit', ['record' => $this->record]);
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            RecordDetailViewWidget::class,
+        ];
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

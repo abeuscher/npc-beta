@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Contact;
 use App\Models\Page;
 use App\WidgetPrimitive\AmbientContexts\DashboardAmbientContext;
 use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
@@ -32,7 +33,8 @@ it('returns null when ambient is a DashboardAmbientContext', function () {
 });
 
 it('returns null when ambient is a RecordDetailAmbientContext', function () {
-    $ctx = new SlotContext(new RecordDetailAmbientContext());
+    $contact = Contact::factory()->create();
+    $ctx = new SlotContext(new RecordDetailAmbientContext($contact));
 
     expect($ctx->currentPage())->toBeNull();
 });

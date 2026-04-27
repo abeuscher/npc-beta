@@ -9,9 +9,11 @@ We are about to begin a new session: **NNN. Session Title**.
 Before doing anything else:
 
 1. Read `sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, and `sessions/template-session-log.md`. These files are the **canonical format reference** for all session documents. Do not infer format from previous session logs — the templates take precedence.
-2. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
-3. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
-4. Summarise your understanding and confirm you are ready to proceed.
+2. Read `sessions/session-outlines.md` (the roadmap) for the active-tracks block and the Beta 1 stub for this session.
+3. If this session belongs to an active track, read that track's planning doc at `sessions/tracks/{track-name}.md` — status snapshot, phase retrospectives (closed-phase history), and the forward plan all live there.
+4. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
+5. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
+6. Summarise your understanding and confirm you are ready to proceed.
 
 ---
 
@@ -57,9 +59,12 @@ Claude then drafts the next session's documents:
 When the user says to close (after the next session's prompt is agreed):
 
 - **Session log**: write a log file at `sessions/NNN. Session Title — Log.md`. Use `sessions/template-session-log.md` as the format reference — copy its structure exactly, do not base it on previous logs.
-- **Update session-outlines.md**: move this session's title into the Completed Sessions table. Review upcoming stubs and update them if this session's work affects their scope or dependencies.
+- **Update `sessions/completed-sessions.md`**: append this session's row to the index table (number + title).
+- **Update `sessions/session-outlines.md`** (the roadmap): if this session resolved any forward stubs, edit or remove them. The Completed Sessions table is **not** here — it lives in `sessions/completed-sessions.md`.
+- **If this session belongs to a track:** update the track's `sessions/tracks/{name}.md` — bump the status snapshot (last update date, what's complete, what's active). If this session is the **terminal session of a phase** within the track, also do the **phase-expiry compression** below.
+- **Phase-expiry compression** *(only when a session closes a phase within a track)*: lift the phase's session-by-session detail out of the track doc's status snapshot or roadmap roll-up and write a compressed retrospective entry into the track doc's "Phase Retrospectives" section. Shape: phase name, sessions list, key outcomes (1–3 sentences), key decisions or carry-forwards. Per-session detail stays in the matching session log files. The roadmap's track entry stays one line; nothing inflates as the project ages.
 - **Archive the previous session**: move all files matching `sessions/(NNN-1). *.md` into `sessions/archived/`. This includes the previous session's base prompt, session prompt, and log. Skip silently if those files don't exist or have already been archived (e.g., the user moved them manually). The current session's files stay in `sessions/` until the *next* session's close.
-- **Commit**: stage all changed files (including the log, updated outlines, and any files moved into `sessions/archived/`), commit on the current `session-NNN/N` branch, and notify the user. Do not push — the user will push and merge when ready.
+- **Commit**: stage all changed files (including the log, updated outlines/track docs, the completed-sessions index, and any files moved into `sessions/archived/`), commit on the current `session-NNN/N` branch, and notify the user. Do not push — the user will push and merge when ready.
 - **Do not begin the next session** until the user explicitly starts it.
 
 ---

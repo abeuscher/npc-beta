@@ -1,6 +1,13 @@
 <?php
 
+use App\Models\Contact;
+use App\WidgetPrimitive\AmbientContexts\RecordDetailAmbientContext;
+use App\WidgetPrimitive\SlotContext;
 use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
 
 it('declares the record-detail-sidebar identity and null config surface', function () {
     $slot = new RecordDetailSidebarSlot();
@@ -21,6 +28,28 @@ it('reports compact, column-stackable, bounded appearance constraints', function
     ]);
 });
 
-it('throws when ambientContext is called — wiring lands in Phase 5b', function () {
-    (new RecordDetailSidebarSlot())->ambientContext();
-})->throws(RuntimeException::class, 'Slot ambient context not yet wired — lands with Phase 5b');
+it('builds a SlotContext carrying the record on a RecordDetailAmbientContext', function () {
+    $contact = Contact::factory()->create();
+
+    $ctx = (new RecordDetailSidebarSlot())->ambientContext($contact);
+
+    expect($ctx)->toBeInstanceOf(SlotContext::class)
+        ->and($ctx->ambient)->toBeInstanceOf(RecordDetailAmbientContext::class)
+        ->and($ctx->ambient->record->id)->toBe($contact->id);
+});
+
+it('marks the record-detail surface as non-public (admin-only)', function () {
+    $contact = Contact::factory()->create();
+
+    $ctx = (new RecordDetailSidebarSlot())->ambientContext($contact);
+
+    expect($ctx->publicSurface)->toBeFalse();
+});
+
+it('returns null from currentPage() — record-detail ambient is not a page ambient', function () {
+    $contact = Contact::factory()->create();
+
+    $ctx = (new RecordDetailSidebarSlot())->ambientContext($contact);
+
+    expect($ctx->currentPage())->toBeNull();
+});

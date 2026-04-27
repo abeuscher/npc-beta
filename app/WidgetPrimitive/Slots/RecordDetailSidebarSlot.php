@@ -2,9 +2,10 @@
 
 namespace App\WidgetPrimitive\Slots;
 
+use App\WidgetPrimitive\AmbientContexts\RecordDetailAmbientContext;
 use App\WidgetPrimitive\Slot;
 use App\WidgetPrimitive\SlotContext;
-use RuntimeException;
+use Illuminate\Database\Eloquent\Model;
 
 final class RecordDetailSidebarSlot extends Slot
 {
@@ -18,9 +19,9 @@ final class RecordDetailSidebarSlot extends Slot
         return 'Record Detail Sidebar';
     }
 
-    public function ambientContext(): SlotContext
+    public function ambientContext(Model $record): SlotContext
     {
-        throw new RuntimeException('Slot ambient context not yet wired — lands with Phase 5b');
+        return new SlotContext(new RecordDetailAmbientContext($record), publicSurface: false);
     }
 
     public function layoutConstraints(): array

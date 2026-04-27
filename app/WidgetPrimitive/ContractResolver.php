@@ -7,16 +7,20 @@ use App\Models\CollectionItem;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\Product;
+use App\WidgetPrimitive\AmbientContexts\RecordDetailAmbientContext;
 use App\WidgetPrimitive\Projectors\PageContextProjector;
+use App\WidgetPrimitive\Projectors\RecordContextProjector;
 use App\WidgetPrimitive\Projectors\SystemModelProjector;
 use App\WidgetPrimitive\Projectors\WidgetContentTypeProjector;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 final class ContractResolver
 {
     public function __construct(
         private readonly PageContextProjector $pageContextProjector,
+        private readonly RecordContextProjector $recordContextProjector,
         private readonly SystemModelProjector $systemModelProjector,
         private readonly WidgetContentTypeProjector $widgetContentTypeProjector,
     ) {}
@@ -52,6 +56,7 @@ final class ContractResolver
         foreach ($contracts as $i => $contract) {
             $results[$i] = match ($contract->source) {
                 DataContract::SOURCE_PAGE_CONTEXT        => $this->pageContextProjector->project($contract, $context->currentPage()),
+                DataContract::SOURCE_RECORD_CONTEXT      => $this->recordContextProjector->project($contract, $this->recordFromContext($context)),
                 DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache),
                 DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $context, $cache, $fallback),
                 default                                  => [],
@@ -59,6 +64,13 @@ final class ContractResolver
         }
 
         return $results;
+    }
+
+    private function recordFromContext(SlotContext $context): ?Model
+    {
+        return $context->ambient instanceof RecordDetailAmbientContext
+            ? $context->ambient->record
+            : null;
     }
 
     /**

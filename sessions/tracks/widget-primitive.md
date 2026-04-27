@@ -1,8 +1,84 @@
-# Widget Primitive — Migration Sketch
+# Track: Widget Primitive
 
-## Status
+The canonical planning + history doc for the Widget Primitive architectural arc. Premise and rationale live alongside in `widget-primitive-premise.md`.
 
-Companion to `widget-primitive.md`. Not a commitment, not a spec, not a sequenced roadmap ready for execution. A sketch of the shape a transition would take if executed, capturing the decisions and priorities aligned on during scoping conversations so they survive into whatever a real plan eventually looks like.
+This doc carries three things:
+
+- **Status snapshot** — where the track is right now, what's next.
+- **Phase Retrospectives** — compressed history of closed phases (sessions list, outcomes, key decisions, carry-forwards). Replaces the per-session paragraph stack that previously lived in `session-outlines.md`.
+- **Forward plan** — the migration sketch (Phase 1–6 sequence and the Phase 5 sub-sequence), design decisions locked in, security posture, content shapes, known risks, forward hooks. Forward-looking detail accumulates here as future phases get scoped.
+
+When a phase closes, its retrospective lands in this doc and its entry in the roadmap (`session-outlines.md`) collapses to a one-liner.
+
+---
+
+## Status snapshot
+
+**Last update:** 2026-04-27 (Phase 5b shipped, session 228).
+
+**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b. Sessions 209–224, 227, 228.
+
+**Active:** Phase 5c — `record_detail_views` table + IsView registry + sub-nav rendering primitive + Templates/Themes refactor folded in + admin UI for authoring per-record-type View sets. Largest session in the Phase 5 arc by surface area.
+
+**Remaining in track:** ~6–9 sessions.
+
+- Phase 5c (1 session, the next one)
+- Phase 5d+ — concrete record-detail widgets: Recent Notes, Recent Donations, Membership Status, Recent Activity (~4–6 sessions, one widget per session, mirrors the Phase 4 cadence)
+- Cheap follow-up post-5d — convert `DashboardConfig` to `DashboardView` implementing `IsView` (1 session, ad-hoc)
+- Phase 6 — page-builder convergence (0–1 standalone sessions; partially landed via the Vue reuse in 215)
+
+**Named risk for the Phase 5 arc** ("low probability the contract layer cannot coexist with Filament's Livewire model") was answered in 5b — it does coexist.
+
+---
+
+## Phase Retrospectives
+
+Compressed history. Per-session detail lives in the matching `sessions/(archived/)NNN. … — Log.md` files.
+
+### Phase 1 — Data contract prototype (session 209)
+
+Two real widgets (BlogListing, EventsListing) had their `DataContract` declarations written by hand and a resolver built that turned contracts into DTOs. Verdict: **proceed with refinements.** The contract language was expressive enough for the test cases without becoming a second ORM.
+
+### Contract Refinements (session 210)
+
+Projector extraction, fallback semantics into the resolver, `PageContextTokens` singleton with per-page memoization, richtext-consumer pattern documented. Mid-session pivot: the **source-as-capability** simplification — `SOURCE_PAGE_CONTEXT` contracts declare no `fields` and the resolver returns the full bounded `PageContextTokens::TOKENS` map. The other two sources keep per-field fail-closed discipline. This is the load-bearing decision the rest of the track depends on.
+
+### Phase 2 — Slot taxonomy (session 211)
+
+`Slot` abstract + `SlotRegistry` singleton; three slot declarations (`PageBuilderCanvasSlot` live, `DashboardGridSlot` and `RecordDetailSidebarSlot` declaration-only with `RuntimeException` bodies pending later phases); `WidgetDefinition::allowedSlots()` default method (`['page_builder_canvas']`); `WidgetRenderer` retrofitted to construct ambient context through the canvas slot. Byte-equivalent output preserved. 15 new unit tests across 6 files.
+
+### Phase 3 — Dashboard grid (sessions 212–215, four sub-sessions)
+
+- **3a (212):** `DashboardGridSlot::ambientContext()` opened. `WidgetRenderer::render()` gained a `$slotHandle` parameter (default `page_builder_canvas`, byte-equivalent for existing callers; `dashboard_grid` branch skips tokenPage and token-substitution). `DashboardSlotGridWidget` Filament widget mounts on the admin dashboard. Surfaced and fixed: a Livewire morph / Alpine race around per-lib asset loading, resolved by extracting `WidgetAssetResolver` (singleton) and emitting lib bundles from a `panels::head.end` render hook.
+- **3b (213):** `App\WidgetPrimitive\Source` final class with six well-known constants (`HUMAN`, `DEMO`, `IMPORT`, `GOOGLE_DOCS`, `LLM_SYNTHESIS`, `STRIPE_WEBHOOK`); `HasSourcePolicy` trait (instance-based `acceptsSource`, fail-closed when `ACCEPTED_SOURCES` constant absent, universal `HUMAN` pass) applied to `Page`, `Contact`, `Donation`; `DataSink` singleton with three guards. Sharpest security win: `Donation::ACCEPTED_SOURCES` explicitly excludes `Source::DEMO`.
+- **3c (214):** Three dashboard-native widgets shipped (Memos, Quick Actions, This Week's Events). `publicSurface: bool` field added to `SlotContext` — admin slots pass `false`, which drops `is_public` filtering inside `ContractResolver::resolveWidgetContentType()`. This is what unlocks admin-only collections (memos) on the dashboard without public exposure leaking.
+- **3d (215):** `dashboard_configs` table as polymorphic owner of `page_widgets` (honors the polymorphic-owner discipline — no parallel `dashboard_widgets` table). The Vue page builder is reused in a new `dashboard` mode — first concrete step of Phase 6 (page-builder convergence) arriving naturally rather than as a later rewrite.
+
+### Phase 4 — Retrofit existing widgets onto contracts (sessions 216–224, nine sub-sessions including the follower)
+
+All ~16 page-builder widgets that had a data path now declare `dataContract($config)`; templates read from `$widgetData['items']` (list) or `$widgetData['item']` (single-row).
+
+- **4a (216) BlogListing audit-style retrofit.** Established the test-lock pattern (fail-closed field whitelist + resolver-is-only-path query-count pin).
+- **4b (217) EventsListing.** Retired `PageContext::upcomingEvents()`. Locked the **projector field-naming convention** — source-column name carries the canonical timestamp (`starts_at` ISO), `_label` suffix the presentation companion (since superseded by 226's concept-named convention).
+- **4c (218) Carousel.** First `SOURCE_WIDGET_CONTENT_TYPE` retrofit. **Established system rule:** contract-locked widgets do not declare `collections()`. Demo data flows only via `DemoSeeder`-seeded real Collections.
+- **4d (219) BarChart.** First widget where `dataContract()`'s `fields` list is dynamic per-instance. **Stale-seeder discipline gap surfaced** — `WidgetTypeSeeder` must be re-run after `collections()` removal; carry-forward rule established. Production deploy note carried.
+- **4e (220) BoardMembers + LogoGarden.** Two SWCT retrofits in one session. After 220, `WidgetRenderer::render()`'s legacy slot-strip loop iterates 0 times for every widget.
+- **Follower (221) — Query settings in the contract layer.** Five-knob (`limit`, `order_by`, `direction`, `include_tags`, `exclude_tags`) panel flows through the contract layer for all eight list-shaped widgets uniformly. `App\WidgetPrimitive\QuerySettings` value object on the contract. Vue panel rebuilt per the no-collapse rule. **Sharpest finding:** `cmsTags` references in `WidgetDataResolver::resolveCustom` had been silently broken since session 040 — `include_tags`/`exclude_tags` was a no-op for ~14 months.
+- **4f (222) BlogPager.** First `SOURCE_SYSTEM_MODEL` retrofit on Page-as-post. Retired `PageContext::posts()`. Surfaced and fixed a pre-existing token-namespacing bug — BlogPager's prev/next links were displaying host post metadata instead of neighbor metadata; tokens migrated to `{{item.foo}}` namespace.
+- **4g (223) EventDescription + EventRegistration.** **First non-list-shaped contract.** Locked the single-row DTO shape `['item' => row | null]`, the `cardinality: 'one' | 'many'` field on `DataContract`, and the **aggregate-derived field via `withCount` baked into the resolver** pattern (`is_at_capacity`). Retired `PageContext::event()`.
+- **4h (224) ProductCarousel + ProductDisplay.** Brand-new `'product'` arm in both `ContractResolver` and `SystemModelProjector`. **First nested DTO projection** (Product.prices). The entire `WidgetDataResolver` shell retired. Out-of-scope cleanup: legacy `TransactionSeeder` deleted entirely. **Closes Phase 4.**
+
+After Phase 4: every widget in `app/Widgets/*` with a data path declares a contract; `WidgetDataResolver` is gone; `PageContext` retains only `currentPage`, `currentUser`, and `form()`. The Forms widget retrofit (which would retire `form()`) has no scheduled session.
+
+### Phase 5a — Typed ambient context primitive (session 227)
+
+Abstract `App\WidgetPrimitive\AmbientContext` (sealed by convention) with three final subtypes (`PageAmbientContext` carrying `?Page`, `DashboardAmbientContext` empty, `RecordDetailAmbientContext` empty — payload landed in 5b). `SlotContext` constructor refactored from `(PageContext, ?Page, bool)` to `(AmbientContext, bool $publicSurface)`; `currentPage()` survives as a delegate that asks the ambient. 14 test files rippled for the constructor swap; 4 new unit test files. **Architectural decision locked in during 227 close-gate:** the **"a+" View framing** — `View` is the shared widget-composition primitive expressed as the `App\WidgetPrimitive\IsView` PHP interface; `DashboardView` and `RecordDetailView` adopt the vocabulary natively; CMS `Page` keeps its own table and full public-facing surface and implements `IsView` as a small adapter only if/when "walk every widget-mounting surface" becomes load-bearing (could be never). No unified `views` table, no Page refactor.
+
+### Phase 5b — Filament mount + record-detail ambient wiring + IsView interface + placeholder widget (session 228)
+
+`RecordDetailAmbientContext` payload (`Model $record`) opened; `RecordDetailSidebarSlot::ambientContext($record)` body opened; `SOURCE_RECORD_CONTEXT` + `RecordContextProjector` + `RecordContextTokens` (mirror of the page-context trio, source-as-capability); `IsView` PHP interface declared; first concrete `RecordDetailView` (hardcoded array — table-backing in 5c); Filament hosting on `EditContact` via `RecordDetailViewWidget` (mirror of `DashboardSlotGridWidget`); placeholder widget at `app/Widgets/RecordDetailPlaceholder/` with `allowedSlots: ['record_detail_sidebar']` and a `SOURCE_RECORD_CONTEXT` contract. Visible verification: a Contact's edit page rendered "Record detail sidebar — Contact #N" through the full pipeline. Fast Pest 1503/0. **The named Phase 5 risk got answered: the contract layer coexists with Filament's Livewire model.**
+
+---
 
 ## Stance
 
@@ -81,6 +157,13 @@ Sequence as of 2026-04-26:
 ### Phase 6 — Page-builder convergence (1–2 sessions)
 
 Ensure the page builder consumes the same primitive. Should be mostly rename/refactor — the page builder is already widget-shaped; the data path becomes contract-bound like every other slot.
+
+### Pending paradigm questions (mid-arc, no committed session yet)
+
+Architectural gaps the arc has been silent on. Both will need addressing within the 5d+ window when concrete record-detail widgets force the issue, but neither blocks any committed session and neither has a session number yet. Named here so they're findable and a reader walking in cold sees them in one place.
+
+- **Permissions in the contract layer.** The arc has been silent on permissions. Today's perms (`view_donation`, `view_note`, etc., via spatie/laravel-permission) are checked at Filament resource/page level. Widgets/contracts don't declare perm requirements and the resolver doesn't gate by permission. The principle is clear (concentrated enforcement at the resolver, fail-closed per source/contract — same shape as the source-as-capability discipline), but the mechanism isn't designed. **Forcing function:** the first concrete record-detail widget in 5d+ that reads sensitive data (Recent Donations is the natural one). When it lands, design and ship "Phase 5e — Permissions in the contract layer" as its own session.
+- **Widget help system integration.** The CRM has a help system (`resources/docs/{handle}.md`, search, related articles) but widgets can't currently express help docs that surface in it. A widget should be able to declare a help article that rolls up into the help for the View it's mounted in (or for the parent record-detail page, or for the dashboard). Same declarative-atom shape as data contracts — each widget declares; the surface aggregates. Open sub-questions: where does widget help live (per-widget folder mirrors session 172 colocation; or `resources/docs/widgets/{handle}.md`), whether the help registers as a standalone article or only rolls up under the parent View, and whether Views themselves carry help docs or are always the union of their widgets' help. **Forcing function:** any concrete record-detail widget benefits from this; the natural moment is when 5d+ ships its second or third widget and the help-rollup gap becomes visible.
 
 ### Deferred
 

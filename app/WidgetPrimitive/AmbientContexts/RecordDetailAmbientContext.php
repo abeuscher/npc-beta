@@ -3,10 +3,11 @@
 namespace App\WidgetPrimitive\AmbientContexts;
 
 use App\WidgetPrimitive\AmbientContext;
+use Illuminate\Database\Eloquent\Model;
 
-/**
- * Phase 5b plugs the record payload (Contact / Event / etc.).
- */
 final class RecordDetailAmbientContext extends AmbientContext
 {
+    public function __construct(
+        public readonly Model $record,
+    ) {}
 }

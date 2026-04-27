@@ -7,6 +7,8 @@ use App\Services\WidgetAssetResolver;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\DataSink;
+use App\WidgetPrimitive\Projectors\RecordContextProjector;
+use App\WidgetPrimitive\RecordContextTokens;
 use App\WidgetPrimitive\SlotRegistry;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
 use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
@@ -37,6 +39,7 @@ use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
+use App\Widgets\RecordDetailPlaceholder\RecordDetailPlaceholderDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
@@ -54,6 +57,8 @@ class WidgetServiceProvider extends ServiceProvider
         $this->app->singleton(WidgetRegistry::class, fn () => new WidgetRegistry());
         $this->app->singleton(WidgetConfigResolver::class, fn ($app) => new WidgetConfigResolver($app->make(WidgetRegistry::class)));
         $this->app->singleton(PageContextTokens::class, fn () => new PageContextTokens());
+        $this->app->singleton(RecordContextTokens::class, fn () => new RecordContextTokens());
+        $this->app->singleton(RecordContextProjector::class, fn ($app) => new RecordContextProjector($app->make(RecordContextTokens::class)));
         $this->app->singleton(SlotRegistry::class, fn () => new SlotRegistry());
         $this->app->singleton(WidgetAssetResolver::class, fn () => new WidgetAssetResolver());
         $this->app->singleton(DataSink::class, fn () => new DataSink());
@@ -103,5 +108,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new MemosDefinition());
         $registry->register(new QuickActionsDefinition());
         $registry->register(new ThisWeeksEventsDefinition());
+        $registry->register(new RecordDetailPlaceholderDefinition());
     }
 }
