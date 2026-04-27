@@ -127,6 +127,8 @@ class TemplateResource extends Resource
             'create'               => Pages\CreateTemplate::route('/create'),
             'edit-content'         => Pages\EditContentTemplate::route('/{record}/edit-content'),
             'edit-page'            => Pages\EditPageTemplate::route('/{record}/edit-page'),
+            'edit-page.chrome'     => Pages\EditPageTemplateChrome::route('/{record}/edit-page/chrome/{view}'),
+            'edit-page.scss'       => Pages\EditPageTemplateScss::route('/{record}/edit-page/scss'),
         ];
     }
 }

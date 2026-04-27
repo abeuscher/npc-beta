@@ -229,33 +229,48 @@ it('renders widget-driven footer when widgets exist', function () {
 
 // ── Permission gating ───────────────────────────────────────────────────────
 
-it('hides Header and Footer tabs from users without edit_site_chrome permission', function () {
+it('hides Header and Footer sub-nav entries from users without edit_site_chrome permission', function () {
     $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $this->seed(\Database\Seeders\WidgetTypeSeeder::class);
+    $this->seed(\Database\Seeders\RecordDetailViewSeeder::class);
     $pt = Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
     $user = User::factory()->create();
     $user->givePermissionTo('view_any_page');
+    $this->actingAs($user);
 
-    $response = $this->actingAs($user)
-        ->get(\App\Filament\Resources\TemplateResource::getUrl('edit-page', ['record' => $pt]));
+    $page = new \App\Filament\Resources\TemplateResource\Pages\EditPageTemplate();
+    $page->record = $pt;
 
-    $response->assertDontSee("tab = 'header'", false);
-    $response->assertDontSee("tab = 'footer'", false);
+    $labels = array_map(
+        fn (\Filament\Navigation\NavigationItem $i) => $i->getLabel(),
+        $page->getSubNavigation(),
+    );
+
+    expect($labels)->not->toContain('Header')
+        ->and($labels)->not->toContain('Footer');
 });
 
-it('shows Header and Footer tabs to users with edit_site_chrome permission', function () {
+it('shows Header and Footer sub-nav entries to users with edit_site_chrome permission', function () {
     $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $this->seed(\Database\Seeders\WidgetTypeSeeder::class);
+    $this->seed(\Database\Seeders\RecordDetailViewSeeder::class);
     $pt = Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
     $user = User::factory()->create();
     $user->givePermissionTo(['view_any_page', 'edit_site_chrome']);
+    $this->actingAs($user);
 
-    $response = $this->actingAs($user)
-        ->get(\App\Filament\Resources\TemplateResource::getUrl('edit-page', ['record' => $pt]))
-        ->assertOk();
+    $page = new \App\Filament\Resources\TemplateResource\Pages\EditPageTemplate();
+    $page->record = $pt;
 
-    $response->assertSee("tab = 'header'", false);
-    $response->assertSee("tab = 'footer'", false);
+    $labels = array_map(
+        fn (\Filament\Navigation\NavigationItem $i) => $i->getLabel(),
+        $page->getSubNavigation(),
+    );
+
+    expect($labels)->toContain('Header')
+        ->and($labels)->toContain('Footer');
 });
 
 // ── ChromeRenderer renders layouts ──────────────────────────────────────────

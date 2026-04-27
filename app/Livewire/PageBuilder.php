@@ -333,8 +333,9 @@ class PageBuilder extends Component
             : [];
 
         $base = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
+        $isChromePage = $page && $page->type === 'system' && str_starts_with($page->slug, '_');
         $path = $page
-            ? ($page->slug === 'home' ? '/' : '/' . $page->slug)
+            ? ($isChromePage || $page->slug === 'home' ? '/' : '/' . $page->slug)
             : '';
         $pageUrl = $page ? ($base . $path) : '';
 

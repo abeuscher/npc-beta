@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ContactResource\Pages;
 
+use App\Filament\Concerns\HasRecordDetailSubNavigation;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\TransactionResource;
 use App\Filament\Widgets\RecordDetailViewWidget;
@@ -20,6 +21,8 @@ use Illuminate\Support\Str;
 
 class EditContact extends ReadOnlyAwareEditRecord
 {
+    use HasRecordDetailSubNavigation;
+
     protected static string $resource = ContactResource::class;
 
     public ?string $initialHouseholdId = null;

@@ -159,6 +159,9 @@ class DatabaseSeeder extends Seeder
         // ── Dashboard config (super_admin default arrangement) ──────────────
         $this->call(DashboardConfigSeeder::class);
 
+        // ── Record-detail Views (per-record-type sub-nav anchors) ───────────
+        $this->call(RecordDetailViewSeeder::class);
+
         // ── Help articles ────────────────────────────────────────────────────
         Artisan::call('help:sync');
     }

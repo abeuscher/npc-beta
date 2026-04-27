@@ -231,4 +231,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 226 | Date Display — Format Hints + Projector-Owned Assembly |
 | 227 | Widget Primitive — Phase 5a (Typed Ambient Context Primitive) |
 | 228 | Widget Primitive — Phase 5b (Record-Detail Filament Mount + Ambient Wiring + IsView Primitive) |
+| 229 | Widget Primitive — Phase 5c (record_detail_views Table + IsView Registry + Sub-Nav Rendering Primitive) |
 

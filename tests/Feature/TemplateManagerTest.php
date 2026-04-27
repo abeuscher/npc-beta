@@ -3,6 +3,7 @@
 use App\Filament\Resources\TemplateResource;
 use App\Filament\Resources\TemplateResource\Pages\EditContentTemplate;
 use App\Filament\Resources\TemplateResource\Pages\EditPageTemplate;
+use App\Filament\Resources\TemplateResource\Pages\EditPageTemplateChrome;
 use App\Filament\Resources\TemplateResource\Pages\ListTemplates;
 use App\Livewire\PageBuilder;
 use App\Models\Page;
@@ -134,10 +135,11 @@ it('can set a page template as default', function () {
     expect($new->fresh()->is_default)->toBeTrue();
 });
 
-it('saves page template appearance via edit form', function () {
+it('saves page template appearance via the entry page (Label and Colors)', function () {
     $pt = Template::factory()->create([
         'type'          => 'page',
         'is_default'    => true,
+        'name'          => 'Default',
         'primary_color' => '#000000',
     ]);
 
@@ -149,7 +151,7 @@ it('saves page template appearance via edit form', function () {
     expect($pt->fresh()->primary_color)->toBe('#ff0000');
 });
 
-it('clears appearance to inherit from default', function () {
+it('clears appearance to inherit from default via the entry page', function () {
     Template::factory()->create(['type' => 'page', 'is_default' => true, 'primary_color' => '#111111']);
     $child = Template::factory()->create([
         'type'            => 'page',
@@ -295,8 +297,9 @@ it('non-default page template inherits values from default when fields are null'
 
 // ── Custom header/footer for non-default templates ────────────────────────
 
-it('enableCustomHeader creates a system page and sets header_page_id', function () {
+it('enableCustomChrome (header) creates a system page and sets header_page_id', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+    $this->artisan('db:seed', ['--class' => 'RecordDetailViewSeeder']);
 
     $headerPage = Page::factory()->create(['slug' => '_header', 'type' => 'system', 'status' => 'published']);
     $default = Template::factory()->create([
@@ -311,8 +314,8 @@ it('enableCustomHeader creates a system page and sets header_page_id', function 
         'header_page_id' => null,
     ]);
 
-    Livewire::test(EditPageTemplate::class, ['record' => $child->id])
-        ->call('enableCustomHeader');
+    Livewire::test(EditPageTemplateChrome::class, ['record' => $child->id, 'view' => 'page_template_header'])
+        ->call('enableCustomChrome');
 
     $child->refresh();
     expect($child->header_page_id)->not->toBeNull();
@@ -322,7 +325,10 @@ it('enableCustomHeader creates a system page and sets header_page_id', function 
     expect($customHeader->type)->toBe('system');
 });
 
-it('inheritHeader resets header_page_id to null', function () {
+it('inheritChrome (header) resets header_page_id to null', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+    $this->artisan('db:seed', ['--class' => 'RecordDetailViewSeeder']);
+
     $default = Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
     $customHeaderPage = Page::factory()->create(['slug' => '_header_test', 'type' => 'system']);
@@ -332,8 +338,8 @@ it('inheritHeader resets header_page_id to null', function () {
         'header_page_id' => $customHeaderPage->id,
     ]);
 
-    Livewire::test(EditPageTemplate::class, ['record' => $child->id])
-        ->call('inheritHeader');
+    Livewire::test(EditPageTemplateChrome::class, ['record' => $child->id, 'view' => 'page_template_header'])
+        ->call('inheritChrome');
 
     expect($child->fresh()->header_page_id)->toBeNull();
 });

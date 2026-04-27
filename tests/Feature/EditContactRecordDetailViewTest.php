@@ -3,7 +3,6 @@
 use App\Filament\Resources\ContactResource\Pages\EditContact;
 use App\Filament\Widgets\RecordDetailViewWidget;
 use App\Models\Contact;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -13,6 +12,7 @@ uses(TestCase::class, RefreshDatabase::class);
 beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     (new \Database\Seeders\PermissionSeeder())->run();
+    (new \Database\Seeders\RecordDetailViewSeeder())->run();
 });
 
 it('declares RecordDetailViewWidget on EditContact::getFooterWidgets()', function () {

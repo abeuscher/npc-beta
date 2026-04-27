@@ -14,16 +14,16 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 
 ## Status snapshot
 
-**Last update:** 2026-04-27 (Phase 5b shipped, session 228).
+**Last update:** 2026-04-27 (Phase 5c shipped, session 229).
 
-**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b. Sessions 209–224, 227, 228.
+**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b, 5c. Sessions 209–224, 227, 228, 229.
 
-**Active:** Phase 5c — `record_detail_views` table + IsView registry + sub-nav rendering primitive + Templates/Themes refactor folded in + admin UI for authoring per-record-type View sets. Largest session in the Phase 5 arc by surface area.
+**Active:** Phase 5c.5 — admin UI for authoring per-record-type View sets. Vue page-builder mounted in a new `record_detail` editor mode against a Filament `RecordDetailViewResource`; mirrors session 215's dashboard authoring shape with Resource-instead-of-SettingsPage adjustments.
 
-**Remaining in track:** ~6–9 sessions.
+**Remaining in track:** ~5–8 sessions.
 
-- Phase 5c (1 session, the next one)
-- Phase 5d+ — concrete record-detail widgets: Recent Notes, Recent Donations, Membership Status, Recent Activity (~4–6 sessions, one widget per session, mirrors the Phase 4 cadence)
+- Phase 5c.5 (1 session, the next one)
+- Phase 5d+ — concrete record-detail widgets: Recent Notes (the natural starting point — "earn the primitive"), Recent Donations, Membership Status, Recent Activity (~4–6 sessions, one widget per session, mirrors the Phase 4 cadence)
 - Cheap follow-up post-5d — convert `DashboardConfig` to `DashboardView` implementing `IsView` (1 session, ad-hoc)
 - Phase 6 — page-builder convergence (0–1 standalone sessions; partially landed via the Vue reuse in 215)
 
@@ -77,6 +77,10 @@ Abstract `App\WidgetPrimitive\AmbientContext` (sealed by convention) with three 
 ### Phase 5b — Filament mount + record-detail ambient wiring + IsView interface + placeholder widget (session 228)
 
 `RecordDetailAmbientContext` payload (`Model $record`) opened; `RecordDetailSidebarSlot::ambientContext($record)` body opened; `SOURCE_RECORD_CONTEXT` + `RecordContextProjector` + `RecordContextTokens` (mirror of the page-context trio, source-as-capability); `IsView` PHP interface declared; first concrete `RecordDetailView` (hardcoded array — table-backing in 5c); Filament hosting on `EditContact` via `RecordDetailViewWidget` (mirror of `DashboardSlotGridWidget`); placeholder widget at `app/Widgets/RecordDetailPlaceholder/` with `allowedSlots: ['record_detail_sidebar']` and a `SOURCE_RECORD_CONTEXT` contract. Visible verification: a Contact's edit page rendered "Record detail sidebar — Contact #N" through the full pipeline. Fast Pest 1503/0. **The named Phase 5 risk got answered: the contract layer coexists with Filament's Livewire model.**
+
+### Phase 5c — `record_detail_views` table + IsView registry + sub-nav rendering primitive + Templates/Themes refactor (session 229)
+
+`record_detail_views` table (uuid PK, `handle`, `record_type` FQCN, `label`, `sort_order`, `layout_config` jsonb, unique on `(record_type, handle)`); `RecordDetailView` lifted from 5b's plain class to an Eloquent model implementing `IsView`, with polymorphic widget ownership via `page_widgets.owner_type='App\WidgetPrimitive\Views\RecordDetailView'` (mirror of `DashboardConfig`); `ViewRegistry` singleton (`forRecordType`, `findByHandle` — thin Eloquent query wrapper, table is canonical); `HasRecordDetailSubNavigation` trait with four hooks (`subNavigationEntryPage`, `recordDetailViewSubPageClass`, `additionalSubNavigationPages`, plus the `getSubNavigation` body) ordering entries `[entry] + [Views] + [additional pages]` and filtering each through `canAccess(['record' => $this->record])`; abstract `RecordDetailViewPage` for future widget-grid sub-pages (concrete subclass deferred to 5d+ when first concrete widget arrives); `RecordDetailViewWidget` rewired to read from registry with byte-equivalent fallback for the EditContact footer mount (also `$isDiscovered = false` to keep the auto-discovered widget off the dashboard); `RecordDetailViewSeeder` seeds `contact_overview` (with placeholder widget attached) plus chrome anchors `page_template_header` / `page_template_footer`. Templates/Themes refactor folded in: `EditPageTemplate` restructured to "Label and Colors" entry (Name + Description half-width stacked above six color pickers full-width), `EditPageTemplateChrome` mounts the existing page-builder against the parent template's `header_page_id` / `footer_page_id` per the View handle (incidentally fixing a long-standing "Header and Footer reference each other on save" bug because sub-nav mounts one chrome page-builder per request rather than both simultaneously), `EditPageTemplateScss` extracted as a custom `Page` with the SCSS save/build flow. Sub-nav order on every page in the cluster: `Label and Colors → Header → Footer → SCSS`. Page-builder preview-link patched to route to `/` when `type='system' && slug` starts with `_` (chrome pages). Fast Pest 1524/0. **Key load-bearing decisions made in flight:** (a) the prompt's "Header/Footer become empty Views" framing was clarified to "Views are page-builder-mount anchors, page-builder mounts inside" per the user's chrome-bug motivation; (b) PHP's static-as-non-static collision forced `$detailView` / `$viewHandle` property renames vs the prompt's `$view`; (c) `canAccess` filtering was added to the trait during verification when chrome-permission tests caught the gap. **Phase 5c closes a phase** — admin UI for View authoring (5c.5) is a sibling follow-up, not a phase continuation. Per-record-type token expansions on `RecordContextTokens::TOKENS` and the `PageContextTokens` namespace migration both remain deferred carry-forwards.
 
 ---
 

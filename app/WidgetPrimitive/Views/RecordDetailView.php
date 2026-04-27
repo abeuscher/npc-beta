@@ -4,21 +4,33 @@ namespace App\WidgetPrimitive\Views;
 
 use App\Models\PageWidget;
 use App\WidgetPrimitive\IsView;
+use Database\Factories\RecordDetailViewFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-final class RecordDetailView implements IsView
+class RecordDetailView extends Model implements IsView
 {
-    /**
-     * @param  string  $handle
-     * @param  string  $recordType  FQCN of the bound record model (e.g. Contact::class).
-     * @param  array<int, PageWidget>  $widgets
-     * @param  array<string, mixed>  $layoutConfig
-     */
-    public function __construct(
-        private readonly string $handle,
-        private readonly string $recordType,
-        private readonly array $widgets,
-        private readonly array $layoutConfig = [],
-    ) {}
+    use HasFactory, HasUuids;
+
+    protected static function newFactory(): Factory
+    {
+        return RecordDetailViewFactory::new();
+    }
+
+    protected $fillable = [
+        'handle',
+        'record_type',
+        'label',
+        'sort_order',
+        'layout_config',
+    ];
+
+    protected $casts = [
+        'layout_config' => 'array',
+    ];
 
     public function handle(): string
     {
@@ -32,7 +44,7 @@ final class RecordDetailView implements IsView
 
     public function recordType(): string
     {
-        return $this->recordType;
+        return $this->record_type;
     }
 
     /**
@@ -40,7 +52,12 @@ final class RecordDetailView implements IsView
      */
     public function widgets(): array
     {
-        return $this->widgets;
+        return $this->pageWidgets()
+            ->where('is_active', true)
+            ->with('widgetType')
+            ->orderBy('sort_order')
+            ->get()
+            ->all();
     }
 
     /**
@@ -48,6 +65,11 @@ final class RecordDetailView implements IsView
      */
     public function layoutConfig(): array
     {
-        return $this->layoutConfig;
+        return $this->layout_config ?? [];
+    }
+
+    public function pageWidgets(): MorphMany
+    {
+        return $this->morphMany(PageWidget::class, 'owner');
     }
 }

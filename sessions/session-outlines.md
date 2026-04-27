@@ -14,7 +14,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~6–9 sessions remaining: Phase 5c (next), Phase 5d+ concrete record-detail widgets, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
+- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~5–8 sessions remaining: Phase 5c.5 admin UI for View authoring (next), Phase 5d+ concrete record-detail widgets, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
 
 ---
 
@@ -177,6 +177,15 @@ Collector for small, scope-bounded UI and polish items that surface during other
 
 - **Text widget vertical alignment.** The `text_block` widget currently renders with text aligned to the vertical middle of its container, which doesn't fit all column-layout use cases. Add a vertical alignment control (top / middle / bottom) to the widget's inspector. Design call to resolve during the session: whether this lives on the widget itself (`align-self` on the wrapper) or as a generalized "widget vertical alignment" control that all widgets inherit — the latter is probably the right shape but the former is the narrower change.
 - **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager.
+
+---
+
+### UI / UX Sprint *(stub — pre-Beta 1)*
+
+Batched UI/UX improvements that don't justify a dedicated session each but together earn one. Distinct from Housekeeping in that the items are explicitly authoring-ergonomics rather than visual polish or audits — they shape how it feels to use the admin tools, not how the surface looks.
+
+- **Page builder full-screen toggle.** Add a toggle that maximizes the page-builder canvas + inspector to the full viewport, hiding the Filament admin chrome (sidebar, top bar, breadcrumbs) for the duration. Persists per-user via localStorage. Exit returns to the previous chrome state.
+- **Adjustable height handle on the Quill editor.** The rich-text editor renders at a fixed height today; long content forces the wrapping page to scroll while the editor's internal area stays small. Add a drag-resize handle on the bottom edge so admins can grow the editor to whatever height fits the content they're authoring. Persisted height per-user via localStorage is fine — no schema change.
 
 ---
 

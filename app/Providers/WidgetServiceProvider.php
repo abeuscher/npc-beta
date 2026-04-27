@@ -10,6 +10,7 @@ use App\WidgetPrimitive\DataSink;
 use App\WidgetPrimitive\Projectors\RecordContextProjector;
 use App\WidgetPrimitive\RecordContextTokens;
 use App\WidgetPrimitive\SlotRegistry;
+use App\WidgetPrimitive\ViewRegistry;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
 use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
 use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
@@ -60,6 +61,7 @@ class WidgetServiceProvider extends ServiceProvider
         $this->app->singleton(RecordContextTokens::class, fn () => new RecordContextTokens());
         $this->app->singleton(RecordContextProjector::class, fn ($app) => new RecordContextProjector($app->make(RecordContextTokens::class)));
         $this->app->singleton(SlotRegistry::class, fn () => new SlotRegistry());
+        $this->app->singleton(ViewRegistry::class, fn () => new ViewRegistry());
         $this->app->singleton(WidgetAssetResolver::class, fn () => new WidgetAssetResolver());
         $this->app->singleton(DataSink::class, fn () => new DataSink());
     }
