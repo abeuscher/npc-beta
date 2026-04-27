@@ -4,7 +4,9 @@ namespace App\WidgetPrimitive;
 
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
+use App\Models\Contact;
 use App\Models\Event;
+use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Page;
 use App\Models\Product;
@@ -82,9 +84,10 @@ final class ContractResolver
     {
         if ($contract->cardinality === DataContract::CARDINALITY_ONE) {
             return match ($contract->model) {
-                'event'   => $this->resolveEventOne($contract, $cache),
-                'product' => $this->resolveProductOne($contract, $cache),
-                default   => ['item' => null],
+                'event'      => $this->resolveEventOne($contract, $cache),
+                'product'    => $this->resolveProductOne($contract, $cache),
+                'membership' => $this->resolveMembershipOne($contract, $cache, $context),
+                default      => ['item' => null],
             };
         }
 
@@ -303,6 +306,41 @@ final class ContractResolver
                 ->where('slug', $slug)
                 ->withCount(['purchases as active_purchases_count' => fn ($q) => $q->where('status', 'active')])
                 ->with(['media', 'prices'])
+                ->first();
+        }
+
+        return $this->systemModelProjector->projectOne($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve the active Membership attached to the ambient Contact. Permission
+     * gate: fail-closed when the authenticated user lacks `view_membership`.
+     * Ambient gate: returns null when the slot is not record-detail or the
+     * ambient record is not a Contact. Filters to `status = 'active'` only —
+     * pending / expired / cancelled rows do not appear; multi-row history is
+     * out of scope for this widget.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveMembershipOne(DataContract $contract, array &$cache, SlotContext $context): array
+    {
+        if (! auth()->user()?->can('view_membership')) {
+            return ['item' => null];
+        }
+
+        $record = $this->recordFromContext($context);
+        if (! $record instanceof Contact) {
+            return ['item' => null];
+        }
+
+        $key = 'membership:one:' . (string) $record->getKey();
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = Membership::query()
+                ->where('contact_id', $record->getKey())
+                ->where('status', 'active')
+                ->orderBy('starts_on', 'desc')
+                ->with('tier')
                 ->first();
         }
 

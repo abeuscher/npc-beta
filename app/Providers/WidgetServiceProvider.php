@@ -29,6 +29,7 @@ use App\Widgets\Image\ImageDefinition;
 use App\Widgets\Logo\LogoDefinition;
 use App\Widgets\LogoGarden\LogoGardenDefinition;
 use App\Widgets\MapEmbed\MapEmbedDefinition;
+use App\Widgets\MembershipStatus\MembershipStatusDefinition;
 use App\Widgets\Memos\MemosDefinition;
 use App\Widgets\Nav\NavDefinition;
 use App\Widgets\PortalAccountDashboard\PortalAccountDashboardDefinition;
@@ -113,5 +114,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new ThisWeeksEventsDefinition());
         $registry->register(new RecordDetailPlaceholderDefinition());
         $registry->register(new RecentNotesDefinition());
+        $registry->register(new MembershipStatusDefinition());
     }
 }

@@ -14,7 +14,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~3–6 sessions remaining: Phase 5d-2 second concrete record-detail widget — Membership Status (next, single-row contract on the record-detail Slot, second per-arm permission-gate evidence point), Phase 5d-3+ remaining concrete widgets (Recent Donations forces Phase 5e architecture decision, Recent Activity), a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
+- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~3–5 sessions remaining: Phase 5d-3 Recent Donations (queued as session 234 after Financial Data Origin Phase A in 233; third per-arm permission-gate evidence point and forcing function for Phase 5e architecture decision), Phase 5d-4+ Recent Activity if pursued, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
 
 ---
 
@@ -25,18 +25,6 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 ### Widget Primitive — Remaining Phases *(track spans pre- and post-Beta 1)*
 
 Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
-
-### Date Handling — Centralized Vocabulary + Schema Audit *(complete — session 225)*
-
-Landed 2026-04-26. `App\Support\DateFormat` final class with 9 named vocabulary constants and a null-safe `format()` helper now backs every presentation-layer date callsite in widgets, services, projectors, Filament resources, and admin pages. `published_at` real timestamp column added to `events` and `products` (idempotent backfill from `created_at` for published rows) with observer-driven auto-set on first publish; `EventsListing`, `ThisWeeksEvents`, and `ProductCarousel` QuerySettings panels gained `published_at` as a sortable order_by option. Visible casing change documented: uppercase `PM`/`AM` → lowercase `pm`/`am` across event cards, transaction tooltips, finance settings, and the importer wizard. Fast Pest 1455/0. Log at `sessions/225. Date Handling — Centralized Vocabulary + Schema Audit — Log.md`.
-
----
-
-### Date Display — Format Hints + Projector-Owned Assembly *(complete — session 226)*
-
-Landed 2026-04-26. `DataContract::formatHints` field and `DateFormat::EVENT_TILE_DATE` + `eventDateOptions()` / `postDateOptions()` curated allowlist helpers introduced; `SystemModelProjector` retired the `_label` field-naming convention in favor of concept-named display fields (`event_date`, `event_time`, `event_location`, `post_date`); `buildEventTime()` and `buildEventLocation()` private helpers absorbed every imperative `Carbon::parse + DateFormat::format` block from the five migrated widget templates (EventsListing, ThisWeeksEvents, EventDescription, BlogListing, BlogPager). EventDescription's same-day vs cross-day structural branching removed entirely; its template went from 51 lines to 20. Tile cleanup (drop `Ends:` / `{{item.slug}}` / `{{item.starts_at}}` debug; reconcile two disagreeing default templates) bundled in. Two widget `script.js` files updated for client-side search filter field references. Fast Pest 1470/0; `build:public` ran clean (new bundle hash). Log at `sessions/226. Date Display — Format Hints + Projector-Owned Assembly — Log.md`.
-
----
 
 ### Fleet Manager Agent — Phase 1 (CRM-Side MVP + Two-Repo Coordination Protocol) *(stub — pre-Beta 1, post-Phase-5)*
 
@@ -115,6 +103,22 @@ Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and t
 ### Notes Permissions & Permissions Audit *(stub — pre-Beta 1)*
 
 Two linked concerns. First: session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. A specific shape surfaced during session 203 manual testing: **edit-only-by-creator** (the authenticated user must equal `notes.author_id` to edit) as an opt-in tenant-level setting, with a separate override permission for managers. Second: a full coverage audit in the pattern of sessions 114 and 117, walking every admin action (Filament resources, pages, actions, bulk actions, header actions) and confirming each has a permission gate and that the gate is enforced at both UI and controller layers. Reference the 114/117 logs for the audit methodology; this pass catches drift introduced since 117 landed.
+
+---
+
+### Financial Data Origin & Lifecycle Discipline *(stub — pre-Beta 1)*
+
+Cross-cutting cleanup of how financial parent rows (`donations`, `memberships`, `event_registrations`, `transactions`, future `purchases`) carry their **origin** — Stripe webhook, hand-imported from a competitor CSV, manual admin entry, or eventual API/automation source. Today origin is tracked half-heartedly: `Donation` declares `ACCEPTED_SOURCES = [IMPORT, STRIPE_WEBHOOK]` via `HasSourcePolicy`, but `Membership` and `Transaction` don't apply the trait at all. Origin is queryable on Transactions only via the `stripe_id IS NULL` predicate, which conflates "Stripe-originated" with everything else. Donation/Membership admin pages have no origin-aware action gating; today this is harmless (no Refund/Cancel/Sync actions exist yet on those resources) but becomes a runtime hazard the moment such actions land — calling Stripe with no Stripe ID, dunning a donor who gave in 2022 to a different system, double-syncing imported rows to QuickBooks. Surfaced during session 233 prompt-drafting when the question "what date does an imported donation carry?" exposed the broader two-dimensional problem: status is the lifecycle dimension (pending/active/expired/cancelled), origin is orthogonal, and they need separate columns.
+
+The shape locked in during scoping conversation: **status stays exactly as-is** as the universal "this is real / countable" reality filter — read sites, aggregate gates, access predicates ($scopeIsMember$, $activeMembership$, etc.) all keep working unchanged across origins. Origin gets its own column carrying an `App\WidgetPrimitive\Source` constant, lifting the existing write-side primitive to read-side queryable.
+
+Splits into two sessions plus an optional third:
+
+- **Phase A — Schema + backfill + write-path discipline.** Add `source` column (default per-table) to `donations`, `memberships`, `event_registrations`, `transactions`, with a single backfill migration that infers values from existing predicates (`stripe_subscription_id`/`stripe_id IS NOT NULL` → STRIPE_WEBHOOK; `import_source_id IS NOT NULL` → IMPORT; remainder → HUMAN for transactions, STRIPE_WEBHOOK for legacy donations). Apply `HasSourcePolicy` to `Membership` and `Transaction` with appropriate `ACCEPTED_SOURCES`. Update `StripeWebhookController`, `DonationCheckoutController`, all four import progress pages, and any admin write paths to set `source` on creation. Resolve the membership-import ledger asymmetry — donation and event imports write a matching transaction row, membership import does not; pick one policy. No UI changes this phase.
+- **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume.
+- **Phase C (defer until forced).** QuickBooks sync origin-awareness, email-trigger origin-awareness on admin-driven bulk send actions (donation receipts, renewal nudges, dunning). Lands when those features arrive; not current debt.
+
+**Sequencing against the Widget Primitive track.** Phase A lands as session 233 — ahead of Phase 5d-3 (Recent Donations) — because origin discipline is foundational to every financial widget that follows and the per-arm Stripe-vs-import fork shows up cleanly only once `source` is queryable. 5d-3 ships immediately after Phase A. Phase B (admin gating generalization) follows when an action surface that needs it is imminent.
 
 ---
 
@@ -215,22 +219,9 @@ Out of scope: parallel-test infrastructure (Pest parallel with `--parallel`) unl
 
 ---
 
-### Template Editor — Record Sub-Navigation Refactor & Column-Layout Mobile Collapse *(stub — pre-Beta 1)*
+### Column-Layout Mobile Collapse *(stub — pre-Beta 1)*
 
-> **Status update (2026-04-26, end of session 227):** Part A (record sub-navigation refactor) **folds into Widget Primitive Phase 5c** — the record-detail sub-nav and Templates/Themes sub-nav are the same architectural pattern, and Phase 5c builds the sub-nav rendering primitive once with both as consumers. Templates/Themes adopts sub-nav driven by Views bound to template type (`EditPageTemplate` → header / footer / SCSS / colors as separate Views) using the same primitive that powers `EditContact` sub-nav. Don't schedule Part A as a standalone session. Part B (column-layout mobile collapse) is unrelated and remains a standalone stub below.
-
-Two pieces of "column-layout admin UX at narrow viewports" that pair naturally.
-
-**Part A — Template editor record sub-navigation** (now folded into Phase 5c — see status update above). Replace the tab pattern on `EditPageTemplate` and `EditContentTemplate` with Filament v3's **record sub-navigation** (`getRecordSubNavigation()`). Rationale:
-
-- The current tabs pattern on `EditPageTemplate` mounts both header and footer page-builder Livewire components simultaneously, which surfaces bugs tied to the one-Vue-app-per-page implicit assumption (see the module-global `api.ts` fragility noted in the 207 log — resolved in 207 but the pattern that triggered it remains). Sub-navigation renders only one `EditRecord` per request, killing that class of bug at the usage site.
-- Sub-pages get their own URLs, so deep-linking to "Edit Template X → Header" works. Today the tab state is in-memory and bookmarks can't target it.
-- The tab pattern is buried — some of these views are hard to find. A sidebar that lists the facets of the record you're editing is more discoverable.
-- While the structure is being reshaped, **unify Themes and Templates into a single top-level nav item**. They're closely related and currently split across two nav entries without a strong reason.
-
-Scope for Part A: convert `EditPageTemplate` to a hub with sub-pages (General / Header / Footer / SCSS / Colors as appropriate), same for `EditContentTemplate` if it has similar facets, and merge the Themes nav slot into Templates.
-
-**Part B — Column-layout mobile collapse.** Column layouts don't collapse at narrow viewport widths today, which causes widget content to overflow its track (addressed partially in 207 with `min-width: 0` but the root cause — columns stay side-by-side at mobile widths regardless of layout — remains). Add a per-layout toggle for mobile-collapse behavior, defaulting to **on** but explicitly overridable to **off** for patterns that genuinely want to keep columns at every viewport (e.g. small side-by-side logo+nav header bars, icon-and-label rows).
+Column layouts don't collapse at narrow viewport widths today, which causes widget content to overflow its track (addressed partially in 207 with `min-width: 0` but the root cause — columns stay side-by-side at mobile widths regardless of layout — remains). Add a per-layout toggle for mobile-collapse behavior, defaulting to **on** but explicitly overridable to **off** for patterns that genuinely want to keep columns at every viewport (e.g. small side-by-side logo+nav header bars, icon-and-label rows).
 
 Implementation notes captured while fresh:
 
@@ -240,7 +231,7 @@ Implementation notes captured while fresh:
 - **Breakpoint.** Pick one value for now (768px is reasonable, matching the tablet/desktop boundary). Don't make it configurable per-layout in this session; if demand emerges, revisit.
 - **Public-side parity.** The public site emits `<div class="page-layout" style="...">` inline. The inline style approach doesn't play nicely with container queries. Two options: (a) emit a `data-collapse-mobile` attribute and let a static `@container` rule in `_layout.scss` key off it; (b) switch to a stylesheet rule keyed off the class and a data attribute. Option (a) is cleaner — implementation detail for the session.
 
-Out of scope: introducing Clusters, sub-navigating anything outside of Templates/Themes, per-layout-configurable breakpoints, per-column (as opposed to per-layout) collapse control, reordering columns on collapse (columns stack in authoring order — whatever the user arranged is what they get on mobile).
+Out of scope: per-layout-configurable breakpoints, per-column (as opposed to per-layout) collapse control, reordering columns on collapse (columns stack in authoring order — whatever the user arranged is what they get on mobile).
 
 ---
 

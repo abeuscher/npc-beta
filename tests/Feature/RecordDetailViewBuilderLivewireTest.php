@@ -46,7 +46,7 @@ it('bootstrap data is record_detail-mode and scoped to the record-detail-view-bu
         ->and($data['api_base_url'])->toContain('/api/record-detail-view-builder/views/' . $this->view->id)
         ->and($data['api_lookup_url'])->toBe($data['api_base_url'])
         ->and($data['allowed_appearance_fields'])->toBe(['background', 'text'])
-        ->and($data['allowed_widget_handles'])->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes'])
+        ->and($data['allowed_widget_handles'])->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes', 'membership_status'])
         ->and($data['view_label'])->toBe('Overview')
         ->and($data['record_type_label'])->toBe('Contact');
 });

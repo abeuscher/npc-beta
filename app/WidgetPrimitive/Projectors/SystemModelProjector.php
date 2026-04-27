@@ -3,6 +3,7 @@
 namespace App\WidgetPrimitive\Projectors;
 
 use App\Models\Event;
+use App\Models\Membership;
 use App\Models\Note;
 use App\Models\Page;
 use App\Models\Product;
@@ -77,11 +78,12 @@ final class SystemModelProjector
     private function projectorFor(DataContract $contract): ?callable
     {
         return match ($contract->model) {
-            'post'    => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
-            'event'   => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
-            'product' => fn (Product $product) => $this->projectProduct($product),
-            'note'    => fn (Note $note) => $this->projectNote($note),
-            default   => null,
+            'post'       => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
+            'event'      => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
+            'product'    => fn (Product $product) => $this->projectProduct($product),
+            'note'       => fn (Note $note) => $this->projectNote($note),
+            'membership' => fn (Membership $membership) => $this->projectMembership($membership),
+            default      => null,
         };
     }
 
@@ -287,6 +289,28 @@ final class SystemModelProjector
             'note_type'         => (string) ($note->type ?? ''),
             'note_occurred_at'  => DateFormat::format($note->occurred_at, DateFormat::MEDIUM_DATETIME),
             'note_author_name'  => $note->author?->name ?? '—',
+        ];
+    }
+
+    /**
+     * Flat row shape derived from a Membership model. Tier-derived fields are
+     * defensive against tier_id NULL (the schema allows it on tier deletion).
+     * `amount_paid` is cast as decimal:2 by the model so `(string)` produces
+     * the canonical `"50.00"` shape. Fields outside this map — `notes`,
+     * `stripe_session_id`, `external_id`, `custom_fields` — are not exposed.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectMembership(Membership $membership): array
+    {
+        return [
+            'membership_id'                => $membership->id,
+            'membership_tier_name'         => (string) ($membership->tier?->name ?? ''),
+            'membership_billing_interval'  => (string) ($membership->tier?->billing_interval ?? ''),
+            'membership_status'            => (string) ($membership->status ?? ''),
+            'membership_starts_on'         => DateFormat::format($membership->starts_on, DateFormat::MEDIUM_DATE),
+            'membership_expires_on'        => DateFormat::format($membership->expires_on, DateFormat::MEDIUM_DATE),
+            'membership_amount_paid'       => $membership->amount_paid === null ? '' : (string) $membership->amount_paid,
         ];
     }
 }

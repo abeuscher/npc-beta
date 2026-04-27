@@ -217,5 +217,5 @@ it('widget-types endpoint returns only widgets whose allowedSlots includes recor
 
     $handles = array_column($response->json('widget_types'), 'handle');
 
-    expect($handles)->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes']);
+    expect($handles)->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes', 'membership_status']);
 });

@@ -14,16 +14,16 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 
 ## Status snapshot
 
-**Last update:** 2026-04-27 (Phase 5d-1 shipped, session 231).
+**Last update:** 2026-04-27 (Phase 5d-2 shipped, session 232).
 
-**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b, 5c, 5c.5, 5d-1. Sessions 209–224, 227, 228, 229, 230, 231.
+**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b, 5c, 5c.5, 5d-1, 5d-2. Sessions 209–224, 227, 228, 229, 230, 231, 232.
 
-**Active:** Phase 5d-2 — second concrete record-detail widget (Membership Status for the current contact). Single-row contract (cardinality: 'one') on the record-detail Slot — first consumer of the 4g shape on this Slot. Mirror of 5d-1's structure: contract + projector + per-arm permission gate (`view_membership`) + test-lock. Adds Membership Status to the existing `contact_overview` View at sort_order 1 (Recent Notes stays at 0); both render in EditContact's footer with no sub-nav (per 5d-1 iteration-2's threshold cleanup). Second evidence point for the per-arm gate posture; full Phase 5e architecture stays carved out.
+**Active:** None of the Widget Primitive track. Session 233 is **Financial Data Origin & Lifecycle Discipline — Phase A** (separate stub at `session-outlines.md` line 109), a foundational data-discipline session that landed on the roadmap during 232's close-gate when Recent Donations prompt-drafting surfaced a structural gap (financial parent rows conflate origin and lifecycle under `status`). 5d-3 (Recent Donations) ships as session 234 immediately after Phase A.
 
-**Remaining in track:** ~3–6 sessions.
+**Remaining in track:** ~3–5 sessions.
 
-- Phase 5d-2 (1 session, the next one — Membership Status)
-- Phase 5d-3+ — remaining concrete record-detail widgets: Recent Donations (forces Phase 5e architecture decision at 5d-3 close — third per-arm gate or centralize?), Recent Activity (~2–4 sessions, one widget per session)
+- Phase 5d-3 — Recent Donations (1 session, queued as 234 after Financial Data Phase A; the per-arm-gate evidence will reach three at this session and the Phase 5e centralize-or-continue decision happens at its close)
+- Phase 5d-4+ — Recent Activity if pursued (1–2 sessions; aggregates across multiple system models — its own design surface)
 - Cheap follow-up post-5d — convert `DashboardConfig` to `DashboardView` implementing `IsView` (1 session, ad-hoc)
 - Phase 6 — page-builder convergence (0–1 standalone sessions; partially landed via the Vue reuse in 215, deepened by the same reuse for record-detail in 230)
 
@@ -93,6 +93,18 @@ First concrete consumer of the record-detail Slot primitive. Contract + projecto
 **Architectural alignment surfaced in flight.** Iteration-2 made implementation match the 5c track-doc intent: most record types have one View (widgets compose into it via the page-builder canvas at `/admin/record-detail-views`), and multi-View is for record types whose Views represent genuinely different sub-areas (Templates/Themes is the canonical case). Adding a hypothetical "Hours Worked" widget to a Contact's front page is achieved by attaching it to `contact_overview` via the admin UI, not by creating a second View. The sub-nav primitive remains available for cases that genuinely want it; record types stay flat by default.
 
 **Carry-forward to 5d-2.** The per-arm `Gate::denies` pattern is one evidence point. 5d-2 (Membership Status) makes two; 5d-3 (Recent Donations) makes three — the natural moment to evaluate Phase 5e centralization. The placeholder widget removal cleanup, the DashboardConfig→DashboardView retrofit, and the Themes/Templates nav merge follow-up all remain deferred.
+
+### Phase 5d-2 — Second concrete record-detail widget: Membership Status (session 232)
+
+Second concrete consumer of the record-detail Slot primitive and **first single-row contract on a record-detail Slot**. Mirror of 5d-1's structure (contract + projector + per-arm permission gate + test-lock) on the `membership` system model, using 4g's `['item' => row | null]` DTO shape for the first time on this Slot. New `'membership'` arm added to `ContractResolver::resolveSystemModel()`'s **cardinality-one** match (sibling to `'event'` and `'product'`). `resolveMembershipOne(DataContract, &$cache, SlotContext)`: per-arm `Gate::denies('view_membership')` fail-closed → `['item' => null]`; ambient gate fail-closed when not `RecordDetailAmbientContext` carrying a `Contact`; query `Membership::query()->where('contact_id', $contact->getKey())->where('status', 'active')->orderBy('starts_on', 'desc')->with('tier')->first()`; contact-scoped cache key. Seven-field concept-named projector map (`membership_id`, `membership_tier_name`, `membership_billing_interval`, `membership_status`, `membership_starts_on`, `membership_expires_on`, `membership_amount_paid`) with defensive null-tier handling and DateFormat::MEDIUM_DATE on the date fields. MembershipStatus widget itself is server-rendered Blade with no JS / SCSS / declared assets, mirror of RecentNotes. The seeder's count-based early-return refactored to per-handle `attachWidgetIfMissing()` so installs with only Recent Notes from 5d-1 gain Membership Status at sort_order 1 on next seed without disturbing the existing widget. Fast Pest 1594/0 (+20 net from 231's 1574). Sub-nav threshold from 231/2 stays under threshold (still 1 View on Contact + entry); both widgets render in EditContact's footer with no chrome.
+
+**Bundled SCSS hotfix.** User-driven during manual testing: a `.widget + .widget { margin-top: 1.5rem }` rule in `resources/scss/_base.scss` was creating broken sections on the public site; deleted and `npm run build` rebuilt the public bundle. Out-of-scope from the prompt but co-located in the branch since it was a one-line removal that needed the rebuild alongside.
+
+**Pivot at close-gate Phase 1: financial origin column work jumps the queue.** While drafting the 5d-3 (Recent Donations) prompt, user-led design conversation surfaced a two-dimensional gap: financial parent rows (`donations`, `memberships`, `event_registrations`, `transactions`) carry their **lifecycle** cleanly via `status` but their **origin** (Stripe webhook / hand-imported / manual admin entry) is conflated under the same column. Status overload was breeding latent runtime hazards (a future "cancel donation" admin action would happily try to drive a non-Stripe imported row through a non-existent state machine). Conclusion: status stays as the universal reality filter (no read-side changes); origin gets its own column carrying an `App\WidgetPrimitive\Source` constant, lifting the existing write-side primitive to read-side queryable. **Status = 'imported' rejected** as it collapses 2D into 1D and forces every read site to either lose lifecycle or lose origin. New roadmap stub *Financial Data Origin & Lifecycle Discipline* added at `session-outlines.md` line 109 with Phases A/B/C named. **Phase A jumps ahead of 5d-3 as session 233**; 5d-3 ships as session 234 against the post-Phase-A schema state. The original 5d-3 drafts (created during 232 prompt-drafting) were deleted at close-gate Phase 1 to be regenerated as 234 against the new world.
+
+**Roadmap hygiene cleanup at close-gate.** User audit caught three completed-but-still-narrated entries against the "closed work isn't narrated here" procedure: the *Date Handling* (225) and *Date Display* (226) retrospective paragraphs were deleted; the *Template Editor — Record Sub-Navigation Refactor & Column-Layout Mobile Collapse* stub had its Part A (folded into Phase 5c) prose deleted and was renamed to just *Column-Layout Mobile Collapse* (Part B preserved as the genuinely-forward concern).
+
+**Carry-forward to 5d-3 (now session 234).** The per-arm `Gate::denies` pattern is two evidence points after this session. Recent Donations at 234 makes three; the Phase 5e centralize-or-continue decision happens at its close. The new `source` column (landing in 233) gives 234 a queryable origin field if Recent Donations' projector wants to surface it as a display affordance — design call at 234 prompt-drafting time. Membership history widget, projector-side label assembly, `show_amount` config knob, placeholder widget removal, DashboardConfig→DashboardView retrofit, and Themes/Templates nav merge all remain deferred.
 
 ---
 

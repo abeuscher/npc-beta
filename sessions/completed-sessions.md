@@ -234,4 +234,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 229 | Widget Primitive — Phase 5c (record_detail_views Table + IsView Registry + Sub-Nav Rendering Primitive) |
 | 230 | Widget Primitive — Phase 5c.5 (Admin UI for Authoring per-Record-Type View Sets) |
 | 231 | Widget Primitive — Phase 5d-1 (Recent Notes — First Concrete Record-Detail Widget) |
+| 232 | Widget Primitive — Phase 5d-2 (Membership Status — Single-Row Record-Detail Widget) |
 

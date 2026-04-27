@@ -24,12 +24,28 @@ class RecordDetailViewSeeder extends Seeder
             ['label' => 'Overview', 'sort_order' => 0],
         );
 
-        if ($view->pageWidgets()->exists()) {
+        $this->attachWidgetIfMissing($view, 'recent_notes', sortOrder: 0, config: ['limit' => 5]);
+        $this->attachWidgetIfMissing($view, 'membership_status', sortOrder: 1, config: []);
+    }
+
+    /**
+     * Attach a widget to the View by handle, idempotently. Skips if a widget
+     * with this widget_type_id is already on the View — preserves admin-side
+     * customizations (reorder, removal, config edits) on subsequent re-seeds.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function attachWidgetIfMissing(RecordDetailView $view, string $widgetHandle, int $sortOrder, array $config): void
+    {
+        $widgetType = WidgetType::where('handle', $widgetHandle)->first();
+        if (! $widgetType) {
             return;
         }
 
-        $recentNotes = WidgetType::where('handle', 'recent_notes')->first();
-        if (! $recentNotes) {
+        $exists = $view->pageWidgets()
+            ->where('widget_type_id', $widgetType->id)
+            ->exists();
+        if ($exists) {
             return;
         }
 
@@ -38,12 +54,12 @@ class RecordDetailViewSeeder extends Seeder
             'owner_id'          => $view->getKey(),
             'layout_id'         => null,
             'column_index'      => null,
-            'widget_type_id'    => $recentNotes->id,
-            'label'             => $recentNotes->label,
-            'config'            => ['limit' => 5],
+            'widget_type_id'    => $widgetType->id,
+            'label'             => $widgetType->label,
+            'config'            => $config,
             'query_config'      => [],
             'appearance_config' => [],
-            'sort_order'        => 0,
+            'sort_order'        => $sortOrder,
             'is_active'         => true,
         ]);
     }
