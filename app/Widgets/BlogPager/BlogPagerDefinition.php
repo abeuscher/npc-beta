@@ -2,6 +2,7 @@
 
 namespace App\Widgets\BlogPager;
 
+use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
 
@@ -35,16 +36,18 @@ class BlogPagerDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'prev_template', 'type' => 'richtext', 'label' => 'Previous link template', 'group' => 'content', 'default' => '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.published_at_label}}</small>'],
-            ['key' => 'next_template', 'type' => 'richtext', 'label' => 'Next link template', 'group' => 'content', 'default' => '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.published_at_label}}</small>'],
+            ['key' => 'prev_template', 'type' => 'richtext', 'label' => 'Previous link template', 'group' => 'content', 'default' => '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.post_date}}</small>'],
+            ['key' => 'next_template', 'type' => 'richtext', 'label' => 'Next link template', 'group' => 'content', 'default' => '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.post_date}}</small>'],
+            ['key' => 'date_format',   'type' => 'select',   'label' => 'Date format', 'options' => DateFormat::postDateOptions(), 'default' => DateFormat::LONG_DATE, 'group' => 'content'],
         ];
     }
 
     public function defaults(): array
     {
         return [
-            'prev_template' => '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.published_at_label}}</small>',
-            'next_template' => '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.published_at_label}}</small>',
+            'prev_template' => '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.post_date}}</small>',
+            'next_template' => '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.post_date}}</small>',
+            'date_format'   => DateFormat::LONG_DATE,
         ];
     }
 
@@ -53,8 +56,9 @@ class BlogPagerDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
-            fields: ['id', 'title', 'slug', 'url', 'published_at_label', 'image', 'author_name'],
+            fields: ['id', 'title', 'slug', 'url', 'post_date', 'image', 'author_name'],
             model: 'post',
+            formatHints: ['post_date' => $config['date_format'] ?? DateFormat::LONG_DATE],
         );
     }
 }

@@ -68,7 +68,7 @@ window.NPWidgets.blogListing = function () {
                     const item = this.cfg.items[i];
                     return item.title.toLowerCase().includes(q)
                         || item.excerpt.toLowerCase().includes(q)
-                        || item.published_at_label.toLowerCase().includes(q);
+                        || (item.post_date || '').toLowerCase().includes(q);
                 });
             }
             indices.sort((a, b) => {

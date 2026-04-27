@@ -68,7 +68,7 @@ it('projects only contract-declared fields onto BlogListing rows (fail-closed wh
     $listing = json_decode($match[1], true);
 
     expect($listing['items'])->toHaveCount(1)
-        ->and(array_keys($listing['items'][0]))->toEqualCanonicalizing(['title', 'slug', 'url', 'published_at', 'published_at_label', 'excerpt', 'image']);
+        ->and(array_keys($listing['items'][0]))->toEqualCanonicalizing(['title', 'slug', 'url', 'published_at', 'post_date', 'excerpt', 'image']);
 });
 
 it('renders BlogListing through the contract resolver only, with a single pages select and eager-loaded media', function () {

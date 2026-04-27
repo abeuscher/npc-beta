@@ -64,7 +64,7 @@ it('projects only contract-declared fields onto EventsListing rows (fail-closed 
     $listing = json_decode($match[1], true);
 
     expect($listing['items'])->toHaveCount(1)
-        ->and(array_keys($listing['items'][0]))->toEqualCanonicalizing(['title', 'slug', 'url', 'starts_at', 'starts_at_label', 'ends_at', 'ends_at_label', 'location', 'is_free', 'image']);
+        ->and(array_keys($listing['items'][0]))->toEqualCanonicalizing(['title', 'slug', 'url', 'starts_at', 'event_date', 'event_time', 'location', 'is_free', 'image']);
 });
 
 it('renders EventsListing through the contract resolver only, with a single events select and eager-loaded media + landingPage', function () {

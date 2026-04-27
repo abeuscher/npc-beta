@@ -76,8 +76,8 @@ final class SystemModelProjector
     private function projectorFor(DataContract $contract): ?callable
     {
         return match ($contract->model) {
-            'post'    => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news')),
-            'event'   => fn (Event $event) => $this->projectEvent($event),
+            'post'    => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
+            'event'   => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
             'product' => fn (Product $product) => $this->projectProduct($product),
             default   => null,
         };
@@ -87,23 +87,26 @@ final class SystemModelProjector
      * Flat row shape derived from a Page model. Each row-field is a value the
      * contract may request; fields outside this map are not exposed.
      *
+     * @param  array<string, string>  $formatHints
      * @return array<string, mixed>
      */
-    private function projectPost(Page $post, string $blogPrefix): array
+    private function projectPost(Page $post, string $blogPrefix, array $formatHints = []): array
     {
         $thumb = $post->getFirstMediaUrl('post_thumbnail', 'webp')
             ?: $post->getFirstMediaUrl('post_thumbnail');
 
+        $postDateFormat = $this->resolveFormatHint($formatHints, 'post_date', DateFormat::postDateOptions(), DateFormat::LONG_DATE);
+
         return [
-            'id'                 => $post->id,
-            'title'              => $post->title,
-            'slug'               => $post->slug,
-            'url'                => url('/' . $post->slug),
-            'published_at'       => $post->published_at?->toIso8601String() ?? '',
-            'published_at_label' => DateFormat::format($post->published_at, DateFormat::LONG_DATE),
-            'excerpt'            => Str::limit(strip_tags($post->meta_description ?? ''), 160),
-            'image'              => $thumb,
-            'author_name'        => $post->author?->name ?? '',
+            'id'           => $post->id,
+            'title'        => $post->title,
+            'slug'         => $post->slug,
+            'url'          => url('/' . $post->slug),
+            'published_at' => $post->published_at?->toIso8601String() ?? '',
+            'post_date'    => DateFormat::format($post->published_at, $postDateFormat),
+            'excerpt'      => Str::limit(strip_tags($post->meta_description ?? ''), 160),
+            'image'        => $thumb,
+            'author_name'  => $post->author?->name ?? '',
         ];
     }
 
@@ -111,9 +114,10 @@ final class SystemModelProjector
      * Flat row shape derived from an Event model. Fields outside this map are
      * not exposed — a contract requesting `internal_notes` gets an empty string.
      *
+     * @param  array<string, string>  $formatHints
      * @return array<string, mixed>
      */
-    private function projectEvent(Event $event): array
+    private function projectEvent(Event $event, array $formatHints = []): array
     {
         $thumb = $event->getFirstMediaUrl('event_thumbnail', 'webp')
             ?: $event->getFirstMediaUrl('event_thumbnail');
@@ -133,20 +137,23 @@ final class SystemModelProjector
         $registeredCount = (int) ($event->getAttribute('registered_count') ?? 0);
         $isAtCapacity = $capacity !== null && $registeredCount >= (int) $capacity;
 
+        $eventDateFormat = $this->resolveFormatHint($formatHints, 'event_date', DateFormat::eventDateOptions(), DateFormat::EVENT_TILE_DATE);
+
         return [
             'id'                          => $event->id,
             'title'                       => $event->title,
             'slug'                        => $event->slug,
             'url'                         => $url,
             'starts_at'                   => $event->starts_at?->toIso8601String() ?? '',
-            'starts_at_label'             => DateFormat::format($event->starts_at, DateFormat::EVENT_FULL),
+            'event_date'                  => DateFormat::format($event->starts_at, $eventDateFormat),
+            'event_time'                  => $this->buildEventTime($event),
             'ends_at'                     => $event->ends_at?->toIso8601String() ?? '',
-            'ends_at_label'               => DateFormat::format($event->ends_at, DateFormat::TIME_OF_DAY),
             'address_line_1'              => $event->getAttribute('address_line_1') ?? '',
             'city'                        => $event->getAttribute('city') ?? '',
             'state'                       => $event->getAttribute('state') ?? '',
             'meeting_label'               => $event->getAttribute('meeting_label') ?? '',
             'location'                    => implode(', ', $locationParts),
+            'event_location'              => $this->buildEventLocation($event),
             'is_free'                     => (bool) $event->is_free,
             'image'                       => $thumb,
             'description'                 => (string) ($event->getAttribute('description') ?? ''),
@@ -159,6 +166,71 @@ final class SystemModelProjector
             'price'                       => (string) ($event->getAttribute('price') ?? '0.00'),
             'status'                      => (string) ($event->getAttribute('status') ?? ''),
         ];
+    }
+
+    /**
+     * Assemble the event_time display string. Multi-day events are not
+     * structurally distinguished — start and end are joined with an em-dash
+     * regardless of whether they fall on the same day.
+     */
+    private function buildEventTime(Event $event): string
+    {
+        $start = $event->starts_at;
+        if ($start === null) {
+            return '';
+        }
+
+        $startStr = DateFormat::format($start, DateFormat::TIME_SMART);
+        $end = $event->ends_at;
+        if ($end === null) {
+            return $startStr;
+        }
+
+        return $startStr . ' – ' . DateFormat::format($end, DateFormat::TIME_SMART);
+    }
+
+    /**
+     * Assemble the venue-mode-aware location label for EventDescription.
+     * Mirrors the prior template-side branching: in-person + virtual,
+     * in-person, virtual, or empty.
+     */
+    private function buildEventLocation(Event $event): string
+    {
+        $isInPerson = (bool) $event->is_in_person;
+        $isVirtual = (bool) $event->is_virtual;
+        $city = (string) ($event->getAttribute('city') ?? '');
+        $state = (string) ($event->getAttribute('state') ?? '');
+        $cityState = $city !== '' ? $city . ($state !== '' ? ', ' . $state : '') : '';
+
+        if ($isInPerson && $isVirtual) {
+            return $cityState !== ''
+                ? 'In-person + Online (' . $cityState . ')'
+                : 'In-person + Online';
+        }
+
+        if ($isInPerson) {
+            return $cityState;
+        }
+
+        if ($isVirtual) {
+            return 'Online';
+        }
+
+        return '';
+    }
+
+    /**
+     * Resolve a format hint against an allowlist; unknown values fall back to
+     * the per-field default. Mirror of session 221's order_by allowlist.
+     *
+     * @param  array<string, string>  $formatHints
+     * @param  array<string, string>  $allowed
+     */
+    private function resolveFormatHint(array $formatHints, string $field, array $allowed, string $default): string
+    {
+        return isset($formatHints[$field]) && array_key_exists($formatHints[$field], $allowed)
+            ? $formatHints[$field]
+            : $default;
     }
 
     /**

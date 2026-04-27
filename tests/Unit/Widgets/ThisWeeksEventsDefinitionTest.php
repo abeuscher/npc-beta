@@ -19,7 +19,7 @@ it('produces a SOURCE_SYSTEM_MODEL contract pointing at the Event model', functi
         ->and($contract->version)->toBe('1.0.0')
         ->and($contract->source)->toBe(DataContract::SOURCE_SYSTEM_MODEL)
         ->and($contract->model)->toBe('event')
-        ->and($contract->fields)->toBe(['id', 'title', 'slug', 'starts_at', 'address_line_1', 'city', 'state', 'meeting_label']);
+        ->and($contract->fields)->toBe(['id', 'title', 'slug', 'event_date', 'event_time', 'address_line_1', 'city', 'state', 'meeting_label']);
 });
 
 it('translates days_ahead into a date_range filter', function () {

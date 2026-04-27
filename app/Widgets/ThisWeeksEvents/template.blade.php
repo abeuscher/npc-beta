@@ -10,7 +10,6 @@
         <ul class="np-this-weeks-events__list">
             @foreach ($items as $event)
                 @php
-                    $startsAt = ! empty($event['starts_at']) ? \Illuminate\Support\Carbon::parse($event['starts_at']) : null;
                     $locationParts = array_filter([
                         $event['address_line_1'] ?? null,
                         $event['city'] ?? null,
@@ -22,8 +21,8 @@
                     }
                 @endphp
                 <li class="np-this-weeks-events__item">
-                    @if ($startsAt)
-                        <p class="np-this-weeks-events__date">{{ \App\Support\DateFormat::format($startsAt, \App\Support\DateFormat::EVENT_COMPACT) }}</p>
+                    @if (! empty($event['event_date']))
+                        <p class="np-this-weeks-events__date">{{ $event['event_date'] }} · {{ $event['event_time'] }}</p>
                     @endif
                     @if (! empty($event['title']))
                         <h4 class="np-this-weeks-events__title">{{ $event['title'] }}</h4>

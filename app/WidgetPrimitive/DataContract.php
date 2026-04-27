@@ -21,6 +21,7 @@ final class DataContract
      * @param  ContentType|null  $contentType  For SOURCE_WIDGET_CONTENT_TYPE: the widget-declared content shape.
      * @param  QuerySettings|null  $querySettings  Honored-knob declaration. List-shaped contracts carry one; PAGE_CONTEXT and single-row contracts pass null.
      * @param  string  $cardinality  CARDINALITY_MANY (default) returns ['items' => [...]]; CARDINALITY_ONE returns ['item' => row | null].
+     * @param  array<string, string>  $formatHints  Per-instance display-format overrides keyed by projector field name; values are DateFormat constants. Validated by the projector against each field's option-set helper; unknown values fall back to the per-field default.
      */
     public function __construct(
         public readonly string $version,
@@ -32,6 +33,7 @@ final class DataContract
         public readonly ?ContentType $contentType = null,
         public readonly ?QuerySettings $querySettings = null,
         public readonly string $cardinality = self::CARDINALITY_MANY,
+        public readonly array $formatHints = [],
     ) {}
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Widgets\BlogListing;
 
+use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\QuerySettings;
@@ -46,7 +47,8 @@ class BlogListingDefinition extends WidgetDefinition
     {
         return [
             ['key' => 'heading',          'type' => 'text',     'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
-            ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.published_at_label}}</h4><p>{{item.excerpt}}</p><p>{{item.slug}}</p><p>{{item.published_at}}</p>', 'group' => 'content'],
+            ['key' => 'content_template', 'type' => 'richtext', 'label' => 'Card template', 'default' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.post_date}}</h4><p>{{item.excerpt}}</p>', 'group' => 'content'],
+            ['key' => 'date_format',      'type' => 'select',   'label' => 'Date format', 'options' => DateFormat::postDateOptions(), 'default' => DateFormat::LONG_DATE, 'group' => 'content'],
             ['key' => 'columns',          'type' => 'select',   'label' => 'Columns per row', 'options' => ['1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6'], 'default' => '3', 'group' => 'appearance'],
             ['key' => 'items_per_page',   'type' => 'number',   'label' => 'Items per page', 'default' => 6, 'group' => 'content'],
             ['key' => 'show_search',       'type' => 'toggle',   'label' => 'Show search', 'default' => false, 'group' => 'appearance'],
@@ -60,7 +62,8 @@ class BlogListingDefinition extends WidgetDefinition
     {
         return [
             'heading'          => '',
-            'content_template' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.published_at_label}}</h4><p>{{item.excerpt}}</p><p>{{item.slug}}</p><p>{{item.published_at}}</p>',
+            'content_template' => '<p>{{item.image}}</p><h3><a href="{{item.url}}">{{item.title}}</a></h3><h4>{{item.post_date}}</h4><p>{{item.excerpt}}</p>',
+            'date_format'      => DateFormat::LONG_DATE,
             'columns'          => '3',
             'items_per_page'   => 6,
             'show_search'      => false,
@@ -75,9 +78,10 @@ class BlogListingDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
-            fields: ['title', 'slug', 'url', 'published_at', 'published_at_label', 'excerpt', 'image'],
+            fields: ['title', 'slug', 'url', 'published_at', 'post_date', 'excerpt', 'image'],
             model: 'post',
             querySettings: $this->querySettings($config),
+            formatHints: ['post_date' => $config['date_format'] ?? DateFormat::LONG_DATE],
         );
     }
 

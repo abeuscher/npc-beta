@@ -47,7 +47,7 @@ it('projects only contract-declared fields onto BlogPager rows (fail-closed whit
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto['items'])->toHaveCount(2)
-        ->and(array_keys($dto['items'][0]))->toEqualCanonicalizing(['id', 'title', 'slug', 'url', 'published_at_label', 'image', 'author_name'])
+        ->and(array_keys($dto['items'][0]))->toEqualCanonicalizing(['id', 'title', 'slug', 'url', 'post_date', 'image', 'author_name'])
         ->and($dto['items'][0])->not->toHaveKey('head_snippet')
         ->and($dto['items'][0])->not->toHaveKey('meta_title')
         ->and($dto['items'][0])->not->toHaveKey('excerpt');

@@ -68,7 +68,7 @@ window.NPWidgets.eventsListing = function () {
                     const item = this.cfg.items[i];
                     return item.title.toLowerCase().includes(q)
                         || (item.location || '').toLowerCase().includes(q)
-                        || item.starts_at_label.toLowerCase().includes(q);
+                        || (item.event_date || '').toLowerCase().includes(q);
                 });
             }
             indices.sort((a, b) => {

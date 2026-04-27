@@ -2,6 +2,7 @@
 
 namespace App\Widgets\ThisWeeksEvents;
 
+use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\QuerySettings;
@@ -42,14 +43,16 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'days_ahead', 'type' => 'number', 'label' => 'Days ahead', 'default' => 7, 'advanced' => true, 'group' => 'content'],
+            ['key' => 'days_ahead',  'type' => 'number', 'label' => 'Days ahead', 'default' => 7, 'advanced' => true, 'group' => 'content'],
+            ['key' => 'date_format', 'type' => 'select', 'label' => 'Date format', 'options' => DateFormat::eventDateOptions(), 'default' => DateFormat::EVENT_TILE_DATE, 'group' => 'content'],
         ];
     }
 
     public function defaults(): array
     {
         return [
-            'days_ahead' => 7,
+            'days_ahead'  => 7,
+            'date_format' => DateFormat::EVENT_TILE_DATE,
         ];
     }
 
@@ -60,13 +63,14 @@ class ThisWeeksEventsDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
-            fields: ['id', 'title', 'slug', 'starts_at', 'address_line_1', 'city', 'state', 'meeting_label'],
+            fields: ['id', 'title', 'slug', 'event_date', 'event_time', 'address_line_1', 'city', 'state', 'meeting_label'],
             filters: [
                 'date_range' => ['from' => 'now', 'to' => '+' . $daysAhead . ' days'],
                 'order_by'   => 'starts_at asc',
             ],
             model: 'event',
             querySettings: $this->querySettings($config),
+            formatHints: ['event_date' => $config['date_format'] ?? DateFormat::EVENT_TILE_DATE],
         );
     }
 

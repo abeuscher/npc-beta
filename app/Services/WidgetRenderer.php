@@ -179,6 +179,7 @@ class WidgetRenderer
             resourceHandle: $contract->resourceHandle,
             contentType: $contract->contentType,
             querySettings: $contract->querySettings,
+            formatHints: $contract->formatHints,
         );
     }
 

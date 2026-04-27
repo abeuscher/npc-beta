@@ -42,6 +42,29 @@ it('carries filters, model, resource handle and content type for richer contract
         ->and($contract->contentType)->toBe($contentType);
 });
 
+it('defaults formatHints to an empty array', function () {
+    $contract = new DataContract(
+        version: '1.0.0',
+        source: DataContract::SOURCE_PAGE_CONTEXT,
+    );
+
+    expect($contract->formatHints)->toBe([]);
+});
+
+it('round-trips formatHints as a readonly associative array', function () {
+    $hints = ['event_date' => 'D, M j', 'post_date' => 'F j, Y'];
+
+    $contract = new DataContract(
+        version: '1.0.0',
+        source: DataContract::SOURCE_SYSTEM_MODEL,
+        fields: ['title', 'event_date'],
+        model: 'event',
+        formatHints: $hints,
+    );
+
+    expect($contract->formatHints)->toBe($hints);
+});
+
 it('exposes image field keys from a content type', function () {
     $contentType = new ContentType(
         handle: 'carousel.slide',

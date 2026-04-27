@@ -38,8 +38,9 @@ it('projects only contract-declared fields onto the EventDescription single-row 
 
     expect($dto)->toHaveKey('item')
         ->and($dto['item'])->not->toBeNull()
-        ->and(array_keys($dto['item']))->toEqualCanonicalizing(['title', 'starts_at', 'ends_at', 'description', 'is_in_person', 'is_virtual', 'city', 'state'])
+        ->and(array_keys($dto['item']))->toEqualCanonicalizing(['title', 'starts_at', 'event_date', 'event_time', 'event_location', 'description', 'is_in_person', 'is_virtual', 'city', 'state'])
         ->and($dto['item'])->not->toHaveKey('meeting_label')
+        ->and($dto['item'])->not->toHaveKey('ends_at')
         ->and($dto['item'])->not->toHaveKey('id')
         ->and($dto['item']['title'])->toBe('Whitelisted Event')
         ->and($dto['item']['city'])->toBe('Springfield');

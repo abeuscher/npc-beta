@@ -20,8 +20,8 @@
         }
     }
 
-    $defaultPrevTemplate = '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.published_at_label}}</small>';
-    $defaultNextTemplate = '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.published_at_label}}</small>';
+    $defaultPrevTemplate = '<span class="pager-link__title">&larr; {{item.title}}</span><small>{{item.author_name}} | {{item.post_date}}</small>';
+    $defaultNextTemplate = '<span class="pager-link__title">{{item.title}} &rarr;</span><small>{{item.author_name}} | {{item.post_date}}</small>';
 
     $prevTemplate = trim(strip_tags($config['prev_template'] ?? '')) !== '' ? ($config['prev_template'] ?? $defaultPrevTemplate) : $defaultPrevTemplate;
     $nextTemplate = trim(strip_tags($config['next_template'] ?? '')) !== '' ? ($config['next_template'] ?? $defaultNextTemplate) : $defaultNextTemplate;
