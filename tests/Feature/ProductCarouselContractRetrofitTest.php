@@ -5,9 +5,9 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,7 +48,7 @@ it('projects only contract-declared fields onto ProductCarousel rows with nested
     }
 
     $contract = (new ProductCarouselDefinition())->dataContract([]);
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto)->toHaveKey('items')

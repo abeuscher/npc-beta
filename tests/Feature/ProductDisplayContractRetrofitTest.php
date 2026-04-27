@@ -5,9 +5,9 @@ use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,7 +55,7 @@ it('projects only contract-declared fields onto the ProductDisplay single-row DT
     }
 
     $contract = (new ProductDisplayDefinition())->dataContract(['product_slug' => 'capacity-test-product']);
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto)->toHaveKey('item')
@@ -135,7 +135,7 @@ it('renders ProductDisplay through the contract resolver only and short-circuits
         'is_active'      => true,
     ]);
 
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $missingContract = (new ProductDisplayDefinition())->dataContract(['product_slug' => 'does-not-exist']);
     $missingDto = app(ContractResolver::class)->resolve([$missingContract], $context)[0];
     $missingHtml = WidgetRenderer::render($missingPw)['html'];

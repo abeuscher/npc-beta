@@ -4,9 +4,9 @@ use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\EventRegistration\EventRegistrationDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,7 +41,7 @@ it('projects only contract-declared fields onto the EventRegistration single-row
     }
 
     $contract = (new EventRegistrationDefinition())->dataContract(['event_slug' => 'capacity-test']);
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto)->toHaveKey('item')

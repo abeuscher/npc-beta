@@ -2,6 +2,7 @@
 
 use App\Models\Page;
 use App\Services\PageContext;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\SlotContext;
 use App\WidgetPrimitive\Slots\PageBuilderCanvasSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +37,9 @@ it('builds a SlotContext from a PageContext and optional page override', functio
     $ctx = $slot->ambientContext($pageContext, $page);
 
     expect($ctx)->toBeInstanceOf(SlotContext::class)
+        ->and($ctx->ambient)->toBeInstanceOf(PageAmbientContext::class)
+        ->and($ctx->ambient->currentPage)->not->toBeNull()
+        ->and($ctx->ambient->currentPage->id)->toBe($page->id)
         ->and($ctx->currentPage())->not->toBeNull()
         ->and($ctx->currentPage()->id)->toBe($page->id);
 });
@@ -46,5 +50,6 @@ it('builds a SlotContext without an override when none is given', function () {
     $ctx = (new PageBuilderCanvasSlot())->ambientContext($pageContext);
 
     expect($ctx)->toBeInstanceOf(SlotContext::class)
+        ->and($ctx->ambient)->toBeInstanceOf(PageAmbientContext::class)
         ->and($ctx->currentPage())->toBeNull();
 });

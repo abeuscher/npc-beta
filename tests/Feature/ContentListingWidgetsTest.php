@@ -3,9 +3,9 @@
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\EventsListing\EventsListingDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,14 +16,14 @@ uses(TestCase::class, RefreshDatabase::class);
 function blogListingWidgetData(array $config = []): array
 {
     $contract = (new BlogListingDefinition())->dataContract($config);
-    $slot = new SlotContext(new PageContext());
+    $slot = new SlotContext(new PageAmbientContext());
     return app(ContractResolver::class)->resolve([$contract], $slot)[0];
 }
 
 function eventsListingWidgetData(array $config = []): array
 {
     $contract = (new EventsListingDefinition())->dataContract($config);
-    $slot = new SlotContext(new PageContext());
+    $slot = new SlotContext(new PageAmbientContext());
     return app(ContractResolver::class)->resolve([$contract], $slot)[0];
 }
 

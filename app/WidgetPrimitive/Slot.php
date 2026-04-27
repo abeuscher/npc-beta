@@ -6,13 +6,14 @@ namespace App\WidgetPrimitive;
  * A Slot is a rendering target for widgets — a declared location in the UI
  * that accepts widgets compatible with its contract.
  *
- * Every slot also exposes an ambientContext(...) method, but its signature
- * varies per slot (page-builder canvas takes PageContext + ?Page; dashboard
- * will take an admin user + request; record-detail will take the current
- * record + user). Callers know which slot they are invoking by handle and
- * therefore know the argument shape. The method is intentionally not
- * declared on this abstract — PHP 8 requires LSP-compatible signatures
- * across overrides, and the per-slot shapes are incompatible.
+ * Every slot also exposes an ambientContext(...) method. The per-slot
+ * argument shapes still differ (page-builder canvas takes PageContext + ?Page;
+ * dashboard takes nothing; record-detail will take the current record + user)
+ * and PHP 8 LSP would reject a shared abstract declaration across them. What
+ * is uniform is the **return** type: every implementation now returns a
+ * SlotContext carrying a typed AmbientContext payload (PageAmbientContext,
+ * DashboardAmbientContext, RecordDetailAmbientContext). Callers know which
+ * slot they are invoking by handle and therefore know the argument shape.
  */
 abstract class Slot
 {

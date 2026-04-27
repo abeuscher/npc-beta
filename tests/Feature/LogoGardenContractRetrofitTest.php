@@ -4,9 +4,9 @@ use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\LogoGarden\LogoGardenDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +72,7 @@ it('projects only contract-declared fields onto LogoGarden rows (fail-closed whi
         'image_field'       => 'logo',
         'name_field'        => 'partner_name',
     ]);
-    $dto = $resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto['items'])->toHaveCount(3)
         ->and(array_keys($dto['items'][0]))->toEqualCanonicalizing(['logo', 'partner_name', '_media'])

@@ -3,8 +3,8 @@
 use App\Models\CollectionItem;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\SlotContext;
@@ -59,8 +59,8 @@ it('returns empty items for an admin-only collection on a public slot (publicSur
 
     $contract = (new MemosDefinition())->dataContract(['limit' => 5]);
 
-    $publicCtx = new SlotContext(new PageContext(), null, publicSurface: true);
-    $adminCtx  = new SlotContext(new PageContext(), null, publicSurface: false);
+    $publicCtx = new SlotContext(new PageAmbientContext(), publicSurface: true);
+    $adminCtx  = new SlotContext(new PageAmbientContext(), publicSurface: false);
 
     $resolver = app(ContractResolver::class);
     $publicDto = $resolver->resolve([$contract], $publicCtx)[0];
@@ -90,7 +90,7 @@ it('honors the limit filter on SOURCE_WIDGET_CONTENT_TYPE reads', function () {
         contentType: (new MemosDefinition())->dataContract(['limit' => 3])->contentType,
     );
 
-    $ctx = new SlotContext(new PageContext(), null, publicSurface: false);
+    $ctx = new SlotContext(new PageAmbientContext(), publicSurface: false);
     $dto = app(ContractResolver::class)->resolve([$contract], $ctx)[0];
 
     expect($dto['items'])->toHaveCount(3);

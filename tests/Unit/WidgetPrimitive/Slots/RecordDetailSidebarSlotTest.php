@@ -21,6 +21,6 @@ it('reports compact, column-stackable, bounded appearance constraints', function
     ]);
 });
 
-it('throws when ambientContext is called — wiring lands in Phase 5', function () {
+it('throws when ambientContext is called — wiring lands in Phase 5b', function () {
     (new RecordDetailSidebarSlot())->ambientContext();
-})->throws(RuntimeException::class, 'Slot ambient context not yet wired — lands with Phase 5');
+})->throws(RuntimeException::class, 'Slot ambient context not yet wired — lands with Phase 5b');

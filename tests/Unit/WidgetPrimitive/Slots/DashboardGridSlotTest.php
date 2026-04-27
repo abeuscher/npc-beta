@@ -1,5 +1,6 @@
 <?php
 
+use App\WidgetPrimitive\AmbientContexts\DashboardAmbientContext;
 use App\WidgetPrimitive\SlotContext;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,10 +27,11 @@ it('reports grid-cell dimensions and bounded appearance', function () {
     ]);
 });
 
-it('builds a SlotContext with a null current page', function () {
+it('builds a SlotContext carrying a DashboardAmbientContext with a null current page', function () {
     $ctx = (new DashboardGridSlot())->ambientContext();
 
     expect($ctx)->toBeInstanceOf(SlotContext::class)
+        ->and($ctx->ambient)->toBeInstanceOf(DashboardAmbientContext::class)
         ->and($ctx->currentPage())->toBeNull();
 });
 

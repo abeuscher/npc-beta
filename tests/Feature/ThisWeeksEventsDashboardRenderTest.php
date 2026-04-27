@@ -3,8 +3,8 @@
 use App\Models\Event;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\SlotContext;
@@ -71,7 +71,7 @@ it('the ContractResolver returns only whitelisted Event fields (fail-closed on u
         model: 'event',
     );
 
-    $ctx = new SlotContext(new PageContext(), null, publicSurface: false);
+    $ctx = new SlotContext(new PageAmbientContext(), publicSurface: false);
     $dto = app(ContractResolver::class)->resolve([$contract], $ctx)[0];
 
     expect($dto['items'])->toHaveCount(1)
@@ -96,7 +96,7 @@ it('the ContractResolver date_range filter clips events outside the window', fun
         model: 'event',
     );
 
-    $ctx = new SlotContext(new PageContext(), null, publicSurface: false);
+    $ctx = new SlotContext(new PageAmbientContext(), publicSurface: false);
     $dto = app(ContractResolver::class)->resolve([$contract], $ctx)[0];
 
     $titles = array_column($dto['items'], 'title');
@@ -112,7 +112,7 @@ it('an unknown system model handle returns an empty item set', function () {
         model: 'widget_type_never_heard_of',
     );
 
-    $ctx = new SlotContext(new PageContext(), null, publicSurface: false);
+    $ctx = new SlotContext(new PageAmbientContext(), publicSurface: false);
     $dto = app(ContractResolver::class)->resolve([$contract], $ctx)[0];
 
     expect($dto)->toBe(['items' => []]);

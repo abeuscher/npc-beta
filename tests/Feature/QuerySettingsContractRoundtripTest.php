@@ -6,7 +6,6 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\Tag;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\BarChart\BarChartDefinition;
 use App\Widgets\BlogListing\BlogListingDefinition;
@@ -15,6 +14,7 @@ use App\Widgets\Carousel\CarouselDefinition;
 use App\Widgets\EventsListing\EventsListingDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Models\Product;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,7 +94,7 @@ function resolveContract(\App\WidgetPrimitive\DataContract $contract, array $use
         querySettings: $contract->querySettings,
     );
 
-    return app(ContractResolver::class)->resolve([$contractWithUser], new SlotContext(new PageContext()))[0];
+    return app(ContractResolver::class)->resolve([$contractWithUser], new SlotContext(new PageAmbientContext()))[0];
 }
 
 it('flows limit through query_config into the SWCT contract resolver', function () {

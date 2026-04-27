@@ -3,9 +3,9 @@
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\EventDescription\EventDescriptionDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +33,7 @@ it('projects only contract-declared fields onto the EventDescription single-row 
     ]);
 
     $contract = (new EventDescriptionDefinition())->dataContract(['event_slug' => 'whitelisted-event']);
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto)->toHaveKey('item')
@@ -128,7 +128,7 @@ it('renders EventDescription through the contract resolver only and short-circui
     ]);
 
     $contract = (new EventDescriptionDefinition())->dataContract(['event_slug' => 'does-not-exist']);
-    $context = new SlotContext(new PageContext(null), null);
+    $context = new SlotContext(new PageAmbientContext());
     $missingDto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     $missingHtml = WidgetRenderer::render($missingPw)['html'];

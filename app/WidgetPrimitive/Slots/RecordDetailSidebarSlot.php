@@ -3,6 +3,7 @@
 namespace App\WidgetPrimitive\Slots;
 
 use App\WidgetPrimitive\Slot;
+use App\WidgetPrimitive\SlotContext;
 use RuntimeException;
 
 final class RecordDetailSidebarSlot extends Slot
@@ -17,9 +18,9 @@ final class RecordDetailSidebarSlot extends Slot
         return 'Record Detail Sidebar';
     }
 
-    public function ambientContext(): object
+    public function ambientContext(): SlotContext
     {
-        throw new RuntimeException('Slot ambient context not yet wired — lands with Phase 5');
+        throw new RuntimeException('Slot ambient context not yet wired — lands with Phase 5b');
     }
 
     public function layoutConstraints(): array

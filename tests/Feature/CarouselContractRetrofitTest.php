@@ -4,9 +4,9 @@ use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\Carousel\CarouselDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,7 +50,7 @@ it('projects only contract-declared fields onto Carousel rows (fail-closed white
     // Resolver-level invariant: contract-declared shape only.
     $resolver = app(ContractResolver::class);
     $contract = (new CarouselDefinition())->dataContract(['collection_handle' => 'audit-slides']);
-    $dto = $resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto['items'])->toHaveCount(3)
         ->and(array_keys($dto['items'][0]))->toEqualCanonicalizing(['title', 'description', '_media'])

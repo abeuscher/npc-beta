@@ -3,7 +3,7 @@
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Page;
-use App\Services\PageContext;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContentType;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\DataContract;
@@ -20,7 +20,7 @@ beforeEach(function () {
 
 function slotWithCurrentPage(?Page $page = null): SlotContext
 {
-    return new SlotContext(new PageContext($page));
+    return new SlotContext(new PageAmbientContext($page));
 }
 
 it('returns DTOs indexed to match the input contract list', function () {
@@ -56,7 +56,7 @@ it('omits fields not declared on the contract', function () {
 it('returns empty scalars when the slot has no current page', function () {
     $contract = new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT, ['title', 'date']);
 
-    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto)->toBe(['title' => '', 'date' => '']);
 });
@@ -77,7 +77,7 @@ it('resolves a system_model post contract into a row-set DTO', function () {
         model: 'post',
     );
 
-    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto)->toHaveKey('items')
         ->and($dto['items'])->toHaveCount(1)
@@ -100,7 +100,7 @@ it('batches system_model resolution when multiple contracts share the same filte
     ];
 
     DB::enableQueryLog();
-    $dtos = $this->resolver->resolve($contracts, new SlotContext(new PageContext()));
+    $dtos = $this->resolver->resolve($contracts, new SlotContext(new PageAmbientContext()));
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
 
@@ -152,7 +152,7 @@ it('resolves a widget_content_type contract into a row-set DTO with declared fie
         contentType: $contentType,
     );
 
-    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto)->toHaveKey('items')
         ->and($dto['items'])->toHaveCount(1)
@@ -172,7 +172,7 @@ it('returns an empty item list when a widget_content_type references an unknown 
         contentType: $contentType,
     );
 
-    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $this->resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     expect($dto)->toBe(['items' => []]);
 });

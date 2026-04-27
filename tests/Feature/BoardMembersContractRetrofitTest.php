@@ -4,9 +4,9 @@ use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Page;
 use App\Models\WidgetType;
-use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -73,7 +73,7 @@ it('projects only contract-declared fields onto BoardMembers rows (fail-closed w
         'extra_url_field'       => 'extra_url',
         'extra_url_label_field' => 'extra_url_label',
     ]);
-    $dto = $resolver->resolve([$contract], new SlotContext(new PageContext()))[0];
+    $dto = $resolver->resolve([$contract], new SlotContext(new PageAmbientContext()))[0];
 
     $expectedKeys = ['photo', 'name', 'job_title', 'department', 'bio', 'linkedin', 'github', 'extra_url', 'extra_url_label', '_media'];
 

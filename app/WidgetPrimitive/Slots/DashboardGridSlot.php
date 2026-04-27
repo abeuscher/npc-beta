@@ -2,7 +2,7 @@
 
 namespace App\WidgetPrimitive\Slots;
 
-use App\Services\PageContext;
+use App\WidgetPrimitive\AmbientContexts\DashboardAmbientContext;
 use App\WidgetPrimitive\Slot;
 use App\WidgetPrimitive\SlotContext;
 
@@ -20,7 +20,7 @@ final class DashboardGridSlot extends Slot
 
     public function ambientContext(): SlotContext
     {
-        return new SlotContext(app(PageContext::class), null, publicSurface: false);
+        return new SlotContext(new DashboardAmbientContext(), publicSurface: false);
     }
 
     public function layoutConstraints(): array

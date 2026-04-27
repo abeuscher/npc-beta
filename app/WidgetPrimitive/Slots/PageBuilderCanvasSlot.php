@@ -4,6 +4,7 @@ namespace App\WidgetPrimitive\Slots;
 
 use App\Models\Page;
 use App\Services\PageContext;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\Slot;
 use App\WidgetPrimitive\SlotContext;
 
@@ -21,7 +22,7 @@ final class PageBuilderCanvasSlot extends Slot
 
     public function ambientContext(PageContext $pageContext, ?Page $currentPageOverride = null): SlotContext
     {
-        return new SlotContext($pageContext, $currentPageOverride);
+        return new SlotContext(new PageAmbientContext($currentPageOverride ?? $pageContext->currentPage));
     }
 
     public function layoutConstraints(): array

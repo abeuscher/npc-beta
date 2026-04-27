@@ -6,6 +6,7 @@ use App\Models\WidgetType;
 use App\Services\PageContext;
 use App\Services\WidgetRenderer;
 use App\Widgets\BlogPager\BlogPagerDefinition;
+use App\WidgetPrimitive\AmbientContexts\PageAmbientContext;
 use App\WidgetPrimitive\ContractResolver;
 use App\WidgetPrimitive\SlotContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,7 +44,7 @@ it('projects only contract-declared fields onto BlogPager rows (fail-closed whit
     $wt = WidgetType::where('handle', 'blog_pager')->firstOrFail();
 
     $contract = (new BlogPagerDefinition())->dataContract([]);
-    $context = new SlotContext(new PageContext($host), $host);
+    $context = new SlotContext(new PageAmbientContext($host));
     $dto = app(ContractResolver::class)->resolve([$contract], $context)[0];
 
     expect($dto['items'])->toHaveCount(2)
