@@ -2,6 +2,7 @@
 
 namespace App\WidgetPrimitive\Views;
 
+use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\WidgetPrimitive\IsView;
 use Database\Factories\RecordDetailViewFactory;
@@ -18,6 +19,19 @@ class RecordDetailView extends Model implements IsView
     protected static function newFactory(): Factory
     {
         return RecordDetailViewFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (RecordDetailView $view) {
+            PageWidget::where('owner_type', static::class)
+                ->where('owner_id', $view->getKey())
+                ->each(fn (PageWidget $w) => $w->delete());
+
+            PageLayout::where('owner_type', static::class)
+                ->where('owner_id', $view->getKey())
+                ->delete();
+        });
     }
 
     protected $fillable = [

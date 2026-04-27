@@ -154,7 +154,7 @@ export interface ThemePaletteEntry {
   value: string | null
 }
 
-export type EditorMode = 'page' | 'dashboard'
+export type EditorMode = 'page' | 'dashboard' | 'record_detail'
 
 export interface BootstrapData {
   mode?: EditorMode
@@ -186,6 +186,8 @@ export interface BootstrapData {
   allowed_appearance_fields?: string[]
   allowed_widget_handles?: string[]
   role_label?: string
+  view_label?: string
+  record_type_label?: string
 }
 
 export interface TreeResponse {

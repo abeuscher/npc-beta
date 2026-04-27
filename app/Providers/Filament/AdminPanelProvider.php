@@ -79,6 +79,11 @@ class AdminPanelProvider extends PanelProvider
                     ->middleware(\Filament\Http\Middleware\Authenticate::class)
                     ->group(base_path('routes/admin-dashboard-api.php'));
 
+                // Record detail view builder API (Vue editor, record_detail mode)
+                \Illuminate\Support\Facades\Route::prefix('api/record-detail-view-builder')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->group(base_path('routes/admin-record-detail-view-api.php'));
+
                 // Theme editor (Vue typography island + SCSS export)
                 \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
                     ->group(function () {

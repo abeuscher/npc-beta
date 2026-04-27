@@ -14,7 +14,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~5–8 sessions remaining: Phase 5c.5 admin UI for View authoring (next), Phase 5d+ concrete record-detail widgets, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
+- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~4–7 sessions remaining: Phase 5d-1 first concrete record-detail widget — Recent Notes (next, forces minimal Phase 5e perm-gate at the resolver), Phase 5d-2+ remaining concrete widgets (Recent Donations, Membership Status, Recent Activity), a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
 
 ---
 

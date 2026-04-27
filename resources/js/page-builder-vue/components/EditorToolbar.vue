@@ -12,6 +12,12 @@ const store = useEditorStore()
         <span v-if="store.roleLabel" class="editor-toolbar__author">for {{ store.roleLabel }}</span>
       </div>
     </div>
+    <div v-else-if="store.mode === 'record_detail'" class="editor-toolbar__left">
+      <div class="editor-toolbar__row1">
+        <span class="editor-toolbar__title">View: {{ store.viewLabel }}</span>
+        <span v-if="store.recordTypeLabel" class="editor-toolbar__author">({{ store.recordTypeLabel }})</span>
+      </div>
+    </div>
     <div v-else class="editor-toolbar__left">
       <div class="editor-toolbar__row1">
         <span class="editor-toolbar__title">{{ store.pageTitle }}</span>

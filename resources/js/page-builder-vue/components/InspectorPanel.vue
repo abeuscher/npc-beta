@@ -31,12 +31,12 @@ const bottomTab = computed({
 const topCollapsed = ref(false)
 const bottomCollapsed = ref(false)
 
-const isDashboard = computed(() => store.mode === 'dashboard')
+const isPageMode = computed(() => store.mode === 'page')
 const allowedAppearance = computed(() => store.allowedAppearanceFields ?? [])
 
 const topTabs = computed(() => {
   const tabs: { id: TopTab; label: string }[] = [{ id: 'content', label: 'Content' }]
-  if (!isDashboard.value) {
+  if (isPageMode.value) {
     tabs.push({ id: 'presets', label: 'Presets' })
   }
   tabs.push({ id: 'widget-settings', label: 'Widget Settings' })
@@ -45,7 +45,7 @@ const topTabs = computed(() => {
 
 const bottomTabs = computed(() => {
   const tabs: { id: BottomTab; label: string }[] = []
-  const allow = (field: string) => !isDashboard.value || allowedAppearance.value.includes(field)
+  const allow = (field: string) => isPageMode.value || allowedAppearance.value.includes(field)
 
   if (allow('background')) tabs.push({ id: 'background', label: 'Background' })
   if (allow('text')) tabs.push({ id: 'text', label: 'Text' })
@@ -110,9 +110,9 @@ function onWidgetRemoveImage() {
   store.removeAppearanceImage(widget.value.id)
 }
 
-// If dashboard mode lands on a tab that was hidden, coerce to a valid one.
+// If a non-page mode lands on a tab that was hidden, coerce to a valid one.
 watch(
-  [isDashboard, topTabs, bottomTabs],
+  [isPageMode, topTabs, bottomTabs],
   () => {
     if (!topTabs.value.some((t) => t.id === topTab.value)) {
       topTab.value = topTabs.value[0]?.id ?? 'content'
@@ -176,7 +176,7 @@ watch(
             <QuerySettings :widget="widget" />
           </div>
 
-          <div v-if="!isDashboard" v-show="topTab === 'presets'" class="inspector-pane__scroll">
+          <div v-if="isPageMode" v-show="topTab === 'presets'" class="inspector-pane__scroll">
             <InspectorPresetGallery :widget="widget" />
           </div>
 
@@ -237,7 +237,7 @@ watch(
           <div v-show="bottomTab === 'text'" class="inspector-pane__scroll">
             <TextPanel :widget="widget" />
           </div>
-          <div v-if="!isDashboard" v-show="bottomTab === 'spacing'" class="inspector-pane__scroll">
+          <div v-if="isPageMode" v-show="bottomTab === 'spacing'" class="inspector-pane__scroll">
             <SectionLayoutPanel
               :config="widget.appearance_config"
               :full-width-disabled="widget.layout_id !== null"

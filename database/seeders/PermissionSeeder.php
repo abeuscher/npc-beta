@@ -119,6 +119,11 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Permission::firstOrCreate([
+            'name'       => 'manage_record_detail_views',
+            'guard_name' => 'web',
+        ]);
+
         // Tier 2 — standalone capabilities for features converted from super_admin-only
         foreach ([
             'manage_custom_fields',

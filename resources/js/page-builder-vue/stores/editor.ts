@@ -28,6 +28,8 @@ export const useEditorStore = defineStore('editor', () => {
   const allowedAppearanceFields = ref<string[]>([])
   const allowedWidgetHandles = ref<string[]>([])
   const roleLabel = ref('')
+  const viewLabel = ref('')
+  const recordTypeLabel = ref('')
   const ownerId = ref('')
   const pageId = ref('')
   const pageType = ref('default')
@@ -166,6 +168,8 @@ export const useEditorStore = defineStore('editor', () => {
     allowedAppearanceFields.value = data.allowed_appearance_fields ?? []
     allowedWidgetHandles.value = data.allowed_widget_handles ?? []
     roleLabel.value = data.role_label ?? ''
+    viewLabel.value = data.view_label ?? ''
+    recordTypeLabel.value = data.record_type_label ?? ''
     ownerId.value = data.owner_id ?? data.page_id
     pageId.value = data.page_id
     pageType.value = data.page_type
@@ -835,6 +839,8 @@ export const useEditorStore = defineStore('editor', () => {
     allowedAppearanceFields,
     allowedWidgetHandles,
     roleLabel,
+    viewLabel,
+    recordTypeLabel,
     ownerId,
     pageId,
     pageType,
