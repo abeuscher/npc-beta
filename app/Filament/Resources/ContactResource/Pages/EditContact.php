@@ -39,6 +39,16 @@ class EditContact extends ReadOnlyAwareEditRecord
         ];
     }
 
+    protected function subNavigationEntryPage(): ?string
+    {
+        return self::class;
+    }
+
+    protected function recordDetailViewSubPageClass(): ?string
+    {
+        return EditContactView::class;
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $this->initialHouseholdId = $data['household_id'] ?? null;

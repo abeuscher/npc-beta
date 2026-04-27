@@ -62,7 +62,7 @@ it('rejects widget creation from a user without the permission', function () {
 // ── allowedSlots enforcement ────────────────────────────────────────────────
 
 it('rejects widget creation when the widget handle does not allow record_detail_sidebar', function () {
-    $notAllowed = WidgetType::where('handle', '!=', 'record_detail_placeholder')->first();
+    $notAllowed = WidgetType::where('handle', 'text_block')->first();
 
     $response = $this->actingAs($this->superAdmin)
         ->postJson(recordDetailUrl($this->view->id, 'widgets'), [
@@ -217,5 +217,5 @@ it('widget-types endpoint returns only widgets whose allowedSlots includes recor
 
     $handles = array_column($response->json('widget_types'), 'handle');
 
-    expect($handles)->toEqualCanonicalizing(['record_detail_placeholder']);
+    expect($handles)->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes']);
 });

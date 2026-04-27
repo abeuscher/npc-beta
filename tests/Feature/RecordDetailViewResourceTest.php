@@ -84,6 +84,32 @@ it('rejects duplicate (record_type, handle) pairs on create', function () {
         ->assertHasFormErrors(['handle']);
 });
 
+it('flags the seeded contact_overview View as primary and prevents deletion', function () {
+    $primary = RecordDetailView::query()
+        ->where('record_type', Contact::class)
+        ->where('handle', 'contact_overview')
+        ->firstOrFail();
+
+    expect(RecordDetailViewResource::isPrimary($primary))->toBeTrue()
+        ->and(RecordDetailViewResource::canDelete($primary))->toBeFalse();
+});
+
+it('does not flag user-created Views as primary and allows their deletion', function () {
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+    $this->actingAs($user);
+
+    $custom = RecordDetailView::create([
+        'record_type' => Contact::class,
+        'handle'      => 'contact_followups',
+        'label'       => 'Follow-Ups',
+        'sort_order'  => 1,
+    ]);
+
+    expect(RecordDetailViewResource::isPrimary($custom))->toBeFalse()
+        ->and(RecordDetailViewResource::canDelete($custom))->toBeTrue();
+});
+
 it('mounts the EditRecordDetailView page and exposes the record', function () {
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');

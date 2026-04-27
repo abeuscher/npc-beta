@@ -204,3 +204,62 @@ it('returns [] when sub-page class is null even with seeded Views', function () 
 
     expect($this->host->getSubNavigation())->toBe([]);
 });
+
+it('returns [] when there is one View and the host declares an entry page (entry alone does not raise the threshold)', function () {
+    $hostWithEntry = new class {
+        use \App\Filament\Concerns\HasRecordDetailSubNavigation;
+
+        public \Illuminate\Database\Eloquent\Model $record;
+
+        public ?string $subPageClass = StubViewSubPage_AlwaysAccessible::class;
+
+        protected function subNavigationEntryPage(): ?string
+        {
+            return StubAdditionalPage_AlwaysAccessible::class;
+        }
+
+        protected function recordDetailViewSubPageClass(): ?string
+        {
+            return $this->subPageClass;
+        }
+    };
+
+    $hostWithEntry->record = Contact::factory()->create();
+
+    RecordDetailView::factory()->create([
+        'record_type' => Contact::class,
+        'handle'      => 'overview',
+        'label'       => 'Overview',
+    ]);
+
+    expect($hostWithEntry->getSubNavigation())->toBe([]);
+});
+
+it('renders sub-nav with entry + 2 Views — three navigable destinations crosses the threshold', function () {
+    $hostWithEntry = new class {
+        use \App\Filament\Concerns\HasRecordDetailSubNavigation;
+
+        public \Illuminate\Database\Eloquent\Model $record;
+
+        public ?string $subPageClass = StubViewSubPage_AlwaysAccessible::class;
+
+        protected function subNavigationEntryPage(): ?string
+        {
+            return StubAdditionalPage_AlwaysAccessible::class;
+        }
+
+        protected function recordDetailViewSubPageClass(): ?string
+        {
+            return $this->subPageClass;
+        }
+    };
+
+    $hostWithEntry->record = Contact::factory()->create();
+
+    RecordDetailView::factory()->create(['record_type' => Contact::class, 'handle' => 'a', 'label' => 'A', 'sort_order' => 0]);
+    RecordDetailView::factory()->create(['record_type' => Contact::class, 'handle' => 'b', 'label' => 'B', 'sort_order' => 1]);
+
+    $items = $hostWithEntry->getSubNavigation();
+
+    expect($items)->toHaveCount(3);
+});

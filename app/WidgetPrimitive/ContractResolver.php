@@ -5,6 +5,7 @@ namespace App\WidgetPrimitive;
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Event;
+use App\Models\Note;
 use App\Models\Page;
 use App\Models\Product;
 use App\WidgetPrimitive\AmbientContexts\RecordDetailAmbientContext;
@@ -57,7 +58,7 @@ final class ContractResolver
             $results[$i] = match ($contract->source) {
                 DataContract::SOURCE_PAGE_CONTEXT        => $this->pageContextProjector->project($contract, $context->currentPage()),
                 DataContract::SOURCE_RECORD_CONTEXT      => $this->recordContextProjector->project($contract, $this->recordFromContext($context)),
-                DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache),
+                DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache, $context),
                 DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $context, $cache, $fallback),
                 default                                  => [],
             };
@@ -77,7 +78,7 @@ final class ContractResolver
      * @param  array<string, mixed>  $cache
      * @return array<string, mixed>
      */
-    private function resolveSystemModel(DataContract $contract, array &$cache): array
+    private function resolveSystemModel(DataContract $contract, array &$cache, SlotContext $context): array
     {
         if ($contract->cardinality === DataContract::CARDINALITY_ONE) {
             return match ($contract->model) {
@@ -91,8 +92,60 @@ final class ContractResolver
             'post'    => $this->resolvePost($contract, $cache),
             'event'   => $this->resolveEvent($contract, $cache),
             'product' => $this->resolveProduct($contract, $cache),
+            'note'    => $this->resolveNote($contract, $cache, $context),
             default   => ['items' => []],
         };
+    }
+
+    /**
+     * Resolve a list of Notes attached to the ambient record. Permission gate:
+     * fail-closed when the authenticated user lacks `view_note`. Ambient gate:
+     * returns empty when the slot is not record-detail. Scoping: notes are
+     * filtered by `notable_type` and `notable_id` derived from the ambient
+     * record — the contract carries no per-instance scope.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveNote(DataContract $contract, array &$cache, SlotContext $context): array
+    {
+        if (! auth()->user()?->can('view_note')) {
+            return ['items' => []];
+        }
+
+        $record = $this->recordFromContext($context);
+        if ($record === null) {
+            return ['items' => []];
+        }
+
+        $recordType = $record::class;
+        $recordId = (string) $record->getKey();
+
+        $key = 'note:' . $recordType . ':' . $recordId . ':' . sha1(serialize($contract->filters));
+        if (! array_key_exists($key, $cache)) {
+            $allowedOrderBy = ['occurred_at', 'created_at'];
+            $rawOrder = (string) ($contract->filters['order_by'] ?? '');
+            $col = in_array($rawOrder, $allowedOrderBy, true) ? $rawOrder : 'occurred_at';
+            $dir = strtolower((string) ($contract->filters['direction'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+            $limit = (int) ($contract->filters['limit'] ?? 5);
+            if ($limit < 1) {
+                $limit = 5;
+            }
+            if ($limit > 50) {
+                $limit = 50;
+            }
+
+            $cache[$key] = Note::query()
+                ->where('notable_type', $recordType)
+                ->where('notable_id', $recordId)
+                ->with('author')
+                ->orderBy($col, $dir)
+                ->take($limit)
+                ->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
     }
 
     /**

@@ -40,6 +40,7 @@ use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
+use App\Widgets\RecentNotes\RecentNotesDefinition;
 use App\Widgets\RecordDetailPlaceholder\RecordDetailPlaceholderDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
@@ -111,5 +112,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new QuickActionsDefinition());
         $registry->register(new ThisWeeksEventsDefinition());
         $registry->register(new RecordDetailPlaceholderDefinition());
+        $registry->register(new RecentNotesDefinition());
     }
 }

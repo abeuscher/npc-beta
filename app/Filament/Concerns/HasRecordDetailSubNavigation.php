@@ -25,9 +25,9 @@ trait HasRecordDetailSubNavigation
             fn (string $class) => $class::canAccess(['record' => $this->record]),
         );
 
-        $totalSubPages = count($entryItems) + $views->count() + count($additionalPages);
+        $navigableSubPages = $views->count() + count($additionalPages);
 
-        if ($totalSubPages <= 1) {
+        if ($navigableSubPages <= 1) {
             return [];
         }
 

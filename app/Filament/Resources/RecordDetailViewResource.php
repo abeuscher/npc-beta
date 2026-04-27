@@ -43,6 +43,28 @@ class RecordDetailViewResource extends Resource
         ];
     }
 
+    /**
+     * Seeded primary View handles per record type. The seeded primary is the
+     * implicit foundation for a record type's front-page footer widgets; it
+     * cannot be deleted through the admin UI because removing it would leave
+     * the record type with no front-page composition surface and no UI path
+     * to recreate one. Add an entry here when a new record type's primary
+     * View is seeded by `RecordDetailViewSeeder`.
+     *
+     * @return array<class-string, array<int, string>>
+     */
+    public static function primaryHandles(): array
+    {
+        return [
+            Contact::class => ['contact_overview'],
+        ];
+    }
+
+    public static function isPrimary(RecordDetailView $view): bool
+    {
+        return in_array($view->handle, self::primaryHandles()[$view->record_type] ?? [], true);
+    }
+
     public static function canViewAny(): bool
     {
         return auth()->user()?->can('manage_record_detail_views') ?? false;
@@ -60,6 +82,10 @@ class RecordDetailViewResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        if ($record instanceof RecordDetailView && self::isPrimary($record)) {
+            return false;
+        }
+
         return auth()->user()?->can('manage_record_detail_views') ?? false;
     }
 
@@ -152,7 +178,19 @@ class RecordDetailViewResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function (Tables\Actions\DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (RecordDetailView $record) use ($action) {
+                                if (self::isPrimary($record)) {
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Cannot delete primary View')
+                                        ->body("The View [{$record->handle}] is the seeded primary for its record type and cannot be deleted.")
+                                        ->danger()
+                                        ->send();
+                                    $action->cancel();
+                                }
+                            });
+                        }),
                 ]),
             ]);
     }

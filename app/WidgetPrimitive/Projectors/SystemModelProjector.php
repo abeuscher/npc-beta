@@ -3,6 +3,7 @@
 namespace App\WidgetPrimitive\Projectors;
 
 use App\Models\Event;
+use App\Models\Note;
 use App\Models\Page;
 use App\Models\Product;
 use App\Support\DateFormat;
@@ -79,6 +80,7 @@ final class SystemModelProjector
             'post'    => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
             'event'   => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
             'product' => fn (Product $product) => $this->projectProduct($product),
+            'note'    => fn (Note $note) => $this->projectNote($note),
             default   => null,
         };
     }
@@ -265,6 +267,26 @@ final class SystemModelProjector
             'capacity'       => $capacity,
             'is_at_capacity' => $isAtCapacity,
             'prices'         => $prices,
+        ];
+    }
+
+    /**
+     * Flat row shape derived from a Note model. Body is excerpted to ~140 chars
+     * with HTML stripped — full body is not exposed. Fields outside this map
+     * are not exposed: `body`, `meta`, `external_id`, `outcome`, etc. all
+     * fall through to the contract's empty-string fallback.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectNote(Note $note): array
+    {
+        return [
+            'note_id'           => $note->id,
+            'note_subject'      => (string) ($note->subject ?? ''),
+            'note_body_excerpt' => Str::limit(strip_tags((string) ($note->body ?? '')), 140),
+            'note_type'         => (string) ($note->type ?? ''),
+            'note_occurred_at'  => DateFormat::format($note->occurred_at, DateFormat::MEDIUM_DATETIME),
+            'note_author_name'  => $note->author?->name ?? '—',
         ];
     }
 }

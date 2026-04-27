@@ -36,7 +36,7 @@ it('seeds contact_overview, page_template_header, and page_template_footer Views
         ->and($footer->label)->toBe('Footer');
 });
 
-it('attaches the placeholder widget to contact_overview only on first run', function () {
+it('attaches the recent_notes widget to contact_overview only on first run', function () {
     (new \Database\Seeders\RecordDetailViewSeeder())->run();
     (new \Database\Seeders\RecordDetailViewSeeder())->run();
 
@@ -45,7 +45,8 @@ it('attaches the placeholder widget to contact_overview only on first run', func
         ->where('handle', 'contact_overview')
         ->first();
 
-    expect($overview->pageWidgets()->count())->toBe(1);
+    expect($overview->pageWidgets()->count())->toBe(1)
+        ->and($overview->pageWidgets()->first()->widgetType->handle)->toBe('recent_notes');
 });
 
 it('seeds page-template chrome Views without widgets', function () {

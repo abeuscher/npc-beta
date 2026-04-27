@@ -233,4 +233,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 228 | Widget Primitive — Phase 5b (Record-Detail Filament Mount + Ambient Wiring + IsView Primitive) |
 | 229 | Widget Primitive — Phase 5c (record_detail_views Table + IsView Registry + Sub-Nav Rendering Primitive) |
 | 230 | Widget Primitive — Phase 5c.5 (Admin UI for Authoring per-Record-Type View Sets) |
+| 231 | Widget Primitive — Phase 5d-1 (Recent Notes — First Concrete Record-Detail Widget) |
 

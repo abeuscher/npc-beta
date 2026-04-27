@@ -346,10 +346,11 @@ class ContactResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListContacts::route('/'),
-            'create' => Pages\CreateContact::route('/create'),
-            'edit'   => Pages\EditContact::route('/{record}/edit'),
-            'notes'  => Pages\ContactNotes::route('/{record}/notes'),
+            'index'     => Pages\ListContacts::route('/'),
+            'create'    => Pages\CreateContact::route('/create'),
+            'edit'      => Pages\EditContact::route('/{record}/edit'),
+            'edit.view' => Pages\EditContactView::route('/{record}/edit/view/{view}'),
+            'notes'     => Pages\ContactNotes::route('/{record}/notes'),
         ];
     }
 }

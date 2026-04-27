@@ -28,8 +28,8 @@ class RecordDetailViewSeeder extends Seeder
             return;
         }
 
-        $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
-        if (! $placeholder) {
+        $recentNotes = WidgetType::where('handle', 'recent_notes')->first();
+        if (! $recentNotes) {
             return;
         }
 
@@ -38,9 +38,9 @@ class RecordDetailViewSeeder extends Seeder
             'owner_id'          => $view->getKey(),
             'layout_id'         => null,
             'column_index'      => null,
-            'widget_type_id'    => $placeholder->id,
-            'label'             => $placeholder->label,
-            'config'            => [],
+            'widget_type_id'    => $recentNotes->id,
+            'label'             => $recentNotes->label,
+            'config'            => ['limit' => 5],
             'query_config'      => [],
             'appearance_config' => [],
             'sort_order'        => 0,
