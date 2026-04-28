@@ -26,6 +26,7 @@ class RecordDetailViewSeeder extends Seeder
 
         $this->attachWidgetIfMissing($view, 'recent_notes', sortOrder: 0, config: ['limit' => 5]);
         $this->attachWidgetIfMissing($view, 'membership_status', sortOrder: 1, config: []);
+        $this->attachWidgetIfMissing($view, 'recent_donations', sortOrder: 2, config: []);
     }
 
     /**

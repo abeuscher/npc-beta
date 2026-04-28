@@ -38,7 +38,7 @@ it('seeds contact_overview, page_template_header, and page_template_footer Views
         ->and($footer->label)->toBe('Footer');
 });
 
-it('attaches both recent_notes and membership_status widgets to contact_overview on fresh seed', function () {
+it('attaches recent_notes, membership_status, and recent_donations to contact_overview on fresh seed', function () {
     (new \Database\Seeders\RecordDetailViewSeeder())->run();
 
     $overview = RecordDetailView::query()
@@ -53,7 +53,7 @@ it('attaches both recent_notes and membership_status widgets to contact_overview
         ->map(fn (PageWidget $pw) => $pw->widgetType->handle)
         ->all();
 
-    expect($handles)->toBe(['recent_notes', 'membership_status']);
+    expect($handles)->toBe(['recent_notes', 'membership_status', 'recent_donations']);
 });
 
 it('is idempotent across re-runs — exactly one of each widget on contact_overview', function () {
@@ -76,10 +76,11 @@ it('is idempotent across re-runs — exactly one of each widget on contact_overv
     expect($counts)->toBe([
         'recent_notes'      => 1,
         'membership_status' => 1,
+        'recent_donations'  => 1,
     ]);
 });
 
-it('adds membership_status to an install that has only recent_notes attached (5d-1 migration path)', function () {
+it('adds recent_donations to an install that has recent_notes + membership_status only (5d-2 migration path)', function () {
     $view = RecordDetailView::create([
         'record_type' => Contact::class,
         'handle'      => 'contact_overview',
@@ -87,6 +88,7 @@ it('adds membership_status to an install that has only recent_notes attached (5d
         'sort_order'  => 0,
     ]);
     $recentNotes = WidgetType::where('handle', 'recent_notes')->firstOrFail();
+    $membershipStatus = WidgetType::where('handle', 'membership_status')->firstOrFail();
     PageWidget::create([
         'owner_type'        => $view->getMorphClass(),
         'owner_id'          => $view->getKey(),
@@ -100,6 +102,19 @@ it('adds membership_status to an install that has only recent_notes attached (5d
         'sort_order'        => 0,
         'is_active'         => true,
     ]);
+    PageWidget::create([
+        'owner_type'        => $view->getMorphClass(),
+        'owner_id'          => $view->getKey(),
+        'layout_id'         => null,
+        'column_index'      => null,
+        'widget_type_id'    => $membershipStatus->id,
+        'label'             => 'Membership Status',
+        'config'            => [],
+        'query_config'      => [],
+        'appearance_config' => [],
+        'sort_order'        => 1,
+        'is_active'         => true,
+    ]);
 
     (new \Database\Seeders\RecordDetailViewSeeder())->run();
 
@@ -110,7 +125,7 @@ it('adds membership_status to an install that has only recent_notes attached (5d
         ->map(fn (PageWidget $pw) => $pw->widgetType->handle)
         ->all();
 
-    expect($handles)->toBe(['recent_notes', 'membership_status']);
+    expect($handles)->toBe(['recent_notes', 'membership_status', 'recent_donations']);
 });
 
 it('seeds page-template chrome Views without widgets', function () {

@@ -5,6 +5,7 @@ namespace App\WidgetPrimitive;
 use App\Models\Collection as CmsCollection;
 use App\Models\CollectionItem;
 use App\Models\Contact;
+use App\Models\Donation;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Note;
@@ -92,11 +93,12 @@ final class ContractResolver
         }
 
         return match ($contract->model) {
-            'post'    => $this->resolvePost($contract, $cache),
-            'event'   => $this->resolveEvent($contract, $cache),
-            'product' => $this->resolveProduct($contract, $cache),
-            'note'    => $this->resolveNote($contract, $cache, $context),
-            default   => ['items' => []],
+            'post'     => $this->resolvePost($contract, $cache),
+            'event'    => $this->resolveEvent($contract, $cache),
+            'product'  => $this->resolveProduct($contract, $cache),
+            'note'     => $this->resolveNote($contract, $cache, $context),
+            'donation' => $this->resolveDonationList($contract, $cache, $context),
+            default    => ['items' => []],
         };
     }
 
@@ -143,6 +145,54 @@ final class ContractResolver
                 ->where('notable_type', $recordType)
                 ->where('notable_id', $recordId)
                 ->with('author')
+                ->orderBy($col, $dir)
+                ->take($limit)
+                ->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve a list of Donations attached to the ambient Contact. Permission
+     * gate: fail-closed when the authenticated user lacks `view_donation`.
+     * Ambient gate: returns empty when the slot is not record-detail or the
+     * ambient record is not a Contact. Status filter: excludes `pending`
+     * (checkout-in-flight); includes active/cancelled/past_due history.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveDonationList(DataContract $contract, array &$cache, SlotContext $context): array
+    {
+        if (! auth()->user()?->can('view_donation')) {
+            return ['items' => []];
+        }
+
+        $record = $this->recordFromContext($context);
+        if (! $record instanceof Contact) {
+            return ['items' => []];
+        }
+
+        $allowedOrderBy = ['started_at', 'created_at'];
+        $rawOrder = (string) ($contract->filters['order_by'] ?? '');
+        $col = in_array($rawOrder, $allowedOrderBy, true) ? $rawOrder : 'started_at';
+        $dir = strtolower((string) ($contract->filters['direction'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $limit = (int) ($contract->filters['limit'] ?? 5);
+        if ($limit < 1) {
+            $limit = 5;
+        }
+        if ($limit > 50) {
+            $limit = 50;
+        }
+
+        $key = 'donation:list:' . (string) $record->getKey() . ':' . $col . ':' . $dir . ':' . $limit;
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = Donation::query()
+                ->where('contact_id', $record->getKey())
+                ->whereIn('status', ['active', 'cancelled', 'past_due'])
+                ->with('fund')
                 ->orderBy($col, $dir)
                 ->take($limit)
                 ->get();

@@ -2,6 +2,7 @@
 
 namespace App\WidgetPrimitive\Projectors;
 
+use App\Models\Donation;
 use App\Models\Event;
 use App\Models\Membership;
 use App\Models\Note;
@@ -9,6 +10,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Support\DateFormat;
 use App\WidgetPrimitive\DataContract;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -83,6 +85,7 @@ final class SystemModelProjector
             'product'    => fn (Product $product) => $this->projectProduct($product),
             'note'       => fn (Note $note) => $this->projectNote($note),
             'membership' => fn (Membership $membership) => $this->projectMembership($membership),
+            'donation'   => fn (Donation $donation) => $this->projectDonation($donation),
             default      => null,
         };
     }
@@ -312,5 +315,39 @@ final class SystemModelProjector
             'membership_expires_on'        => DateFormat::format($membership->expires_on, DateFormat::MEDIUM_DATE),
             'membership_amount_paid'       => $membership->amount_paid === null ? '' : (string) $membership->amount_paid,
         ];
+    }
+
+    /**
+     * Flat row shape derived from a Donation model. `donation_origin` is a
+     * friendly label derived from the row's `source` column (per session 233):
+     * Stripe / Imported / Manual. Unknown source values fall through to an
+     * empty string per the fail-closed convention. `donation_fund_name` is
+     * defensive against null `fund_id` (unrestricted donations). Fields
+     * outside this map — `stripe_subscription_id`, `external_id`,
+     * `custom_fields`, etc. — are not exposed.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectDonation(Donation $donation): array
+    {
+        return [
+            'donation_id'        => $donation->id,
+            'donation_amount'    => (string) $donation->amount,
+            'donation_date'      => DateFormat::format($donation->started_at, DateFormat::MEDIUM_DATE),
+            'donation_fund_name' => (string) ($donation->fund?->name ?? ''),
+            'donation_type'      => (string) ($donation->type ?? ''),
+            'donation_status'    => (string) ($donation->status ?? ''),
+            'donation_origin'    => $this->donationOriginLabel((string) ($donation->source ?? '')),
+        ];
+    }
+
+    private function donationOriginLabel(string $source): string
+    {
+        return match ($source) {
+            Source::STRIPE_WEBHOOK => 'Stripe',
+            Source::IMPORT         => 'Imported',
+            Source::HUMAN          => 'Manual',
+            default                => '',
+        };
     }
 }
