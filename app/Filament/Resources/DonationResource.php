@@ -117,6 +117,20 @@ class DonationResource extends Resource
                         'gray'    => 'cancelled',
                     ]),
 
+                Tables\Columns\BadgeColumn::make('source')
+                    ->label('Origin')
+                    ->colors([
+                        'primary' => 'stripe_webhook',
+                        'gray'    => 'import',
+                        'success' => 'human',
+                    ])
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'stripe_webhook' => 'Stripe',
+                        'import'         => 'Imported',
+                        'human'          => 'Manual',
+                        default          => (string) $state,
+                    }),
+
                 Tables\Columns\TextColumn::make('fund.name')
                     ->label('Fund')
                     ->placeholder('—'),

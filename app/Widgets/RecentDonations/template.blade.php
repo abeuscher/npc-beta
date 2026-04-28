@@ -12,9 +12,6 @@
                     @if (! empty($donation['donation_amount']))
                         <p class="np-recent-donations__amount">
                             <strong>${{ $donation['donation_amount'] }}</strong>
-                            @if (! empty($donation['donation_origin']))
-                                <span class="np-recent-donations__origin">({{ $donation['donation_origin'] }})</span>
-                            @endif
                         </p>
                     @endif
                     <p class="np-recent-donations__meta">
@@ -26,6 +23,9 @@
                             <span class="np-recent-donations__status"><em>{{ $donation['donation_status'] }}</em></span>
                         @endif
                     </p>
+                    @if (! empty($donation['donation_origin']))
+                        <p class="np-recent-donations__origin">Origin: <strong>{{ $donation['donation_origin'] }}</strong></p>
+                    @endif
                 </li>
             @endforeach
         </ul>
