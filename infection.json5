@@ -1,0 +1,23 @@
+{
+    $schema: "vendor/infection/infection/resources/schema.json",
+    source: {
+        directories: [
+            "app/WidgetPrimitive"
+        ]
+    },
+    timeout: 10,
+    logs: {
+        text: "infection-log.txt",
+        html: "infection.html",
+        json: "infection.json",
+        summary: "infection-summary.txt"
+    },
+    mutators: {
+        "@default": true
+    },
+    testFramework: "phpunit",
+    testFrameworkOptions: "--exclude-group=slow",
+    phpUnit: {
+        customPath: "bin/pest-for-infection.php"
+    }
+}

@@ -82,6 +82,11 @@ RUN docker-php-ext-configure gd \
 RUN pecl install redis \
     && docker-php-ext-enable redis
 
+# PCOV extension via PECL — installed but not auto-enabled. Loaded
+# opt-in for Infection mutation-testing runs via `php -d extension=pcov
+# -d pcov.enabled=1`. Default Pest runs are unaffected.
+RUN pecl install pcov
+
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 

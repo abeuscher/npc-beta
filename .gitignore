@@ -25,3 +25,8 @@ yarn-error.log
 /test-results/
 /playwright-report/
 /blob-report/
+/infection.html
+/infection.json
+/infection-log.txt
+/infection-summary.txt
+/.infection.cache/
