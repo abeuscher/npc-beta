@@ -72,6 +72,7 @@ class RecentNotesDefinition extends WidgetDefinition
                 'direction' => 'desc',
             ],
             model: 'note',
+            requiredPermission: 'view_note',
         );
     }
 }

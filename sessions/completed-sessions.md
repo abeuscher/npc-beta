@@ -237,4 +237,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 232 | Widget Primitive — Phase 5d-2 (Membership Status — Single-Row Record-Detail Widget) |
 | 233 | Financial Data Origin & Lifecycle Discipline — Phase A (`source` Column + Write-Path Discipline) |
 | 234 | Widget Primitive — Phase 5d-3 (Recent Donations — Third Concrete Record-Detail Widget) |
+| 235 | Widget Primitive — Phase 5e (Permissions in the Contract Layer) |
 

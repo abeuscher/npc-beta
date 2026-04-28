@@ -34,6 +34,7 @@ function noteContract(array $filters = []): DataContract
         fields: ['note_id', 'note_subject', 'note_body_excerpt', 'note_type', 'note_occurred_at', 'note_author_name'],
         filters: array_merge(['limit' => 5, 'order_by' => 'occurred_at', 'direction' => 'desc'], $filters),
         model: 'note',
+        requiredPermission: 'view_note',
     );
 }
 

@@ -44,3 +44,9 @@ it('clamps limit to 50 maximum and falls back to default for invalid values', fu
     expect($highContract->filters['limit'])->toBe(50)
         ->and($zeroContract->filters['limit'])->toBe(5);
 });
+
+it('declares view_note as the contract requiredPermission', function () {
+    $contract = (new RecentNotesDefinition())->dataContract([]);
+
+    expect($contract->requiredPermission)->toBe('view_note');
+});

@@ -58,6 +58,13 @@ final class ContractResolver
         $results = [];
 
         foreach ($contracts as $i => $contract) {
+            if ($contract->requiredPermission !== null && ! auth()->user()?->can($contract->requiredPermission)) {
+                $results[$i] = $contract->cardinality === DataContract::CARDINALITY_ONE
+                    ? ['item' => null]
+                    : ['items' => []];
+                continue;
+            }
+
             $results[$i] = match ($contract->source) {
                 DataContract::SOURCE_PAGE_CONTEXT        => $this->pageContextProjector->project($contract, $context->currentPage()),
                 DataContract::SOURCE_RECORD_CONTEXT      => $this->recordContextProjector->project($contract, $this->recordFromContext($context)),
@@ -103,9 +110,9 @@ final class ContractResolver
     }
 
     /**
-     * Resolve a list of Notes attached to the ambient record. Permission gate:
-     * fail-closed when the authenticated user lacks `view_note`. Ambient gate:
-     * returns empty when the slot is not record-detail. Scoping: notes are
+     * Resolve a list of Notes attached to the ambient record. Permission gate
+     * is centralized in resolve() via the contract's $requiredPermission. Ambient
+     * gate: returns empty when the slot is not record-detail. Scoping: notes are
      * filtered by `notable_type` and `notable_id` derived from the ambient
      * record — the contract carries no per-instance scope.
      *
@@ -114,10 +121,6 @@ final class ContractResolver
      */
     private function resolveNote(DataContract $contract, array &$cache, SlotContext $context): array
     {
-        if (! auth()->user()?->can('view_note')) {
-            return ['items' => []];
-        }
-
         $record = $this->recordFromContext($context);
         if ($record === null) {
             return ['items' => []];
@@ -155,7 +158,7 @@ final class ContractResolver
 
     /**
      * Resolve a list of Donations attached to the ambient Contact. Permission
-     * gate: fail-closed when the authenticated user lacks `view_donation`.
+     * gate is centralized in resolve() via the contract's $requiredPermission.
      * Ambient gate: returns empty when the slot is not record-detail or the
      * ambient record is not a Contact. Status filter: excludes `pending`
      * (checkout-in-flight); includes active/cancelled/past_due history.
@@ -165,10 +168,6 @@ final class ContractResolver
      */
     private function resolveDonationList(DataContract $contract, array &$cache, SlotContext $context): array
     {
-        if (! auth()->user()?->can('view_donation')) {
-            return ['items' => []];
-        }
-
         $record = $this->recordFromContext($context);
         if (! $record instanceof Contact) {
             return ['items' => []];
@@ -364,7 +363,7 @@ final class ContractResolver
 
     /**
      * Resolve the active Membership attached to the ambient Contact. Permission
-     * gate: fail-closed when the authenticated user lacks `view_membership`.
+     * gate is centralized in resolve() via the contract's $requiredPermission.
      * Ambient gate: returns null when the slot is not record-detail or the
      * ambient record is not a Contact. Filters to `status = 'active'` only —
      * pending / expired / cancelled rows do not appear; multi-row history is
@@ -375,10 +374,6 @@ final class ContractResolver
      */
     private function resolveMembershipOne(DataContract $contract, array &$cache, SlotContext $context): array
     {
-        if (! auth()->user()?->can('view_membership')) {
-            return ['item' => null];
-        }
-
         $record = $this->recordFromContext($context);
         if (! $record instanceof Contact) {
             return ['item' => null];

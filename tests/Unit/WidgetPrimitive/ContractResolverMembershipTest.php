@@ -43,6 +43,7 @@ function membershipContract(): DataContract
         ],
         model: 'membership',
         cardinality: DataContract::CARDINALITY_ONE,
+        requiredPermission: 'view_membership',
     );
 }
 

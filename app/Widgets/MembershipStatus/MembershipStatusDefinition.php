@@ -65,6 +65,7 @@ class MembershipStatusDefinition extends WidgetDefinition
             filters: [],
             model: 'membership',
             cardinality: DataContract::CARDINALITY_ONE,
+            requiredPermission: 'view_membership',
         );
     }
 }

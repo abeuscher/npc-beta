@@ -36,3 +36,9 @@ it('declares an empty schema (no per-instance config knobs in this first cut)', 
     expect((new MembershipStatusDefinition())->schema())->toBe([])
         ->and((new MembershipStatusDefinition())->defaults())->toBe([]);
 });
+
+it('declares view_membership as the contract requiredPermission', function () {
+    $contract = (new MembershipStatusDefinition())->dataContract([]);
+
+    expect($contract->requiredPermission)->toBe('view_membership');
+});

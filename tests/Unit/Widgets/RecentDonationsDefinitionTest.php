@@ -38,3 +38,9 @@ it('exposes empty schema and defaults (no per-instance config knobs in V1)', fun
     expect($definition->schema())->toBe([])
         ->and($definition->defaults())->toBe([]);
 });
+
+it('declares view_donation as the contract requiredPermission', function () {
+    $contract = (new RecentDonationsDefinition())->dataContract([]);
+
+    expect($contract->requiredPermission)->toBe('view_donation');
+});

@@ -44,6 +44,7 @@ function donationContract(array $filters = []): DataContract
         ],
         filters: $filters,
         model: 'donation',
+        requiredPermission: 'view_donation',
     );
 }
 

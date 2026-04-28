@@ -64,6 +64,7 @@ class RecentDonationsDefinition extends WidgetDefinition
             ],
             filters: [],
             model: 'donation',
+            requiredPermission: 'view_donation',
         );
     }
 }
