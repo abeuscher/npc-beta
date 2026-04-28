@@ -111,6 +111,16 @@ export async function countDonationsInSession(sessionId: string): Promise<number
     return countInSession('donations', sessionId);
 }
 
+export async function countDonationsInSessionByStatus(sessionId: string, status: string): Promise<number> {
+    return withClient(async (client) => {
+        const res = await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM donations WHERE import_session_id = $1 AND status = $2',
+            [sessionId, status],
+        );
+        return Number(res.rows[0].count);
+    });
+}
+
 export async function countMembershipsInSession(sessionId: string): Promise<number> {
     return countInSession('memberships', sessionId);
 }

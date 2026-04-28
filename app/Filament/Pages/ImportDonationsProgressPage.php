@@ -569,16 +569,16 @@ class ImportDonationsProgressPage extends Page
     private function mapDonationStatus(?string $source): string
     {
         if (blank($source)) {
-            return 'completed';
+            return 'active';
         }
 
         $normalized = strtolower(trim($source));
 
         return match ($normalized) {
-            'active', 'completed', 'paid', 'succeeded' => 'completed',
+            'active', 'completed', 'paid', 'succeeded' => 'active',
             'pending'                                   => 'pending',
             'cancelled', 'canceled', 'refunded'         => 'cancelled',
-            default                                     => 'completed',
+            default                                     => 'active',
         };
     }
 }

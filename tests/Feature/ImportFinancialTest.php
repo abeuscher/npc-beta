@@ -119,7 +119,7 @@ it('creates a Donation and Transaction for each row', function () {
     $donation = Donation::first();
     expect($donation->contact_id)->toBe($contact->id);
     expect((float) $donation->amount)->toBe(50.0);
-    expect($donation->status)->toBe('completed');
+    expect($donation->status)->toBe('active');
     expect($donation->import_session_id)->toBe($session->id);
 
     $tx = Transaction::where('subject_type', Donation::class)

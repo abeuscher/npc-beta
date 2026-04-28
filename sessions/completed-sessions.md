@@ -241,4 +241,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 236 | Widget Primitive — DashboardConfig → DashboardView Retrofit |
 | 237 | Widget Primitive — Phase 6 (Page-as-View Adapter, Placeholder Sweep, Track Closure) |
 | 238 | Fleet Manager Agent — Phase 1 (CRM-Side MVP + v1.0.0 Contract) |
+| 239 | Donation Status Enum Alignment (Importer + Backfill) |
 

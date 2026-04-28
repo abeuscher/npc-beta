@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
     cleanupAllImportSessionsOfType,
     countDonationsInSession,
+    countDonationsInSessionByStatus,
     countTransactionsInSession,
     countStagedUpdatesForSession,
     findLatestImportSessionId,
@@ -47,6 +48,7 @@ test.describe('Donations importer — happy path', () => {
         const sessionId = await findLatestImportSessionId('donation');
         expect(sessionId).not.toBeNull();
         expect(await countDonationsInSession(sessionId!)).toBe(EXPECTED.donationCount);
+        expect(await countDonationsInSessionByStatus(sessionId!, 'active')).toBe(EXPECTED.donationCount);
         expect(await countTransactionsInSession(sessionId!)).toBe(EXPECTED.transactionCount);
         expect(await countStagedUpdatesForSession(sessionId!)).toBe(0);
     });
