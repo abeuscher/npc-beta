@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\DashboardConfig;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
+use App\WidgetPrimitive\Views\DashboardView;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 
-class DashboardConfigSeeder extends Seeder
+class DashboardViewSeeder extends Seeder
 {
     public function run(): void
     {
@@ -17,9 +17,9 @@ class DashboardConfigSeeder extends Seeder
             return;
         }
 
-        $config = DashboardConfig::firstOrCreate(['role_id' => $superAdmin->id]);
+        $view = DashboardView::firstOrCreate(['role_id' => $superAdmin->id]);
 
-        if ($config->widgets()->exists()) {
+        if ($view->pageWidgets()->exists()) {
             return;
         }
 
@@ -37,8 +37,8 @@ class DashboardConfigSeeder extends Seeder
             }
 
             PageWidget::create([
-                'owner_type'        => $config->getMorphClass(),
-                'owner_id'          => $config->getKey(),
+                'owner_type'        => $view->getMorphClass(),
+                'owner_id'          => $view->getKey(),
                 'layout_id'         => null,
                 'column_index'      => null,
                 'widget_type_id'    => $widgetType->id,

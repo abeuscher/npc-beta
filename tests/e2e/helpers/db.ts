@@ -297,8 +297,8 @@ export async function deleteLayout(layoutId: string): Promise<void> {
 export async function findDashboardConfigIdByRoleName(roleName: string): Promise<string | null> {
     return withClient(async (client) => {
         const res = await client.query<{ id: string }>(
-            `SELECT dc.id FROM dashboard_configs dc
-             JOIN roles r ON r.id = dc.role_id
+            `SELECT dv.id FROM dashboard_views dv
+             JOIN roles r ON r.id = dv.role_id
              WHERE r.name = $1 LIMIT 1`,
             [roleName],
         );
@@ -310,7 +310,7 @@ export async function countDashboardWidgets(configId: string): Promise<number> {
     return withClient(async (client) => {
         const res = await client.query<{ count: string }>(
             `SELECT COUNT(*)::text AS count FROM page_widgets
-             WHERE owner_type = 'App\\Models\\DashboardConfig' AND owner_id = $1`,
+             WHERE owner_type = 'App\\WidgetPrimitive\\Views\\DashboardView' AND owner_id = $1`,
             [configId],
         );
         return Number(res.rows[0].count);
@@ -322,7 +322,7 @@ export async function findDashboardWidgetIdByHandle(configId: string, handle: st
         const res = await client.query<{ id: string }>(
             `SELECT pw.id FROM page_widgets pw
              JOIN widget_types wt ON wt.id = pw.widget_type_id
-             WHERE pw.owner_type = 'App\\Models\\DashboardConfig'
+             WHERE pw.owner_type = 'App\\WidgetPrimitive\\Views\\DashboardView'
                AND pw.owner_id = $1
                AND wt.handle = $2
              LIMIT 1`,

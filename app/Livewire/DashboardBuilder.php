@@ -3,12 +3,12 @@
 namespace App\Livewire;
 
 use App\Http\Resources\WidgetPreviewResource;
-use App\Models\DashboardConfig;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
 use App\Services\WidgetPreviewRenderer;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
+use App\WidgetPrimitive\Views\DashboardView;
 use Livewire\Component;
 
 class DashboardBuilder extends Component
@@ -45,7 +45,7 @@ class DashboardBuilder extends Component
             'addModalLabel' => 'nullable|string|max:255',
         ]);
 
-        $config = DashboardConfig::find($this->dashboardConfigId);
+        $config = DashboardView::find($this->dashboardConfigId);
         $widgetType = WidgetType::find($widgetTypeId);
 
         if (! $config || ! $widgetType) {
@@ -61,9 +61,9 @@ class DashboardBuilder extends Component
         $position = $this->insertPosition;
 
         if ($position === null) {
-            $position = ($config->widgets()->max('sort_order') ?? -1) + 1;
+            $position = ($config->pageWidgets()->max('sort_order') ?? -1) + 1;
         } else {
-            $config->widgets()
+            $config->pageWidgets()
                 ->where('sort_order', '>=', $position)
                 ->increment('sort_order');
         }
@@ -90,12 +90,12 @@ class DashboardBuilder extends Component
 
     public function getBootstrapData(): array
     {
-        $config = DashboardConfig::with('role')->find($this->dashboardConfigId);
+        $config = DashboardView::with('role')->find($this->dashboardConfigId);
         if (! $config) {
             abort(404);
         }
 
-        $rootWidgets = $config->widgets()
+        $rootWidgets = $config->pageWidgets()
             ->where('is_active', true)
             ->with('widgetType')
             ->orderBy('sort_order')

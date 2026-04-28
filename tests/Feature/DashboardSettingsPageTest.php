@@ -2,9 +2,9 @@
 
 use App\Filament\Pages\DashboardSettingsPage;
 use App\Livewire\DashboardBuilder;
-use App\Models\DashboardConfig;
+use App\WidgetPrimitive\Views\DashboardView;
 use App\Models\User;
-use Database\Seeders\DashboardConfigSeeder;
+use Database\Seeders\DashboardViewSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -16,7 +16,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     (new \Database\Seeders\PermissionSeeder())->run();
     (new \Database\Seeders\MemosCollectionSeeder())->run();
-    (new DashboardConfigSeeder())->run();
+    (new DashboardViewSeeder())->run();
 });
 
 it('renders for super_admin and includes the dashboard builder', function () {
@@ -26,7 +26,7 @@ it('renders for super_admin and includes the dashboard builder', function () {
     $response = $this->actingAs($admin)->get(DashboardSettingsPage::getUrl());
 
     $response->assertOk();
-    $response->assertSee('Dashboard Settings');
+    $response->assertSee('Dashboard View');
     $response->assertSee('page-builder--dashboard', false);
 });
 
@@ -39,35 +39,35 @@ it('denies cms_editor access to the settings page', function () {
     expect($response->getStatusCode())->toBeIn([403, 404]);
 });
 
-it('breadcrumbs follow the Settings ▸ Dashboard Settings pattern', function () {
+it('breadcrumbs follow the Tools ▸ Dashboard View pattern', function () {
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');
     $this->actingAs($admin);
 
     $page = new DashboardSettingsPage();
 
-    expect($page->getBreadcrumbs())->toBe(['Settings', 'Dashboard Settings']);
+    expect($page->getBreadcrumbs())->toBe(['Tools', 'Dashboard View']);
 });
 
-it('creating a dashboard for a role without one firstOrCreates a DashboardConfig row', function () {
+it('creating a dashboard for a role without one firstOrCreates a DashboardView row', function () {
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');
 
     $cmsEditorRole = Role::where('name', 'cms_editor')->first();
-    expect(DashboardConfig::where('role_id', $cmsEditorRole->id)->count())->toBe(0);
+    expect(DashboardView::where('role_id', $cmsEditorRole->id)->count())->toBe(0);
 
     Livewire::actingAs($admin)
         ->test(DashboardSettingsPage::class, ['roleId' => (string) $cmsEditorRole->id])
         ->call('createConfigForSelectedRole');
 
-    expect(DashboardConfig::where('role_id', $cmsEditorRole->id)->count())->toBe(1);
+    expect(DashboardView::where('role_id', $cmsEditorRole->id)->count())->toBe(1);
 });
 
 it('DashboardBuilder Livewire shell aborts 403 for users without manage_dashboard_config', function () {
     $user = User::factory()->create();
     $user->assignRole('cms_editor');
 
-    $config = DashboardConfig::first();
+    $config = DashboardView::first();
 
     $this->actingAs($user);
 
@@ -80,7 +80,7 @@ it('DashboardBuilder bootstrap data is dashboard-mode and scoped to the dashboar
     $admin->assignRole('super_admin');
     $this->actingAs($admin);
 
-    $config = DashboardConfig::first();
+    $config = DashboardView::first();
 
     $component = Livewire::test(DashboardBuilder::class, ['dashboardConfigId' => $config->id]);
     $data = $component->instance()->getBootstrapData();

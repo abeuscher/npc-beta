@@ -2,26 +2,26 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\DashboardConfig;
+use App\WidgetPrimitive\Views\DashboardView;
 use Filament\Pages\Page;
 use Livewire\Attributes\Url;
 use Spatie\Permission\Models\Role;
 
 class DashboardSettingsPage extends Page
 {
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Tools';
 
-    protected static ?string $navigationLabel = 'Dashboard Settings';
+    protected static ?string $navigationLabel = 'Dashboard View';
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 3;
 
     protected static string $view = 'filament.pages.dashboard-settings-page';
 
-    protected static ?string $title = 'Dashboard Settings';
+    protected static ?string $title = 'Dashboard View';
 
-    protected static ?string $slug = 'dashboard-settings';
+    protected static ?string $slug = 'dashboard-view';
 
     #[Url]
     public ?string $roleId = null;
@@ -34,8 +34,8 @@ class DashboardSettingsPage extends Page
     public function getBreadcrumbs(): array
     {
         return [
-            'Settings',
-            'Dashboard Settings',
+            'Tools',
+            'Dashboard View',
         ];
     }
 
@@ -65,7 +65,7 @@ class DashboardSettingsPage extends Page
             return;
         }
 
-        DashboardConfig::firstOrCreate(['role_id' => $role->id]);
+        DashboardView::firstOrCreate(['role_id' => $role->id]);
     }
 
     public function getRoleOptions(): array
@@ -75,13 +75,13 @@ class DashboardSettingsPage extends Page
         ])->toArray();
     }
 
-    public function getSelectedConfig(): ?DashboardConfig
+    public function getSelectedConfig(): ?DashboardView
     {
         if ($this->roleId === null) {
             return null;
         }
 
-        return DashboardConfig::where('role_id', (int) $this->roleId)->first();
+        return DashboardView::where('role_id', (int) $this->roleId)->first();
     }
 
     public function getSelectedRoleLabel(): ?string

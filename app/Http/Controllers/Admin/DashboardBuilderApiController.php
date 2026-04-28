@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WidgetPreviewResource;
 use App\Http\Resources\WidgetResource;
-use App\Models\DashboardConfig;
 use App\Models\PageWidget;
 use App\Models\WidgetType;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\Slots\DashboardGridSlot;
+use App\WidgetPrimitive\Views\DashboardView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,10 +24,10 @@ class DashboardBuilderApiController extends Controller
         abort_unless(auth()->user()?->can('manage_dashboard_config'), 403);
     }
 
-    private function assertOwnsWidget(DashboardConfig $config, PageWidget $widget): void
+    private function assertOwnsWidget(DashboardView $config, PageWidget $widget): void
     {
         abort_unless(
-            $widget->owner_type === DashboardConfig::class
+            $widget->owner_type === DashboardView::class
                 && $widget->owner_id === $config->getKey(),
             404,
         );
@@ -35,14 +35,14 @@ class DashboardBuilderApiController extends Controller
 
     // ── Widget CRUD ──────────────────────────────────────────────────────────
 
-    public function index(DashboardConfig $dashboardConfig): JsonResponse
+    public function index(DashboardView $dashboardConfig): JsonResponse
     {
         $this->assertCanManage();
 
         return response()->json($this->buildTree($dashboardConfig));
     }
 
-    public function store(Request $request, DashboardConfig $dashboardConfig): JsonResponse
+    public function store(Request $request, DashboardView $dashboardConfig): JsonResponse
     {
         $this->assertCanManage();
 
@@ -69,9 +69,9 @@ class DashboardBuilderApiController extends Controller
         $position = $validated['insert_position'] ?? null;
 
         if ($position === null) {
-            $position = ($dashboardConfig->widgets()->max('sort_order') ?? -1) + 1;
+            $position = ($dashboardConfig->pageWidgets()->max('sort_order') ?? -1) + 1;
         } else {
-            $dashboardConfig->widgets()
+            $dashboardConfig->pageWidgets()
                 ->where('sort_order', '>=', $position)
                 ->increment('sort_order');
         }
@@ -99,7 +99,7 @@ class DashboardBuilderApiController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, DashboardConfig $dashboardConfig, PageWidget $widget): JsonResponse
+    public function update(Request $request, DashboardView $dashboardConfig, PageWidget $widget): JsonResponse
     {
         $this->assertCanManage();
         $this->assertOwnsWidget($dashboardConfig, $widget);
@@ -143,7 +143,7 @@ class DashboardBuilderApiController extends Controller
         ]);
     }
 
-    public function destroy(DashboardConfig $dashboardConfig, PageWidget $widget): JsonResponse
+    public function destroy(DashboardView $dashboardConfig, PageWidget $widget): JsonResponse
     {
         $this->assertCanManage();
         $this->assertOwnsWidget($dashboardConfig, $widget);
@@ -159,7 +159,7 @@ class DashboardBuilderApiController extends Controller
         ]);
     }
 
-    public function reorder(Request $request, DashboardConfig $dashboardConfig): JsonResponse
+    public function reorder(Request $request, DashboardView $dashboardConfig): JsonResponse
     {
         $this->assertCanManage();
 
@@ -170,7 +170,7 @@ class DashboardBuilderApiController extends Controller
         ]);
 
         foreach ($validated['items'] as $item) {
-            $dashboardConfig->widgets()
+            $dashboardConfig->pageWidgets()
                 ->where('id', $item['id'])
                 ->update(['sort_order' => (int) $item['sort_order']]);
         }
@@ -185,7 +185,7 @@ class DashboardBuilderApiController extends Controller
 
     // ── Preview ──────────────────────────────────────────────────────────────
 
-    public function preview(DashboardConfig $dashboardConfig, PageWidget $widget): JsonResponse
+    public function preview(DashboardView $dashboardConfig, PageWidget $widget): JsonResponse
     {
         $this->assertCanManage();
         $this->assertOwnsWidget($dashboardConfig, $widget);
@@ -201,7 +201,7 @@ class DashboardBuilderApiController extends Controller
 
     // ── Lookups ──────────────────────────────────────────────────────────────
 
-    public function widgetTypes(DashboardConfig $dashboardConfig): JsonResponse
+    public function widgetTypes(DashboardView $dashboardConfig): JsonResponse
     {
         $this->assertCanManage();
 
@@ -212,7 +212,7 @@ class DashboardBuilderApiController extends Controller
 
     // ── Appearance background image ────────────────────────────────────────
 
-    public function uploadAppearanceImage(Request $request, DashboardConfig $dashboardConfig, PageWidget $widget): JsonResponse
+    public function uploadAppearanceImage(Request $request, DashboardView $dashboardConfig, PageWidget $widget): JsonResponse
     {
         $this->assertCanManage();
         $this->assertOwnsWidget($dashboardConfig, $widget);
@@ -232,7 +232,7 @@ class DashboardBuilderApiController extends Controller
         ]);
     }
 
-    public function removeAppearanceImage(DashboardConfig $dashboardConfig, PageWidget $widget): JsonResponse
+    public function removeAppearanceImage(DashboardView $dashboardConfig, PageWidget $widget): JsonResponse
     {
         $this->assertCanManage();
         $this->assertOwnsWidget($dashboardConfig, $widget);
@@ -244,9 +244,9 @@ class DashboardBuilderApiController extends Controller
 
     // ── Private helpers ─────────────────────────────────────────────────────
 
-    private function buildTree(DashboardConfig $dashboardConfig): array
+    private function buildTree(DashboardView $dashboardConfig): array
     {
-        $widgets = $dashboardConfig->widgets()
+        $widgets = $dashboardConfig->pageWidgets()
             ->where('is_active', true)
             ->with(['widgetType', 'owner'])
             ->orderBy('sort_order')

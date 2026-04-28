@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\DashboardConfig;
+use App\WidgetPrimitive\Views\DashboardView;
 use App\Models\PageWidget;
 use App\Models\User;
 use App\Models\WidgetType;
-use Database\Seeders\DashboardConfigSeeder;
+use Database\Seeders\DashboardViewSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     (new \Database\Seeders\PermissionSeeder())->run();
     (new \Database\Seeders\MemosCollectionSeeder())->run();
-    (new DashboardConfigSeeder())->run();
+    (new DashboardViewSeeder())->run();
 
     $this->superAdmin = User::factory()->create();
     $this->superAdmin->assignRole('super_admin');
@@ -23,7 +23,7 @@ beforeEach(function () {
     $this->cmsEditor = User::factory()->create();
     $this->cmsEditor->assignRole('cms_editor');
 
-    $this->config = DashboardConfig::first();
+    $this->config = DashboardView::first();
 });
 
 function dashboardUrl(string $configId, string $path = ''): string
@@ -74,7 +74,7 @@ it('rejects widget creation when the widget handle does not allow dashboard_grid
 });
 
 it('accepts widget creation for handles whose allowedSlots() includes dashboard_grid', function () {
-    $this->config->widgets()->delete();
+    $this->config->pageWidgets()->delete();
 
     $memos = WidgetType::where('handle', 'memos')->first();
 
@@ -84,14 +84,14 @@ it('accepts widget creation for handles whose allowedSlots() includes dashboard_
         ]);
 
     $response->assertCreated();
-    expect($this->config->widgets()->count())->toBe(1);
+    expect($this->config->pageWidgets()->count())->toBe(1);
 });
 
 // ── IDOR guard ──────────────────────────────────────────────────────────────
 
 it('returns 404 when updating a widget that belongs to a different dashboard config', function () {
     $otherRole = Role::create(['name' => 'other_role', 'guard_name' => 'web']);
-    $otherConfig = DashboardConfig::create(['role_id' => $otherRole->id]);
+    $otherConfig = DashboardView::create(['role_id' => $otherRole->id]);
 
     $memos = WidgetType::where('handle', 'memos')->first();
     $otherWidget = PageWidget::create([
@@ -115,7 +115,7 @@ it('returns 404 when updating a widget that belongs to a different dashboard con
     expect($otherWidget->fresh()->label)->toBe('Other');
 });
 
-it('returns 404 when the widget belongs to a Page (not a DashboardConfig) via the dashboard route', function () {
+it('returns 404 when the widget belongs to a Page (not a DashboardView) via the dashboard route', function () {
     $page = \App\Models\Page::factory()->create();
     $memos = WidgetType::where('handle', 'memos')->first();
     $pageWidget = PageWidget::create([
@@ -140,7 +140,7 @@ it('returns 404 when the widget belongs to a Page (not a DashboardConfig) via th
 // ── Appearance whitelist ───────────────────────────────────────────────────
 
 it('strips appearance_config keys outside background/text on update', function () {
-    $widget = $this->config->widgets()->first();
+    $widget = $this->config->pageWidgets()->first();
 
     $this->actingAs($this->superAdmin)
         ->putJson(dashboardUrl($this->config->id, "widgets/{$widget->id}"), [
@@ -162,7 +162,7 @@ it('strips appearance_config keys outside background/text on update', function (
 // ── Reorder / delete happy paths ───────────────────────────────────────────
 
 it('reorders widgets within a dashboard config', function () {
-    $ids = $this->config->widgets()->orderBy('sort_order')->pluck('id')->all();
+    $ids = $this->config->pageWidgets()->orderBy('sort_order')->pluck('id')->all();
 
     $reversed = array_reverse($ids);
     $payload = [];
@@ -174,12 +174,12 @@ it('reorders widgets within a dashboard config', function () {
         ->putJson(dashboardUrl($this->config->id, 'widgets/reorder'), ['items' => $payload])
         ->assertOk();
 
-    $after = $this->config->widgets()->orderBy('sort_order')->pluck('id')->all();
+    $after = $this->config->pageWidgets()->orderBy('sort_order')->pluck('id')->all();
     expect($after)->toBe($reversed);
 });
 
 it('deletes a widget belonging to the config', function () {
-    $widget = $this->config->widgets()->first();
+    $widget = $this->config->pageWidgets()->first();
 
     $this->actingAs($this->superAdmin)
         ->deleteJson(dashboardUrl($this->config->id, "widgets/{$widget->id}"))

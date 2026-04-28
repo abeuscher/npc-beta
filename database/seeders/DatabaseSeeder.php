@@ -156,8 +156,8 @@ class DatabaseSeeder extends Seeder
         // ── Dashboard-native collections (memos) ────────────────────────────
         $this->call(MemosCollectionSeeder::class);
 
-        // ── Dashboard config (super_admin default arrangement) ──────────────
-        $this->call(DashboardConfigSeeder::class);
+        // ── Dashboard view (super_admin default arrangement) ────────────────
+        $this->call(DashboardViewSeeder::class);
 
         // ── Record-detail Views (per-record-type sub-nav anchors) ───────────
         $this->call(RecordDetailViewSeeder::class);

@@ -12,7 +12,7 @@ uses(TestCase::class, RefreshDatabase::class);
 beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
     (new \Database\Seeders\PermissionSeeder())->run();
-    (new \Database\Seeders\DashboardConfigSeeder())->run();
+    (new \Database\Seeders\DashboardViewSeeder())->run();
 });
 
 it('widgets() returns the super_admin config\'s three dashboard-native widgets in sort order', function () {

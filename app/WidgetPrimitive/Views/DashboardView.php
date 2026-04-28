@@ -1,7 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\WidgetPrimitive\Views;
 
+use App\Models\PageWidget;
+use App\Models\User;
+use App\WidgetPrimitive\IsView;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Permission\Models\Role;
 
-class DashboardConfig extends Model
+class DashboardView extends Model implements IsView
 {
     use HasFactory, HasUuids;
 
@@ -23,9 +26,40 @@ class DashboardConfig extends Model
         return $this->belongsTo(Role::class);
     }
 
-    public function widgets(): MorphMany
+    public function pageWidgets(): MorphMany
     {
         return $this->morphMany(PageWidget::class, 'owner');
+    }
+
+    public function handle(): string
+    {
+        return str($this->role?->name ?? 'unknown')->slug()->toString();
+    }
+
+    public function slotHandle(): string
+    {
+        return 'dashboard_grid';
+    }
+
+    /**
+     * @return array<int, PageWidget>
+     */
+    public function widgets(): array
+    {
+        return $this->pageWidgets()
+            ->where('is_active', true)
+            ->with('widgetType')
+            ->orderBy('sort_order')
+            ->get()
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function layoutConfig(): array
+    {
+        return [];
     }
 
     public static function forUser(?User $user): ?self

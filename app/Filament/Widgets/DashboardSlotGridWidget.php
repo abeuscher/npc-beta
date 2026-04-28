@@ -2,8 +2,8 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\DashboardConfig;
 use App\Models\PageWidget;
+use App\WidgetPrimitive\Views\DashboardView;
 use Filament\Widgets\Widget;
 
 class DashboardSlotGridWidget extends Widget
@@ -19,17 +19,12 @@ class DashboardSlotGridWidget extends Widget
      */
     protected function widgets(): array
     {
-        $config = DashboardConfig::forUser(auth()->user());
-        if (! $config) {
+        $view = DashboardView::forUser(auth()->user());
+        if (! $view) {
             return [];
         }
 
-        return $config->widgets()
-            ->where('is_active', true)
-            ->with('widgetType')
-            ->orderBy('sort_order')
-            ->get()
-            ->all();
+        return $view->widgets();
     }
 
     /**

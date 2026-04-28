@@ -9,7 +9,7 @@ import {
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe('Dashboard Settings', () => {
+test.describe('Dashboard View', () => {
     let addedWidgetId: string | null = null;
 
     test.beforeAll(async ({ browser }) => {
@@ -30,7 +30,7 @@ test.describe('Dashboard Settings', () => {
         const before = await countDashboardWidgets(configId!);
         expect(before).toBe(3);
 
-        await page.goto('/admin/dashboard-settings');
+        await page.goto('/admin/dashboard-view');
         await expect(page.getByText('Dashboard arrangement')).toBeVisible({ timeout: 15_000 });
 
         const existingHandles = ['memos', 'quick_actions', 'this_weeks_events'];

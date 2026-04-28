@@ -31,7 +31,7 @@ footer, …) that surface as Filament record-sub-navigation entries via
 
 **Cascade:** none — `record_type` is a FQCN string, not a FK. Widgets owned by a
 View are not removed by DB constraint when the View row is deleted (mirrors
-`dashboard_configs`); orphan cleanup on `page_widgets` where
+`dashboard_views`); orphan cleanup on `page_widgets` where
 `owner_type = 'App\WidgetPrimitive\Views\RecordDetailView'` is the operational
 answer if a View is ever deleted.
 

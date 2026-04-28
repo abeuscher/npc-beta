@@ -14,17 +14,16 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 
 ## Status snapshot
 
-**Last update:** 2026-04-28 (Phase 5e closed, session 235 shipped centralized `requiredPermission` enforcement at the resolver dispatch boundary).
+**Last update:** 2026-04-28 (DashboardConfig → DashboardView retrofit closed, session 236 lifted the dashboard's model + table + polymorphic owner FQN into the unified View vocabulary; `DashboardView implements IsView` natively alongside `RecordDetailView`).
 
-**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b, 5c, 5c.5, 5d, **5e**. Sessions 209–224, 227, 228, 229, 230, 231, 232, 234, 235.
+**Complete:** Phases 1, 2, 3 (3a–3d), 4 (4a–4h + follower), 5a, 5b, 5c, 5c.5, 5d, 5e, **DashboardConfig → DashboardView retrofit**. Sessions 209–224, 227, 228, 229, 230, 231, 232, 234, 235, 236.
 
-**Active:** None — track is in steady state between phases. The DashboardConfig → DashboardView retrofit is **queued as session 236** — the cheap, named-ad-hoc follow-up that lifts the dashboard's per-role widget-composition model (`DashboardConfig`, session 215) into the unified View vocabulary by renaming both the model class and the table to mirror `RecordDetailView`'s shape.
+**Active:** None — track is in steady state. Phase 6 (page-builder convergence + closure) is **queued as session 237** — the milestone-closure session that adds the Page-as-View adapter (committing the long-elective "a+" hook), retires the placeholder widget that has been on disk since 5b without a live consumer, and compresses the Phase Retrospectives section into a closure block.
 
-**Remaining in track:** ~1–3 sessions.
+**Remaining in track:** ~0–2 sessions.
 
-- DashboardConfig → DashboardView retrofit (queued as 236)
+- Phase 6 — Page-as-View adapter + placeholder widget retirement + track closure (queued as 237)
 - Phase 5d-4 — Recent Activity widget if pursued (1–2 sessions; aggregates across multiple system models — its own design surface and a stress-test of 5e's `requiredPermission` grammar against a multi-model widget)
-- Phase 6 — page-builder convergence (0–1 standalone sessions; partially landed via the Vue reuse in 215, deepened by the same reuse for record-detail in 230)
 
 **Named risk for the Phase 5 arc** ("low probability the contract layer cannot coexist with Filament's Livewire model") was answered in 5b — it does coexist.
 
@@ -166,7 +165,8 @@ Sequence as of 2026-04-28:
 - **5c / 5c.5** (sessions 229, 230, complete): `record_detail_views` table + `IsView` registry + sub-nav rendering primitive + admin UI for authoring per-record-type View sets. Templates/Themes record sub-navigation refactor folds in as a consumer of the same primitive.
 - **5d** (sessions 231, 232, 234, complete): three concrete record-detail widgets — Recent Notes, Membership Status, Recent Donations — each contributing a per-arm permission gate that 5e centralized.
 - **5e** (session 235, complete): permissions in the contract layer — `requiredPermission` field on `DataContract` enforced at the resolver dispatch boundary; three per-arm gates lifted to centralized enforcement; mechanism inherits source-agnostically across all four `SOURCE_*` types.
-- **DashboardConfig → DashboardView retrofit** (queued as session 236): cheap, named-ad-hoc follow-up that lifts `DashboardConfig` (session 215) into the unified View vocabulary by renaming both the model class (to `App\WidgetPrimitive\Views\DashboardView`) and the table (to `dashboard_views`), implementing the `IsView` interface that has carried its name in the docblock since Phase 5b. Small migration (table rename + polymorphic `owner_type` backfill on `page_widgets`); behavior byte-equivalent end-to-end.
+- **DashboardConfig → DashboardView retrofit** (session 236, complete): cheap, named-ad-hoc follow-up that lifted `DashboardConfig` (session 215) into the unified View vocabulary — model `App\Models\DashboardConfig` → `App\WidgetPrimitive\Views\DashboardView` implementing `IsView`, table `dashboard_configs` → `dashboard_views`, polymorphic `page_widgets.owner_type` backfilled in the same migration. Behavior byte-equivalent end-to-end. Iteration-1 follow-up moved the editor from `Settings → Dashboard Settings` to `Tools → Dashboard View` (placement parity with `Tools → Record Detail Views`). Fast Pest 1649 → 1651.
+- **Phase 6** (queued as session 237): closure session — Page-as-View adapter (`App\Models\Page implements IsView`, committing the long-elective "a+" hook), placeholder widget retirement (`RecordDetailPlaceholderDefinition` carried since 5b with no live consumer), Phase Retrospectives compression into a closure block.
 - **5d-4 if pursued**: Recent Activity widget aggregating across multiple system models; not currently queued.
 
 ### Phase 6 — Page-builder convergence (1–2 sessions)

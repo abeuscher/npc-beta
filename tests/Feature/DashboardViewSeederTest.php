@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\DashboardConfig;
 use App\Models\PageWidget;
-use Database\Seeders\DashboardConfigSeeder;
+use App\WidgetPrimitive\Views\DashboardView;
+use Database\Seeders\DashboardViewSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -14,45 +14,45 @@ beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
 });
 
-it('creates a DashboardConfig for super_admin and seeds the three default widgets in order', function () {
-    (new DashboardConfigSeeder())->run();
+it('creates a DashboardView for super_admin and seeds the three default widgets in order', function () {
+    (new DashboardViewSeeder())->run();
 
     $superAdmin = Role::where('name', 'super_admin')->first();
-    $config = DashboardConfig::where('role_id', $superAdmin->id)->first();
+    $view = DashboardView::where('role_id', $superAdmin->id)->first();
 
-    expect($config)->not->toBeNull();
+    expect($view)->not->toBeNull();
 
-    $handles = $config->widgets()->with('widgetType')->orderBy('sort_order')->get()
+    $handles = $view->pageWidgets()->with('widgetType')->orderBy('sort_order')->get()
         ->map(fn ($w) => $w->widgetType->handle)
         ->all();
 
     expect($handles)->toBe(['memos', 'quick_actions', 'this_weeks_events']);
 });
 
-it('is idempotent — running twice does not create a second config or duplicate widgets', function () {
-    (new DashboardConfigSeeder())->run();
-    (new DashboardConfigSeeder())->run();
+it('is idempotent — running twice does not create a second view or duplicate widgets', function () {
+    (new DashboardViewSeeder())->run();
+    (new DashboardViewSeeder())->run();
 
     $superAdmin = Role::where('name', 'super_admin')->first();
 
-    expect(DashboardConfig::where('role_id', $superAdmin->id)->count())->toBe(1);
+    expect(DashboardView::where('role_id', $superAdmin->id)->count())->toBe(1);
 
-    $config = DashboardConfig::where('role_id', $superAdmin->id)->first();
-    expect($config->widgets()->count())->toBe(3);
+    $view = DashboardView::where('role_id', $superAdmin->id)->first();
+    expect($view->pageWidgets()->count())->toBe(3);
 });
 
-it('never clobbers an existing arrangement — no widgets seeded when the config already has widgets', function () {
-    (new DashboardConfigSeeder())->run();
+it('never clobbers an existing arrangement — no widgets seeded when the view already has widgets', function () {
+    (new DashboardViewSeeder())->run();
 
     $superAdmin = Role::where('name', 'super_admin')->first();
-    $config = DashboardConfig::where('role_id', $superAdmin->id)->first();
+    $view = DashboardView::where('role_id', $superAdmin->id)->first();
 
-    $config->widgets()->delete();
+    $view->pageWidgets()->delete();
 
     $memos = \App\Models\WidgetType::where('handle', 'memos')->first();
     PageWidget::create([
-        'owner_type'        => $config->getMorphClass(),
-        'owner_id'          => $config->getKey(),
+        'owner_type'        => $view->getMorphClass(),
+        'owner_id'          => $view->getKey(),
         'widget_type_id'    => $memos->id,
         'label'             => 'Custom Memos',
         'config'            => ['limit' => 2],
@@ -62,27 +62,27 @@ it('never clobbers an existing arrangement — no widgets seeded when the config
         'is_active'         => true,
     ]);
 
-    (new DashboardConfigSeeder())->run();
+    (new DashboardViewSeeder())->run();
 
-    expect($config->widgets()->count())->toBe(1)
-        ->and($config->widgets()->first()->label)->toBe('Custom Memos');
+    expect($view->pageWidgets()->count())->toBe(1)
+        ->and($view->pageWidgets()->first()->label)->toBe('Custom Memos');
 });
 
 it('is a no-op when the super_admin role does not exist', function () {
     Role::where('name', 'super_admin')->delete();
 
-    (new DashboardConfigSeeder())->run();
+    (new DashboardViewSeeder())->run();
 
-    expect(DashboardConfig::count())->toBe(0);
+    expect(DashboardView::count())->toBe(0);
 });
 
 it('seeded widgets ship with the default configs the hardcoded widgets() used in session 214', function () {
-    (new DashboardConfigSeeder())->run();
+    (new DashboardViewSeeder())->run();
 
     $superAdmin = Role::where('name', 'super_admin')->first();
-    $config = DashboardConfig::where('role_id', $superAdmin->id)->first();
+    $view = DashboardView::where('role_id', $superAdmin->id)->first();
 
-    $widgets = $config->widgets()->with('widgetType')->orderBy('sort_order')->get()
+    $widgets = $view->pageWidgets()->with('widgetType')->orderBy('sort_order')->get()
         ->keyBy(fn ($w) => $w->widgetType->handle);
 
     expect($widgets['memos']->config)->toBe(['limit' => 5])

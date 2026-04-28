@@ -1,17 +1,17 @@
 ---
-title: Dashboard Settings
+title: Dashboard View
 description: Arrange per-role admin dashboard widgets using the page builder.
-version: "0.69"
-updated: 2026-04-24
-tags: [settings, admin, dashboard, widgets]
+version: "0.70"
+updated: 2026-04-28
+tags: [tools, admin, dashboard, widgets]
 routes:
-  - filament.admin.pages.dashboard-settings-page
-category: settings
+  - filament.admin.pages.dashboard-view
+category: tools
 ---
 
-# Dashboard Settings
+# Dashboard View
 
-Dashboard Settings lets an admin arrange the tiles that appear on the admin landing page (`/admin`). Each role (e.g. *Super Admin*, *CMS Editor*) can have its own arrangement; logged-in users see the dashboard belonging to their first assigned role.
+Dashboard View lets an admin arrange the tiles that appear on the admin landing page (`/admin`). Each role (e.g. *Super Admin*, *CMS Editor*) can have its own arrangement; logged-in users see the dashboard belonging to their first assigned role.
 
 Access requires the `manage_dashboard_config` permission (granted to `super_admin` by default).
 

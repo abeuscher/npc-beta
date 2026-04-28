@@ -19,7 +19,7 @@
             </div>
         @else
             <div class="np-dashboard-slot-grid__empty">
-                No dashboard arrangement for your role — ask an admin to configure one in Settings → Dashboard Settings.
+                No dashboard arrangement for your role — ask an admin to configure one in Tools → Dashboard View.
             </div>
         @endif
     </x-filament::section>
