@@ -50,11 +50,11 @@ it('returns 200 on index for a super_admin (gate bypass)', function () {
 });
 
 it('rejects widget creation from a user without the permission', function () {
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
 
     $this->actingAs($this->cmsEditor)
         ->postJson(recordDetailUrl($this->view->id, 'widgets'), [
-            'widget_type_id' => $placeholder->id,
+            'widget_type_id' => $widgetType->id,
         ])
         ->assertStatus(403);
 });
@@ -78,11 +78,11 @@ it('rejects widget creation when the widget handle does not allow record_detail_
 it('accepts widget creation for handles whose allowedSlots() includes record_detail_sidebar', function () {
     $this->view->pageWidgets()->delete();
 
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
 
     $response = $this->actingAs($this->superAdmin)
         ->postJson(recordDetailUrl($this->view->id, 'widgets'), [
-            'widget_type_id' => $placeholder->id,
+            'widget_type_id' => $widgetType->id,
         ]);
 
     $response->assertCreated();
@@ -99,11 +99,11 @@ it('returns 404 when updating a widget that belongs to a different View', functi
         'sort_order'  => 5,
     ]);
 
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
     $otherWidget = PageWidget::create([
         'owner_type'        => $otherView->getMorphClass(),
         'owner_id'          => $otherView->getKey(),
-        'widget_type_id'    => $placeholder->id,
+        'widget_type_id'    => $widgetType->id,
         'label'             => 'Other',
         'config'            => [],
         'query_config'      => [],
@@ -123,11 +123,11 @@ it('returns 404 when updating a widget that belongs to a different View', functi
 
 it('returns 404 when the widget belongs to a Page (not a RecordDetailView) via the record-detail route', function () {
     $page = \App\Models\Page::factory()->create();
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
     $pageWidget = PageWidget::create([
         'owner_type'        => $page->getMorphClass(),
         'owner_id'          => $page->getKey(),
-        'widget_type_id'    => $placeholder->id,
+        'widget_type_id'    => $widgetType->id,
         'label'             => 'On a page',
         'config'            => [],
         'query_config'      => [],
@@ -168,12 +168,12 @@ it('strips appearance_config keys outside background/text on update', function (
 // ── Reorder / delete happy paths ───────────────────────────────────────────
 
 it('reorders widgets within a View', function () {
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
 
     PageWidget::create([
         'owner_type'        => $this->view->getMorphClass(),
         'owner_id'          => $this->view->getKey(),
-        'widget_type_id'    => $placeholder->id,
+        'widget_type_id'    => $widgetType->id,
         'label'             => 'Second',
         'config'            => [],
         'query_config'      => [],
@@ -217,5 +217,5 @@ it('widget-types endpoint returns only widgets whose allowedSlots includes recor
 
     $handles = array_column($response->json('widget_types'), 'handle');
 
-    expect($handles)->toEqualCanonicalizing(['record_detail_placeholder', 'recent_notes', 'membership_status', 'recent_donations']);
+    expect($handles)->toEqualCanonicalizing(['recent_notes', 'membership_status', 'recent_donations']);
 });

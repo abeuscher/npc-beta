@@ -14,7 +14,20 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). `DashboardConfig → DashboardView` retrofit complete (session 236; model + table + polymorphic owner FQN aligned to the View vocabulary; `DashboardView implements IsView`). ~0–2 sessions remaining: Phase 6 page-builder convergence (queued as session 237 — Page-as-View adapter + placeholder widget retirement + track closure) and the optional Phase 5d-4 Recent Activity widget if pursued.
+- **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
+
+---
+
+## Cross-Repo: Fleet Manager / CRM
+
+Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
+
+- **Agent contract version:** `0.0.0` (stub — surface not yet authored)
+- **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
+- **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
+- **Last boundary-touching session in this repo:** session 237 (created the stub doc; surface still unbuilt)
+- **Last boundary-touching session in Fleet Manager repo:** none (FM repo not yet created)
+- **Pending boundary changes:** v1.0.0 — the actual HTTP contract — is authored in the CRM-side Fleet Manager Agent — Phase 1 session
 
 ---
 
@@ -22,58 +35,34 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 *Ordered by priority.*
 
-### Widget Primitive — Remaining Phases *(track spans pre- and post-Beta 1)*
+### Widget Primitive — Remaining Phases *(track substantially complete; carry-forwards unscheduled)*
 
-Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
+Track substantially closed at session 237. Carry-forwards (none scheduled): Forms widget retrofit, `PageContext` full retirement, `RecordContextTokens::TOKENS` per-record-type expansion, `PageContextTokens` namespace migration. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
 
-### Fleet Manager Agent — Phase 1 (CRM-Side MVP + Two-Repo Coordination Protocol) *(stub — pre-Beta 1, post-Phase-5)*
+### Fleet Manager Agent — Phase 1 (CRM-Side MVP) *(stub — pre-Beta 1; next-up after Widget Primitive closure)*
 
-Companion CRM-side work for the Fleet Manager operational tool described in `sessions/fleet-manager-planning-spec.md` (separate Laravel app, separate droplet, polls each CRM install on a schedule). This session lands the *minimum CRM-side surface* Fleet Manager needs to begin polling, plus — critically — the two-repo coordination protocol that lets the CRM workstream and the Fleet Manager workstream evolve in parallel without quietly drifting on shared interfaces.
+Companion CRM-side work for the Fleet Manager operational tool. **Full product spec, stack, two-repo coordination protocol, local dev scheme, and resolved leans all live in [`sessions/fleet-manager-planning-spec.md`](fleet-manager-planning-spec.md)** — that doc is the seed for the separate Fleet Manager repo and the canonical reference for both workstreams.
 
-**Why this slot.** The original spec framed Fleet Manager as post-1.0. Pragmatic reconsideration: multiple installs happen *during* Beta 1, and operator-time becomes the bottleneck once the user starts managing multiple clients. Better to land cheap operational scaffolding before that bottleneck hits. The CRM-side prereqs are non-blocking on every other Beta-1 concern (no overlap with widget primitive Phase 5, page builder, or Filament — they live in routes, console commands, and config) and can develop in parallel with the Fleet Manager repo from this session forward.
+**Coordination skeleton already in place (session 237 close).** The stub `docs/fleet-manager-agent-contract.md` exists at v0.0.0; the Cross-Repo block lives at the top of this file; the prompt template carries the cross-cutting flag that fires when any agent-surface file is modified. Phase 1's job is to fill the skeleton with the actual contract.
 
-**Why post-Phase-5 specifically.** Phase 5 of the widget primitive (record-detail slot + ambient context refactor) is the next significant architectural beat and shouldn't be fragmented. Phase 6 is 0–1 sessions and won't conflict either way. Fleet Manager Agent can slot before or after Phase 6; the work is orthogonal. After Phase 5 closes, the CRM's internal architecture is stable enough that adding an operational HTTP surface won't get tangled in pending refactors.
+**Phase 1 deliverables:**
 
-**Two heads to this session — both load-bearing:**
-
-**Head 1 — CRM-side MVP for the agent endpoint.** The cheap-bucket items from the spec's Discussion Point #1:
-
-- Authenticated `/api/health` route returning a JSON status payload with subchecks (app responding, DB reachable, Redis reachable, disk usage %, last-backup timestamp if available, SSL expiry if CRM-side, current version)
-- A simple bearer-token auth scheme (per-install secret in `.env`, single middleware, no `laravel/sanctum` dependency unless we already need it for something else)
-- Version reporting — read from a `VERSION` file written at deploy time *or* from `git rev-parse HEAD` cached at boot. Deferred design choice in the session
-- Subcheck implementations (`DB::connection()->getPdo()`, `Redis::ping()`, `disk_free_space()` / `disk_total_space()`)
-- SSL expiry: design choice — CRM-side via `openssl_x509_parse()` against the local cert, OR punt to Fleet Manager checking externally on its own (more honest about reachability). Lean external; revisit if the spec session converges otherwise
-
-The backup mechanism is **not** in this session's scope — it's its own multi-session beat (see "Fleet Manager Agent — Phase 2" below). The agent endpoint reports `last_backup_at` as `null` initially; Fleet Manager treats null as "unknown, don't alarm." That's enough for the first round of polling against the user's own deploy.
-
-**Head 2 — Two-repo coordination protocol.** This is the harder concern and the reason this is one session, not just an "endpoint build" session. Two parallel agentic workstreams operating across two repos can quietly diverge on shared interfaces because each repo's Claude session reads only its own `session-outlines.md` / base prompts — neither agent knows the other workstream exists. Without explicit coordination artifacts, the agent contract drifts and incidents emerge weeks later.
-
-The session establishes a coordination protocol with concrete artifacts. Initial sketch (to be pressure-tested in the session):
-
-- **One canonical agent-contract spec doc.** Lives in this CRM repo at a stable path (e.g., `docs/fleet-manager-agent-contract.md`); the Fleet Manager repo references it by URL. Spec covers: endpoint path, auth handshake, request schema, response schema (subcheck names + value shapes), version negotiation, error envelope. The doc carries a `Contract Version` field; bumps are explicit, with a CHANGELOG section.
-- **Cross-repo status mirrors.** Each repo's `session-outlines.md` carries a "Cross-Repo: Fleet Manager / CRM" subsection naming current contract version, last boundary-touching session in either repo, and any pending boundary changes. The mirror is updated by the close-gate of any session that touches the boundary, in either repo.
-- **Boundary-touching session marker.** Naming convention for sessions that touch the agent contract — e.g., "Fleet Manager Agent — *" in the CRM repo, "CRM Integration — *" in the Fleet Manager repo. Each marked session's base prompt MUST include "read the agent-contract spec doc" as a pre-implementation step; agents working in either repo on a marked session know the boundary is live.
-- **Version-bump checklist.** When the contract version bumps, both repos update before the next boundary-touching session in either. Documented as a process rule in the protocol.
-- **First-write asymmetry.** The CRM emits the contract; Fleet Manager consumes it. So the spec doc lives in the CRM repo, and the Fleet Manager repo treats it as a read-only dependency. This is the locality-of-change principle (the side that defines the surface owns the doc).
-
-The session's deliverable is the spec doc + the protocol named above + the CRM-side endpoint implementation. Fleet Manager itself is a separate repo built in the workstream that follows; this session unblocks that workstream.
-
-**Open questions to resolve in the session (carried from spec Discussion Points #1, 4, 5, 6):**
-
-- Auth scheme: bearer token in header vs signed request? Bearer is simpler and meets v1 needs; lean bearer.
-- Version reporting mechanism: VERSION file vs git SHA? Lean VERSION file written at deploy time — explicit and survives Docker layer caching cleanly.
-- SSL expiry: CRM-side or Fleet-Manager-side? Lean Fleet-Manager-side (more honest).
-- API key bootstrapping for new client installs: manual env-var on first deploy is fine for v1; automate later.
-- Where the spec doc lives in the CRM repo: `docs/fleet-manager-agent-contract.md` is the proposed home; confirm in session.
+- `/api/health` route inside the CRM, bearer-token authenticated, returning the JSON status payload defined in the planning spec (subchecks: app, database, Redis, disk, last_backup_at, version)
+- Subcheck implementations (`DB::connection()->getPdo()`, `Redis::ping()`, `disk_free_space() / disk_total_space()`)
+- VERSION file write at deploy time + read-at-boot caching for version reporting (per planning spec lean)
+- Bearer-token middleware + per-install API key bootstrapping (manual env-var, per planning spec lean)
+- Author `docs/fleet-manager-agent-contract.md` v1.0.0 — fill in the placeholder body with the actual contract surface, bump version, update CHANGELOG, update the Cross-Repo block
+- Local-dev wiring for the host-bridge pattern named in the planning spec (verify FM-side stack can reach the CRM's local `/api/health` from a sibling Docker compose project)
 
 **Out of scope for this session:**
 
-- Backup mechanism (separate stub: "Fleet Manager Agent — Phase 2 (Backup Pipeline)"). Greenfield; no existing infrastructure (`spatie/laravel-backup` not installed; no `pg_dump` script; no media backup). Designed in a later session, in coordination with Fleet Manager so the success-record shape and storage target align.
-- Fleet Manager's own implementation (separate repo, separate workstream — kicked off after this session).
-- Public status page (lives entirely in Fleet Manager).
-- Multi-channel alerting, performance metrics, remote-action capability — all explicitly deferred per the planning spec.
+- Backup mechanism (Phase 2 — separate stub below)
+- The Fleet Manager repo itself (separate workstream, kicked off after this session)
+- Public status page (lives entirely in Fleet Manager)
+- Multi-channel alerting, performance metrics, remote-action capability (deferred per planning spec)
+- SSL expiry CRM-side check (planning spec leans Fleet-Manager-side external)
 
-**Scope:** one session. Could expand to two if the coordination protocol design proves harder than expected — call out at session-prompt drafting time.
+**Scope:** one session. Could expand to two if the contract authoring proves harder than expected — call out at session-prompt drafting time.
 
 ---
 

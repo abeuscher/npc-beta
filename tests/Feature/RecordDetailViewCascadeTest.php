@@ -24,12 +24,12 @@ it('deleting a View cascades its polymorphic page_widgets and page_layouts', fun
         'sort_order'  => 9,
     ]);
 
-    $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $widgetType = WidgetType::where('handle', 'recent_notes')->first();
 
     $rootWidget = PageWidget::create([
         'owner_type'        => $view->getMorphClass(),
         'owner_id'          => $view->getKey(),
-        'widget_type_id'    => $placeholder->id,
+        'widget_type_id'    => $widgetType->id,
         'label'             => 'Root',
         'config'            => [],
         'query_config'      => [],
@@ -53,7 +53,7 @@ it('deleting a View cascades its polymorphic page_widgets and page_layouts', fun
         'owner_id'          => $view->getKey(),
         'layout_id'         => $layout->id,
         'column_index'      => 0,
-        'widget_type_id'    => $placeholder->id,
+        'widget_type_id'    => $widgetType->id,
         'label'             => 'In Column',
         'config'            => [],
         'query_config'      => [],

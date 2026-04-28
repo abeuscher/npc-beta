@@ -43,7 +43,6 @@ use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\RecentDonations\RecentDonationsDefinition;
 use App\Widgets\RecentNotes\RecentNotesDefinition;
-use App\Widgets\RecordDetailPlaceholder\RecordDetailPlaceholderDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
@@ -113,7 +112,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new MemosDefinition());
         $registry->register(new QuickActionsDefinition());
         $registry->register(new ThisWeeksEventsDefinition());
-        $registry->register(new RecordDetailPlaceholderDefinition());
         $registry->register(new RecentNotesDefinition());
         $registry->register(new MembershipStatusDefinition());
         $registry->register(new RecentDonationsDefinition());

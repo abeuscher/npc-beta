@@ -43,7 +43,7 @@ it('widgets() returns the polymorphic page_widgets rows ordered by sort_order, w
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 
     $view = RecordDetailView::factory()->create();
-    $wt = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $wt = WidgetType::where('handle', 'recent_notes')->first();
 
     PageWidget::create([
         'owner_type' => $view->getMorphClass(),
@@ -74,7 +74,7 @@ it('widgets() omits inactive page_widgets', function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 
     $view = RecordDetailView::factory()->create();
-    $wt = WidgetType::where('handle', 'record_detail_placeholder')->first();
+    $wt = WidgetType::where('handle', 'recent_notes')->first();
 
     PageWidget::create([
         'owner_type' => $view->getMorphClass(),

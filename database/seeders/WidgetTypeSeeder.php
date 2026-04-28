@@ -34,6 +34,13 @@ class WidgetTypeSeeder extends Seeder
             }
         }
 
+        // Remove record_detail_placeholder — retired in session 237 once concrete record-detail widgets shipped.
+        $placeholder = WidgetType::where('handle', 'record_detail_placeholder')->first();
+        if ($placeholder) {
+            PageWidget::where('widget_type_id', $placeholder->id)->delete();
+            $placeholder->delete();
+        }
+
         app(WidgetRegistry::class)->sync();
     }
 }
