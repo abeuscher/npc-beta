@@ -7,12 +7,24 @@
  * adapter spawns the configured path as `php <path>` — so this must
  * be a PHP file, not a shell script.
  *
- * Why this exists: PCOV's coverage-xml emits Pest's mangled namespace
- * ("P\Tests\Feature\..."). PHPUnit's junit log emits the user-facing
- * namespace ("Tests\Feature\..."). Infection cross-references the two
- * by class name and the prefix mismatch makes the lookup fail. The
- * shim runs Pest, then rewrites the junit log so both sides agree on
- * the "P\" form.
+ * Two compatibility fixes are applied:
+ *
+ * 1. Per-mutant config <file> path rewrite. Infection generates a
+ *    PHPUnit config under /tmp/infection/ for each mutant with
+ *    relative test paths ("tests/Feature/X.php"). PHPUnit/Pest
+ *    resolve those relative to the config file's location, so
+ *    "/tmp/infection/tests/Feature/X.php" — which does not exist —
+ *    causes a "Test file not found" exit and a false-positive
+ *    "killed" status. The shim rewrites every <file> in any
+ *    /tmp/infection/ config to an absolute project path before Pest
+ *    sees it.
+ *
+ * 2. Junit log namespace rewrite. PCOV's coverage-xml emits Pest's
+ *    mangled namespace ("P\Tests\Feature\..."). PHPUnit's junit log
+ *    emits the user-facing namespace ("Tests\Feature\..."). Infection
+ *    cross-references the two by class name and the prefix mismatch
+ *    makes the lookup fail. The shim rewrites the junit log so both
+ *    sides agree on the "P\" form.
  *
  * Pest needs PCOV loaded for coverage-xml emission, so the inner
  * invocation hard-codes the PCOV opt-in flags (matching the outer
@@ -20,6 +32,40 @@
  */
 
 $args = array_slice($argv, 1);
+
+$projectRoot = getcwd();
+$configPath = null;
+foreach ($args as $i => $arg) {
+    if ($arg === '--configuration' && isset($args[$i + 1])) {
+        $configPath = $args[$i + 1];
+        break;
+    }
+    if (str_starts_with($arg, '--configuration=')) {
+        $configPath = substr($arg, strlen('--configuration='));
+        break;
+    }
+}
+
+if ($configPath !== null && is_file($configPath) && str_contains($configPath, '/infection/')) {
+    $cfg = file_get_contents($configPath);
+    $rewritten = preg_replace_callback(
+        '#<file>([^<]+)</file>#',
+        function ($m) use ($projectRoot) {
+            $path = $m[1];
+            if ($path === '' || $path[0] === '/') {
+                return $m[0];
+            }
+            return '<file>' . $projectRoot . '/' . $path . '</file>';
+        },
+        $cfg
+    );
+    if (getenv('PEST_FOR_INFECTION_NO_STOP_ON_FAILURE') === '1') {
+        $rewritten = preg_replace('/stopOnFailure="true"/', 'stopOnFailure="false"', $rewritten);
+    }
+    if ($rewritten !== $cfg) {
+        file_put_contents($configPath, $rewritten);
+    }
+}
 
 $junitPath = null;
 foreach ($args as $arg) {

@@ -29,11 +29,17 @@ Infection lives in `require-dev` and PCOV is installed in the Dockerfile but **n
 
 ### Pest 2 adapter shim
 
-Pest 2 + Infection 0.32 disagree on test class names: PCOV's coverage-xml emits Pest's mangled namespace (`P\Tests\Feature\…`) while PHPUnit's junit log emits the user-facing namespace (`Tests\Feature\…`). Infection cross-references the two and the prefix mismatch makes the lookup fail.
+Pest 2 + Infection 0.32 don't fit cleanly together. The shim at `bin/pest-for-infection.php` papers over two specific bugs. Infection's PHPUnit adapter spawns the configured `phpUnit.customPath` as `php <path>`, which is why the wrapper is PHP rather than bash. `infection.json5` already points `phpUnit.customPath` at it. Nothing to do on a fresh checkout — the file ships with the repo.
 
-The fix is a small PHP wrapper at `bin/pest-for-infection.php`. Infection's PHPUnit adapter spawns the configured `phpUnit.customPath` as `php <path>`, which is why the wrapper is PHP rather than bash. The wrapper runs Pest, then rewrites the junit log so both sides agree on the `P\` form. `infection.json5` already points `phpUnit.customPath` at it. Nothing to do on a fresh checkout — the file ships with the repo.
+What it fixes:
 
-If a future Pest major version (Pest 3+) lands or an upstream Pest-Infection adapter is released that handles the namespace mismatch natively, retire the shim.
+1. **Per-mutant config `<file>` path rewrite.** Infection generates a PHPUnit config under `/tmp/infection/` for each mutant with relative test paths (`tests/Feature/X.php`). PHPUnit/Pest resolve those relative to the config file's location, producing `/tmp/infection/tests/Feature/X.php` — which doesn't exist — and Pest exits non-zero with "Test file not found". Infection then records the mutant as **killed** (it interprets the non-zero exit as a successful kill), producing a 100% MSI report where no test ever actually ran. The shim rewrites every `<file>` path in any `/tmp/infection/` config to absolute project paths before Pest sees it. Without this, every Phase 2 number is a false positive.
+
+2. **Junit log namespace rewrite.** PCOV's coverage-xml emits Pest's mangled namespace (`P\Tests\Feature\…`). PHPUnit's junit log emits the user-facing namespace (`Tests\Feature\…`). Infection cross-references the two by class name and the prefix mismatch makes the lookup fail with `TestNotFound`. The shim rewrites the junit log so both sides agree on the `P\` form.
+
+Optional knob: setting the env var `PEST_FOR_INFECTION_NO_STOP_ON_FAILURE=1` rewrites the per-mutant configs' `stopOnFailure="true"` to `"false"`. Default Infection runs with stopOnFailure=true, so Pest stops at the first failing test per mutant — meaning the report only sees the *first* test that caught each mutant. Setting the env var produces a complete catcher set per mutant (every test that would have failed runs to completion). 4–5× slower per mutant; only worth it when the question is "is test X uniquely catching anything, or are siblings catching the same things?" — i.e., the redundancy/dead-test analysis.
+
+If a future Pest major version (Pest 3+) lands or an upstream Pest-Infection adapter is released that handles these compatibility issues natively, retire the shim.
 
 ### Fresh checkout
 
