@@ -12,6 +12,7 @@ use App\Models\ImportSource;
 use App\Models\Note;
 use App\Models\Transaction;
 use App\Services\Import\FieldMapper;
+use App\WidgetPrimitive\Source;
 use Filament\Pages\Page;
 
 class ImportDonationsProgressPage extends Page
@@ -492,6 +493,7 @@ class ImportDonationsProgressPage extends Page
             'contact_id'        => $contact->id,
             'type'              => $attrs['type'] ?? 'one_off',
             'status'            => $this->mapDonationStatus($attrs['status'] ?? null),
+            'source'            => Source::IMPORT,
             'amount'            => $amount,
             'currency'          => 'usd',
             'import_source_id'  => $this->importSourceId ?: null,
@@ -535,6 +537,7 @@ class ImportDonationsProgressPage extends Page
             'type'              => 'payment',
             'direction'         => 'in',
             'status'            => $this->mapPaymentStatus($txAttrs['payment_state'] ?? $donationAttrs['status'] ?? null),
+            'source'            => Source::IMPORT,
             'amount'            => $amount,
             'occurred_at'       => $this->parseDate($txAttrs['occurred_at'] ?? $donationAttrs['donated_at'] ?? null) ?? now(),
             'contact_id'        => $contact->id,

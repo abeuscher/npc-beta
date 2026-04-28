@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\StripeCheckoutService;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -74,6 +75,7 @@ class EventCheckoutController extends Controller
             'contact_id'          => null,
             'registered_at'       => now(),
             'status'              => 'pending',
+            'source'              => Source::STRIPE_WEBHOOK,
             'mailing_list_opt_in' => (bool) ($validated['mailing_list_opt_in'] ?? false),
         ]);
 

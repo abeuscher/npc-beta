@@ -133,6 +133,7 @@ class DashboardDebugGeneratorWidget extends Widget
                         'name'          => $name,
                         'email'         => $email,
                         'status'        => 'registered',
+                        'source'        => Source::HUMAN,
                         'registered_at' => now(),
                     ]);
                 }

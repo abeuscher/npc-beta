@@ -27,6 +27,7 @@ class Donation extends Model
         'currency',
         'frequency',
         'status',
+        'source',
         'stripe_subscription_id',
         'stripe_customer_id',
         'started_at',

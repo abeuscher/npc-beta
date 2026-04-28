@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\EventCheckoutController;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -75,6 +76,7 @@ class EventController extends Controller
             'contact_id'         => null,
             'registered_at'      => now(),
             'status'             => 'registered',
+            'source'             => Source::HUMAN,
             'mailing_list_opt_in' => (bool) ($validated['mailing_list_opt_in'] ?? false),
         ]);
 

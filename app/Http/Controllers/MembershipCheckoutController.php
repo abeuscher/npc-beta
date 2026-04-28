@@ -9,6 +9,7 @@ use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
 use App\Services\StripeCheckoutService;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -103,6 +104,7 @@ class MembershipCheckoutController extends Controller
             'contact_id'  => $contact->id,
             'tier_id'     => $tier->id,
             'status'      => 'pending',
+            'source'      => Source::STRIPE_WEBHOOK,
             'amount_paid' => $tier->default_price,
         ]);
 

@@ -15,6 +15,7 @@ use App\Models\Note;
 use App\Models\Tag;
 use App\Models\Transaction;
 use App\Services\Import\FieldMapper;
+use App\WidgetPrimitive\Source;
 use Filament\Pages\Page;
 use Illuminate\Support\Str;
 
@@ -482,6 +483,7 @@ class ImportEventsProgressPage extends Page
         $payload['name']       = trim(($contact->first_name ?? '') . ' ' . ($contact->last_name ?? '')) ?: ($contact->email ?? '');
         $payload['email']      = $contact->email ?? '';
         $payload['phone']      = $contact->phone ?? null;
+        $payload['source']     = Source::IMPORT;
 
         if (empty($payload['status'])) {
             $payload['status'] = 'registered';
@@ -526,6 +528,7 @@ class ImportEventsProgressPage extends Page
             'type'             => 'payment',
             'direction'        => 'in',
             'status'           => $this->mapPaymentStatus($attrs['payment_state'] ?? null),
+            'source'           => Source::IMPORT,
             'amount'           => $this->parseDecimal($attrs['amount'] ?? null) ?? 0,
             'occurred_at'      => $this->parseDate($attrs['occurred_at'] ?? null) ?? now(),
             'contact_id'       => $contact->id,

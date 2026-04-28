@@ -17,6 +17,7 @@ Registrations submitted for an event.
 | state | string(100) | yes | |
 | zip | string(20) | yes | |
 | status | enum | no | default: 'registered'; values: pending, registered, waitlisted, cancelled, attended |
+| source | string | no | default: human; values: human, import, stripe_webhook (per `EventRegistration::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | registered_at | timestamp | no | default: current |
 | stripe_payment_intent_id | string | yes | |
 | stripe_session_id | string | yes | Stripe Checkout session ID for paid registrations |
@@ -30,3 +31,6 @@ Registrations submitted for an event.
 | custom_fields | jsonb | no | default: `{}`. Registration-scoped custom-field values (populated by the events importer's `__custom_registration__` sentinel). |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
+
+Indexes:
+- `(source)` — `event_registrations_source_index`.

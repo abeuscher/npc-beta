@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
+use App\WidgetPrimitive\Source;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -196,6 +197,7 @@ class EditContact extends ReadOnlyAwareEditRecord
                             'contact_id'  => $this->record->id,
                             'tier_id'     => $tierId,
                             'status'      => 'active',
+                            'source'      => Source::HUMAN,
                             'starts_on'   => $data['starts_on'],
                             'expires_on'  => $expiresOn,
                             'amount_paid' => $data['amount_paid'] ?? 0,

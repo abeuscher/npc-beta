@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,12 +12,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Membership extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+
+    public const ACCEPTED_SOURCES = [
+        Source::HUMAN,
+        Source::IMPORT,
+        Source::STRIPE_WEBHOOK,
+    ];
 
     protected $fillable = [
         'contact_id',
         'tier_id',
         'status',
+        'source',
         'starts_on',
         'expires_on',
         'amount_paid',

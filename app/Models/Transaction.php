@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Jobs\SyncTransactionToQuickBooks;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +13,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Transaction extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasSourcePolicy, HasUuids;
+
+    public const ACCEPTED_SOURCES = [
+        Source::HUMAN,
+        Source::IMPORT,
+        Source::STRIPE_WEBHOOK,
+    ];
 
     protected $fillable = [
         'subject_type',
@@ -21,6 +29,7 @@ class Transaction extends Model
         'amount',
         'direction',
         'status',
+        'source',
         'stripe_id',
         'quickbooks_id',
         'qb_sync_error',
@@ -56,6 +65,7 @@ class Transaction extends Model
             'type'        => 'payment',
             'direction'   => 'in',
             'status'      => 'completed',
+            'source'      => Source::STRIPE_WEBHOOK,
             'occurred_at' => now(),
         ], $attributes));
 

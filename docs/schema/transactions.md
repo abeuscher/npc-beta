@@ -12,6 +12,7 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | amount | decimal(10,2) | no | |
 | direction | string | no | default: 'in'; values: in, out |
 | status | string | no | default: 'pending'; values: pending, completed, failed |
+| source | string | no | default: human; values: human, import, stripe_webhook (per `Transaction::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | stripe_id | string | yes | |
 | quickbooks_id | string | yes | |
 | qb_sync_error | text | yes | Last sync error message; cleared on success |
@@ -32,3 +33,4 @@ Indexes:
 - `(import_source_id, external_id)` — `transactions_import_external_idx`, for fast upsert lookup.
 - `(contact_id)` — `transactions_contact_id_index`.
 - `(subject_type, subject_id)` — `transactions_subject_type_subject_id_index`.
+- `(source)` — `transactions_source_index`.

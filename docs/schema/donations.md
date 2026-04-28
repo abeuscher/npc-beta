@@ -12,6 +12,7 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 | currency | string(3) | no | default: usd |
 | frequency | string | yes | Values: monthly, annual; null for one_off |
 | status | string | no | default: pending; values: pending, active, cancelled, past_due |
+| source | string | no | default: stripe_webhook; values: import, stripe_webhook (per `Donation::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | stripe_subscription_id | string | yes | Stripe subscription ID for recurring donations; null for one_off |
 | stripe_customer_id | string | yes | Stripe customer ID; set for recurring donations |
 | started_at | timestamp | yes | Set when status transitions to active |
@@ -27,3 +28,4 @@ Indexes:
 - `(contact_id)` — `donations_contact_id_index`.
 - `(fund_id)` — `donations_fund_id_index`.
 - `(import_source_id, external_id)` — `donations_import_external_idx`.
+- `(source)` — `donations_source_index`.

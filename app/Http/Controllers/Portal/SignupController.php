@@ -10,6 +10,7 @@ use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -84,6 +85,7 @@ class SignupController extends Controller
                     'contact_id' => $contact->id,
                     'tier_id'    => $tier->id,
                     'status'     => 'active',
+                    'source'     => Source::HUMAN,
                     'starts_on'  => now()->toDateString(),
                     'expires_on' => match ($tier->billing_interval) {
                         'monthly'  => now()->addMonth()->toDateString(),

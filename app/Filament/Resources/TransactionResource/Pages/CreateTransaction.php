@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TransactionResource\Pages;
 
 use App\Filament\Resources\TransactionResource;
+use App\WidgetPrimitive\Source;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateTransaction extends CreateRecord
@@ -17,6 +18,7 @@ class CreateTransaction extends CreateRecord
         ];
 
         $data['direction'] = $directionMap[$data['type']] ?? 'in';
+        $data['source']    = Source::HUMAN;
 
         return $data;
     }

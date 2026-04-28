@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\StripeCheckoutService;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 
 class EventCheckoutController extends Controller
@@ -57,6 +58,7 @@ class EventCheckoutController extends Controller
             'name'          => $contact->display_name,
             'email'         => $contact->email,
             'status'        => 'pending',
+            'source'        => Source::STRIPE_WEBHOOK,
             'registered_at' => now(),
         ]);
 

@@ -4,6 +4,7 @@ import { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode
 import { calendarJs } from 'jcalendar.js/dist/calendar.export.js'
 import 'jcalendar.js/dist/calendar.js.min.css'
 import Chart from 'chart.js/auto'
+import customSelect from './admin/custom-select.js'
 
 window.Swiper = Swiper
 window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode }
@@ -11,6 +12,10 @@ window.calendarJs = calendarJs
 window.Chart = Chart
 
 window.Alpine = Alpine
+
+document.addEventListener('alpine:init', () => {
+    window.Alpine.data('customSelect', customSelect)
+})
 
 Alpine.store('theme', {
     current: localStorage.getItem('theme') ?? 'auto',

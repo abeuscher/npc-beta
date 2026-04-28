@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Portal\EventCheckoutController;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 
 class EventRegistrationController extends Controller
@@ -57,6 +58,7 @@ class EventRegistrationController extends Controller
             'name'          => $contact->display_name,
             'email'         => $contact->email,
             'status'        => 'registered',
+            'source'        => Source::HUMAN,
             'registered_at' => now(),
         ]);
 

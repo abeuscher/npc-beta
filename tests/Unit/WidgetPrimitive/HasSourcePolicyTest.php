@@ -2,7 +2,10 @@
 
 use App\Models\Contact;
 use App\Models\Donation;
+use App\Models\EventRegistration;
+use App\Models\Membership;
 use App\Models\Page;
+use App\Models\Transaction;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 
@@ -78,4 +81,49 @@ it('applies the declared policy on Donation (import, stripe_webhook) — never D
 
 it('locks in the Donation/DEMO security invariant', function () {
     expect(in_array(Source::DEMO, Donation::ACCEPTED_SOURCES, true))->toBeFalse();
+});
+
+it('applies the declared policy on Membership (import, stripe_webhook) — never DEMO', function () {
+    $membership = new Membership;
+
+    expect($membership->acceptsSource(Source::HUMAN))->toBeTrue()
+        ->and($membership->acceptsSource(Source::IMPORT))->toBeTrue()
+        ->and($membership->acceptsSource(Source::STRIPE_WEBHOOK))->toBeTrue()
+        ->and($membership->acceptsSource(Source::DEMO))->toBeFalse()
+        ->and($membership->acceptsSource(Source::GOOGLE_DOCS))->toBeFalse()
+        ->and($membership->acceptsSource(Source::LLM_SYNTHESIS))->toBeFalse();
+});
+
+it('locks in the Membership/DEMO security invariant', function () {
+    expect(in_array(Source::DEMO, Membership::ACCEPTED_SOURCES, true))->toBeFalse();
+});
+
+it('applies the declared policy on EventRegistration (import, stripe_webhook) — never DEMO', function () {
+    $registration = new EventRegistration;
+
+    expect($registration->acceptsSource(Source::HUMAN))->toBeTrue()
+        ->and($registration->acceptsSource(Source::IMPORT))->toBeTrue()
+        ->and($registration->acceptsSource(Source::STRIPE_WEBHOOK))->toBeTrue()
+        ->and($registration->acceptsSource(Source::DEMO))->toBeFalse()
+        ->and($registration->acceptsSource(Source::GOOGLE_DOCS))->toBeFalse()
+        ->and($registration->acceptsSource(Source::LLM_SYNTHESIS))->toBeFalse();
+});
+
+it('locks in the EventRegistration/DEMO security invariant', function () {
+    expect(in_array(Source::DEMO, EventRegistration::ACCEPTED_SOURCES, true))->toBeFalse();
+});
+
+it('applies the declared policy on Transaction (import, stripe_webhook) — never DEMO', function () {
+    $transaction = new Transaction;
+
+    expect($transaction->acceptsSource(Source::HUMAN))->toBeTrue()
+        ->and($transaction->acceptsSource(Source::IMPORT))->toBeTrue()
+        ->and($transaction->acceptsSource(Source::STRIPE_WEBHOOK))->toBeTrue()
+        ->and($transaction->acceptsSource(Source::DEMO))->toBeFalse()
+        ->and($transaction->acceptsSource(Source::GOOGLE_DOCS))->toBeFalse()
+        ->and($transaction->acceptsSource(Source::LLM_SYNTHESIS))->toBeFalse();
+});
+
+it('locks in the Transaction/DEMO security invariant', function () {
+    expect(in_array(Source::DEMO, Transaction::ACCEPTED_SOURCES, true))->toBeFalse();
 });

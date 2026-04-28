@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Donation;
 use App\Services\StripeCheckoutService;
+use App\WidgetPrimitive\Source;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,6 +32,7 @@ class DonationCheckoutController extends Controller
             'currency'  => 'usd',
             'frequency' => $validated['frequency'] ?? null,
             'status'    => 'pending',
+            'source'    => Source::STRIPE_WEBHOOK,
         ]);
 
         $referer    = strtok($request->header('Referer', url('/')), '?');

@@ -11,7 +11,9 @@ use App\Models\ImportSource;
 use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\Note;
+use App\Models\Transaction;
 use App\Services\Import\FieldMapper;
+use App\WidgetPrimitive\Source;
 use Filament\Pages\Page;
 
 class ImportMembershipsProgressPage extends Page
@@ -74,9 +76,10 @@ class ImportMembershipsProgressPage extends Page
             'duplicate_skipped' => 0,
         ],
         'entities' => [
-            'memberships' => ['would_create' => 0, 'would_update' => 0],
-            'tiers'       => ['would_create' => 0, 'would_match' => 0],
-            'contacts'    => ['would_create' => 0],
+            'memberships'  => ['would_create' => 0, 'would_update' => 0],
+            'transactions' => ['would_create' => 0],
+            'tiers'        => ['would_create' => 0, 'would_match' => 0],
+            'contacts'     => ['would_create' => 0],
         ],
     ];
 
@@ -126,9 +129,10 @@ class ImportMembershipsProgressPage extends Page
                 'duplicate_skipped' => 0,
             ],
             'entities' => [
-                'memberships' => ['would_create' => 0, 'would_update' => 0],
-                'tiers'       => ['would_create' => 0, 'would_match' => 0],
-                'contacts'    => ['would_create' => 0],
+                'memberships'  => ['would_create' => 0, 'would_update' => 0],
+                'transactions' => ['would_create' => 0],
+                'tiers'        => ['would_create' => 0, 'would_match' => 0],
+                'contacts'     => ['would_create' => 0],
             ],
         ];
     }
@@ -169,6 +173,10 @@ class ImportMembershipsProgressPage extends Page
             if (! empty($entities['memberships'][$state])) {
                 $report['entities']['memberships'][$state] += $entities['memberships'][$state];
             }
+        }
+
+        if (! empty($entities['transactions']['would_create'])) {
+            $report['entities']['transactions']['would_create'] += $entities['transactions']['would_create'];
         }
 
         foreach (['would_create', 'would_match'] as $state) {
@@ -353,6 +361,10 @@ class ImportMembershipsProgressPage extends Page
             // Create Membership.
             $membership = $this->createMembership($memberAttrs, $contact, $tier, $membershipCustomFields);
 
+            // Create matching Transaction for paid+active|expired memberships
+            // (mirrors the donation/event import ledger discipline).
+            $transaction = $this->createTransactionForMembership($membership);
+
             // Timeline note.
             $tierLabel = $tier?->name ?? 'unspecified';
             Note::create([
@@ -372,6 +384,10 @@ class ImportMembershipsProgressPage extends Page
             $entities = [
                 'memberships' => ['would_create' => 1],
             ];
+
+            if ($transaction) {
+                $entities['transactions'] = ['would_create' => 1];
+            }
 
             if ($tier) {
                 $entities['tiers'] = [$tierCreated ? 'would_create' : 'would_match' => 1];
@@ -483,12 +499,41 @@ class ImportMembershipsProgressPage extends Page
         return [$tier, true];
     }
 
+    private function createTransactionForMembership(Membership $membership): ?Transaction
+    {
+        $amount = $membership->amount_paid;
+
+        if ($amount === null || (float) $amount <= 0) {
+            return null;
+        }
+
+        if (! in_array($membership->status, ['active', 'expired'], true)) {
+            return null;
+        }
+
+        return Transaction::create([
+            'subject_type'      => Membership::class,
+            'subject_id'        => $membership->id,
+            'contact_id'        => $membership->contact_id,
+            'type'              => 'payment',
+            'direction'         => 'in',
+            'status'            => 'completed',
+            'source'            => Source::IMPORT,
+            'amount'            => $amount,
+            'occurred_at'       => $membership->starts_on ?? now(),
+            'import_source_id'  => $membership->import_source_id,
+            'import_session_id' => $membership->import_session_id,
+            'external_id'       => $membership->external_id,
+        ]);
+    }
+
     private function createMembership(array $attrs, Contact $contact, ?MembershipTier $tier, array $customFields = []): Membership
     {
         $payload = [
             'contact_id'        => $contact->id,
             'tier_id'           => $tier?->id,
             'status'            => $this->mapMembershipStatus($attrs['status'] ?? null),
+            'source'            => Source::IMPORT,
             'starts_on'         => $this->parseDate($attrs['starts_on'] ?? null),
             'expires_on'        => $this->parseDate($attrs['expires_on'] ?? null),
             'amount_paid'       => $this->parseDecimal($attrs['amount_paid'] ?? null),

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TransactionFactory extends Factory
@@ -31,6 +32,7 @@ class TransactionFactory extends Factory
     public function fromStripe(): static
     {
         return $this->state(fn () => [
+            'source'    => Source::STRIPE_WEBHOOK,
             'stripe_id' => 'ch_fake_' . $this->faker->unique()->regexify('[A-Za-z0-9]{14}'),
         ]);
     }

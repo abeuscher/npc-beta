@@ -11,6 +11,7 @@ use App\Models\ImportSession;
 use App\Models\ImportSource;
 use App\Models\Transaction;
 use App\Services\Import\FieldMapper;
+use App\WidgetPrimitive\Source;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 
@@ -712,6 +713,7 @@ class ImportInvoiceDetailsProgressPage extends Page
             'type'              => 'payment',
             'direction'         => 'in',
             'status'            => $this->mapPaymentStatus($meta['status'] ?? null),
+            'source'            => Source::IMPORT,
             'amount'            => $totalAmount,
             'occurred_at'       => $this->parseDate($meta['invoice_date'] ?? $meta['payment_date'] ?? null) ?? now(),
             'contact_id'        => $contact->id,
