@@ -30,6 +30,7 @@ function logoGardenRetrofitSamplePath(): string
     return $files[0];
 }
 
+// guards: LogoGarden whitelist (partner DTO with _media[logo], internal_notes/legacy_id non-leak, partner-name HTML rendering); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto LogoGarden rows (fail-closed whitelist)', function () {
     Storage::fake('public');
 
@@ -108,6 +109,7 @@ it('projects only contract-declared fields onto LogoGarden rows (fail-closed whi
         ->not->toContain('LEGACY_ID_SENTINEL');
 });
 
+// guards: LogoGarden query pattern (1 collections + 1 collection_items + 1 media, logo-garden cell HTML count); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders LogoGarden through the contract resolver only, with one collections + one collection_items + one media select', function () {
     Storage::fake('public');
 

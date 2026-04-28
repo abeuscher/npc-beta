@@ -18,6 +18,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: EventDescription whitelist (single-row DTO derived event_date/event_time/event_location/is_in_person/is_virtual, meeting_label/ends_at/id non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit (Q stays load-bearing).
 it('projects only contract-declared fields onto the EventDescription single-row DTO (fail-closed whitelist)', function () {
     Event::factory()->create([
         'title'          => 'Whitelisted Event',

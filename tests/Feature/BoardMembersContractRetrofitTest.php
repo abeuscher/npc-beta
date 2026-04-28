@@ -19,6 +19,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: BoardMembers whitelist (member DTO with _media[photo], internal_notes/legacy_id non-leak, board-member HTML rendering); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto BoardMembers rows (fail-closed whitelist)', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-board',
@@ -119,6 +120,7 @@ it('projects only contract-declared fields onto BoardMembers rows (fail-closed w
         ->not->toContain('LEGACY_ID_SENTINEL');
 });
 
+// guards: BoardMembers query pattern (1 collections + 1 collection_items + 1 media); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders BoardMembers through the contract resolver only, with one collections + one collection_items + one media select', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-board',

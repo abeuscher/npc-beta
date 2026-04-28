@@ -22,6 +22,7 @@ beforeEach(function () {
     view()->share('errors', new ViewErrorBag());
 });
 
+// guards: ProductCarousel whitelist (product DTO with nested prices DTO shape, slug/capacity/is_at_capacity non-leak, tier label rendering); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto ProductCarousel rows with nested prices DTO (fail-closed whitelist)', function () {
     foreach (range(0, 2) as $i) {
         $product = Product::factory()->create([
@@ -80,6 +81,7 @@ it('projects only contract-declared fields onto ProductCarousel rows with nested
         ->toContain('product_price_id');
 });
 
+// guards: ProductCarousel query pattern (1 products + 1 media + 1 product_prices, withCount as sole path to active_purchases_count, no standalone purchases select); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders ProductCarousel through the contract resolver only with withCount as the only path to active_purchases_count', function () {
     $published = Product::factory()->create([
         'name'        => 'Published Product',

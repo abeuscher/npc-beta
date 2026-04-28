@@ -22,6 +22,7 @@ beforeEach(function () {
     view()->share('errors', new ViewErrorBag());
 });
 
+// guards: ProductDisplay whitelist (single-row DTO with prices and is_at_capacity, slug/image_url/capacity non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit (Q stays load-bearing).
 it('projects only contract-declared fields onto the ProductDisplay single-row DTO with is_at_capacity aggregate', function () {
     $product = Product::factory()->create([
         'name'        => 'Capacity Test Product',

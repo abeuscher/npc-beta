@@ -19,6 +19,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: BarChart whitelist (chart-config JSON shape, no _media key, sentinel non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto BarChart rows (fail-closed whitelist)', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-bars',
@@ -100,6 +101,7 @@ it('projects only contract-declared fields onto BarChart rows (fail-closed white
         ->not->toContain('LEGACY_ID_SENTINEL');
 });
 
+// guards: BarChart query pattern (1 collections + 1 collection_items + 1 media); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders BarChart through the contract resolver only, with one collections + one collection_items + one media select', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-bars',

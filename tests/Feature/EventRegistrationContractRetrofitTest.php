@@ -19,6 +19,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: EventRegistration whitelist (capacity-aware single-row DTO with is_at_capacity aggregate, address_line_1/meeting_url/description non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto the EventRegistration single-row DTO with is_at_capacity aggregate', function () {
     $event = Event::factory()->create([
         'title'                     => 'Capacity Test Event',
@@ -61,6 +62,7 @@ it('projects only contract-declared fields onto the EventRegistration single-row
         ->and($dto['item']['slug'])->toBe('capacity-test');
 });
 
+// guards: EventRegistration query pattern (events query with withCount as sole path to is_at_capacity, no standalone event_registrations select); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders EventRegistration through the contract resolver with withCount as the only path to is_at_capacity', function () {
     $landing = Page::factory()->create([
         'title'  => 'Reg Landing',

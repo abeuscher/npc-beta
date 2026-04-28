@@ -14,6 +14,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: BlogListing whitelist (post DTO + listingData JSON shape, meta_title/head_snippet/id non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto BlogListing rows (fail-closed whitelist)', function () {
     $author = User::factory()->create();
 
@@ -71,6 +72,7 @@ it('projects only contract-declared fields onto BlogListing rows (fail-closed wh
         ->and(array_keys($listing['items'][0]))->toEqualCanonicalizing(['title', 'slug', 'url', 'published_at', 'post_date', 'excerpt', 'image']);
 });
 
+// guards: BlogListing query pattern (1 pages + 1 media + 1 user-batch select, COALESCE(published_at, created_at) ordering); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders BlogListing through the contract resolver only, with a single pages select and eager-loaded media', function () {
     for ($i = 0; $i < 3; $i++) {
         Page::factory()->create([

@@ -19,6 +19,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: BlogPager whitelist (sibling-post DTO with author_name projection, head_snippet/meta_title/excerpt non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto BlogPager rows (fail-closed whitelist with author projection)', function () {
     $author = User::factory()->create(['name' => 'Authored Name']);
 
@@ -72,6 +73,7 @@ it('projects only contract-declared fields onto BlogPager rows (fail-closed whit
         ->not->toContain('HEAD_SNIPPET_NOTLEAKED_SENTINEL');
 });
 
+// guards: BlogPager query pattern (1 pages + 1 media + 1 user-batch select, COALESCE ordering, sibling navigation); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders BlogPager through the contract resolver only, with a single pages select and eager-loaded media + author', function () {
     $author = User::factory()->create(['name' => 'Author One']);
 

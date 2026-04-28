@@ -19,6 +19,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
+// guards: Carousel whitelist (slide DTO with _media[image], caption_template token-substitution non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto Carousel rows (fail-closed whitelist)', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-slides',
@@ -85,6 +86,7 @@ it('projects only contract-declared fields onto Carousel rows (fail-closed white
         ->not->toContain('LEGACY_ID_SENTINEL');
 });
 
+// guards: Carousel query pattern (1 collections + 1 collection_items + 1 media, swiper-slide HTML count); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('renders Carousel through the contract resolver only, with one collections + one collection_items + one media select', function () {
     $collection = CmsCollection::create([
         'handle'      => 'audit-slides',
