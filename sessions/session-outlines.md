@@ -14,7 +14,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~3–5 sessions remaining: Phase 5d-3 Recent Donations (queued as session 234; third per-arm permission-gate evidence point and forcing function for Phase 5e architecture decision), Phase 5d-4+ Recent Activity if pursued, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
+- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~2–4 sessions remaining: Phase 5e Permissions in the Contract Layer (queued as session 235; centralizes the three per-arm `Gate::denies` lines into a `requiredPermission` field on `DataContract`), Phase 5d-4 Recent Activity if pursued, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
 
 ---
 
