@@ -40,6 +40,8 @@ FROM php:8.4-fpm AS app
 # widget and factories work. production strips them.
 ARG BUILD_ENV=production
 
+ARG APP_VERSION=dev
+
 # System dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -120,6 +122,8 @@ RUN if [ "$BUILD_ENV" = "public-dev" ]; then \
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/resources/scss /var/www/html/public/build
+
+RUN mkdir -p /var/cache/app && echo "$APP_VERSION" > /var/cache/app/VERSION
 
 # Entrypoint script: fix ownership on mounted volumes before dropping to www-data.
 # Named volumes are mounted after build, so the Dockerfile chown doesn't persist.

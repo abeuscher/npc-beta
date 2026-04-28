@@ -15,6 +15,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 ## Active tracks
 
 - **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
+- **Fleet Manager Agent** — *Phase 1 complete (session 238); Phase 2 (Backup Pipeline) queued, not yet scheduled.* See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.0.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md).
 
 ---
 
@@ -22,12 +23,12 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 
-- **Agent contract version:** `0.0.0` (stub — surface not yet authored)
+- **Agent contract version:** `1.0.0`
 - **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
 - **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
-- **Last boundary-touching session in this repo:** session 237 (created the stub doc; surface still unbuilt)
-- **Last boundary-touching session in Fleet Manager repo:** none (FM repo not yet created)
-- **Pending boundary changes:** v1.0.0 — the actual HTTP contract — is authored in the CRM-side Fleet Manager Agent — Phase 1 session
+- **Last boundary-touching session in this repo:** session 238 (authored v1.0.0; `/api/health` shipped)
+- **Last boundary-touching session in Fleet Manager repo:** none (FM repo not yet building against v1.0.0)
+- **Pending boundary changes:** none — v1.0.0 is the current shippable state. Future bumps land when subcheck names or shapes evolve (e.g., when the Backup Pipeline lands and `last_backup_at` gains real values + thresholds).
 
 ---
 
@@ -39,30 +40,9 @@ Two parallel agentic workstreams run across two repos (this CRM repo and a separ
 
 Track substantially closed at session 237. Carry-forwards (none scheduled): Forms widget retrofit, `PageContext` full retirement, `RecordContextTokens::TOKENS` per-record-type expansion, `PageContextTokens` namespace migration. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
 
-### Fleet Manager Agent — Phase 1 (CRM-Side MVP) *(stub — pre-Beta 1; next-up after Widget Primitive closure)*
+### Fleet Manager Agent — Remaining Phases *(track active; Phase 2 queued, not yet scheduled)*
 
-Companion CRM-side work for the Fleet Manager operational tool. **Full product spec, stack, two-repo coordination protocol, local dev scheme, and resolved leans all live in [`sessions/fleet-manager-planning-spec.md`](fleet-manager-planning-spec.md)** — that doc is the seed for the separate Fleet Manager repo and the canonical reference for both workstreams.
-
-**Coordination skeleton already in place (session 237 close).** The stub `docs/fleet-manager-agent-contract.md` exists at v0.0.0; the Cross-Repo block lives at the top of this file; the prompt template carries the cross-cutting flag that fires when any agent-surface file is modified. Phase 1's job is to fill the skeleton with the actual contract.
-
-**Phase 1 deliverables:**
-
-- `/api/health` route inside the CRM, bearer-token authenticated, returning the JSON status payload defined in the planning spec (subchecks: app, database, Redis, disk, last_backup_at, version)
-- Subcheck implementations (`DB::connection()->getPdo()`, `Redis::ping()`, `disk_free_space() / disk_total_space()`)
-- VERSION file write at deploy time + read-at-boot caching for version reporting (per planning spec lean)
-- Bearer-token middleware + per-install API key bootstrapping (manual env-var, per planning spec lean)
-- Author `docs/fleet-manager-agent-contract.md` v1.0.0 — fill in the placeholder body with the actual contract surface, bump version, update CHANGELOG, update the Cross-Repo block
-- Local-dev wiring for the host-bridge pattern named in the planning spec (verify FM-side stack can reach the CRM's local `/api/health` from a sibling Docker compose project)
-
-**Out of scope for this session:**
-
-- Backup mechanism (Phase 2 — separate stub below)
-- The Fleet Manager repo itself (separate workstream, kicked off after this session)
-- Public status page (lives entirely in Fleet Manager)
-- Multi-channel alerting, performance metrics, remote-action capability (deferred per planning spec)
-- SSL expiry CRM-side check (planning spec leans Fleet-Manager-side external)
-
-**Scope:** one session. Could expand to two if the contract authoring proves harder than expected — call out at session-prompt drafting time.
+Phase 1 (CRM-Side MVP + v1.0.0 Contract) closed at session 238. Forward plan, design decisions, phase retrospective, and status all live in `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Phase 2 (Backup Pipeline) summarized below for slot awareness.
 
 ---
 

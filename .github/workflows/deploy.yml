@@ -53,6 +53,7 @@ jobs:
           push: true
           build-args: |
             BUILD_ENV=${{ vars.BUILD_ENV || 'production' }}
+            APP_VERSION=${{ steps.tag.outputs.IMAGE_TAG }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:${{ steps.tag.outputs.IMAGE_TAG }}
             ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:latest
