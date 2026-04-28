@@ -23,12 +23,12 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 
-- **Agent contract version:** `1.0.0`
+- **Agent contract version:** `1.1.0`
 - **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
 - **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
-- **Last boundary-touching session in this repo:** session 238 (authored v1.0.0; `/api/health` shipped)
-- **Last boundary-touching session in Fleet Manager repo:** none (FM repo not yet building against v1.0.0)
-- **Pending boundary changes:** none — v1.0.0 is the current shippable state. Future bumps land when subcheck names or shapes evolve (e.g., when the Backup Pipeline lands and `last_backup_at` gains real values + thresholds).
+- **Last boundary-touching session in this repo:** session 240 (bumped 1.0.0 → 1.1.0; added `unknown` subcheck-level status; flipped `last_backup_at` from green-with-null to `unknown`)
+- **Last boundary-touching session in Fleet Manager repo:** FM session 002 (refreshed local cache to v1.0.0; data-model authored against it)
+- **Pending boundary changes:** none — v1.1.0 is the current shippable state. The FM-side request for `unknown`-on-null is now satisfied. Future bumps land when subcheck names or shapes evolve (e.g., when the Backup Pipeline lands and `last_backup_at` flips from `unknown` to threshold-driven values).
 
 ---
 

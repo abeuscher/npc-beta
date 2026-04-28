@@ -77,10 +77,10 @@ it('returns the documented top-level keys on a successful poll', function () {
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
-it('reports contract_version 1.0.0', function () {
+it('reports contract_version 1.1.0', function () {
     $response = $this->getJson('/api/health', fleetAuthHeaders());
 
-    $response->assertJsonPath('contract_version', '1.0.0');
+    $response->assertJsonPath('contract_version', '1.1.0');
 });
 
 it('returns the six documented subcheck keys', function () {
@@ -96,13 +96,13 @@ it('shapes each subcheck with status, value, threshold, message keys', function 
     foreach ($response->json('subchecks') as $name => $entry) {
         expect(array_keys($entry))
             ->toEqualCanonicalizing(['status', 'value', 'threshold', 'message'])
-            ->and($entry['status'])->toBeIn(['green', 'yellow', 'red']);
+            ->and($entry['status'])->toBeIn(['green', 'yellow', 'red', 'unknown']);
     }
 });
 
 // ── Subcheck happy paths ─────────────────────────────────────────────────────
 
-it('returns green across all subchecks in a healthy test environment', function () {
+it('returns yellow overall in a healthy test environment because last_backup_at is unknown', function () {
     $response = $this->getJson('/api/health', fleetAuthHeaders());
 
     $subchecks = $response->json('subchecks');
@@ -110,12 +110,12 @@ it('returns green across all subchecks in a healthy test environment', function 
     expect($subchecks['app']['status'])->toBe('green')
         ->and($subchecks['database']['status'])->toBe('green')
         ->and($subchecks['redis']['status'])->toBe('green')
-        ->and($subchecks['last_backup_at']['status'])->toBe('green')
+        ->and($subchecks['last_backup_at']['status'])->toBe('unknown')
         ->and($subchecks['version']['status'])->toBe('green');
 
-    expect($response->json('status'))->toBe(in_array($subchecks['disk']['status'], ['yellow', 'red'], true)
-        ? $subchecks['disk']['status']
-        : 'green');
+    expect($response->json('status'))->toBe(
+        $subchecks['disk']['status'] === 'red' ? 'red' : 'yellow'
+    );
 });
 
 it('mirrors config(fleet.agent.app_version) in both the top-level and subcheck version fields', function () {
@@ -123,6 +123,67 @@ it('mirrors config(fleet.agent.app_version) in both the top-level and subcheck v
 
     $response->assertJsonPath('version', 'testver1')
         ->assertJsonPath('subchecks.version.value', 'testver1');
+});
+
+// ── last_backup_at unknown semantics (v1.1.0) ────────────────────────────────
+
+it('emits last_backup_at as unknown with null value and the not-yet-implemented message', function () {
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
+        ->assertJsonPath('subchecks.last_backup_at.value', null)
+        ->assertJsonPath('subchecks.last_backup_at.threshold', null)
+        ->assertJsonPath('subchecks.last_backup_at.message', 'backup pipeline not yet implemented');
+});
+
+it('returns overall yellow when subchecks are only green and unknown', function () {
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $subchecks = $response->json('subchecks');
+
+    if ($subchecks['disk']['status'] !== 'green') {
+        $this->markTestSkipped('disk subcheck is not green in this environment; another case covers the unknown-with-yellow path');
+    }
+
+    expect($subchecks['last_backup_at']['status'])->toBe('unknown')
+        ->and(array_filter(array_column($subchecks, 'status'), fn ($s) => in_array($s, ['yellow', 'red'], true)))->toBe([])
+        ->and($response->json('status'))->toBe('yellow');
+});
+
+it('returns overall red when any subcheck is red, even though last_backup_at is unknown', function () {
+    $connection = Mockery::mock(Connection::class);
+    $connection->shouldReceive('getPdo')->andThrow(new PDOException('simulated db failure'));
+
+    DB::shouldReceive('connection')->andReturn($connection);
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertStatus(200)
+        ->assertJsonPath('status', 'red')
+        ->assertJsonPath('subchecks.database.status', 'red')
+        ->assertJsonPath('subchecks.last_backup_at.status', 'unknown');
+});
+
+it('ranks unknown equivalently to yellow in the worst-of overall derivation', function () {
+    $statuses = ['app' => 'green', 'last_backup_at' => 'unknown', 'extra' => 'yellow'];
+
+    $reflection = new ReflectionMethod(\App\Http\Controllers\Api\Fleet\HealthController::class, 'overallStatus');
+    $reflection->setAccessible(true);
+
+    $controller = new \App\Http\Controllers\Api\Fleet\HealthController();
+
+    $subchecks = array_map(
+        fn ($status) => ['status' => $status, 'value' => null, 'threshold' => null, 'message' => null],
+        $statuses
+    );
+
+    expect($reflection->invoke($controller, $subchecks))->toBe('yellow');
+
+    $subchecks['extra']['status'] = 'unknown';
+    expect($reflection->invoke($controller, $subchecks))->toBe('yellow');
+
+    $subchecks['extra']['status'] = 'green';
+    expect($reflection->invoke($controller, $subchecks))->toBe('yellow');
 });
 
 // ── Subcheck failure paths ───────────────────────────────────────────────────

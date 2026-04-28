@@ -10,7 +10,7 @@ use Throwable;
 
 class HealthController extends Controller
 {
-    public const CONTRACT_VERSION = '1.0.0';
+    public const CONTRACT_VERSION = '1.1.0';
 
     private const DISK_YELLOW_THRESHOLD = 80;
     private const DISK_RED_THRESHOLD = 95;
@@ -120,7 +120,7 @@ class HealthController extends Controller
     private function checkLastBackupAt(): array
     {
         return [
-            'status'    => 'green',
+            'status'    => 'unknown',
             'value'     => null,
             'threshold' => null,
             'message'   => 'backup pipeline not yet implemented',
@@ -145,7 +145,7 @@ class HealthController extends Controller
             return 'red';
         }
 
-        if (in_array('yellow', $statuses, true)) {
+        if (in_array('yellow', $statuses, true) || in_array('unknown', $statuses, true)) {
             return 'yellow';
         }
 

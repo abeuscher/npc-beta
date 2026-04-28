@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `1.0.0`
+**Contract Version:** `1.1.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -46,57 +46,61 @@ Authorization: Bearer <token>
   "status": "green|yellow|red",
   "version": "abc1234",
   "timestamp": "2026-04-28T15:42:00+00:00",
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "subchecks": {
-    "app":            { "status": "green",  "value": "responding",  "threshold": null,     "message": null },
-    "database":       { "status": "green",  "value": "reachable",   "threshold": null,     "message": null },
-    "redis":          { "status": "green",  "value": "reachable",   "threshold": null,     "message": null },
-    "disk":           { "status": "green",  "value": 42,            "threshold": [80, 95], "message": null },
-    "last_backup_at": { "status": "green",  "value": null,          "threshold": null,     "message": "backup pipeline not yet implemented" },
-    "version":        { "status": "green",  "value": "abc1234",     "threshold": null,     "message": null }
+    "app":            { "status": "green",   "value": "responding",  "threshold": null,     "message": null },
+    "database":       { "status": "green",   "value": "reachable",   "threshold": null,     "message": null },
+    "redis":          { "status": "green",   "value": "reachable",   "threshold": null,     "message": null },
+    "disk":           { "status": "green",   "value": 42,            "threshold": [80, 95], "message": null },
+    "last_backup_at": { "status": "unknown", "value": null,          "threshold": null,     "message": "backup pipeline not yet implemented" },
+    "version":        { "status": "green",   "value": "abc1234",     "threshold": null,     "message": null }
   }
 }
 ```
 
 ### Top-level fields
 
-| Field              | Type   | Description                                                                  |
-|--------------------|--------|------------------------------------------------------------------------------|
-| `status`           | string | Overall — worst of all subcheck statuses. One of `green`, `yellow`, `red`.   |
-| `version`          | string | Application version (e.g., the seven-character git SHA, or `dev` locally).   |
-| `timestamp`        | string | ISO 8601 server time at response composition.                                |
-| `contract_version` | string | Semver. Tells Fleet Manager which contract version this response speaks.     |
-| `subchecks`        | object | Object keyed by subcheck name. Stable v1 keys listed below.                  |
+| Field              | Type   | Description                                                                                                          |
+|--------------------|--------|----------------------------------------------------------------------------------------------------------------------|
+| `status`           | string | Overall — derived from all subcheck statuses (see worst-of rule). Always one of `green`, `yellow`, `red`. **Top-level `status` is never `unknown`** — `unknown` is a subcheck-level value only. |
+| `version`          | string | Application version (e.g., the seven-character git SHA, or `dev` locally).                                           |
+| `timestamp`        | string | ISO 8601 server time at response composition.                                                                        |
+| `contract_version` | string | Semver. Tells Fleet Manager which contract version this response speaks.                                             |
+| `subchecks`        | object | Object keyed by subcheck name. Stable v1 keys listed below.                                                          |
 
 ### Subcheck shape
 
 Every subcheck — present and future — has the same four keys:
 
-| Field       | Type                | Description                                                                          |
-|-------------|---------------------|--------------------------------------------------------------------------------------|
-| `status`    | string              | `green`, `yellow`, or `red`.                                                         |
-| `value`     | mixed (`null` ok)   | Subcheck-specific payload (string, integer percent, ISO timestamp, or `null`).       |
-| `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold. |
-| `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.      |
+| Field       | Type                | Description                                                                                                                                                |
+|-------------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `status`    | string              | One of `green`, `yellow`, `red`, or `unknown`. `unknown` means the subcheck cannot determine its state yet (e.g., the underlying mechanism is not in place). Subcheck-level only — `unknown` never propagates to the top-level `status` field. |
+| `value`     | mixed (`null` ok)   | Subcheck-specific payload (string, integer percent, ISO timestamp, or `null`).                                                                             |
+| `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
+| `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
 ### Subchecks (v1 — six stable keys)
 
-| Key              | `value` shape                | `threshold`         | Notes                                                                                                                       |
-|------------------|------------------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `app`            | `"responding"`               | `null`              | The fact that the controller produced this entry IS the check.                                                              |
-| `database`       | `"reachable"` / `"unreachable"` | `null`           | `red` on `PDOException`. `message` carries the exception class name only.                                                   |
-| `redis`          | `"reachable"` / `"unreachable"` | `null`           | `red` on any `Redis::ping()` exception. `message` carries the exception class name only.                                    |
-| `disk`           | integer (percent used)       | `[80, 95]`          | `yellow` at ≥80 %, `red` at ≥95 %. Measured against `/`. Returns `red` with `value: null` if usage cannot be read.           |
-| `last_backup_at` | `null` (v1) / ISO timestamp  | `null`              | Always `green` in v1 with `value: null` and a "not yet implemented" message. Threshold-driven `yellow`/`red` lands in Phase 2. |
-| `version`        | string                       | `null`              | Always `green`. Mirrors top-level `version` field. A `dev` build is not a failure state.                                    |
+| Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
+|------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `app`            | `"responding"`               | `null`              | The fact that the controller produced this entry IS the check.                                                                                                                                     |
+| `database`       | `"reachable"` / `"unreachable"` | `null`           | `red` on `PDOException`. `message` carries the exception class name only.                                                                                                                          |
+| `redis`          | `"reachable"` / `"unreachable"` | `null`           | `red` on any `Redis::ping()` exception. `message` carries the exception class name only.                                                                                                           |
+| `disk`           | integer (percent used)       | `[80, 95]`          | `yellow` at ≥80 %, `red` at ≥95 %. Measured against `/`. Returns `red` with `value: null` if usage cannot be read.                                                                                  |
+| `last_backup_at` | `null` (v1) / ISO timestamp  | `null`              | `unknown` in v1.1.0 with `value: null` and a "not yet implemented" message — the CRM cannot determine backup freshness because no backup pipeline exists yet. Threshold-driven `green`/`yellow`/`red` against an ISO timestamp lands in Phase 2. Fleet Manager treats `unknown` as yellow-tier (don't alarm, but surface). |
+| `version`        | string                       | `null`              | Always `green`. Mirrors top-level `version` field. A `dev` build is not a failure state.                                                                                                            |
 
 ### Overall status — worst-of rule
 
 ```
-red    if any subcheck is red
-yellow if any subcheck is yellow and none are red
-green  if all subchecks are green
+red     if any subcheck is red
+yellow  if any subcheck is yellow OR unknown, and none are red
+green   if all subchecks are green
 ```
+
+`unknown` at the subcheck level ranks equivalently to `yellow` for the purposes of computing the top-level `status`. Top-level `status` is therefore always one of `{green, yellow, red}`; `unknown` never propagates to the top level.
+
+The `unknown` ≡ `yellow` ranking is a v1.1.0 lean. Operational experience may show that missing data should rank above yellow (more concerning) or below yellow (less concerning); the ranking may be revisited in a future bump.
 
 ### Endpoint behaviour on subcheck failure
 
@@ -153,6 +157,12 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 ---
 
 ## CHANGELOG
+
+### `1.1.0` — 2026-04-28 (session 240)
+
+Adds `unknown` as a valid subcheck-level status value. `last_backup_at` emits `unknown` (was `green`) when no backup pipeline exists — null `value` no longer reads as "things are fine," it reads as "we don't know yet." `unknown` ranks as `yellow` in the overall-status worst-of derivation; the top-level `status` enum is unchanged (`{green, yellow, red}`). Only `last_backup_at` emits `unknown` in v1.1.0; other subchecks (`app`, `database`, `redis`, `disk`, `version`) continue to emit `{green, yellow, red}` exclusively.
+
+Forward-compatible with v1.0.0 consumers: top-level shape and values are unchanged. Consumers reading subcheck-level `status` should accept `unknown` as a fourth valid value.
 
 ### `1.0.0` — 2026-04-28 (session 238)
 

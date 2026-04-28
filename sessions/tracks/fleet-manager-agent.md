@@ -16,18 +16,19 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 
 ## Status snapshot
 
-**Last update:** 2026-04-28 (Phase 1 closed at session 238).
+**Last update:** 2026-04-28 (v1.1.0 contract bump landed at session 240; Phase 1 closed at session 238).
 
-**Complete:** Phase 1 — CRM-Side MVP + v1.0.0 Contract (session 238).
+**Complete:** Phase 1 — CRM-Side MVP + v1.0.0 Contract (session 238). Sub-phase: v1.1.0 contract bump introducing `unknown` subcheck-level status (session 240).
 
-**Active:** none. Phase 2 (Backup Pipeline) is queued but not scheduled — it lands when a second client install is in flight or when Fleet Manager v1 approaches production launch and `last_backup_at = null` becomes operationally annoying.
+**Active:** none. Phase 2 (Backup Pipeline) is queued but not scheduled — it lands when a second client install is in flight or when Fleet Manager v1 approaches production launch and `last_backup_at = unknown` (v1.1.0) becomes operationally annoying. Sequencing note: Phase 2 also depends on the FM repo catching up to v1.1.0 first (FM-side boundary-touching session that refreshes the local cache and aligns the contract validator + tests against the new subcheck status enum).
 
 **Cross-repo coordination state:**
 
-- Agent contract version: `1.0.0` (live as of session 238).
+- Agent contract version: `1.1.0` (live as of session 240).
 - Spec doc: [`docs/fleet-manager-agent-contract.md`](../../docs/fleet-manager-agent-contract.md). Canonical URL for FM-repo `WebFetch`: `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`.
-- Cross-Repo block in `sessions/session-outlines.md` (top of file, just below Active tracks) reflects v1.0.0 and last-boundary-touching session 238.
-- The standing cross-repo flag in every session base prompt is now active (no longer dormant) — it fires whenever a session modifies `/api/health`, the auth middleware, the response schema, the VERSION pipeline, or anything in `app/Http/Controllers/Api/Fleet/*`.
+- Cross-Repo block in `sessions/session-outlines.md` (top of file, just below Active tracks) reflects v1.1.0 and last-boundary-touching session 240.
+- FM-side cached copy at `/home/al/fleetmanager/docs/imported/fleet-manager-agent-contract.md` still reads v1.0.0 as of 240 close — refreshes on FM's next boundary-touching session per the Two-Repo Coordination Protocol.
+- The standing cross-repo flag in every session base prompt is active (no longer dormant) — it fires whenever a session modifies `/api/health`, the auth middleware, the response schema, the VERSION pipeline, or anything in `app/Http/Controllers/Api/Fleet/*`.
 
 **Carry-forwards (none scheduled):**
 
@@ -40,6 +41,8 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 ---
 
 ## Phase Retrospectives
+
+**v1.1.0 contract bump — `unknown` status for `last_backup_at` (session 240).** Sub-phase under Phase 1; not a new full phase (Phase 2 still owns the eventual threshold-driven flip when the Backup Pipeline lands). The FM workstream flagged that `last_backup_at: { status: "green", value: null }` is semantically wrong — null means "we don't know," not "things are fine." Bump landed as additive `1.0.0 → 1.1.0`: introduced `unknown` as a fourth valid subcheck-level status, flipped `HealthController::checkLastBackupAt()` from `green` to `unknown`, and expanded the worst-of derivation so `unknown` ranks equivalent to `yellow` (top-level `status` enum stays `{green, yellow, red}` — `unknown` never propagates upward by construction). Spec doc body + JSON example + worst-of rule + subcheck table updated; CHANGELOG gained the v1.1.0 entry with the explicit forward-compat note for v1.0.0 consumers. Tests: three existing cases adjusted (contract_version literal, allowed-status set, healthy-env top-level expectation), four new cases added (literal-shape pinning, only-green-and-unknown→yellow, red-overrides-unknown→red, reflection-driven worst-of equivalence). Fast Pest 1674 → 1678 (+4 net). Sequencing rationale: landed v1.1.0 *before* the FM repo's next boundary-touching session (FM 004 — CRM Integration — Health Polling Skeleton + HTTP Client) so the FM contract validator builds against the final shape with no retrofit. Load-bearing decision: `unknown ≡ yellow` ranking is a v1.1.0 lean — operational experience may show missing data should rank above or below yellow; flagged in the spec doc for future revisit.
 
 **Phase 1 — CRM-Side MVP + v1.0.0 Contract (session 238).** The inaugural fire of the cross-repo coordination flag, by design — every artifact the flag is meant to govern landed in one session.
 
