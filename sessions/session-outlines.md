@@ -14,7 +14,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 ## Active tracks
 
-- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~3–5 sessions remaining: Phase 5d-3 Recent Donations (queued as session 234 after Financial Data Origin Phase A in 233; third per-arm permission-gate evidence point and forcing function for Phase 5e architecture decision), Phase 5d-4+ Recent Activity if pursued, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
+- **Widget Primitive** — see `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Mid-Phase 5. ~3–5 sessions remaining: Phase 5d-3 Recent Donations (queued as session 234; third per-arm permission-gate evidence point and forcing function for Phase 5e architecture decision), Phase 5d-4+ Recent Activity if pursued, a cheap `DashboardConfig → DashboardView` follow-up, and Phase 6 page-builder convergence (0–1 sessions).
 
 ---
 
@@ -106,19 +106,14 @@ Two linked concerns. First: session 198's Notes → structured interactions work
 
 ---
 
-### Financial Data Origin & Lifecycle Discipline *(stub — pre-Beta 1)*
+### Financial Data Origin & Lifecycle Discipline *(stub — pre-Beta 1; Phase A complete)*
 
-Cross-cutting cleanup of how financial parent rows (`donations`, `memberships`, `event_registrations`, `transactions`, future `purchases`) carry their **origin** — Stripe webhook, hand-imported from a competitor CSV, manual admin entry, or eventual API/automation source. Today origin is tracked half-heartedly: `Donation` declares `ACCEPTED_SOURCES = [IMPORT, STRIPE_WEBHOOK]` via `HasSourcePolicy`, but `Membership` and `Transaction` don't apply the trait at all. Origin is queryable on Transactions only via the `stripe_id IS NULL` predicate, which conflates "Stripe-originated" with everything else. Donation/Membership admin pages have no origin-aware action gating; today this is harmless (no Refund/Cancel/Sync actions exist yet on those resources) but becomes a runtime hazard the moment such actions land — calling Stripe with no Stripe ID, dunning a donor who gave in 2022 to a different system, double-syncing imported rows to QuickBooks. Surfaced during session 233 prompt-drafting when the question "what date does an imported donation carry?" exposed the broader two-dimensional problem: status is the lifecycle dimension (pending/active/expired/cancelled), origin is orthogonal, and they need separate columns.
+Phase A landed in session 233 — `source` column live across all four financial tables (`donations`, `memberships`, `event_registrations`, `transactions`), `HasSourcePolicy` applied to all four models, every write path source-aware (Stripe checkout / import / manual admin / portal signup / free-event), `Transaction::recordStripe` defaults source for the webhook flow, and the membership-import ledger asymmetry resolved (paid+active|expired imported memberships now write matching Transaction rows). The `donations.source` column gives Recent Donations (5d-3, queued as 234) a queryable origin field.
 
-The shape locked in during scoping conversation: **status stays exactly as-is** as the universal "this is real / countable" reality filter — read sites, aggregate gates, access predicates ($scopeIsMember$, $activeMembership$, etc.) all keep working unchanged across origins. Origin gets its own column carrying an `App\WidgetPrimitive\Source` constant, lifting the existing write-side primitive to read-side queryable.
+Remaining:
 
-Splits into two sessions plus an optional third:
-
-- **Phase A — Schema + backfill + write-path discipline.** Add `source` column (default per-table) to `donations`, `memberships`, `event_registrations`, `transactions`, with a single backfill migration that infers values from existing predicates (`stripe_subscription_id`/`stripe_id IS NOT NULL` → STRIPE_WEBHOOK; `import_source_id IS NOT NULL` → IMPORT; remainder → HUMAN for transactions, STRIPE_WEBHOOK for legacy donations). Apply `HasSourcePolicy` to `Membership` and `Transaction` with appropriate `ACCEPTED_SOURCES`. Update `StripeWebhookController`, `DonationCheckoutController`, all four import progress pages, and any admin write paths to set `source` on creation. Resolve the membership-import ledger asymmetry — donation and event imports write a matching transaction row, membership import does not; pick one policy. No UI changes this phase.
-- **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume.
+- **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume. Lands when an action surface that needs it is imminent.
 - **Phase C (defer until forced).** QuickBooks sync origin-awareness, email-trigger origin-awareness on admin-driven bulk send actions (donation receipts, renewal nudges, dunning). Lands when those features arrive; not current debt.
-
-**Sequencing against the Widget Primitive track.** Phase A lands as session 233 — ahead of Phase 5d-3 (Recent Donations) — because origin discipline is foundational to every financial widget that follows and the per-arm Stripe-vs-import fork shows up cleanly only once `source` is queryable. 5d-3 ships immediately after Phase A. Phase B (admin gating generalization) follows when an action surface that needs it is imminent.
 
 ---
 

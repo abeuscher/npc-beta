@@ -235,4 +235,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 230 | Widget Primitive — Phase 5c.5 (Admin UI for Authoring per-Record-Type View Sets) |
 | 231 | Widget Primitive — Phase 5d-1 (Recent Notes — First Concrete Record-Detail Widget) |
 | 232 | Widget Primitive — Phase 5d-2 (Membership Status — Single-Row Record-Detail Widget) |
+| 233 | Financial Data Origin & Lifecycle Discipline — Phase A (`source` Column + Write-Path Discipline) |
 
