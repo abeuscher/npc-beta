@@ -912,6 +912,25 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     color: rgb(229 231 235);
 }
 
+/* ── Quill list rendering — bullet/number markers + indent ─────────────*/
+/* Quill 1.x renders list markers via ::before counter pseudo-elements on
+ * every <li>. A CSS reset upstream (Tailwind preflight + modern-normalize)
+ * clears `list-style` and `padding` on <ul>/<ol>, which is what Quill's own
+ * stylesheet expects — but a stray re-enabling rule was producing duplicate
+ * markers (browser default + Quill's ::before) on bullet lists, and the
+ * padding clear was leaving Quill's ::before markers outside the padded
+ * editor text area. Both fixes scoped to .ql-editor so they don't leak into
+ * other admin lists.                                                       */
+.ql-editor ol,
+.ql-editor ul {
+    padding-inline-start: 1.5em;
+    list-style: none;
+}
+.ql-editor ol > li,
+.ql-editor ul > li {
+    list-style: none;
+}
+
 /* ── Dashboard widget-primitive slot grid ────────────────────────────── */
 /* Container for widget-primitive widgets rendered inside the Filament
  * admin dashboard via DashboardSlotGridWidget. Two-column layout on wide
