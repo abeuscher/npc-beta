@@ -8,6 +8,34 @@ Each selected rehearsal needs a written success criterion **before** it runs. "I
 
 ---
 
+## Pre-release requirements (non-rehearsal)
+
+These are gate items framed as release-blocking capabilities or operational readiness, not as timed rehearsal scenarios. The vetting session decides per item whether it (a) becomes its own session, (b) folds into an existing track or stub, or (c) is bundled into a rehearsal that already exercises it.
+
+### Fleet Manager — node operations parity
+
+Fleet Manager needs to be able to **install, backup, restore, and read logs** from nodes before Beta-1 ships. The CRM-side contract surface is at v1.2.0 (CRM reports `last_backup_at` against a threshold-driven success record); the FM-side capability set that consumes the contract and drives node operations needs:
+
+- **Install** — provision a fresh CRM node from a clean droplet to a working install end-to-end.
+- **Backup** — trigger and verify a backup against a node, surfacing failure modes the agent endpoint reports.
+- **Restore** — restore a node from a backup blob (CRM-side has the manual procedure documented per sessions 242 + 243; FM-side needs the operator-facing equivalent).
+- **Read logs** — fetch and surface application logs from a node without operator SSH.
+
+These four capabilities partially overlap existing Fleet Manager Agent carry-forwards (`backup-restore tooling`) and partially expand scope (install, log-reading). The FM track is currently marked "substantially complete" — this requirement re-opens it as Beta-1-blocking for a specific capability subset.
+
+### Multi-node operational readiness
+
+By release we need to be running, on production infrastructure:
+
+- **Marketing site** — the public-facing site that explains the product to prospects.
+- **Demo install** — a clean, populated CRM install we can show in a sales pitch.
+- **Test / deploy instance** — a staging install we deploy to and exercise before promoting to production.
+- **A fourth node, ready** — pre-provisioned for the first customer signup, so onboarding is "transfer ownership" rather than "spin up infrastructure during the customer's pitch."
+
+This is operational provisioning, not a rehearsal. The vetting decides whether this lands as its own session, as work bundled into a Fleet Manager install drill, or as ongoing infrastructure work outside the release-gate plan.
+
+---
+
 ## Categories
 
 - **Onboarding rehearsals** — correctness under realistic client data messiness.
@@ -43,6 +71,7 @@ Each selected rehearsal needs a written success criterion **before** it runs. "I
 - **Concurrent admin editing.** Two staff editing the same contact at the same time. Same for CMS page edits during publish.
 - **Permission audit.** Walk same data from volunteer, board read-only, staff admin, and public visitor perspectives. Verify boundaries hold.
 - **Accidental public exposure.** Attempt to mark sensitive fields public — home addresses, donor amounts, internal notes. Verify the system makes this hard or visible.
+- **Integration retest — coordinated tire-kicking.** Near the end of the final dev cycle, run a single session that exercises every external integration the product depends on (Stripe, Resend, Mailchimp, DigitalOcean Spaces, QuickBooks, Google Calendar — full list confirmed at session time) end-to-end in coordinated fashion. The premise: integrations are the most fragile part of the app — they break silently when an upstream API changes shape, when credentials drift, when a webhook gets reconfigured. A scheduled coordinated retest catches drift before it surfaces in a customer install. The session output is a runbook entry per integration covering the tire-kick steps and the green/red criterion. Timing matters — this rehearsal lands late, against a near-final surface.
 
 ### Compatibility
 

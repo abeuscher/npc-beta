@@ -245,4 +245,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 240 | Fleet Manager Agent — Contract v1.1.0 (`unknown` Status for `last_backup_at`) |
 | 241 | Test Audit (Mutation Testing) — First Slice |
 | 242 | Fleet Manager Agent — Phase 2 (Backup Pipeline) |
+| 243 | Housekeeping Batch 1 |
 
