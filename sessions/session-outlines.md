@@ -15,7 +15,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 ## Active tracks
 
 - **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
-- **Fleet Manager Agent** — *substantially complete* (Phase 2 closed at session 242). See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.2.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Carry-forwards remain (none scheduled): custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener, backup-restore tooling.
+- **Fleet Manager Agent** — *substantially complete* (Phase 2 closed at session 242); **Beta-1-blocking work resumes** for node operations parity (install / backup / restore / log-reading) per `sessions/release-plan.md` § A2. See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.2.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Other carry-forwards remain unscheduled: custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener.
 
 ---
 
@@ -57,26 +57,25 @@ Descoped in 204 on the grounds that wheel/touch interception fights browser iner
 
 ---
 
-### Code Review & Cleanup *(stub — pre-Beta 1; 205/206 pair completed)*
+### Code Review & Cleanup + Migration Squash *(stub — pre-Beta 1, terminal session; T1 in `release-plan.md`)*
 
-Periodic codebase sweep in the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply; both complete). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review. Deliberately not a feature session — purely quality. Splits into an audit session (produces the W6 / W7 tables and open flags) followed by an apply session (walks the flags, picks a subset, and applies in iteration-sliced branches).
+Final pre-release session combining a code review pass with a migration squash. Per the plan's Rule 10, this is the *terminal* session — every other entry in `release-plan.md` must close first.
+
+Code review portion follows the pattern of sessions 101, 116, 141, 178/179, and the most recent 205/206 pair (audit → apply; both complete). Scope: dead code and unused imports, duplicated logic ripe for extraction, inconsistent naming, outdated comments, drift from framework conventions, test coverage gaps surfaced since the last review.
+
+Migration squash portion: collapse the per-session migration history into a single squashed migration set against the v1 schema baseline.
+
+Both halves land in one branch; no code change after T1 closes.
 
 ---
 
-### Notes Permissions & Permissions Audit *(stub — pre-Beta 1)*
+### Notes Permissions (feature half) *(stub — pre-Beta 1; C1 in `release-plan.md`)*
 
-Two linked concerns. First: session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. A specific shape surfaced during session 203 manual testing: **edit-only-by-creator** (the authenticated user must equal `notes.author_id` to edit) as an opt-in tenant-level setting, with a separate override permission for managers. Second: a full coverage audit in the pattern of sessions 114 and 117, walking every admin action (Filament resources, pages, actions, bulk actions, header actions) and confirming each has a permission gate and that the gate is enforced at both UI and controller layers. Reference the 114/117 logs for the audit methodology; this pass catches drift introduced since 117 landed.
+Half-split from the original Notes Permissions & Permissions Audit stub at session 244. The *audit* half is consumed by C3 (Permission audit + Concurrent admin editing + Accidental public exposure) — see `sessions/release-plan.md` § C3. This stub now covers only the feature work.
 
----
+Session 198's Notes → structured interactions work introduced authoring surfaces (subtype, direction, outcome, participants, meta) that need finer-grained permission gates than the current `create_note` / `update_note` / `delete_note` trio — e.g. who can edit a note authored by someone else, who can change the subtype of an existing note, who can see internal-only notes. A specific shape surfaced during session 203 manual testing: **edit-only-by-creator** (the authenticated user must equal `notes.author_id` to edit) as an opt-in tenant-level setting, with a separate override permission for managers.
 
-### Financial Data Origin & Lifecycle Discipline *(stub — pre-Beta 1; Phase A complete)*
-
-Phase A landed in session 233 — `source` column live across all four financial tables (`donations`, `memberships`, `event_registrations`, `transactions`), `HasSourcePolicy` applied to all four models, every write path source-aware (Stripe checkout / import / manual admin / portal signup / free-event), `Transaction::recordStripe` defaults source for the webhook flow, and the membership-import ledger asymmetry resolved (paid+active|expired imported memberships now write matching Transaction rows). The `donations.source` column gives Recent Donations (5d-3, queued as 234) a queryable origin field.
-
-Remaining:
-
-- **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume. Lands when an action surface that needs it is imminent.
-- **Phase C (defer until forced).** QuickBooks sync origin-awareness, email-trigger origin-awareness on admin-driven bulk send actions (donation receipts, renewal nudges, dunning). Lands when those features arrive; not current debt.
+C1 must close before C3 runs (the audit walks the surface that this stub builds out).
 
 ---
 
@@ -212,35 +211,6 @@ Bring concrete examples to scope: bar_chart's many `chart_config` knobs, event_c
 
 ---
 
-### Event Description Widget Removal → PageContext *(stub — pre-Beta 1, refactor)*
-
-Replace the dedicated `event_description` widget with a more sensible architecture: pass event details forward through `PageContext` (or `RecordContext`) and have the event detail template use a standard `text_block` widget that references the contextual data via tokens. Justification: event_description's only job is to render a single record's title/description/date — that is exactly the problem `PageContext` and template tokens solve generally. The widget is also one of the test-audit-flagged W-cases from sessions 216–224 — removing it shrinks the widget catalog and tightens the system without losing functionality.
-
-Concrete steps:
-
-1. Extend `RecordContextTokens` (or the equivalent context surface) to expose event fields as tokens consumable by widget templates.
-2. Update the event detail template seed to use `text_block` with the new tokens instead of `event_description`.
-3. Add a migration that swaps any existing `event_description` widget instances on event detail pages for the equivalent `text_block` config (preserving authored content where it exists).
-4. Retire the widget definition and its retrofit test cases (the test slice already flagged the W cases as N≥2 redundant; deletion was deferred — this session takes the deletion).
-
-Touches the `RecordContextTokens` per-record-type expansion carry-forward from the Widget Primitive track — the session may forcing-function that work into completion for the event domain specifically. Out of scope: doing the same exercise for other detail-template widgets (product detail, post detail). If the pattern works for events, those follow as separate small sessions.
-
----
-
-### Text Color Hierarchy Rules *(stub — pre-Beta 1, design discussion)*
-
-Resolve the layered text-color decision hierarchy across widget config, WYSIWYG Quill formatting, and theme defaults. Concretely: many widgets expose a "text color" control in the inspector, but the embedded Quill editor *also* exposes inline text-color formatting per character/run. When both are set, who wins? Today the answer is inconsistent. Plus a load-bearing edge case: if the user picks "white" as text color but the surrounding background is also white (default page background), the content becomes invisible — the rendering pipeline needs a safety net.
-
-Open questions:
-
-- **Should widget-level text color be removed from widget configs entirely**, deferring all color decisions to Quill? Pro: single source of truth. Con: forces per-character styling for the "all this widget's text is brand color" use case.
-- **What is the contrast safety net?** Authoring-time validation that warns on low contrast? Render-time fallback to theme default if contrast drops below threshold? A WCAG check that blocks save? The white-on-white edge case must not produce invisible content in the rendered page.
-- **What is the theme's role?** Theme provides the default text color; widget override layers on top; Quill inline overrides per-run. Codify this stack and document it.
-
-Design discussion first; implementation lands once rules are resolved. Out of scope: a full WCAG contrast checker UI (that is post-Beta-1 in the Site Theme Builder stub).
-
----
-
 ### Stripe Checkout Branding *(stub — pre-Beta 1, standalone session)*
 
 The product checkout, donation checkout, event checkout, and membership checkout flows all redirect to Stripe-hosted checkout pages today. These pages carry minimal CRM-side branding — Stripe controls the surface, with limited customization available via the Stripe Dashboard (logo, primary color, business name) and via API parameters at checkout-session creation time. The ask: figure out how much additional branding we can inject given Stripe's API constraints, then implement it consistently across all four checkout flows.
@@ -262,7 +232,9 @@ Touches `Filament/Pages/ImportContactsPage.php` and the other importer mapping p
 
 ---
 
-### Random Data Generator as Dashboard Widget *(stub — pre-Beta 1, feature)*
+### Random Data Generator as Dashboard Widget *(stub — pre-Beta 1, feature; A1 in `release-plan.md`)*
+
+A1 in `sessions/release-plan.md` — the first session in execution order. Track A operational foundation: downstream rehearsals lean on this for synthetic data.
 
 The current debug data generator (gated behind the `APP_DEBUG_TOOLS=true` env var) is incomplete and lives on the dashboard via flag-conditional rendering. Rebuild it as a first-class dashboard widget that:
 
@@ -276,37 +248,82 @@ Forcing function: surfaced during 242 backup-restore testing — the user genera
 
 ---
 
-### Pre-Beta Release Plan — Rehearsal Vetting & Success Criteria *(stub — pre-Beta 1; queued as session 244, immediately following Housekeeping Batch 1)*
+### Fleet Manager — Node Operations Parity *(stub — pre-Beta 1; A2 in `release-plan.md`)*
 
-Take `sessions/release-plan-outline.md` (the user's working notes) and use it as the seed for a session that produces the actual pre-Beta-1 release gate. The outline currently lists candidate rehearsals across five categories — Onboarding, Capsize drills, Scale, Workflow, Compatibility — without commitments; every candidate is "maybe." The session converts that into a concrete plan:
+A2 in `sessions/release-plan.md`. Re-opens the Fleet Manager Agent track for a specific Beta-1-blocking capability subset.
 
-- **Vet each candidate** against the four criteria already in the outline doc: confidence delivered, failure prevented, time cost, artifact produced.
-- **Pick the working set** — bias toward scenarios that produce reusable artifacts (runbooks, sizing docs, onboarding playbooks) since those double as sales credibility against incumbents.
-- **Define a written success criterion for each** — "it worked" is not a gate; specific measurable outcomes are.
-- **Sequence them** — order of execution matters when scenarios share fixtures or build on each other.
-- **Surface additional scenarios** that the outline doesn't yet capture but the session conversation reveals.
+The CRM-side agent contract is at v1.2.0 and substantially complete. The FM-side capability set that consumes the contract and drives node operations needs four capabilities operator-accessible from the FM admin UI:
 
-Concrete inputs to bring to the vetting:
+- **Install** — provision a fresh CRM node from a clean droplet to a working install end-to-end.
+- **Backup** — trigger and verify a backup against a node, surfacing failure modes the agent endpoint reports.
+- **Restore** — restore a node from a backup blob (CRM-side has the manual procedure documented per sessions 242 + 243; FM-side needs the operator-facing equivalent).
+- **Read logs** — fetch and surface application logs from a node without operator SSH.
 
-- The full `sessions/session-outlines.md` roadmap — what other Beta-1 stubs are still open and how they intersect with rehearsal scenarios (e.g., several existing stubs are already arguably rehearsal candidates: Notes Permissions audit ↔ workflow `Permission audit`; Org Model Overhaul ↔ onboarding `Custom fields + public collection ingestion`; Event Ticket Tiers ↔ workflow `Event with everything`).
-- Real or simulated client data shapes — at least one messy-CSV example (Neon or Wild Apricot exports) for the Onboarding category.
-- The **custom-field-with-lookup edge case** (custom field that pulls allowed values from a separate Collection or another model's column) — surfaced as a release-readiness concern; needs vetting as either a workflow rehearsal or an onboarding constraint.
-- The 242-confirmed **DB wipe + backup recovery** capsize drill — the manual procedure was exercised end-to-end at 242 close (twice), and the recipe was updated at 243 close to reflect the new gzipped-dump + relative-path zip shape. The vetting session decides whether to keep it as a release gate or fold it into the Backups documentation.
-- The **243-extended pre-release requirements register** (in the outline's "Pre-release requirements (non-rehearsal)" section): Fleet Manager node operations parity (install / backup / restore / log-reading), multi-node operational readiness (marketing / demo / test / spare). These are gate items, not timed rehearsals — vetting decides per item whether each becomes its own session, folds into an existing track, or bundles into a rehearsal that already exercises it.
-- The **243-added Workflow candidate**: integration retest — a coordinated tire-kicking session against every external integration near end of final dev cycle.
-- The **investment-seeking gate framing**: 244's deliverable structures `release-plan.md` to support a future subset selection (each entry carries a `gate:` line that holds `release` by default, flipped to `release, investment` when the subset is chosen in a follow-up conversation). 244 produces the menu; the subset selection happens in a separate conversation.
-- The 243-shipped `/llms.txt` route + global `noindex_global` toggle — new crawler-facing surfaces that any Compatibility / SEO rehearsal should now exercise.
-- Any pre-existing concerns from the user's working notes about real-world failure modes not yet captured in the outline.
+Likely 2 sessions (install + backup + restore in one; log-reading separately, different surface). Per the plan's Rule 11, may split further.
 
-The session **does not execute the rehearsals** — it produces the plan. Each selected rehearsal becomes its own subsequent session (or a paired session if scenarios bundle naturally). Out-of-scope rehearsals get marked as post-1.0 hardening per the outline's framing.
+---
 
-Deliverable: replace `sessions/release-plan-outline.md` with a finalized `sessions/release-plan.md` that lists the selected working set, success criteria per scenario, execution order, and a roadmap entry pointing forward to each rehearsal session. Update `session-outlines.md` to remove individual rehearsal stubs that the vetting picked up wholesale, and add new stubs for the rehearsals that won the vetting (the Beta-1 Scope section gets a "Rehearsal Sessions" subsection collecting those entries so the release-readiness work is grouped rather than scattered).
+### Multi-Node Operational Readiness *(stub — pre-Beta 1; A3 in `release-plan.md`)*
 
-Sequencing rationale: this session lands immediately after Housekeeping Batch 1 (session 243) so the small paper-cut work that pre-dates release-readiness is closed before the release-gate planning happens. Putting the vetting session *before* housekeeping would mean the housekeeping work either (a) lands inside rehearsals it shouldn't be coupled to, or (b) gets re-scoped against criteria that were not in place when the items were captured. Cleanest order is "clear the small list, then plan the big work."
+A3 in `sessions/release-plan.md`. Operational provisioning, mostly not code. Prerequisites: A2 substantially complete; E1 (Onboarding/Install Dashboard Widget).
+
+Four nodes running on production by Beta-1: marketing site, demo install, test/deploy instance, spare-for-first-customer. Each node's purpose + URL + access creds documented. FM monitors all four. Test/deploy instance is the target environment for subsequent rehearsals.
+
+---
+
+### 2FA for Admin Accounts *(stub — pre-Beta 1; A5 in `release-plan.md`)*
+
+A5 in `sessions/release-plan.md`. Foundational security feature; must close before C3 (Permission audit).
+
+Admin login requires a second factor (TOTP via authenticator app) in addition to password. Recovery codes available at enrollment. Existing admin users have a one-time enrollment flow on next login. The FM-agent API key path is unaffected (it's not a user credential, per the contract spec). Tested across the standard Filament admin entry points. Help-doc entry on enrollment.
+
+---
+
+### Rehearsal Sessions
+
+The pre-Beta-1 release gate is defined in `sessions/release-plan.md`. Each rehearsal becomes its own session; the plan doc carries success criteria, prerequisites, sequencing, and the artifact each rehearsal must produce. The 11 discipline rules at the top of `release-plan.md` govern how rehearsal sessions interact with the plan.
+
+The stubs below are pointers — `release-plan.md` is the source of truth.
+
+#### A4. DB wipe + backup recovery (Capsize drill — runbook polish)
+See `sessions/release-plan.md` § A4.
+
+#### B2. Onboarding rehearsal cluster *(Migration in/out + Custom fields + public collection + custom-field-with-lookup edge case)*
+See `sessions/release-plan.md` § B2.
+
+#### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded)*
+See `sessions/release-plan.md` § C3.
+
+#### C4. Donation-to-acknowledgment loop
+See `sessions/release-plan.md` § C4.
+
+#### C5. Event with everything
+See `sessions/release-plan.md` § C5.
+
+#### C6. Membership renewal cycle
+See `sessions/release-plan.md` § C6.
+
+#### C7. Email at volume
+See `sessions/release-plan.md` § C7.
+
+#### D1. Scale rehearsal
+See `sessions/release-plan.md` § D1.
+
+#### D2. Compatibility cluster *(Browser bingo + Accessibility + Flaky connection — folded)*
+See `sessions/release-plan.md` § D2.
+
+#### D3. Integration retest *(absolute last rehearsal)*
+See `sessions/release-plan.md` § D3.
 
 ---
 
 ## Infrastructure & Ops — Beta 1 Scope
+
+**Pre-release requirements (non-session)** — tracked in `sessions/release-plan.md` § Pre-release requirements register:
+
+- **Privacy policy live on marketing site** — drafts in process with counsel.
+- **Terms of Service live on marketing site** — drafts in process with counsel.
+- **Operator master runbook / SOPs** — DEFERRED DECISION: TBD whether this lives in this project or a separate non-technical project.
 
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
 
@@ -339,6 +356,40 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 ---
 
 ## Post-Beta 1
+
+### Financial Data Origin & Lifecycle Discipline — Phases B and C *(deferred to post-release at session 244)*
+
+Phase A complete (session 233): `source` column live across all four financial tables (`donations`, `memberships`, `event_registrations`, `transactions`); `HasSourcePolicy` applied; every write path source-aware. Remaining phases deferred to post-release per session 244 vetting:
+
+- **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume.
+- **Phase C — QuickBooks sync origin-awareness, email-trigger origin-awareness on admin-driven bulk send actions** (donation receipts, renewal nudges, dunning). Lands when those features arrive.
+
+### Event Description Widget Removal → PageContext *(deferred to post-1.0 at session 244 — refactor; no rehearsal forces it)*
+
+Replace the dedicated `event_description` widget with a more sensible architecture: pass event details forward through `PageContext` (or `RecordContext`) and have the event detail template use a standard `text_block` widget that references the contextual data via tokens. Justification: event_description's only job is to render a single record's title/description/date — that is exactly the problem `PageContext` and template tokens solve generally. The widget is also one of the test-audit-flagged W-cases from sessions 216–224 — removing it shrinks the widget catalog and tightens the system without losing functionality.
+
+Concrete steps:
+
+1. Extend `RecordContextTokens` (or the equivalent context surface) to expose event fields as tokens consumable by widget templates.
+2. Update the event detail template seed to use `text_block` with the new tokens instead of `event_description`.
+3. Add a migration that swaps any existing `event_description` widget instances on event detail pages for the equivalent `text_block` config (preserving authored content where it exists).
+4. Retire the widget definition and its retrofit test cases.
+
+Touches the `RecordContextTokens` per-record-type expansion carry-forward from the Widget Primitive track. Out of scope: doing the same exercise for other detail-template widgets (product detail, post detail).
+
+### Text Color Hierarchy Rules *(deferred to post-1.0 at session 244 — design discussion that doesn't surface during any rehearsal as currently scoped)*
+
+Resolve the layered text-color decision hierarchy across widget config, WYSIWYG Quill formatting, and theme defaults. Concretely: many widgets expose a "text color" control in the inspector, but the embedded Quill editor *also* exposes inline text-color formatting per character/run. When both are set, who wins? Today the answer is inconsistent. Plus a load-bearing edge case: if the user picks "white" as text color but the surrounding background is also white (default page background), the content becomes invisible — the rendering pipeline needs a safety net.
+
+Open questions:
+
+- **Should widget-level text color be removed from widget configs entirely**, deferring all color decisions to Quill? Pro: single source of truth. Con: forces per-character styling for the "all this widget's text is brand color" use case.
+- **What is the contrast safety net?** Authoring-time validation that warns on low contrast? Render-time fallback to theme default if contrast drops below threshold? A WCAG check that blocks save?
+- **What is the theme's role?** Theme provides the default text color; widget override layers on top; Quill inline overrides per-run. Codify this stack and document it.
+
+Design discussion first; implementation lands once rules are resolved. Out of scope: a full WCAG contrast checker UI (that is post-Beta-1 in the Site Theme Builder stub).
+
+---
 
 ### Sovereign Widget System — Remaining Stages
 
