@@ -143,6 +143,10 @@ class Collection extends Model
                       ->required($required)
                       ->helperText($helpText);
 
+            if ($type === 'date' && $this->handle === 'memos' && $key === 'posted_at') {
+                $component->default(today());
+            }
+
             $schema[] = $component;
         }
 

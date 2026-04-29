@@ -3,7 +3,9 @@
 use App\Models\Collection;
 use App\WidgetPrimitive\Source;
 use Database\Seeders\MemosCollectionSeeder;
+use Filament\Forms\Components\DatePicker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -35,4 +37,18 @@ it('is idempotent — running twice produces a single row', function () {
     (new MemosCollectionSeeder())->run();
 
     expect(Collection::where('handle', 'memos')->count())->toBe(1);
+});
+
+it('defaults the posted_at date field to today on the create form', function () {
+    (new MemosCollectionSeeder())->run();
+
+    $memos = Collection::where('handle', 'memos')->first();
+
+    $postedAtField = collect($memos->getFormSchema())
+        ->first(fn ($component) => $component instanceof DatePicker
+            && $component->getStatePath(isAbsolute: false) === 'data.posted_at');
+
+    expect($postedAtField)->not->toBeNull()
+        ->and($postedAtField->getDefaultState())->toBeInstanceOf(Carbon::class)
+        ->and($postedAtField->getDefaultState()->isToday())->toBeTrue();
 });
