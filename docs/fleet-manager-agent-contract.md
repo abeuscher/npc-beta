@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `1.1.0`
+**Contract Version:** `1.2.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -46,14 +46,14 @@ Authorization: Bearer <token>
   "status": "green|yellow|red",
   "version": "abc1234",
   "timestamp": "2026-04-28T15:42:00+00:00",
-  "contract_version": "1.1.0",
+  "contract_version": "1.2.0",
   "subchecks": {
-    "app":            { "status": "green",   "value": "responding",  "threshold": null,     "message": null },
-    "database":       { "status": "green",   "value": "reachable",   "threshold": null,     "message": null },
-    "redis":          { "status": "green",   "value": "reachable",   "threshold": null,     "message": null },
-    "disk":           { "status": "green",   "value": 42,            "threshold": [80, 95], "message": null },
-    "last_backup_at": { "status": "unknown", "value": null,          "threshold": null,     "message": "backup pipeline not yet implemented" },
-    "version":        { "status": "green",   "value": "abc1234",     "threshold": null,     "message": null }
+    "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
+    "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
+    "redis":          { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
+    "disk":           { "status": "green", "value": 42,                          "threshold": [80, 95], "message": null },
+    "last_backup_at": { "status": "green", "value": "2026-04-29T01:30:00+00:00", "threshold": [24, 36], "message": null },
+    "version":        { "status": "green", "value": "abc1234",                   "threshold": null,     "message": null }
   }
 }
 ```
@@ -74,7 +74,7 @@ Every subcheck — present and future — has the same four keys:
 
 | Field       | Type                | Description                                                                                                                                                |
 |-------------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `status`    | string              | One of `green`, `yellow`, `red`, or `unknown`. `unknown` means the subcheck cannot determine its state yet (e.g., the underlying mechanism is not in place). Subcheck-level only — `unknown` never propagates to the top-level `status` field. |
+| `status`    | string              | One of `green`, `yellow`, `red`, or `unknown`. `unknown` means the subcheck cannot determine its state yet (e.g., the underlying mechanism has not yet produced a successful result). Subcheck-level only — `unknown` never propagates to the top-level `status` field. |
 | `value`     | mixed (`null` ok)   | Subcheck-specific payload (string, integer percent, ISO timestamp, or `null`).                                                                             |
 | `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
@@ -87,7 +87,7 @@ Every subcheck — present and future — has the same four keys:
 | `database`       | `"reachable"` / `"unreachable"` | `null`           | `red` on `PDOException`. `message` carries the exception class name only.                                                                                                                          |
 | `redis`          | `"reachable"` / `"unreachable"` | `null`           | `red` on any `Redis::ping()` exception. `message` carries the exception class name only.                                                                                                           |
 | `disk`           | integer (percent used)       | `[80, 95]`          | `yellow` at ≥80 %, `red` at ≥95 %. Measured against `/`. Returns `red` with `value: null` if usage cannot be read.                                                                                  |
-| `last_backup_at` | `null` (v1) / ISO timestamp  | `null`              | `unknown` in v1.1.0 with `value: null` and a "not yet implemented" message — the CRM cannot determine backup freshness because no backup pipeline exists yet. Threshold-driven `green`/`yellow`/`red` against an ISO timestamp lands in Phase 2. Fleet Manager treats `unknown` as yellow-tier (don't alarm, but surface). |
+| `last_backup_at` | ISO 8601 timestamp (`null` when status is `unknown`) | `[24, 36]` | Threshold-driven against the most recent successful backup. `green` < 24h, `yellow` 24–36h, `red` > 36h. `unknown` when no successful backup exists yet (pipeline installed but no run completed, or the success-record file is missing/empty/unparseable). Fleet Manager treats `unknown` as yellow-tier (don't alarm, but surface). |
 | `version`        | string                       | `null`              | Always `green`. Mirrors top-level `version` field. A `dev` build is not a failure state.                                                                                                            |
 
 ### Overall status — worst-of rule
@@ -157,6 +157,12 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 ---
 
 ## CHANGELOG
+
+### `1.2.0` — 2026-04-28 (session 242)
+
+Adds the threshold-driven `last_backup_at` semantics. `value` is now an ISO 8601 timestamp when a successful backup exists; `threshold` is `[24, 36]` (hours) — `green` < 24h, `yellow` 24–36h, `red` > 36h. `unknown` is now reserved for "pipeline exists but no successful run yet" (was "no pipeline at all" in v1.1.0); FM-side semantics are unchanged because `unknown` continues to rank as yellow-tier in the worst-of derivation.
+
+Forward-compatible with v1.1.0 consumers: the subcheck shape (`status`, `value`, `threshold`, `message`) is unchanged; only the values within those keys change. Consumers reading the v1.1.0 `last_backup_at.value` as null can still treat null as "unknown — don't alarm" (the semantic still holds). Consumers reading numeric thresholds can now act on `last_backup_at.threshold` as a real `[low, high]` pair.
 
 ### `1.1.0` — 2026-04-28 (session 240)
 

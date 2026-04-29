@@ -1,9 +1,5 @@
 {
   "permissions": {
-    "deny": [
-      "Bash(git push:*)",
-      "Bash(git merge:*)"
-    ],
     "allow": [
       "Bash(docker exec:*)",
       "Bash(docker run:*)",
@@ -181,7 +177,17 @@
       "Read(//home/al/**)",
       "Bash(python3 -m json.tool)",
       "Bash(sudo chmod:*)",
-      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js\")"
+      "Bash(curl -s \"https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js\")",
+      "Bash(unzip -l /home/al/nonprofitcrm/storage/app/private/NonProfitCRM/2026-04-29-01-36-18.zip)",
+      "Bash(unzip -p /home/al/nonprofitcrm/storage/app/private/NonProfitCRM/2026-04-29-01-36-18.zip db-dumps/pgsql.sql)",
+      "Bash(rm -rf /home/al/nonprofitcrm/storage/app/public/*)",
+      "Bash(echo \"tables: $\\(docker compose exec -T postgres psql -U postgres -d nonprofitcrm -tAc \"SELECT count\\(*\\) FROM pg_tables WHERE schemaname='public';\"\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f\\\\\"status={d['status']} contract={d['contract_version']} last_backup_at={d['subchecks']['last_backup_at']['status']} value={d['subchecks']['last_backup_at']['value']}\\\\\"\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f\\\\\"status={d['status']} last_backup_at={d['subchecks']['last_backup_at']['status']} value={d['subchecks']['last_backup_at']['value']}\\\\\"\\)\")"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)"
     ],
     "additionalDirectories": [
       "e:\\Clients\\nonprofitcrm\\database\\migrations",

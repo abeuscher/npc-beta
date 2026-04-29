@@ -5,6 +5,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -14,6 +15,7 @@ const FLEET_TEST_KEY = 'test-fleet-agent-key-do-not-reuse-elsewhere';
 beforeEach(function () {
     config(['fleet.agent.api_key' => FLEET_TEST_KEY]);
     config(['fleet.agent.app_version' => 'testver1']);
+    Storage::fake('local');
 });
 
 function fleetAuthHeaders(?string $token = FLEET_TEST_KEY): array
@@ -77,10 +79,10 @@ it('returns the documented top-level keys on a successful poll', function () {
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
-it('reports contract_version 1.1.0', function () {
+it('reports contract_version 1.2.0', function () {
     $response = $this->getJson('/api/health', fleetAuthHeaders());
 
-    $response->assertJsonPath('contract_version', '1.1.0');
+    $response->assertJsonPath('contract_version', '1.2.0');
 });
 
 it('returns the six documented subcheck keys', function () {
@@ -102,7 +104,7 @@ it('shapes each subcheck with status, value, threshold, message keys', function 
 
 // ── Subcheck happy paths ─────────────────────────────────────────────────────
 
-it('returns yellow overall in a healthy test environment because last_backup_at is unknown', function () {
+it('returns yellow overall in a healthy test environment because last_backup_at is unknown (no successful backup yet)', function () {
     $response = $this->getJson('/api/health', fleetAuthHeaders());
 
     $subchecks = $response->json('subchecks');
@@ -111,6 +113,7 @@ it('returns yellow overall in a healthy test environment because last_backup_at 
         ->and($subchecks['database']['status'])->toBe('green')
         ->and($subchecks['redis']['status'])->toBe('green')
         ->and($subchecks['last_backup_at']['status'])->toBe('unknown')
+        ->and($subchecks['last_backup_at']['threshold'])->toBe([24, 36])
         ->and($subchecks['version']['status'])->toBe('green');
 
     expect($response->json('status'))->toBe(
@@ -125,15 +128,68 @@ it('mirrors config(fleet.agent.app_version) in both the top-level and subcheck v
         ->assertJsonPath('subchecks.version.value', 'testver1');
 });
 
-// ── last_backup_at unknown semantics (v1.1.0) ────────────────────────────────
+// ── last_backup_at threshold-driven semantics (v1.2.0) ──────────────────────
 
-it('emits last_backup_at as unknown with null value and the not-yet-implemented message', function () {
+it('emits last_backup_at as unknown with null value and "no successful backup yet" when the file is missing', function () {
     $response = $this->getJson('/api/health', fleetAuthHeaders());
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
         ->assertJsonPath('subchecks.last_backup_at.value', null)
-        ->assertJsonPath('subchecks.last_backup_at.threshold', null)
-        ->assertJsonPath('subchecks.last_backup_at.message', 'backup pipeline not yet implemented');
+        ->assertJsonPath('subchecks.last_backup_at.threshold', [24, 36])
+        ->assertJsonPath('subchecks.last_backup_at.message', 'no successful backup yet');
+});
+
+it('emits last_backup_at as green when the success-record timestamp is recent', function () {
+    $iso = now()->subHours(2)->toIso8601String();
+    Storage::disk('local')->put('fleet/last-backup-at', $iso);
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'green')
+        ->assertJsonPath('subchecks.last_backup_at.threshold', [24, 36])
+        ->assertJsonPath('subchecks.last_backup_at.message', null);
+
+    expect($response->json('subchecks.last_backup_at.value'))->toBeString()
+        ->and(\Illuminate\Support\Carbon::parse($response->json('subchecks.last_backup_at.value'))->diffInMinutes(now()))->toBeLessThan(180);
+});
+
+it('emits last_backup_at as yellow when the success-record timestamp is between 24 and 36 hours old', function () {
+    Storage::disk('local')->put('fleet/last-backup-at', now()->subHours(30)->toIso8601String());
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'yellow')
+        ->assertJsonPath('subchecks.last_backup_at.threshold', [24, 36])
+        ->assertJsonPath('subchecks.last_backup_at.message', null);
+});
+
+it('emits last_backup_at as red when the success-record timestamp is older than 36 hours', function () {
+    Storage::disk('local')->put('fleet/last-backup-at', now()->subHours(48)->toIso8601String());
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'red')
+        ->assertJsonPath('status', 'red');
+});
+
+it('emits last_backup_at as unknown when the success-record file is empty', function () {
+    Storage::disk('local')->put('fleet/last-backup-at', '');
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
+        ->assertJsonPath('subchecks.last_backup_at.value', null)
+        ->assertJsonPath('subchecks.last_backup_at.message', 'last-backup-at file is empty');
+});
+
+it('emits last_backup_at as unknown when the success-record file is unparseable', function () {
+    Storage::disk('local')->put('fleet/last-backup-at', 'not a timestamp');
+
+    $response = $this->getJson('/api/health', fleetAuthHeaders());
+
+    $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
+        ->assertJsonPath('subchecks.last_backup_at.value', null)
+        ->assertJsonPath('subchecks.last_backup_at.message', 'last-backup-at file unparseable');
 });
 
 it('returns overall yellow when subchecks are only green and unknown', function () {

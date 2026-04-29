@@ -243,6 +243,55 @@ The existing bundles in `public/build/widgets/` persist on disk. If the build se
 
 ---
 
+## Backups
+
+CRM data is backed up nightly to a per-install DigitalOcean Spaces bucket. The pipeline is `spatie/laravel-backup` invoked by the Laravel scheduler.
+
+### What gets backed up
+
+- The `nonprofitcrm` Postgres database (via `pg_dump`).
+- The Spatie media library tree under `storage/app/public`.
+
+### Per-install bucket setup procedure
+
+Each install gets its own DigitalOcean Spaces bucket and its own scoped access key. Setup steps for a new install:
+
+1. **Create a Space** (DO console → Spaces → Create) with a name like `nonprofitcrm-{install-handle}-backups`. Region should match the droplet's region for lowest latency.
+2. **Generate a bucket-scoped Spaces access key** (DO console → API → Spaces Keys → Generate New Key, with the bucket scoped to the new bucket and permission `Read/Write/Delete`).
+3. **Set production env vars** in the install's `/opt/nonprofitcrm/.env`:
+   - `SPACES_KEY=<scoped key>`
+   - `SPACES_SECRET=<scoped secret>`
+   - `SPACES_BUCKET=<bucket name from step 1>`
+   - `SPACES_REGION=<region slug, e.g. nyc3>`
+   - `SPACES_ENDPOINT=https://<region>.digitaloceanspaces.com`
+   - `BACKUP_DISKS=spaces`
+4. **Restart the worker container** so the scheduler picks up the new env. The first scheduled `backup:run` (next 01:30 UTC) writes the first blob to the bucket and updates `storage/app/private/fleet/last-backup-at`.
+5. **Verify** by hitting `/api/health` with the bearer token after the first backup runs — `last_backup_at.status` should be `green` with a recent ISO timestamp.
+
+### Local dev posture
+
+Local dev defaults to `BACKUP_DISKS=local`, which writes backups to `storage/app/private/Laravel/`. No Spaces credentials are required to run `php artisan backup:run` locally for testing. Each manual run also writes `storage/app/private/fleet/last-backup-at`, so local `/api/health` responses reflect a green `last_backup_at` once a manual run has happened.
+
+### Scheduler runner — known gap
+
+The `worker` service (both `docker-compose.yml` and `docker-compose.prod.yml`) runs `php artisan queue:work` only — no `schedule:work` and no cron-driven `schedule:run`. The 242 wiring registers `backup:clean` and `backup:run` in `bootstrap/app.php`'s `withSchedule()` block (visible via `php artisan schedule:list`), but they do not fire automatically until a scheduler runner is added (a separate worker variant, sidecar, or host-level cron). Manual `php artisan backup:run` works today; production deployment requires the runner to be in place before the daily cadence takes effect. Listed as a carry-forward in `sessions/tracks/fleet-manager-agent.md`.
+
+### Restoration (manual)
+
+`spatie/laravel-backup` does not ship restore tooling — restoration is a manual operator operation. The procedure was verified end-to-end against a local backup during session 242 manual testing (twice — once against the seeded baseline, once against a 99 MB backup with 48 admin-created contacts + 95 user-uploaded media; both round-tripped cleanly).
+
+1. **Locate the backup blob.** On Spaces, download the most-recent zip from the install's bucket. Locally, zips live at `storage/app/private/{APP_NAME}/<timestamp>.zip`. Each zip contains `db-dumps/postgresql-{db_name}.sql` (plain SQL — the project leaves `database_dump_compressor` at `null`) plus the included media tree under `var/www/html/storage/app/public/...`.
+2. **Wipe the target before restoring.** `docker compose exec app php artisan db:wipe --force` drops all tables, types, and views — cleaner than `migrate:fresh` since the dump's `CREATE TABLE` statements would otherwise conflict with the freshly-migrated empty tables. Also wipe the media tree for a clean restore: `rm -rf storage/app/public/*`.
+3. **Extract the archive.** `unzip <backup>.zip -d /tmp/restore` (or any work directory).
+4. **Restore the database.** `PGPASSWORD=<DB_PASSWORD> psql -h <host> -U <user> -d <db_name> -f /tmp/restore/db-dumps/postgresql-<db_name>.sql`. The container's postgres requires a real password (configured in `docker-compose.yml` from `DB_PASSWORD`); set `PGPASSWORD` inline so the command does not stall on a silent password prompt. The dump is plain SQL — `psql -f` is correct; `pg_restore` is for `pg_dump --format=custom` output, which we do not produce.
+5. **Restore media.** `cp -r /tmp/restore/var/www/html/storage/app/public/* /var/www/html/storage/app/public/`. The zip stores media at the absolute container path because `relative_path` is `null` in the spatie config; the `cp -r` glob handles the prefix.
+
+The success-record file at `storage/app/private/fleet/last-backup-at` is **not** included in the backup zip — `source.files.include` is `storage/app/public` only. That is intentional: the success-record is per-install metadata about *this* install's backup history, not data to replicate onto another install. After a cross-install restore, the recipient's `last_backup_at` continues to reflect *their* most-recent local `backup:run`, which is the right answer.
+
+Backup restoration is intentionally manual at v1 — high-stakes operations benefit from the operator pausing to verify each step rather than a click-button shortcut.
+
+---
+
 ## Dev tooling — widget thumbnails
 
 | Item | Path / command |

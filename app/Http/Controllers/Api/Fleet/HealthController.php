@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Api\Fleet;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class HealthController extends Controller
 {
-    public const CONTRACT_VERSION = '1.1.0';
+    public const CONTRACT_VERSION = '1.2.0';
 
     private const DISK_YELLOW_THRESHOLD = 80;
     private const DISK_RED_THRESHOLD = 95;
@@ -119,11 +121,54 @@ class HealthController extends Controller
 
     private function checkLastBackupAt(): array
     {
+        $threshold = [24, 36];
+
+        $disk = Storage::disk('local');
+
+        if (! $disk->exists('fleet/last-backup-at')) {
+            return [
+                'status'    => 'unknown',
+                'value'     => null,
+                'threshold' => $threshold,
+                'message'   => 'no successful backup yet',
+            ];
+        }
+
+        $iso = trim((string) $disk->get('fleet/last-backup-at'));
+
+        if ($iso === '') {
+            return [
+                'status'    => 'unknown',
+                'value'     => null,
+                'threshold' => $threshold,
+                'message'   => 'last-backup-at file is empty',
+            ];
+        }
+
+        try {
+            $timestamp = Carbon::parse($iso);
+        } catch (Throwable $e) {
+            return [
+                'status'    => 'unknown',
+                'value'     => null,
+                'threshold' => $threshold,
+                'message'   => 'last-backup-at file unparseable',
+            ];
+        }
+
+        $hours = $timestamp->diffInHours(now(), absolute: true);
+
+        $status = match (true) {
+            $hours > $threshold[1]  => 'red',
+            $hours >= $threshold[0] => 'yellow',
+            default                 => 'green',
+        };
+
         return [
-            'status'    => 'unknown',
-            'value'     => null,
-            'threshold' => null,
-            'message'   => 'backup pipeline not yet implemented',
+            'status'    => $status,
+            'value'     => $timestamp->toIso8601String(),
+            'threshold' => $threshold,
+            'message'   => null,
         ];
     }
 

@@ -15,7 +15,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 ## Active tracks
 
 - **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
-- **Fleet Manager Agent** — *Phase 1 complete (session 238); Phase 2 (Backup Pipeline) queued, not yet scheduled.* See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.0.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md).
+- **Fleet Manager Agent** — *substantially complete* (Phase 2 closed at session 242). See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.2.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Carry-forwards remain (none scheduled): custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener, backup-restore tooling.
 
 ---
 
@@ -23,12 +23,12 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 
-- **Agent contract version:** `1.1.0`
+- **Agent contract version:** `1.2.0`
 - **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
 - **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
-- **Last boundary-touching session in this repo:** session 240 (bumped 1.0.0 → 1.1.0; added `unknown` subcheck-level status; flipped `last_backup_at` from green-with-null to `unknown`)
-- **Last boundary-touching session in Fleet Manager repo:** FM session 002 (refreshed local cache to v1.0.0; data-model authored against it)
-- **Pending boundary changes:** none — v1.1.0 is the current shippable state. The FM-side request for `unknown`-on-null is now satisfied. Future bumps land when subcheck names or shapes evolve (e.g., when the Backup Pipeline lands and `last_backup_at` flips from `unknown` to threshold-driven values).
+- **Last boundary-touching session in this repo:** session 242 (Phase 2 Backup Pipeline; flipped `last_backup_at` from hardcoded `unknown` to threshold-driven against pg_dump + media → DO Spaces success-record file; bumped 1.1.0 → 1.2.0)
+- **Last boundary-touching session in Fleet Manager repo:** FM session 005 (refreshed local cache to v1.1.0; `ContractValidator` widened to accept `unknown`; `StatusInterpreter` rewritten to honour CRM-reported `unknown` directly)
+- **Pending boundary changes:** none — v1.2.0 is the current shippable state. The FM-side cache is at v1.1.0; it refreshes on FM's next boundary-touching session and `StatusInterpreter` aligns to the new threshold-driven shape at the same time.
 
 ---
 
@@ -40,15 +40,9 @@ Two parallel agentic workstreams run across two repos (this CRM repo and a separ
 
 Track substantially closed at session 237. Carry-forwards (none scheduled): Forms widget retrofit, `PageContext` full retirement, `RecordContextTokens::TOKENS` per-record-type expansion, `PageContextTokens` namespace migration. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
 
-### Fleet Manager Agent — Remaining Phases *(track active; Phase 2 queued, not yet scheduled)*
+### Fleet Manager Agent — Remaining Phases *(track substantially complete; carry-forwards unscheduled)*
 
-Phase 1 (CRM-Side MVP + v1.0.0 Contract) closed at session 238. Forward plan, design decisions, phase retrospective, and status all live in `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Phase 2 (Backup Pipeline) summarized below for slot awareness.
-
----
-
-### Fleet Manager Agent — Phase 2 (Backup Pipeline) *(stub — pre-Beta 1, post Phase 1)*
-
-Greenfield backup mechanism inside the CRM. None exists today (verified during the Phase 1 stub drafting). 2–3 sessions: pg_dump + media → DigitalOcean Spaces (or chosen object storage), scheduler-driven cadence, success-timestamp written to a location the Phase 1 health endpoint reports as `last_backup_at`. Retention on the client side. Failure handling. Designed in coordination with Fleet Manager so the success-record shape and storage target are aligned. Not blocking on Phase 1 of Fleet Manager itself — Fleet Manager v1 can ship with `last_backup_at = null` interpreted as "unknown" until this lands. Slot timing: when the user has a second client install in flight (the practical forcing function for needing backup observability beyond their own deploy).
+Track substantially closed at session 242. Carry-forwards (none scheduled): custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener, backup-restore tooling, per-install retention configuration beyond the 14-day default. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`.
 
 ---
 
@@ -117,12 +111,27 @@ Custom fields currently support `text`, `number`, `date`, `boolean`, and `select
 
 ---
 
-### Housekeeping *(stub — pre-Beta 1)*
+### Housekeeping — Batch 1 *(stub — pre-Beta 1, queued as session 243)*
 
-Collector for small, scope-bounded UI and polish items that surface during other sessions' manual-test passes but don't justify a dedicated session each. Each item should fit in well under a session's worth of work; the session exists to batch them. Keep items crisp — if one grows to design-level discussion, lift it out into its own stub.
+Collector for small, scope-bounded UI and polish items that surface during other sessions' manual-test passes but don't justify a dedicated session each. Each item should fit in well under a session's worth of work; the session exists to batch them. Batch 1 is the working set for session 243 — six items selected for size compatibility (each genuinely small) and high demo / onboarding visibility. Keep items crisp — if one grows to design-level discussion in flight, lift it out into its own stub rather than letting it eat the batch.
 
-- **Text widget vertical alignment.** The `text_block` widget currently renders with text aligned to the vertical middle of its container, which doesn't fit all column-layout use cases. Add a vertical alignment control (top / middle / bottom) to the widget's inspector. Design call to resolve during the session: whether this lives on the widget itself (`align-self` on the wrapper) or as a generalized "widget vertical alignment" control that all widgets inherit — the latter is probably the right shape but the former is the narrower change.
-- **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager.
+- **Memo date field auto-defaults to today on create.** Memo content type's date field currently requires manual entry; default it to `today()` on the create form so the common case is one less field to fill in. Existing rows untouched.
+- **Backup pipeline tweaks from session 242 testing.** Two small `config/backup.php` adjustments surfaced during the 242 manual restore drill: (a) flip `database_dump_compressor` from `null` to `Spatie\DbDumper\Compressors\GzipCompressor::class` for ~10× dump compression at trivial CPU cost; (b) set `relative_path = base_path()` so backup zips store media at `storage/app/public/...` instead of `var/www/html/storage/app/public/...`, flattening the manual restore `cp -r`. Both are config-only, no behavior change beyond the zip shape. Update `docs/app-reference.md` Backups → Restoration step 5 to match if (b) lands.
+- **SEO/AEO additions to CMS settings.** Three small items bundled: (a) global "noindex/nofollow" toggle on `CmsSettingsPage` that injects `<meta name="robots" content="noindex,nofollow">` site-wide when on (useful for staging/pre-launch sites that shouldn't index — distinct from per-page noindex delivered in session 096); (b) audit `SitemapController` to confirm it generates correctly for the current page + post catalog (no known bug, but no recent verification); (c) ship an AEO-focused file at the project root (`/llms.txt` or whichever standard wins by session time) that gives LLM crawlers a readable site overview. Each piece is small; bundled because they all live in the same CMS-settings + SEO surface.
+- **Horizontal text alignment on text-editor-bearing widgets.** Currently inconsistent — works correctly in `hero` but not in other widgets that expose a Quill text field (`text_block`, `cta_block`, others — confirm full set at session time). Single root cause likely; track it down and apply uniformly. Distinct from the text-widget vertical alignment item in Batch 2.
+- **List rendering + indent fixes in admin Quill editor.** Two paired bugs (admin only — public site renders correctly): (a) bullet lists show both bullet *and* number markers simultaneously; (b) list indent is broken — bullet/number markers sit outside the padded text area instead of inside. Likely a CSS reset interaction with Filament's editor styles; track down the offending rule and scope it.
+- **Mobile type scaling.** Page text does not shrink correctly on narrow viewports — typography stays at desktop sizes even when layouts collapse. Add responsive type-scale rules to the theme SCSS so headings and body type scale down at standard mobile breakpoints. Watch for scope creep into the Theme Colors Refactor stub or the post-Beta-1 Site Theme Builder; if the fix needs more than CSS rules and a couple of `clamp()` calls, lift it into its own stub.
+
+---
+
+### Housekeeping — Batch 2 *(stub — pre-Beta 1, deferred)*
+
+Items that didn't make Batch 1's working set — either scope-flagged (might exceed housekeeping size at scoping time), design-prerequisite (needs a sibling discussion or stub to land first), or lower demo / onboarding priority for the next iteration. Each can be lifted into a Batch 2 session whenever the timing fits, or promoted into a Batch 1 successor if it becomes more pressing. Same crispness rule — if any item turns out to need design-level conversation, lift it into its own stub rather than letting the batch absorb the cost.
+
+- **Text widget vertical alignment.** The `text_block` widget currently renders with text aligned to the vertical middle of its container, which doesn't fit all column-layout use cases. Add a vertical alignment control (top / middle / bottom) to the widget's inspector. Design call to resolve during the session: whether this lives on the widget itself (`align-self` on the wrapper) or as a generalized "widget vertical alignment" control that all widgets inherit — the latter is probably the right shape but the former is the narrower change. Deferred from Batch 1 because the design call is real and may push it past housekeeping size.
+- **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager. Deferred from Batch 1 because audit-shaped work tends to surface findings that themselves want fixing in scope.
+- **Dev-environment orphan media cleanup.** Custom `php artisan app:reset` (refuses to run when `APP_ENV=production`) that wraps `migrate:fresh --seed` with `rm -rf storage/app/public/* storage/media-library/temp/*` so the on-disk media tree stays synchronized with the DB. Root cause surfaced at session 242 close: `migrate:fresh` truncates tables via raw SQL, which bypasses Eloquent's `deleting` events — Spatie Media Library's "delete file when model deleted" observer never fires, so every dev-cycle reseed leaves the previous run's media files behind. Image conversions multiply the leak by ~6× per original (responsive WebP breakpoints). Months of `migrate:fresh` cycles compounded into ~4.7 GB of orphan files in `storage/app/public/` at the time of discovery (only ~10 MB of which was referenced by current `media` rows); manual `rm -rf + migrate:fresh` cleared it during the session 242 manual-test pass. Pair the artisan command with scheduling Spatie's built-in `media-library:clean` (the 242 close added the `withSchedule` block — natural slot) to handle the slow-drip orphan-conversion path that normal admin usage produces. Deferred from Batch 1 because building a real artisan command (with the production-refusal gate, confirmation prompt, and pairing with scheduled `media-library:clean`) is closer to a small-feature session than housekeeping. Out of scope, by design: a `Storage::fake('public')` audit of tests that may be writing real media to disk — that lands more naturally as a Test Audit slice item.
+- **Heroicon picker in Quill editor.** Add a Quill custom format that lets users insert a heroicon inline in rich text (confirm icon set at session time — heroicons is the assumed set; verify against what the project actually ships). Small custom-format addition; not a feature blowup. Borderline housekeeping — if scope grows past "register one Quill format with a picker UI," lift to a sibling stub. Deferred from Batch 1 because feature additions tend to attract scope creep; revisit once the editor-bug fixes (list rendering + horizontal alignment) confirm the editor surface is well-understood.
 
 ---
 
@@ -176,6 +185,116 @@ Implementation notes captured while fresh:
 - **Public-side parity.** The public site emits `<div class="page-layout" style="...">` inline. The inline style approach doesn't play nicely with container queries. Two options: (a) emit a `data-collapse-mobile` attribute and let a static `@container` rule in `_layout.scss` key off it; (b) switch to a stylesheet rule keyed off the class and a data attribute. Option (a) is cleaner — implementation detail for the session.
 
 Out of scope: per-layout-configurable breakpoints, per-column (as opposed to per-layout) collapse control, reordering columns on collapse (columns stack in authoring order — whatever the user arranged is what they get on mobile).
+
+Related but distinct, surfaced post-241: many widgets contain their *own* internal grid systems (`board_members`, `logo_garden`, `product_carousel` grid mode, etc.) that need mobile-collapse behavior independent of the page-layout-level collapse this stub covers. If the per-widget grid-collapse work is small enough to fold into this session, do so; otherwise lift it to a sibling stub at scoping time. The implementation pattern is likely identical (container queries against the widget wrapper), so a unified session is the natural shape.
+
+---
+
+### Full-Width Architecture Enforcement *(stub — pre-Beta 1, architectural)*
+
+The universal Appearance layer's `full_width` setting (delivered in sessions 161–166) is honored by most widgets but not all — there are still rendering paths where a widget escapes the layout's `full_width` instruction or fails to honor it cleanly. The ask: bind widgets to the page-layout's full-width contract at the architecture level, so individual widget templates cannot accidentally bypass it. Implementation candidates: (a) wrap every widget in a layout-aware wrapper that asserts the full-width style at render, (b) add a contract-level guard in `AppearanceStyleComposer` that enforces full-width regardless of per-widget background/padding when the layout asserts `full_width: true`, (c) audit the widget templates for direct CSS that escapes the wrapper. The user notes "mostly works perfectly" — the goal is to make compliance structural rather than per-widget discipline. Out of scope: adding *new* full-bleed primitives; that lives in the post-Beta-1 "Hero Full-Bleed Promotion" stub.
+
+---
+
+### Widget Help Authoring & Help-System Integration *(stub — pre-Beta 1, design discussion)*
+
+Widgets vary in self-evidence — most are obvious from their name and inspector (`text_block`, `image`, `hero`), but some (`bar_chart`, `event_calendar`, `donation_form`, `web_form`, `event_registration`) have configuration surfaces complex enough to warrant explanatory help. Today the help system (`help_articles` + admin help-doc routes) lives separately from the widget definition pipeline. The session needs to resolve **how widgets carry their help info and how it surfaces**:
+
+- **Where does help live?** Per-widget help could live as a markdown file colocated with the widget definition (`app/Widgets/{Name}/help.md`), as a `help` key in the widget definition class, or as a row in `help_articles` keyed off widget handle. Each has tradeoffs (versioning, authorability, search integration).
+- **How does it surface?** A "?" affordance in the inspector that opens the widget's help inline, a link out to the help system, a tooltip-on-hover for individual config fields, or some combination.
+- **What's the rollup story?** Some widgets need only a one-paragraph "this widget does X" entry; others need multi-section configuration walkthroughs. Open question: do we author one help entry per widget, or do we have a "widget catalog" page in the help system that everyone shares with per-widget anchors?
+
+Bring concrete examples to scope: bar_chart's many `chart_config` knobs, event_calendar's filter rules, donation_form's amount-tier configuration. The session is design + landing the first 3–5 widgets' help entries to validate the chosen pattern. Out of scope: building a content-pipeline or auto-discovery tool; one-off authoring is fine for the first batch.
+
+---
+
+### Event Description Widget Removal → PageContext *(stub — pre-Beta 1, refactor)*
+
+Replace the dedicated `event_description` widget with a more sensible architecture: pass event details forward through `PageContext` (or `RecordContext`) and have the event detail template use a standard `text_block` widget that references the contextual data via tokens. Justification: event_description's only job is to render a single record's title/description/date — that is exactly the problem `PageContext` and template tokens solve generally. The widget is also one of the test-audit-flagged W-cases from sessions 216–224 — removing it shrinks the widget catalog and tightens the system without losing functionality.
+
+Concrete steps:
+
+1. Extend `RecordContextTokens` (or the equivalent context surface) to expose event fields as tokens consumable by widget templates.
+2. Update the event detail template seed to use `text_block` with the new tokens instead of `event_description`.
+3. Add a migration that swaps any existing `event_description` widget instances on event detail pages for the equivalent `text_block` config (preserving authored content where it exists).
+4. Retire the widget definition and its retrofit test cases (the test slice already flagged the W cases as N≥2 redundant; deletion was deferred — this session takes the deletion).
+
+Touches the `RecordContextTokens` per-record-type expansion carry-forward from the Widget Primitive track — the session may forcing-function that work into completion for the event domain specifically. Out of scope: doing the same exercise for other detail-template widgets (product detail, post detail). If the pattern works for events, those follow as separate small sessions.
+
+---
+
+### Text Color Hierarchy Rules *(stub — pre-Beta 1, design discussion)*
+
+Resolve the layered text-color decision hierarchy across widget config, WYSIWYG Quill formatting, and theme defaults. Concretely: many widgets expose a "text color" control in the inspector, but the embedded Quill editor *also* exposes inline text-color formatting per character/run. When both are set, who wins? Today the answer is inconsistent. Plus a load-bearing edge case: if the user picks "white" as text color but the surrounding background is also white (default page background), the content becomes invisible — the rendering pipeline needs a safety net.
+
+Open questions:
+
+- **Should widget-level text color be removed from widget configs entirely**, deferring all color decisions to Quill? Pro: single source of truth. Con: forces per-character styling for the "all this widget's text is brand color" use case.
+- **What is the contrast safety net?** Authoring-time validation that warns on low contrast? Render-time fallback to theme default if contrast drops below threshold? A WCAG check that blocks save? The white-on-white edge case must not produce invisible content in the rendered page.
+- **What is the theme's role?** Theme provides the default text color; widget override layers on top; Quill inline overrides per-run. Codify this stack and document it.
+
+Design discussion first; implementation lands once rules are resolved. Out of scope: a full WCAG contrast checker UI (that is post-Beta-1 in the Site Theme Builder stub).
+
+---
+
+### Stripe Checkout Branding *(stub — pre-Beta 1, standalone session)*
+
+The product checkout, donation checkout, event checkout, and membership checkout flows all redirect to Stripe-hosted checkout pages today. These pages carry minimal CRM-side branding — Stripe controls the surface, with limited customization available via the Stripe Dashboard (logo, primary color, business name) and via API parameters at checkout-session creation time. The ask: figure out how much additional branding we can inject given Stripe's API constraints, then implement it consistently across all four checkout flows.
+
+Touch points: `ProductCheckoutController`, `DonationCheckoutController`, `EventCheckoutController`, `MembershipCheckoutController`, plus the Stripe-account-level settings the operator configures. Possible levers: `custom_text` on session creation (header / submit / shipping-address / terms), `payment_method_options.card.statement_descriptor`, `customer_update` for stronger customer-facing identity, line-item description/image overrides. Standalone session because it requires Stripe-API exploration to know what is actually possible before committing scope. Out of scope: building a Stripe-account-onboarding wizard (post-Beta-1 in the Integration Setup Wizards stub).
+
+---
+
+### Importer Mapping Page UX *(stub — pre-Beta 1, UX session)*
+
+The CSV importer's column-mapping page is the most stressful UI surface in the admin today — wide dropdowns, vertical sprawl across many rows, no visual cue for which mappings are completed vs. still needed. Concrete improvements:
+
+- **Completed-row visual indicator** (checkmark, color stripe, opacity reduction) so the user can scan for unmapped rows at a glance.
+- **Reduce vertical space per row.** Today each mapping row takes ~2 lines of vertical real estate; trim padding and label sizing.
+- **Friendlier dropdowns.** Currently too wide; trim to fit typical destination-field-name length plus padding. Possibly switch to a search-as-you-type combobox if the dropdown count justifies it.
+- **Optional grouping.** Group destination fields by entity (Contact, Address, CustomFields, …) so the dropdown is not a flat ~40-item list.
+
+Touches `Filament/Pages/ImportContactsPage.php` and the other importer mapping pages (events, donations, memberships, invoice details, notes). Five mapping pages share enough structure that improvements should land as a shared pattern, not a per-page reskin. Out of scope: rebuilding the importer pipeline; the session is UI-only on the existing mapping shape.
+
+---
+
+### Random Data Generator as Dashboard Widget *(stub — pre-Beta 1, feature)*
+
+The current debug data generator (gated behind the `APP_DEBUG_TOOLS=true` env var) is incomplete and lives on the dashboard via flag-conditional rendering. Rebuild it as a first-class dashboard widget that:
+
+- Generates contacts, donations, events, registrations, memberships in configurable counts.
+- Respects custom-field types when seeding contact records.
+- Distinguishes "generated for testing" records via a tagged `source` value (e.g. `source = 'generated'`) so the orphan-cleanup story stays clean and operators can scope teardown queries.
+- Lives behind a permission gate (only super admins can invoke; not a regular-staff feature).
+- Has a per-action confirmation step so an accidental click does not dump 1000 fake records into a real install.
+
+Forcing function: surfaced during 242 backup-restore testing — the user generated random records to give the second restore test meaningful data, and the existing generator's seams showed. Out of scope: a separate "delete all generated records" sweep tool; that is its own stub if it surfaces a need.
+
+---
+
+### Pre-Beta Release Plan — Rehearsal Vetting & Success Criteria *(stub — pre-Beta 1; queued as session 244, immediately following Housekeeping Batch 1)*
+
+Take `sessions/release-plan-outline.md` (the user's working notes) and use it as the seed for a session that produces the actual pre-Beta-1 release gate. The outline currently lists candidate rehearsals across five categories — Onboarding, Capsize drills, Scale, Workflow, Compatibility — without commitments; every candidate is "maybe." The session converts that into a concrete plan:
+
+- **Vet each candidate** against the four criteria already in the outline doc: confidence delivered, failure prevented, time cost, artifact produced.
+- **Pick the working set** — bias toward scenarios that produce reusable artifacts (runbooks, sizing docs, onboarding playbooks) since those double as sales credibility against incumbents.
+- **Define a written success criterion for each** — "it worked" is not a gate; specific measurable outcomes are.
+- **Sequence them** — order of execution matters when scenarios share fixtures or build on each other.
+- **Surface additional scenarios** that the outline doesn't yet capture but the session conversation reveals.
+
+Concrete inputs to bring to the vetting:
+
+- The full `sessions/session-outlines.md` roadmap — what other Beta-1 stubs are still open and how they intersect with rehearsal scenarios (e.g., several existing stubs are already arguably rehearsal candidates: Notes Permissions audit ↔ workflow `Permission audit`; Org Model Overhaul ↔ onboarding `Custom fields + public collection ingestion`; Event Ticket Tiers ↔ workflow `Event with everything`).
+- Real or simulated client data shapes — at least one messy-CSV example (Neon or Wild Apricot exports) for the Onboarding category.
+- The **custom-field-with-lookup edge case** (custom field that pulls allowed values from a separate Collection or another model's column) — surfaced as a release-readiness concern; needs vetting as either a workflow rehearsal or an onboarding constraint.
+- The 242-confirmed **DB wipe + backup recovery** capsize drill — the manual procedure was exercised end-to-end at 242 close (twice), so this scenario already has a working recipe and a measured time. The vetting session decides whether to keep it as a release gate or fold it into the Backups documentation.
+- Any pre-existing concerns from the user's working notes about real-world failure modes not yet captured in the outline.
+
+The session **does not execute the rehearsals** — it produces the plan. Each selected rehearsal becomes its own subsequent session (or a paired session if scenarios bundle naturally). Out-of-scope rehearsals get marked as post-1.0 hardening per the outline's framing.
+
+Deliverable: replace `sessions/release-plan-outline.md` with a finalized `sessions/release-plan.md` that lists the selected working set, success criteria per scenario, execution order, and a roadmap entry pointing forward to each rehearsal session. Update `session-outlines.md` to remove individual rehearsal stubs that the vetting picked up wholesale, and add new stubs for the rehearsals that won the vetting (the Beta-1 Scope section gets a "Rehearsal Sessions" subsection collecting those entries so the release-readiness work is grouped rather than scattered).
+
+Sequencing rationale: this session lands immediately after Housekeeping Batch 1 (session 243) so the small paper-cut work that pre-dates release-readiness is closed before the release-gate planning happens. Putting the vetting session *before* housekeeping would mean the housekeeping work either (a) lands inside rehearsals it shouldn't be coupled to, or (b) gets re-scoped against criteria that were not in place when the items were captured. Cleanest order is "clear the small list, then plan the big work."
 
 ---
 

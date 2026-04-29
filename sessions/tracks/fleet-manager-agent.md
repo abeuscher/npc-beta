@@ -16,31 +16,43 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 
 ## Status snapshot
 
-**Last update:** 2026-04-28 (v1.1.0 contract bump landed at session 240; Phase 1 closed at session 238).
+**Last update:** 2026-04-28 (Phase 2 Backup Pipeline landed at session 242; track substantially complete).
 
-**Complete:** Phase 1 — CRM-Side MVP + v1.0.0 Contract (session 238). Sub-phase: v1.1.0 contract bump introducing `unknown` subcheck-level status (session 240).
+**Complete:** Phase 1 — CRM-Side MVP + v1.0.0 Contract (session 238). Sub-phase: v1.1.0 contract bump introducing `unknown` subcheck-level status (session 240). Phase 2 — Backup Pipeline + v1.2.0 contract bump (session 242).
 
-**Active:** none. Phase 2 (Backup Pipeline) is queued but not scheduled — it lands when a second client install is in flight or when Fleet Manager v1 approaches production launch and `last_backup_at = unknown` (v1.1.0) becomes operationally annoying. Sequencing note: Phase 2 also depends on the FM repo catching up to v1.1.0 first (FM-side boundary-touching session that refreshes the local cache and aligns the contract validator + tests against the new subcheck status enum).
+**Active:** none. Track substantially complete; Phase 2 closed at session 242. Carry-forwards listed below remain unscheduled.
 
 **Cross-repo coordination state:**
 
-- Agent contract version: `1.1.0` (live as of session 240).
+- Agent contract version: `1.2.0` (live as of session 242).
 - Spec doc: [`docs/fleet-manager-agent-contract.md`](../../docs/fleet-manager-agent-contract.md). Canonical URL for FM-repo `WebFetch`: `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`.
-- Cross-Repo block in `sessions/session-outlines.md` (top of file, just below Active tracks) reflects v1.1.0 and last-boundary-touching session 240.
-- FM-side cached copy at `/home/al/fleetmanager/docs/imported/fleet-manager-agent-contract.md` still reads v1.0.0 as of 240 close — refreshes on FM's next boundary-touching session per the Two-Repo Coordination Protocol.
-- The standing cross-repo flag in every session base prompt is active (no longer dormant) — it fires whenever a session modifies `/api/health`, the auth middleware, the response schema, the VERSION pipeline, or anything in `app/Http/Controllers/Api/Fleet/*`.
+- Cross-Repo block in `sessions/session-outlines.md` (top of file, just below Active tracks) reflects v1.2.0 and last-boundary-touching session 242.
+- FM-side cached copy at `/home/al/fleetmanager/docs/imported/fleet-manager-agent-contract.md` still reads v1.1.0 as of 242 close — refreshes on FM's next boundary-touching session per the Two-Repo Coordination Protocol; `StatusInterpreter` aligns to the new threshold-driven shape at the same time.
+- The standing cross-repo flag in every session base prompt remains active — it fires whenever a session modifies `/api/health`, the auth middleware, the response schema, the VERSION pipeline, or anything in `app/Http/Controllers/Api/Fleet/*`.
 
 **Carry-forwards (none scheduled):**
 
 - A custom artisan command for generating the agent key (`php artisan fleet:generate-agent-key`) — operator currently uses `Str::random(64)` or `php -r 'echo bin2hex(random_bytes(32));'` directly. Lands if friction emerges.
 - A Filament admin UI for managing the agent key — out of scope by design; key lives in `.env`.
-- Multi-tenant API key support (one CRM serving multiple FM instances) — explicitly forbidden by the v1.0.0 contract. If multi-FM scenarios emerge, the surface change is additive (an array of accepted keys) and warrants a `1.1.0` contract bump.
+- Multi-tenant API key support (one CRM serving multiple FM instances) — explicitly forbidden by the v1.0.0 contract. If multi-FM scenarios emerge, the surface change is additive (an array of accepted keys) and warrants a contract bump.
 - Key rotation flow — manual replacement on the droplet for v1; automation deferred.
 - Disk subcheck automated failure-path test — `disk_free_space` mocking requires scaffolding beyond v1 needs; integration-tested in dev only.
+- `BackupHasFailed` event listener — failure is observed via timestamp aging into `yellow` then `red`; active failure-alerting (email, Slack) is a future concern.
+- Backup-restore tooling — manual operator op for v1 (`pg_restore` + tarball-extract against a downloaded blob); not a click-button feature.
+- Per-install retention configuration beyond the 14-day default — lands when a client has a different requirement.
+- Scheduler runner on the worker container — the `worker` service in both `docker-compose.yml` and `docker-compose.prod.yml` runs `php artisan queue:work` only; no `schedule:work` or cron-driven `schedule:run` is in place. The 242 wiring registers `backup:clean` and `backup:run` in `bootstrap/app.php`'s `withSchedule()` block so they appear in `schedule:list`, but they will not fire automatically until a scheduler runner is added (separate worker variant, sidecar container, or host-level cron). Manual `php artisan backup:run` works today; production deployment requires the runner to be in place before the daily cadence takes effect.
 
 ---
 
 ## Phase Retrospectives
+
+**Phase 2 — Backup Pipeline (session 242).** Greenfield CRM-side backup mechanism shipped. `spatie/laravel-backup` ^9.0 added to `require` (not require-dev — runs in production); `league/flysystem-aws-s3-v3` ^3.0 added alongside to make the s3-driver `spaces` disk usable. `pg_dump` + media library tarball uploaded daily to a per-install DigitalOcean Spaces bucket (one bucket per install; bucket-scoped Spaces access keys via `SPACES_KEY` / `SPACES_SECRET` / `SPACES_BUCKET` / `SPACES_REGION` / `SPACES_ENDPOINT`). Success record at `storage/app/fleet/last-backup-at` (flat file with ISO 8601 timestamp, written by `App\Listeners\RecordBackupSuccess` listening to `Spatie\Backup\Events\BackupWasSuccessful` via Laravel 11 type-hint auto-discovery — no `EventServiceProvider` needed). `HealthController::checkLastBackupAt()` flipped from hardcoded `unknown` to threshold-driven (`green` < 24h, `yellow` 24–36h, `red` > 36h, `unknown` if no successful run yet — file missing, empty, or unparseable, each with a distinct `message`). Contract bumped 1.1.0 → 1.2.0 (additive — `value`/`threshold` shapes filled, `unknown` semantic refined). Operator setup procedure documented in `docs/app-reference.md`. Local dev runs to local disk only via `BACKUP_DISKS=local` env var; production sets `BACKUP_DISKS=spaces`.
+
+Load-bearing decisions: `spatie/laravel-backup` over rolling our own (battle-tested + same author family as other Spatie deps); server-side encryption via Spaces SSE (over client-side encryption from the planning spec — sufficient for v1; revisit on regulatory driver); flat file at `storage/app/fleet/last-backup-at` (over Redis cache key — survives Redis outages, no extra dependency, atomic via `Storage::disk('local')->put`); bucket-per-install (over shared bucket with prefix isolation — DO Spaces scoped keys are bucket-level not prefix-level, so per-bucket gives real isolation at zero marginal cost since DO Spaces is pooled-storage-priced).
+
+Surfaced gap: the `worker` service in both `docker-compose.yml` and `docker-compose.prod.yml` runs `php artisan queue:work` only; nothing runs the scheduler. The 242 wiring registers the daily backup commands but they will not fire automatically until a scheduler runner is added (a separate worker variant, sidecar, or host-level cron). Documented in carry-forwards rather than fixed in scope per the session prompt's "do not implement scheduler-runner infrastructure in this session" rule. Manual `php artisan backup:run` works today and is the manual-test path.
+
+Carry-forwards: backup-restore tooling (deferred — high-stakes manual op for v1, not a click-button feature); `BackupHasFailed` event listener (deferred — failure is observed via timestamp aging into yellow then red, that is the intended observation path); per-install retention tuning beyond the 14-day default (deferred until a client has a different requirement); scheduler runner on the worker container (named gap above).
 
 **v1.1.0 contract bump — `unknown` status for `last_backup_at` (session 240).** Sub-phase under Phase 1; not a new full phase (Phase 2 still owns the eventual threshold-driven flip when the Backup Pipeline lands). The FM workstream flagged that `last_backup_at: { status: "green", value: null }` is semantically wrong — null means "we don't know," not "things are fine." Bump landed as additive `1.0.0 → 1.1.0`: introduced `unknown` as a fourth valid subcheck-level status, flipped `HealthController::checkLastBackupAt()` from `green` to `unknown`, and expanded the worst-of derivation so `unknown` ranks equivalent to `yellow` (top-level `status` enum stays `{green, yellow, red}` — `unknown` never propagates upward by construction). Spec doc body + JSON example + worst-of rule + subcheck table updated; CHANGELOG gained the v1.1.0 entry with the explicit forward-compat note for v1.0.0 consumers. Tests: three existing cases adjusted (contract_version literal, allowed-status set, healthy-env top-level expectation), four new cases added (literal-shape pinning, only-green-and-unknown→yellow, red-overrides-unknown→red, reflection-driven worst-of equivalence). Fast Pest 1674 → 1678 (+4 net). Sequencing rationale: landed v1.1.0 *before* the FM repo's next boundary-touching session (FM 004 — CRM Integration — Health Polling Skeleton + HTTP Client) so the FM contract validator builds against the final shape with no retrofit. Load-bearing decision: `unknown ≡ yellow` ranking is a v1.1.0 lean — operational experience may show missing data should rank above or below yellow; flagged in the spec doc for future revisit.
 
@@ -68,24 +80,6 @@ When a phase closes, its retrospective lands in this doc and its entry in the ro
 ---
 
 ## Forward plan
-
-### Phase 2 — Backup Pipeline (1 session, possibly 2; not yet scheduled)
-
-Greenfield CRM-side backup mechanism. None exists today (verified during Phase 1 prompt drafting — `spatie/laravel-backup` not installed; no `pg_dump` script; no media backup runs). The agent endpoint's `last_backup_at` returns `null` until this lands.
-
-**Scope:**
-
-- **Database backup:** `pg_dump` against `nonprofitcrm_postgres`. Output is a compressed SQL dump. Encryption-at-rest decision deferred to scoping time — likely client-side encryption with a key stored in `.env`, with the encrypted blob shipped to object storage.
-- **Media backup:** the Spatie media library tree (`storage/app/public/media-library/` and any disk volumes). Tar + gzip + ship; same encryption posture as the SQL dump.
-- **Object storage target:** DigitalOcean Spaces (decided in the planning spec). Bucket-per-install or shared bucket with key-prefixing — decision deferred. Credentials via `.env`.
-- **Scheduler cadence:** Laravel scheduler (`schedule:run` in cron). Daily likely; tunable per-install. Failure handling: log, retry with backoff, surface in the next agent poll.
-- **Success-record location:** `last_backup_at` reads from a known location — likely a single-row config table or a cache key — written by the backup job on success. The shape needs to align with what the agent endpoint reports.
-- **Retention:** client-side (the CRM keeps N days of backups in object storage; old ones are pruned by the same job that wrote them). Fleet Manager observes the most-recent timestamp; it does not orchestrate retention.
-- **Threshold update on the agent endpoint:** once the pipeline lands, `checkLastBackupAt` flips from green/null/`'not yet implemented'` to threshold-driven: green if <24h, yellow at 24–36h, red at >36h. This is a contract bump (`1.0.0 → 1.1.0` or possibly `1.0.0 → 2.0.0` if the response shape changes incompatibly — likely 1.1.0 since adding a real value/threshold is additive).
-
-**Cross-repo coordination:** Phase 2 is boundary-touching — the agent endpoint's `last_backup_at` field changes from "always green/null" to "threshold-driven." Spec doc bumps to 1.1.0; CHANGELOG entry; Cross-Repo block in `sessions/session-outlines.md` reflects the new last-boundary-touching session.
-
-**Forcing function:** Phase 2 lands when a second client install is in flight (giving the operator a real reason to want backup observability beyond their own deploy) or when Fleet Manager v1 approaches production launch and the operator decides null-as-unknown is too sloppy. Until then, the contract caveat in the spec doc — *"Fleet Manager treats null as 'unknown — don't alarm'"* — covers the gap operationally.
 
 ### Out of scope for this track, by design
 
