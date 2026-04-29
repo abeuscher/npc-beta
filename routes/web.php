@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\EventCheckoutController;
 use App\Http\Controllers\EventController;
@@ -132,6 +133,9 @@ Route::get('/account/email/confirm', [AccountController::class, 'confirmEmailCha
 // Sitemap and robots.txt
 Route::get('/sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+
+// LLMs.txt — AEO file describing the site to LLM crawlers
+Route::get('/llms.txt', [LlmsTxtController::class, 'index'])->name('llms-txt');
 
 // Widget thumbnail images (public, static assets served from app/Widgets/*/thumbnails/).
 Route::get('/widget-thumbnails/{handle}/{file}', [WidgetThumbnailController::class, 'show'])

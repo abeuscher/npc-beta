@@ -69,7 +69,13 @@
 
     <link rel="canonical" href="{{ $canonicalUrl }}">
 
-    @if (! empty($page) && $page->noindex)
+    @php
+        $__noindexGlobal = SiteSetting::get('noindex_global', 'false') === 'true';
+        $__noindexPage   = ! empty($page) && $page->noindex;
+    @endphp
+    @if ($__noindexGlobal)
+        <meta name="robots" content="noindex,nofollow">
+    @elseif ($__noindexPage)
         <meta name="robots" content="noindex">
     @endif
 

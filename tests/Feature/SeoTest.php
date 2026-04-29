@@ -131,6 +131,55 @@ it('does not render noindex meta tag when noindex is false', function () {
         ->assertDontSee('noindex');
 });
 
+it('emits noindex,nofollow site-wide when the noindex_global setting is on', function () {
+    SiteSetting::set('noindex_global', 'true');
+
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'noindex'      => false,
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('<meta name="robots" content="noindex,nofollow">', false);
+});
+
+it('omits the global noindex meta tag when the noindex_global setting is off', function () {
+    SiteSetting::set('noindex_global', 'false');
+
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'noindex'      => false,
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('noindex');
+});
+
+it('global noindex_global overrides per-page noindex with the more restrictive nofollow form', function () {
+    SiteSetting::set('noindex_global', 'true');
+
+    Page::factory()->create([
+        'slug'         => 'thanks',
+        'title'        => 'Thank You',
+        'noindex'      => true,
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/thanks')
+        ->assertOk()
+        ->assertSee('<meta name="robots" content="noindex,nofollow">', false)
+        ->assertDontSee('content="noindex">', false);
+});
+
 // ── JSON-LD ──────────────────────────────────────────────────────────────────
 
 it('generates BlogPosting JSON-LD for post pages', function () {
@@ -359,6 +408,30 @@ it('returns robots.txt with sitemap reference', function () {
         ->assertHeader('Content-Type', 'text/plain; charset=utf-8')
         ->assertSee('User-agent: *')
         ->assertSee('Sitemap: https://example.org/sitemap.xml');
+});
+
+// ── /llms.txt ────────────────────────────────────────────────────────────────
+
+it('returns /llms.txt with site name, description, and a published page link', function () {
+    SiteSetting::set('site_name', 'Example Org');
+    SiteSetting::set('site_description', 'A great nonprofit.');
+    SiteSetting::set('contact_email', 'hello@example.org');
+    SiteSetting::set('base_url', 'https://example.org');
+
+    Page::factory()->create([
+        'slug'         => 'about',
+        'title'        => 'About',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/llms.txt')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=utf-8')
+        ->assertSee('# Example Org', false)
+        ->assertSee('> A great nonprofit.', false)
+        ->assertSee('- [About](https://example.org/about)', false)
+        ->assertSee('Email: hello@example.org', false);
 });
 
 // ── Permission gating ────────────────────────────────────────────────────────

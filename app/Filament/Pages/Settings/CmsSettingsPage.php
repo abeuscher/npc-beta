@@ -61,6 +61,7 @@ class CmsSettingsPage extends Page
             'default_content_template_default' => SiteSetting::get('default_content_template_default', ''),
             'default_content_template_post'    => SiteSetting::get('default_content_template_post', ''),
             'default_content_template_event'   => SiteSetting::get('default_content_template_event', ''),
+            'noindex_global'  => SiteSetting::get('noindex_global', 'false') === 'true',
         ]);
     }
 
@@ -119,6 +120,16 @@ class CmsSettingsPage extends Page
                         $this->sectionSaveAction('general', 'General')->columnSpan(12),
                     ])
                     ->columns(12),
+
+                Forms\Components\Section::make('Search Engine Visibility')
+                    ->schema([
+                        Forms\Components\Toggle::make('noindex_global')
+                            ->label('Block search engines from indexing this site')
+                            ->helperText('When enabled, every public page emits a "noindex,nofollow" meta tag. Use during staging or pre-launch — disable before going live.')
+                            ->columnSpanFull(),
+
+                        $this->sectionSaveAction('search-visibility', 'Search Engine Visibility')->columnSpanFull(),
+                    ]),
 
                 Forms\Components\Section::make('Default Content Templates')
                     ->description('Choose a default content template for each page type. New pages of that type will use this template unless the user picks a different one at creation.')
@@ -338,6 +349,8 @@ class CmsSettingsPage extends Page
         SiteSetting::set('default_content_template_post', $data['default_content_template_post'] ?? '');
         SiteSetting::set('default_content_template_event', $data['default_content_template_event'] ?? '');
 
+        SiteSetting::set('noindex_global', ! empty($data['noindex_global']) ? 'true' : 'false');
+
         SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
 
         if (filled($data['build_server_api_key'] ?? '')) {
@@ -409,6 +422,9 @@ class CmsSettingsPage extends Page
                 SiteSetting::set('default_content_template_default', $data['default_content_template_default'] ?? '');
                 SiteSetting::set('default_content_template_post', $data['default_content_template_post'] ?? '');
                 SiteSetting::set('default_content_template_event', $data['default_content_template_event'] ?? '');
+            })(),
+            'search-visibility' => (function () use ($data) {
+                SiteSetting::set('noindex_global', ! empty($data['noindex_global']) ? 'true' : 'false');
             })(),
             'build-server' => (function () use ($data) {
                 SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
