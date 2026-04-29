@@ -96,12 +96,18 @@
 .hero--pos-center-right .hero-body > .site-container,
 .hero--pos-bottom-right .hero-body > .site-container    { align-items: flex-end; }
 
-// Rich-text alignment inside the hero content is driven by Quill's
-// ql-align-* classes (emitted per block). Keep the content's own text
-// alignment independent of the outer text-position layout.
+// The hero content's text-align defaults to left independent of the outer
+// text-position layout. Per-block alignment (Quill's ql-align-* classes) is
+// handled by the structural rule below, scoped to any richtext container.
 .hero-content {
     text-align: left;
+}
 
+// Rich-text alignment driven by Quill's ql-align-* classes, emitted per block
+// inside any data-config-type="richtext" container. Applies uniformly to
+// Hero, TextBlock, ThreeBuckets, and any future richtext-bearing widget that
+// follows the same wrapper convention.
+[data-config-type="richtext"] {
     .ql-align-center  { text-align: center; }
     .ql-align-right   { text-align: right; }
     .ql-align-justify { text-align: justify; }
