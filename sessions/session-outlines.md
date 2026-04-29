@@ -86,28 +86,6 @@ Remaining:
 
 ---
 
-### Importer Source Presets — Competitor Coverage *(stub — pre-Beta 1)*
-
-Expand the seeded importer source presets beyond Generic / Wild Apricot / Bloomerang to cover the most common nonprofit CRM migration paths. Each preset is a field map + skip-header list — no structural code changes, just data work driven by sample exports. Priority order based on installed base and likelihood of migration:
-
-1. **Blackbaud / Raiser's Edge** — the largest installed base. Exports are wide, multi-file, and use proprietary field names with constituent IDs as cross-file keys. Most common migration source for mid-to-large orgs.
-2. **Little Green Light** — very popular with small orgs. Clean CSV exports with their own naming conventions.
-3. **DonorPerfect** — large legacy installed base, especially older orgs. Wide, messy exports.
-4. **Neon CRM** — growing player, already encountered in client work.
-5. **Salesforce NPSP** — well-structured exports but deeply relational (multiple CSVs with Salesforce IDs as foreign keys). Common for orgs outgrowing or cost-cutting Salesforce.
-6. **Network for Good / Bonterra** — common donor management source.
-7. **eTapestry** (Blackbaud lower tier) — simpler variant of Raiser's Edge exports.
-8. **Kindful** (now Bloomerang) — legacy installs still export in Kindful format.
-9. **QuickBooks export** — not a CRM, but many small nonprofits track donors in QB and need to import that history.
-
-Competitive value: demonstrating fast, low-friction migration off a prospect's current platform is a core sales story. Each preset added reduces onboarding friction and strengthens the pitch against competitors on time-to-live. Pairs with the CSV template download feature from session 191 (covers the long tail of unknown formats). Likely splits across 2–3 sessions, batched by shared export shape.
-
-Approach: obtain sample exports (anonymised) for each platform, map their column conventions into `guessDestination()` heuristics and `FieldMapper::sourceSkippedHeaders()`, seed the preset. No schema changes — the preset infrastructure from sessions 188–191 handles everything.
-
-Note: session 202's label disambiguation (`Donation Amount` / `Transaction Amount`) plus the composer's strict header contract against `CsvTemplateService` means preset field maps now have a stable, unambiguous column vocabulary to target. Any preset written here can assume the canonical template shape as the destination and focus solely on source-column-name heuristics. Session 203 landed the standalone Notes importer with free-text-column heuristics covering the common activity-export shapes; per-platform note presets (Raiser's Edge Actions, Bloomerang Interactions, Salesforce Task/Event, CiviCRM Activities) still want a dedicated pass here using real sample exports.
-
----
-
 ### Organizations Model Overhaul *(stub — pre-Beta 1)*
 
 Surface-level, Organization is a real entity in the CRM; below the surface, it is a placeholder — a row with a name and not much else. Testers noticing this gap will have valid questions. Session should define what Organizations actually are and how they relate to the rest of the model:
@@ -158,6 +136,8 @@ Batched UI/UX improvements that don't justify a dedicated session each but toget
 ---
 
 ### Test Suite Audit — Cost, Coverage, and Shape *(stub — pre-Beta 1)*
+
+**Mutation-testing slice precedent:** session 241 ran the first mutation-testing pass against the Widget Primitive contract-resolution slice. Workflow doc shipped at [`docs/testing/mutation-audits.md`](../docs/testing/mutation-audits.md); slice findings + bucket distribution in [`sessions/241. Test Audit (Mutation Testing) — First Slice — Log.md`](241.%20Test%20Audit%20%28Mutation%20Testing%29%20—%20First%20Slice%20—%20Log.md). Outcome: 100% MSI, 0 surviving mutants, 18 N≥2 redundant cases override-kept with `// guards:` markers (no deletions). Future mutation passes (different module slices) reuse the same toolchain on a fresh checkout.
 
 The Pest + Playwright suite has grown organically and takes ~5 minutes on the fast Pest pass + ~7 minutes on Playwright. Runtime itself is not the concern; the question is whether the time is **earned** — whether each slow test guards something worth the cost, whether coverage maps to real risk, whether test shapes match their subjects. This has been attempted before and produced mediocre findings because the judgment calls don't reduce cleanly to measurement.
 
@@ -258,6 +238,14 @@ All five starter pages in a published state. Default seed includes one sample ev
 ### Installer
 
 Guided first-run setup: database connection, mail provider configuration, admin user creation, initial seed. Must be fast enough to run live during a sales pitch — a prospect-facing demo that ends with their own configured install at a fresh URL.
+
+### Importer Source Presets — Competitor Coverage *(retired from pre-Beta-1 at session 241 close)*
+
+Originally a pre-Beta-1 stub aiming for 9 vendor presets (Blackbaud / Raiser's Edge, Little Green Light, DonorPerfect, Neon CRM, Salesforce NPSP, Network for Good / Bonterra, eTapestry, Kindful, QuickBooks export). Retired during 241 close on the grounds that vendors don't actually adhere to a standardized export format — each org configures custom export templates from inside the vendor's UI, so per-vendor presets need anonymized real exports to write usefully. Lift relative to payoff is not high without those samples in hand. The seeded Generic / Wild Apricot / Bloomerang presets continue to ship at v1; users on other source CRMs use the Generic preset + the importer's `guessDestination()` heuristics + the LLM-Assisted Data Prep path (separate stub below) for shape-shifting messy exports.
+
+When this comes back, the more interesting shape is **API schema discovery** rather than CSV-preset writing: for vendors with heavy per-customer schema customization (Salesforce NPSP, Raiser's Edge NXT, possibly Neon), the customer's API can be introspected at migration time to generate a *customer-specific* preset on the fly — the API tells us "your Salesforce has these custom objects with these fields named these ways," and we map against that rather than against vendor-doc-derived defaults. The data path itself can stay CSV-driven (user uploads, we map); the API does discovery only, sidestepping rate limits and ongoing-maintenance complexity. For vendors with relatively fixed schemas (Bloomerang, LGL), API discovery doesn't add much over docs and CSV samples; the API path is specifically for the customizable-schema vendors. Salesforce NPSP is the most natural first slice if pursued — public schema, well-documented OAuth — but only worth the engineering with a paying customer attached given the surface area.
+
+Forcing function for revisit: a paying client migration where the cost of writing a custom preset against their actual export pays back a multi-thousand-dollar engagement. Until then, the Generic preset + LLM-Assisted Data Prep (post-Beta-1 stub) covers the long tail.
 
 ---
 

@@ -243,4 +243,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 238 | Fleet Manager Agent — Phase 1 (CRM-Side MVP + v1.0.0 Contract) |
 | 239 | Donation Status Enum Alignment (Importer + Backfill) |
 | 240 | Fleet Manager Agent — Contract v1.1.0 (`unknown` Status for `last_backup_at`) |
+| 241 | Test Audit (Mutation Testing) — First Slice |
 
