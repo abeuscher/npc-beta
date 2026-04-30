@@ -1,24 +1,29 @@
 <?php
 
-use App\Filament\Widgets\DashboardDebugGeneratorWidget;
-use App\Models\Contact;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\Product;
 use App\Models\SampleImage;
+use App\Models\User;
+use App\Services\RandomDataGenerator;
 use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class)->group('slow');
 
+beforeEach(function () {
+    (new \Database\Seeders\PermissionSeeder())->run();
+
+    $admin = User::factory()->create();
+    $admin->assignRole('super_admin');
+    test()->actingAs($admin);
+});
+
 it('attaches pool images to generated products when the pool has images', function () {
     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
 
-    $widget = new DashboardDebugGeneratorWidget();
-    $widget->type = 'products';
-    $widget->quantity = 3;
-    $widget->generate();
+    app(RandomDataGenerator::class)->generate(['products' => 3]);
 
     $products = Product::all();
     expect($products)->toHaveCount(3);
@@ -31,10 +36,7 @@ it('attaches pool images to generated products when the pool has images', functi
 it('attaches pool images to generated events for thumbnail and header collections', function () {
     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
 
-    $widget = new DashboardDebugGeneratorWidget();
-    $widget->type = 'events';
-    $widget->quantity = 3;
-    $widget->generate();
+    app(RandomDataGenerator::class)->generate(['events' => 3]);
 
     $events = Event::all();
     expect($events)->toHaveCount(3);
@@ -48,12 +50,7 @@ it('attaches pool images to generated events for thumbnail and header collection
 it('attaches pool images to generated blog posts for thumbnail and header collections', function () {
     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
 
-    \App\Models\User::factory()->create();
-
-    $widget = new DashboardDebugGeneratorWidget();
-    $widget->type = 'blog_posts';
-    $widget->quantity = 2;
-    $widget->generate();
+    app(RandomDataGenerator::class)->generate(['posts' => 2]);
 
     $posts = Page::where('type', 'post')->get();
     expect($posts)->toHaveCount(2);
@@ -65,13 +62,9 @@ it('attaches pool images to generated blog posts for thumbnail and header collec
 });
 
 it('no-ops gracefully when the product-photos pool is empty', function () {
-    // Ensure the host row exists but has no media attached
     SampleImage::forCategory(SampleImage::CATEGORY_PRODUCT_PHOTOS);
 
-    $widget = new DashboardDebugGeneratorWidget();
-    $widget->type = 'products';
-    $widget->quantity = 2;
-    $widget->generate();
+    app(RandomDataGenerator::class)->generate(['products' => 2]);
 
     expect(Product::count())->toBe(2);
     Product::all()->each(function (Product $p) {
