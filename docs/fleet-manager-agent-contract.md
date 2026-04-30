@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.0.0`
+**Contract Version:** `2.1.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -16,16 +16,18 @@ Both the CRM and Fleet Manager implement against this contract. The CRM emits th
 
 ---
 
-## Endpoint
+## Endpoints
 
 ```
 GET /api/health
+GET /api/logs
 ```
 
-- One route, GET only.
-- No request body, no query parameters.
+- Two routes, GET only.
 - Stateless — no session cookie, no CSRF token, not in the web middleware group.
-- Rate-limited at the application layer: **60 requests per minute per IP** (Laravel `throttle:60,1`). Independent of auth — the throttle protects against polling-loop bugs whether or not the cert handshake succeeded.
+- Both rate-limited at the application layer: **60 requests per minute per IP** (Laravel `throttle:60,1`). The throttle defends against authenticated polling-loop bugs on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
+
+`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`.
 
 ## Auth
 
@@ -33,7 +35,7 @@ GET /api/health
 mTLS — terminated by nginx at the TLS layer.
 ```
 
-- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate on `/api/health`. Public routes (admin, portal, marketing pages) stay reachable without a client cert; only `/api/health` is gated.
+- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **both** `/api/health` and `/api/logs`. Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
 - Each CRM install trusts **exactly one** specific FM-side cert, configured at nginx via `ssl_client_certificate` pointed at `/etc/nginx/certs/fm-client.crt`. No CA, no PKI tooling, no chain. Direct trust against the per-install cert.
 - The FM operator pastes the trusted cert into the CRM droplet at `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container). Restart nginx to apply.
 - The application sees no auth signal. If the request reached the `HealthController`, nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
@@ -43,7 +45,7 @@ mTLS — terminated by nginx at the TLS layer.
   In both cases the body is plain HTML emitted by nginx, not a JSON envelope. There is no application-layer JSON `401` envelope in v2.0.0; consumers should not expect one for auth failures.
 - **One cert per install in v2.x.** Reusing the same cert across multiple CRM installs is forbidden — Fleet Manager treats each install as a distinct credential boundary, and a leaked shared keypair would compromise the entire fleet at once. Multi-FM-instance support (one CRM trusting multiple FM-side certs) would land as an additive v2.x bump.
 
-## Response — `200 OK` (success, including subcheck failures)
+## `/api/health` — Response — `200 OK` (success, including subcheck failures)
 
 ```json
 {
@@ -83,7 +85,7 @@ Every subcheck — present and future — has the same four keys:
 | `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
-### Subchecks (v2.0.0 — six stable keys, unchanged from v1.2.0)
+### Subchecks (v2.1.0 — six stable keys, unchanged from v1.2.0)
 
 | Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
 |------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -110,26 +112,125 @@ The `unknown` ≡ `yellow` ranking is a v1.1.0 lean. Operational experience may 
 
 The endpoint returns **200** with the failing subcheck marked `red` in the body. The endpoint itself does not return `503` for subcheck failures — Fleet Manager always gets structured data to act on. `503` is reserved (see below).
 
+## `/api/logs` — Request
+
+```
+GET /api/logs
+GET /api/logs?lines=N
+```
+
+| Parameter | Type    | Default | Range  | Description                                                                                              |
+|-----------|---------|---------|--------|----------------------------------------------------------------------------------------------------------|
+| `lines`   | integer | `500`   | 1–10000 | Tail length — the number of newline-delimited rows to return from the end of the log file. Values above the cap are clipped silently to the cap; non-positive or non-integer values return `422`. |
+
+No request body. No other query parameters. The endpoint reads from a single source — `storage/logs/laravel.log` — and walks backward from EOF.
+
+### "Line" semantics
+
+A "line" in the response is one `\n`-delimited row in the file, **not a logical log entry**. Laravel writes a stack trace across many `\n`-delimited rows; a single ERROR-level entry can occupy 30+ lines once a multi-frame trace lands. `?lines=500` during a heavy-error period might surface as few as 3 logical entries. Fleet Manager-side UX should display these as raw rows; logical-entry parsing is out of scope at v2.1.
+
+### Source — single channel, multi-container unification
+
+The CRM today runs `LOG_CHANNEL=stack` with `LOG_STACK=single`, so all application log output lands in one ever-growing `storage/logs/laravel.log`. The endpoint returns lines from that single file. There is no `?date=` parameter at v2.1 because the file is not date-partitioned. If a future session migrates the install to `LOG_STACK=daily`, an additive v2.x bump can introduce `?date=YYYY-MM-DD`.
+
+The `app` and `worker` services share `storage/logs/` via the docker-compose volume layout — locally via the `.:/var/www/html` bind-mount, in production via the `storage_data:/var/www/html/storage` named volume mounted on both services. **`/api/logs` therefore returns a unified view of both PHP-FPM and queue-worker output.** Concurrent appends from both processes are line-atomic at the OS level; concurrent readers may rarely see a partial trailing line — the contract does not engineer around this. A future docker-compose change that splits the log volume between services would be a contract-affecting concern.
+
+### Scope clarification — what `/api/logs` is NOT
+
+The endpoint returns the Laravel application log only. It does **not** surface:
+
+- Nginx access or error logs (`/var/log/nginx/`).
+- Queue-worker stderr beyond what Laravel logs through its own channel.
+- Supervisord output.
+- OS journals (`journalctl`).
+- Database slow-query or query logs.
+
+Operators reading the endpoint's name should not expect a full operational picture — `/api/logs` is the Laravel surface only. Other log sources stay accessible via operator SSH or future additive endpoints if the need arises.
+
+## `/api/logs` — Response — `200 OK`
+
+```json
+{
+  "lines": [
+    "[2026-04-30 15:42:00] production.INFO: Backup completed successfully",
+    "[2026-04-30 15:42:01] production.INFO: Cleaned old backups"
+  ],
+  "lines_returned": 2,
+  "lines_truncated": false,
+  "source": "laravel.log"
+}
+```
+
+| Field             | Type           | Description                                                                                                                                                  |
+|-------------------|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `lines`           | array of string | Tail of the source file, in chronological order (oldest first within the returned slice; the last element is the most recent line in the file).            |
+| `lines_returned`  | integer        | `count(lines)`. Convenience for FM-side display.                                                                                                             |
+| `lines_truncated` | boolean        | `true` if either the line cap (`?lines=N`) or the byte cap fired before the start of the file was reached. `false` if the response covers the entire file. |
+| `source`          | string         | Source filename (`laravel.log`). Reserved for future multi-file shapes; FM should not assume it is always this exact value.                                  |
+
+### Caps
+
+- **Line cap.** `?lines=N` is honoured up to a hard max of **10000**. Requests above the cap clip silently and `lines_truncated` reflects that older lines were dropped.
+- **Byte cap.** Raw line content is capped at **~850 KB** before JSON encoding (leaves headroom for envelope + escaping under a 1 MB encoded body ceiling). When the byte cap fires before the line cap, older lines are dropped and `lines_truncated` is `true`. The byte cap is a hard ceiling; a single line larger than the cap may cause the response to omit it entirely.
+- **Truncation rule.** When either cap fires, **older** lines are dropped — the response always carries the tail. There is no way to fetch lines older than the most recent N within a single request.
+
+### Read implementation note
+
+The controller seeks from EOF and reads backward in 8 KB chunks, accumulating lines until a cap fires or the start of the file is reached. A single line longer than 8 KB (e.g., a SQL exception with an embedded query, a logged request payload) is read intact across chunk boundaries — the implementation does not silently truncate trailing partial lines.
+
+## `/api/logs` — Response — `404 Not Found`
+
+```json
+{
+  "error": "log_not_found",
+  "message": "log file does not exist"
+}
+```
+
+Returned when `storage/logs/laravel.log` does not exist (e.g., a fresh install before any request has fired). FM should distinguish this from "endpoint broken." The CRM creates the log on first write — once the install has handled at least one request, this state should not recur.
+
+## `/api/logs` — Response — `422 Unprocessable Entity`
+
+```json
+{
+  "error": "invalid_lines",
+  "message": "lines must be a positive integer between 1 and 10000"
+}
+```
+
+Returned for non-integer, zero, or negative `lines` values. Values above the cap clip silently — they do not produce 422.
+
+## `/api/logs` — Response — `500 Internal Server Error`
+
+```json
+{
+  "error": "log_unreadable",
+  "message": "RuntimeException"
+}
+```
+
+Returned for unexpected file I/O failures (file disappeared between existence check and open, OS-level read errors, etc.). The `message` carries the exception class name only — never the exception message, never a path, never a stack frame. Matches `HealthController` exception-message discipline.
+
 ## Response — auth-failure paths (nginx-emitted, not application)
 
-When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
+Applies to both `/api/health` and `/api/logs`. When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
 
-- **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate on `/api/health` then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
+- **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
 - **`400 Bad Request`** — body "The SSL certificate error". A cert was presented but did not match the trusted cert at `ssl_client_certificate`. Fleet Manager seeing repeated `400`s should suspect cert misalignment (the FM-side cert no longer matches what the CRM trusts; the operator may need to re-paste).
 
 ## Response — `429 Too Many Requests`
 
-Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The 60-rpm cap defends against an FM-side bug polling every second; well-behaved consumers will never see this.
+Applies to both endpoints (each has its own throttle bucket per the `throttle:60,1` middleware). Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The 60-rpm cap defends against authenticated polling-bug storms on the FM side; well-behaved consumers will never see this.
 
 ## Response — `503 Service Unavailable`
 
-**Reserved.** Not emitted by v2.0.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
+**Reserved.** Not emitted by v2.1.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
 
 ---
 
 ## Version negotiation
 
-Every response carries `contract_version`. Fleet Manager reads it on every poll and:
+Every `/api/health` response carries `contract_version`. (`/api/logs` does not — FM reads the version from `/api/health` on every poll and treats it as authoritative for the install.) Fleet Manager:
 
 - Compares against the canonical version it fetches via `WebFetch` against `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md` at session-bootstrap time.
 - Logs a drift warning if the install's `contract_version` does not match the fleet baseline.
@@ -142,16 +243,34 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 
 ## Security posture
 
-- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for `/api/health` — request arrival IS the auth proof.
+- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for `/api/health` or `/api/logs` — request arrival IS the auth proof.
 - Per-install cert trust: each CRM install trusts exactly one FM-side cert. Compromise of one install's cert does not cascade across the fleet.
-- The route is in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
-- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented subcheck shapes and exception **class names** in `message` fields where useful.
-- The endpoint is rate-limited at the application layer; nginx can apply additional rate-limiting if needed.
-- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond this endpoint. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
+- Both routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
+- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** in `message` fields where useful. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
+- Both endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed.
+- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these two endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
+- `/api/logs` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface.
 
 ---
 
 ## CHANGELOG
+
+### `2.1.0` — 2026-04-30 (session 251)
+
+**Additive within v2 major.** Adds a second endpoint, `/api/logs`, that returns the tail of the Laravel application log so Fleet Manager (FM 013+) can surface logs from a CRM install without operator SSH.
+
+- New endpoint at `GET /api/logs` with optional `?lines=N` (default 500, max 10000). Response is a JSON envelope: `{ lines, lines_returned, lines_truncated, source }`.
+- Reuses the existing nginx-terminated mTLS gate — a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate ships on `/api/logs` in both `docker/nginx/default.conf` (local) and `docker/nginx/prod.conf` (prod). Same trusted `fm-client.crt`; operators do not re-paste anything.
+- Reuses the existing `throttle:60,1` middleware shape. Each route has its own throttle bucket.
+- Source is today's `LOG_CHANNEL=stack` / `LOG_STACK=single` posture: a single ever-growing `storage/logs/laravel.log` shared between the `app` (PHP-FPM) and `worker` (queue) containers via the docker-compose volume layout. Log lines from both containers are unified in the response. A future `daily` channel migration can introduce `?date=` via an additive v2.x bump.
+- Caps: `?lines=N` clipped silently at 10000; raw line content capped at ~850 KB before JSON encoding (under a 1 MB encoded body ceiling). When either cap fires, **older** lines are dropped and `lines_truncated: true`. A single line longer than 8 KB is read intact across the controller's backward-read chunk boundaries.
+- "Lines" in the response means newline-delimited rows in the file, **not logical log entries**. A single multi-line stack trace counts as N rows. Logical-entry parsing is out of scope at v2.1.
+- Error envelopes (always JSON): `404 log_not_found`, `422 invalid_lines`, `500 log_unreadable` (exception class name only, matching `HealthController` discipline). nginx-emitted `403` / `400` for mTLS-gate failures stay plain HTML.
+- Read-only endpoint. No log-write, log-rotate, or log-delete affordance.
+- `HealthController::CONTRACT_VERSION` bumps `2.0.0 → 2.1.0`. The constant covers both endpoints; `/api/logs` does not carry its own version field — FM reads contract version from `/api/health`.
+- Forward-compatible with v2.0.0 consumers. FM-side consumers wanting to use the new endpoint upgrade their HTTP client to handle the `/api/logs` shape.
+
+**Scope note:** the v2.0.0-deferred FM-raised question of `last_backup_at` threshold-derivation ownership stays deferred — v2.1.0 is narrowly the log-fetch addition. Threshold-derivation lands at a future v2.x bump when there's natural impetus.
 
 ### `2.0.0` — 2026-04-30 (session 248)
 

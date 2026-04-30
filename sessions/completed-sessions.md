@@ -253,4 +253,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 248 | Fleet Manager Contract v2.0.0 — mTLS Migration |
 | 249 | Onboarding/Install Dashboard Widget |
 | 250 | Rich Text Custom Fields |
+| 251 | Fleet Manager Contract v2.1.0 — Log-Fetch Endpoint |
 

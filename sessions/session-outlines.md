@@ -23,14 +23,13 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 
-- **Agent contract version:** `2.0.0`
+- **Agent contract version:** `2.1.0`
 - **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
 - **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
-- **Last boundary-touching session in this repo:** session 248 (mTLS Migration; bumped 1.2.0 → 2.0.0; bearer auth retired in the same cutover; nginx terminates mTLS; application has no auth code path on `/api/health`)
-- **Last boundary-touching session in Fleet Manager repo:** FM session 011 (refreshed local cache from v1.1.0 to v1.2.0; verified no FM-side consumer-code change required — `ContractValidator` already accepts `unknown`, `StatusInterpreter` re-derives `last_backup_at` against FM-side thresholds matching the CRM's `[24, 36]`)
+- **Last boundary-touching session in this repo:** session 251 (additive `/api/logs` endpoint; bumped 2.0.0 → 2.1.0; mTLS gate extended to the new location; `?lines=N` tail-only against the `single`-channel `laravel.log`; JSON envelope carrying `lines` / `lines_returned` / `lines_truncated` / `source`)
+- **Last boundary-touching session in Fleet Manager repo:** FM session 011 (refreshed local cache from v1.1.0 to v1.2.0; verified no FM-side consumer-code change required — `ContractValidator` already accepts `unknown`, `StatusInterpreter` re-derives `last_backup_at` against FM-side thresholds matching the CRM's `[24, 36]`). FM 012 (drafted: mTLS Migration — Absorb v2.0.0) and FM 013+ (A2 affordance work, including the log-reading slice) absorb v2.0.0 + v2.1.0 together at next FM-side cycle.
 - **Pending boundary changes:**
-  - **`last_backup_at` threshold-derivation ownership** — FM-raised question of whether the CRM's derived `status` should be canonical (FM trusts the string, drops re-derivation) vs FM canonical (CRM emits only the timestamp + threshold). Considered for v2.0.0 and explicitly deferred — lands at a future additive v2.x bump to keep the v2.0.0 retrospective focused on the auth swap.
-  - **Log-fetch endpoint** — additive CRM-side endpoint that A2's log-reading session (FM 013+) blocks on. Lands as part of A2's CRM-side companion work; out of scope for v2.0.0 by design.
+  - **`last_backup_at` threshold-derivation ownership** — FM-raised question of whether the CRM's derived `status` should be canonical (FM trusts the string, drops re-derivation) vs FM canonical (CRM emits only the timestamp + threshold). Considered for both v2.0.0 and v2.1.0 and explicitly deferred at each — lands at a future additive v2.x bump when there's natural impetus.
 
 ---
 
@@ -260,12 +259,12 @@ Closed at session 245. See `sessions/release-plan.md` § A1 (✅) and `sessions/
 
 A2 in `sessions/release-plan.md`. Re-opens the Fleet Manager Agent track for a specific Beta-1-blocking capability subset.
 
-The v2.0.0 mTLS prerequisite shipped at session 248 — FM 012 absorbs v2.0.0 next; FM's affordance work begins at FM 013+. The CRM-side agent contract is at v2.0.0 and substantially complete. The FM-side capability set that consumes the contract and drives node operations needs four capabilities operator-accessible from the FM admin UI:
+The v2.0.0 mTLS prerequisite shipped at session 248 — FM 012 absorbs v2.0.0 next; FM's affordance work begins at FM 013+. The CRM-side companion to the **log-reading** affordance shipped at session 251 (additive `/api/logs` endpoint; v2.1.0 contract). FM 012 absorbs both v2.0.0 and v2.1.0 together. The CRM-side agent contract is at v2.1.0; the four affordances FM 013+ delivers are now all unblocked CRM-side. The FM-side capability set needs:
 
 - **Install** — provision a fresh CRM node from a clean droplet to a working install end-to-end.
 - **Backup** — trigger and verify a backup against a node, surfacing failure modes the agent endpoint reports.
 - **Restore** — restore a node from a backup blob (CRM-side has the manual procedure documented per sessions 242 + 243; FM-side needs the operator-facing equivalent).
-- **Read logs** — fetch and surface application logs from a node without operator SSH.
+- **Read logs** — fetch and surface application logs from a node without operator SSH. **CRM-side endpoint shipped at session 251**; FM 013+ consumes it.
 
 Likely 2 sessions (install + backup + restore in one; log-reading separately, different surface). Per the plan's Rule 11, may split further.
 

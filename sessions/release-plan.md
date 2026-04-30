@@ -205,6 +205,14 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** per-integration runbook entries at `docs/runbooks/integrations/{integration}.md`.
 - **estimated time cost:** 1 session.
 
+#### D4. Test suite review — cost & shape
+
+- **gate:** release
+- **prerequisites:** all of A, B, C, D1–D3, E closed — D4 reviews the suite as it'll ship; running it before late-cycle test additions land would re-bake the same cost analysis.
+- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests.
+- **artifact:** committed baseline timing snapshot, findings-and-gaps report at `sessions/NNN-test-audit-findings.md`, applied picks (each as its own commit), updated baseline snapshot.
+- **estimated time cost:** 1 session; per Rule 11, may extend if findings exceed in-session-fix capacity.
+
 ### Track E — Demonstrability polish
 
 All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal dependencies are positioned to land before those rehearsals (see execution order). Detailed scope for each entry lives in the corresponding stub in `session-outlines.md`; entries below carry only the metadata that connects them to the plan.
@@ -357,7 +365,8 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 30. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
 31. **E13.** Help docs body content
 32. **E14.** Third-Party Licensing Compliance Audit
-33. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+33. **D4.** Test suite review — cost & shape
+34. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
@@ -370,7 +379,7 @@ Items considered during 244 vetting and explicitly *not* in the working set. Eac
 - **Event Description Widget Removal → PageContext** *(post-1.0)* — Refactor; no rehearsal forces it. Roadmap entry preserved in post-Beta-1 section of `session-outlines.md`.
 - **Text Color Hierarchy Rules** *(post-1.0)* — Design discussion that doesn't surface during any rehearsal as currently scoped. Defer until forced.
 - **Financial Data Origin & Lifecycle Discipline — Phases B and C** *(post-release)* — Phase A complete (session 233). B is gated on "lands when an action surface that needs it is imminent"; C is gated on "defer until forced." Neither is release-blocking by user direction at session 244.
-- **Test Suite Audit** *(orthogonal — conditional)* — Recent partial run did not show significant cruft. Becomes a priority only if test suite timeout starts to feel like a blocker. Not gating Beta-1.
+- ~~**Test Suite Audit** *(orthogonal — conditional)*~~ — Promoted to **D4** in the working set at session 251 close. The 256M → 1G memory bump fixed the immediate CI cascade, but the underlying question (does the suite earn its size?) is now in-gate before Beta-1.
 
 ---
 
