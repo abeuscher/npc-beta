@@ -135,6 +135,7 @@ Items that didn't make Batch 1's working set — either scope-flagged (might exc
 - **In-app actions that should trigger a build.** Sweep the admin UI for actions that change files the front-end bundle depends on (theme SCSS editing on the Design System page, per-template `custom_scss`, any widget asset editing surface) and confirm each one either fires the matching build automatically or surfaces a clear "rebuild required" affordance to the admin. Unconfirmed whether any gap exists — this is an audit, not a known bug. Focus areas: theming, templates, design system, widget manager. Deferred from Batch 1 because audit-shaped work tends to surface findings that themselves want fixing in scope.
 - **Dev-environment orphan media cleanup.** Custom `php artisan app:reset` (refuses to run when `APP_ENV=production`) that wraps `migrate:fresh --seed` with `rm -rf storage/app/public/* storage/media-library/temp/*` so the on-disk media tree stays synchronized with the DB. Root cause surfaced at session 242 close: `migrate:fresh` truncates tables via raw SQL, which bypasses Eloquent's `deleting` events — Spatie Media Library's "delete file when model deleted" observer never fires, so every dev-cycle reseed leaves the previous run's media files behind. Image conversions multiply the leak by ~6× per original (responsive WebP breakpoints). Months of `migrate:fresh` cycles compounded into ~4.7 GB of orphan files in `storage/app/public/` at the time of discovery (only ~10 MB of which was referenced by current `media` rows); manual `rm -rf + migrate:fresh` cleared it during the session 242 manual-test pass. Pair the artisan command with scheduling Spatie's built-in `media-library:clean` (the 242 close added the `withSchedule` block — natural slot) to handle the slow-drip orphan-conversion path that normal admin usage produces. Deferred from Batch 1 because building a real artisan command (with the production-refusal gate, confirmation prompt, and pairing with scheduled `media-library:clean`) is closer to a small-feature session than housekeeping. Out of scope, by design: a `Storage::fake('public')` audit of tests that may be writing real media to disk — that lands more naturally as a Test Audit slice item.
 - **Heroicon picker in Quill editor.** Add a Quill custom format that lets users insert a heroicon inline in rich text (confirm icon set at session time — heroicons is the assumed set; verify against what the project actually ships). Small custom-format addition; not a feature blowup. Borderline housekeeping — if scope grows past "register one Quill format with a picker UI," lift to a sibling stub. Deferred from Batch 1 because feature additions tend to attract scope creep; revisit once the editor-bug fixes (list rendering + horizontal alignment) confirm the editor surface is well-understood.
+- **Blog Post Pager — page context not resolving correctly** *(bug surfaced at session 245 UAT)*. The `blog_pager` widget renders on individual blog post detail pages and is supposed to expose previous/next post navigation by reading the current post's page context. During session 245 UAT (generating scrub blog posts and clicking through them), the pager renders but isn't receiving correct page context — needs investigation. Likely a contract-resolution / token-binding issue in the way `BlogPagerDefinition::dataContract` resolves against `RecordContextProjector`. Scope: identify the binding gap, fix or document, add a regression test that walks the pager surface for a post page. Out of scope for this stub: pager visual redesign or new pager features.
 
 ---
 
@@ -232,19 +233,9 @@ Touches `Filament/Pages/ImportContactsPage.php` and the other importer mapping p
 
 ---
 
-### Random Data Generator as Dashboard Widget *(stub — pre-Beta 1, feature; A1 in `release-plan.md`)*
+### Random Data Generator as Dashboard Widget *(complete — closed at session 245)*
 
-A1 in `sessions/release-plan.md` — the first session in execution order. Track A operational foundation: downstream rehearsals lean on this for synthetic data.
-
-The current debug data generator (gated behind the `APP_DEBUG_TOOLS=true` env var) is incomplete and lives on the dashboard via flag-conditional rendering. Rebuild it as a first-class dashboard widget that:
-
-- Generates contacts, donations, events, registrations, memberships in configurable counts.
-- Respects custom-field types when seeding contact records.
-- Distinguishes "generated for testing" records via a tagged `source` value (e.g. `source = 'generated'`) so the orphan-cleanup story stays clean and operators can scope teardown queries.
-- Lives behind a permission gate (only super admins can invoke; not a regular-staff feature).
-- Has a per-action confirmation step so an accidental click does not dump 1000 fake records into a real install.
-
-Forcing function: surfaced during 242 backup-restore testing — the user generated random records to give the second restore test meaningful data, and the existing generator's seams showed. Out of scope: a separate "delete all generated records" sweep tool; that is its own stub if it surfaces a need.
+Closed at session 245. See `sessions/release-plan.md` § A1 (✅) and `sessions/245. Random Data Generator as Dashboard Widget — Log.md` for the full landing.
 
 ---
 
@@ -276,6 +267,23 @@ Four nodes running on production by Beta-1: marketing site, demo install, test/d
 A5 in `sessions/release-plan.md`. Foundational security feature; must close before C3 (Permission audit).
 
 Admin login requires a second factor (TOTP via authenticator app) in addition to password. Recovery codes available at enrollment. Existing admin users have a one-time enrollment flow on next login. The FM-agent API key path is unaffected (it's not a user credential, per the contract spec). Tested across the standard Filament admin entry points. Help-doc entry on enrollment.
+
+---
+
+### Stripe Test-Mode Detection & Random Data Generator Production Guard *(stub — pre-Beta 1, release blocker; surfaced at session 245)*
+
+The Random Data Generator (session 245) gives super-admins the ability to generate arbitrary financial-shape data (donations, transactions, memberships, registrations) tagged `source = 'scrub_data'`. This is safe in test installs and rehearsal environments, but **if the Stripe integration is configured against a real (non-test) Stripe account**, an operator clicking "generate donations" against scrub data could in principle create real Stripe customer/subscription IDs in the production Stripe account. The 245 generator does not attach real Stripe IDs to its scrub donations, but the architectural boundary is fragile — any future code path that pushes a scrub donation through Stripe (a rehearsal walkthrough, a misconfigured webhook, a copy-paste between environments) could touch real Stripe.
+
+This stub: detect Stripe test-mode at runtime (Stripe API keys self-identify via `sk_test_` / `sk_live_` prefix; the API also exposes account metadata) and either:
+
+- **(a) Hard refuse-to-render** — the Random Data Generator widget does not render at all when the install is configured against a real Stripe account.
+- **(b) Warning + acknowledgment gate** — render the widget but with a strong visible warning and an explicit "I understand this install is connected to real Stripe" gate before any generation action is permitted.
+
+Default lean is (a) for safety; (b) for ops flexibility. Decide at session time. Could pair naturally with a broader "production-mode safety" framework (hide all dev tools when not in test mode), but keep that scope question for the session.
+
+Forcing function: shipped at session 245 close as a known gap. Release-blocker because production installs configured against real Stripe accounts could otherwise incur real Stripe activity from accidental scrub-data generation. Sequencing: should land before any production install is configured against a real Stripe account.
+
+Related but distinct: the existing post-Beta-1 stub *API Key Pattern Validation & Test-Mode Warning* — that stub focuses on form-level validation and Stripe/QB environment-mismatch gates. This new stub is narrower (protect the random data generator specifically) and is pre-release-blocking because the generator ships in 245.
 
 ---
 
@@ -664,6 +672,18 @@ Asset delivery via CDN for uploaded images and static files. Pairs with the imag
 
 A lightweight test suite that runs on the deploy server against real sandbox APIs (QuickBooks sandbox, Stripe test mode, Resend test keys). Catches integration issues that mocked unit tests cannot — token refresh flows, API payload shape changes, webhook delivery. Runs as `php artisan test --group=integration` using `.env.testing` with sandbox credentials. Could also include a post-deploy smoke check (app boots, key routes respond, queue processes a job). Manual SSH trigger for now; hook into CI/CD later if one is added.
 
+### Service-Worker Sweep — Activity-Log Orphans + Dead Media + Scrub Data Aging *(post-Beta 1; surfaced at session 245)*
+
+After session 245's scrub-data wipe ships, three categories of orphan / aged data accumulate over time:
+
+- **Activity-log orphans.** Spatie ActivityLog entries whose subject row has been deleted (by the scrub wipe, by soft-delete cascade, by manual operator action). Benign noise; doesn't affect correctness, only storage hygiene and admin-UI relevance.
+- **Media Library orphans.** Spatie Media Library rows whose owning model has been deleted. Pairs with the existing `media-library:clean` artisan command named in *Housekeeping — Batch 2*; this stub is the broader scheduled-sweep concern.
+- **Aged scrub data (opt-in only).** Optional retention policy: scrub-data rows that have aged out (e.g., retain N days then auto-wipe). Operator-opt-in only — never default.
+
+Future scheduled cleanup: a service-worker / scheduler-driven sweep that handles all three. Lands as one cohesive operations-hygiene session post-Beta-1. Pairs naturally with the existing Spatie Media Library cleanup artisan command and with the scheduler-runner work surfaced in the Backups/scheduler gap (see `docs/app-reference.md` § Scheduler runner — known gap).
+
+Defer to post-Beta-1: not a release blocker — orphans don't affect correctness, only storage hygiene and admin-list relevance. Forcing function: surfaced when 245 ships; cumulative impact grows with rehearsal frequency.
+
 ### API Key Pattern Validation & Test-Mode Warning
 
 Three related features: (1) form-level validation that recognises API key format patterns (e.g. Stripe `sk_test_` vs `sk_live_`, Resend `re_` prefix) and shows an inline hint; (2) a production-context warning surfaced when a test-mode key is detected; (3) **environment mismatch hard gate** — on save, detect whether Stripe and QuickBooks are pointing at different environments (e.g. Stripe live + QB sandbox, or vice versa) and refuse to save with a clear error. The dangerous scenario is Stripe test mode pushing fake transactions into a real QuickBooks company. The gate ensures both integrations are in the same mode before the configuration is accepted. Scope and warning placement to be agreed following the session 081 discussion.
@@ -675,6 +695,14 @@ A user-editable singleton record that pre-fills the email preview wizard with re
 ### Batch Edit on Admin Tables
 
 Add batch (bulk) edit capability to admin resource tables. Any field exposed in a content type's settings should be available as a batch-edit action. Scope: agree which tables get batch edit, define the UI pattern (inline modal vs dedicated form), and implement. Content type deletability decisions (see separate stub) should be resolved first so batch-delete controls are consistent.
+
+### Surface `source` Field on Records *(post-Beta 1; surfaced at session 245)*
+
+Every source-bearing record (Contact, Donation, Membership, EventRegistration, Transaction, Event, Page) carries a `source` column tagging the row's origin (`human`, `import`, `stripe_webhook`, `scrub_data`, etc.) but the value is not visible anywhere in the admin UI. This makes verification awkward — at session 245 close, the only way to confirm scrub-tagged rows existed pre-wipe was to query the database directly.
+
+Scope: surface `source` on the relevant Filament resource list views (as a column, ideally filterable) and on detail/edit pages. Decide on a consistent presentation pattern (badge, plain text, icon) and apply uniformly. Should ship before C3 (Permission audit) so the auditor can quickly distinguish synthetic vs. real rows; could plausibly land pre-Beta-1 if the priority surfaces during rehearsal sessions.
+
+Out of scope: a global "show me all scrub data" filter view (separate concern; the per-resource filter is sufficient for verification). Operator UX for manually changing source (the `EnforcesScrubInheritance` policy makes this a one-way street for scrub-tagged rows; not a problem for the read-only display).
 
 ### Multi-Vendor Mail Support
 

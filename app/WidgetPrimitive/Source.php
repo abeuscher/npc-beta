@@ -16,6 +16,8 @@ final class Source
 
     public const STRIPE_WEBHOOK = 'stripe_webhook';
 
+    public const SCRUB_DATA = 'scrub_data';
+
     public const KNOWN = [
         self::HUMAN,
         self::DEMO,
@@ -23,6 +25,7 @@ final class Source
         self::GOOGLE_DOCS,
         self::LLM_SYNTHESIS,
         self::STRIPE_WEBHOOK,
+        self::SCRUB_DATA,
     ];
 
     private function __construct() {}

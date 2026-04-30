@@ -197,5 +197,5 @@ it('widget-types endpoint returns only widgets whose allowedSlots includes dashb
 
     $handles = array_column($response->json('widget_types'), 'handle');
 
-    expect($handles)->toEqualCanonicalizing(['memos', 'quick_actions', 'this_weeks_events']);
+    expect($handles)->toEqualCanonicalizing(['memos', 'quick_actions', 'this_weeks_events', 'random_data_generator']);
 });

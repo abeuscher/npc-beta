@@ -41,6 +41,7 @@ use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
+use App\Widgets\RandomDataGenerator\RandomDataGeneratorDefinition;
 use App\Widgets\RecentDonations\RecentDonationsDefinition;
 use App\Widgets\RecentNotes\RecentNotesDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
@@ -115,5 +116,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new RecentNotesDefinition());
         $registry->register(new MembershipStatusDefinition());
         $registry->register(new RecentDonationsDefinition());
+        $registry->register(new RandomDataGeneratorDefinition());
     }
 }

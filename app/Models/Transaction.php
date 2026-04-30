@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Jobs\SyncTransactionToQuickBooks;
+use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -13,13 +14,22 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Transaction extends Model
 {
-    use HasFactory, HasSourcePolicy, HasUuids;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,
         Source::IMPORT,
         Source::STRIPE_WEBHOOK,
+        Source::SCRUB_DATA,
     ];
+
+    public static function scrubInheritsFrom(): array
+    {
+        return [
+            ['type' => 'subject_type', 'id' => 'subject_id'],
+            'contact_id' => Contact::class,
+        ];
+    }
 
     protected $fillable = [
         'subject_type',

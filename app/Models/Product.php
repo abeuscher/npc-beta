@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Observers\ProductObserver;
 use App\Services\Media\ImageSizeProfile;
 use App\Traits\Archivable;
+use App\WidgetPrimitive\EnforcesScrubInheritance;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +20,13 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[ObservedBy(ProductObserver::class)]
 class Product extends Model implements HasMedia
 {
-    use Archivable, HasFactory, HasUuids, InteractsWithMedia;
+    use Archivable, EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, InteractsWithMedia;
+
+    public const ACCEPTED_SOURCES = [
+        Source::HUMAN,
+        Source::IMPORT,
+        Source::SCRUB_DATA,
+    ];
 
     protected $fillable = [
         'name',
@@ -25,6 +34,7 @@ class Product extends Model implements HasMedia
         'description',
         'capacity',
         'status',
+        'source',
         'sort_order',
         'is_archived',
     ];

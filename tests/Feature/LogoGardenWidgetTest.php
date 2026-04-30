@@ -86,20 +86,6 @@ it('logo garden demo seeder is idempotent', function () {
     expect(CollectionItem::where('collection_id', $collection->id)->count())->toBe(9);
 });
 
-// ── Debug generator seedWidgetCollections ───────────────────────────────────
-
-it('seedWidgetCollections runs every widget demo seeder', function () {
-    $widget = new \App\Filament\Widgets\DashboardDebugGeneratorWidget();
-    $widget->seedWidgetCollections();
-
-    expect(Collection::where('handle', 'carousel-demo')->exists())->toBeTrue()
-        ->and(Collection::where('handle', 'chart-demo')->exists())->toBeTrue()
-        ->and(Collection::where('handle', 'logo-garden-demo')->exists())->toBeTrue()
-        ->and(Collection::where('handle', 'board-members-demo')->exists())->toBeTrue();
-
-    expect($widget->feedback)->toStartWith('Widget demo collections seeded:');
-});
-
 // ── Logo garden blade template rendering ────────────────────────────────────
 
 it('logo garden renders static grid with collection data', function () {

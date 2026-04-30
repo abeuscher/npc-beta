@@ -10,6 +10,7 @@ Named finite-inventory entitlements offered by the organisation (plots, slots, p
 | description | text | yes | |
 | capacity | integer | no | Total units available |
 | status | string | no | default: 'draft'; values: draft, published |
+| source | string | no | default: human; values: human, import, scrub_data (per `Product::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | published_at | timestamp | yes | Set by `ProductObserver` on first transition to `status = 'published'` (and `is_archived = false`) if currently null. Never overrides admin-set values. |
 | sort_order | integer | no | default: 0 |
 | is_archived | boolean | no | default: false |

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -12,12 +13,18 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Donation extends Model
 {
-    use HasFactory, HasSourcePolicy, HasUuids;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids;
 
     public const ACCEPTED_SOURCES = [
         Source::IMPORT,
         Source::STRIPE_WEBHOOK,
+        Source::SCRUB_DATA,
     ];
+
+    public static function scrubInheritsFrom(): array
+    {
+        return ['contact_id' => Contact::class];
+    }
 
     protected $fillable = [
         'contact_id',

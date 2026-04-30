@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Observers\EventObserver;
+use App\WidgetPrimitive\EnforcesScrubInheritance;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -20,9 +23,17 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 #[ObservedBy(EventObserver::class)]
 class Event extends Model implements HasMedia
 {
+    use EnforcesScrubInheritance;
     use HasFactory;
+    use HasSourcePolicy;
     use HasUuids;
     use InteractsWithMedia;
+
+    public const ACCEPTED_SOURCES = [
+        Source::HUMAN,
+        Source::IMPORT,
+        Source::SCRUB_DATA,
+    ];
 
     protected $fillable = [
         'title',
@@ -51,6 +62,7 @@ class Event extends Model implements HasMedia
         'custom_fields',
         'starts_at',
         'ends_at',
+        'source',
         'import_session_id', // system-managed: set by events importer
     ];
 

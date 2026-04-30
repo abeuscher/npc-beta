@@ -2,13 +2,14 @@
 
 use App\WidgetPrimitive\Source;
 
-it('exposes the six well-known source constants', function () {
+it('exposes the seven well-known source constants', function () {
     expect(Source::HUMAN)->toBe('human')
         ->and(Source::DEMO)->toBe('demo')
         ->and(Source::IMPORT)->toBe('import')
         ->and(Source::GOOGLE_DOCS)->toBe('google_docs')
         ->and(Source::LLM_SYNTHESIS)->toBe('llm_synthesis')
-        ->and(Source::STRIPE_WEBHOOK)->toBe('stripe_webhook');
+        ->and(Source::STRIPE_WEBHOOK)->toBe('stripe_webhook')
+        ->and(Source::SCRUB_DATA)->toBe('scrub_data');
 });
 
 it('enumerates every declared constant in KNOWN', function () {
@@ -19,6 +20,7 @@ it('enumerates every declared constant in KNOWN', function () {
         Source::GOOGLE_DOCS,
         Source::LLM_SYNTHESIS,
         Source::STRIPE_WEBHOOK,
+        Source::SCRUB_DATA,
     ]);
 });
 

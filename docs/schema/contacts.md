@@ -21,7 +21,7 @@ Individual people in the CRM — donors, volunteers, members, etc.
 | country | string | yes | default: 'US' |
 | do_not_contact | boolean | no | default: false |
 | mailing_list_opt_in | boolean | no | default: false |
-| source | string | no | default: 'manual'; values: manual, import, web_form, api |
+| source | string | no | default: 'manual'; values: manual, import, web_form, api, scrub_data |
 | import_session_id | uuid | yes | FK→import_sessions, nullOnDelete |
 | custom_data | jsonb | yes | SchemalessAttributes; written by importer |
 | custom_fields | jsonb | yes | User-defined custom field values |

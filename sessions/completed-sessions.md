@@ -247,4 +247,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 242 | Fleet Manager Agent — Phase 2 (Backup Pipeline) |
 | 243 | Housekeeping Batch 1 |
 | 244 | Pre-Beta Release Plan — Rehearsal Vetting & Success Criteria |
+| 245 | Random Data Generator as Dashboard Widget |
 

@@ -2,7 +2,7 @@
 
 use App\Models\Contact;
 use App\Models\Donation;
-use App\Models\Event;
+use App\Models\Fund;
 use App\WidgetPrimitive\DataSink;
 use App\WidgetPrimitive\Exceptions\SourceRejectedException;
 use App\WidgetPrimitive\Source;
@@ -59,7 +59,7 @@ it('throws InvalidArgumentException when source is an unknown string', function 
 it('throws LogicException when the target class lacks HasSourcePolicy', function () {
     $sink = app(DataSink::class);
 
-    $sink->write(Event::class, Source::HUMAN, ['name' => 'no-op']);
+    $sink->write(Fund::class, Source::HUMAN, ['name' => 'no-op']);
 })->throws(LogicException::class);
 
 it('NEVER creates a Donation with source Source::DEMO — the critical security assertion', function () {

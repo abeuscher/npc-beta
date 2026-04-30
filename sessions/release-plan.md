@@ -46,13 +46,13 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 ### Track A — Operational foundations
 
-#### A1. Random Data Generator as Dashboard Widget
+#### A1. Random Data Generator as Dashboard Widget ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** A super-admin-gated Filament dashboard widget that generates contacts / donations / events / registrations / memberships in configurable counts. Generated rows tag `source = 'generated'` so teardown queries are clean. Custom fields on contacts respect declared types when seeded. Per-action confirmation step prevents accidental clicks. The existing `APP_DEBUG_TOOLS`-flagged debug generator is retired.
+- **success criterion** *(corrected at 245 close — agreed Rule-6 carve-out)*: A super-admin-gated **contract widget** in the `dashboard_grid` slot that **generates AND wipes** synthetic CRM data — contacts / donations / events / registrations / memberships / blog posts / products in configurable counts, plus a Seed Widget Collections action. Generated rows tag `source = 'scrub_data'` (new value alongside the existing `Source::DEMO`); a new `EnforcesScrubInheritance` trait makes the source infectious downward through FK relationships so any row created in relationship to scrub data is itself scrub-tagged. Source-scoped wipe removes the entire scrub subgraph cleanly. Custom fields on contacts respect declared types when seeded. Per-action confirmation step prevents accidental clicks. The existing `APP_DEBUG_TOOLS`-flagged debug generator is retired.
 - **artifact:** the widget itself; downstream rehearsals can lean on it for synthetic data.
-- **estimated time cost:** 1 session.
+- **estimated time cost:** 1 session. **Closed at session 245.** Lifted in-session: `events.source` column, `pages.source` column (pre-existing inconsistency), `products.source` column, blog post generation, seed-widget-collections, image attachments via Spatie Media Library, generation variability. See `sessions/245. Random Data Generator as Dashboard Widget — Log.md` for the full landing.
 
 #### A2. Fleet Manager — node operations parity
 

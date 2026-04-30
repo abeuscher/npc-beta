@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -12,13 +13,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Membership extends Model
 {
-    use HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,
         Source::IMPORT,
         Source::STRIPE_WEBHOOK,
+        Source::SCRUB_DATA,
     ];
+
+    public static function scrubInheritsFrom(): array
+    {
+        return ['contact_id' => Contact::class];
+    }
 
     protected $fillable = [
         'contact_id',

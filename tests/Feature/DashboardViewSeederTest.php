@@ -14,7 +14,7 @@ beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
 });
 
-it('creates a DashboardView for super_admin and seeds the three default widgets in order', function () {
+it('creates a DashboardView for super_admin and seeds the four default widgets in order', function () {
     (new DashboardViewSeeder())->run();
 
     $superAdmin = Role::where('name', 'super_admin')->first();
@@ -26,7 +26,7 @@ it('creates a DashboardView for super_admin and seeds the three default widgets 
         ->map(fn ($w) => $w->widgetType->handle)
         ->all();
 
-    expect($handles)->toBe(['memos', 'quick_actions', 'this_weeks_events']);
+    expect($handles)->toBe(['memos', 'quick_actions', 'this_weeks_events', 'random_data_generator']);
 });
 
 it('is idempotent — running twice does not create a second view or duplicate widgets', function () {
@@ -38,7 +38,7 @@ it('is idempotent — running twice does not create a second view or duplicate w
     expect(DashboardView::where('role_id', $superAdmin->id)->count())->toBe(1);
 
     $view = DashboardView::where('role_id', $superAdmin->id)->first();
-    expect($view->pageWidgets()->count())->toBe(3);
+    expect($view->pageWidgets()->count())->toBe(4);
 });
 
 it('never clobbers an existing arrangement — no widgets seeded when the view already has widgets', function () {

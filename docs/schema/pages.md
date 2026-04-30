@@ -11,6 +11,7 @@ Static pages and landing pages. Posts are stored here with `type = 'post'`; memb
 | template_id | uuid | yes | FK → templates, nullOnDelete; null = use default template |
 | author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
 | status | string | no | default: 'draft'; values: draft, published |
+| source | string | no | default: human; values: human, demo, google_docs, llm_synthesis, scrub_data (per `Page::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | meta_title | string | yes | |
 | meta_description | text | yes | |
 | noindex | boolean | no | default: false; adds noindex meta tag when true |

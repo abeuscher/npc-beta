@@ -8,7 +8,7 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 | contact_id | uuid | no | FK→contacts, restrictOnDelete |
 | tier_id | uuid | yes | FK→membership_tiers, set null on delete |
 | status | string | no | default: 'pending'; values: pending, active, expired, cancelled |
-| source | string | no | default: human; values: human, import, stripe_webhook (per `Membership::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
+| source | string | no | default: human; values: human, import, stripe_webhook, scrub_data (per `Membership::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
 | starts_on | date | yes | |
 | expires_on | date | yes | null for lifetime tiers |
 | amount_paid | decimal(10,2) | yes | |

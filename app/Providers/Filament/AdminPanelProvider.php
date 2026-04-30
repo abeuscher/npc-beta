@@ -92,6 +92,19 @@ class AdminPanelProvider extends PanelProvider
                         \Illuminate\Support\Facades\Route::get('/design-system/typography/export.scss', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'export'])
                             ->name('theme.typography.export');
                     });
+
+                // Dev tools — Random Data Generator
+                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->prefix('dev-tools')
+                    ->name('dev-tools.')
+                    ->group(function () {
+                        \Illuminate\Support\Facades\Route::post('/random-data', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'store'])
+                            ->name('random-data.store');
+                        \Illuminate\Support\Facades\Route::post('/random-data/wipe', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'wipe'])
+                            ->name('random-data.wipe');
+                        \Illuminate\Support\Facades\Route::post('/random-data/seed-collections', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'seedCollections'])
+                            ->name('random-data.seed-collections');
+                    });
             })
             ->colors([
                 'primary'   => Color::hex($primaryColor),

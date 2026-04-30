@@ -1007,3 +1007,127 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     font-weight: 500;
     text-decoration: underline;
 }
+
+/* Random Data Generator — super-admin scrub-data tooling. */
+.np-random-data-generator__heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.np-random-data-generator__description {
+    margin: 0 0 1rem 0;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+.np-random-data-generator__alert {
+    margin: 0 0 1rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+}
+.np-random-data-generator__alert--success {
+    background: #ecfdf5;
+    color: #065f46;
+}
+.np-random-data-generator__alert--error {
+    background: #fef2f2;
+    color: #991b1b;
+}
+.np-random-data-generator__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    border: 0;
+    padding: 0;
+    margin: 0 0 0.75rem 0;
+}
+.np-random-data-generator__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.np-random-data-generator__field-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.85;
+}
+.np-random-data-generator__input {
+    padding: 0.4rem 0.55rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    background: var(--np-control-bg, #fff);
+}
+.np-random-data-generator__hint {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+.np-random-data-generator__button {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    background: var(--np-control-bg, #fff);
+    cursor: pointer;
+}
+.np-random-data-generator__button[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.np-random-data-generator__button--primary {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+}
+.np-random-data-generator__button--primary[disabled] {
+    background: #93c5fd;
+    border-color: #93c5fd;
+    color: #fff;
+}
+.np-random-data-generator__modal {
+    margin: 0.75rem 0 0 0;
+    padding: 0.75rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.5rem;
+    background: var(--np-control-bg, #fafafa);
+}
+.np-random-data-generator__modal-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.np-random-data-generator__modal-body {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+}
+.np-random-data-generator__modal-note {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+.np-random-data-generator__modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+.np-random-data-generator__divider {
+    margin: 1.5rem 0 1rem 0;
+    border: 0;
+    border-top: 1px solid var(--np-control-border, #e5e7eb);
+}
+.np-random-data-generator__subheading {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.np-random-data-generator__counts {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+.np-random-data-generator__button--danger {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
+}

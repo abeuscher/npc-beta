@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\EventRegistrationObserver;
+use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy(EventRegistrationObserver::class)]
 class EventRegistration extends Model
 {
+    use EnforcesScrubInheritance;
     use HasFactory;
     use HasSourcePolicy;
     use HasUuids;
@@ -22,7 +24,13 @@ class EventRegistration extends Model
         Source::HUMAN,
         Source::IMPORT,
         Source::STRIPE_WEBHOOK,
+        Source::SCRUB_DATA,
     ];
+
+    public static function scrubInheritsFrom(): array
+    {
+        return ['contact_id' => Contact::class];
+    }
 
     protected $fillable = [
         'event_id',

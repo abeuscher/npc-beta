@@ -90,6 +90,6 @@ it('DashboardBuilder bootstrap data is dashboard-mode and scoped to the dashboar
         ->and($data['api_base_url'])->toContain('/api/dashboard-builder/configs/' . $config->id)
         ->and($data['api_lookup_url'])->toBe($data['api_base_url'])
         ->and($data['allowed_appearance_fields'])->toBe(['background', 'text'])
-        ->and($data['allowed_widget_handles'])->toEqualCanonicalizing(['memos', 'quick_actions', 'this_weeks_events'])
+        ->and($data['allowed_widget_handles'])->toEqualCanonicalizing(['memos', 'quick_actions', 'this_weeks_events', 'random_data_generator'])
         ->and($data['role_label'])->toBe('Super Admin');
 });

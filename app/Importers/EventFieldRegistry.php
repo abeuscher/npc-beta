@@ -36,6 +36,7 @@ class EventFieldRegistry extends FieldRegistry
         'meeting_url',
         'meeting_label',
         'meeting_details',
+        'source',
         'import_source_id',
         'import_session_id',
     ];
