@@ -24,7 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'portal.auth' => \App\Http\Middleware\PortalAuthenticate::class,
-            'fleet.agent' => \App\Http\Middleware\AuthenticateFleetManagerAgent::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule): void {

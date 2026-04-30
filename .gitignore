@@ -30,3 +30,5 @@ yarn-error.log
 /infection-log.txt
 /infection-summary.txt
 /.infection.cache/
+/nginx-certs/*.key
+/nginx-certs/localhost.crt

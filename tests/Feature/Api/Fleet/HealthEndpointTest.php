@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\AuthenticateFleetManagerAgent;
 use Illuminate\Database\Connection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -10,90 +9,41 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-const FLEET_TEST_KEY = 'test-fleet-agent-key-do-not-reuse-elsewhere';
-
 beforeEach(function () {
-    config(['fleet.agent.api_key' => FLEET_TEST_KEY]);
     config(['fleet.agent.app_version' => 'testver1']);
     Storage::fake('local');
 });
 
-function fleetAuthHeaders(?string $token = FLEET_TEST_KEY): array
-{
-    return $token === null
-        ? []
-        : ['Authorization' => 'Bearer '.$token];
-}
-
-// ── Auth ─────────────────────────────────────────────────────────────────────
-
-it('rejects requests with no Authorization header as 401', function () {
-    $response = $this->getJson('/api/health');
-
-    $response->assertStatus(401)
-        ->assertExactJson(['error' => 'unauthorized']);
-});
-
-it('rejects requests with an empty bearer token as 401', function () {
-    $response = $this->getJson('/api/health', ['Authorization' => 'Bearer ']);
-
-    $response->assertStatus(401)
-        ->assertExactJson(['error' => 'unauthorized']);
-});
-
-it('rejects requests with a wrong bearer token as 401', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders('definitely-not-the-key'));
-
-    $response->assertStatus(401)
-        ->assertExactJson(['error' => 'unauthorized']);
-});
-
-it('returns 500 misconfigured when the server has no agent key set', function () {
-    config(['fleet.agent.api_key' => null]);
-
-    $response = $this->getJson('/api/health', fleetAuthHeaders('anything'));
-
-    $response->assertStatus(500)
-        ->assertExactJson(['error' => 'misconfigured']);
-});
-
-it('accepts requests with the correct bearer token as 200', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
-
-    $response->assertStatus(200);
-});
-
-it('uses hash_equals for timing-safe token comparison', function () {
-    $source = file_get_contents((new ReflectionClass(AuthenticateFleetManagerAgent::class))->getFileName());
-
-    expect($source)->toContain('hash_equals(');
-});
+// Auth is enforced at the TLS layer by nginx (mTLS). The application sees no
+// auth signal — request arrival IS the auth proof. There are no
+// application-layer auth tests in v2.0.0; auth verification lives in the
+// manual-testing curl scenarios and in FM-side integration tests.
 
 // ── Response shape ──────────────────────────────────────────────────────────
 
 it('returns the documented top-level keys on a successful poll', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertStatus(200);
     expect(array_keys($response->json()))
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
-it('reports contract_version 1.2.0', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+it('reports contract_version 2.0.0', function () {
+    $response = $this->getJson('/api/health');
 
-    $response->assertJsonPath('contract_version', '1.2.0');
+    $response->assertJsonPath('contract_version', '2.0.0');
 });
 
 it('returns the six documented subcheck keys', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     expect(array_keys($response->json('subchecks')))
         ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version']);
 });
 
 it('shapes each subcheck with status, value, threshold, message keys', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     foreach ($response->json('subchecks') as $name => $entry) {
         expect(array_keys($entry))
@@ -105,7 +55,7 @@ it('shapes each subcheck with status, value, threshold, message keys', function 
 // ── Subcheck happy paths ─────────────────────────────────────────────────────
 
 it('returns yellow overall in a healthy test environment because last_backup_at is unknown (no successful backup yet)', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $subchecks = $response->json('subchecks');
 
@@ -122,16 +72,16 @@ it('returns yellow overall in a healthy test environment because last_backup_at 
 });
 
 it('mirrors config(fleet.agent.app_version) in both the top-level and subcheck version fields', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('version', 'testver1')
         ->assertJsonPath('subchecks.version.value', 'testver1');
 });
 
-// ── last_backup_at threshold-driven semantics (v1.2.0) ──────────────────────
+// ── last_backup_at threshold-driven semantics (v1.2.0 — unchanged in v2.0.0) ─
 
 it('emits last_backup_at as unknown with null value and "no successful backup yet" when the file is missing', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
         ->assertJsonPath('subchecks.last_backup_at.value', null)
@@ -143,7 +93,7 @@ it('emits last_backup_at as green when the success-record timestamp is recent', 
     $iso = now()->subHours(2)->toIso8601String();
     Storage::disk('local')->put('fleet/last-backup-at', $iso);
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'green')
         ->assertJsonPath('subchecks.last_backup_at.threshold', [24, 36])
@@ -156,7 +106,7 @@ it('emits last_backup_at as green when the success-record timestamp is recent', 
 it('emits last_backup_at as yellow when the success-record timestamp is between 24 and 36 hours old', function () {
     Storage::disk('local')->put('fleet/last-backup-at', now()->subHours(30)->toIso8601String());
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'yellow')
         ->assertJsonPath('subchecks.last_backup_at.threshold', [24, 36])
@@ -166,7 +116,7 @@ it('emits last_backup_at as yellow when the success-record timestamp is between 
 it('emits last_backup_at as red when the success-record timestamp is older than 36 hours', function () {
     Storage::disk('local')->put('fleet/last-backup-at', now()->subHours(48)->toIso8601String());
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'red')
         ->assertJsonPath('status', 'red');
@@ -175,7 +125,7 @@ it('emits last_backup_at as red when the success-record timestamp is older than 
 it('emits last_backup_at as unknown when the success-record file is empty', function () {
     Storage::disk('local')->put('fleet/last-backup-at', '');
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
         ->assertJsonPath('subchecks.last_backup_at.value', null)
@@ -185,7 +135,7 @@ it('emits last_backup_at as unknown when the success-record file is empty', func
 it('emits last_backup_at as unknown when the success-record file is unparseable', function () {
     Storage::disk('local')->put('fleet/last-backup-at', 'not a timestamp');
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('subchecks.last_backup_at.status', 'unknown')
         ->assertJsonPath('subchecks.last_backup_at.value', null)
@@ -193,7 +143,7 @@ it('emits last_backup_at as unknown when the success-record file is unparseable'
 });
 
 it('returns overall yellow when subchecks are only green and unknown', function () {
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $subchecks = $response->json('subchecks');
 
@@ -212,7 +162,7 @@ it('returns overall red when any subcheck is red, even though last_backup_at is 
 
     DB::shouldReceive('connection')->andReturn($connection);
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertStatus(200)
         ->assertJsonPath('status', 'red')
@@ -250,7 +200,7 @@ it('marks database red and overall red when DB::getPdo throws, while still retur
 
     DB::shouldReceive('connection')->andReturn($connection);
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertStatus(200)
         ->assertJsonPath('status', 'red')
@@ -263,7 +213,7 @@ it('marks database red and overall red when DB::getPdo throws, while still retur
 it('marks redis red and overall red when Redis::ping throws, while still returning 200', function () {
     Redis::shouldReceive('ping')->andThrow(new RuntimeException('simulated redis failure'));
 
-    $response = $this->getJson('/api/health', fleetAuthHeaders());
+    $response = $this->getJson('/api/health');
 
     $response->assertStatus(200)
         ->assertJsonPath('status', 'red')
@@ -283,8 +233,8 @@ it('applies the throttle:60,1 middleware on the route', function () {
 
 it('returns 429 once the per-minute limit is exceeded', function () {
     for ($i = 0; $i < 60; $i++) {
-        $this->getJson('/api/health', fleetAuthHeaders())->assertStatus(200);
+        $this->getJson('/api/health')->assertStatus(200);
     }
 
-    $this->getJson('/api/health', fleetAuthHeaders())->assertStatus(429);
+    $this->getJson('/api/health')->assertStatus(429);
 })->group('slow');

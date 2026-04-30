@@ -12,7 +12,7 @@ use Throwable;
 
 class HealthController extends Controller
 {
-    public const CONTRACT_VERSION = '1.2.0';
+    public const CONTRACT_VERSION = '2.0.0';
 
     private const DISK_YELLOW_THRESHOLD = 80;
     private const DISK_RED_THRESHOLD = 95;

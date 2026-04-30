@@ -15,7 +15,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 ## Active tracks
 
 - **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
-- **Fleet Manager Agent** — *substantially complete* (Phase 2 closed at session 242); **Beta-1-blocking work resumes** for node operations parity (install / backup / restore / log-reading) per `sessions/release-plan.md` § A2. See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v1.2.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Other carry-forwards remain unscheduled: custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener.
+- **Fleet Manager Agent** — *active* — Phase 2 Backup Pipeline closed at session 242; reopened at session 248 for the v2.0.0 mTLS migration (auth handshake swap from bearer to nginx-terminated mTLS); **Beta-1-blocking work resumes** for node operations parity (install / backup / restore / log-reading) per `sessions/release-plan.md` § A2 once FM 012 has absorbed v2.0.0. See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v2.0.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Carry-forwards remaining: BackupHasFailed event listener, backup-restore tooling, per-install retention configuration beyond the 14-day default, scheduler runner on the worker container.
 
 ---
 
@@ -23,12 +23,14 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 
 Two parallel agentic workstreams run across two repos (this CRM repo and a separate Fleet Manager repo, to be created). The agent contract surface — the HTTP shape Fleet Manager polls — is governed by a shared spec doc plus this status block. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 
-- **Agent contract version:** `1.2.0`
+- **Agent contract version:** `2.0.0`
 - **Spec doc:** [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md)
 - **Canonical URL (used by FM repo via WebFetch):** `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md`
-- **Last boundary-touching session in this repo:** session 242 (Phase 2 Backup Pipeline; flipped `last_backup_at` from hardcoded `unknown` to threshold-driven against pg_dump + media → DO Spaces success-record file; bumped 1.1.0 → 1.2.0)
-- **Last boundary-touching session in Fleet Manager repo:** FM session 005 (refreshed local cache to v1.1.0; `ContractValidator` widened to accept `unknown`; `StatusInterpreter` rewritten to honour CRM-reported `unknown` directly)
-- **Pending boundary changes:** none — v1.2.0 is the current shippable state. The FM-side cache is at v1.1.0; it refreshes on FM's next boundary-touching session and `StatusInterpreter` aligns to the new threshold-driven shape at the same time.
+- **Last boundary-touching session in this repo:** session 248 (mTLS Migration; bumped 1.2.0 → 2.0.0; bearer auth retired in the same cutover; nginx terminates mTLS; application has no auth code path on `/api/health`)
+- **Last boundary-touching session in Fleet Manager repo:** FM session 011 (refreshed local cache from v1.1.0 to v1.2.0; verified no FM-side consumer-code change required — `ContractValidator` already accepts `unknown`, `StatusInterpreter` re-derives `last_backup_at` against FM-side thresholds matching the CRM's `[24, 36]`)
+- **Pending boundary changes:**
+  - **`last_backup_at` threshold-derivation ownership** — FM-raised question of whether the CRM's derived `status` should be canonical (FM trusts the string, drops re-derivation) vs FM canonical (CRM emits only the timestamp + threshold). Considered for v2.0.0 and explicitly deferred — lands at a future additive v2.x bump to keep the v2.0.0 retrospective focused on the auth swap.
+  - **Log-fetch endpoint** — additive CRM-side endpoint that A2's log-reading session (FM 013+) blocks on. Lands as part of A2's CRM-side companion work; out of scope for v2.0.0 by design.
 
 ---
 
@@ -40,9 +42,9 @@ Two parallel agentic workstreams run across two repos (this CRM repo and a separ
 
 Track substantially closed at session 237. Carry-forwards (none scheduled): Forms widget retrofit, `PageContext` full retirement, `RecordContextTokens::TOKENS` per-record-type expansion, `PageContextTokens` namespace migration. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/widget-primitive.md`. Premise lives in `sessions/tracks/widget-primitive-premise.md`.
 
-### Fleet Manager Agent — Remaining Phases *(track substantially complete; carry-forwards unscheduled)*
+### Fleet Manager Agent — Remaining Phases *(track active; v2.0.0 mTLS migration shipped at 248)*
 
-Track substantially closed at session 242. Carry-forwards (none scheduled): custom artisan command for agent-key generation, Filament UI for agent key, key rotation flow, multi-tenant API key support, BackupHasFailed event listener, backup-restore tooling, per-install retention configuration beyond the 14-day default. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`.
+Phase 2 Backup Pipeline closed at session 242. Phase 3 mTLS Migration shipped at session 248 (v2.0.0 contract bump, bearer auth retired, nginx-terminated mTLS in production). Carry-forwards (none scheduled): BackupHasFailed event listener, backup-restore tooling, per-install retention configuration beyond the 14-day default, scheduler runner on the worker container. Forward plan, design decisions, phase retrospectives, and status all live in `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`.
 
 ---
 
@@ -244,7 +246,7 @@ Closed at session 245. See `sessions/release-plan.md` § A1 (✅) and `sessions/
 
 A2 in `sessions/release-plan.md`. Re-opens the Fleet Manager Agent track for a specific Beta-1-blocking capability subset.
 
-The CRM-side agent contract is at v1.2.0 and substantially complete. The FM-side capability set that consumes the contract and drives node operations needs four capabilities operator-accessible from the FM admin UI:
+The v2.0.0 mTLS prerequisite shipped at session 248 — FM 012 absorbs v2.0.0 next; FM's affordance work begins at FM 013+. The CRM-side agent contract is at v2.0.0 and substantially complete. The FM-side capability set that consumes the contract and drives node operations needs four capabilities operator-accessible from the FM admin UI:
 
 - **Install** — provision a fresh CRM node from a clean droplet to a working install end-to-end.
 - **Backup** — trigger and verify a backup against a node, surfacing failure modes the agent endpoint reports.

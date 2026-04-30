@@ -268,7 +268,7 @@ Each install gets its own DigitalOcean Spaces bucket and its own scoped access k
    - `SPACES_ENDPOINT=https://<region>.digitaloceanspaces.com`
    - `BACKUP_DISKS=spaces`
 4. **Restart the worker container** so the scheduler picks up the new env. The first scheduled `backup:run` (next 01:30 UTC) writes the first blob to the bucket and updates `storage/app/private/fleet/last-backup-at`.
-5. **Verify** by hitting `/api/health` with the bearer token after the first backup runs — `last_backup_at.status` should be `green` with a recent ISO timestamp.
+5. **Verify** by hitting `/api/health` with a curl that presents the FM-supplied client cert after the first backup runs — `last_backup_at.status` should be `green` with a recent ISO timestamp. Auth is mTLS as of v2.0.0; see `docs/runbooks/fleet-manager-cert-paste.md` for the verification command.
 
 ### Local dev posture
 
@@ -297,6 +297,15 @@ The success-record file at `storage/app/private/fleet/last-backup-at` is **not**
 Backup restoration is intentionally manual at v1 — high-stakes operations benefit from the operator pausing to verify each step rather than a click-button shortcut.
 
 ---
+
+## Fleet Manager mTLS — cert paths
+
+The Fleet Manager agent contract authenticates via mTLS at the TLS layer as of v2.0.0 (session 248). Nginx terminates the handshake; the application has no auth code path on `/api/health`. Two cert plumbing details matter operationally:
+
+- **Local dev:** run `bin/dev-certs.sh` once per fresh checkout to generate `nginx-certs/localhost.{crt,key}` (the server-side TLS cert for `localhost`). Both files are gitignored. Without them, `docker compose up` fails because nginx cannot load the SSL config. The placeholder client-trust cert at `nginx-certs/fm-client.crt` is committed and untouched by the script.
+- **Production:** the operator pastes the FM-supplied client cert into `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container at `/etc/nginx/certs/fm-client.crt`) before first nginx start, and re-pastes plus restarts on rotation. Full procedure at `docs/runbooks/fleet-manager-cert-paste.md`.
+
+The mTLS gate is `/api/health`-scoped only — public routes, admin, portal stay reachable without a client cert.
 
 ## Dev tooling — `app:reset`
 
