@@ -183,7 +183,11 @@
       "Bash(rm -rf /home/al/nonprofitcrm/storage/app/public/*)",
       "Bash(echo \"tables: $\\(docker compose exec -T postgres psql -U postgres -d nonprofitcrm -tAc \"SELECT count\\(*\\) FROM pg_tables WHERE schemaname='public';\"\\)\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f\\\\\"status={d['status']} contract={d['contract_version']} last_backup_at={d['subchecks']['last_backup_at']['status']} value={d['subchecks']['last_backup_at']['value']}\\\\\"\\)\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f\\\\\"status={d['status']} last_backup_at={d['subchecks']['last_backup_at']['status']} value={d['subchecks']['last_backup_at']['value']}\\\\\"\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f\\\\\"status={d['status']} last_backup_at={d['subchecks']['last_backup_at']['status']} value={d['subchecks']['last_backup_at']['value']}\\\\\"\\)\")",
+      "Bash(grep -rn 'pageContext->currentPage\\\\|$pageContext->currentPage' /home/al/nonprofitcrm/app/Widgets/ /home/al/nonprofitcrm/resources/views/)",
+      "Bash(grep -rn '$pageContext' /home/al/nonprofitcrm/app/Widgets/ /home/al/nonprofitcrm/resources/views/widget-shared/)",
+      "Bash(python3 -c \"import json,sys; m=json.load\\(sys.stdin\\); [print\\(k, '->', v.get\\('file'\\), 'css:', v.get\\('css', []\\)\\) for k,v in m.items\\(\\) if v.get\\('isEntry'\\)]\")",
+      "Bash(chmod 700 storage/app/private/imports/bundles)"
     ],
     "deny": [
       "Bash(git push:*)",
@@ -200,7 +204,9 @@
       "/home/al/nonprofitcrm/resources/css/filament",
       "/mnt/e/Clients/nonprofitcrm/resources/sample-images/portraits",
       "/home/al/nonprofitcrm/resources/views/widgets/partials",
-      "/home/al/.claude/projects/-home-al-nonprofitcrm"
+      "/home/al/.claude/projects/-home-al-nonprofitcrm",
+      "/home/al/nonprofitcrm/storage/app/private/NonProfitCRM",
+      "/home/al/nonprofitcrm/storage/app"
     ]
   }
 }

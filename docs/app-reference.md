@@ -274,9 +274,13 @@ Each install gets its own DigitalOcean Spaces bucket and its own scoped access k
 
 Local dev defaults to `BACKUP_DISKS=local`, which writes backups to `storage/app/private/Laravel/`. No Spaces credentials are required to run `php artisan backup:run` locally for testing. Each manual run also writes `storage/app/private/fleet/last-backup-at`, so local `/api/health` responses reflect a green `last_backup_at` once a manual run has happened.
 
+### Orphan media sweep
+
+`spatie/laravel-medialibrary` ships `media-library:clean`, which removes orphan `media` rows (where the polymorphic owner is gone) and orphan conversion files (where the parent `media` row is gone but the conversion file lingers). Session 247 registered it in `bootstrap/app.php`'s `withSchedule()` block on a daily cadence (`->onOneServer()->withoutOverlapping()`). It does NOT walk the whole `storage/app/public/` tree looking for files with no `media` row — that gap is what `app:reset` covers for the dev wholesale-wipe case (see Dev tooling — `app:reset`). Subject to the same scheduler-runner gap below.
+
 ### Scheduler runner — known gap
 
-The `worker` service (both `docker-compose.yml` and `docker-compose.prod.yml`) runs `php artisan queue:work` only — no `schedule:work` and no cron-driven `schedule:run`. The 242 wiring registers `backup:clean` and `backup:run` in `bootstrap/app.php`'s `withSchedule()` block (visible via `php artisan schedule:list`), but they do not fire automatically until a scheduler runner is added (a separate worker variant, sidecar, or host-level cron). Manual `php artisan backup:run` works today; production deployment requires the runner to be in place before the daily cadence takes effect. Listed as a carry-forward in `sessions/tracks/fleet-manager-agent.md`.
+The `worker` service (both `docker-compose.yml` and `docker-compose.prod.yml`) runs `php artisan queue:work` only — no `schedule:work` and no cron-driven `schedule:run`. The 242 wiring registers `backup:clean` and `backup:run` in `bootstrap/app.php`'s `withSchedule()` block (visible via `php artisan schedule:list`), and 247 added `media-library:clean`, but none of them fire automatically until a scheduler runner is added (a separate worker variant, sidecar, or host-level cron). Manual `php artisan backup:run` works today; production deployment requires the runner to be in place before the daily cadence takes effect. Listed as a carry-forward in `sessions/tracks/fleet-manager-agent.md`.
 
 ### Restoration (manual)
 
@@ -293,6 +297,20 @@ The success-record file at `storage/app/private/fleet/last-backup-at` is **not**
 Backup restoration is intentionally manual at v1 — high-stakes operations benefit from the operator pausing to verify each step rather than a click-button shortcut.
 
 ---
+
+## Dev tooling — `app:reset`
+
+`docker compose exec app php artisan app:reset` wipes the database and the on-disk media tree, then runs `migrate:fresh --seed` to restore a clean dev state. Use it any time you want a fresh install — it replaces the manual `migrate:fresh --seed` + `rm -rf storage/app/public/*` two-step.
+
+**Why it exists.** `migrate:fresh` truncates tables via raw SQL, which bypasses Eloquent's `deleting` events — so Spatie Media Library's "delete file when model deleted" observer never fires, and every reseed cycle leaves the previous run's media files behind. With image conversions multiplying each upload by ~6× (responsive WebP variants), months of `migrate:fresh` cycles compound into multi-GB orphan piles. `app:reset` pairs the DB wipe with a storage wipe so the two stay in sync.
+
+**Production-refusal gate.** The command refuses to run when `app()->environment() === 'production'` and exits non-zero. There is no escape hatch — if you need to wipe a production install, the supported path is the manual restore procedure in the Backups section.
+
+**What it wipes.**
+
+- The whole database (via `migrate:fresh --seed --force`).
+- `storage/app/public/*` (Spatie Media Library's primary disk).
+- `storage/media-library/temp/*` (Spatie's temp upload area).
 
 ## Dev tooling — widget thumbnails
 
