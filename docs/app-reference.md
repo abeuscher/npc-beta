@@ -10,6 +10,7 @@ Fast-orientation index for Claude. Read this at the start of any session before 
 |------|------|----------|---------|
 | **Local (WSL2)** | `localhost` | `~/nonprofitcrm` (WSL2 Linux filesystem) | `docker compose exec app php artisan` |
 | **Deploy server** | `root@167.172.141.225` (DigitalOcean, Ubuntu 22.04) | `/opt/nonprofitcrm` | `docker exec nonprofitcrm_app php artisan` |
+| **Public demo** | `root@147.182.214.147` (DigitalOcean, Ubuntu 22.04) | `/opt/nonprofitcrm` | `docker exec nonprofitcrm_app php artisan` |
 
 ### Deploy server — Docker containers
 
@@ -24,6 +25,17 @@ Fast-orientation index for Claude. Read this at the start of any session before 
 Local container names are identical. Local compose file: `docker-compose.yml` in the project root. Deploy server compose file: `/opt/nonprofitcrm/docker-compose.prod.yml`.
 
 Deploy server domain: `beuscher.net`. `.env` lives at `/opt/nonprofitcrm/.env` (not in source control).
+
+### Public demo
+
+The public-demo droplet at `147.182.214.147` runs the same image stack as the deploy server (identical compose file, identical container names — both droplets are isolated, one set of names per host). It exists to host a parked stable build at `rectanglemachine.com` that's deliberately frozen — updates flow only when commits land on the `release/public-demo` branch (not on push to `main`).
+
+- **Trigger:** push to `release/public-demo` runs `.github/workflows/deploy-demo.yml`. Manual `workflow_dispatch` is also supported from the Actions tab.
+- **Image namespace:** the demo workflow tags images as `:demo-<sha>` and `:demo-latest` so the demo droplet never picks up `:latest` from prod's main-branch deploys.
+- **Secrets used:** `DEMO_DEPLOY_HOST`, `DEMO_DEPLOY_USER`, `DEMO_DEPLOY_SSH_KEY` (separate from prod's `DEPLOY_*` triplet). `BUILD_SERVER_API_KEY` is shared with prod — both droplets can use the same build server cleanly because bundle filenames are content-hashed.
+- **Updating the demo:** merge a fix into `main`, then merge or fast-forward `release/public-demo` to the desired commit and push. The branch IS the version pin.
+- **`.env`:** lives at `/opt/nonprofitcrm/.env` on the demo droplet. Independent of the deploy-server `.env` — different `APP_URL` (`https://rectanglemachine.com`), different `APP_KEY`, different `DB_PASSWORD`, separate / sandbox integration keys, same `BUILD_SERVER_URL` + `BUILD_SERVER_API_KEY` if the demo should compile assets through the build server.
+- **First-time data:** the workflow only runs `migrate --force` on each deploy (additive). Initial seed + scrub data load is a one-time manual step on the droplet (`docker exec nonprofitcrm_app php artisan migrate:fresh --seed --force`, then super-admin login + Random Data Generator widget).
 
 **`.env` propagation note:** `docker-compose.prod.yml` wires the host `.env` via `env_file:` (read at container *start*, not mounted as a live file), so edits to `/opt/nonprofitcrm/.env` do not reach the running container until you restart it (`docker compose -f docker-compose.prod.yml up -d` or `restart app worker`). `php artisan config:clear` only flushes the cached config file — it does not refresh the process environment. After restarting, run `config:clear` to drop any stale `bootstrap/cache/config.php` (the `bootstrap_cache` named volume persists across restarts). The `worker` container needs the same restart for queue jobs to see new env values.
 

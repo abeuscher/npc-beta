@@ -1,0 +1,103 @@
+name: Deploy to Public Demo
+
+on:
+  push:
+    branches:
+      - release/public-demo
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set image tag
+        id: tag
+        run: echo "IMAGE_TAG=demo-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_pgsql, gd, zip, intl, bcmath, redis
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Build widget bundle via build server
+        if: ${{ vars.BUILD_SERVER_URL != '' }}
+        continue-on-error: true
+        env:
+          BUILD_SERVER_URL: ${{ vars.BUILD_SERVER_URL }}
+          BUILD_SERVER_API_KEY: ${{ secrets.BUILD_SERVER_API_KEY }}
+        run: php artisan build:public
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: app
+          push: true
+          build-args: |
+            BUILD_ENV=${{ vars.BUILD_ENV || 'production' }}
+            APP_VERSION=${{ steps.tag.outputs.IMAGE_TAG }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:${{ steps.tag.outputs.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:demo-latest
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: web
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/nonprofitcrm-web:${{ steps.tag.outputs.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/nonprofitcrm-web:demo-latest
+
+      - name: Copy compose file to droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEMO_DEPLOY_HOST }}
+          username: ${{ secrets.DEMO_DEPLOY_USER }}
+          key: ${{ secrets.DEMO_DEPLOY_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: /opt/nonprofitcrm/
+
+      - name: Deploy to droplet
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.IMAGE_TAG }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.DEMO_DEPLOY_HOST }}
+          username: ${{ secrets.DEMO_DEPLOY_USER }}
+          key: ${{ secrets.DEMO_DEPLOY_SSH_KEY }}
+          envs: IMAGE_TAG,GHCR_USER,GHCR_TOKEN
+          script: |
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            cd /opt/nonprofitcrm
+            export IMAGE_TAG="$IMAGE_TAG"
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
+            docker compose -f docker-compose.prod.yml exec -T app php artisan storage:link
+            docker compose -f docker-compose.prod.yml exec -T app php artisan view:clear
+            docker compose -f docker-compose.prod.yml exec -T app php artisan config:clear
+            docker compose -f docker-compose.prod.yml exec -T app php artisan build:public || true
+            docker image prune -af
