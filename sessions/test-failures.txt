@@ -1,0 +1,2203 @@
+   PASS  Tests\Feature\WidgetTypesSession098Test
+  ✓ it event json endpoint returns published events with correct fields  0.10s  
+  ✓ it event json endpoint excludes draft events                         0.06s  
+  ✓ it event json endpoint excludes cancelled events                     0.06s  
+  ✓ it event json endpoint does not expose internal fields               0.06s  
+  ✓ it parses youtube watch url into nocookie embed url                  0.09s  
+  ✓ it parses youtube short url into nocookie embed url                  0.05s  
+  ✓ it parses vimeo url into embed url                                   0.05s  
+  ✓ it shows fallback for unsupported video url                          0.05s  
+  ✓ it does not produce iframe for arbitrary urls                        0.05s  
+  ✓ it seeder creates event_calendar, bar_chart, and video_embed widget… 0.10s  
+  ✓ it bar chart widget renders a canvas element with collection data    0.18s  
+
+   PASS  Tests\Feature\WidgetsManifestJsonCommandTest
+  ✓ it widgets:manifest-json exits 0 and prints a JSON-decodable widget… 0.06s  
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\BlogPagerEndToE…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:30:55, 2026-04-30 18:30:55) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/BlogPagerEndToEndTest.php:13
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\BlogPagerEndToE…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:30:55, 2026-04-30 18:30:55) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/BlogPagerEndToEndTest.php:13
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\BlogPrefixValidationTest > it changing the prefix a…   
+  Failed asserting that two strings are identical.
+  -'stories'
+  +'news-1'
+  
+
+  at tests/Feature/BlogPrefixValidationTest.php:190
+    186▕         ])
+    187▕         ->call('save')
+    188▕         ->assertHasNoFormErrors();
+    189▕ 
+  ➜ 190▕     expect($blogIndexPage->fresh()->slug)->toBe('stories');
+    191▕ });
+    192▕
+
+  1   tests/Feature/BlogPrefixValidationTest.php:190
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it returns null when system page…   
+  Failed asserting that Array &0 [
+    'html' => '<div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+    <a href="/" class="widget-logo__link">\n
+                            <span class="widget-logo__text">My Organization</span>\n
+            </a>\n
+</div>\n
+</div></div><div class="layout-column"><div class="widget widget--nav" id="widget-a1ab5dbb-aeb9-45f2-9a74-5b1d54d7e968"><style>\n
+    @media (min-width: 769px) {\n
+        #nav-a52cfd87 .widget-nav__hamburger { display: none; }\n
+        #nav-a52cfd87 .widget-nav__mobile { display: none !important; }\n
+    }\n
+    @media (max-width: 768px) {\n
+        #nav-a52cfd87 .widget-nav__menu { display: none; }\n
+        #nav-a52cfd87 .widget-nav__hamburger { display: block; }\n
+    }\n
+</style>\n
+<nav\n
+    id="nav-a52cfd87"\n
+    class="widget-nav widget-nav--drop-fade widget-nav--mobile-slide"\n
+    aria-label="primary"\n
+    x-data="{\n
+        mobileOpen: false,\n
+        activeDropdown: null,\n
+        hoverTimeout: null,\n
+        openDropdown(id) {\n
+            clearTimeout(this.hoverTimeout);\n
+            this.activeDropdown = id;\n
+        },\n
+        closeDropdown(id) {\n
+            this.hoverTimeout = setTimeout(() => {\n
+                if (this.activeDropdown === id) this.activeDropdown = null;\n
+            }, 150);\n
+        },\n
+        closeAll() { this.activeDropdown = null; },\n
+        toggleMobile() { this.mobileOpen = !this.mobileOpen; },\n
+    }"\n
+    @keydown.escape.window="closeAll(); mobileOpen = false"\n
+    style="--nav-justify: flex-end; --nav-align: center; --nav-link-color:#1d4ed8; --nav-hover-color:#60a5fa; --nav-drop-link-color:#1d4ed8; --nav-drop-hover-color:#60a5fa"\n
+>\n
+    \n
+    \n
+    \n
+    <button\n
+        class="widget-nav__hamburger"\n
+        @click="toggleMobile()"\n
+        :aria-expanded="mobileOpen.toString()"\n
+        aria-controls="nav-a52cfd87-mobile"\n
+        aria-label="Toggle navigation menu"\n
+    >\n
+        <span class="widget-nav__hamburger-bar" :class="mobileOpen && 'is-active'"></span>\n
+    </button>\n
+\n
+    \n
+    <ul class="widget-nav__menu" role="menubar" id="nav-a52cfd87-menu">\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/home" class="widget-nav__link ">Home</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/about" class="widget-nav__link ">About</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/contact" class="widget-nav__link ">Contact</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/events" class="widget-nav__link ">Events</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/news" class="widget-nav__link ">News</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+            </ul>\n
+\n
+    \n
+    <div\n
+        class="widget-nav__mobile"\n
+        id="nav-a52cfd87-mobile"\n
+        x-show="mobileOpen"\n
+        x-cloak\n
+        role="menu"\n
+        aria-label="primary"\n
+    >\n
+        <ul class="widget-nav__mobile-list">\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/home" class="widget-nav__link ">Home</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/about" class="widget-nav__link ">About</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/contact" class="widget-nav__link ">Contact</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/events" class="widget-nav__link ">Events</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/news" class="widget-nav__link ">News</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                    </ul>\n
+    </div>\n
+</nav>\n
+</div></div></div>',
+    'styles' => '',
+    'scripts' => '',
+    'assets' => Array &1 [
+        'css' => Array &2 [],
+        'js' => Array &3 [],
+        'scss' => Array &4 [
+            0 => 'app/Widgets/Logo/styles.scss',
+            1 => 'app/Widgets/Nav/styles.scss',
+        ],
+    ],
+] is null.
+
+  at tests/Feature/ChromeWidgetTest.php:93
+     89▕         'status'       => 'published',
+     90▕         'published_at' => now(),
+     91▕     ]);
+     92▕ 
+  ➜  93▕     expect(ChromeRenderer::render('_header'))->toBeNull();
+     94▕ });
+     95▕ 
+     96▕ it('returns null when system page does not exist', function () {
+     97▕     expect(ChromeRenderer::render('_header'))->toBeNull();
+
+  1   tests/Feature/ChromeWidgetTest.php:93
+
+  ──────────────────────────────────────────────────────────────────────��─────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it returns null when system page…   
+  Failed asserting that Array &0 [
+    'html' => '<div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+    <a href="/" class="widget-logo__link">\n
+                            <span class="widget-logo__text">My Organization</span>\n
+            </a>\n
+</div>\n
+</div></div><div class="layout-column"><div class="widget widget--nav" id="widget-a1ab5dbb-aeb9-45f2-9a74-5b1d54d7e968"><style>\n
+    @media (min-width: 769px) {\n
+        #nav-4751a55e .widget-nav__hamburger { display: none; }\n
+        #nav-4751a55e .widget-nav__mobile { display: none !important; }\n
+    }\n
+    @media (max-width: 768px) {\n
+        #nav-4751a55e .widget-nav__menu { display: none; }\n
+        #nav-4751a55e .widget-nav__hamburger { display: block; }\n
+    }\n
+</style>\n
+<nav\n
+    id="nav-4751a55e"\n
+    class="widget-nav widget-nav--drop-fade widget-nav--mobile-slide"\n
+    aria-label="primary"\n
+    x-data="{\n
+        mobileOpen: false,\n
+        activeDropdown: null,\n
+        hoverTimeout: null,\n
+        openDropdown(id) {\n
+            clearTimeout(this.hoverTimeout);\n
+            this.activeDropdown = id;\n
+        },\n
+        closeDropdown(id) {\n
+            this.hoverTimeout = setTimeout(() => {\n
+                if (this.activeDropdown === id) this.activeDropdown = null;\n
+            }, 150);\n
+        },\n
+        closeAll() { this.activeDropdown = null; },\n
+        toggleMobile() { this.mobileOpen = !this.mobileOpen; },\n
+    }"\n
+    @keydown.escape.window="closeAll(); mobileOpen = false"\n
+    style="--nav-justify: flex-end; --nav-align: center; --nav-link-color:#1d4ed8; --nav-hover-color:#60a5fa; --nav-drop-link-color:#1d4ed8; --nav-drop-hover-color:#60a5fa"\n
+>\n
+    \n
+    \n
+    \n
+    <button\n
+        class="widget-nav__hamburger"\n
+        @click="toggleMobile()"\n
+        :aria-expanded="mobileOpen.toString()"\n
+        aria-controls="nav-4751a55e-mobile"\n
+        aria-label="Toggle navigation menu"\n
+    >\n
+        <span class="widget-nav__hamburger-bar" :class="mobileOpen && 'is-active'"></span>\n
+    </button>\n
+\n
+    \n
+    <ul class="widget-nav__menu" role="menubar" id="nav-4751a55e-menu">\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/home" class="widget-nav__link ">Home</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/about" class="widget-nav__link ">About</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/contact" class="widget-nav__link ">Contact</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/events" class="widget-nav__link ">Events</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+                                <li\n
+                role="none"\n
+                class="widget-nav__item"\n
+                            >\n
+                <span\n
+                    role="menuitem"\n
+                    class="widget-nav__item-wrap"\n
+                                                        >\n
+                    <p><a href="http://localhost/news" class="widget-nav__link ">News</a></p>\n
+                                    </span>\n
+\n
+                            </li>\n
+            </ul>\n
+\n
+    \n
+    <div\n
+        class="widget-nav__mobile"\n
+        id="nav-4751a55e-mobile"\n
+        x-show="mobileOpen"\n
+        x-cloak\n
+        role="menu"\n
+        aria-label="primary"\n
+    >\n
+        <ul class="widget-nav__mobile-list">\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/home" class="widget-nav__link ">Home</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/about" class="widget-nav__link ">About</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/contact" class="widget-nav__link ">Contact</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/events" class="widget-nav__link ">Events</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                                            <li\n
+                    class="widget-nav__mobile-item"\n
+                    role="none"\n
+                                    >\n
+                    <span role="menuitem" class="widget-nav__mobile-item-wrap">\n
+                        <p><a href="http://localhost/news" class="widget-nav__link ">News</a></p>\n
+                                            </span>\n
+\n
+                                    </li>\n
+                    </ul>\n
+    </div>\n
+</nav>\n
+</div></div></div>',
+    'styles' => '',
+    'scripts' => '',
+    'assets' => Array &1 [
+        'css' => Array &2 [],
+        'js' => Array &3 [],
+        'scss' => Array &4 [
+            0 => 'app/Widgets/Logo/styles.scss',
+            1 => 'app/Widgets/Nav/styles.scss',
+        ],
+    ],
+] is null.
+
+  at tests/Feature/ChromeWidgetTest.php:97
+     93▕     expect(ChromeRenderer::render('_header'))->toBeNull();
+     94▕ });
+     95▕ 
+     96▕ it('returns null when system page does not exist', function () {
+  ➜  97▕     expect(ChromeRenderer::render('_header'))->toBeNull();
+     98▕ });
+     99▕ 
+    100▕ it('renders widget HTML when system page has active widgets', function () {
+    101▕     $page = Page::factory()->create([
+
+  1   tests/Feature/ChromeWidgetTest.php:97
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it renders widget HTML when syst…   
+  Expected: <div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+      <a href="/" class="widget-logo__link">\n
+                              <span class="widget-logo__text">My Organization</span>\n
+  ... (171 more lines)
+
+  To contain: Hello Chrome
+
+  at tests/Feature/ChromeWidgetTest.php:128
+    124▕ 
+    125▕     $result = ChromeRenderer::render('_header');
+    126▕ 
+    127▕     expect($result)->not->toBeNull();
+  ➜ 128▕     expect($result['html'])->toContain('Hello Chrome');
+    129▕ });
+    130▕ 
+    131▕ // ── Public layout fallback vs widget-driven ─────────────────────────────────
+    132▕
+
+  1   tests/Feature/ChromeWidgetTest.php:128
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it renders widget-driven header…    
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (261 more lines)
+
+  To contain: Widget Header Active
+
+  at tests/Feature/ChromeWidgetTest.php:190
+    186▕     ]);
+    187▕ 
+    188▕     $response = $this->get('/');
+    189▕     $response->assertOk();
+  ➜ 190▕     $response->assertSee('Widget Header Active');
+    191▕ });
+    192▕ 
+    193▕ it('renders widget-driven footer when widgets exist', function () {
+    194▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it renders widget-driven footer…    
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (261 more lines)
+
+  To contain: Widget Footer Active
+
+  at tests/Feature/ChromeWidgetTest.php:227
+    223▕     ]);
+    224▕ 
+    225▕     $response = $this->get('/');
+    226▕     $response->assertOk();
+  ➜ 227▕     $response->assertSee('Widget Footer Active');
+    228▕ });
+    229▕ 
+    230▕ // ── Permission gating ───────────────────────────────────────────────────────
+    231▕
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it renders a column layout on a…    
+  Expected: <div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+      <a href="/" class="widget-logo__link">\n
+                              <span class="widget-logo__text">My Organization</span>\n
+  ... (171 more lines)
+
+  To contain: Layout child content
+
+  at tests/Feature/ChromeWidgetTest.php:323
+    319▕     expect($result['html'])->toContain('page-layout');
+    320▕     expect($result['html'])->toContain('display:grid');
+    321▕     expect($result['html'])->toContain('grid-template-columns:auto 1fr');
+    322▕     expect($result['html'])->toContain('layout-column');
+  ➜ 323▕     expect($result['html'])->toContain('Layout child content');
+    324▕ });
+    325▕ 
+    326▕ it('wraps chrome layout in site-container by default', function () {
+    327▕     $page = Page::factory()->create([
+
+  1   tests/Feature/ChromeWidgetTest.php:323
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it wraps chrome layout in site-c…   
+  Expected: <div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+      <a href="/" class="widget-logo__link">\n
+                              <span class="widget-logo__text">My Organization</span>\n
+  ... (171 more lines)
+
+  To contain: site-container
+
+  at tests/Feature/ChromeWidgetTest.php:344
+    340▕ 
+    341▕     $result = ChromeRenderer::render('_header');
+    342▕ 
+    343▕     expect($result)->not->toBeNull();
+  ➜ 344▕     expect($result['html'])->toContain('site-container');
+    345▕     expect($result['html'])->toMatch('/<div class="site-container"><div class="page-layout"/');
+    346▕ });
+    347▕ 
+    348▕ it('renders chrome layout edge-to-edge when full_width is true', function () {
+
+  1   tests/Feature/ChromeWidgetTest.php:344
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTest > it emits new layout style fields…   
+  Expected: <div class="page-layout" style="display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;"><div class="layout-column"><div class="widget widget--logo" id="widget-a1ab5dbb-ae2b-4858-8b42-5b4f738b79e7"><div class="widget-logo">\n
+      <a href="/" class="widget-logo__link">\n
+                              <span class="widget-logo__text">My Organization</span>\n
+  ... (171 more lines)
+
+  To contain: background-color:#123456
+
+  at tests/Feature/ChromeWidgetTest.php:396
+    392▕ 
+    393▕     $result = ChromeRenderer::render('_header');
+    394▕ 
+    395▕     expect($result)->not->toBeNull();
+  ➜ 396▕     expect($result['html'])->toContain('background-color:#123456');
+    397▕     expect($result['html'])->toContain('padding-top:15px');
+    398▕     expect($result['html'])->toContain('margin-bottom:7px');
+    399▕ });
+    400▕
+
+  1   tests/Feature/ChromeWidgetTest.php:396
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ChromeWidgetTes…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5de9-fd07-4c99-9135-e1b682fefb90, 2026-04-30 18:31:10, 2026-04-30 18:31:10))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/ChromeWidgetTest.php:432
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CollectionPublicFlagTest > it scopePublic does not…    
+  Failed asserting that 3 is identical to 0.
+
+  at tests/Feature/CollectionPublicFlagTest.php:19
+     15▕         'is_active'   => true,
+     16▕         'fields'      => [],
+     17▕     ]);
+     18▕ 
+  ➜  19▕     expect(Collection::public()->count())->toBe(0);
+     20▕ });
+     21▕ 
+     22▕ it('scopePublic returns a public and active collection', function () {
+     23▕     Collection::create([
+
+  1   tests/Feature/CollectionPublicFlagTest.php:19
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CollectionPublicFlagTest > it scopePublic returns a…   
+  Failed asserting that 4 is identical to 1.
+
+  at tests/Feature/CollectionPublicFlagTest.php:32
+     28▕         'is_active'   => true,
+     29▕         'fields'      => [],
+     30▕     ]);
+     31▕ 
+  ➜  32▕     expect(Collection::public()->count())->toBe(1);
+     33▕ });
+     34▕ 
+     35▕ it('scopePublic does not return a public but inactive collection', function () {
+     36▕     Collection::create([
+
+  1   tests/Feature/CollectionPublicFlagTest.php:32
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\CollectionPublicFlagTest > it scopePublic does not…    
+  Failed asserting that 3 is identical to 0.
+
+  at tests/Feature/CollectionPublicFlagTest.php:45
+     41▕         'is_active'   => false,
+     42▕         'fields'      => [],
+     43▕     ]);
+     44▕ 
+  ➜  45▕     expect(Collection::public()->count())->toBe(0);
+     46▕ });
+     47▕
+
+  1   tests/Feature/CollectionPublicFlagTest.php:45
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ContentImportExportTest > it rejects a bundle with…    
+  Failed asserting that 15 is identical to 0.
+
+  at tests/Feature/ContentImportExportTest.php:478
+    474▕     expect(fn () => app(ContentImporter::class)->import($bundle, new ImportLog()))
+    475▕         ->toThrow(InvalidImportBundleException::class);
+    476▕ 
+    477▕     // No partial DB writes
+  ➜ 478▕     expect(Page::count())->toBe(0);
+    479▕ });
+    480▕ 
+    481▕ it('accepts a bundle within the supported major (1.x.y)', function () {
+    482▕     $this->actingAs(ieAuthorUser());
+
+  1   tests/Feature/ContentImportExportTest.php:478
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\DashboardBuilderApiControllerTest > it rejects widg…   
+  Failed asserting that 1 is identical to 0.
+
+  at tests/Feature/DashboardBuilderApiControllerTest.php:73
+     69▕ 
+     70▕     $response->assertStatus(422)
+     71▕         ->assertJsonFragment(['error' => "Widget [{$notDashboard->handle}] is not allowed in the dashboard grid slot."]);
+     72▕ 
+  ➜  73▕     expect(PageWidget::where('widget_type_id', $notDashboard->id)->count())->toBe(0);
+     74▕ });
+     75▕ 
+     76▕ it('accepts widget creation for handles whose allowedSlots() includes dashboard_grid', function () {
+     77▕     $this->config->pageWidgets()->delete();
+
+  1   tests/Feature/DashboardBuilderApiControllerTest.php:73
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpArticlePage…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "app_version", "last_updated", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm"], crm, 0.26, 2026-04-01 00:00:00, 2026-04-30 18:32:05, 2026-04-30 18:32:05) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpArticlePageTest.php:15
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpArticlePage…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm","tags","custom-fields"], crm, 2026-04-30 18:32:05, 2026-04-30 18:32:05) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpArticlePageTest.php:39
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpArticlePage…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm"], crm, 2026-04-30 18:32:05, 2026-04-30 18:32:05) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpArticlePageTest.php:76
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpArticleServ…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm"], 2026-04-30 18:32:05, 2026-04-30 18:32:05) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpArticleServiceTest.php:12
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpArticleServiceTest > it returns null when no ar…   
+  Failed asserting that App\Models\HelpArticle Object #59233 (
+    'connection' => 'pgsql',
+    'table' => 'help_articles',
+    'primaryKey' => 'id',
+    'keyType' => 'int',
+    'incrementing' => true,
+    'with' => Array &0 [],
+    'withCount' => Array &1 [],
+    'preventsLazyLoading' => false,
+    'perPage' => 15,
+    'exists' => true,
+    'wasRecentlyCreated' => false,
+    'escapeWhenCastingToString' => false,
+    'attributes' => Array &2 [
+        'id' => 8,
+        'slug' => 'dashboard',
+        'title' => 'Dashboard',
+        'description' => 'The main landing page of the admin panel, showing a welcome message, quick actions, integration status, and a help placeholder.',
+        'content' => '# Dashboard\n
+\n
+The Dashboard is the first screen you see when you log into the admin panel. It is arranged as a two-column grid with four sections.\n
+\n
+## Welcome\n
+\n
+The top-left panel displays the welcome message configured in **Settings → General → Admin Panel → Dashboard welcome message**. If no message has been set, a placeholder prompt is shown instead. This is a good place to post a short note for your team — upcoming maintenance, a staff reminder, or a seasonal greeting.\n
+\n
+## Help\n
+\n
+The top-right panel is reserved for a help article search. Search functionality is coming soon.\n
+\n
+## Quick Actions\n
+\n
+The bottom-left panel provides one-click shortcuts to the most common content creation tasks:\n
+\n
+- **New Blog Post** — opens the create screen for a new post.\n
+- **New Event** — opens the create screen for a new event.\n
+\n
+## Integration Status\n
+\n
+The bottom-right panel shows which third-party integrations are currently configured. An integration appears here when its API key has been entered in **Settings → General → Integrations**. If no keys are present, a prompt is shown to direct you to settings.\n
+\n
+Currently tracked integrations: MailChimp, Resend, Stripe, QuickBooks.\n
+\n
+## Getting Around\n
+\n
+Use the left-hand navigation to move between sections of the admin panel. Navigation is grouped into **CRM**, **CMS**, **Finance**, **Tools**, and **Settings**. Groups can be collapsed and expanded.',
+        'tags' => '["dashboard","overview"]',
+        'app_version' => '0.39',
+        'last_updated' => '2026-03-19',
+        'embedding' => null,
+        'created_at' => '2026-04-30 18:30:40',
+        'updated_at' => '2026-04-30 18:30:40',
+        'category' => 'general',
+    ],
+    'original' => Array &3 [
+        'id' => 8,
+        'slug' => 'dashboard',
+        'title' => 'Dashboard',
+        'description' => 'The main landing page of the admin panel, showing a welcome message, quick actions, integration status, and a help placeholder.',
+        'content' => '# Dashboard\n
+\n
+The Dashboard is the first screen you see when you log into the admin panel. It is arranged as a two-column grid with four sections.\n
+\n
+## Welcome\n
+\n
+The top-left panel displays the welcome message configured in **Settings → General → Admin Panel → Dashboard welcome message**. If no message has been set, a placeholder prompt is shown instead. This is a good place to post a short note for your team — upcoming maintenance, a staff reminder, or a seasonal greeting.\n
+\n
+## Help\n
+\n
+The top-right panel is reserved for a help article search. Search functionality is coming soon.\n
+\n
+## Quick Actions\n
+\n
+The bottom-left panel provides one-click shortcuts to the most common content creation tasks:\n
+\n
+- **New Blog Post** — opens the create screen for a new post.\n
+- **New Event** — opens the create screen for a new event.\n
+\n
+## Integration Status\n
+\n
+The bottom-right panel shows which third-party integrations are currently configured. An integration appears here when its API key has been entered in **Settings → General → Integrations**. If no keys are present, a prompt is shown to direct you to settings.\n
+\n
+Currently tracked integrations: MailChimp, Resend, Stripe, QuickBooks.\n
+\n
+## Getting Around\n
+\n
+Use the left-hand navigation to move between sections of the admin panel. Navigation is grouped into **CRM**, **CMS**, **Finance**, **Tools**, and **Settings**. Groups can be collapsed and expanded.',
+        'tags' => '["dashboard","overview"]',
+        'app_version' => '0.39',
+        'last_updated' => '2026-03-19',
+        'embedding' => null,
+        'created_at' => '2026-04-30 18:30:40',
+        'updated_at' => '2026-04-30 18:30:40',
+        'category' => 'general',
+    ],
+    'changes' => Array &4 [],
+    'casts' => Array &5 [
+        'tags' => 'array',
+        'last_updated' => 'date',
+        'embedding' => 'array',
+    ],
+    'classCastCache' => Array &6 [],
+    'attributeCastCache' => Array &7 [],
+    'dateFormat' => null,
+    'appends' => Array &8 [],
+    'dispatchesEvents' => Array &9 [],
+    'observables' => Array &10 [],
+    'relations' => Array &11 [],
+    'touches' => Array &12 [],
+    'timestamps' => true,
+    'usesUniqueIds' => false,
+    'hidden' => Array &13 [],
+    'visible' => Array &14 [],
+    'fillable' => Array &15 [
+        0 => 'slug',
+        1 => 'title',
+        2 => 'description',
+        3 => 'content',
+        4 => 'tags',
+        5 => 'app_version',
+        6 => 'last_updated',
+        7 => 'category',
+        8 => 'embedding',
+    ],
+    'guarded' => Array &16 [
+        0 => '*',
+    ],
+) is null.
+
+  at tests/Feature/HelpArticleServiceTest.php:43
+     39▕ it('returns null when no articles exist', function () {
+     40▕     $service = app(HelpArticleService::class);
+     41▕     $result = $service->forRoute('filament.admin.pages.dashboard');
+     42▕ 
+  ➜  43▕     expect($result)->toBeNull();
+     44▕ });
+     45▕
+
+  1   tests/Feature/HelpArticleServiceTest.php:43
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpSearchTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm"], crm, 2026-04-30 18:32:06, 2026-04-30 18:32:06) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpSearchTest.php:17
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpSearchTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(contacts) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (contacts, Contacts, Managing contacts., # Contacts, ["crm"], crm, 2026-04-30 18:32:06, 2026-04-30 18:32:06) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpSearchTest.php:32
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpSearchTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(donations) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (donations, Donations, Managing donations., # Donations help, ["finance"], finance, 2026-04-30 18:32:06, 2026-04-30 18:32:06) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpSearchTest.php:60
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\HelpSearchTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "help_articles_slug_unique"
+DETAIL:  Key (slug)=(custom-fields) already exists. (Connection: pgsql, SQL: insert into "help_articles" ("slug", "title", "description", "content", "tags", "category", "updated_at", "created_at") values (custom-fields, Custom Fields, Define custom fields., # Custom Fields, ["crm","custom-fields","contacts"], crm, 2026-04-30 18:32:06, 2026-04-30 18:32:06) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/HelpSearchTest.php:108
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e67-ca11-42a7-981c-8476b18c5603, 2026-04-30 18:32:33, 2026-04-30 18:32:33))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e67-de2b-4765-8214-dfa271930a1e, 2026-04-30 18:32:33, 2026-04-30 18:32:33))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationTest.php:25
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e68-9353-48e1-8c01-c14faef067fa, 2026-04-30 18:32:33, 2026-04-30 18:32:33))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:56
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e68-c4ae-49e9-93cc-7cb003a7990e, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:72
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e68-eb92-48f1-8159-403ed82ca05f, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:91
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e69-1211-422e-85a5-d4f732a6bcc7, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:104
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e69-3866-4bb3-ba1c-0a81ae737630, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:120
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e69-5e53-4cdc-a784-f0ca35a5d0bf, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:133
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e69-84c9-48e2-8802-7481ba2faa35, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:148
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e69-e61c-4268-9dcb-c7efdc9cf5a8, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:169
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e6a-0e0a-4b04-90cc-6fc108c33c4a, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:178
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e6a-3466-4eb0-8f0c-1393ce1a6299, 2026-04-30 18:32:34, 2026-04-30 18:32:34))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:191
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e6a-5c28-4b54-a85c-3b2716855805, 2026-04-30 18:32:35, 2026-04-30 18:32:35))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:204
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e6a-83d0-4650-b9ac-1d2d911d43d2, 2026-04-30 18:32:35, 2026-04-30 18:32:35))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:215
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\NavigationWidge…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "navigation_menus_handle_unique"
+DETAIL:  Key (handle)=(primary) already exists. (Connection: pgsql, SQL: insert into "navigation_menus" ("label", "handle", "id", "updated_at", "created_at") values (Primary, primary, a1ab5e6a-b4c9-4155-8f92-008496eca6df, 2026-04-30 18:32:35, 2026-04-30 18:32:35))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/NavigationWidgetTest.php:23
+  17  tests/Feature/NavigationWidgetTest.php:228
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageBuilderBootstrapPaletteTest > it exposes theme_…   
+  Failed asserting that two strings are identical.
+  -'#aabbcc'
+  +'#0172ad'
+  
+
+  at tests/Feature/PageBuilderBootstrapPaletteTest.php:55
+     51▕         'nav_hover_color',
+     52▕         'nav_active_color',
+     53▕     ]);
+     54▕ 
+  ➜  55▕     expect($byKey['primary_color']['value'])->toBe('#aabbcc');
+     56▕     expect($byKey['header_bg_color']['value'])->toBe('#ffffff');
+     57▕     expect($byKey['nav_active_color']['value'])->toBe('#333333');
+     58▕ });
+     59▕
+
+  1   tests/Feature/PageBuilderBootstrapPaletteTest.php:55
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageBuilderBootstrapPaletteTest > it falls back to…    
+  Failed asserting that two strings are identical.
+  -'#bbbbbb'
+  +'#ffffff'
+  
+
+  at tests/Feature/PageBuilderBootstrapPaletteTest.php:135
+    131▕ 
+    132▕     $byKey = collect($bootstrap['theme_palette'])->keyBy('key');
+    133▕ 
+    134▕     expect($byKey['primary_color']['value'])->toBe('#123456');
+  ➜ 135▕     expect($byKey['header_bg_color']['value'])->toBe('#bbbbbb');
+    136▕     expect($byKey['footer_bg_color']['value'])->toBe('#cccccc');
+    137▕     expect($byKey['nav_link_color']['value'])->toBe('#dddddd');
+    138▕     expect($byKey['nav_hover_color']['value'])->toBe('#eeeeee');
+    139▕     expect($byKey['nav_active_color']['value'])->toBe('#ffffff');
+
+  1   tests/Feature/PageBuilderBootstrapPaletteTest.php:135
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageBuilderBootstrapPaletteTest > it returns an emp…   
+  Failed asserting that an array is empty.
+
+  at tests/Feature/PageBuilderBootstrapPaletteTest.php:150
+    146▕         ->instance()
+    147▕         ->getBootstrapData();
+    148▕ 
+    149▕     expect($bootstrap)->toHaveKey('theme_palette');
+  ➜ 150▕     expect($bootstrap['theme_palette'])->toBeArray()->toBeEmpty();
+    151▕ });
+    152▕
+
+  1   tests/Feature/PageBuilderBootstrapPaletteTest.php:150
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageTest > it serves a published page at /{slug}       
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (261 more lines)
+
+  To contain: About Us
+
+  at tests/Feature/PageTest.php:31
+     27▕         'status' => 'published',
+     28▕         'published_at' => now(),
+     29▕     ]);
+     30▕ 
+  ➜  31▕     $this->get('/about')->assertOk()->assertSee('About Us');
+     32▕ });
+     33▕ 
+     34▕ it('serves a published page with a nested slug', function () {
+     35▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageTest > it returns 404 at / when no published ho…   
+  Expected response status code [404] but received 200.
+Failed asserting that 200 is identical to 404.
+
+  at tests/Feature/PageTest.php:72
+     68▕     expect($page->slug)->toBe('our-mission-statement');
+     69▕ });
+     70▕ 
+     71▕ it('returns 404 at / when no published home page exists', function () {
+  ➜  72▕     $this->get('/')->assertNotFound();
+     73▕ });
+     74▕ 
+     75▕ it('page type defaults to default', function () {
+     76▕     $page = Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageWidgetTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "widget_types_handle_unique"
+DETAIL:  Key (handle)=(text_block) already exists. (Connection: pgsql, SQL: insert into "widget_types" ("handle", "label", "render_mode", "collections", "config_schema", "template", "id", "updated_at", "created_at") values (text_block, Text Block, server, [], [{"key":"content","type":"richtext","label":"Content"}], {!! $config['content'] ?? '' !!}, a1ab5e8d-4e2b-4ecd-9171-03fb46668fc1, 2026-04-30 18:32:57, 2026-04-30 18:32:57))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/PageWidgetTest.php:13
+  17  tests/Feature/PageWidgetTest.php:31
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PageWidgetTest…   UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "widget_types_handle_unique"
+DETAIL:  Key (handle)=(text_block) already exists. (Connection: pgsql, SQL: insert into "widget_types" ("handle", "label", "render_mode", "collections", "config_schema", "template", "id", "updated_at", "created_at") values (text_block, Text Block, server, [], [{"key":"content","type":"richtext","label":"Content"}], {!! $config['content'] ?? '' !!}, a1ab5e8d-9996-452c-a3b2-aac154f1ce83, 2026-04-30 18:32:58, 2026-04-30 18:32:58))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/PageWidgetTest.php:13
+  17  tests/Feature/PageWidgetTest.php:76
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it s…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:11, 2026-04-30 18:33:11) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it p…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:11, 2026-04-30 18:33:11) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it u…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:11, 2026-04-30 18:33:11) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it m…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:12, 2026-04-30 18:33:12) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it p…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:12, 2026-04-30 18:33:12) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it f…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:12, 2026-04-30 18:33:12) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PostTest > it f…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(blog_prefix) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (blog_prefix, news, general, string, 2026-04-30 18:33:12, 2026-04-30 18:33:12) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/PostTest.php:14
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RandomDataGeneratorPoolImagesTest > it attaches poo…   
+  Failed asserting that actual size 0 matches expected size 1.
+
+  at tests/Feature/RandomDataGeneratorPoolImagesTest.php:32
+     28▕     $products = Product::all();
+     29▕     expect($products)->toHaveCount(3);
+     30▕ 
+     31▕     $products->each(function (Product $p) {
+  ➜  32▕         expect($p->getMedia('product_image'))->toHaveCount(1);
+     33▕     });
+     34▕ });
+     35▕ 
+     36▕ it('attaches pool images to generated events for thumbnail and header collections', function () {
+
+  1   tests/Feature/RandomDataGeneratorPoolImagesTest.php:32
+      +1 vendor frames 
+  3   tests/Feature/RandomDataGeneratorPoolImagesTest.php:31
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RandomDataGeneratorPoolImagesTest > it attaches poo…   
+  Failed asserting that actual size 0 matches expected size 1.
+
+  at tests/Feature/RandomDataGeneratorPoolImagesTest.php:45
+     41▕     $events = Event::all();
+     42▕     expect($events)->toHaveCount(3);
+     43▕ 
+     44▕     $events->each(function (Event $e) {
+  ➜  45▕         expect($e->getMedia('event_thumbnail'))->toHaveCount(1);
+     46▕         expect($e->getMedia('event_header'))->toHaveCount(1);
+     47▕     });
+     48▕ });
+     49▕
+
+  1   tests/Feature/RandomDataGeneratorPoolImagesTest.php:45
+      +1 vendor frames 
+  3   tests/Feature/RandomDataGeneratorPoolImagesTest.php:44
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RandomDataGeneratorPoolImagesTest > it attaches poo…   
+  Failed asserting that actual size 0 matches expected size 1.
+
+  at tests/Feature/RandomDataGeneratorPoolImagesTest.php:59
+     55▕     $posts = Page::where('type', 'post')->get();
+     56▕     expect($posts)->toHaveCount(2);
+     57▕ 
+     58▕     $posts->each(function (Page $page) {
+  ➜  59▕         expect($page->getMedia('post_thumbnail'))->toHaveCount(1);
+     60▕         expect($page->getMedia('post_header'))->toHaveCount(1);
+     61▕     });
+     62▕ });
+     63▕
+
+  1   tests/Feature/RandomDataGeneratorPoolImagesTest.php:59
+      +1 vendor frames 
+  3   tests/Feature/RandomDataGeneratorPoolImagesTest.php:58
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewBuilderApiControllerTest > it rejec…   
+  Failed asserting that 6 is identical to 0.
+
+  at tests/Feature/RecordDetailViewBuilderApiControllerTest.php:75
+     71▕ 
+     72▕     $response->assertStatus(422)
+     73▕         ->assertJsonFragment(['error' => "Widget [{$notAllowed->handle}] is not allowed in the record detail sidebar slot."]);
+     74▕ 
+  ➜  75▕     expect(PageWidget::where('widget_type_id', $notAllowed->id)->count())->toBe(0);
+     76▕ });
+     77▕ 
+     78▕ it('accepts widget creation for handles whose allowedSlots() includes record_detail_sidebar', function () {
+     79▕     $this->view->pageWidgets()->delete();
+
+  1   tests/Feature/RecordDetailViewBuilderApiControllerTest.php:75
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailVie…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "record_detail_views_record_type_handle_unique"
+DETAIL:  Key (record_type, handle)=(App\Models\Contact, contact_overview) already exists. (Connection: pgsql, SQL: insert into "record_detail_views" ("record_type", "handle", "label", "sort_order", "id", "updated_at", "created_at") values (App\Models\Contact, contact_overview, Overview, 0, a1ab5ef5-1e7f-482c-9278-0b85e621d43b, 2026-04-30 18:34:06, 2026-04-30 18:34:06))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +15 vendor frames 
+  16  tests/Feature/RecordDetailViewSeederTest.php:84
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailVie…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "record_detail_views_record_type_handle_unique"
+DETAIL:  Key (record_type, handle)=(App\Models\Contact, contact_overview) already exists. (Connection: pgsql, SQL: insert into "record_detail_views" ("handle", "record_type", "label", "sort_order", "layout_config", "id", "updated_at", "created_at") values (contact_overview, App\Models\Contact, Overview, 0, ?, a1ab5ef5-776a-4f44-8ebd-57b625b5daab, 2026-04-30 18:34:06, 2026-04-30 18:34:06))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:571
+    567▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    568▕ 
+    569▕             $this->recordsHaveBeenModified();
+    570▕ 
+  ➜ 571▕             return $statement->execute();
+    572▕         });
+    573▕     }
+    574▕ 
+    575▕     /**
+
+      +14 vendor frames 
+  15  tests/Feature/RecordDetailViewSubNavigationTest.php:107
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewSubNavigationTest > it builds Navig…   
+  Failed asserting that actual size 3 matches expected size 2.
+
+  at tests/Feature/RecordDetailViewSubNavigationTest.php:134
+    130▕     ]);
+    131▕ 
+    132▕     $items = $this->host->getSubNavigation();
+    133▕ 
+  ➜ 134▕     expect($items)->toHaveCount(2)
+    135▕         ->and($items[0])->toBeInstanceOf(NavigationItem::class)
+    136▕         ->and($items[0]->getLabel())->toBe('A')
+    137▕         ->and($items[1]->getLabel())->toBe('B');
+    138▕ });
+
+  1   tests/Feature/RecordDetailViewSubNavigationTest.php:134
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewSubNavigationTest > it appends addi…   
+  Failed asserting that actual size 3 matches expected size 2.
+
+  at tests/Feature/RecordDetailViewSubNavigationTest.php:154
+    150▕     $this->host->extraPages = [StubAdditionalPage_AlwaysAccessible::class];
+    151▕ 
+    152▕     $items = $this->host->getSubNavigation();
+    153▕ 
+  ➜ 154▕     expect($items)->toHaveCount(2)
+    155▕         ->and($items[0]->getLabel())->toBe('Overview')
+    156▕         ->and($items[1]->getLabel())->toBe('Stub');
+    157▕ });
+    158▕
+
+  1   tests/Feature/RecordDetailViewSubNavigationTest.php:154
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewSubNavigationTest > it drops additi…   
+  Failed asserting that actual size 3 matches expected size 2.
+
+  at tests/Feature/RecordDetailViewSubNavigationTest.php:193
+    189▕     ]);
+    190▕ 
+    191▕     $items = $this->host->getSubNavigation();
+    192▕ 
+  ➜ 193▕     expect($items)->toHaveCount(2)
+    194▕         ->and($items[0]->getLabel())->toBe('Overview')
+    195▕         ->and($items[1]->getLabel())->toBe('Stub');
+    196▕ });
+    197▕
+
+  1   tests/Feature/RecordDetailViewSubNavigationTest.php:193
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewSubNavigationTest > it returns [] w…   
+  Failed asserting that two arrays are identical.
+  -Array &0 []
+  +Array &0 [
+  +    0 => Filament\Navigation\NavigationItem Object #75107 (
+  +        'group' => null,
+  +        'parentItem' => null,
+  +        'isActive' => null,
+  +        'icon' => null,
+  +        'activeIcon' => null,
+  +        'label' => 'Stub',
+  +        'badge' => null,
+  +        'badgeColor' => null,
+  +        'badgeTooltip' => null,
+  +        'shouldOpenUrlInNewTab' => false,
+  +        'sort' => null,
+  +        'url' => '/stub',
+  +        'isHidden' => false,
+  +        'isVisible' => true,
+  +        'childItems' => Array &1 [],
+  +    ),
+  +    1 => Filament\Navigation\NavigationItem Object #68030 (
+  +        'group' => null,
+  +        'parentItem' => null,
+  +        'isActive' => Closure Object #74908 (
+  +            0 => Closure Object #74908,
+  +        ),
+  +        'icon' => null,
+  +        'activeIcon' => null,
+  +        'label' => 'Overview',
+  +        'badge' => null,
+  +        'badgeColor' => null,
+  +        'badgeTooltip' => null,
+  +        'shouldOpenUrlInNewTab' => false,
+  +        'sort' => null,
+  +        'url' => '/stub',
+  +        'isHidden' => false,
+  +        'isVisible' => true,
+  +        'childItems' => Array &2 [],
+  +    ),
+  +    2 => Filament\Navigation\NavigationItem Object #77277 (
+  +        'group' => null,
+  +        'parentItem' => null,
+  +        'isActive' => Closure Object #77837 (
+  +            0 => Closure Object #77837,
+  +        ),
+  +        'icon' => null,
+  +        'activeIcon' => null,
+  +        'label' => 'Overview',
+  +        'badge' => null,
+  +        'badgeColor' => null,
+  +        'badgeTooltip' => null,
+  +        'shouldOpenUrlInNewTab' => false,
+  +        'sort' => null,
+  +        'url' => '/stub',
+  +        'isHidden' => false,
+  +        'isVisible' => true,
+  +        'childItems' => Array &3 [],
+  +    ),
+  +]
+  
+
+  at tests/Feature/RecordDetailViewSubNavigationTest.php:235
+    231▕         'handle'      => 'overview',
+    232▕         'label'       => 'Overview',
+    233▕     ]);
+    234▕ 
+  ➜ 235▕     expect($hostWithEntry->getSubNavigation())->toBe([]);
+    236▕ });
+    237▕ 
+    238▕ it('renders sub-nav with entry + 2 Views — three navigable destinations crosses the threshold', function () {
+    239▕     $hostWithEntry = new class {
+
+  1   tests/Feature/RecordDetailViewSubNavigationTest.php:235
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\RecordDetailViewSubNavigationTest > it renders sub-…   
+  Failed asserting that actual size 4 matches expected size 3.
+
+  at tests/Feature/RecordDetailViewSubNavigationTest.php:264
+    260▕     RecordDetailView::factory()->create(['record_type' => Contact::class, 'handle' => 'b', 'label' => 'B', 'sort_order' => 1]);
+    261▕ 
+    262▕     $items = $hostWithEntry->getSubNavigation();
+    263▕ 
+  ➜ 264▕     expect($items)->toHaveCount(3);
+    265▕ });
+    266▕
+
+  1   tests/Feature/RecordDetailViewSubNavigationTest.php:264
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SampleImageLibraryTest > it random returns empty co…   
+  Failed asserting that actual size 3 matches expected size 0.
+
+  at tests/Feature/SampleImageLibraryTest.php:77
+     73▕ it('random returns empty collection when pool is empty', function () {
+     74▕     SampleImage::forCategory(SampleImage::CATEGORY_STILL_PHOTOS); // row but no media
+     75▕     $lib = app(SampleImageLibrary::class);
+     76▕ 
+  ➜  77▕     expect($lib->random(SampleImage::CATEGORY_STILL_PHOTOS, 3))->toHaveCount(0);
+     78▕ });
+     79▕ 
+     80▕ it('randomUrl returns null when pool is empty', function () {
+     81▕     $lib = app(SampleImageLibrary::class);
+
+  1   tests/Feature/SampleImageLibraryTest.php:77
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SampleImageLibraryTest > it randomUrl returns null…    
+  Failed asserting that 'http://localhost/storage/37/Atypical_chess_pieces_(3).jpg' is null.
+
+  at tests/Feature/SampleImageLibraryTest.php:82
+     78▕ });
+     79▕ 
+     80▕ it('randomUrl returns null when pool is empty', function () {
+     81▕     $lib = app(SampleImageLibrary::class);
+  ➜  82▕     expect($lib->randomUrl(SampleImage::CATEGORY_PRODUCT_PHOTOS))->toBeNull();
+     83▕ });
+     84▕ 
+     85▕ it('urlOrPlaceholder falls back to placeholder when empty', function () {
+     86▕     $lib = app(SampleImageLibrary::class);
+
+  1   tests/Feature/SampleImageLibraryTest.php:82
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SampleImageLibraryTest > it urlOrPlaceholder falls…    
+  Failed asserting that two strings are identical.
+  -'/images/sample-placeholder.png'
+  +'http://localhost/storage/39/Dülmen,_Kirchspiel,_ehem._Sondermunitionslager_Visbeck,__What_if__--_2023_--_6727.jpg'
+  
+
+  at tests/Feature/SampleImageLibraryTest.php:88
+     84▕ 
+     85▕ it('urlOrPlaceholder falls back to placeholder when empty', function () {
+     86▕     $lib = app(SampleImageLibrary::class);
+     87▕     expect($lib->urlOrPlaceholder(SampleImage::CATEGORY_PRODUCT_PHOTOS))
+  ➜  88▕         ->toBe(SampleImageLibrary::PLACEHOLDER_URL);
+     89▕ });
+     90▕ 
+     91▕ // ── DemoDataService integration ─────────────────────────────────────────────
+     92▕
+
+  1   tests/Feature/SampleImageLibraryTest.php:88
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SampleImageLibraryTest > it DemoDataService generat…   
+  Failed asserting that two strings are identical.
+  -'/images/sample-placeholder.png'
+  +'http://localhost/storage/8/JORGE_LUIS_DEL_HIERRO.jpg'
+  
+
+  at tests/Feature/SampleImageLibraryTest.php:97
+     93▕ it('DemoDataService generateFieldValue maps image keys to pool URLs or placeholder', function () {
+     94▕     $svc = app(DemoDataService::class);
+     95▕ 
+     96▕     $url = $svc->generateFieldValue('image', null, ['key' => 'product_photo']);
+  ➜  97▕     expect($url)->toBe(SampleImageLibrary::PLACEHOLDER_URL);
+     98▕ 
+     99▕     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
+    100▕ 
+    101▕     $logoUrl = $svc->generateFieldValue('image', null, ['key' => 'company_logo']);
+
+  1   tests/Feature/SampleImageLibraryTest.php:97
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it renders title from meta_title when set    
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <title>Custom SEO Title</title>
+
+  at tests/Feature/SeoTest.php:28
+     24▕     ]);
+     25▕ 
+     26▕     $this->get('/')
+     27▕         ->assertOk()
+  ➜  28▕         ->assertSee('<title>Custom SEO Title</title>', false);
+     29▕ });
+     30▕ 
+     31▕ it('falls back to page title when meta_title is empty', function () {
+     32▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it falls back to page title when meta_tit…   
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <title>About Our Org</title>
+
+  at tests/Feature/SeoTest.php:42
+     38▕     ]);
+     39▕ 
+     40▕     $this->get('/about')
+     41▕         ->assertOk()
+  ➜  42▕         ->assertSee('<title>About Our Org</title>', false);
+     43▕ });
+     44▕ 
+     45▕ it('renders meta description when set', function () {
+     46▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it renders meta description when set         
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <meta name="description" content="A great nonprofit.">
+
+  at tests/Feature/SeoTest.php:56
+     52▕     ]);
+     53▕ 
+     54▕     $this->get('/')
+     55▕         ->assertOk()
+  ➜  56▕         ->assertSee('<meta name="description" content="A great nonprofit.">', false);
+     57▕ });
+     58▕ 
+     59▕ it('renders OG tags', function () {
+     60▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it renders OG tags                           
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <meta property="og:title" content="OG Test">
+
+  at tests/Feature/SeoTest.php:70
+     66▕     ]);
+     67▕ 
+     68▕     $this->get('/')
+     69▕         ->assertOk()
+  ➜  70▕         ->assertSee('<meta property="og:title" content="OG Test">', false)
+     71▕         ->assertSee('<meta property="og:type" content="website">', false);
+     72▕ });
+     73▕ 
+     74▕ it('renders canonical URL', function () {
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it renders per-page head snippet in the h…   
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <!-- test-head-snippet -->
+
+  at tests/Feature/SeoTest.php:279
+    275▕     ]);
+    276▕ 
+    277▕     $this->get('/')
+    278▕         ->assertOk()
+  ➜ 279▕         ->assertSee('<!-- test-head-snippet -->', false);
+    280▕ });
+    281▕ 
+    282▕ it('renders per-page body snippet before closing body', function () {
+    283▕     Page::factory()->create([
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SeoTest > it renders per-page body snippet before c…   
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (264 more lines)
+
+  To contain: <!-- test-body-snippet -->
+
+  at tests/Feature/SeoTest.php:293
+    289▕     ]);
+    290▕ 
+    291▕     $this->get('/')
+    292▕         ->assertOk()
+  ➜ 293▕         ->assertSee('<!-- test-body-snippet -->', false);
+    294▕ });
+    295▕ 
+    296▕ it('renders site-wide head snippet', function () {
+    297▕     SiteSetting::set('site_head_snippet', '<!-- site-head -->');
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SiteSettingTest…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(site_name) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (site_name, Test Org, general, string, 2026-04-30 18:34:42, 2026-04-30 18:34:42) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/SiteSettingTest.php:19
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SiteSettingTest…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(use_pico) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (use_pico, true, styles, boolean, 2026-04-30 18:34:42, 2026-04-30 18:34:42) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/SiteSettingTest.php:30
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\SiteSettingTest…  UniqueConstraintViolationException   
+  SQLSTATE[23505]: Unique violation: 7 ERROR:  duplicate key value violates unique constraint "site_settings_key_unique"
+DETAIL:  Key (key)=(site_name) already exists. (Connection: pgsql, SQL: insert into "site_settings" ("key", "value", "group", "type", "updated_at", "created_at") values (site_name, Old Name, general, string, 2026-04-30 18:34:42, 2026-04-30 18:34:42) returning "id")
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:412
+    408▕             );
+    409▕ 
+    410▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    411▕ 
+  ➜ 412▕             $statement->execute();
+    413▕ 
+    414▕             return $statement->fetchAll();
+    415▕         });
+    416▕     }
+
+      +17 vendor frames 
+  18  tests/Feature/SiteSettingTest.php:58
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateManagerTest > it non-default page template…    
+  Failed asserting that two strings are identical.
+  -'#aaaaaa'
+  +'#0172ad'
+  
+
+  at tests/Feature/TemplateManagerTest.php:294
+    290▕         'primary_color'   => null,
+    291▕         'header_bg_color' => null,
+    292▕     ]);
+    293▕ 
+  ➜ 294▕     expect($child->resolved('primary_color'))->toBe('#aaaaaa');
+    295▕     expect($child->resolved('header_bg_color'))->toBe('#bbbbbb');
+    296▕ });
+    297▕ 
+    298▕ // ── Custom header/footer for non-default templates ────────────────────────
+
+  1   tests/Feature/TemplateManagerTest.php:294
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it resolved() falls back to default…    
+  Failed asserting that two strings are identical.
+  -'#ff0000'
+  +'#0172ad'
+  
+
+  at tests/Feature/TemplateTest.php:56
+     52▕         'primary_color'   => null,
+     53▕         'header_bg_color' => null,
+     54▕     ]);
+     55▕ 
+  ➜  56▕     expect($child->resolved('primary_color'))->toBe('#ff0000');
+     57▕     expect($child->resolved('header_bg_color'))->toBe('#abcdef');
+     58▕ });
+     59▕ 
+     60▕ // ── Scopes ──────────────────────────────────────────────────────────────────
+
+  1   tests/Feature/TemplateTest.php:56
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it scopeDefault returns the default…    
+  Failed asserting that two strings are identical.
+  -'a1ab5f38-194a-4cc1-96e7-ae6f2d24c588'
+  +'a1ab5dbb-b1ed-424b-8be8-77788a46b349'
+  
+
+  at tests/Feature/TemplateTest.php:68
+     64▕     Template::factory()->create(['type' => 'page', 'is_default' => false]);
+     65▕     Template::factory()->create(['type' => 'content', 'is_default' => false]);
+     66▕ 
+     67▕     $result = Template::query()->default()->first();
+  ➜  68▕     expect($result->id)->toBe($default->id);
+     69▕ });
+     70▕ 
+     71▕ it('scopePage filters to page type', function () {
+     72▕     Template::factory()->create(['type' => 'page']);
+
+  1   tests/Feature/TemplateTest.php:68
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it scopePage filters to page type       
+  Failed asserting that 2 is identical to 1.
+
+  at tests/Feature/TemplateTest.php:75
+     71▕ it('scopePage filters to page type', function () {
+     72▕     Template::factory()->create(['type' => 'page']);
+     73▕     Template::factory()->create(['type' => 'content']);
+     74▕ 
+  ➜  75▕     expect(Template::query()->page()->count())->toBe(1);
+     76▕ });
+     77▕ 
+     78▕ it('scopeContent filters to content type', function () {
+     79▕     Template::factory()->create(['type' => 'page']);
+
+  1   tests/Feature/TemplateTest.php:75
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it scopeContent filters to content t…   
+  Failed asserting that 6 is identical to 1.
+
+  at tests/Feature/TemplateTest.php:82
+     78▕ it('scopeContent filters to content type', function () {
+     79▕     Template::factory()->create(['type' => 'page']);
+     80▕     Template::factory()->create(['type' => 'content']);
+     81▕ 
+  ➜  82▕     expect(Template::query()->content()->count())->toBe(1);
+     83▕ });
+     84▕ 
+     85▕ // ── TemplateSeeder ──────────────────────────────────────────────────────────
+     86▕
+
+  1   tests/Feature/TemplateTest.php:82
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it TemplateSeeder creates default pa…   
+  Failed asserting that two strings are identical.
+  -'a1ab5f38-5638-4e25-b5ef-51fa4b76ee27'
+  +'a1ab5dbb-aa9c-4ecb-8d55-c5e069bd192b'
+  
+
+  at tests/Feature/TemplateTest.php:100
+     96▕     expect($default)->not->toBeNull();
+     97▕     expect($default->name)->toBe('Default');
+     98▕     expect($default->primary_color)->toBe('#0172ad');
+     99▕     expect($default->header_bg_color)->toBe('#ffffff');
+  ➜ 100▕     expect($default->header_page_id)->toBe($header->id);
+    101▕     expect($default->footer_page_id)->toBe($footer->id);
+    102▕ });
+    103▕ 
+    104▕ it('TemplateSeeder creates all built-in content templates', function () {
+
+  1   tests/Feature/TemplateTest.php:100
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TemplateTest > it page with no template uses defaul…   
+  Expected: <!DOCTYPE html>\n
+  <html lang="en">\n
+  <head>\n
+  ... (261 more lines)
+
+  To contain: #333333
+
+  at tests/Feature/TemplateTest.php:211
+    207▕     ]);
+    208▕ 
+    209▕     $response = $this->get('/default-tpl-page');
+    210▕     $response->assertStatus(200);
+  ➜ 211▕     $response->assertSee('#333333');
+    212▕ });
+    213▕
+
+
+  Tests:    86 failed, 1724 passed (9399 assertions)
+  Duration: 308.37s
+
+Error: Process completed with exit code 2.

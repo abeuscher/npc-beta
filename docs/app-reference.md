@@ -276,7 +276,7 @@ Local dev defaults to `BACKUP_DISKS=local`, which writes backups to `storage/app
 
 ### Orphan media sweep
 
-`spatie/laravel-medialibrary` ships `media-library:clean`, which removes orphan `media` rows (where the polymorphic owner is gone) and orphan conversion files (where the parent `media` row is gone but the conversion file lingers). Session 247 registered it in `bootstrap/app.php`'s `withSchedule()` block on a daily cadence (`->onOneServer()->withoutOverlapping()`). It does NOT walk the whole `storage/app/public/` tree looking for files with no `media` row — that gap is what `app:reset` covers for the dev wholesale-wipe case (see Dev tooling — `app:reset`). Subject to the same scheduler-runner gap below.
+`spatie/laravel-medialibrary` ships `media-library:clean`, which removes orphan `media` rows (where the polymorphic owner is gone) and orphan conversion files (where the parent `media` row is gone but the conversion file lingers). Session 247 registered it in `bootstrap/app.php`'s `withSchedule()` block on a daily cadence (`->onOneServer()->withoutOverlapping()`). It does NOT walk the whole `storage/app/public/` tree looking for files with no `media` row — that wholesale-wipe gap remains open as a stub in `session-outlines.md` (the original 247 `app:reset` fix was reverted at session 252; see the stub for the open design question). Subject to the same scheduler-runner gap below.
 
 ### Scheduler runner — known gap
 
@@ -306,20 +306,6 @@ The Fleet Manager agent contract authenticates via mTLS at the TLS layer as of v
 - **Production:** the operator pastes the FM-supplied client cert into `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container at `/etc/nginx/certs/fm-client.crt`) before first nginx start, and re-pastes plus restarts on rotation. Full procedure at `docs/runbooks/fleet-manager-cert-paste.md`.
 
 The mTLS gate is `/api/health`-scoped only — public routes, admin, portal stay reachable without a client cert.
-
-## Dev tooling — `app:reset`
-
-`docker compose exec app php artisan app:reset` wipes the database and the on-disk media tree, then runs `migrate:fresh --seed` to restore a clean dev state. Use it any time you want a fresh install — it replaces the manual `migrate:fresh --seed` + `rm -rf storage/app/public/*` two-step.
-
-**Why it exists.** `migrate:fresh` truncates tables via raw SQL, which bypasses Eloquent's `deleting` events — so Spatie Media Library's "delete file when model deleted" observer never fires, and every reseed cycle leaves the previous run's media files behind. With image conversions multiplying each upload by ~6× (responsive WebP variants), months of `migrate:fresh` cycles compound into multi-GB orphan piles. `app:reset` pairs the DB wipe with a storage wipe so the two stay in sync.
-
-**Production-refusal gate.** The command refuses to run when `app()->environment() === 'production'` and exits non-zero. There is no escape hatch — if you need to wipe a production install, the supported path is the manual restore procedure in the Backups section.
-
-**What it wipes.**
-
-- The whole database (via `migrate:fresh --seed --force`).
-- `storage/app/public/*` (Spatie Media Library's primary disk).
-- `storage/media-library/temp/*` (Spatie's temp upload area).
 
 ## Dev tooling — widget thumbnails
 

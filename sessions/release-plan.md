@@ -300,7 +300,7 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub. Text widget vertical alignment, in-app build-trigger audit, dev-environment orphan media cleanup (`app:reset` artisan command), heroicon picker in Quill. May split per Rule 11.
+- **success criterion:** Per existing stub. Text widget vertical alignment, in-app build-trigger audit, dev-environment orphan media cleanup (artisan-command shape closed at session 252; revisit per the reopened stub in `session-outlines.md`), heroicon picker in Quill. May split per Rule 11.
 - **estimated time cost:** 1–2 sessions.
 
 #### E13. Help docs body content
@@ -390,4 +390,4 @@ Items considered during 244 vetting and explicitly *not* in the working set. Eac
 - **A2 split shape.** FM node operations parity may run as one session or two (install + backup + restore in one; log-reading separately). Decide at A2 session start based on FM-side codebase state.
 - **C3 split shape.** Permission audit + concurrent + exposure are folded; may split if findings exceed in-session-fix capacity (Rule 2).
 - **D2 split shape.** Compatibility cluster is folded; may split into Browser+Accessibility / Flaky-connection halves if scope inflates.
-- **E12 (Housekeeping Batch 2) shape.** May split per Rule 11 if any item turns out to need design-level conversation; the existing stub flags `app:reset` as the largest item.
+- **E12 (Housekeeping Batch 2) shape.** May split per Rule 11 if any item turns out to need design-level conversation. The dev-environment orphan media cleanup item reopened at session 252 (original 247 `app:reset` fix reverted — see the reopened stub in `session-outlines.md`); the next attempt is design-shaped and likely wants its own session.
