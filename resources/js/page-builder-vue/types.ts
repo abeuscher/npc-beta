@@ -180,6 +180,7 @@ export interface BootstrapData {
   api_base_url: string
   api_lookup_url?: string
   inline_image_upload_url: string
+  heroicons_url?: string
   color_swatches: string[]
   theme_palette: ThemePaletteEntry[]
   theme_editor_url: string

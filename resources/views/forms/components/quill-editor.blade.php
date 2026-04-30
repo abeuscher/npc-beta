@@ -12,6 +12,7 @@
         wire:ignore
         class="w-full overflow-hidden border-b border-[#ccc]"
         data-upload-url="{{ route('filament.admin.inline-image-upload') }}"
+        data-heroicons-url="{{ route('filament.admin.heroicons.index') }}"
         data-model-type="{{ $inlineImageModelType }}"
         data-model-id="{{ $inlineImageModelId }}"
         x-data="quillEditor($wire.entangle('{{ $getStatePath() }}'))"

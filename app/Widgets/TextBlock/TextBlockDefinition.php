@@ -36,13 +36,15 @@ class TextBlockDefinition extends WidgetDefinition
     {
         return [
             ['key' => 'content', 'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
+            ['key' => 'vertical_align', 'type' => 'select', 'label' => 'Vertical Alignment', 'default' => 'middle', 'options' => ['top' => 'Top', 'middle' => 'Middle', 'bottom' => 'Bottom'], 'helper' => 'Vertical position of content within the widget. Visible when the widget shares a column-layout row with a taller neighbor.', 'group' => 'appearance'],
         ];
     }
 
     public function defaults(): array
     {
         return [
-            'content' => '',
+            'content'        => '',
+            'vertical_align' => 'middle',
         ];
     }
 

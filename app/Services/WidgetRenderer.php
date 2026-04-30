@@ -66,6 +66,13 @@ class WidgetRenderer
             $ctxPage = $pageContext->currentPage;
             $ownerPage = ($pw->owner instanceof \App\Models\Page) ? $pw->owner : null;
             $tokenPage = ($ctxPage && $ctxPage->exists) ? $ctxPage : $ownerPage;
+            // PostController / PageController View::share `pageContext` but do
+            // not app()->instance(PageContext::class, ...), so the container
+            // resolves a fresh PageContext with currentPage=null in production.
+            // Templates that read $pageContext->currentPage (BlogPager) need
+            // the resolved page; rebuild from $tokenPage so production parity
+            // matches the test pattern that does bind the container.
+            $pageContext = new PageContext($tokenPage);
         } else {
             $tokenPage = null;
         }

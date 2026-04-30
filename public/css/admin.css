@@ -1131,3 +1131,112 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     border-color: #b91c1c;
     color: #fff;
 }
+
+/* ── Quill heroicon picker (toolbar button + popover + inline icon) ─────── */
+/* The toolbar button receives its SVG content via JS at editor init. The
+ * popover is appended to document.body (position: fixed) so Filament's
+ * overflow chrome can't clip it. The inline icon mirrors Filament's text-line
+ * sizing: 1em square, baseline-aligned, currentColor. */
+
+.ql-toolbar.ql-snow button.ql-heroicon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.heroicon-picker {
+    position: fixed;
+    z-index: 9999;
+    width: 320px;
+    max-height: 360px;
+    background: #fff;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.dark .heroicon-picker {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+.heroicon-picker__search {
+    width: 100%;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.375rem;
+    background: #fff;
+    color: inherit;
+    font-size: inherit;
+    box-sizing: border-box;
+}
+.dark .heroicon-picker__search {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+.heroicon-picker__grid {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+.heroicon-picker__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    padding: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.heroicon-picker__icon:hover,
+.heroicon-picker__icon:focus-visible {
+    background: var(--np-control-surface-hover, rgba(0, 0, 0, 0.06));
+    border-color: var(--np-control-border, #d1d5db);
+    outline: none;
+}
+.dark .heroicon-picker__icon:hover,
+.dark .heroicon-picker__icon:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #4b5563;
+}
+.heroicon-picker__icon svg {
+    width: 100%;
+    height: 100%;
+}
+.heroicon-picker__status {
+    padding: 0.5rem;
+    text-align: center;
+    color: var(--np-control-text-muted, #6b7280);
+    font-size: 0.85rem;
+}
+
+/* Inline heroicon embed — appears in both the Quill editor surface and the
+ * public render. Sized to flow with surrounding text and inherit color from
+ * the running text via stroke="currentColor" (heroicon outline convention). */
+.ql-heroicon,
+.heroicon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    line-height: 1;
+}
+.ql-heroicon__svg,
+.ql-heroicon svg,
+.heroicon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+

@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import type { FieldDef, Widget } from '../../types'
 import { useEditorStore } from '../../stores/editor'
+import { registerHeroiconBlot, HEROICON_TOOLBAR_BUTTON_SVG } from '../../../admin/heroicon-blot.js'
+import { openHeroiconPicker, setHeroiconsUrl } from '../../../admin/heroicon-picker.js'
 
 const props = defineProps<{
   field: FieldDef
@@ -29,6 +31,11 @@ onMounted(() => {
     return
   }
 
+  registerHeroiconBlot()
+  if (store.heroiconsUrl) {
+    setHeroiconsUrl(store.heroiconsUrl)
+  }
+
   quillInstance = new Quill(editorEl.value, {
     theme: 'snow',
     modules: {
@@ -40,15 +47,24 @@ onMounted(() => {
           [{ list: 'bullet' }, { list: 'ordered' }],
           ['blockquote'],
           [{ align: ['', 'center', 'right', 'justify'] }],
-          ['link', 'image'],
+          ['link', 'image', ...(store.heroiconsUrl ? ['heroicon'] : [])],
           ['clean'],
         ],
         handlers: {
           image: handleImageUpload,
+          heroicon: handleHeroiconInsert,
         },
       },
     },
   })
+
+  // Quill creates the heroicon toolbar button as <button class="ql-heroicon">
+  // with empty content. Inject the picker icon so the operator sees what the
+  // button does — mirror of the admin Quill editor's wiring.
+  const toolbarButton = editorEl.value.parentElement?.querySelector('button.ql-heroicon') as HTMLElement | null
+  if (toolbarButton && !toolbarButton.firstChild) {
+    toolbarButton.innerHTML = HEROICON_TOOLBAR_BUTTON_SVG
+  }
 
   if (props.modelValue) {
     quillInstance.root.innerHTML = props.modelValue
@@ -82,6 +98,18 @@ watch(
     }
   }
 )
+
+function handleHeroiconInsert() {
+  if (!quillInstance || !editorEl.value) return
+  const button = editorEl.value.parentElement?.querySelector('button.ql-heroicon') as HTMLElement | null
+  if (!button) return
+  const range = quillInstance.getSelection(true) ?? { index: quillInstance.getLength() - 1 }
+  openHeroiconPicker(button, (icon: { name: string; svg: string }) => {
+    const Quill = (window as any).Quill
+    quillInstance.insertEmbed(range.index, 'heroicon', icon, Quill.sources.USER)
+    quillInstance.setSelection(range.index + 1, Quill.sources.SILENT)
+  })
+}
 
 function handleImageUpload() {
   const uploadUrl = store.inlineImageUploadUrl

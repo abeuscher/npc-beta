@@ -113,6 +113,46 @@
     .ql-align-justify { text-align: justify; }
 }
 
+// Inline heroicon embed — emitted by the Quill heroicon picker in the admin,
+// rendered on the public side wherever Quill richtext containing icons
+// appears (event descriptions, blog post body, page-builder TextBlock, etc.).
+// Sized to flow with surrounding text and inherit color via the heroicon
+// outline convention (stroke="currentColor"). Mirror of the admin.css rules
+// so the editor preview and the public render look identical.
+.ql-heroicon,
+.heroicon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    line-height: 1;
+}
+.ql-heroicon__svg,
+.ql-heroicon svg,
+.heroicon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+// TextBlock widget — vertical alignment (per-widget control). The wrapper is
+// a column-direction flex container at full parent height so justify-content
+// positions the rendered rich text within the column-layout row's stretched
+// height. Only visibly different from the default block flow when the parent
+// row has a determinate height taller than the rich-text content (e.g. a
+// column layout where a sibling is taller).
+.widget--text_block { height: 100%; }
+.widget--text_block > .site-container { height: 100%; }
+.widget-text-block {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    &--vertical-top    { justify-content: flex-start; }
+    &--vertical-middle { justify-content: center; }
+    &--vertical-bottom { justify-content: flex-end; }
+}
+
 // ── Scroll indicator ────────────────────────────────────────────────────────
 
 .hero-scroll-indicator {

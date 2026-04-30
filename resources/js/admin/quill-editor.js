@@ -1,6 +1,11 @@
+import { openHeroiconPicker, setHeroiconsUrl } from './heroicon-picker.js';
+import { registerHeroiconBlot, HEROICON_TOOLBAR_BUTTON_SVG } from './heroicon-blot.js';
+
 export default (state) => ({
     state,
     init() {
+        registerHeroiconBlot();
+
         const container = this.$el;
         const self = this;
         const quill = new Quill(this.$refs.editor, {
@@ -14,7 +19,7 @@ export default (state) => ({
                         [{ list: 'bullet' }, { list: 'ordered' }],
                         ['blockquote'],
                         [{ align: ['', 'center', 'right', 'justify'] }],
-                        ['link', 'image'],
+                        ['link', 'image', 'heroicon'],
                         ['clean'],
                     ],
                     handlers: {
@@ -53,10 +58,30 @@ export default (state) => ({
                             };
                             input.click();
                         },
+                        heroicon: function () {
+                            const button = this.container.querySelector('button.ql-heroicon');
+                            if (!button) return;
+                            if (container.dataset.heroiconsUrl) {
+                                setHeroiconsUrl(container.dataset.heroiconsUrl);
+                            }
+                            const range = quill.getSelection(true) || { index: quill.getLength() - 1 };
+                            openHeroiconPicker(button, (icon) => {
+                                quill.insertEmbed(range.index, 'heroicon', icon, Quill.sources.USER);
+                                quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                            });
+                        },
                     },
                 },
             },
         });
+
+        // Quill creates the heroicon toolbar button as <button class="ql-heroicon">
+        // with empty content. Inject the picker icon so the operator sees what
+        // the button does.
+        const toolbarButton = this.$el.querySelector('button.ql-heroicon');
+        if (toolbarButton && !toolbarButton.firstChild) {
+            toolbarButton.innerHTML = HEROICON_TOOLBAR_BUTTON_SVG;
+        }
 
         if (this.state) quill.root.innerHTML = this.state;
 

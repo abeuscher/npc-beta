@@ -248,4 +248,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 243 | Housekeeping Batch 1 |
 | 244 | Pre-Beta Release Plan — Rehearsal Vetting & Success Criteria |
 | 245 | Random Data Generator as Dashboard Widget |
+| 246 | Housekeeping Batch 2 — UI Fixes Bundle |
 

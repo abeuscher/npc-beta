@@ -375,6 +375,7 @@ class PageBuilder extends Component
             'api_base_url'            => $apiBaseUrl,
             'api_lookup_url'          => '/' . $adminPath . '/api/page-builder',
             'inline_image_upload_url' => '/' . $adminPath . '/inline-image-upload',
+            'heroicons_url'           => '/' . $adminPath . '/heroicons',
             'color_swatches'          => $colorSwatches,
             'theme_palette'           => $themePalette,
             'theme_editor_url'        => \App\Filament\Pages\DesignSystemPage::getUrl(['activeTab' => 'text-styles']),

@@ -84,6 +84,10 @@ export const useEditorStore = defineStore('editor', () => {
   // Inline image upload URL (from bootstrap data, used by RichTextField)
   const inlineImageUploadUrl = ref('')
 
+  // Heroicons manifest URL (from bootstrap data, used by RichTextField's
+  // toolbar heroicon picker — empty string disables the toolbar button)
+  const heroiconsUrl = ref('')
+
   // Theme editor URL (from bootstrap data, used by RichTextField "edit site styles" link)
   const themeEditorUrl = ref('')
 
@@ -186,6 +190,7 @@ export const useEditorStore = defineStore('editor', () => {
     pages.value = data.pages
     events.value = data.events
     inlineImageUploadUrl.value = data.inline_image_upload_url ?? ''
+    heroiconsUrl.value = data.heroicons_url ?? ''
     themeEditorUrl.value = data.theme_editor_url ?? ''
     colorSwatches.value = data.color_swatches ?? []
     themePalette.value = data.theme_palette ?? []
@@ -870,6 +875,7 @@ export const useEditorStore = defineStore('editor', () => {
     saving,
     dragging,
     inlineImageUploadUrl,
+    heroiconsUrl,
     themeEditorUrl,
     colorSwatches,
     themePalette,

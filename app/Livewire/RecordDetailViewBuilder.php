@@ -207,6 +207,7 @@ class RecordDetailViewBuilder extends Component
             'api_base_url'              => $apiBaseUrl,
             'api_lookup_url'            => $apiBaseUrl,
             'inline_image_upload_url'   => '',
+            'heroicons_url'             => '/' . env('ADMIN_PATH', 'admin') . '/heroicons',
             'color_swatches'            => $colorSwatches,
             'theme_palette'             => [],
             'theme_editor_url'          => '',
