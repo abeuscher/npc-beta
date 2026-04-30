@@ -252,4 +252,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 247 | Housekeeping Batch 2 — app:reset Artisan + Orphan Media Cleanup |
 | 248 | Fleet Manager Contract v2.0.0 — mTLS Migration |
 | 249 | Onboarding/Install Dashboard Widget |
+| 250 | Rich Text Custom Fields |
 

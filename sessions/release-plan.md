@@ -224,11 +224,12 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Completed-row visual indicator, reduced vertical sprawl, friendlier dropdowns, optional grouping by entity. Applies as shared pattern across the five mapping pages.
 - **estimated time cost:** 1 session.
 
-#### E3. Rich Text Custom Fields
+#### E3. Rich Text Custom Fields ✅
 
 - **gate:** release
 - **prerequisites:** none; must land before B2 (HTML in import data)
-- **success criterion:** Per existing stub. New `rich_text` custom field type alongside text/number/date/boolean/select. Filament rich editor on admin forms; HTML render on detail views and widget output. Importer treats rich-text cells as plain strings.
+- **success criterion** *(closed at session 250)*: New `rich_text` custom-field type alongside text / number / date / boolean / select. QuillEditor primitive on admin forms (the established convention across NoteResource / EventResource / EmailTemplateResource / GeneralSettingsPage). HTML stored verbatim in the existing `custom_fields` JSONB column; render path is `{!! !!}` matching every other rich-text surface in the app. Importer treats rich-text cells as plain strings — both the manual mapping and the auto-create paths now offer `rich_text` as a field-type option, so HTML CSV cells (Wild Apricot bios) round-trip into rich-text-typed fields and mount QuillEditor on the next admin edit. Event and Page admin forms surface rich-text custom fields automatically via the existing `HasPageBuilderForm::metadataFormSchema` trait wiring.
+- **artifact:** the feature itself. **Closed at session 250.** See `sessions/250. Rich Text Custom Fields — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
 #### E4. Stripe Checkout Branding

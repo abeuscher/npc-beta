@@ -49,6 +49,43 @@ it('can create a custom field def', function () {
     expect(CustomFieldDef::where('handle', 'external_id')->exists())->toBeTrue();
 });
 
+it('can create a rich_text custom field def', function () {
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+
+    Livewire::actingAs($user)
+        ->test(CustomFieldDefResource\Pages\CreateCustomFieldDef::class)
+        ->fillForm([
+            'model_type' => 'contact',
+            'label'      => 'Bio',
+            'handle'     => 'bio',
+            'field_type' => 'rich_text',
+            'sort_order' => 1,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(CustomFieldDef::where('handle', 'bio')->where('field_type', 'rich_text')->exists())->toBeTrue();
+});
+
+it('lists rich_text in the field-type table column', function () {
+    CustomFieldDef::create([
+        'model_type' => 'contact',
+        'handle'     => 'bio',
+        'label'      => 'Bio',
+        'field_type' => 'rich_text',
+        'sort_order' => 1,
+    ]);
+
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+
+    Livewire::actingAs($user)
+        ->test(CustomFieldDefResource\Pages\ListCustomFieldDefs::class)
+        ->assertCanSeeTableRecords(CustomFieldDef::all())
+        ->assertSee('Rich Text');
+});
+
 it('can delete a custom field def', function () {
     $def = CustomFieldDef::create([
         'model_type' => 'contact',

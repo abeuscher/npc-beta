@@ -71,11 +71,12 @@ class CustomFieldDefResource extends Resource
                     ->label('Field Type')
                     ->required()
                     ->options([
-                        'text'    => 'Text',
-                        'number'  => 'Number',
-                        'date'    => 'Date',
-                        'boolean' => 'Boolean (Yes/No)',
-                        'select'  => 'Select (dropdown)',
+                        'text'      => 'Text',
+                        'number'    => 'Number',
+                        'date'      => 'Date',
+                        'boolean'   => 'Boolean (Yes/No)',
+                        'select'    => 'Select (dropdown)',
+                        'rich_text' => 'Rich Text',
                     ])
                     ->default('text')
                     ->live(),
@@ -137,12 +138,13 @@ class CustomFieldDefResource extends Resource
                 Tables\Columns\BadgeColumn::make('field_type')
                     ->label('Field Type')
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'text'    => 'Text',
-                        'number'  => 'Number',
-                        'date'    => 'Date',
-                        'boolean' => 'Boolean',
-                        'select'  => 'Select',
-                        default   => ucfirst($state),
+                        'text'      => 'Text',
+                        'number'    => 'Number',
+                        'date'      => 'Date',
+                        'boolean'   => 'Boolean',
+                        'select'    => 'Select',
+                        'rich_text' => 'Rich Text',
+                        default     => ucfirst($state),
                     })
                     ->colors(['gray' => fn () => true]),
 

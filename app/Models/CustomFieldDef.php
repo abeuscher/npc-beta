@@ -49,22 +49,25 @@ class CustomFieldDef extends Model
         $key = "custom_fields.{$this->handle}";
 
         return match ($this->field_type) {
-            'number'  => Forms\Components\TextInput::make($key)
+            'number'    => Forms\Components\TextInput::make($key)
                 ->label($this->label)
                 ->numeric(),
 
-            'date'    => Forms\Components\DatePicker::make($key)
+            'date'      => Forms\Components\DatePicker::make($key)
                 ->label($this->label),
 
-            'boolean' => Forms\Components\Toggle::make($key)
+            'boolean'   => Forms\Components\Toggle::make($key)
                 ->label($this->label),
 
-            'select'  => Forms\Components\Select::make($key)
+            'select'    => Forms\Components\Select::make($key)
                 ->label($this->label)
                 ->options($this->selectOptions())
                 ->nullable(),
 
-            default   => Forms\Components\TextInput::make($key)
+            'rich_text' => \App\Forms\Components\QuillEditor::make($key)
+                ->label($this->label),
+
+            default     => Forms\Components\TextInput::make($key)
                 ->label($this->label),
         };
     }

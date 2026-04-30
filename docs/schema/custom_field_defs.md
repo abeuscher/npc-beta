@@ -8,7 +8,7 @@ Definitions for user-created custom fields on contacts and events.
 | model_type | string | no | e.g. 'contact', 'event' |
 | handle | string | no | unique per model_type |
 | label | string | no | |
-| field_type | string | no | default: 'text' |
+| field_type | string | no | default: 'text'. Allowed values: `text`, `number`, `date`, `boolean`, `select`, `rich_text`. |
 | options | jsonb | yes | For select/checkbox field types |
 | sort_order | unsignedInteger | no | default: 0 |
 | is_filterable | boolean | no | default: false; marks field as available in mailing-list filter UI |

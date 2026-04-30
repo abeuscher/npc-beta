@@ -565,11 +565,12 @@ class ImportContactsPage extends Page
                 Forms\Components\Select::make("cf_type_{$n}")
                     ->label('Field type')
                     ->options([
-                        'text'    => 'Text',
-                        'number'  => 'Number',
-                        'date'    => 'Date',
-                        'boolean' => 'Boolean',
-                        'select'  => 'Select',
+                        'text'      => 'Text',
+                        'number'    => 'Number',
+                        'date'      => 'Date',
+                        'boolean'   => 'Boolean',
+                        'select'    => 'Select',
+                        'rich_text' => 'Rich Text',
                     ])
                     ->default('text')
                     ->required(),

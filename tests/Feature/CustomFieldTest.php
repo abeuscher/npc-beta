@@ -53,6 +53,51 @@ it('stores and reads custom_fields on a page', function () {
     expect($page->custom_fields['featured_image'])->toBe('https://example.com/img.jpg');
 });
 
+it('stores and reads rich_text HTML in custom_fields on a contact', function () {
+    $html = '<p>Bio with <strong>bold</strong> and <em>italic</em>.</p><p class="ql-align-center">Centered paragraph.</p>';
+
+    $contact = Contact::factory()->create([
+        'custom_fields' => ['bio' => $html],
+    ]);
+
+    $contact->refresh();
+
+    expect($contact->custom_fields['bio'])->toBe($html);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CustomFieldDef::toFilamentFormComponent
+// ─────────────────────────────────────────────────────────────────────────────
+
+it('toFilamentFormComponent returns a QuillEditor for rich_text', function () {
+    $def = CustomFieldDef::create([
+        'model_type' => 'contact',
+        'handle'     => 'bio',
+        'label'      => 'Bio',
+        'field_type' => 'rich_text',
+        'sort_order' => 1,
+    ]);
+
+    $component = $def->toFilamentFormComponent();
+
+    expect($component)->toBeInstanceOf(\App\Forms\Components\QuillEditor::class)
+        ->and($component->getName())->toBe('custom_fields.bio');
+});
+
+it('toFilamentFormComponent returns a TextInput for text (regression)', function () {
+    $def = CustomFieldDef::create([
+        'model_type' => 'contact',
+        'handle'     => 'legacy_id',
+        'label'      => 'Legacy ID',
+        'field_type' => 'text',
+        'sort_order' => 1,
+    ]);
+
+    $component = $def->toFilamentFormComponent();
+
+    expect($component)->toBeInstanceOf(\Filament\Forms\Components\TextInput::class);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CustomFieldDef: scope
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,6 +174,42 @@ it('import creates a new CustomFieldDef when handle does not exist', function ()
 
     expect(CustomFieldDef::where('handle', 'wild_apricot_id')->where('model_type', 'contact')->exists())->toBeTrue();
     expect(Contact::withoutGlobalScopes()->where('email', 'alice@example.com')->first()?->custom_fields['wild_apricot_id'])->toBe('99887');
+});
+
+it('import lands HTML byte-for-byte in a rich_text custom field', function () {
+    $html = '<p>Bio with <strong>bold</strong> and <em>italic</em>.</p><p class="ql-align-center">Centered paragraph.</p>';
+
+    $path = writeCfCsv([
+        ['email', 'Bio'],
+        ['dana@example.com', $html],
+    ], 'test-rich-text.csv');
+
+    $log = makeCfImportLog(
+        columnMap:      ['email' => 'email', 'Bio' => null],
+        customFieldMap: ['Bio' => ['handle' => 'bio', 'label' => 'Bio', 'field_type' => 'rich_text']],
+    );
+
+    $log->update(['storage_path' => $path, 'filename' => 'test-rich-text.csv']);
+
+    $user = User::factory()->create();
+    $user->givePermissionTo('import_data');
+    $this->actingAs($user);
+
+    $page = new ImportProgressPage();
+    $page->importLogId = $log->id;
+    $page->mount();
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    $def = CustomFieldDef::where('handle', 'bio')->where('model_type', 'contact')->first();
+    expect($def)->not->toBeNull()
+        ->and($def->field_type)->toBe('rich_text');
+
+    $contact = Contact::withoutGlobalScopes()->where('email', 'dana@example.com')->first();
+    expect($contact)->not->toBeNull()
+        ->and($contact->custom_fields['bio'])->toBe($html);
 });
 
 it('import reuses existing CustomFieldDef and logs action as reused', function () {

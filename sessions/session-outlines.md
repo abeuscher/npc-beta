@@ -106,9 +106,23 @@ Complete the theme/template split started in session 182 by moving colour-relate
 
 ---
 
-### Rich Text Custom Fields *(stub — pre-Beta 1)*
+### Rich Text Custom Fields *(complete — closed at session 250)*
 
-Custom fields currently support `text`, `number`, `date`, `boolean`, and `select` types. Add a `rich_text` type so admins can capture formatted content (bios, descriptions, multi-paragraph notes) as a custom field. Uses the existing Filament rich editor primitive on admin forms; renders HTML on detail views and in widget output. Importer treats rich-text cells as plain strings (no HTML parsing) — same shape as `textarea` today.
+`rich_text` custom-field type shipped at session 250. QuillEditor primitive on admin forms, HTML stored in the existing `custom_fields` JSONB column, render via `{!! !!}` matching every other rich-text surface. Importer auto-create + manual mapping both offer `rich_text` as a field type so HTML CSV cells round-trip cleanly. See `sessions/250. Rich Text Custom Fields — Log.md`.
+
+### Rich-Text Surface Sanitization Hardening *(stub — pre-Beta 1, surfaced at session 250)*
+
+Today every rich-text surface in the app stores Quill output (or Trix output, in the [Memos collection](app/Models/Collection.php) case) verbatim and renders via `{!! !!}`. [ContentImporter::sanitizeWidgetConfig](app/Services/ImportExport/ContentImporter.php) does collection-handle remap + media-id clearing but **not** HTML sanitization, so HTML in widget config and (post-250) `custom_fields` round-trips byte-for-byte through page export/import. Quill v2 strips `<script>` tags client-side but that is a UX nicety, not a server-side guarantee — direct DB writes, importer payloads, and any future bypass of the editor would land unsanitized HTML.
+
+**Scope:**
+
+- One `App\Support\HtmlSanitizer` utility with a Quill-shape allow-list. Tags: `p`, `br`, `strong`, `em`, `u`, `s`, `ol`, `ul`, `li`, `blockquote`, `pre`, `code`, `h1`–`h6`, `a`, `span`, plus the heroicon-shape `<svg>` children. Class allow-list restricted to `ql-*` regex (covers `ql-align-{center,right,justify}`, `ql-indent-N`, `ql-direction-rtl`, `ql-size-*`, `ql-font-*`, `ql-heroicon`). `data-heroicon` on `span.ql-heroicon`. `href` allow-list `http(s)`/`mailto`/relative. No new Composer dep.
+- Apply on save at every model boundary that stores rich-text HTML: `PageWidget` config (rich-text-typed schema fields), `Collection` rich_text fields, `Note.body`, `Event.description` + `meeting_details`, `EmailTemplate.body`, `SiteSetting` rich-text keys, the new `custom_fields` rich_text values, dashboard `welcome_message` and `system_page_content_*`.
+- Apply at the import boundary too — `ContentImporter::sanitizeWidgetConfig` walks each widget's schema and re-sanitizes any `richtext` field; `ImportProgressPage` (contacts/events/etc.) sanitizes any `custom_fields` rich_text cell.
+- Convert the [Memos `body`](app/Models/Collection.php) editor from Filament's `RichEditor` (Trix) to `App\Forms\Components\QuillEditor`, converging on the dominant convention. One-time data-migration step for existing Trix-shape stored values to Quill-shape.
+- Allow-list test suite — every Quill default-toolbar shape round-trips clean; every disallowed tag/attribute is stripped; representative XSS payloads (script tags, `javascript:` href, `on*` handlers, embedded SVG with script) are neutralized.
+
+Folds in the previously-floated "Collection Rich-Text Editor Convergence" stub since the editor swap and the sanitizer rollout are most cleanly done together. Discovered during session 250's read-through of E3 — chose path A (match existing convention) for E3 itself rather than carve custom_fields out as a special-case sanitized surface while the rest of the rich-text surface stayed raw. This stub is the coherent successor.
 
 ---
 
