@@ -209,11 +209,12 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal dependencies are positioned to land before those rehearsals (see execution order). Detailed scope for each entry lives in the corresponding stub in `session-outlines.md`; entries below carry only the metadata that connects them to the plan.
 
-#### E1. Onboarding/Install Dashboard Widget
+#### E1. Onboarding/Install Dashboard Widget ✅
 
 - **gate:** release
 - **prerequisites:** none; should land before A3 (multi-node first-customer install experience)
-- **success criterion:** Per existing stub. First-run install detection + minimum-viable-setup walkthrough (mail, Stripe, branding); disappears once confirmed; doubles as ongoing health-check widget.
+- **success criterion** *(closed at session 249)*: Super-admin-gated slot-grid dashboard widget that surfaces a 14-item checklist across three category bands (required-to-launch / required-for-features / optional). Each item carries a status pill plus a deep-link "Configure →" button into the existing admin page where the item lives — no new admin surfaces authored. Two render modes: first-run (full prominence at top of the super-admin grid) when `installation_completed_at` is null; health-check (compact, only non-`done` items) when the flag is set. "Mark setup complete" + "Reset install state" actions flip the flag. The Stripe item carries a warning branch when configured against a `pk_test_` key (pairs with the separate Stripe Test-Mode Detection stub). In-session lift: per-widget Filament card outline (each slot-grid cell now wraps in its own `<x-filament::section>` rather than sharing one outer card with siblings).
+- **artifact:** the widget itself. **Closed at session 249.** See `sessions/249. Onboarding-Install Dashboard Widget — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
 #### E2. Importer Mapping Page UX

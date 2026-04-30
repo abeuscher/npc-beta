@@ -109,6 +109,17 @@ class AdminPanelProvider extends PanelProvider
                         \Illuminate\Support\Facades\Route::post('/random-data/seed-collections', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'seedCollections'])
                             ->name('random-data.seed-collections');
                     });
+
+                // Setup checklist widget actions
+                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
+                    ->prefix('setup-checklist')
+                    ->name('setup-checklist.')
+                    ->group(function () {
+                        \Illuminate\Support\Facades\Route::post('/mark-complete', [\App\Http\Controllers\Admin\SetupChecklistController::class, 'markComplete'])
+                            ->name('mark-complete');
+                        \Illuminate\Support\Facades\Route::post('/reset', [\App\Http\Controllers\Admin\SetupChecklistController::class, 'reset'])
+                            ->name('reset');
+                    });
             })
             ->colors([
                 'primary'   => Color::hex($primaryColor),

@@ -15,7 +15,7 @@ beforeEach(function () {
     (new \Database\Seeders\DashboardViewSeeder())->run();
 });
 
-it('widgets() returns the super_admin config\'s four dashboard-native widgets in sort order', function () {
+it('widgets() returns the super_admin config\'s five dashboard-native widgets in sort order', function () {
     $admin = User::factory()->create();
     $admin->assignRole('super_admin');
     $this->actingAs($admin);
@@ -27,7 +27,7 @@ it('widgets() returns the super_admin config\'s four dashboard-native widgets in
 
     $handles = array_map(fn ($pw) => $pw->widgetType->handle, $instances);
 
-    expect($handles)->toBe(['memos', 'quick_actions', 'this_weeks_events', 'random_data_generator']);
+    expect($handles)->toBe(['setup_checklist', 'memos', 'quick_actions', 'this_weeks_events', 'random_data_generator']);
 });
 
 it('widgets() returns an empty array when the acting user has no role', function () {
@@ -41,7 +41,7 @@ it('widgets() returns an empty array when the acting user has no role', function
     expect($method->invoke($widget))->toBe([]);
 });
 
-it('the mounted Livewire widget renders the slot grid container with the four dashboard-native widgets', function () {
+it('the mounted Livewire widget renders the slot grid container with the five dashboard-native widgets', function () {
     (new \Database\Seeders\MemosCollectionSeeder())->run();
 
     $admin = User::factory()->create();
@@ -58,6 +58,7 @@ it('the mounted Livewire widget renders the slot grid container with the four da
 
     expect($rendered)
         ->toContain('np-dashboard-slot-grid')
+        ->toContain('np-setup-checklist')
         ->toContain('np-memos')
         ->toContain('np-quick-actions')
         ->toContain('np-this-weeks-events')

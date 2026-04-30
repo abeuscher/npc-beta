@@ -74,6 +74,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'site_description', 'value' => '',                   'group' => 'general', 'type' => 'string'],
             ['key' => 'timezone',         'value' => 'America/Chicago',    'group' => 'general', 'type' => 'string'],
             ['key' => 'contact_email',    'value' => '',                   'group' => 'general', 'type' => 'string'],
+            ['key' => 'installation_completed_at', 'value' => null,         'group' => 'general', 'type' => 'string'],
             ['key' => 'use_pico',         'value' => 'false',              'group' => 'styles',  'type' => 'boolean'],
             ['key' => 'custom_css_path',  'value' => null,                 'group' => 'styles',  'type' => 'string'],
             ['key' => 'logo_path',        'value' => null,                 'group' => 'styles',  'type' => 'string'],

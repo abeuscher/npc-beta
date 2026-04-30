@@ -1132,6 +1132,156 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     color: #fff;
 }
 
+/* ── Setup Checklist — first-run + ongoing health-check widget. ───────── */
+.np-setup-checklist__heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.np-setup-checklist__description {
+    margin: 0 0 1rem 0;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+.np-setup-checklist__alert {
+    margin: 0 0 1rem 0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+}
+.np-setup-checklist__alert--success {
+    background: #ecfdf5;
+    color: #065f46;
+}
+.np-setup-checklist__empty {
+    margin: 0 0 1rem 0;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+.np-setup-checklist__section {
+    margin: 0 0 1.25rem 0;
+}
+.np-setup-checklist__section-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+}
+.np-setup-checklist__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.np-setup-checklist__item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--np-control-border, #e5e7eb);
+    border-radius: 0.5rem;
+    background: var(--np-control-bg, #fff);
+}
+.np-setup-checklist__pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+.np-setup-checklist__pill--done {
+    background: #ecfdf5;
+    color: #065f46;
+}
+.np-setup-checklist__pill--incomplete {
+    background: #fef2f2;
+    color: #991b1b;
+}
+.np-setup-checklist__pill--warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+.np-setup-checklist__pill--optional {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.np-setup-checklist__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 0.15rem 0;
+}
+.np-setup-checklist__copy {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+.np-setup-checklist__message {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: #92400e;
+}
+.np-setup-checklist__link {
+    align-self: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+.np-setup-checklist__actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+.np-setup-checklist__form {
+    position: relative;
+}
+.np-setup-checklist__button {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    background: var(--np-control-bg, #fff);
+    cursor: pointer;
+}
+.np-setup-checklist__button--primary {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+}
+.np-setup-checklist__button--danger {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
+}
+.np-setup-checklist__modal {
+    margin: 0.75rem 0 0 0;
+    padding: 0.75rem;
+    border: 1px solid var(--np-control-border, #d1d5db);
+    border-radius: 0.5rem;
+    background: var(--np-control-bg, #fafafa);
+}
+.np-setup-checklist__modal-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.np-setup-checklist__modal-body {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+}
+.np-setup-checklist__modal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
 /* ── Quill heroicon picker (toolbar button + popover + inline icon) ─────── */
 /* The toolbar button receives its SVG content via JS at editor init. The
  * popover is appended to document.body (position: fixed) so Filament's

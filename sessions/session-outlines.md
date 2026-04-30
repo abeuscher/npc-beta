@@ -348,9 +348,9 @@ See `sessions/release-plan.md` § D3.
 
 ## End of Roadmap — Beta 1
 
-### Onboarding / Install Dashboard Widget
+### Onboarding / Install Dashboard Widget *(complete — closed at session 249)*
 
-First-run widget: detects unconfigured install, walks admin through minimum viable setup steps (mail, Stripe, branding). Disappears once confirmed. Could double as an ongoing health-check widget for production installs.
+Closed at session 249. See `sessions/release-plan.md` § E1 (✅) and `sessions/249. Onboarding-Install Dashboard Widget — Log.md` for the full landing.
 
 ### Third-Party Licensing Compliance Audit
 

@@ -24,6 +24,7 @@ class DashboardViewSeeder extends Seeder
         }
 
         $defaults = [
+            ['handle' => 'setup_checklist',        'config' => []],
             ['handle' => 'memos',                  'config' => ['limit' => 5]],
             ['handle' => 'quick_actions',          'config' => ['actions' => ['new_contact', 'new_event', 'new_post']]],
             ['handle' => 'this_weeks_events',      'config' => ['days_ahead' => 7]],
