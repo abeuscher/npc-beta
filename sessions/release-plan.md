@@ -102,18 +102,26 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 ### Track B — Onboarding cluster
 
-#### B1. Organizations Model Overhaul *(prerequisite stub for B2)*
+#### B1a. Organizations Model Overhaul (Min) *(prerequisite stub for B2)*
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub in `session-outlines.md` § Organizations Model Overhaul. Lifts Organization from placeholder to first-class entity with relationships (Contact employer, Event sponsor/host, EventRegistration registrant, Donation/Membership origin), admin UI ("Events sponsored" / "Members" / "Donations" panels), importer destinations, migration of existing `Contact.organization_id` linkage, and the events importer's `__org_contact__` sentinel retired into real model paths.
+- **success criterion:** Minimum implementation of Organizations as a peer to Contact — transactional Org peering only. Four nullable `organization_id` FKs land on `donations`, `memberships`, `event_registrations`, and `events.sponsor_organization_id` (`ON DELETE SET NULL`). Four new per-importer Org-as-source sentinels (`__org_donor__`, `__org_member__`, `__org_sponsor__`, `__org_invoice_party__` — the last conditional on a verify-at-start invoice-model check) reusing the existing `__org_contact__` strategy-radio UX (`auto_create` / `match_only` / `as_custom`). Four read-only related-records panels on the Organization edit page (Members / Donations Received / Memberships Held / Events Sponsored). Block-with-counts deletion with explicit force-delete confirmation that cascades `SET NULL` on the four FKs (records preserved, FK nulled). `Contact.organization_id` (the Contact's primary employer FK) stays exactly as-is. Coexistence with `contact_id` is non-exclusive at the DB level — leaves room for B1b's soft-credit work without a schema change.
 - **artifact:** the feature itself; required for B2 to have meaningful Org-related fixtures.
+- **estimated time cost:** 1 session.
+
+#### B1b. Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+
+- **gate:** release
+- **prerequisites:** B1a (transactional FKs in place); B2 (onboarding rehearsal informs the junction shape).
+- **success criterion:** New `affiliations` junction table (`contact_id`, `organization_id`, `role`, `start_date`, `end_date`, `is_primary`) supporting multi-employer / multi-role Contact↔Org relationships. New `donation_credits` junction supporting soft-credit attribution (a single gift attributed to multiple parties — e.g., the giving Org plus the human who triggered it). One-time data migration of existing `Contact.organization_id` rows → `affiliations` rows with `is_primary = true`. `Contact.organization_id` then either derived (cached) or dropped per the migration shape that emerges. Org contact-info parity audit and gap-fill (Organization model already has phone / website / address / type / notes — confirm whether industry / EIN are needed and add accordingly). **Deletion-policy revision** — junction-aware deletion semantics: deleting an Org with affiliated Contacts surfaces the affiliations as well as the four transactional FKs; force-delete cascade rules need to handle the junction. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges.
+- **artifact:** the feature itself; carries the affiliation modelling required for any sales narrative involving complex donor relationships.
 - **estimated time cost:** 1–2 sessions; may split per Rule 11.
 
 #### B2. Onboarding rehearsal cluster
 
 - **gate:** release
-- **prerequisites:** B1, A1, E2 (Importer Mapping Page UX), E3 (Rich Text Custom Fields)
+- **prerequisites:** B1a, A1, E2 (Importer Mapping Page UX), E3 (Rich Text Custom Fields). B1b is *not* a prerequisite — B2 exercises B1a's transactional Org peering and informs the shape B1b ultimately adopts.
 - **success criterion:** All four sub-scenarios pass against a single shared messy-data fixture (real-shape Wild Apricot or Neon export):
   - **Migration in:** import completes with <5% manual cleanup post-import. Edge cases logged with documented resolution: duplicates, inconsistent dates, missing required fields, custom-field drift across rows.
   - **Migration out:** full export against a 10K-record install completes in <5 min, no data loss verified by row counts and 5-table spot-check.
@@ -232,11 +240,12 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **artifact:** the widget itself. **Closed at session 249.** See `sessions/249. Onboarding-Install Dashboard Widget — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
-#### E2. Importer Mapping Page UX
+#### E2. Importer Mapping Page UX ✅
 
 - **gate:** release
 - **prerequisites:** none; should land before B2 (will surface as a finding otherwise)
-- **success criterion:** Per existing stub. Completed-row visual indicator, reduced vertical sprawl, friendlier dropdowns, optional grouping by entity. Applies as shared pattern across the five mapping pages.
+- **success criterion** *(closed at session 254)*: Three landed UX improvements to the Map Columns step, applied as a shared pattern across all six mapping pages (the five trait-driven importers plus the Contacts variant): (a) per-row status indicator badge — red **×** for unmapped, green **✓** for mapped, with custom-field rows requiring label / handle / Field type all filled before flipping to complete; (b) reduced vertical sprawl via `Forms\Components\Group` row wrap + Filament's native `inlineLabel()` (label 1/3 + Select 2/3 responsive) + tightened row padding and inter-row separator; (c) `->searchable()` on each per-column Select. In-session lifts: pre-existing wizard back-button bug fix; duplicate-strategy radio dropped its `default('skip')` and now indicates the same complete/incomplete state; red-coloured `.choices__button` clear-button styling scoped to importer rows for visibility; Filament Notification toast when a duplicate column-mapping is created; pre-existing help slide-over routing fix (resolves through render-hook scope so the help button survives Livewire roundtrips); `import-contacts.md` content audit covering the new behaviour. **Optional grouping by entity** (the original fourth bullet) was deliberately deferred — programmatic regex-shaped grouping is brittle without LLM/MCP-shape help; revisit on real importer-use feedback, not via stub-and-defer.
+- **artifact:** the feature itself. **Closed at session 254.** See `sessions/254. Importer Mapping Page UX — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
 #### E3. Rich Text Custom Fields ✅
@@ -349,32 +358,33 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 7. **A4.** DB wipe + backup recovery — runbook polish
 8. **A5.** 2FA for admin accounts
 9. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
-10. **E2.** Importer Mapping Page UX *(precedes B2)*
-11. **B1.** Organizations Model Overhaul
+10. **E2.** Importer Mapping Page UX *(closed at 254; precedes B2)*
+11. **B1a.** Organizations Model Overhaul (Min)
 12. **B2.** Onboarding rehearsal cluster
-13. **E10.** Full-Width Architecture Enforcement
-14. **E11.** Page Builder Focus-Scroll Clamp
-15. **C1.** Notes Permissions (feature half)
-16. **E9.** Widget Help Authoring
-17. **C2.** Event Ticket Tiers
-18. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-19. **E4.** Stripe Checkout Branding *(precedes C4)*
-20. **C4.** Donation-to-acknowledgment loop
-21. **C5.** Event with everything
-22. **C6.** Membership renewal cycle
-23. **C7.** Email at volume
-24. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-25. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-26. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-27. **E8.** UI/UX Sprint
-28. **E12.** Housekeeping Batch 2
-29. **D1.** Scale rehearsal
-30. **D2.** Compatibility cluster
-31. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-32. **E13.** Help docs body content
-33. **E14.** Third-Party Licensing Compliance Audit
-34. **D4.** Test suite review — cost & shape
-35. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+13. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+14. **E10.** Full-Width Architecture Enforcement
+15. **E11.** Page Builder Focus-Scroll Clamp
+16. **C1.** Notes Permissions (feature half)
+17. **E9.** Widget Help Authoring
+18. **C2.** Event Ticket Tiers
+19. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+20. **E4.** Stripe Checkout Branding *(precedes C4)*
+21. **C4.** Donation-to-acknowledgment loop
+22. **C5.** Event with everything
+23. **C6.** Membership renewal cycle
+24. **C7.** Email at volume
+25. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+26. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+27. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+28. **E8.** UI/UX Sprint
+29. **E12.** Housekeeping Batch 2
+30. **D1.** Scale rehearsal
+31. **D2.** Compatibility cluster
+32. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+33. **E13.** Help docs body content
+34. **E14.** Third-Party Licensing Compliance Audit
+35. **D4.** Test suite review — cost & shape
+36. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

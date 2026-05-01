@@ -44,7 +44,7 @@ trait InteractsWithImportWizard
     protected function topNav(int $currentIndex, bool $isFirst, bool $isLast): Forms\Components\Placeholder
     {
         $back = $isFirst ? '<span></span>'
-            : "<button type='button' data-testid='import-step-back-{$currentIndex}' class='text-sm text-gray-600 hover:text-gray-900 hover:underline underline-offset-4 dark:text-gray-400 dark:hover:text-gray-200' x-on:click=\"\$wire.dispatchFormEvent('wizard::previousStep', 'data', {$currentIndex})\">← Back</button>";
+            : "<button type='button' data-testid='import-step-back-{$currentIndex}' class='text-sm text-gray-600 hover:text-gray-900 hover:underline underline-offset-4 dark:text-gray-400 dark:hover:text-gray-200' x-on:click=\"previousStep()\">← Back</button>";
 
         $next = $isLast ? '<span></span>'
             : "<button type='button' data-testid='import-step-next-{$currentIndex}' class='inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500' x-on:click=\"\$wire.dispatchFormEvent('wizard::nextStep', 'data', {$currentIndex})\">Next →</button>";
@@ -535,6 +535,8 @@ trait InteractsWithImportWizard
             ->placeholder('— ignore —')
             ->nullable()
             ->live()
+            ->searchable()
+            ->inlineLabel()
             ->extraAttributes(['data-testid' => "map-column-{$n}"])
             ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n, $customSentinels) {
                 if (in_array($state, $customSentinels, true)) {
@@ -568,6 +570,7 @@ trait InteractsWithImportWizard
                     ->label('Handle')
                     ->required()
                     ->rules(['alpha_dash'])
+                    ->live(onBlur: true)
                     ->helperText('Lowercase, underscores only.'),
 
                 Forms\Components\Select::make("cf_type_{$n}")
@@ -581,7 +584,8 @@ trait InteractsWithImportWizard
                         'rich_text' => 'Rich Text',
                     ])
                     ->default('text')
-                    ->required(),
+                    ->required()
+                    ->live(),
             ])
             ->visible(fn (Forms\Get $get) => in_array($get($key), $customSentinels, true));
 
@@ -624,7 +628,25 @@ trait InteractsWithImportWizard
             ->required()
             ->visible(fn (Forms\Get $get) => $get($key) === '__org_contact__');
 
-        return [$select, $customSubForm, $noteSubForm, $tagSubForm, $orgSubForm];
+        $row = Forms\Components\Group::make([$select, $customSubForm, $noteSubForm, $tagSubForm, $orgSubForm])
+            ->extraAttributes(function (Forms\Get $get) use ($key, $n, $customSentinels): array {
+                $dest = $get($key);
+
+                $complete = filled($dest) && (
+                    ! in_array($dest, $customSentinels, true)
+                    || (
+                        filled($get("cf_label_{$n}"))
+                        && filled($get("cf_handle_{$n}"))
+                        && filled($get("cf_type_{$n}"))
+                    )
+                );
+
+                return [
+                    'class' => 'np-import-map-row np-import-map-row--' . ($complete ? 'complete' : 'incomplete'),
+                ];
+            });
+
+        return [$row];
     }
 
     // ─── Namespaced processUploadedFile (shared by 4 non-contact pages) ──
@@ -1074,7 +1096,7 @@ trait InteractsWithImportWizard
 
     // ─── Duplicate-strategy Radio (shared across every wizard) ───────────
 
-    protected function duplicateStrategyRadio(string $entityLabel, bool $includeDuplicate = false): Forms\Components\Radio
+    protected function duplicateStrategyRadio(string $entityLabel, bool $includeDuplicate = false): Forms\Components\Group
     {
         $options = [
             'skip'   => 'Skip',
@@ -1091,13 +1113,18 @@ trait InteractsWithImportWizard
             $descriptions['duplicate'] = "Ignore the match and create a new {$entityLabel} from the CSV row. May create multiple records for the same input.";
         }
 
-        return Forms\Components\Radio::make('duplicate_strategy')
-            ->label("When an imported row matches an existing {$entityLabel}")
-            ->options($options)
-            ->descriptions($descriptions)
-            ->default('skip')
-            ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
-            ->required();
+        return Forms\Components\Group::make([
+            Forms\Components\Radio::make('duplicate_strategy')
+                ->label("When an imported row matches an existing {$entityLabel}")
+                ->options($options)
+                ->descriptions($descriptions)
+                ->extraAttributes(['data-testid' => 'import-duplicate-strategy'])
+                ->required()
+                ->live(),
+        ])
+            ->extraAttributes(fn (Forms\Get $get) => [
+                'class' => 'np-import-map-row np-import-map-row--' . (filled($get('duplicate_strategy')) ? 'complete' : 'incomplete'),
+            ]);
     }
 
     // ─── Mapping step banners ────────────────────────────────────────────

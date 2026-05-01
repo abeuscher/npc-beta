@@ -81,16 +81,14 @@ C1 must close before C3 runs (the audit walks the surface that this stub builds 
 
 ---
 
-### Organizations Model Overhaul *(stub — pre-Beta 1)*
+### Organizations Model Overhaul *(stub — pre-Beta 1; split into B1a + B1b at session 254 close)*
 
-Surface-level, Organization is a real entity in the CRM; below the surface, it is a placeholder — a row with a name and not much else. Testers noticing this gap will have valid questions. Session should define what Organizations actually are and how they relate to the rest of the model:
+Lift Organization from "placeholder with a name" to a peer of Contact, modelled in NPSP-shape (separate peers joined via explicit relations rather than NPC's Person-Account-merge pattern). At session 254 close, scoping settled this as a clean two-session split:
 
-- **Relationships**: Contact `belongsTo` Organization (today — employer/member org) is one role; Events may have Sponsor/Host Organizations (many-to-many with role); EventRegistration may carry a distinct "registering organization" for corporate group sign-ups. Donations & memberships may also originate from an Organization rather than a Contact.
-- **Importer implications**: session 189 added a narrow `__org_contact__` sentinel that fills `Contact.organization_id` only when blank. That's a pragmatic stopgap, not a real model. Once this session lands, the events importer can offer richer Org destinations (sponsor on Event, employer on Contact, registrant on Registration) without ambiguity.
-- **UI**: Organization admin resource today is minimal. Needs an "Events sponsored" / "Members" / "Donations" panel so the entity pays its own way in the nav.
-- **Migration**: existing Contacts with `organization_id` set keep their link; new role-scoped pivot tables added; Event's string `company` field on registrations becomes a FK when resolvable.
+- **B1a — Organizations Model Overhaul (Min)** — *next session per release-plan execution order; queued for session 255.* Transactional Org peering only: nullable `organization_id` FK on `donations` / `memberships` / `event_registrations` plus `events.sponsor_organization_id` (`ON DELETE SET NULL`); four new per-importer Org-as-source sentinels (`__org_donor__`, `__org_member__`, `__org_sponsor__`, `__org_invoice_party__` — last one conditional on a verify-at-start invoice-model check) reusing the existing `__org_contact__` strategy-radio UX; four read-only related-records panels on the Organization edit page (Members / Donations Received / Memberships Held / Events Sponsored); block-with-counts deletion. `Contact.organization_id` (Contact's primary employer) stays as-is. Coexistence with `contact_id` is non-exclusive at the DB level.
+- **B1b — Affiliations Junction & Soft-Credit Layer** — *post-B2 follow-up; release-plan position 13.* Adds the `affiliations` junction (`contact_id`, `organization_id`, `role`, `start_date`, `end_date`, `is_primary`) for multi-employer / multi-role Contact↔Org relationships, plus a `donation_credits` junction for soft-credit attribution. One-time migration of `Contact.organization_id` → `affiliations` rows with `is_primary = true`. Org contact-info parity audit (Organization model already has phone / website / address / type / notes — fill industry / EIN gaps if needed). **Junction-aware deletion-policy revision** — folded into B1b at scoping. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges. Slotted post-B2 so the onboarding rehearsal cluster informs the junction shape; `Contact.organization_id` migration is cheaper before C-track rehearsals generate fixture data.
 
-Priority: before Beta 1 demo — prospects testing the import flows will hit the gap, and the answer shouldn't be "yeah, it's a placeholder."
+Both entries are canonical in [`release-plan.md`](release-plan.md) § B1a / § B1b. The single-session B1 framing the original stub assumed has been retired.
 
 ---
 
@@ -237,16 +235,9 @@ Touch points: `ProductCheckoutController`, `DonationCheckoutController`, `EventC
 
 ---
 
-### Importer Mapping Page UX *(stub — pre-Beta 1, UX session)*
+### Importer Mapping Page UX *(complete — closed at session 254)*
 
-The CSV importer's column-mapping page is the most stressful UI surface in the admin today — wide dropdowns, vertical sprawl across many rows, no visual cue for which mappings are completed vs. still needed. Concrete improvements:
-
-- **Completed-row visual indicator** (checkmark, color stripe, opacity reduction) so the user can scan for unmapped rows at a glance.
-- **Reduce vertical space per row.** Today each mapping row takes ~2 lines of vertical real estate; trim padding and label sizing.
-- **Friendlier dropdowns.** Currently too wide; trim to fit typical destination-field-name length plus padding. Possibly switch to a search-as-you-type combobox if the dropdown count justifies it.
-- **Optional grouping.** Group destination fields by entity (Contact, Address, CustomFields, …) so the dropdown is not a flat ~40-item list.
-
-Touches `Filament/Pages/ImportContactsPage.php` and the other importer mapping pages (events, donations, memberships, invoice details, notes). Five mapping pages share enough structure that improvements should land as a shared pattern, not a per-page reskin. Out of scope: rebuilding the importer pipeline; the session is UI-only on the existing mapping shape.
+Closed at session 254. Three landed UX improvements applied as a shared pattern across all six mapping pages — per-row status indicator (red × / green ✓), reduced vertical sprawl via row wrap + Filament's native `inlineLabel()`, and `->searchable()` on each per-column Select. **Optional grouping by entity** was deliberately deferred — programmatic regex-shaped grouping is brittle without LLM/MCP-shape help; revisit on real importer-use feedback, not via stub-and-defer. See `sessions/release-plan.md` § E2 (✅) and `sessions/254. Importer Mapping Page UX — Log.md` for the full landing.
 
 ---
 
@@ -353,6 +344,10 @@ See `sessions/release-plan.md` § D3.
 **Help docs needing body content written** (stubs exist with frontmatter + route mapping):
 
 - `resources/docs/generate-tax-receipts.md` — Generate Tax Receipts page
+
+**Known dev-environment fragilities** (Docker Desktop / WSL2):
+
+- **Single-file bind-mounts can break their own snapshot path on host-side state changes.** `docker/nginx/default.conf`, `docker/nginx/prod.conf`, and `docker/php/local.ini` are all single-file bind-mounts in `docker-compose.yml`. Docker Desktop on WSL2 maps each into a content-addressed snapshot at `/run/desktop/mnt/host/wsl/docker-desktop-bind-mounts/Ubuntu-24.04/<hash>`. When the host inode shifts — Edit-tool atomic-replace, Docker Desktop restart, WSL2 distro restart, Windows update, certain `git checkout` flows — the running container's mount points at the now-defunct snapshot hash. The container keeps running with stale content, but the next `docker compose restart <service>` surfaces it as an OCI mount error: *`unable to start container process: error during container init: error mounting ... no such file or directory`*. **Failure signature:** the dst path in the error matches one of the three single-file mounts. **Fix:** `docker compose up -d --force-recreate <service>` (recreates the container, which reads a fresh snapshot path from Docker Desktop). **Do not retry `restart`** — it will fail with the same error every time. Directory bind-mounts (`./:/var/www/html`, `./nginx-certs/:/etc/nginx/certs`) are unaffected — only single-file mounts have the inode-detachment failure mode. **Long-term fix candidate** (not yet scheduled): convert the three single-file mounts to directory mounts (`./docker/nginx/:/etc/nginx/conf.d/`, `./docker/php/:/usr/local/etc/php/conf.d/`) to retire the failure class; deferred since the workaround is well-known and the conversion has its own scope. Memory note: `feedback_bind_mount_edit_breaks_container.md`.
 
 ---
 

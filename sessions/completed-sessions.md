@@ -256,4 +256,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 251 | Fleet Manager Contract v2.1.0 — Log-Fetch Endpoint |
 | 252 | CI Test Suite Cascade — Root-Cause & Fix |
 | 253 | Fleet Manager Pivot Planning Session |
+| 254 | Importer Mapping Page UX |
 

@@ -531,11 +531,21 @@ class ImportContactsPage extends Page
             ->placeholder('— ignore —')
             ->nullable()
             ->live()
+            ->searchable()
+            ->inlineLabel()
             ->extraAttributes(['data-testid' => "map-column-{$n}"])
             ->afterStateUpdated(function ($state, Forms\Set $set) use ($header, $n) {
                 if ($state === '__custom__') {
                     $set("cf_label_{$n}", $header);
                     $set("cf_handle_{$n}", Str::slug($header, '_'));
+                }
+
+                if ($this->wouldCauseCollision(is_string($state) ? $state : null, $n)) {
+                    Notification::make()
+                        ->title('Duplicate fields assigned')
+                        ->body('Two columns now map to the same destination. Resolve at the bottom of the mapping form.')
+                        ->warning()
+                        ->send();
                 }
             });
 
@@ -560,6 +570,7 @@ class ImportContactsPage extends Page
                     ->label('Handle')
                     ->required()
                     ->rules(['alpha_dash'])
+                    ->live(onBlur: true)
                     ->helperText('Lowercase, underscores only.'),
 
                 Forms\Components\Select::make("cf_type_{$n}")
@@ -573,7 +584,8 @@ class ImportContactsPage extends Page
                         'rich_text' => 'Rich Text',
                     ])
                     ->default('text')
-                    ->required(),
+                    ->required()
+                    ->live(),
             ])
             ->visible(fn (Forms\Get $get) => $get($key) === '__custom__');
 
@@ -624,7 +636,25 @@ class ImportContactsPage extends Page
             ])
             ->visible(fn (Forms\Get $get) => $get($key) === '__tag_contact__');
 
-        return [$select, $customSubForm, $orgSubForm, $noteSubForm, $tagSubForm];
+        $row = Forms\Components\Group::make([$select, $customSubForm, $orgSubForm, $noteSubForm, $tagSubForm])
+            ->extraAttributes(function (Forms\Get $get) use ($key, $n): array {
+                $dest = $get($key);
+
+                $complete = filled($dest) && (
+                    $dest !== '__custom__'
+                    || (
+                        filled($get("cf_label_{$n}"))
+                        && filled($get("cf_handle_{$n}"))
+                        && filled($get("cf_type_{$n}"))
+                    )
+                );
+
+                return [
+                    'class' => 'np-import-map-row np-import-map-row--' . ($complete ? 'complete' : 'incomplete'),
+                ];
+            });
+
+        return [$row];
     }
 
     private function detectCollisions(array $columnMap): array
@@ -644,6 +674,29 @@ class ImportContactsPage extends Page
         }
 
         return array_filter($byDest, fn ($headers) => count($headers) >= 2);
+    }
+
+    private function wouldCauseCollision(?string $newState, int $changingColumnIndex): bool
+    {
+        $special = ['__custom__', '__org_contact__', '__note_contact__', '__tag_contact__'];
+
+        if (blank($newState) || in_array($newState, $special, true)) {
+            return false;
+        }
+
+        $columnMap = $this->data['column_map'] ?? [];
+        $skipKey   = "col_{$changingColumnIndex}";
+
+        foreach ($columnMap as $key => $dest) {
+            if ($key === $skipKey) {
+                continue;
+            }
+            if ($dest === $newState) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function collisionResolutionSchema(array $collisions, array $contactFields): array

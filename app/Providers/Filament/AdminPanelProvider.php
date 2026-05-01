@@ -292,11 +292,39 @@ class AdminPanelProvider extends PanelProvider
                 )
             )
             // Context-sensitive help: ? icon in the page header that opens a slide-over.
+            // Resolve from the render-hook scope (the page/resource class Filament
+            // passes through) rather than Route::currentRouteName(), so the lookup
+            // keeps working through Livewire roundtrips where the active route is
+            // livewire.update, not the page route.
             ->renderHook(
                 PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE,
-                function (): \Illuminate\Contracts\View\View {
-                    $routeName = \Illuminate\Support\Facades\Route::currentRouteName() ?? '';
-                    $article = app(HelpArticleService::class)->forRoute($routeName);
+                function (array $scopes = []): \Illuminate\Contracts\View\View {
+                    $service = app(HelpArticleService::class);
+                    $article = null;
+
+                    foreach ($scopes as $scope) {
+                        if (! is_string($scope) || ! method_exists($scope, 'getRouteName')) {
+                            continue;
+                        }
+
+                        try {
+                            $article = $service->forRoute($scope::getRouteName());
+                        } catch (\Throwable) {
+                            continue;
+                        }
+
+                        if ($article) {
+                            break;
+                        }
+                    }
+
+                    if (! $article) {
+                        $routeName = \Illuminate\Support\Facades\Route::currentRouteName() ?? '';
+                        if ($routeName !== '') {
+                            $article = $service->forRoute($routeName);
+                        }
+                    }
+
                     return view('components.help-slide-over', ['article' => $article]);
                 }
             );

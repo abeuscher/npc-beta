@@ -1,8 +1,8 @@
 ---
 title: Data Imports
 description: Umbrella reference for every importer in the CRM — contacts, events, donations, memberships, invoice details, notes, and the shared review / history workflow. Covers CSV upload, source selection, column mapping, duplicate handling, approval, and rollback.
-version: "0.45"
-updated: 2026-04-21
+version: "0.46"
+updated: 2026-05-01
 tags: [import, contacts, events, donations, memberships, invoice-details, notes, csv, crm, review]
 routes:
   - filament.admin.pages.import-contacts-page
@@ -61,10 +61,24 @@ For each column in your CSV, select the CRM field it should map to. You can:
 
 - Map a column to a standard field for the target type (name, email, phone, date, amount, etc.).
 - Map a column to **External ID** — this stores the source system's ID for that record, enabling staged updates on re-import from the same source.
-- Map a column to a **Custom field** (Contacts only — if the field does not exist, the importer will create it).
-- Leave a column as **ignore** to skip it.
+- Map a column to a **Custom field** — supported for contacts, donations, events, memberships, notes, and invoice details. If the field does not exist, the importer will create it. You must pick a Field type (text, number, date, boolean, select, rich text) for each new custom field before the row counts as mapped.
+- Leave a column as **ignore** to skip it. To clear a column you previously mapped, click the small × on the right edge of its destination value.
+
+#### Row indicators and search
+
+Each mapping row carries a status badge to its left. A red **×** means the row is not yet fully mapped — destination not picked, or a custom-field row missing its Field type / label / handle. The badge flips to a green **✓** once the row is fully resolved, so you can scan a long mapping list at a glance and find the rows that still need attention.
+
+The destination dropdown is searchable: click into it and start typing the field name to filter the option list. The search matches across both group names (e.g. "Contact", "Address") and individual field labels.
+
+#### Duplicate column mappings
+
+If you map two columns to the same destination field, both rows are pulled out of the main list and grouped into a **Duplicate column mappings** section at the bottom of the page, so you can compare them side-by-side and pick a resolution (prefer one column, split into a custom field, or drop the others). A notification at the top of the page tells you when this has happened and points you to the bottom of the form.
 
 The importer detects common export formats and pre-fills mappings where it can. Adjust any that are incorrect.
+
+#### Duplicate-row strategy (bottom of the page)
+
+After mapping all columns, the **When an imported row matches an existing record** block at the bottom of the page asks how you want to handle CSV rows that match an existing record. You must pick one — there is no default — and your choice applies to every row in this import.
 
 ### Step 4 — Preview and Confirm
 

@@ -1390,3 +1390,53 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     display: block;
 }
 
+/* ─── Importer Map Columns step — per-row status indicator + spacing ───
+ * Each per-column mapping row is wrapped in a Filament Group whose
+ * extraAttributes() emits .np-import-map-row plus a state modifier
+ * (--complete when column_map.col_N is filled, --incomplete otherwise).
+ * The ::before badge sits to the left of the row's content; row padding
+ * and inter-row gap are tightened from Filament's default form spacing
+ * to keep 30+ column wizards scannable. */
+.np-import-map-row {
+    position: relative;
+    padding: 0.5rem 0 0.5rem 2.25rem;
+}
+.np-import-map-row + .np-import-map-row {
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--np-control-chip-border, #e5e7eb);
+}
+.np-import-map-row::before {
+    position: absolute;
+    left: 0;
+    top: 0.65rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: white;
+    flex-shrink: 0;
+}
+.np-import-map-row--incomplete::before {
+    background-color: #dc2626;
+    content: "\2715";
+}
+.np-import-map-row--complete::before {
+    background-color: #16a34a;
+    content: "\2713";
+}
+.dark .np-import-map-row + .np-import-map-row {
+    border-top-color: #374151;
+}
+.np-import-map-row .choices[data-type*='select-one'] .choices__button {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21' viewBox='0 0 21 21'><g fill='%23dc2626' fill-rule='evenodd'><path d='M2.592.044l18.364 18.364-2.548 2.548L.044 2.592z'/><path d='M0 18.364L18.364 0l2.548 2.548L2.548 20.912z'/></g></svg>");
+    opacity: 1;
+}
+.np-import-map-row .choices[data-type*='select-one'] .choices__button:hover,
+.np-import-map-row .choices[data-type*='select-one'] .choices__button:focus-visible {
+    opacity: 0.75;
+}
+
