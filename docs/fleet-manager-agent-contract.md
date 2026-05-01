@@ -251,9 +251,23 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 - The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these two endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface.
 
+### Recovery posture and FM-side trust assumptions
+
+These describe the v2.1.0 security posture; items carry status as either **shipped at this revision** (item 1) or **FM-side intended posture, Beta-1 scope** (items 2 + 3). FM-side absorption sessions promote the intended items to shipped status; this section updates without a contract bump as that happens.
+
+1. **Break-glass recovery path.** Each CRM install trusts exactly one FM-side cert. If FM is compromised, recovery is operator SSH + cert swap on every CRM install, not a contract-level rotation flow. The CRM-side rotation script (`bin/rotate-fm-cert.sh`) and the recovery runbook (`docs/runbooks/fm-compromise-recovery.md`) document the per-install procedure.
+
+2. **FM's off-filesystem-key posture.** FM does not store its master encryption key on disk. The key is bootstrapped at FM startup through an operator-presence step (mechanism FM-side) and held in process memory only. The CRM-side trust assumption follows: FM cannot self-decrypt the trusted-cert keypairs without an operator at the FM console. A stolen FM disk image does not unlock the fleet.
+
+3. **Audit-sink discipline.** FM emits an external append-only audit log of every action against the CRM contract surface (poll dispatch, log fetch, install / restore actions when those land), mirrored to a write-only object-locked Spaces bucket FM cannot delete from after write. The CRM-side nginx access logs are the CRM-side complement — together the two form the cross-repo audit trail. (FM's broader admin-action audit posture is FM-side scope and not specified by this contract.)
+
 ---
 
 ## CHANGELOG
+
+### `2.1.0` revision — 2026-05-01 (session 253)
+
+**Documentation revision — no contract surface change.** Security Posture section adds language naming the break-glass recovery path (CRM-side artifacts shipping in this revision: `bin/rotate-fm-cert.sh` + `docs/runbooks/fm-compromise-recovery.md`) and FM-side intended-posture statements for off-filesystem encryption keys + external append-only audit sink (FM Beta-1 scope per FM-side Security Posture Pivot at FM repo `sessions/session-outlines.md`). HTTP contract surface unchanged; consumers do not need to refresh.
 
 ### `2.1.0` — 2026-04-30 (session 251)
 

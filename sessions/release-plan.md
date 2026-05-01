@@ -61,6 +61,13 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **success criterion** *(closed at session 248)*: Auth handshake swaps from bearer token at the application layer to mTLS at the TLS layer. Nginx terminates the handshake; the application has no auth code path on `/api/health` after this session. Non-additive bump (v1.2.0 → v2.0.0); the bearer path retires in the same cutover. Pre-Beta-1 scope-correct because there are no live clients.
 - **artifact:** `docs/fleet-manager-agent-contract.md` at v2.0.0; operator cert-paste runbook at `docs/runbooks/fleet-manager-cert-paste.md`. **Closed at session 248.** See `sessions/248. Fleet Manager Contract v2.0.0 — mTLS Migration — Log.md` for the full landing.
 
+#### A1c. Fleet Manager Compromise Recovery Infrastructure ✅
+
+- **gate:** release
+- **prerequisites:** A1b (CRM-side v2.0.0 mTLS surface shipped at session 248)
+- **success criterion** *(closed at session 253)*: Operator-facing tooling and documentation for break-glass recovery from FM compromise — the case where the per-install trust-one-cert mTLS model needs an operator-driven cert swap across every CRM in the fleet. Three artifacts: (a) operator-facing rotation script at `bin/rotate-fm-cert.sh` (validates input PEM via `openssl x509`, atomic `mv` into `/opt/nonprofitcrm/nginx-certs/fm-client.crt`, `nginx -s reload`, host-side audit log at `/opt/nonprofitcrm/logs/fm-cert-rotations.log`); (b) compromise-recovery runbook at `docs/runbooks/fm-compromise-recovery.md` (pre-installation break-glass cert generation with cold-storage discipline + at-recovery-time per-CRM cert swap procedure + post-recovery cold-storage invariant restore); (c) additive Security Posture sub-section "Recovery posture and FM-side trust assumptions" in `docs/fleet-manager-agent-contract.md` naming the three trust-model properties (break-glass recovery path; FM's off-filesystem-key posture; audit-sink discipline) under a section-header rule labeling each item shipped vs FM-side intended-posture. Documentation revision under v2.1.0; no contract bump.
+- **artifact:** the script + runbook + spec doc revision. **Closed at session 253.** See `sessions/253. Fleet Manager Pivot Planning Session — Log.md` for the full landing.
+
 #### A2. Fleet Manager — node operations parity
 
 - **gate:** release
@@ -335,38 +342,39 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 
 1. **A1.** Random Data Generator as Dashboard Widget
 2. **A1b.** Fleet Manager Contract v2.0.0 — mTLS Migration *(closed at 248; A2 prerequisite)*
-3. **A2.** Fleet Manager — node operations parity *(may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0)*
-4. **E1.** Onboarding/Install Dashboard Widget *(precedes A3 for first-run experience)*
-5. **A3.** Multi-node operational readiness
-6. **A4.** DB wipe + backup recovery — runbook polish
-7. **A5.** 2FA for admin accounts
-8. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
-9. **E2.** Importer Mapping Page UX *(precedes B2)*
-10. **B1.** Organizations Model Overhaul
-11. **B2.** Onboarding rehearsal cluster
-12. **E10.** Full-Width Architecture Enforcement
-13. **E11.** Page Builder Focus-Scroll Clamp
-14. **C1.** Notes Permissions (feature half)
-15. **E9.** Widget Help Authoring
-16. **C2.** Event Ticket Tiers
-17. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-18. **E4.** Stripe Checkout Branding *(precedes C4)*
-19. **C4.** Donation-to-acknowledgment loop
-20. **C5.** Event with everything
-21. **C6.** Membership renewal cycle
-22. **C7.** Email at volume
-23. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-24. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-25. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-26. **E8.** UI/UX Sprint
-27. **E12.** Housekeeping Batch 2
-28. **D1.** Scale rehearsal
-29. **D2.** Compatibility cluster
-30. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-31. **E13.** Help docs body content
-32. **E14.** Third-Party Licensing Compliance Audit
-33. **D4.** Test suite review — cost & shape
-34. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+3. **A1c.** Fleet Manager Compromise Recovery Infrastructure *(closed at 253; documentation revision under v2.1.0, no contract bump)*
+4. **A2.** Fleet Manager — node operations parity *(may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
+5. **E1.** Onboarding/Install Dashboard Widget *(precedes A3 for first-run experience)*
+6. **A3.** Multi-node operational readiness
+7. **A4.** DB wipe + backup recovery — runbook polish
+8. **A5.** 2FA for admin accounts
+9. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
+10. **E2.** Importer Mapping Page UX *(precedes B2)*
+11. **B1.** Organizations Model Overhaul
+12. **B2.** Onboarding rehearsal cluster
+13. **E10.** Full-Width Architecture Enforcement
+14. **E11.** Page Builder Focus-Scroll Clamp
+15. **C1.** Notes Permissions (feature half)
+16. **E9.** Widget Help Authoring
+17. **C2.** Event Ticket Tiers
+18. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+19. **E4.** Stripe Checkout Branding *(precedes C4)*
+20. **C4.** Donation-to-acknowledgment loop
+21. **C5.** Event with everything
+22. **C6.** Membership renewal cycle
+23. **C7.** Email at volume
+24. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+25. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+26. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+27. **E8.** UI/UX Sprint
+28. **E12.** Housekeeping Batch 2
+29. **D1.** Scale rehearsal
+30. **D2.** Compatibility cluster
+31. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+32. **E13.** Help docs body content
+33. **E14.** Third-Party Licensing Compliance Audit
+34. **D4.** Test suite review — cost & shape
+35. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
