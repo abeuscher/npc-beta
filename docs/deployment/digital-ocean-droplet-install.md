@@ -65,22 +65,35 @@ ufw reload
 ufw status   # confirm 80 + 443 now show ALLOW
 ```
 
-**c. SSH rate-limit — leave as `ALLOW`, NOT `LIMIT`.**
+**c. Replace the marketplace image's SSH `LIMIT` rule with `ALLOW`.**
 
-UFW's `LIMIT` on `:22` rate-limits to 6 connections per 30 seconds per source IP. Looks defensive, but breaks GitHub Actions deploys: `appleboy/scp-action` opens multiple SSH sessions per run, and the runner trips the LIMIT mid-deploy. The symptom is `dial tcp <ip>:22: i/o timeout` after a partial-success. For a key-only auth setup, the LIMIT adds little defensive value (sshd rejects bad keys at the auth layer regardless), so leave SSH as `ALLOW`:
+The stock Docker on Ubuntu 22.04 image **ships with `LIMIT IN` already configured on `:22`** (both v4 and v6) — visible as `22/tcp LIMIT IN` in `ufw status`. The intent is rate-limiting (drops connections from any source IP exceeding 6 attempts in 30 seconds), but it breaks GitHub Actions deploys: `appleboy/scp-action` opens 5+ rapid SSH sessions per workflow run, trips the LIMIT mid-deploy, and the workflow fails with `dial tcp <ip>:22: i/o timeout` after a partial-success. The dropped packets never reach sshd, so the SSH journal shows nothing — only `/var/log/ufw.log` records the silent drops. For a key-only auth setup, the LIMIT adds little defensive value anyway (sshd rejects bad keys at the auth layer regardless of rate).
+
+**Reliable removal sequence — interactive confirmation is required:**
 
 ```bash
-ufw delete limit 22/tcp 2>/dev/null
-ufw allow 22/tcp
+ufw status numbered                       # find the [N] number for "22/tcp LIMIT IN"
+ufw delete <N>                            # answer y at prompt
+ufw allow 22/tcp                          # adds v4 ALLOW; ALSO auto-replaces any v6 LIMIT in place
 ufw reload
+ufw status verbose                        # confirm both v4 + v6 show ALLOW IN, NOT LIMIT IN
+```
+
+After the v4 delete, you may be tempted to `ufw delete <new_N>` for the v6 LIMIT separately — not needed. `ufw allow 22/tcp` updates BOTH protocols in one step (you'll see `Rule added` for v4 and `Rule updated (v6)` in the output).
+
+**Common mistake — don't do this:**
+```bash
+ufw delete limit 22/tcp 2>/dev/null       # SILENTLY NO-OPS — the 2>/dev/null suppresses
+                                          # the y/n prompt UFW expects, so the rule survives.
+                                          # `ufw status` will still show LIMIT IN afterwards.
 ```
 
 Final UFW state should look like:
 ```
-22/tcp     ALLOW       Anywhere
-80/tcp     ALLOW       Anywhere
-443/tcp    ALLOW       Anywhere
-(plus v6 equivalents)
+22/tcp     ALLOW IN    Anywhere
+80/tcp     ALLOW IN    Anywhere
+443/tcp    ALLOW IN    Anywhere
+(plus v6 equivalents, all ALLOW IN — no LIMIT anywhere)
 ```
 
 ---
