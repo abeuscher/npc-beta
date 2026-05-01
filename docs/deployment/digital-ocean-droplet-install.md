@@ -325,24 +325,37 @@ Watch the run in GitHub → Actions. Common failure modes:
 - **`dial tcp <ip>:22: i/o timeout` after partial success** — UFW `LIMIT` on :22 is dropping subsequent connections. Re-check step 2c.
 - **`docker compose up` errors about empty config** — nginx conf bind-mount source is missing; re-check step 7.
 
+**Workflow goes green but the site 500s on login** — the workflow's `migrate --force` step doesn't reliably run on first install. This is the expected first-deploy state, not a failure mode. Proceed to step 11 to run the migration manually.
+
 ---
 
-## 11. First-time database seed
+## 11. First-time database migration + seed (REQUIRED — not optional)
 
-The deploy workflow only runs `migrate --force` (additive). Initial seed + scrub data load is a one-time manual step:
+**The deploy workflow's `migrate --force` step does not reliably create tables on first install.** Confirmed on both prod and the public-demo droplet — the first-deploy migrate exits 0 (so the workflow goes green) but `migrate:status` afterwards reports `Migration table not found`, and any DB-touching action 500s. Suspected cause is a race between `docker compose up -d` returning and the postgres container finishing its first-time data-directory init, but unconfirmed and not the priority to debug — the workaround is documented and reliable.
+
+**After the first deploy goes green, immediately SSH in and run the migration manually:**
 
 ```bash
+# Confirm the symptom (optional sanity check):
+docker exec nonprofitcrm_app php artisan migrate:status
+# If it says "Migration table not found", the workflow's migrate didn't take.
+
+# Wipe + re-migrate + seed (admin user, roles, base pages, sample images all land):
 docker exec nonprofitcrm_app php artisan migrate:fresh --seed --force
 docker exec nonprofitcrm_app php artisan storage:link
 ```
 
 Then log in to `https://<your_domain>/admin` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`. For demo droplets, use the **Random Data Generator** widget on the dashboard to populate scrub contacts/donations/events/etc.
 
+**Symptom if you skip this step:** login returns 500. The Laravel log will show `SQLSTATE[42P01]: Undefined table: 7 ERROR: relation "roles" does not exist` (Spatie's `roles` table is the first one the seed-or-login flow touches; the deeper truth is *no* tables exist yet).
+
 For a wholesale wipe-and-reseed later (preserving sample images via the seeder):
 
 ```bash
 docker exec nonprofitcrm_app sh -c 'rm -rf storage/app/public/* storage/media-library/temp/* && php artisan migrate:fresh --seed --force'
 ```
+
+**Architectural debt:** the deploy workflow should either (a) wait for postgres health before running migrate (`docker compose up --wait` if the compose file declares healthchecks), or (b) the workflow's migrate step should be retried on the "no such table"/"connection refused" failure modes. Either fix would eliminate the manual-migrate step. Until then, treat the manual migrate as a required step, not optional.
 
 ---
 
@@ -381,6 +394,7 @@ Then re-trigger the workflow.
 
 ## Open architectural debt (not blocking, file later)
 
+- **First-deploy migrate step doesn't run.** The workflow's `migrate --force` returns success but no migrations actually land on first install — confirmed on both prod and public-demo. Manual migrate (step 11) is the workaround. Real fix: add a postgres healthcheck to `docker-compose.prod.yml` and use `docker compose up --wait`, OR retry migrate on connection-refused / no-such-table.
 - **nginx conf is not in the deployment pipeline.** Both prod and demo need `docker/nginx/prod.conf` placed manually and re-placed on every change. Future fix: extend each deploy workflow with an scp step that pushes the right conf (e.g. `docker/nginx/demo.conf` for demo) into `/opt/nonprofitcrm/docker/nginx/prod.conf` on the droplet.
 - **TLS cert renewal nginx-coordination.** Certbot's `--standalone` mode and a long-running nginx process don't coordinate cleanly. Switch to `--webroot` or add a deploy-hook before any cert hits its 90-day window.
 - **`droplet-setup.md` is stale.** Predates SSL/mTLS, the conf-file gap, and the 2375/2376 cleanup. Either deprecate it (point to this doc) or merge the two.
