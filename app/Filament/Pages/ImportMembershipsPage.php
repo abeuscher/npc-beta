@@ -227,6 +227,7 @@ class ImportMembershipsPage extends Page
                 '__note_contact__' => 'Contact Note',
                 '__tag_contact__'  => 'Contact Tag',
                 '__org_contact__'  => 'Contact Organization',
+                '__org_member__'   => 'Member Organization',
             ],
         );
     }

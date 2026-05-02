@@ -158,6 +158,22 @@ class EventResource extends Resource
                 type: 'event',
                 modelType: 'event',
                 tagType: 'event',
+                extraTitleFields: [
+                    Forms\Components\Grid::make(12)->schema([
+                        Forms\Components\Select::make('sponsor_organization_id')
+                            ->label('Sponsor')
+                            ->relationship('sponsorOrganization', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->columnSpan(6),
+                    ]),
+                ],
                 uniqueSections: [
                     Forms\Components\Grid::make(3)->schema([
                         // ── Left column (8 of 12 = 2 of 3) ──────────────────

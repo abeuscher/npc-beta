@@ -8,6 +8,7 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 | subject_type | string | yes | Polymorphic model class, e.g. App\Models\Donation |
 | subject_id | string | yes | Polymorphic FK (UUID string) |
 | contact_id | uuid | yes | FK → contacts.id; denormalized for filtering; null on manual entries |
+| organization_id | uuid | yes | FK → organizations.id, nullOnDelete; the bill-to / payer Org for invoice-shaped Transactions. Coexists non-exclusively with `contact_id`. |
 | type | string | no | default: 'payment' |
 | amount | decimal(10,2) | no | |
 | direction | string | no | default: 'in'; values: in, out |
@@ -32,5 +33,6 @@ Financial transaction ledger entries. Subject is polymorphic — one table cover
 Indexes:
 - `(import_source_id, external_id)` — `transactions_import_external_idx`, for fast upsert lookup.
 - `(contact_id)` — `transactions_contact_id_index`.
+- `(organization_id)` — `transactions_organization_id_index`.
 - `(subject_type, subject_id)` — `transactions_subject_type_subject_id_index`.
 - `(source)` — `transactions_source_index`.

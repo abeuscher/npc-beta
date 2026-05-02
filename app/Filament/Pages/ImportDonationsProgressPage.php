@@ -158,6 +158,7 @@ class ImportDonationsProgressPage extends Page
             $contactNotes       = [];
             $contactTags        = [];
             $contactOrgName     = null;
+            $donorOrgName       = null;
             $contactMatchSource = null;
             $donationCustomFields = [];
 
@@ -197,6 +198,13 @@ class ImportDonationsProgressPage extends Page
                 if ($destField === '__org_contact__') {
                     if ($rawValue !== null) {
                         $contactOrgName = trim((string) $rawValue);
+                    }
+                    continue;
+                }
+
+                if ($destField === '__org_donor__') {
+                    if ($rawValue !== null) {
+                        $donorOrgName = trim((string) $rawValue);
                     }
                     continue;
                 }
@@ -302,7 +310,8 @@ class ImportDonationsProgressPage extends Page
             }
 
             // Create Donation.
-            $donation = $this->createDonation($donationAttrs, $contact, $donationCustomFields);
+            $donorOrg = $this->resolveOrganizationByName($donorOrgName, $context, 'donation_organization');
+            $donation = $this->createDonation($donationAttrs, $contact, $donationCustomFields, $donorOrg?->id);
 
             // Create/upsert Transaction linked to the Donation.
             $tx         = null;
@@ -485,12 +494,13 @@ class ImportDonationsProgressPage extends Page
         return $attrs;
     }
 
-    private function createDonation(array $attrs, Contact $contact, array $customFields = []): Donation
+    private function createDonation(array $attrs, Contact $contact, array $customFields = [], ?string $organizationId = null): Donation
     {
         $amount = $this->parseDecimal($attrs['amount'] ?? null) ?? 0;
 
         $payload = [
             'contact_id'        => $contact->id,
+            'organization_id'   => $organizationId,
             'type'              => $attrs['type'] ?? 'one_off',
             'status'            => $this->mapDonationStatus($attrs['status'] ?? null),
             'source'            => Source::IMPORT,

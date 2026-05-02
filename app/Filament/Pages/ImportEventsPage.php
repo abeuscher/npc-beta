@@ -340,6 +340,7 @@ class ImportEventsPage extends Page
                 '__tag_contact__'  => 'Contact Tag',
                 '__tag_event__'    => 'Event Tag',
                 '__org_contact__'  => 'Contact Organization (fill blanks only)',
+                '__org_sponsor__'  => 'Sponsor Organization',
             ],
         );
     }

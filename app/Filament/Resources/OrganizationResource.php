@@ -3,10 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrganizationResource\Pages;
-use App\Filament\Resources\OrganizationResource\RelationManagers\ContactsRelationManager;
+use App\Filament\Resources\OrganizationResource\RelationManagers\EventsSponsoredRelationManager;
 use App\Models\Organization;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,31 +26,39 @@ class OrganizationResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make()->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'foundation'  => 'Foundation',
-                        'corporate'   => 'Corporate',
-                        'government'  => 'Government',
-                        'other'       => 'Other',
-                    ])
-                    ->nullable(),
-
-                Forms\Components\TextInput::make('website')
-                    ->url()
-                    ->maxLength(255),
-
-                Forms\Components\TextInput::make('phone')
-                    ->tel()
-                    ->maxLength(50),
-            ])->columns(2),
-
-            Forms\Components\Section::make('Address')
+            Forms\Components\Section::make()
+                ->columns(12)
                 ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpan(6),
+
+                    Forms\Components\Select::make('type')
+                        ->options([
+                            'nonprofit'  => 'Nonprofit',
+                            'for_profit' => 'For profit',
+                            'government' => 'Government',
+                            'other'      => 'Other',
+                        ])
+                        ->nullable()
+                        ->columnSpan(6),
+
+                    Forms\Components\TextInput::make('website')
+                        ->url()
+                        ->maxLength(255)
+                        ->columnSpan(4),
+
+                    Forms\Components\TextInput::make('phone')
+                        ->tel()
+                        ->maxLength(50)
+                        ->columnSpan(4),
+
+                    Forms\Components\TextInput::make('email')
+                        ->email()
+                        ->maxLength(255)
+                        ->columnSpan(4),
+
                     Forms\Components\TextInput::make('address_line_1')
                         ->label('Address Line 1')
                         ->columnSpanFull(),
@@ -58,19 +67,11 @@ class OrganizationResource extends Resource
                         ->label('Address Line 2')
                         ->columnSpanFull(),
 
-                    Forms\Components\TextInput::make('city'),
-                    Forms\Components\TextInput::make('state'),
-                    Forms\Components\TextInput::make('postal_code'),
-                    Forms\Components\TextInput::make('country')->default('US'),
-                ])
-                ->columns(2)
-                ->collapsible(),
-
-            Forms\Components\Section::make('Notes')->schema([
-                Forms\Components\Textarea::make('notes')
-                    ->rows(4)
-                    ->columnSpanFull(),
-            ]),
+                    Forms\Components\TextInput::make('city')->columnSpan(3),
+                    Forms\Components\TextInput::make('state')->columnSpan(3),
+                    Forms\Components\TextInput::make('postal_code')->columnSpan(3),
+                    Forms\Components\TextInput::make('country')->default('US')->columnSpan(3),
+                ]),
         ]);
     }
 
@@ -84,9 +85,16 @@ class OrganizationResource extends Resource
 
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'foundation' => 'info',
-                        'corporate'  => 'warning',
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'nonprofit'  => 'Nonprofit',
+                        'for_profit' => 'For profit',
+                        'government' => 'Government',
+                        'other'      => 'Other',
+                        default      => $state ?? '',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'nonprofit'  => 'info',
+                        'for_profit' => 'warning',
                         'government' => 'success',
                         default      => 'gray',
                     }),
@@ -107,8 +115,8 @@ class OrganizationResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'foundation' => 'Foundation',
-                        'corporate'  => 'Corporate',
+                        'nonprofit'  => 'Nonprofit',
+                        'for_profit' => 'For profit',
                         'government' => 'Government',
                         'other'      => 'Other',
                     ]),
@@ -118,17 +126,74 @@ class OrganizationResource extends Resource
             ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function (Tables\Actions\DeleteAction $action, Organization $record) {
+                        if (! self::guardDeletion($record)) {
+                            $action->cancel();
+                        }
+                    }),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function (Tables\Actions\DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records) {
+                            $blocked = $records->filter(fn (Organization $org) => self::countRelatedRecords($org) > 0);
+
+                            if ($blocked->isNotEmpty()) {
+                                Notification::make()
+                                    ->title('Cannot delete')
+                                    ->body($blocked->count() . ' organization(s) have linked members, donations, memberships, sponsored events, or invoices. Reassign or remove those records, or use Force Delete.')
+                                    ->danger()
+                                    ->send();
+
+                                $action->cancel();
+                            }
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function countRelatedRecords(Organization $organization): int
+    {
+        return $organization->contacts()->count()
+            + $organization->donations()->count()
+            + $organization->memberships()->count()
+            + $organization->eventsSponsored()->count()
+            + $organization->transactions()->count();
+    }
+
+    public static function guardDeletion(Organization $organization): bool
+    {
+        $counts = [
+            'affiliated contacts' => $organization->contacts()->count(),
+            'donations'           => $organization->donations()->count(),
+            'memberships'         => $organization->memberships()->count(),
+            'sponsored events'    => $organization->eventsSponsored()->count(),
+            'invoices'            => $organization->transactions()->count(),
+        ];
+
+        $nonZero = array_filter($counts, fn ($n) => $n > 0);
+
+        if (empty($nonZero)) {
+            return true;
+        }
+
+        $parts = [];
+        foreach ($nonZero as $label => $count) {
+            $parts[] = "{$count} {$label}";
+        }
+
+        Notification::make()
+            ->title('Cannot delete')
+            ->body('This organization has ' . implode(', ', $parts) . '. Reassign or remove these before deleting, or use Force Delete to keep the records and null their organization link.')
+            ->danger()
+            ->send();
+
+        return false;
     }
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
@@ -140,8 +205,7 @@ class OrganizationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            ContactsRelationManager::class,
-            \App\Filament\Resources\OrganizationResource\RelationManagers\NotesRelationManager::class,
+            EventsSponsoredRelationManager::class,
         ];
     }
 
@@ -151,6 +215,7 @@ class OrganizationResource extends Resource
             'index'  => Pages\ListOrganizations::route('/'),
             'create' => Pages\CreateOrganization::route('/create'),
             'edit'   => Pages\EditOrganization::route('/{record}/edit'),
+            'notes'  => Pages\OrganizationNotes::route('/{record}/notes'),
         ];
     }
 }

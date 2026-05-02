@@ -32,10 +32,11 @@ class InvoiceImportFieldRegistry extends AggregatingRegistry
     protected static function otherOptions(): array
     {
         return [
-            '__custom_invoice__' => '— Create as Transaction custom field —',
-            '__tag_contact__'    => '— Apply as Contact tag —',
-            '__note_contact__'   => '— Create as Contact note —',
-            '__org_contact__'    => '— Link to Contact Organization —',
+            '__custom_invoice__'     => '— Create as Transaction custom field —',
+            '__tag_contact__'        => '— Apply as Contact tag —',
+            '__note_contact__'       => '— Create as Contact note —',
+            '__org_contact__'        => '— Link to Contact Organization —',
+            '__org_invoice_party__'  => '— Link to Organization (Bill-To) —',
         ];
     }
 }

@@ -36,6 +36,7 @@ class MembershipImportFieldRegistry extends AggregatingRegistry
             '__tag_contact__'       => '— Apply as Contact tag —',
             '__note_contact__'      => '— Create as Contact note —',
             '__org_contact__'       => '— Link to Contact Organization —',
+            '__org_member__'        => '— Link to Organization (Member) —',
         ];
     }
 }

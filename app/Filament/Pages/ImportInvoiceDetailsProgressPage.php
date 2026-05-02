@@ -189,12 +189,13 @@ class ImportInvoiceDetailsProgressPage extends Page
 
             if (! isset($this->invoiceGroups[$invoiceNum])) {
                 $this->invoiceGroups[$invoiceNum] = [
-                    'meta'           => $parsed['meta'],
-                    'contact'        => $parsed['contact'],
-                    'contactCreated' => $parsed['contactCreated'],
-                    'items'          => [],
-                    'rows'           => [],
-                    'customFields'   => [],
+                    'meta'                => $parsed['meta'],
+                    'contact'             => $parsed['contact'],
+                    'contactCreated'      => $parsed['contactCreated'],
+                    'invoicePartyOrgName' => $parsed['invoicePartyOrgName'] ?? null,
+                    'items'               => [],
+                    'rows'                => [],
+                    'customFields'        => [],
                 ];
             }
 
@@ -386,12 +387,13 @@ class ImportInvoiceDetailsProgressPage extends Page
 
             if (! isset($invoiceGroups[$invoiceNum])) {
                 $invoiceGroups[$invoiceNum] = [
-                    'meta'           => $parsed['meta'],
-                    'contact'        => $parsed['contact'],
-                    'contactCreated' => $parsed['contactCreated'],
-                    'items'          => [],
-                    'rows'           => [],
-                    'customFields'   => [],
+                    'meta'                => $parsed['meta'],
+                    'contact'             => $parsed['contact'],
+                    'contactCreated'      => $parsed['contactCreated'],
+                    'invoicePartyOrgName' => $parsed['invoicePartyOrgName'] ?? null,
+                    'items'               => [],
+                    'rows'                => [],
+                    'customFields'        => [],
                 ];
             }
 
@@ -447,14 +449,15 @@ class ImportInvoiceDetailsProgressPage extends Page
     private function parseRow(array $row, int $rowNumber, array $context): array
     {
         try {
-            $invoiceAttrs       = [];
-            $contactLookup      = [];
-            $contactExternalId  = null;
-            $contactNotes       = [];
-            $contactTags        = [];
-            $contactOrgName     = null;
-            $contactMatchSource = null;
-            $customFields       = [];
+            $invoiceAttrs        = [];
+            $contactLookup       = [];
+            $contactExternalId   = null;
+            $contactNotes        = [];
+            $contactTags         = [];
+            $contactOrgName      = null;
+            $invoicePartyOrgName = null;
+            $contactMatchSource  = null;
+            $customFields        = [];
 
             foreach ($row as $index => $value) {
                 $header    = $this->csvHeaders[$index] ?? null;
@@ -501,6 +504,13 @@ class ImportInvoiceDetailsProgressPage extends Page
                 if ($destField === '__org_contact__') {
                     if ($rawValue !== null) {
                         $contactOrgName = trim((string) $rawValue);
+                    }
+                    continue;
+                }
+
+                if ($destField === '__org_invoice_party__') {
+                    if ($rawValue !== null) {
+                        $invoicePartyOrgName = trim((string) $rawValue);
                     }
                     continue;
                 }
@@ -583,17 +593,18 @@ class ImportInvoiceDetailsProgressPage extends Page
             }
 
             return [
-                'skip'           => false,
-                'error'          => false,
-                'invoiceNumber'  => $invoiceNumber,
-                'contact'        => $contact,
-                'contactCreated' => $contactCreated,
-                'lineItem'       => $lineItem,
-                'meta'           => $invoiceAttrs,
-                'contactNotes'   => $contactNotes,
-                'contactTags'    => $contactTags,
-                'contactOrgName' => $contactOrgName,
-                'customFields'   => $customFields,
+                'skip'                 => false,
+                'error'                => false,
+                'invoiceNumber'        => $invoiceNumber,
+                'contact'              => $contact,
+                'contactCreated'       => $contactCreated,
+                'lineItem'             => $lineItem,
+                'meta'                 => $invoiceAttrs,
+                'contactNotes'         => $contactNotes,
+                'contactTags'          => $contactTags,
+                'contactOrgName'       => $contactOrgName,
+                'invoicePartyOrgName'  => $invoicePartyOrgName,
+                'customFields'         => $customFields,
             ];
         } catch (\Throwable $e) {
             return [
@@ -619,10 +630,11 @@ class ImportInvoiceDetailsProgressPage extends Page
      */
     private function processInvoiceGroup(string $invoiceNumber, array $group, array $context): array
     {
-        $meta         = $group['meta'];
-        $contact      = $group['contact'];
-        $items        = $group['items'];
-        $customFields = $group['customFields'] ?? [];
+        $meta                = $group['meta'];
+        $contact             = $group['contact'];
+        $items               = $group['items'];
+        $customFields        = $group['customFields'] ?? [];
+        $invoicePartyOrgName = $group['invoicePartyOrgName'] ?? null;
 
         // Look for existing Transaction (from events or donations import).
         $existing = null;
@@ -709,6 +721,8 @@ class ImportInvoiceDetailsProgressPage extends Page
         }
 
         // Create new Transaction.
+        $invoiceParty = $this->resolveOrganizationByName($invoicePartyOrgName, $context, 'invoice_organization');
+
         $payload = [
             'type'              => 'payment',
             'direction'         => 'in',
@@ -717,6 +731,7 @@ class ImportInvoiceDetailsProgressPage extends Page
             'amount'            => $totalAmount,
             'occurred_at'       => $this->parseDate($meta['invoice_date'] ?? $meta['payment_date'] ?? null) ?? now(),
             'contact_id'        => $contact->id,
+            'organization_id'   => $invoiceParty?->id,
             'external_id'       => $invoiceNumber,
             'invoice_number'    => $invoiceNumber,
             'import_source_id'  => $this->importSourceId ?: null,

@@ -29,6 +29,7 @@ class Membership extends Model
 
     protected $fillable = [
         'contact_id',
+        'organization_id',
         'tier_id',
         'status',
         'source',
@@ -64,6 +65,11 @@ class Membership extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function tier(): BelongsTo

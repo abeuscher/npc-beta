@@ -257,4 +257,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 252 | CI Test Suite Cascade — Root-Cause & Fix |
 | 253 | Fleet Manager Pivot Planning Session |
 | 254 | Importer Mapping Page UX |
+| 255 | Organizations Model Overhaul (Min) |
 

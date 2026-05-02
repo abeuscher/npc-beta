@@ -6,6 +6,7 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 |---|---|---|---|
 | id | uuid | no | PK |
 | contact_id | uuid | yes | FK→contacts, nullOnDelete; set by webhook after Stripe confirms payment |
+| organization_id | uuid | yes | FK→organizations, nullOnDelete; set when the donation is corporate (Org-as-source). Coexists non-exclusively with `contact_id`. |
 | fund_id | uuid | yes | FK→funds, nullOnDelete; null = unrestricted/general fund |
 | type | string | no | Values: one_off, recurring |
 | amount | decimal(10,2) | no | Amount in dollars; validated min $1 / max $10,000 |
@@ -26,6 +27,7 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 
 Indexes:
 - `(contact_id)` — `donations_contact_id_index`.
+- `(organization_id)` — `donations_organization_id_index`.
 - `(fund_id)` — `donations_fund_id_index`.
 - `(import_source_id, external_id)` — `donations_import_external_idx`.
 - `(source)` — `donations_source_index`.

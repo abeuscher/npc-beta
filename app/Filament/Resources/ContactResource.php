@@ -307,6 +307,12 @@ class ContactResource extends Resource
                     ->label('In a household')
                     ->query(fn ($query) => $query->whereColumn('household_id', '!=', 'id')),
 
+                Tables\Filters\SelectFilter::make('organization_id')
+                    ->label('Organization')
+                    ->relationship('organization', 'name')
+                    ->searchable()
+                    ->preload(),
+
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->defaultSort('created_at', 'desc')

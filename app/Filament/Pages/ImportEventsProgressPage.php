@@ -200,6 +200,7 @@ class ImportEventsProgressPage extends Page
             $contactTags        = [];
             $eventTags          = [];
             $contactOrgName     = null;
+            $sponsorOrgName     = null;
             $contactMatchSource = null;
 
             foreach ($row as $index => $value) {
@@ -242,6 +243,13 @@ class ImportEventsProgressPage extends Page
                 if ($destField === '__org_contact__') {
                     if ($rawValue !== null) {
                         $contactOrgName = trim((string) $rawValue);
+                    }
+                    continue;
+                }
+
+                if ($destField === '__org_sponsor__') {
+                    if ($rawValue !== null) {
+                        $sponsorOrgName = trim((string) $rawValue);
                     }
                     continue;
                 }
@@ -329,7 +337,8 @@ class ImportEventsProgressPage extends Page
             }
 
             if (! $event) {
-                $event        = $this->createEvent($eventAttrs, $eventCustomFields, $rowNumber);
+                $sponsorOrg   = $this->resolveOrganizationByName($sponsorOrgName, $context, 'event_sponsor_organization');
+                $event        = $this->createEvent($eventAttrs, $eventCustomFields, $rowNumber, $sponsorOrg?->id);
                 $eventCreated = true;
 
                 if ($this->importSourceId) {
@@ -440,7 +449,7 @@ class ImportEventsProgressPage extends Page
 
     // ─── Entity-specific methods ────────────────────────────────────────
 
-    private function createEvent(array $attrs, array $customFields, int $rowNumber): Event
+    private function createEvent(array $attrs, array $customFields, int $rowNumber, ?string $sponsorOrganizationId = null): Event
     {
         $title = $attrs['title'] ?? null;
 
@@ -452,6 +461,10 @@ class ImportEventsProgressPage extends Page
         $payload['slug']      = $this->buildUniqueSlug($title);
         $payload['status']    = $payload['status'] ?? 'draft';
         $payload['author_id'] = $this->importerUserId ?: \App\Models\User::query()->value('id');
+
+        if ($sponsorOrganizationId !== null) {
+            $payload['sponsor_organization_id'] = $sponsorOrganizationId;
+        }
 
         if (! empty($customFields)) {
             $payload['custom_fields'] = $customFields;

@@ -102,12 +102,20 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 ### Track B — Onboarding cluster
 
-#### B1a. Organizations Model Overhaul (Min) *(prerequisite stub for B2)*
+#### B1a. Organizations Model Overhaul (Min) ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Minimum implementation of Organizations as a peer to Contact — transactional Org peering only. Four nullable `organization_id` FKs land on `donations`, `memberships`, `event_registrations`, and `events.sponsor_organization_id` (`ON DELETE SET NULL`). Four new per-importer Org-as-source sentinels (`__org_donor__`, `__org_member__`, `__org_sponsor__`, `__org_invoice_party__` — the last conditional on a verify-at-start invoice-model check) reusing the existing `__org_contact__` strategy-radio UX (`auto_create` / `match_only` / `as_custom`). Four read-only related-records panels on the Organization edit page (Members / Donations Received / Memberships Held / Events Sponsored). Block-with-counts deletion with explicit force-delete confirmation that cascades `SET NULL` on the four FKs (records preserved, FK nulled). `Contact.organization_id` (the Contact's primary employer FK) stays exactly as-is. Coexistence with `contact_id` is non-exclusive at the DB level — leaves room for B1b's soft-credit work without a schema change.
-- **artifact:** the feature itself; required for B2 to have meaningful Org-related fixtures.
+- **success criterion** *(closed at session 255)*: Five nullable transactional FKs landed (`donations.organization_id`, `memberships.organization_id`, `event_registrations.organization_id`, `events.sponsor_organization_id`, `transactions.organization_id`), all `ON DELETE SET NULL`. Four importer Org-as-source sentinels (`__org_donor__`, `__org_member__`, `__org_sponsor__`, `__org_invoice_party__`) reusing the `__org_contact__` strategy-radio UX. The original "four read-only panels on Org edit" plan was scoped down mid-session: financial transactions are referenced via filtered links to Finance, not displayed inside records; final shape is **Events Sponsored panel only** plus a "View affiliated contacts →" ellipsis-menu link to the Contacts list (filtered by `organization_id`). Org admin form rebuilt to a single-section layout with type values `nonprofit/for_profit/government/other`, an `email` field, and the address fields flowed inline. Sponsor field added to the Event admin form. Notes lifted from a free-text textarea to the same polymorphic Timeline pattern Contact uses, via a new shared abstract `app/Filament/Concerns/RecordTimelinePage.php` (ContactNotes refactored to extend it; new OrganizationNotes extends it; blade renamed to `record-timeline.blade.php`); `organizations.notes` text column dropped. Block-with-counts deletion guard with force-delete branch.
+- **artifact:** the feature itself; required for B2 to have meaningful Org-related fixtures. **Closed at session 255.** See `sessions/255. Organizations Model Overhaul (Min) — Log.md` for the full landing.
+- **estimated time cost:** 1 session.
+
+#### B1c. Organizations Importer *(prerequisite stub for B2)*
+
+- **gate:** release
+- **prerequisites:** B1a (Org peer-record family in place)
+- **success criterion:** Top-level CSV importer for Organizations under the Tools group, mirroring the namespaced importer pattern (Memberships shape — single-entity, no contact-match bucket). Mappable core fields: name / type / website / phone / email / address. Three new sentinels (`__custom_organization__`, `__tag_organization__`, `__note_organization__`) following the established trait-level parallel-edit discipline. Dedup match-key dropdown defaulting to `organization:name` (case-insensitive `LOWER(TRIM(...))`); `email` and `external_id` also valid. Three-option duplicate strategy radio (`skip` / `update` / `error`); `update` follows fill-blanks-only semantic. Schema additions on `organizations`: `source` (NOT NULL, default `'human'`, accepted set HUMAN/IMPORT/SCRUB_DATA), `custom_fields` (jsonb), `import_source_id`, `import_session_id`, `external_id` plus composite index. `Organization` model gains `EnforcesScrubInheritance` + `HasSourcePolicy`; `scrubInheritsFrom` returns `[]` (top of source-policy graph). `ImportSource` model gains the per-importer mapping triplet (`organizations_field_map` / `organizations_custom_field_map` / `organizations_match_key`). Coexistence with the Org-as-source sentinels is structural — both orderings (Org importer first, or Contact/Donation/etc. importer first with Org stubs auto-created) work because the dedup match logic is the same `LOWER(TRIM(...))` pattern in both directions.
+- **artifact:** the feature itself; required for B2 to land real-shape exports with full Org metadata.
 - **estimated time cost:** 1 session.
 
 #### B1b. Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
@@ -359,32 +367,33 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 8. **A5.** 2FA for admin accounts
 9. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
 10. **E2.** Importer Mapping Page UX *(closed at 254; precedes B2)*
-11. **B1a.** Organizations Model Overhaul (Min)
-12. **B2.** Onboarding rehearsal cluster
-13. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
-14. **E10.** Full-Width Architecture Enforcement
-15. **E11.** Page Builder Focus-Scroll Clamp
-16. **C1.** Notes Permissions (feature half)
-17. **E9.** Widget Help Authoring
-18. **C2.** Event Ticket Tiers
-19. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-20. **E4.** Stripe Checkout Branding *(precedes C4)*
-21. **C4.** Donation-to-acknowledgment loop
-22. **C5.** Event with everything
-23. **C6.** Membership renewal cycle
-24. **C7.** Email at volume
-25. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-26. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-27. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-28. **E8.** UI/UX Sprint
-29. **E12.** Housekeeping Batch 2
-30. **D1.** Scale rehearsal
-31. **D2.** Compatibility cluster
-32. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-33. **E13.** Help docs body content
-34. **E14.** Third-Party Licensing Compliance Audit
-35. **D4.** Test suite review — cost & shape
-36. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+11. **B1a.** Organizations Model Overhaul (Min) *(closed at 255)*
+12. **B1c.** Organizations Importer *(prerequisite stub for B2)*
+13. **B2.** Onboarding rehearsal cluster
+14. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+15. **E10.** Full-Width Architecture Enforcement
+16. **E11.** Page Builder Focus-Scroll Clamp
+17. **C1.** Notes Permissions (feature half)
+18. **E9.** Widget Help Authoring
+19. **C2.** Event Ticket Tiers
+20. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+21. **E4.** Stripe Checkout Branding *(precedes C4)*
+22. **C4.** Donation-to-acknowledgment loop
+23. **C5.** Event with everything
+24. **C6.** Membership renewal cycle
+25. **C7.** Email at volume
+26. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+27. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+28. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+29. **E8.** UI/UX Sprint
+30. **E12.** Housekeeping Batch 2
+31. **D1.** Scale rehearsal
+32. **D2.** Compatibility cluster
+33. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+34. **E13.** Help docs body content
+35. **E14.** Third-Party Licensing Compliance Audit
+36. **D4.** Test suite review — cost & shape
+37. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

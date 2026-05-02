@@ -7,6 +7,7 @@ Registrations submitted for an event.
 | id | uuid | no | PK |
 | event_id | uuid | no | FK→events, cascade |
 | contact_id | uuid | yes | FK→contacts, nullOnDelete |
+| organization_id | uuid | yes | FK→organizations, nullOnDelete; set when the registrant party is an Org rather than a person. Schema-only at session 255 — admin UI sets manually; no importer sentinel ships this session. |
 | name | string | no | |
 | email | string | no | |
 | phone | string(50) | yes | |
@@ -33,4 +34,5 @@ Registrations submitted for an event.
 | updated_at | timestamp | no | |
 
 Indexes:
+- `(organization_id)` — `event_registrations_organization_id_index`.
 - `(source)` — `event_registrations_source_index`.

@@ -35,6 +35,7 @@ class Transaction extends Model
         'subject_type',
         'subject_id',
         'contact_id',
+        'organization_id',
         'type',
         'amount',
         'direction',
@@ -94,6 +95,11 @@ class Transaction extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function importSource(): BelongsTo

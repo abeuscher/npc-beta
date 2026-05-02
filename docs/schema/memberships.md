@@ -6,6 +6,7 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 |---|---|---|---|
 | id | uuid | no | PK |
 | contact_id | uuid | no | FK→contacts, restrictOnDelete |
+| organization_id | uuid | yes | FK→organizations, nullOnDelete; set when the membership is corporate (Org-as-source). Coexists non-exclusively with `contact_id`. |
 | tier_id | uuid | yes | FK→membership_tiers, set null on delete |
 | status | string | no | default: 'pending'; values: pending, active, expired, cancelled |
 | source | string | no | default: human; values: human, import, stripe_webhook, scrub_data (per `Membership::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |
@@ -25,4 +26,5 @@ Membership records for contacts, including tier, status, and dates. Multiple rec
 
 Indexes:
 - `(import_source_id, external_id)` — `memberships_import_external_idx`.
+- `(organization_id)` — `memberships_organization_id_index`.
 - `(source)` — `memberships_source_index`.

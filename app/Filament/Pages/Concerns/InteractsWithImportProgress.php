@@ -787,9 +787,29 @@ trait InteractsWithImportProgress
             return;
         }
 
+        $org = $this->resolveOrganizationByName($orgName, $context, 'contact_organization');
+
+        if (! $org) {
+            return;
+        }
+
+        Contact::withoutGlobalScopes()
+            ->where('id', $contact->id)
+            ->whereNull('organization_id')
+            ->update(['organization_id' => $org->id]);
+
+        $contact->organization_id = $org->id;
+    }
+
+    protected function resolveOrganizationByName(?string $orgName, array $context, string $relationalType): ?Organization
+    {
+        if (blank($orgName)) {
+            return null;
+        }
+
         $strategy = 'auto_create';
-        foreach ($context['relationalMap'] as $cfg) {
-            if (($cfg['type'] ?? null) === 'contact_organization') {
+        foreach ($context['relationalMap'] ?? [] as $cfg) {
+            if (($cfg['type'] ?? null) === $relationalType) {
                 $strategy = $cfg['strategy'] ?? 'auto_create';
                 break;
             }
@@ -801,18 +821,13 @@ trait InteractsWithImportProgress
 
         if (! $org) {
             if ($strategy === 'match_only') {
-                return;
+                return null;
             }
 
             $org = Organization::create(['name' => $orgName]);
         }
 
-        Contact::withoutGlobalScopes()
-            ->where('id', $contact->id)
-            ->whereNull('organization_id')
-            ->update(['organization_id' => $org->id]);
-
-        $contact->organization_id = $org->id;
+        return $org;
     }
 
     // ─── Staged-update helper (polymorphic, used by 4 non-contact pages) ──

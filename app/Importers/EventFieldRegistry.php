@@ -24,6 +24,7 @@ class EventFieldRegistry extends FieldRegistry
      */
     protected static array $excluded = [
         'author_id',
+        'sponsor_organization_id',
         'landing_page_id',
         'registrants_deleted_at',
         'custom_fields',

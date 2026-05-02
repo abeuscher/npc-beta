@@ -19,13 +19,13 @@ class Organization extends Model
         'type',
         'website',
         'phone',
+        'email',
         'address_line_1',
         'address_line_2',
         'city',
         'state',
         'postal_code',
         'country',
-        'notes',
     ];
 
     public function contacts(): HasMany
@@ -36,6 +36,26 @@ class Organization extends Model
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    public function eventsSponsored(): HasMany
+    {
+        return $this->hasMany(Event::class, 'sponsor_organization_id');
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
     }
 
     public function tags(): MorphToMany

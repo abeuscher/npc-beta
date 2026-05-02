@@ -235,6 +235,7 @@ class ImportDonationsPage extends Page
                 '__note_contact__' => 'Contact Note',
                 '__tag_contact__'  => 'Contact Tag',
                 '__org_contact__'  => 'Contact Organization (fill blanks only)',
+                '__org_donor__'    => 'Donor Organization',
             ],
         );
     }

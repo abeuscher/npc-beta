@@ -215,6 +215,7 @@ class ImportMembershipsProgressPage extends Page
             $contactNotes       = [];
             $contactTags        = [];
             $contactOrgName     = null;
+            $memberOrgName      = null;
             $contactMatchSource = null;
             $membershipCustomFields = [];
 
@@ -263,6 +264,13 @@ class ImportMembershipsProgressPage extends Page
                 if ($destField === '__org_contact__') {
                     if ($rawValue !== null) {
                         $contactOrgName = trim((string) $rawValue);
+                    }
+                    continue;
+                }
+
+                if ($destField === '__org_member__') {
+                    if ($rawValue !== null) {
+                        $memberOrgName = trim((string) $rawValue);
                     }
                     continue;
                 }
@@ -359,7 +367,8 @@ class ImportMembershipsProgressPage extends Page
             }
 
             // Create Membership.
-            $membership = $this->createMembership($memberAttrs, $contact, $tier, $membershipCustomFields);
+            $memberOrg  = $this->resolveOrganizationByName($memberOrgName, $context, 'membership_organization');
+            $membership = $this->createMembership($memberAttrs, $contact, $tier, $membershipCustomFields, $memberOrg?->id);
 
             // Create matching Transaction for paid+active|expired memberships
             // (mirrors the donation/event import ledger discipline).
@@ -527,10 +536,11 @@ class ImportMembershipsProgressPage extends Page
         ]);
     }
 
-    private function createMembership(array $attrs, Contact $contact, ?MembershipTier $tier, array $customFields = []): Membership
+    private function createMembership(array $attrs, Contact $contact, ?MembershipTier $tier, array $customFields = [], ?string $organizationId = null): Membership
     {
         $payload = [
             'contact_id'        => $contact->id,
+            'organization_id'   => $organizationId,
             'tier_id'           => $tier?->id,
             'status'            => $this->mapMembershipStatus($attrs['status'] ?? null),
             'source'            => Source::IMPORT,

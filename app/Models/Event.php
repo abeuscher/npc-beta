@@ -57,6 +57,7 @@ class Event extends Model implements HasMedia
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
         'author_id', // required; set to auth user on creation
+        'sponsor_organization_id',
         'landing_page_id', // system-managed: set by EventObserver when event is created
         'registrants_deleted_at',
         'custom_fields',
@@ -104,6 +105,11 @@ class Event extends Model implements HasMedia
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function sponsorOrganization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'sponsor_organization_id');
     }
 
     public function registrations(): HasMany

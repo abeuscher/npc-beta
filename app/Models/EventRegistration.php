@@ -35,6 +35,7 @@ class EventRegistration extends Model
     protected $fillable = [
         'event_id',
         'contact_id',
+        'organization_id',
         'name',
         'email',
         'phone',
@@ -78,6 +79,11 @@ class EventRegistration extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function transaction(): BelongsTo

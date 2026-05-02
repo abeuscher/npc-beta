@@ -58,6 +58,7 @@ class EventImportFieldRegistry extends AggregatingRegistry
             '__tag_event__'           => '— Apply as Event tag —',
             '__note_contact__'        => '— Create as Contact note —',
             '__org_contact__'         => '— Link to Contact Organization —',
+            '__org_sponsor__'         => '— Link to Organization (Sponsor) —',
         ];
     }
 

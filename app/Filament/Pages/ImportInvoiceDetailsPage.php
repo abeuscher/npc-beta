@@ -250,9 +250,10 @@ class ImportInvoiceDetailsPage extends Page
             flatLabels: InvoiceImportFieldRegistry::flatFields(),
             customDisplayMap: ['__custom_invoice__' => 'Transaction custom field'],
             relationalDisplayMap: [
-                '__note_contact__' => 'Contact Note',
-                '__tag_contact__'  => 'Contact Tag',
-                '__org_contact__'  => 'Contact Organization',
+                '__note_contact__'        => 'Contact Note',
+                '__tag_contact__'         => 'Contact Tag',
+                '__org_contact__'         => 'Contact Organization',
+                '__org_invoice_party__'   => 'Bill-To Organization',
             ],
         );
     }

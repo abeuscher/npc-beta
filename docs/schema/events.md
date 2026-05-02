@@ -8,6 +8,7 @@ Events with dates, registration, and venue information.
 | title | string | no | |
 | slug | string | no | unique |
 | author_id | bigint unsigned | no | FK → users.id, restrictOnDelete |
+| sponsor_organization_id | uuid | yes | FK→organizations, nullOnDelete; corporate sponsor of the event. |
 | description | text | yes | |
 | status | enum | no | default: 'draft'; values: draft, published, cancelled |
 | source | string | no | default: human; values: human, import, scrub_data (per `Event::ACCEPTED_SOURCES`). Origin discriminator — orthogonal to `status`. |

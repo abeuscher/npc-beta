@@ -29,6 +29,14 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
  */
 trait InteractsWithImportWizard
 {
+    private const ORG_SENTINEL_TYPES = [
+        '__org_contact__'       => 'contact_organization',
+        '__org_donor__'         => 'donation_organization',
+        '__org_member__'        => 'membership_organization',
+        '__org_sponsor__'       => 'event_sponsor_organization',
+        '__org_invoice_party__' => 'invoice_organization',
+    ];
+
     // ─── State properties ────────────────────────────────────────────────
     // Each consuming page must declare these as public properties:
     //   parsedHeaders, uploadedFilePath, previewRows, sampleRows,
@@ -626,7 +634,13 @@ trait InteractsWithImportWizard
             ])
             ->default('auto_create')
             ->required()
-            ->visible(fn (Forms\Get $get) => $get($key) === '__org_contact__');
+            ->visible(fn (Forms\Get $get) => in_array($get($key), [
+                '__org_contact__',
+                '__org_donor__',
+                '__org_member__',
+                '__org_sponsor__',
+                '__org_invoice_party__',
+            ], true));
 
         $row = Forms\Components\Group::make([$select, $customSubForm, $noteSubForm, $tagSubForm, $orgSubForm])
             ->extraAttributes(function (Forms\Get $get) use ($key, $n, $customSentinels): array {
@@ -946,7 +960,7 @@ trait InteractsWithImportWizard
                     'type'      => 'event_tag',
                     'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
                 ];
-            } elseif ($destField === '__org_contact__') {
+            } elseif (isset(self::ORG_SENTINEL_TYPES[$destField])) {
                 $strategy = $data["org_strategy_{$n}"] ?? 'auto_create';
 
                 if ($strategy === 'as_custom') {
@@ -956,15 +970,16 @@ trait InteractsWithImportWizard
                         'label'      => $header,
                         'field_type' => 'text',
                     ];
-                    // Events store org-as-custom on registration target
-                    if (in_array('__custom_registration__', $customSentinels, true)) {
+                    if ($destField === '__org_sponsor__' && in_array('__custom_event__', $customSentinels, true)) {
+                        $entry['target'] = 'event';
+                    } elseif ($destField === '__org_contact__' && in_array('__custom_registration__', $customSentinels, true)) {
                         $entry['target'] = 'registration';
                     }
                     $customFieldMap[$header] = $entry;
                 } else {
-                    $namedMap[$header] = '__org_contact__';
+                    $namedMap[$header] = $destField;
                     $relationalMap[$header] = [
-                        'type'     => 'contact_organization',
+                        'type'     => self::ORG_SENTINEL_TYPES[$destField],
                         'strategy' => $strategy,
                     ];
                 }
