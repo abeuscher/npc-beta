@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use App\WidgetPrimitive\EnforcesScrubInheritance;
+use App\WidgetPrimitive\HasSourcePolicy;
+use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -12,7 +16,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Organization extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+
+    public const ACCEPTED_SOURCES = [
+        Source::HUMAN,
+        Source::IMPORT,
+        Source::SCRUB_DATA,
+    ];
+
+    public static function scrubInheritsFrom(): array
+    {
+        return [];
+    }
 
     protected $fillable = [
         'name',
@@ -26,6 +41,15 @@ class Organization extends Model
         'state',
         'postal_code',
         'country',
+        'source',
+        'custom_fields',
+        'import_source_id',
+        'import_session_id',
+        'external_id',
+    ];
+
+    protected $casts = [
+        'custom_fields' => 'array',
     ];
 
     public function contacts(): HasMany
@@ -66,5 +90,15 @@ class Organization extends Model
     public function notes(): MorphMany
     {
         return $this->morphMany(Note::class, 'notable');
+    }
+
+    public function importSource(): BelongsTo
+    {
+        return $this->belongsTo(ImportSource::class);
+    }
+
+    public function importSession(): BelongsTo
+    {
+        return $this->belongsTo(ImportSession::class);
     }
 }

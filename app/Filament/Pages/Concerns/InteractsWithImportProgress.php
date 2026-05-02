@@ -682,7 +682,7 @@ trait InteractsWithImportProgress
 
     // ─── Relational helpers ──────────────────────────────────────────────
 
-    protected function applyPerRowNotes(Contact $contact, array $entries): int
+    protected function applyPerRowNotes(Model $notable, array $entries): int
     {
         $created = 0;
 
@@ -695,8 +695,8 @@ trait InteractsWithImportProgress
 
             foreach ($fragments as $fragment) {
                 Note::create([
-                    'notable_type'     => Contact::class,
-                    'notable_id'       => $contact->id,
+                    'notable_type'     => $notable::class,
+                    'notable_id'       => $notable->getKey(),
                     'author_id'        => $this->importerUserId ?: null,
                     'body'             => $fragment['body'],
                     'occurred_at'      => $fragment['occurred_at'] ?? now(),
@@ -758,7 +758,7 @@ trait InteractsWithImportProgress
         return $fragments ?: [['body' => $body, 'occurred_at' => null]];
     }
 
-    protected function applyPerRowTags(Contact $contact, array $tagNames): void
+    protected function applyPerRowTags(Model $taggable, array $tagNames, string $tagType = 'contact'): void
     {
         if (empty($tagNames)) {
             return;
@@ -767,18 +767,18 @@ trait InteractsWithImportProgress
         $ids = [];
 
         foreach ($tagNames as $name) {
-            $tag = Tag::where('type', 'contact')
+            $tag = Tag::where('type', $tagType)
                 ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($name))])
                 ->first();
 
             if (! $tag) {
-                $tag = Tag::create(['name' => $name, 'type' => 'contact']);
+                $tag = Tag::create(['name' => $name, 'type' => $tagType]);
             }
 
             $ids[] = $tag->id;
         }
 
-        $contact->tags()->syncWithoutDetaching($ids);
+        $taggable->tags()->syncWithoutDetaching($ids);
     }
 
     protected function applyContactOrganization(Contact $contact, ?string $orgName, array $context): void

@@ -8,6 +8,7 @@ use App\Importers\EventFieldRegistry;
 use App\Importers\InvoiceDetailFieldRegistry;
 use App\Importers\MembershipFieldRegistry;
 use App\Importers\NoteFieldRegistry;
+use App\Importers\OrganizationFieldRegistry;
 use App\Importers\RegistrationFieldRegistry;
 use App\Importers\TransactionFieldRegistry;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -134,6 +135,21 @@ class CsvTemplateService
         return $headers;
     }
 
+    public static function organizationHeaders(): array
+    {
+        $headers = [];
+
+        foreach (OrganizationFieldRegistry::options() as $label) {
+            $headers[] = $label;
+        }
+
+        // Relational columns not in the registry
+        $headers[] = 'Tags';
+        $headers[] = 'Notes';
+
+        return $headers;
+    }
+
     public static function stream(string $type): StreamedResponse
     {
         $headers = match ($type) {
@@ -143,6 +159,7 @@ class CsvTemplateService
             'memberships'     => static::membershipHeaders(),
             'invoice_details' => static::invoiceDetailHeaders(),
             'notes'           => static::noteHeaders(),
+            'organizations'   => static::organizationHeaders(),
             default           => throw new \InvalidArgumentException("Unknown template type: {$type}"),
         };
 

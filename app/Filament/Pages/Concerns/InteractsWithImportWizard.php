@@ -617,13 +617,13 @@ trait InteractsWithImportWizard
                     ->visible(fn (Forms\Get $get) => $get("note_split_{$n}") === 'regex')
                     ->columnSpan(1),
             ])
-            ->visible(fn (Forms\Get $get) => $get($key) === '__note_contact__');
+            ->visible(fn (Forms\Get $get) => in_array($get($key), ['__note_contact__', '__note_organization__'], true));
 
         $tagSubForm = Forms\Components\TextInput::make("tag_delimiter_{$n}")
             ->label('Tag delimiter (optional)')
             ->helperText('Leave blank to treat the whole cell as one tag. Set a delimiter (e.g. "," or "|") to split into multiple tags.')
             ->maxLength(10)
-            ->visible(fn (Forms\Get $get) => in_array($get($key), ['__tag_contact__', '__tag_event__'], true));
+            ->visible(fn (Forms\Get $get) => in_array($get($key), ['__tag_contact__', '__tag_event__', '__tag_organization__'], true));
 
         $orgSubForm = Forms\Components\Radio::make("org_strategy_{$n}")
             ->label('How should this Organization column be handled?')
@@ -959,6 +959,22 @@ trait InteractsWithImportWizard
                 $relationalMap[$header] = [
                     'type'      => 'event_tag',
                     'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
+                ];
+            } elseif ($destField === '__tag_organization__') {
+                $namedMap[$header] = '__tag_organization__';
+                $relationalMap[$header] = [
+                    'type'      => 'organization_tag',
+                    'delimiter' => $data["tag_delimiter_{$n}"] ?? '',
+                ];
+            } elseif ($destField === '__note_organization__') {
+                $namedMap[$header] = '__note_organization__';
+                $splitMode = $data["note_split_{$n}"] ?? 'none';
+                $relationalMap[$header] = [
+                    'type'        => 'organization_note',
+                    'delimiter'   => '',
+                    'skip_blanks' => true,
+                    'split_mode'  => $splitMode,
+                    'split_regex' => $splitMode === 'regex' ? ($data["note_regex_{$n}"] ?? '') : '',
                 ];
             } elseif (isset(self::ORG_SENTINEL_TYPES[$destField])) {
                 $strategy = $data["org_strategy_{$n}"] ?? 'auto_create';

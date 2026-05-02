@@ -73,6 +73,11 @@ class ImporterPage extends Page implements HasTable
         return CsvTemplateService::stream('notes');
     }
 
+    public function downloadOrganizationsTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return CsvTemplateService::stream('organizations');
+    }
+
     public function getBlockedTypes(): array
     {
         if ($this->blockedTypesCache !== null) {

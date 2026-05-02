@@ -20,6 +20,7 @@ enum ImportModelType: string
     case Membership    = 'membership';
     case InvoiceDetail = 'invoice_detail';
     case Note          = 'note';
+    case Organization  = 'organization';
 
     public function label(): string
     {
@@ -30,6 +31,7 @@ enum ImportModelType: string
             self::Membership    => 'Membership',
             self::InvoiceDetail => 'Invoice Detail',
             self::Note          => 'Note',
+            self::Organization  => 'Organization',
         };
     }
 
@@ -42,6 +44,7 @@ enum ImportModelType: string
             self::Membership    => 'Memberships',
             self::InvoiceDetail => 'Invoice Details',
             self::Note          => 'Notes',
+            self::Organization  => 'Organizations',
         };
     }
 }

@@ -28,6 +28,9 @@ Named external systems that imports originate from (e.g. "Old CRM", "Wild Aprico
 | notes_field_map | jsonb | no | default: `{}`; notes-scoped equivalent of `field_map`. |
 | notes_custom_field_map | jsonb | no | default: `{}`; notes-scoped equivalent of `custom_field_map`. Values are `{handle, label, field_type}` but there is no CustomFieldDef surface — these columns are written into `notes.meta` at import time. |
 | notes_contact_match_key | string | yes | Contact match key for the notes importer. |
+| organizations_field_map | jsonb | yes | organizations-scoped equivalent of `field_map`. Keys = lowercased/trimmed source column headers, values = Organization field keys (prefixed `organization:*`). |
+| organizations_custom_field_map | jsonb | yes | organizations-scoped equivalent of `custom_field_map`. Values are `{handle, label, field_type}` for columns mapped via the `__custom_organization__` sentinel. |
+| organizations_match_key | string | yes | Match key used to dedupe orgs on re-import (one of `organization:name`, `organization:email`, `organization:external_id`). Default at runtime is `organization:name`. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

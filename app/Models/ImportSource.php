@@ -34,21 +34,26 @@ class ImportSource extends Model
         'notes_field_map',
         'notes_custom_field_map',
         'notes_contact_match_key',
+        'organizations_field_map',
+        'organizations_custom_field_map',
+        'organizations_match_key',
     ];
 
     protected $casts = [
-        'contacts_field_map'           => 'array',
-        'contacts_custom_field_map'    => 'array',
-        'events_field_map'             => 'array',
-        'events_custom_field_map'      => 'array',
-        'donations_field_map'          => 'array',
-        'donations_custom_field_map'   => 'array',
-        'memberships_field_map'        => 'array',
-        'memberships_custom_field_map' => 'array',
-        'invoices_field_map'           => 'array',
-        'invoices_custom_field_map'    => 'array',
-        'notes_field_map'              => 'array',
-        'notes_custom_field_map'       => 'array',
+        'contacts_field_map'             => 'array',
+        'contacts_custom_field_map'      => 'array',
+        'events_field_map'               => 'array',
+        'events_custom_field_map'        => 'array',
+        'donations_field_map'            => 'array',
+        'donations_custom_field_map'     => 'array',
+        'memberships_field_map'          => 'array',
+        'memberships_custom_field_map'   => 'array',
+        'invoices_field_map'             => 'array',
+        'invoices_custom_field_map'      => 'array',
+        'notes_field_map'                => 'array',
+        'notes_custom_field_map'         => 'array',
+        'organizations_field_map'        => 'array',
+        'organizations_custom_field_map' => 'array',
     ];
 
     public function sessions(): HasMany

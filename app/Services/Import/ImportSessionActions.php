@@ -12,6 +12,7 @@ use App\Models\ImportSession;
 use App\Models\ImportStagedUpdate;
 use App\Models\Membership;
 use App\Models\Note;
+use App\Models\Organization;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,12 @@ class ImportSessionActions
             return;
         }
 
+        if ($session->model_type === ImportModelType::Organization) {
+            $this->rollBackOrganizationSession($session);
+            $session->delete();
+            return;
+        }
+
         // Contacts (default)
         $contactIds = Contact::withoutGlobalScopes()
             ->where('import_session_id', $session->id)
@@ -162,6 +169,12 @@ class ImportSessionActions
             return;
         }
 
+        if ($session->model_type === ImportModelType::Organization) {
+            $this->rollBackOrganizationSession($session);
+            $session->delete();
+            return;
+        }
+
         // Contacts (default)
         $contactIds = Contact::withoutGlobalScopes()
             ->where('import_session_id', $session->id)
@@ -221,6 +234,19 @@ class ImportSessionActions
             return implode(' ', $parts) . '. This cannot be undone.';
         }
 
+        if ($session->model_type === ImportModelType::Organization) {
+            $count  = Organization::where('import_session_id', $session->id)->count();
+            $staged = ImportStagedUpdate::where('import_session_id', $session->id)->count();
+
+            $parts = ["This will approve {$count} organization(s) from this import"];
+
+            if ($staged > 0) {
+                $parts[] = "and apply {$staged} staged update(s) to existing organizations";
+            }
+
+            return implode(' ', $parts) . '. This cannot be undone.';
+        }
+
         return "This will make all {$session->row_count} contacts from this import visible to all users, and apply all staged updates to existing contacts. This cannot be undone.";
     }
 
@@ -246,6 +272,19 @@ class ImportSessionActions
 
             if ($stagedCount > 0) {
                 $parts[] = "and discard {$stagedCount} staged update(s) to existing notes";
+            }
+
+            return implode(' ', $parts) . '. This cannot be undone.';
+        }
+
+        if ($session->model_type === ImportModelType::Organization) {
+            $count       = Organization::where('import_session_id', $session->id)->count();
+            $stagedCount = ImportStagedUpdate::where('import_session_id', $session->id)->count();
+
+            $parts = ["This will permanently delete {$count} organization(s) created by this import"];
+
+            if ($stagedCount > 0) {
+                $parts[] = "and discard {$stagedCount} staged update(s) to existing organizations";
             }
 
             return implode(' ', $parts) . '. This cannot be undone.';
@@ -284,6 +323,12 @@ class ImportSessionActions
             $count = Note::where('import_session_id', $session->id)->count();
 
             return "Permanently delete this session and {$count} note(s) created by it. Any staged updates are discarded. This cannot be undone.";
+        }
+
+        if ($session->model_type === ImportModelType::Organization) {
+            $count = Organization::where('import_session_id', $session->id)->count();
+
+            return "Permanently delete this session and {$count} organization(s) created by it. Any staged updates are discarded. This cannot be undone.";
         }
 
         $count = Contact::withoutGlobalScopes()
@@ -362,6 +407,26 @@ class ImportSessionActions
     private function rollBackNoteSession(ImportSession $session): void
     {
         Note::where('import_session_id', $session->id)->forceDelete();
+        ImportStagedUpdate::where('import_session_id', $session->id)->delete();
+    }
+
+    private function rollBackOrganizationSession(ImportSession $session): void
+    {
+        $orgIds = Organization::where('import_session_id', $session->id)->pluck('id')->toArray();
+
+        if (! empty($orgIds)) {
+            DB::table('taggables')
+                ->whereIn('taggable_id', $orgIds)
+                ->where('taggable_type', Organization::class)
+                ->delete();
+
+            Note::where('notable_type', Organization::class)
+                ->whereIn('notable_id', $orgIds)
+                ->forceDelete();
+
+            Organization::whereIn('id', $orgIds)->forceDelete();
+        }
+
         ImportStagedUpdate::where('import_session_id', $session->id)->delete();
     }
 

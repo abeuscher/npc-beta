@@ -11,6 +11,7 @@ use App\Models\ImportSession;
 use App\Models\ImportStagedUpdate;
 use App\Models\Membership;
 use App\Models\Note;
+use App\Models\Organization;
 use App\Models\Transaction;
 use Illuminate\Contracts\View\View;
 
@@ -38,9 +39,25 @@ class ImportSessionPreview
                 ImportModelType::Membership,
                 ImportModelType::InvoiceDetail,
             ], true) => $this->financialPreview($session),
-            $session->model_type === ImportModelType::Note => $this->notePreview($session),
+            $session->model_type === ImportModelType::Note         => $this->notePreview($session),
+            $session->model_type === ImportModelType::Organization => $this->organizationPreview($session),
             default => $this->contactPreview($session),
         };
+    }
+
+    private function organizationPreview(ImportSession $session): View
+    {
+        $organizations = Organization::where('import_session_id', $session->id)
+            ->latest('created_at')
+            ->limit(20)
+            ->get(['id', 'name', 'type', 'website', 'email', 'city', 'state']);
+
+        $orgsTotal   = Organization::where('import_session_id', $session->id)->count();
+        $stagedTotal = ImportStagedUpdate::where('import_session_id', $session->id)->count();
+
+        return view('filament.pages.import-organizations-review-preview', compact(
+            'organizations', 'orgsTotal', 'stagedTotal'
+        ));
     }
 
     private function eventPreview(ImportSession $session): View
