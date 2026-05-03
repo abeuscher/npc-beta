@@ -928,7 +928,7 @@ trait InteractsWithImportWizard
                     '__custom_registration__' => 'registration',
                     default                   => null,
                 };
-                $namedMap[$header]       = null;
+                $namedMap[$header]       = $destField;
                 $entry = [
                     'handle'     => $data["cf_handle_{$n}"] ?? Str::slug($header, '_'),
                     'label'      => $data["cf_label_{$n}"] ?? $header,

@@ -32,6 +32,12 @@ const WIZARD_TESTID: Record<ImporterKey, string> = {
     'notes': 'import-notes-wizard',
 };
 
+export type OrganizationsWizardOptions = WizardOptions & {
+    extraColumnMappings?: Record<number, string>;
+    tagDelimiters?: Record<number, string>;
+    matchKey?: 'organization:name' | 'organization:email' | 'organization:external_id';
+};
+
 export async function openContactsWizard(page: Page): Promise<void> {
     await page.goto('/admin/import-contacts-page');
     await expect(page.getByTestId('import-contacts-wizard')).toBeVisible();
@@ -50,7 +56,9 @@ export async function fillUploadStep(page: Page, opts: WizardOptions): Promise<v
     await fileInput.setInputFiles(opts.csvPath);
 
     await expect(page.locator('p', { hasText: 'Uploading file' })).toBeHidden({ timeout: 30_000 });
-    await expect(page.locator('.filepond--file-status-main', { hasText: 'Upload complete' })).toBeVisible({ timeout: 30_000 });
+    // Filepond's "Upload complete" toast is transient and can be missed under
+    // load. The persistent post-upload signal is the item's state attribute.
+    await expect(page.locator('[data-filepond-item-state="processing-complete"]')).toBeVisible({ timeout: 30_000 });
     await page.waitForLoadState('networkidle');
 }
 
@@ -105,10 +113,37 @@ async function applyContactMissingStrategy(page: Page, strategy: 'error' | 'auto
 
 async function applyExtraColumnMappings(page: Page, mappings: Record<number, string>): Promise<void> {
     for (const [colIdx, destination] of Object.entries(mappings)) {
-        const selectEl = page.getByTestId(`map-column-${colIdx}`).locator('select');
-        await selectEl.selectOption(destination);
-        await page.waitForLoadState('networkidle');
+        await selectChoicesOption(page, `map-column-${colIdx}`, destination);
     }
+}
+
+async function selectChoicesOption(page: Page, selectTestId: string, dataValue: string): Promise<void> {
+    // Filament's Choices.js wraps the underlying <select> and syncs state via Alpine $entangle.
+    // Driving the UI (clicks on .choices__item--choice) is brittle when multiple lazy-loaded
+    // Choices instances coexist on the page; setting Livewire state directly is the robust path.
+    const match = selectTestId.match(/^map-column-(\d+)$/);
+    if (!match) {
+        throw new Error(`selectChoicesOption expected map-column-{n} testid; got ${selectTestId}`);
+    }
+    const colIdx = match[1];
+    await page.evaluate(async ({ colIdx, dataValue }) => {
+        const livewire = (window as any).Livewire;
+        const components = livewire?.all?.() ?? [];
+        for (const c of components) {
+            const data = c.$wire?.$get?.('data');
+            if (data && Object.prototype.hasOwnProperty.call(data, 'column_map')) {
+                await c.$wire.set(`data.column_map.col_${colIdx}`, dataValue);
+                // Custom sentinels surface a sub-form; populate cf_type_N so the
+                // form's required validation doesn't block step navigation.
+                if (dataValue.startsWith('__custom_')) {
+                    await c.$wire.set(`data.cf_type_${colIdx}`, 'text');
+                }
+                return;
+            }
+        }
+        throw new Error(`No Livewire component owns data.column_map.col_${colIdx}`);
+    }, { colIdx, dataValue });
+    await page.waitForLoadState('networkidle');
 }
 
 async function advanceNonContactMapping(page: Page, opts: NonContactWizardOptions): Promise<void> {
@@ -161,6 +196,50 @@ export async function driveInvoiceDetailsHappyPath(page: Page, opts: NonContactW
 
 export async function driveNotesHappyPath(page: Page, opts: NonContactWizardOptions): Promise<void> {
     await driveNonContactHappyPath(page, 'notes', opts);
+}
+
+export async function driveOrganizationsHappyPath(page: Page, opts: OrganizationsWizardOptions): Promise<void> {
+    await page.goto('/admin/import-organizations-page');
+    await expect(page.getByTestId('import-organizations-wizard')).toBeVisible();
+
+    await fillUploadStep(page, opts);
+
+    await page.getByTestId('import-step-next-0').click();
+    await expect(page.getByTestId('import-step-next-1')).toBeVisible();
+
+    await page.getByTestId('import-step-next-1').click();
+    await expect(page.getByTestId('import-organization-match-key')).toBeVisible();
+
+    if (opts.extraColumnMappings) {
+        await applyExtraColumnMappings(page, opts.extraColumnMappings);
+    }
+
+    if (opts.tagDelimiters) {
+        for (const [colIdx, delim] of Object.entries(opts.tagDelimiters)) {
+            const tagInput = page.locator(`[id="data.tag_delimiter_${colIdx}"]`);
+            await tagInput.waitFor({ state: 'visible', timeout: 10_000 });
+            await page.waitForTimeout(300);
+            await tagInput.fill(delim);
+            await tagInput.blur();
+            await page.waitForLoadState('networkidle');
+        }
+    }
+
+    if (opts.matchKey) {
+        await page.getByTestId('import-organization-match-key')
+            .locator('select')
+            .selectOption(opts.matchKey);
+    }
+
+    const strategy = opts.duplicateStrategy ?? 'skip';
+    await page.getByTestId('import-duplicate-strategy')
+        .locator(`input[type="radio"][value="${strategy}"]`)
+        .check();
+
+    await page.getByTestId('import-step-next-2').click();
+    await expect(page.getByTestId('import-commit-button')).toBeVisible();
+
+    await stageAndCommit(page);
 }
 
 export async function approveSessionViaImporter(page: Page, sessionId: string): Promise<void> {

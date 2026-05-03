@@ -1,0 +1,6 @@
+Name,Type,Website,Email,Phone,External ID,Industry,Tags,Notes
+acme corp,for_profit,https://acme-updated.example,billing@acme.example,555-0100,ORG-E2E-1,Construction,gold|sponsor,Renewed sponsorship 2026
+GLOBEX FOUNDATION,nonprofit,https://globex.example,foundation@globex.example,555-0200,ORG-E2E-2,Philanthropy,foundation|partner,Continued grant cycle
+Initech LLC,for_profit,initech.example,billing@initech.example,555-0300,ORG-E2E-3,Technology,sponsor|silver,New sponsor tier
+City of Sample,government,https://sample.example,city@sample.example,(555) 040-0100,ORG-E2E-4,Municipality,government|partner,Granting agency
+Fictional Nonprofit Network,nonprofit,fnn.example,info@fnn.example,(555) 050-0100,ORG-E2E-5,Nonprofit Services,nonprofit,Active membership 2026

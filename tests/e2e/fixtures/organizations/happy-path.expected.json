@@ -1,0 +1,52 @@
+{
+    "organizationCount": 5,
+    "externalIds": [
+        "ORG-E2E-1",
+        "ORG-E2E-2",
+        "ORG-E2E-3",
+        "ORG-E2E-4",
+        "ORG-E2E-5"
+    ],
+    "tagCount": 4,
+    "tagsByOrg": {
+        "ACME Corp": ["sponsor", "partner"],
+        "Globex Foundation": ["foundation", "partner"],
+        "Initech LLC": ["sponsor"],
+        "City of Sample": ["government", "partner"]
+    },
+    "notesByExternalId": {
+        "ORG-E2E-1": "Met at conference 2024",
+        "ORG-E2E-2": "Major grantor",
+        "ORG-E2E-4": "Granting agency",
+        "ORG-E2E-5": "Active membership 2026"
+    },
+    "industryByExternalId": {
+        "ORG-E2E-1": "Construction",
+        "ORG-E2E-2": "Philanthropy",
+        "ORG-E2E-3": "Technology",
+        "ORG-E2E-4": "Municipality",
+        "ORG-E2E-5": "Nonprofit Services"
+    },
+    "columnIndexes": {
+        "name": 0,
+        "type": 1,
+        "website": 2,
+        "email": 3,
+        "phone": 4,
+        "externalId": 5,
+        "industry": 6,
+        "tags": 7,
+        "notes": 8
+    },
+    "preservedOnUpdate": {
+        "ACME Corp": {
+            "website": "https://acme.example",
+            "email": "info@acme.example"
+        }
+    },
+    "filledOnUpdate": {
+        "ORG-E2E-3": { "email": "billing@initech.example" },
+        "ORG-E2E-4": { "email": "city@sample.example" },
+        "ORG-E2E-5": { "email": "info@fnn.example", "phone": "(555) 050-0100" }
+    }
+}

@@ -1,0 +1,6 @@
+Name,Type,Website,Email,Phone,External ID,Industry,Tags,Notes
+ACME Corp,for_profit,https://acme.example,info@acme.example,555-0100,ORG-E2E-1,Construction,sponsor|partner,Met at conference 2024
+Globex Foundation,nonprofit,https://globex.example,foundation@globex.example,555-0200,ORG-E2E-2,Philanthropy,foundation|partner,Major grantor
+Initech LLC,for_profit,initech.example,,555-0300,ORG-E2E-3,Technology,sponsor,
+City of Sample,government,https://sample.example,,(555) 040-0100,ORG-E2E-4,Municipality,government|partner,Granting agency
+Fictional Nonprofit Network,nonprofit,fnn.example,,,ORG-E2E-5,Nonprofit Services,,Active membership 2026

@@ -133,6 +133,73 @@ export async function countNotesInSession(sessionId: string): Promise<number> {
     return countInSession('notes', sessionId);
 }
 
+export async function countOrganizationsInSession(sessionId: string): Promise<number> {
+    return countInSession('organizations', sessionId);
+}
+
+export async function findOrganizationByExternalId(sourceId: string, externalId: string): Promise<Record<string, unknown> | null> {
+    return withClient(async (client) => {
+        const res = await client.query<Record<string, unknown>>(
+            'SELECT * FROM organizations WHERE import_source_id = $1 AND external_id = $2 LIMIT 1',
+            [sourceId, externalId],
+        );
+        return res.rows[0] ?? null;
+    });
+}
+
+export async function findOrganizationByName(name: string): Promise<Record<string, unknown> | null> {
+    return withClient(async (client) => {
+        const res = await client.query<Record<string, unknown>>(
+            'SELECT * FROM organizations WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1',
+            [name],
+        );
+        return res.rows[0] ?? null;
+    });
+}
+
+export async function countTagsByType(type: string): Promise<number> {
+    return withClient(async (client) => {
+        const res = await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM tags WHERE type = $1',
+            [type],
+        );
+        return Number(res.rows[0].count);
+    });
+}
+
+export async function getTagsForOrganization(orgId: string): Promise<string[]> {
+    return withClient(async (client) => {
+        const res = await client.query<{ name: string }>(
+            `SELECT t.name FROM tags t
+             INNER JOIN taggables tg ON tg.tag_id = t.id
+             WHERE tg.taggable_type = 'App\\Models\\Organization' AND tg.taggable_id = $1
+             ORDER BY t.name`,
+            [orgId],
+        );
+        return res.rows.map((r) => r.name);
+    });
+}
+
+export async function countNotesByNotableType(notableType: string): Promise<number> {
+    return withClient(async (client) => {
+        const res = await client.query<{ count: string }>(
+            'SELECT COUNT(*)::text AS count FROM notes WHERE notable_type = $1',
+            [notableType],
+        );
+        return Number(res.rows[0].count);
+    });
+}
+
+export async function getNotesForOrganization(orgId: string): Promise<Array<{ body: string }>> {
+    return withClient(async (client) => {
+        const res = await client.query<{ body: string }>(
+            `SELECT body FROM notes WHERE notable_type = 'App\\Models\\Organization' AND notable_id = $1 ORDER BY created_at`,
+            [orgId],
+        );
+        return res.rows;
+    });
+}
+
 export async function findNoteByExternalId(sourceId: string, externalId: string): Promise<Record<string, unknown> | null> {
     return withClient(async (client) => {
         const res = await client.query<Record<string, unknown>>(

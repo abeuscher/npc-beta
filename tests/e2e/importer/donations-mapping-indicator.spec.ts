@@ -49,8 +49,19 @@ test.describe('Donations importer — Map Columns row indicator', () => {
 
         await expect(externalIdRow).toHaveClass(/np-import-map-row--incomplete/);
 
-        const externalIdSelect = page.getByTestId(`map-column-${externalIdColIndex}`).locator('select');
-        await externalIdSelect.selectOption('donation:external_id');
+        // Filament's Choices.js wraps the underlying <select> and hides it; setting Livewire
+        // state directly is the robust path against the form's $entangle binding.
+        await page.evaluate(async ({ colIdx, value }) => {
+            const livewire = (window as any).Livewire;
+            const components = livewire?.all?.() ?? [];
+            for (const c of components) {
+                const data = c.$wire?.$get?.('data');
+                if (data && Object.prototype.hasOwnProperty.call(data, 'column_map')) {
+                    await c.$wire.set(`data.column_map.col_${colIdx}`, value);
+                    return;
+                }
+            }
+        }, { colIdx: externalIdColIndex, value: 'donation:external_id' });
         await page.waitForLoadState('networkidle');
 
         await expect(externalIdRow).toHaveClass(/np-import-map-row--complete/);
