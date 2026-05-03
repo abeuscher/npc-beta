@@ -341,6 +341,28 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Swiper.js MIT compliance verified; all npm + Composer dependencies reviewed for license compatibility with a commercial product.
 - **estimated time cost:** 1 session.
 
+### Track G — Test-Data Generation Infrastructure
+
+Multi-session track for generating adversarial fixtures the importer can be tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns and let us harden the importer ahead of B2 (Onboarding rehearsal cluster) and any future importer-touching session.
+
+Track G's pre-Beta-1 scope is the foundational generator + a follow-on session for cross-importer pairs / replay / adversarial dedup. Format extensions beyond CSV (XLSX, JSON, source-system-specific shapes like Salesforce) live in the post-release section.
+
+#### G1. Importer Test-Fixture Generator — CSV Foundation
+
+- **gate:** release
+- **prerequisites:** none (the generator stands alone; consumes the field registries + PII scanner the importer already uses)
+- **success criterion:** New artisan command `import-fixtures:generate` emits CSV fixtures for each of the seven importers (contacts / events / donations / memberships / invoice_details / notes / organizations) across five "shape" modes (clean / messy / corrupt / pii / stress), seedable for determinism. Each fixture lands at `storage/app/import-test-fixtures/<importer>-<shape>-<preset>-<encoding>-<seed>.csv` paired with a sibling `.expected.json` manifest describing per-row expected importer outcome (imported / skipped + reason / errored + reason / pii-rejected + violation). Source-preset flag (`generic` / `wild_apricot` / `neon` / `bloomerang`) varies header naming. Encoding flag (`utf8` / `utf8-bom` / `windows-1252`) varies output encoding. Pest test runner consumes the manifests and asserts each importer's actual outcome matches expected — generated fixtures become parametrized integration tests.
+- **artifact:** the generator + the fixture directory + the parametrized Pest runner + an authoring doc at `docs/runbooks/import-fixture-generator.md`.
+- **estimated time cost:** 1–2 sessions; per Rule 11, may split if the per-importer generator implementations exceed a single context window.
+
+#### G2. Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+
+- **gate:** release
+- **prerequisites:** G1
+- **success criterion:** Generator extended with three additional fixture-set modes: (a) `--pair=cross-importer` — coordinated CSV sets where contacts.csv + donations.csv + memberships.csv reference the same external IDs, exercising `ImportIdMap` linkage end-to-end; (b) `--pair=replay` — pass-1.csv + pass-2.csv pairs for re-import dedup-strategy tests (skip / update / error / duplicate), with manifests describing per-row dedup expectation; (c) adversarial dedup fixtures — match keys differ only by case / whitespace / NBSP / zero-width-space, hardening the case-insensitive trim path. Pest runner extended to consume pair manifests. False-positive PII coverage added: rows that look PII-shaped but should not be rejected, preventing over-rejection regressions when scanner rules tighten.
+- **artifact:** the extended generator + the additional fixture sets + the extended Pest runner.
+- **estimated time cost:** 1 session.
+
 ### Track F — On-Demand E2E Coverage
 
 Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each F-track session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
@@ -376,7 +398,7 @@ The on-demand category was introduced at session 256 close after the Organizatio
 #### T1. Code Review & Cleanup + Migration Squash
 
 - **gate:** release
-- **prerequisites:** all of A, B, C, D, E, F closed (Rule 10)
+- **prerequisites:** all of A, B, C, D, E, F, G closed (Rule 10)
 - **success criterion:** Final code review pass in the pattern of sessions 101 / 116 / 141 / 178–179 / 205–206 — dead code, unused imports, duplicated logic, naming, outdated comments, drift from framework conventions. Combined in the same session with migration squash: collapse the per-session migration history into a single squashed migration set against the v1 schema baseline. Both halves land in one branch; no code change after T1 closes.
 - **artifact:** the cleaned-up code + the squashed migration set.
 - **estimated time cost:** 1–2 sessions; the squash half may force its own session per Rule 11.
@@ -398,35 +420,37 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 9. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
 10. **E2.** Importer Mapping Page UX *(closed at 254; precedes B2)*
 11. **B1a.** Organizations Model Overhaul (Min) *(closed at 255)*
-12. **B1c.** Organizations Importer *(prerequisite stub for B2)*
-13. **B2.** Onboarding rehearsal cluster
-14. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
-15. **E10.** Full-Width Architecture Enforcement
-16. **E11.** Page Builder Focus-Scroll Clamp
-17. **C1.** Notes Permissions (feature half)
-18. **E9.** Widget Help Authoring
-19. **C2.** Event Ticket Tiers
-20. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-21. **E4.** Stripe Checkout Branding *(precedes C4)*
-22. **C4.** Donation-to-acknowledgment loop
-23. **C5.** Event with everything
-24. **C6.** Membership renewal cycle
-25. **C7.** Email at volume
-26. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-27. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-28. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-29. **E8.** UI/UX Sprint
-30. **E12.** Housekeeping Batch 2
-31. **D1.** Scale rehearsal
-32. **D2.** Compatibility cluster
-33. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-34. **E13.** Help docs body content
-35. **E14.** Third-Party Licensing Compliance Audit
-36. **D4.** Test suite review — cost & shape
-37. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-38. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-39. **F3.** On-Demand E2E — Permission / role-gate matrix
-40. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+12. **B1c.** Organizations Importer *(closed at session 256)*
+13. **G1.** Importer Test-Fixture Generator — CSV Foundation *(precedes B2 per request at 256 close: real-data scrub-and-reimport has stopped finding bugs; generated fixtures expand coverage)*
+14. **B2.** Onboarding rehearsal cluster
+15. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+16. **E10.** Full-Width Architecture Enforcement
+17. **E11.** Page Builder Focus-Scroll Clamp
+18. **C1.** Notes Permissions (feature half)
+19. **E9.** Widget Help Authoring
+20. **C2.** Event Ticket Tiers
+21. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+22. **E4.** Stripe Checkout Branding *(precedes C4)*
+23. **C4.** Donation-to-acknowledgment loop
+24. **C5.** Event with everything
+25. **C6.** Membership renewal cycle
+26. **C7.** Email at volume
+27. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+28. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+29. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+30. **E8.** UI/UX Sprint
+31. **E12.** Housekeeping Batch 2
+32. **D1.** Scale rehearsal
+33. **D2.** Compatibility cluster
+34. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+35. **E13.** Help docs body content
+36. **E14.** Third-Party Licensing Compliance Audit
+37. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+38. **D4.** Test suite review — cost & shape
+39. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+40. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+41. **F3.** On-Demand E2E — Permission / role-gate matrix
+42. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

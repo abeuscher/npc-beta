@@ -356,6 +356,50 @@ See `sessions/release-plan.md` § D3.
 
 ---
 
+## Test-Data Generation Infrastructure — Beta 1 Scope
+
+Track G in [`release-plan.md`](release-plan.md). Multi-session track for generating adversarial fixtures the importer is tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings any more. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns.
+
+Track scope (pre-Beta-1):
+- **G1** — CSV foundation: per-importer fixtures across five shapes (clean / messy / corrupt / pii / stress), source-preset variance, encoding variance, manifest sidecars, parametrized Pest runner. Lands before B2.
+- **G2** — Cross-importer matched pairs, re-import replay pairs, adversarial dedup, false-positive PII coverage. Lands late-cycle (before D4).
+
+Format extensions beyond CSV — XLSX, JSON, source-system-specific shapes — live in the Post-Beta-1 section (see "Salesforce export shape support" below).
+
+### G1 — Importer Test-Fixture Generator: CSV Foundation *(stub — pre-Beta 1, precedes B2)*
+
+New artisan command `import-fixtures:generate` emits adversarial CSV fixtures for each of the seven importers across five shape modes. Output lands at `storage/app/import-test-fixtures/<importer>-<shape>-<preset>-<encoding>-<seed>.csv` paired with a `.expected.json` sidecar.
+
+**Five shapes:**
+- `clean` — well-formed CSV that should fully import. Baseline.
+- `messy` — well-formed but realistic mess: type-value case variance (`Nonprofit` / `nonprofit` / `NONPROFIT`), mixed date formats (M/D/Y, ISO, "March 5, 2024", Excel-serial integers), trim issues, header noise, system-metadata columns. Should fully import after the importer's normalization layers do their work.
+- `corrupt` — schema- and value-level corruption that the importer should reject row-by-row (orphan FK, unparseable date, bad email, embedded delimiter without quoting, quote-unbalanced cell). Manifest describes per-row error reason.
+- `pii` — rows containing PII patterns the `PiiScanner` should reject (SSN-shaped, credit-card-shaped Luhn-valid, password-named columns, sensitive-header-named columns). One fixture row per scanner rule. Manifest describes per-row violation reason.
+- `stress` — large-row + wide-row + heavy-cell variants for sizing tests. Tagged `->group('slow')` in the Pest runner.
+
+**Source-preset flag.** `--source-preset=generic|wild_apricot|neon|bloomerang`. Reuses `FieldMapper::presets()` to vary header naming so the auto-detect path gets exercised. Wild Apricot uses "Member ID" instead of "External ID"; Neon uses "Account ID"; Bloomerang uses its own conventions.
+
+**Encoding flag.** `--encoding=utf8|utf8-bom|windows-1252`. Default `utf8`. The non-default encodings exercise the importer's BOM-stripping path and Windows-1252 transcoding.
+
+**Determinism.** `--seed=N` for reproducibility. Same seed + same flags = byte-identical CSV.
+
+**Manifest sidecar.** Each `<fixture>.csv` has a `<fixture>.expected.json` describing per-row expected outcome. Critical: without manifests, a fixture proves nothing — "5 rejected" is indistinguishable from "5 silently dropped." The manifest closes that loop.
+
+**Pest runner.** `tests/Feature/Generated/ImportFixtureRunnerTest.php` enumerates `(importer, shape, preset, encoding, seed)` tuples via Pest datasets, runs the generator, drives the importer against each row, and asserts outcomes match the manifest. Stress shape runs under `->group('slow')` only.
+
+Architecture decision driving scope: implement four importer-agnostic transforms (Messy / Corrupt / Pii / Stress) that mutate per-importer "clean" baselines. Per-importer code is just the clean baseline + the canonical header set. Transforms are reused. Keeps G1 to a single context window even with seven importers.
+
+### G2 — Importer Test-Fixture Generator: Cross-importer Pairs, Replay, Adversarial Dedup *(stub — pre-Beta 1)*
+
+Three additional fixture-set modes layered on G1:
+
+- **`--pair=cross-importer`** — coordinated CSV sets where contacts.csv + donations.csv + memberships.csv reference the same external IDs end-to-end. Tests `ImportIdMap` linkage across importers. The org-as-source sentinels (`__org_contact__` / `__org_donor__` / etc.) get a real cross-importer test bed.
+- **`--pair=replay`** — pass-1.csv + pass-2.csv pairs for re-import dedup-strategy tests (skip / update / error / duplicate). Manifest describes per-row dedup expectation: "row 3 matches by external_id, will be skipped"; "row 5 is net-new, will be imported"; "row 7 fills blanks under update strategy and the resulting field values are X / Y / Z."
+- **Adversarial dedup fixtures** — match keys differ only by case / whitespace / NBSP ( ) / zero-width-space (​). Hardens the case-insensitive trim path. Today the importer uses `LOWER(TRIM(...))`; adversarial fixtures verify it actually catches what it should.
+- **False-positive PII coverage** — rows that look PII-shaped but should not be rejected (e.g., a 9-digit external ID in a column the scanner shouldn't apply SSN rules to). Without false-positive fixtures, scanner tightening over time pushes toward over-rejection and you only notice when a real customer's import gets blocked.
+
+Pest runner extended to consume pair manifests and assert dedup behavior.
+
 ## On-Demand E2E Coverage — Beta 1 Scope
 
 Track F in [`release-plan.md`](release-plan.md). Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
@@ -429,6 +473,20 @@ Before Beta 1 ships: audit all third-party dependencies for license compliance. 
 ---
 
 ## Post-Beta 1
+
+### Test-Data Generator — Salesforce Export Shape Support *(post-Beta 1, deferred from Track G at session 256 close)*
+
+Salesforce / NPSP exports are a high-value source preset for the importer fixture generator (Track G). Salesforce's export format is publicly documented (their Reports/Data Loader output schemas are stable and well-defined), so adding a `salesforce_npsp` preset to `import-fixtures:generate` is a tractable post-release addition without depending on us getting our hands on a real export.
+
+Scope:
+- New `--source-preset=salesforce_npsp` option emits CSVs with NPSP-canonical headers (`Account.Name` / `Contact.FirstName` / `npe01__One2OneContact__c` / `npo02__OppAmount__c` / etc.) for each importer that has an NPSP analog.
+- Preset-specific quirks captured in fixtures: NPSP's compound name fields ("Account: Account Name"), Opportunity-as-Donation mapping shape, recurring-donation flat shape vs subscription shape, household-account vs one-to-one-contact account models.
+- `FieldMapper` gets a `salesforce_npsp` preset entry mapping NPSP headers to canonical importer destinations, so a real Salesforce export auto-maps without manual user intervention.
+- Pest runner extended with `salesforce_npsp` cases for the same five shapes as G1/G2.
+
+Deferred post-release because (a) the NPSP integration itself is post-release per project priorities, (b) the value of NPSP-shape coverage is largest when sales conversations against Salesforce-using prospects ramp up, which is post-Beta-1, (c) the publicly-documented format means we can author this entirely from spec without waiting for a sample export.
+
+If a real NPSP export shows up in our hands before this session schedules, the shape gets confirmed against reality before being landed (specs and reality diverge in edge cases on most platforms).
 
 ### Financial Data Origin & Lifecycle Discipline — Phases B and C *(deferred to post-release at session 244)*
 
