@@ -31,13 +31,19 @@ export default defineConfig({
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
-            grepInvert: /@stress/,
+            grepInvert: /@stress|@on-demand/,
         },
         {
             name: 'stress',
             use: { ...devices['Desktop Chrome'] },
             grep: /@stress/,
             timeout: 600_000,
+        },
+        {
+            name: 'on-demand',
+            use: { ...devices['Desktop Chrome'] },
+            grep: /@on-demand/,
+            timeout: 300_000,
         },
     ],
 });

@@ -356,6 +356,58 @@ See `sessions/release-plan.md` § D3.
 
 ---
 
+## On-Demand E2E Coverage — Beta 1 Scope
+
+Track F in [`release-plan.md`](release-plan.md). Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
+
+Track introduced at session 256 close after the Organizations importer's deep Playwright pass surfaced two pre-existing bugs that earlier per-importer tests had missed (a `serializeColumnMaps` regression silently dropping custom-field columns; a Choices.js `selectOption` pattern broken across multiple importer specs). Pattern is: deep, fixture-heavy, judgment-led — better suited to occasional sweeps than per-merge regression. Three slots on the working set: payments, portal, role gates.
+
+### F1 — On-Demand E2E: Donation / payment-flow integration depth pass *(stub — pre-Beta 1)*
+
+Public donation form → Stripe test-mode checkout → webhook → `Donation` + `Transaction` records → tax-receipt email content. Specs simulate signed Stripe webhook payloads and verify idempotency under retries.
+
+Coverage matrix:
+- One-time donation happy path (Donation row + Transaction row + receipt email body matches donor name + amount + date verbatim).
+- Recurring subscription start (Donation with `frequency='monthly'`, `stripe_subscription_id` set, `started_at` populated).
+- Partial refund (Stripe webhook `charge.refunded` with partial amount → Donation status update + corrected receipt sent).
+- Full refund (full-amount webhook → Donation status update + corrected receipt sent).
+- Failed-payment retry (Stripe webhook `invoice.payment_failed` → no Donation row, alert/admin signal lands).
+- Stripe-cancel redirect (donor lands on cancel URL → no Donation row, no receipt sent).
+- Webhook-replay idempotency (same webhook event delivered twice → same Donation row, no duplicate; verify on `stripe_id` + `external_id` uniqueness paths).
+
+Stripe is already running in test mode; webhook signing setup is the new infrastructure. Heaviest of the three F-track sessions because of the Stripe plumbing.
+
+Prerequisites per release plan: C4 (donation rehearsal), E4 (Stripe Checkout Branding), D3 (so the surface as it ships is what gets exercised). Artifact: spec suite + `docs/runbooks/payments-on-demand-coverage.md`.
+
+### F2 — On-Demand E2E: Member portal self-service & contact-scoping security *(stub — pre-Beta 1)*
+
+The CLAUDE.md portal-security rule — every portal route and query strictly scoped to the authenticated portal user's own `contact_id` — is the load-bearing invariant. This session walks each portal route from two authenticated contact fixtures (Alice + Bob) and asserts data isolation under URL-fishing attempts.
+
+Coverage:
+- Cross-contact isolation: Bob authenticated, attempts to view `/{portal_prefix}/donations/{alice_donation_id}`, `/memberships/{alice_membership_id}`, `/registrations/{alice_event_registration_id}` → 403 / 404 / redirect-to-own-account, never Alice's data.
+- Password reset flow: token generation → email send → reset link click → password set → login with new password.
+- Email verification: signup → unverified state → verification email → link click → verified state.
+- Address update + own-record edit boundaries (Alice can edit her own profile but not Bob's via direct route).
+- Token expiration + double-use rejection on password-reset and email-verify tokens.
+- `portal_prefix` setting change mid-session: routes adapt, old URLs 404 cleanly.
+- Signup → email verify → first-login flow lands a clean `PortalAccount` + `Contact` pair (no orphaned rows on partial-completion paths).
+
+Prerequisites per release plan: C3 (permission audit informs the scoping invariant), A3 (production-shape install for portal mail flows). Artifact: spec suite + `docs/runbooks/portal-security-audit.md`.
+
+### F3 — On-Demand E2E: Permission / role-gate matrix *(stub — pre-Beta 1)*
+
+C3 produces a permission matrix at `docs/runbooks/permission-matrix.md`. F3 mechanically validates that matrix: each role fixture (super-admin, staff-admin, board-read-only, volunteer, public-visitor) walks the admin surface and asserts the matrix's documented expected outcome for every (role × resource × action) cell.
+
+Coverage:
+- Role-fixture-driven Playwright sessions: log in as each role, hit each Filament resource list / create / edit / delete page, attempt each row-level action (approve, rollback, force-delete, etc.).
+- Both UI assertions (button visible / hidden / disabled) and controller-layer assertions (POST to the resource's action URL → 403 vs 200 as expected).
+- Findings that contradict the documented matrix: matrix wins for the in-session code-level fix; Playwright tests confirm the corrected gate.
+- Smaller C3 findings deferred under Rule 2 land here as proper code fixes.
+
+Prerequisites per release plan: C3 (matrix doc lands first), E14 (no further structural changes pre-T1). Artifact: spec suite + delta entry in `docs/runbooks/permission-matrix.md`.
+
+---
+
 ## End of Roadmap — Beta 1
 
 ### Onboarding / Install Dashboard Widget *(complete — closed at session 249)*

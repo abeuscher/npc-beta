@@ -34,7 +34,7 @@ test.describe('Organizations importer — update strategy', () => {
         await cleanupAllImportSessionsOfType('organization');
     });
 
-    test('re-import with update strategy fills blanks; existing non-blank values preserved', async ({ page }) => {
+    test('re-import with update strategy fills blanks; existing non-blank values preserved @on-demand', async ({ page }) => {
         test.setTimeout(300_000);
 
         // First pass — seed the orgs.

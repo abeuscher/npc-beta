@@ -341,12 +341,42 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Swiper.js MIT compliance verified; all npm + Composer dependencies reviewed for license compatibility with a commercial product.
 - **estimated time cost:** 1 session.
 
+### Track F — On-Demand E2E Coverage
+
+Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each F-track session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
+
+The on-demand category was introduced at session 256 close after the Organizations importer's deep Playwright pass surfaced two pre-existing bugs that earlier per-importer tests had missed (a `serializeColumnMaps` regression silently dropping custom-field columns, and a Choices.js `selectOption` pattern broken across multiple importer specs). The pattern is: deep, fixture-heavy, judgment-led — better suited to occasional sweeps than per-merge regression.
+
+#### F1. On-Demand E2E — Donation / payment-flow integration depth pass
+
+- **gate:** release
+- **prerequisites:** C4 (donation-to-acknowledgment loop rehearsal); E4 (Stripe Checkout Branding); D3 (so the surface as it ships is what gets exercised)
+- **success criterion:** A new `tests/e2e/payments/` spec set, all `@on-demand`-tagged, covers the public donation form → Stripe test-mode checkout → webhook → Donation + Transaction records → tax-receipt email content path end-to-end. Specs simulate signed Stripe webhook payloads and verify idempotency under retries. Coverage matrix: one-time donation happy path; recurring subscription start; partial refund; full refund; failed-payment retry; Stripe-cancel redirect; webhook-replay idempotency. Each spec asserts both the DB outcome (correct rows, amounts, contact linkage) and the email outcome (receipt body matches donor name + amount + date verbatim). Stripe is already running in test mode (per session 256 close note); webhook signing setup is the new infrastructure.
+- **artifact:** the spec suite + a coverage doc at `docs/runbooks/payments-on-demand-coverage.md` listing what's covered, what's not, and any in-session bugs lifted.
+- **estimated time cost:** 1 session. May extend per Rule 11 if Stripe webhook signing setup surfaces issues.
+
+#### F2. On-Demand E2E — Member portal self-service & contact-scoping security
+
+- **gate:** release
+- **prerequisites:** C3 (permission audit informs the scoping invariant); A3 (production-shape install for portal mail flows)
+- **success criterion:** A new `tests/e2e/portal/` spec set, all `@on-demand`-tagged, walks each portal route from two authenticated contact fixtures (Alice + Bob). Coverage: (a) the CLAUDE.md portal-security rule — every portal route and query is scoped to the authenticated contact's own `contact_id`; Bob cannot view Alice's donations / memberships / event registrations even via URL fishing; (b) password reset, email verification, address update flows succeed end-to-end; (c) signup → email verify → first-login flow lands a clean `PortalAccount` + `Contact` pair; (d) password-reset token expires and double-use is rejected; (e) `/{portal_prefix}/*` URL routing adapts when the `portal_prefix` site setting changes mid-session. The portal-security rule is the load-bearing invariant — any cross-contact data leak surfaces as a hard fail.
+- **artifact:** the spec suite + a security findings doc at `docs/runbooks/portal-security-audit.md`.
+- **estimated time cost:** 1 session.
+
+#### F3. On-Demand E2E — Permission / role-gate matrix
+
+- **gate:** release
+- **prerequisites:** C3 (permission matrix lands at `docs/runbooks/permission-matrix.md`); E14 (no further structural changes pre-T1)
+- **success criterion:** A new `tests/e2e/roles/` spec set, all `@on-demand`-tagged, walks each role fixture (super-admin, staff-admin, board-read-only, volunteer, public-visitor — sourced from C3's matrix) through the admin surface. For each (role × Filament resource × action) cell in the matrix: assert the role's expected outcome — visible / hidden, actionable / disabled, enforced at controller layer not just UI. C3 findings that were too small to fix in-session per Rule 2 land here as code-level fixes. Where Playwright contradicts the documented matrix, the matrix wins for the in-session fix and Playwright tests confirm the corrected gate.
+- **artifact:** the spec suite + a delta entry in `docs/runbooks/permission-matrix.md` listing any cells where Playwright contradicted the documented expected outcome.
+- **estimated time cost:** 1 session.
+
 ### Terminal session
 
 #### T1. Code Review & Cleanup + Migration Squash
 
 - **gate:** release
-- **prerequisites:** all of A, B, C, D, E closed (Rule 10)
+- **prerequisites:** all of A, B, C, D, E, F closed (Rule 10)
 - **success criterion:** Final code review pass in the pattern of sessions 101 / 116 / 141 / 178–179 / 205–206 — dead code, unused imports, duplicated logic, naming, outdated comments, drift from framework conventions. Combined in the same session with migration squash: collapse the per-session migration history into a single squashed migration set against the v1 schema baseline. Both halves land in one branch; no code change after T1 closes.
 - **artifact:** the cleaned-up code + the squashed migration set.
 - **estimated time cost:** 1–2 sessions; the squash half may force its own session per Rule 11.
@@ -393,7 +423,10 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 34. **E13.** Help docs body content
 35. **E14.** Third-Party Licensing Compliance Audit
 36. **D4.** Test suite review — cost & shape
-37. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+37. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+38. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+39. **F3.** On-Demand E2E — Permission / role-gate matrix
+40. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

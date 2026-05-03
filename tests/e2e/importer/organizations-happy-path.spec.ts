@@ -36,7 +36,7 @@ test.describe('Organizations importer — happy path', () => {
         await cleanupAllImportSessionsOfType('organization');
     });
 
-    test('imports 5 organizations with custom field, tags, and notes', async ({ page }) => {
+    test('imports 5 organizations with custom field, tags, and notes @on-demand', async ({ page }) => {
         test.setTimeout(180_000);
 
         await driveOrganizationsHappyPath(page, {
