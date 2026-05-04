@@ -13,7 +13,7 @@ category: tools
 
 The Importer is the central entry point for bringing data into the CRM from external systems. It also serves as the **Review Queue** for users who have the `review_imports` permission.
 
-For the full cross-cutting workflow — source selection, CSV upload, column mapping, duplicate handling, approval, and rollback — see the [Data Imports](import-contacts) reference. Notes interactions are covered separately in [Import Notes](import-notes).
+For the full cross-cutting workflow — source selection, CSV upload, column mapping, duplicate handling, approval, and rollback — see the [Data Imports](import-contacts) reference. Notes interactions are covered separately in [Import Notes](import-notes). For end-to-end guidance on a first migration into a new install — what to expect, the order to run imports in, and edge cases to watch for — see [Onboarding — Migration](onboarding-migration).
 
 ## Available Importers
 

@@ -126,17 +126,28 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself; carries the affiliation modelling required for any sales narrative involving complex donor relationships.
 - **estimated time cost:** 1–2 sessions; may split per Rule 11.
 
-#### B2. Onboarding rehearsal cluster
+#### B2. Onboarding rehearsal cluster ✅
 
 - **gate:** release
 - **prerequisites:** B1a, A1, E2 (Importer Mapping Page UX), E3 (Rich Text Custom Fields). B1b is *not* a prerequisite — B2 exercises B1a's transactional Org peering and informs the shape B1b ultimately adopts.
-- **success criterion:** All four sub-scenarios pass against a single shared messy-data fixture (real-shape Wild Apricot or Neon export):
-  - **Migration in:** import completes with <5% manual cleanup post-import. Edge cases logged with documented resolution: duplicates, inconsistent dates, missing required fields, custom-field drift across rows.
-  - **Migration out:** full export against a 10K-record install completes in <5 min, no data loss verified by row counts and 5-table spot-check.
-  - **Custom fields + public collection:** custom fields on contacts + events plus a public event-photos collection ingest cleanly; the public collection page renders.
-  - **Custom-field-with-lookup edge case:** a custom field that pulls allowed values from a separate Collection or another model's column either works or surfaces as a documented finding with a planned fix.
-- **artifact:** **Onboarding playbook** at `docs/runbooks/onboarding-playbook.md` — sales-credibility document covering the full intake flow including edge-case handling.
-- **estimated time cost:** 1–2 sessions; may split into Migration / Custom-fields halves per Rule 11.
+- **success criterion** *(closed at session 258 with substantial findings register)*: Onboarding migration help doc landed in the help system at `resources/docs/onboarding-migration.md` (slug `onboarding-migration`, category `tools`, standalone) and linked from the main importer help doc. Phase 2 (Migration-in) measurement was *partial* — Contacts cleared 25/25 cleanly; Events drove through wizard with manual mappings but landed 0 rows due to G1 cross-importer email-pool mismatch; the other five importers halted at the test-driver layer (methodology issue, not importer bug). Phase 3 (Migration-out) cleared cleanly: 5K-contact install exports in 1.65 seconds with row-count parity. Phase 4 (Custom fields + public collection) confirmed CF round-trip works on Contacts (25/25 with populated `custom_fields`, 6 auto-created defs); public `/events` renders HTTP 200 with content. Phase 5 (Custom-field-with-lookup) confirmed structurally not supported in v1. Phase 6 blind eval ran the discipline check. Two new working-set entries lifted from the rehearsal (B2a + B2b below); several Out-of-Gate register entries lifted (FieldMapper aliases, events status normalization, email-trim, A1 Faker uniqueness ceiling, public-widget bundle errors). The original four sub-scenario success bars were not all met as originally written — Migration-in's <5% manual cleanup bar holds for preset-supported CSVs only; with the G1 generic-preset fixtures, manual mapping under the current importer shape exceeds 50% for 5 of 6 namespaced importers. The help doc frames the migration tractably for the customer-facing audience (no specific source-system names, no methodology candor); the operator-internal methodology + findings detail lives in the session log.
+- **artifact:** **Onboarding — Migration** help doc at `resources/docs/onboarding-migration.md` (registered in help system via `help:sync`). **Closed at session 258.** See `sessions/258. Onboarding Rehearsal Cluster — Log.md` for the full landing including methodology + measurements.
+
+#### B2a. Lift Contacts auto-mapping pattern to namespaced importers *(B2 follow-on)*
+
+- **gate:** release
+- **prerequisites:** B2 closed (the rehearsal that surfaced this finding).
+- **success criterion:** Replace the small per-page `guessDestination($normalizedHeader)` match statements on the five namespaced importers (Events / Donations / Memberships / Invoice Details / Notes) with a `FieldMapper`-shaped service-level alias dictionary, parallel to the Contacts importer's `App\Services\Import\FieldMapper`. Each importer gains rich coverage across the three existing presets (`generic` / `wild_apricot` / `bloomerang`) so non-Wild-Apricot CSVs auto-map at parity with the Contacts surface. The current per-page match statements are calibrated to legacy Wild-Apricot-shape headers and produce ~10% header recognition under G1's `generic` preset — see B2 Phase 2 findings for the concrete numbers. Lifting this pattern is the single largest operator-cost lever surfaced by B2.
+- **artifact:** the architectural lift; per-importer field-registry classes or a shared mapper registry; updated unit + integration tests for header recognition under each preset.
+- **estimated time cost:** 1–2 sessions (Rule 11).
+
+#### B2b. Export CSV actions for non-Contact list resources *(B2 follow-on)*
+
+- **gate:** release
+- **prerequisites:** B2 closed.
+- **success criterion:** Add operator-facing "Export CSV" admin actions, in the pattern of [`ContactResource\Pages\ListContacts::exportContacts`](../app/Filament/Resources/ContactResource/Pages/ListContacts.php), to every list resource that holds migration-relevant data: Organizations, Donations, Events, Memberships, Event Registrations, Transactions, Funds, Campaigns, Notes. Each export emits a CSV via `streamDownload`, runs against the current filtered+sorted query, and includes custom-field columns where the model supports them. Match the contacts exporter's behavior on naming, content-type, file-shape, and access-control gating.
+- **artifact:** the export actions themselves; per-resource standardized export pattern.
+- **estimated time cost:** 1 session, possibly 1–2 if custom-field flattening surfaces design questions per Rule 11.
 
 ### Track C — Workflow rehearsals
 
@@ -422,35 +433,37 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 11. **B1a.** Organizations Model Overhaul (Min) *(closed at 255)*
 12. **B1c.** Organizations Importer *(closed at session 256)*
 13. **G1.** Importer Test-Fixture Generator — CSV Foundation *(precedes B2 per request at 256 close: real-data scrub-and-reimport has stopped finding bugs; generated fixtures expand coverage)*
-14. **B2.** Onboarding rehearsal cluster
-15. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
-16. **E10.** Full-Width Architecture Enforcement
-17. **E11.** Page Builder Focus-Scroll Clamp
-18. **C1.** Notes Permissions (feature half)
-19. **E9.** Widget Help Authoring
-20. **C2.** Event Ticket Tiers
-21. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-22. **E4.** Stripe Checkout Branding *(precedes C4)*
-23. **C4.** Donation-to-acknowledgment loop
-24. **C5.** Event with everything
-25. **C6.** Membership renewal cycle
-26. **C7.** Email at volume
-27. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-28. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-29. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-30. **E8.** UI/UX Sprint
-31. **E12.** Housekeeping Batch 2
-32. **D1.** Scale rehearsal
-33. **D2.** Compatibility cluster
-34. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-35. **E13.** Help docs body content
-36. **E14.** Third-Party Licensing Compliance Audit
-37. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-38. **D4.** Test suite review — cost & shape
-39. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-40. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-41. **F3.** On-Demand E2E — Permission / role-gate matrix
-42. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+14. **B2.** Onboarding rehearsal cluster *(closed at session 258 with two follow-on entries lifted)*
+15. **B2a.** Lift Contacts auto-mapping pattern to namespaced importers *(B2 follow-on)*
+16. **B2b.** Export CSV actions for non-Contact list resources *(B2 follow-on)*
+17. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+18. **E10.** Full-Width Architecture Enforcement
+19. **E11.** Page Builder Focus-Scroll Clamp
+20. **C1.** Notes Permissions (feature half)
+21. **E9.** Widget Help Authoring
+22. **C2.** Event Ticket Tiers
+23. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+24. **E4.** Stripe Checkout Branding *(precedes C4)*
+25. **C4.** Donation-to-acknowledgment loop
+26. **C5.** Event with everything
+27. **C6.** Membership renewal cycle
+28. **C7.** Email at volume
+29. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+30. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+31. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+32. **E8.** UI/UX Sprint
+33. **E12.** Housekeeping Batch 2
+34. **D1.** Scale rehearsal
+35. **D2.** Compatibility cluster
+36. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+37. **E13.** Help docs body content
+38. **E14.** Third-Party Licensing Compliance Audit
+39. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+40. **D4.** Test suite review — cost & shape
+41. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+42. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+43. **F3.** On-Demand E2E — Permission / role-gate matrix
+44. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
@@ -465,6 +478,12 @@ Items considered during 244 vetting and explicitly *not* in the working set. Eac
 - **Financial Data Origin & Lifecycle Discipline — Phases B and C** *(post-release)* — Phase A complete (session 233). B is gated on "lands when an action surface that needs it is imminent"; C is gated on "defer until forced." Neither is release-blocking by user direction at session 244.
 - ~~**Test Suite Audit** *(orthogonal — conditional)*~~ — Promoted to **D4** in the working set at session 251 close. The 256M → 1G memory bump fixed the immediate CI cascade, but the underlying question (does the suite earn its size?) is now in-gate before Beta-1.
 - **CI test suite cascade — root-cause & fix (session 252)** — out-of-gate emergency lift. Session 251's `memory_limit` bump was necessary but not sufficient; the same 86-test cascade returned with no memory signature. Root cause was [`AppResetCommandTest`](tests/Feature/AppResetCommandTest.php) (shipped at session 247) running `Artisan::call('app:reset')` — which executes `migrate:fresh --seed --force` — from inside Pest without `RefreshDatabase`, committing seed rows past the per-test transaction wrap and breaking 86 downstream tests on unique-constraint violations. Fix: deleted `app:reset` and its test entirely (the artisan-command surface is structurally unfit for re-running `migrate:fresh` from inside the test suite); reopened the underlying orphan-media-cleanup bug as a stub in `session-outlines.md` § Housekeeping — Batch 2 with the constraint *"no new artisan command that re-runs `migrate:fresh` from inside the application."* Suite went from 86 failed/1724 passed to 1808 passed/0 failed.
+- **Events `status` case-normalization helper** *(B2 carry-forward, surfaced at session 257, confirmed at 258)* — When an events CSV has a `status` value with mixed case (e.g., `Draft` instead of `draft`), the importer doesn't normalize before insert and the `events_status_check` constraint rejects the row. Add a `mapEventStatus` helper parallel to donations'/memberships' existing normalization. Follow-on session candidate; small.
+- **FieldMapper missing common header aliases** *(B2 finding)* — `FieldMapper::map('Postal Code', 'generic')` returns NULL despite `Postal Code` being the international canonical term; only `ZIP` and `Zip Code` are recognized. Audit and expand the alias dictionary across the three presets. Follow-on session candidate; small. Rolls naturally into B2a (the pattern-lift) but can land sooner standalone if scheduling permits.
+- **Email whitespace not trimmed before insert** *(B2 finding)* — Contacts imported with leading/trailing whitespace in the email column land with the whitespace preserved. Add a trim at the importer's contact-create / contact-update boundary. Follow-on; small.
+- **A1 Random Data Generator's Faker unique-pool ceiling** *(B2 finding, surfaced during Migration-out planting)* — The contacts factory uses `fake()->unique()->numerify('.###')` (1,000-value pool) which overflows around ~1,200 contacts in a single PHP process. Multi-process planting works (each process gets a fresh Faker cache) but is operator-unfriendly. Replace the numerifier with a strategy that scales: UUID-suffixed emails, or a much wider numeric range, or per-batch unique-cache reset. Documents the "10K-record install" success-criterion bar properly. Follow-on; small-medium.
+- **Public-widget bundle / manifest mismatch on `/events`** *(B2 finding)* — Public `/events` page renders HTTP 200 with content but the browser console reports `NPWidgets is not defined` and `cfg is not defined`. Server-rendered content is unaffected, but any widget that depends on the JS bundle is at risk. Suggested first step: run `php artisan build:public` to refresh the manifest; if errors persist, it's a public-widget-bundle authoring or layout issue. Follow-on; investigation-shaped.
+- **B2 test-driver methodology lessons** *(B2 internal)* — Future rehearsal sessions that drive multiple importers in sequence should use **inline driver code** rather than layering pre-setup atop existing high-level helpers. Mixing `page.goto` + `fillUploadStep` calls between custom and helper code produced wizard-state collisions that halted 4 of 7 importer measurements at the test-driver layer. Documented in the B2 log and the playbook's methodology section. Not a working-set entry; a process note for the next rehearsal.
 
 ---
 
