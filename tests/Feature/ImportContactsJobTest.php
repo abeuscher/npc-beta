@@ -60,6 +60,70 @@ it('new email creates a contact record', function () {
     expect($log->status)->toBe('complete');
 });
 
+it('trims leading and trailing whitespace from email on contact creation', function () {
+    $path = writeCsv([
+        ['first_name', 'email'],
+        ['Whitespace', '  spaced@example.com  '],
+    ]);
+
+    $log = makeImportLog();
+
+    (new ImportContactsJob(
+        importLogId:       $log->id,
+        storagePath:       $path,
+        columnMap:         ['first_name' => 'first_name', 'email' => 'email'],
+        duplicateStrategy: 'skip',
+    ))->handle();
+
+    expect(Contact::where('email', 'spaced@example.com')->exists())->toBeTrue()
+        ->and(Contact::where('email', '  spaced@example.com  ')->exists())->toBeFalse();
+});
+
+it('treats whitespace-only email as missing identifier', function () {
+    $path = writeCsv([
+        ['first_name', 'email'],
+        ['NoEmail', '   '],
+    ]);
+
+    $log = makeImportLog();
+
+    (new ImportContactsJob(
+        importLogId:       $log->id,
+        storagePath:       $path,
+        columnMap:         ['first_name' => 'first_name', 'email' => 'email'],
+        duplicateStrategy: 'skip',
+    ))->handle();
+
+    // first_name is present so the row imports — but email lands as null, not "   "
+    $contact = Contact::where('first_name', 'NoEmail')->first();
+    expect($contact)->not->toBeNull()
+        ->and($contact->email)->toBeNull();
+});
+
+it('matches an existing contact when CSV email has whitespace and DB email is clean', function () {
+    Contact::factory()->create([
+        'first_name' => 'Original',
+        'email'      => 'match@example.com',
+    ]);
+
+    $path = writeCsv([
+        ['first_name', 'email'],
+        ['Updated', '  match@example.com  '],
+    ]);
+
+    $log = makeImportLog('update');
+
+    (new ImportContactsJob(
+        importLogId:       $log->id,
+        storagePath:       $path,
+        columnMap:         ['first_name' => 'first_name', 'email' => 'email'],
+        duplicateStrategy: 'update',
+    ))->handle();
+
+    expect(Contact::where('email', 'match@example.com')->count())->toBe(1)
+        ->and(Contact::where('email', 'match@example.com')->first()->first_name)->toBe('Updated');
+});
+
 it('duplicate email with strategy skip does not update the existing contact', function () {
     Contact::factory()->create([
         'first_name' => 'Original',

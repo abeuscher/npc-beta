@@ -346,6 +346,11 @@ class ImportProgressPage extends Page
                 }
             }
 
+            if (isset($attributes['email']) && is_string($attributes['email'])) {
+                $trimmedEmail = trim($attributes['email']);
+                $attributes['email'] = $trimmedEmail === '' ? null : $trimmedEmail;
+            }
+
             $email     = $attributes['email'] ?? null;
             $firstName = $attributes['first_name'] ?? null;
 

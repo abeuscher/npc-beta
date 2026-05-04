@@ -8,6 +8,7 @@ use App\Importers\MembershipImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
 use App\Services\Import\FieldMapper;
+use App\Services\Import\MembershipFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -155,23 +156,9 @@ class ImportMembershipsPage extends Page
         );
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'user id'                              => 'contact:external_id',
-            'email', 'email address'               => 'contact:email',
-            'phone', 'phone number'                => 'contact:phone',
-
-            'membership level'                     => 'membership:tier',
-            'membership status'                    => 'membership:status',
-            'member since'                         => 'membership:starts_on',
-            'renewal due'                          => 'membership:expires_on',
-            'balance'                              => 'membership:amount_paid',
-            'notes'                                => 'membership:notes',
-            'member bundle id or email'            => 'membership:external_id',
-
-            default                                => null,
-        };
+        return (new MembershipFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

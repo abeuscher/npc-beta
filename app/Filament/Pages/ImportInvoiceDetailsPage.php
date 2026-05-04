@@ -8,6 +8,7 @@ use App\Importers\InvoiceImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
 use App\Services\Import\FieldMapper;
+use App\Services\Import\InvoiceFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -152,31 +153,9 @@ class ImportInvoiceDetailsPage extends Page
         );
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'user id'                               => 'contact:external_id',
-            'email', 'email address'                => 'contact:email',
-            'phone', 'phone number'                 => 'contact:phone',
-
-            'invoice #', 'invoice number'           => 'invoice:invoice_number',
-            'invoice date'                          => 'invoice:invoice_date',
-            'origin'                                => 'invoice:origin',
-            'origin details'                        => 'invoice:origin_details',
-            'ticket type (only for event invoices)'  => 'invoice:ticket_type',
-            'status'                                => 'invoice:status',
-            'currency'                              => 'invoice:currency',
-            'payment date'                          => 'invoice:payment_date',
-            'settled payment type(s)'               => 'invoice:payment_type',
-            'item'                                  => 'invoice:item',
-            'item quantity'                         => 'invoice:item_quantity',
-            'item price'                            => 'invoice:item_price',
-            'item amount'                           => 'invoice:item_amount',
-            'internal notes'                        => 'invoice:internal_notes',
-
-            'online/offline'                        => 'invoice:status',
-            default                                 => null,
-        };
+        return (new InvoiceFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

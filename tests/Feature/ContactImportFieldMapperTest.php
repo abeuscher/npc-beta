@@ -86,3 +86,100 @@ it('presetMap returns an array with string keys and string values', function () 
         expect($dest)->toBeString();
     }
 });
+
+it('generic preset maps "Postal Code" to postal_code', function () {
+    $mapper = new FieldMapper();
+    expect($mapper->map('Postal Code', 'generic'))->toBe('postal_code');
+});
+
+it('generic preset maps additional postal-code aliases to postal_code', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Postal Code', 'postal_code', 'PostalCode', 'Postcode', 'Zipcode', 'Zip_Code', 'ZIP'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('postal_code');
+    }
+});
+
+it('generic preset maps additional first-name aliases to first_name', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['First Name', 'first_name', 'FirstName', 'FName', 'Given Name', 'GivenName'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('first_name');
+    }
+});
+
+it('generic preset maps additional last-name aliases to last_name', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Last Name', 'last_name', 'LastName', 'Surname', 'LName', 'Family Name', 'FamilyName'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('last_name');
+    }
+});
+
+it('generic preset maps prefix and salutation to prefix', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Prefix', 'Salutation'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('prefix');
+    }
+});
+
+it('generic preset maps additional email aliases to email', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Email', 'Email Address', 'EmailAddress', 'E-mail', 'Primary Email', 'PrimaryEmail'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('email');
+    }
+});
+
+it('generic preset maps additional phone aliases to phone', function () {
+    $mapper = new FieldMapper();
+
+    foreach ([
+        'Phone', 'Phone Number', 'PhoneNumber',
+        'Mobile', 'Mobile Phone', 'MobilePhone',
+        'Cell', 'Cell Phone', 'CellPhone',
+        'Home Phone', 'HomePhone',
+        'Work Phone', 'WorkPhone',
+        'Telephone',
+    ] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('phone');
+    }
+});
+
+it('generic preset maps additional address-line-1 aliases to address_line_1', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Address', 'Address Line 1', 'address_line_1', 'AddressLine1', 'Address1', 'Street', 'Street Address', 'StreetAddress'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('address_line_1');
+    }
+});
+
+it('generic preset maps additional address-line-2 aliases to address_line_2', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Address Line 2', 'address_line_2', 'AddressLine2', 'Address 2', 'Address2', 'Apt', 'Apartment'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('address_line_2');
+    }
+});
+
+it('generic preset maps additional state aliases to state', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['State', 'Province', 'Region', 'State/Province', 'StateProvince'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('state');
+    }
+});
+
+it('generic preset maps "Country" to country', function () {
+    $mapper = new FieldMapper();
+    expect($mapper->map('Country', 'generic'))->toBe('country');
+});
+
+it('generic preset maps date-of-birth aliases to date_of_birth', function () {
+    $mapper = new FieldMapper();
+
+    foreach (['Date of Birth', 'date_of_birth', 'DateOfBirth', 'DOB', 'Birthday', 'Birth Date', 'BirthDate'] as $header) {
+        expect($mapper->map($header, 'generic'))->toBe('date_of_birth');
+    }
+});

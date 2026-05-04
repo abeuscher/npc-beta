@@ -261,4 +261,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 256 | Organizations Importer |
 | 257 | Importer Test-Fixture Generator — CSV Foundation |
 | 258 | Onboarding Rehearsal Cluster |
+| 259 | Importer Auto-Mapping Pattern Lift |
 

@@ -459,7 +459,7 @@ class ImportEventsProgressPage extends Page
 
         $payload = array_filter($attrs, fn ($v) => $v !== null);
         $payload['slug']      = $this->buildUniqueSlug($title);
-        $payload['status']    = $payload['status'] ?? 'draft';
+        $payload['status']    = $this->mapEventStatus($payload['status'] ?? null);
         $payload['author_id'] = $this->importerUserId ?: \App\Models\User::query()->value('id');
 
         if ($sponsorOrganizationId !== null) {
@@ -627,6 +627,22 @@ class ImportEventsProgressPage extends Page
         $display = $value ?: '(blank)';
 
         return "Contact not found: {$field} = {$display}. Import contacts first, or re-check the Contact Match Key column.";
+    }
+
+    private function mapEventStatus(?string $source): string
+    {
+        if (blank($source)) {
+            return 'draft';
+        }
+
+        $normalized = strtolower(trim($source));
+
+        return match ($normalized) {
+            'draft'                                => 'draft',
+            'published', 'live', 'active', 'public' => 'published',
+            'cancelled', 'canceled'                => 'cancelled',
+            default                                => 'draft',
+        };
     }
 
     private function accumulateEntityCounts(array &$report, array $entities): void

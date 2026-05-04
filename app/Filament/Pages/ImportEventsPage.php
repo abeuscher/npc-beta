@@ -7,6 +7,7 @@ use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\EventImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
+use App\Services\Import\EventFieldMapper;
 use App\Services\Import\FieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
@@ -153,34 +154,9 @@ class ImportEventsPage extends Page
         }
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'event id'                  => 'event:external_id',
-            'event title'               => 'event:title',
-            'start date'                => 'event:starts_at',
-            'end date'                  => 'event:ends_at',
-            'event location'            => 'event:address_line_1',
-
-            'user id'                   => 'contact:external_id',
-            'first name', 'firstname'   => null,
-            'last name', 'lastname'     => null,
-            'email', 'email address'    => 'contact:email',
-            'phone', 'phone number'     => 'contact:phone',
-
-            'ticket type', 'ticket type/invitee reply' => 'registration:ticket_type',
-            'ticket fee', 'ticket type fee'            => 'registration:ticket_fee',
-            'event registration date'                  => 'registration:registered_at',
-
-            'invoice #', 'invoice number', 'transaction id' => 'transaction:external_id',
-            'total fee incl. extra costs and guests registration fees', 'transaction amount' => 'transaction:amount',
-            'payment state'                                            => 'transaction:payment_state',
-            'payment type'                                             => 'transaction:payment_method',
-            'online/offline'                                           => 'transaction:payment_channel',
-
-            'internal notes' => '__note_contact__',
-            default          => null,
-        };
+        return (new EventFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

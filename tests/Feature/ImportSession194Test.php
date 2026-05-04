@@ -356,6 +356,62 @@ it('invoice details: dry-run with update strategy on matched invoice_number repo
         ->and(ImportStagedUpdate::count())->toBe(0);
 });
 
+it('invoice details: runCommit handles multiple rows when at least one has a custom field (regression)', function () {
+    $source = ImportSource::create(['name' => 'InvCFShadowReg']);
+    Contact::factory()->create(['email' => 'inv1@example.com']);
+    Contact::factory()->create(['email' => 'inv2@example.com']);
+
+    $path = s194Csv([
+        ['Email',             'Invoice #',  'Item',   'Item amount', 'Project'],
+        ['inv1@example.com',  'INV-CF-1',   'Widget', '10.00',       'Project A'],
+        ['inv2@example.com',  'INV-CF-2',   'Gadget', '20.00',       'Project B'],
+    ]);
+
+    $session = ImportSession::create([
+        'model_type'       => 'invoice_detail',
+        'status'           => 'pending',
+        'filename'         => 'i.csv',
+        'row_count'        => 2,
+        'imported_by'      => $this->admin->id,
+        'import_source_id' => $source->id,
+    ]);
+    $log = ImportLog::create([
+        'model_type'        => 'invoice_detail',
+        'filename'          => basename($path),
+        'storage_path'      => $path,
+        'column_map'        => [
+            'Email'       => 'contact:email',
+            'Invoice #'   => 'invoice:invoice_number',
+            'Item'        => 'invoice:item',
+            'Item amount' => 'invoice:item_amount',
+            'Project'     => '__custom_invoice__',
+        ],
+        'custom_field_map'  => [
+            'Project' => ['handle' => 'project', 'label' => 'Project', 'field_type' => 'text'],
+        ],
+        'row_count'         => 2,
+        'duplicate_strategy'=> 'skip',
+        'match_key'         => 'contact:email',
+        'contact_match_key' => 'contact:email',
+        'import_source_id'  => $source->id,
+        'status'            => 'pending',
+    ]);
+
+    $page = new ImportInvoiceDetailsProgressPage();
+    $page->importLogId     = $log->id;
+    $page->importSessionId = $session->id;
+    $page->importSourceId  = $source->id;
+    $page->contactStrategy = 'error';
+    $page->mount();
+
+    // Without the file-handle / CF-handle scope fix in runCommit, this throws
+    // TypeError on the second fgetcsv() call.
+    $page->runCommit();
+
+    expect($page->errorCount)->toBe(0)
+        ->and($page->processed)->toBe(2);
+});
+
 it('invoice details: commit with update strategy stages without modifying transaction', function () {
     $source   = ImportSource::create(['name' => 'InvCommit']);
     $contact  = Contact::factory()->create(['email' => 'ic@example.com']);

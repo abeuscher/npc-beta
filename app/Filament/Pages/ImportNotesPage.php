@@ -6,6 +6,7 @@ use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\NoteImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
+use App\Services\Import\NoteFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -137,43 +138,9 @@ class ImportNotesPage extends Page
         );
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'type', 'note type', 'activity type', 'action type',
-            'interaction type', 'contact type', 'channel'             => 'note:type',
-
-            'subject', 'note subject', 'title',
-            'activity subject', 'action subject'                       => 'note:subject',
-
-            'status', 'note status',
-            'activity status', 'action status'                         => 'note:status',
-
-            'body', 'note body', 'notes', 'description', 'details',
-            'comments', 'action notes', 'contact notes'                => 'note:body',
-
-            'date', 'occurred at', 'note occurred at',
-            'activity date', 'action date',
-            'contact date', 'interaction date'                         => 'note:occurred_at',
-
-            'follow up', 'follow-up', 'follow up at', 'note follow-up at',
-            'next action date', 'next contact date'                    => 'note:follow_up_at',
-
-            'outcome', 'note outcome', 'result', 'notes outcome'       => 'note:outcome',
-
-            'duration', 'duration minutes',
-            'note duration (minutes)', 'duration (minutes)',
-            'call duration'                                            => 'note:duration_minutes',
-
-            'external id', 'note external id',
-            'activity id', 'action id', 'interaction id'               => 'note:external_id',
-
-            'email', 'email address'                                   => 'contact:email',
-            'user id', 'constituent id', 'contact id'                  => 'contact:external_id',
-            'phone', 'phone number'                                    => 'contact:phone',
-
-            default                                                     => null,
-        };
+        return (new NoteFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

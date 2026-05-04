@@ -161,6 +161,71 @@ it('creates a new Event when no external ID match exists, writing an ImportIdMap
             ->exists())->toBeTrue();
 });
 
+// ── Event status case-normalization ──────────────────────────────────────────
+
+it('normalises mixed-case event status values to the lowercase enum form', function () {
+    $source = ImportSource::create(['name' => 'Source Status']);
+    Contact::factory()->create(['email' => 'a@example.com']);
+    Contact::factory()->create(['email' => 'b@example.com']);
+    Contact::factory()->create(['email' => 'c@example.com']);
+    Contact::factory()->create(['email' => 'd@example.com']);
+
+    $path = eventsCsv([
+        ['Event ID', 'Event Title', 'Start Date', 'Event Status', 'Email'],
+        ['EV-DRAFT',  'Draft Event',     '05/01/2026 10:00:00', 'Draft',     'a@example.com'],
+        ['EV-PUB',    'Published Event', '05/01/2026 10:00:00', 'PUBLISHED', 'b@example.com'],
+        ['EV-CXL',    'Cancelled Event', '05/01/2026 10:00:00', 'Cancelled', 'c@example.com'],
+        ['EV-LIVE',   'Live Event',      '05/01/2026 10:00:00', 'Live',      'd@example.com'],
+    ]);
+
+    $log = eventsLog($path, [
+        'Event ID'     => 'event:external_id',
+        'Event Title'  => 'event:title',
+        'Start Date'   => 'event:starts_at',
+        'Event Status' => 'event:status',
+        'Email'        => 'contact:email',
+    ], 4, $source->id);
+    $session = eventsSession($this->admin, $source->id);
+    $page    = mountEventsPage($log, $session, $source->id);
+
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    expect(Event::where('title', 'Draft Event')->first()->status)->toBe('draft')
+        ->and(Event::where('title', 'Published Event')->first()->status)->toBe('published')
+        ->and(Event::where('title', 'Cancelled Event')->first()->status)->toBe('cancelled')
+        ->and(Event::where('title', 'Live Event')->first()->status)->toBe('published');
+});
+
+it('defaults event status to draft when the source value is unrecognised', function () {
+    $source = ImportSource::create(['name' => 'Source Status Unrecognised']);
+    Contact::factory()->create(['email' => 'a@example.com']);
+
+    $path = eventsCsv([
+        ['Event ID', 'Event Title', 'Start Date', 'Event Status', 'Email'],
+        ['EV-WTF',  'Mystery Event', '05/01/2026 10:00:00', 'WhoKnows',     'a@example.com'],
+    ]);
+
+    $log = eventsLog($path, [
+        'Event ID'     => 'event:external_id',
+        'Event Title'  => 'event:title',
+        'Start Date'   => 'event:starts_at',
+        'Event Status' => 'event:status',
+        'Email'        => 'contact:email',
+    ], 1, $source->id);
+    $session = eventsSession($this->admin, $source->id);
+    $page    = mountEventsPage($log, $session, $source->id);
+
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    expect(Event::where('title', 'Mystery Event')->first()->status)->toBe('draft');
+});
+
 // ── Unresolved contact ───────────────────────────────────────────────────────
 
 it('errors out when the contact match key fails to resolve a contact', function () {

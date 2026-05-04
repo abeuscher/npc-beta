@@ -401,9 +401,9 @@ class ImportInvoiceDetailsProgressPage extends Page
                 $invoiceGroups[$invoiceNum]['items'][] = $parsed['lineItem'];
             }
 
-            foreach (($parsed['customFields'] ?? []) as $handle => $val) {
-                if (! array_key_exists($handle, $invoiceGroups[$invoiceNum]['customFields'])) {
-                    $invoiceGroups[$invoiceNum]['customFields'][$handle] = $val;
+            foreach (($parsed['customFields'] ?? []) as $cfHandle => $val) {
+                if (! array_key_exists($cfHandle, $invoiceGroups[$invoiceNum]['customFields'])) {
+                    $invoiceGroups[$invoiceNum]['customFields'][$cfHandle] = $val;
                 }
             }
 

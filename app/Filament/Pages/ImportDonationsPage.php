@@ -7,6 +7,7 @@ use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\DonationImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
+use App\Services\Import\DonationFieldMapper;
 use App\Services\Import\FieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
@@ -155,27 +156,9 @@ class ImportDonationsPage extends Page
         );
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'user id'                          => 'contact:external_id',
-            'email', 'email address'           => 'contact:email',
-            'phone', 'phone number'            => 'contact:phone',
-
-            'donation date'                    => 'donation:donated_at',
-            'amount', 'donation amount'        => 'donation:amount',
-            'number'                           => 'donation:invoice_number',
-            'comment', 'comments for payer'    => 'donation:comment',
-
-            'transaction amount'               => 'transaction:amount',
-            'payment state'                    => 'transaction:payment_state',
-            'payment type'                     => 'transaction:payment_method',
-            'online/offline'                   => 'transaction:payment_channel',
-            'payment method id'                => 'transaction:external_id',
-
-            'internal notes'                   => '__note_contact__',
-            default                            => null,
-        };
+        return (new DonationFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

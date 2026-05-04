@@ -118,7 +118,7 @@ Event status fields need to match a fixed set of values exactly (`draft`, `publi
 
 ### Some column names won't auto-recognize
 
-The system recognizes many common column-naming patterns, but not all of them. If you see a column on the Map Columns step that you'd expect the system to know (for example, *Postal Code*) sitting on *— ignore —*, just pick the matching destination from the dropdown manually. The mapping is saved with the source, so the next import from the same source will remember it.
+The system recognizes most common column-naming patterns out of the box — entity-prefixed forms like *Event Title* or *Registration Ticket Type*, separator variants like *postal_code* / *postalcode* / *Postal Code*, and many natural alternatives (*Mobile Phone*, *Date of Birth*, *Salutation*). What it usually won't recognize without help is your organization's own custom-field names — *Volunteer Status*, *Dietary Pref*, *Anonymous*, *PO Number*, and so on. If a column lands on *— ignore —* on the Map Columns step, pick the matching destination from the dropdown, or turn on *Create custom fields for unrecognized columns* on the Upload step to have those preserved as custom fields automatically. Either way, the mapping is saved with the source, so the next import from the same source will remember it.
 
 ### Cross-importer references depend on matching emails
 

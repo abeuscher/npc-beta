@@ -763,7 +763,7 @@ trait InteractsWithImportWizard
                 continue;
             }
 
-            $guess = $this->guessDestination($normalized);
+            $guess = $this->guessDestination($normalized, $sourcePreset);
 
             if ($guess !== null) {
                 $columnMap["col_{$n}"] = $guess;
