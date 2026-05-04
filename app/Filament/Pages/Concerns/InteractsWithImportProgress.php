@@ -666,6 +666,8 @@ trait InteractsWithImportProgress
             'import_session_id' => $this->importSessionId ?: null,
         ]);
 
+        $this->writeImportCreationNote($contact);
+
         if (! blank($externalId) && $this->importSourceId) {
             ImportIdMap::updateOrCreate(
                 [
@@ -678,6 +680,36 @@ trait InteractsWithImportProgress
         }
 
         return $contact;
+    }
+
+    /**
+     * Body for the "imported from X (session: Y)" timeline note that lands on
+     * any record created by an import. Used by every importer site that
+     * creates a Contact or Organization.
+     */
+    protected function importedCreationNoteBody(): string
+    {
+        $source  = ($this->sourceName ?? '') ?: 'unknown source';
+        $session = ($this->sessionLabel ?? '') ?: 'unnamed';
+
+        return "Imported from {$source} (session: {$session})";
+    }
+
+    /**
+     * Write the standard creation timeline note onto a record produced by
+     * an import. Caller is responsible for ensuring $record is a model
+     * with a notes() polymorphic relationship (Contact, Organization).
+     */
+    protected function writeImportCreationNote(Model $record): void
+    {
+        Note::create([
+            'notable_type'     => $record::class,
+            'notable_id'       => $record->getKey(),
+            'author_id'        => ($this->importerUserId ?? 0) ?: null,
+            'body'             => $this->importedCreationNoteBody(),
+            'occurred_at'      => now(),
+            'import_source_id' => ($this->importSourceId ?? '') ?: null,
+        ]);
     }
 
     // ─── Relational helpers ──────────────────────────────────────────────
@@ -825,6 +857,7 @@ trait InteractsWithImportProgress
             }
 
             $org = Organization::create(['name' => $orgName]);
+            $this->writeImportCreationNote($org);
         }
 
         return $org;

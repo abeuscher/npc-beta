@@ -331,3 +331,16 @@ The mTLS gate is `/api/health`-scoped only — public routes, admin, portal stay
 | Host-level Playwright install | `npm install --global playwright && npx playwright install chromium` (not in `package.json`) |
 | Thumbnail output | `app/Widgets/{PascalName}/thumbnails/static.png` and `preset-{handle}.png`, committed to the repo |
 | Public thumbnail serving route | `GET /widget-thumbnails/{handle}/{file}` — `App\Http\Controllers\WidgetThumbnailController`. Strict filename regex (`static.png` / `preset-*.png`). |
+
+## Dev tooling — importer test fixtures
+
+| Item | Path / command |
+|------|----------------|
+| Generate adversarial CSV fixtures | `docker compose exec app php artisan import-fixtures:generate --importer=<name> --shape=<clean\|messy\|corrupt\|pii\|stress> --seed=<n>` |
+| Output directory | `storage/app/import-test-fixtures/` (gitignored) |
+| Pest runner | `tests/Feature/Generated/ImportFixtureRunnerTest.php` (fast suite + `--group=slow` for stress) |
+| Documentation | [`docs/runbooks/import-fixture-generator.md`](runbooks/import-fixture-generator.md) |
+| Builder classes | `app/Services/Import/Fixtures/Importers/<Importer>FixtureBuilder.php` |
+| Transform classes | `app/Services/Import/Fixtures/Transforms/{Messy,Corrupt,Pii,Stress}Transform.php` |
+| Generator service | `App\Services\Import\Fixtures\FixtureGenerator` |
+| Runner service | `App\Services\Import\FixtureRunner` (consumes a CSV + manifest, replays `processOneRow` per row off-Livewire) |

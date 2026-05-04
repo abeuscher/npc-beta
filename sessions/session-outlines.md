@@ -366,28 +366,9 @@ Track scope (pre-Beta-1):
 
 Format extensions beyond CSV — XLSX, JSON, source-system-specific shapes — live in the Post-Beta-1 section (see "Salesforce export shape support" below).
 
-### G1 — Importer Test-Fixture Generator: CSV Foundation *(stub — pre-Beta 1, precedes B2)*
+### G1 — Importer Test-Fixture Generator: CSV Foundation *(complete — closed at session 257)*
 
-New artisan command `import-fixtures:generate` emits adversarial CSV fixtures for each of the seven importers across five shape modes. Output lands at `storage/app/import-test-fixtures/<importer>-<shape>-<preset>-<encoding>-<seed>.csv` paired with a `.expected.json` sidecar.
-
-**Five shapes:**
-- `clean` — well-formed CSV that should fully import. Baseline.
-- `messy` — well-formed but realistic mess: type-value case variance (`Nonprofit` / `nonprofit` / `NONPROFIT`), mixed date formats (M/D/Y, ISO, "March 5, 2024", Excel-serial integers), trim issues, header noise, system-metadata columns. Should fully import after the importer's normalization layers do their work.
-- `corrupt` — schema- and value-level corruption that the importer should reject row-by-row (orphan FK, unparseable date, bad email, embedded delimiter without quoting, quote-unbalanced cell). Manifest describes per-row error reason.
-- `pii` — rows containing PII patterns the `PiiScanner` should reject (SSN-shaped, credit-card-shaped Luhn-valid, password-named columns, sensitive-header-named columns). One fixture row per scanner rule. Manifest describes per-row violation reason.
-- `stress` — large-row + wide-row + heavy-cell variants for sizing tests. Tagged `->group('slow')` in the Pest runner.
-
-**Source-preset flag.** `--source-preset=generic|wild_apricot|neon|bloomerang`. Reuses `FieldMapper::presets()` to vary header naming so the auto-detect path gets exercised. Wild Apricot uses "Member ID" instead of "External ID"; Neon uses "Account ID"; Bloomerang uses its own conventions.
-
-**Encoding flag.** `--encoding=utf8|utf8-bom|windows-1252`. Default `utf8`. The non-default encodings exercise the importer's BOM-stripping path and Windows-1252 transcoding.
-
-**Determinism.** `--seed=N` for reproducibility. Same seed + same flags = byte-identical CSV.
-
-**Manifest sidecar.** Each `<fixture>.csv` has a `<fixture>.expected.json` describing per-row expected outcome. Critical: without manifests, a fixture proves nothing — "5 rejected" is indistinguishable from "5 silently dropped." The manifest closes that loop.
-
-**Pest runner.** `tests/Feature/Generated/ImportFixtureRunnerTest.php` enumerates `(importer, shape, preset, encoding, seed)` tuples via Pest datasets, runs the generator, drives the importer against each row, and asserts outcomes match the manifest. Stress shape runs under `->group('slow')` only.
-
-Architecture decision driving scope: implement four importer-agnostic transforms (Messy / Corrupt / Pii / Stress) that mutate per-importer "clean" baselines. Per-importer code is just the clean baseline + the canonical header set. Transforms are reused. Keeps G1 to a single context window even with seven importers.
+Closed at session 257. See `sessions/release-plan.md` § G1 (✅) and `sessions/257. Importer Test-Fixture Generator — CSV Foundation — Log.md` for the full landing. Artisan command `import-fixtures:generate` ships with all seven importers × five shapes × the three presets `FieldMapper::presets()` actually exposes (Neon dropped during scope-out — preset doesn't exist in code). `App\Services\Import\FixtureRunner` lifted to drive importers off-Livewire. Parametrized Pest runner in `tests/Feature/Generated/`. Authoring doc at `docs/runbooks/import-fixture-generator.md`. Pre-existing fix lifted in-session: Org + auto-created Contact creation paths now write "Imported from X" timeline notes (was missing in four places). Findings recorded for B2 to inherit without re-discovery.
 
 ### G2 — Importer Test-Fixture Generator: Cross-importer Pairs, Replay, Adversarial Dedup *(stub — pre-Beta 1)*
 
@@ -449,6 +430,33 @@ Coverage:
 - Smaller C3 findings deferred under Rule 2 land here as proper code fixes.
 
 Prerequisites per release plan: C3 (matrix doc lands first), E14 (no further structural changes pre-T1). Artifact: spec suite + delta entry in `docs/runbooks/permission-matrix.md`.
+
+---
+
+## User-Testing Plans — Beta 1 Scope *(stub — placeholder for future lift)*
+
+Real-user testing of the onboarding flow, run by people outside the project. Distinct from B2's Claude+Playwright rehearsal: B2 measures system-savvy operator effort (a useful lower bound), this stub plans the honest naïve-operator measurement that B2 explicitly does not claim to be. Lifted at session 257 close after surfacing the methodological framing for B2.
+
+**Why this is separate from B2:**
+- B2 is Claude-driven with full system knowledge — its "manual cleanup %" reflects what a code-aware reviewer would call cleanup, not what a fresh operator would.
+- Real users face an unfamiliar surface, hit affordance-discoverability issues that Claude's code-aware steering doesn't reproduce, and bring outsider judgment ("does this feel safe to point a real customer at?") that the rehearsal can't.
+- The B2 playbook seeds the user-testing scenarios — once the playbook lists the four sub-scenarios and their edge cases, those scenarios become the user-testing task list.
+
+**Shape (TBD — refine before lifting to release-plan):**
+- Small focused tasks (5–15 minutes each): "import this contacts file and tell me what you'd do next," "export a report and tell me what's confusing," "set up a custom field and import data into it."
+- Sample data: anonymized real-shape exports + G1-generated `messy` fixtures, depending on the task. Filename + content sanitized so the user isn't primed about what to look for.
+- Open-ended evaluation prompts — "where did you get stuck?", "what did you expect to find that wasn't there?", "what felt like it was working against you?".
+- Recruit from existing network — friends + colleagues comfortable with admin-CRM tooling but without codebase familiarity. Likely 3–6 testers per task.
+- Synthesis: collect findings into a delta-doc against the B2 playbook.
+
+**Out of scope right now (resolves before lifting):**
+- Recruiting + scheduling logistics.
+- Compensation / reward structure.
+- NDA / data-handling considerations for non-employees handling sample data.
+- Whether testing happens before or after Beta-1 ships (likely some of each — pre-ship for tractable affordance issues, post-ship for the longer-tail discoverability questions).
+- Whether to commission a small honorarium budget for testers' time.
+
+**Lift trigger:** once the B2 playbook ships and the four sub-scenarios have documented operator narratives, this stub gets refined and lifted into `release-plan.md` as a new working-set entry — likely a Track-B follow-on.
 
 ---
 

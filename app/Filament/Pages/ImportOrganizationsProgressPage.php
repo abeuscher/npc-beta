@@ -296,6 +296,7 @@ class ImportOrganizationsProgressPage extends Page
             }
 
             $org = $this->createOrganization($orgAttrs, $orgCustomFields);
+            $this->writeImportCreationNote($org);
 
             $tagOutcome = $this->applyOrgTags($org, $tagNames);
             $noteCount  = $this->applyOrgNotes($org, $noteEntries);

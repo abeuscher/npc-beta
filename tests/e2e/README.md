@@ -44,6 +44,10 @@ Specs that need a clean mid-run state call `resetDatabase()` from `helpers/db.ts
 
 All five CSV importers (contacts, events, donations, memberships, invoice details) have happy-path and update-strategy regression coverage — 10 specs total under `tests/e2e/importer/`. Each importer has its own fixture folder `tests/e2e/fixtures/{importer}/` containing `happy-path.csv`, `update-second-pass.csv`, and `happy-path.expected.json`. Fixtures are handcrafted, small (3–6 rows), PII-free, and use canonical header names so the wizard's field mapper auto-resolves most columns. The eight non-contact specs complement `tests/Feature/ImportSession194Test.php` — that Pest suite covers update-strategy logic at the service layer; these specs cover it end-to-end through the UI.
 
+## Generated CSV fixtures (Pest, not Playwright)
+
+For deeper adversarial coverage of the importer's per-row outcomes (clean / messy / corrupt / pii / stress shapes × seven importers), the project ships an artisan command `import-fixtures:generate` that emits CSVs + manifest sidecars consumed by [tests/Feature/Generated/ImportFixtureRunnerTest.php](../Feature/Generated/ImportFixtureRunnerTest.php). See [docs/runbooks/import-fixture-generator.md](../../docs/runbooks/import-fixture-generator.md). Wiring generated fixtures into Playwright on-demand specs is a follow-up — revisit once the generator's output has matured against real-world adversarial inputs.
+
 ## On-demand specs
 
 Specs tagged `@on-demand` are excluded from the default run and run only via `npm run test:e2e:on-demand`. They exist for deep-coverage sweeps that don't earn their cost in the regular regression cycle but want to live in the suite for episodic re-runs. The Organizations importer (`organizations-happy-path.spec.ts` + `organizations-update-strategy.spec.ts`) is the first example. Future on-demand suites are slotted as named pre-T1 stubs in `sessions/release-plan.md`.

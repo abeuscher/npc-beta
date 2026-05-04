@@ -334,3 +334,128 @@ it('__org_invoice_party__ auto_create sets transactions.organization_id', functi
     expect($tx)->not->toBeNull();
     expect($tx->organization_id)->toBe($billTo->id);
 });
+
+// ── Import-creation note: relational-sentinel Org creation paths ─────────────
+
+it('writes an "Imported from {source}" creation note on Orgs auto-created via __org_donor__', function () {
+    $source = ImportSource::create(['name' => 'Donor Run']);
+    Contact::factory()->create(['email' => 'bob@example.com']);
+
+    $path = orgSentinelCsv([
+        ['Email', 'Amount', 'Donor Org'],
+        ['bob@example.com', '50.00', 'Brand New Charity'],
+    ]);
+
+    $log = orgSentinelImportLog('donation', $path, [
+        'Email'     => 'contact:email',
+        'Amount'    => 'donation:amount',
+        'Donor Org' => '__org_donor__',
+    ], [
+        'Donor Org' => ['type' => 'donation_organization', 'strategy' => 'auto_create'],
+    ], 1, $source->id);
+
+    $session = orgSentinelSession($this->admin, 'donation', $source->id);
+    orgSentinelRunDonations($log, $session, $source->id);
+
+    $org = Organization::where('name', 'Brand New Charity')->first();
+    expect($org)->not->toBeNull();
+
+    $note = $org->notes()->first();
+    expect($note)->not->toBeNull('Auto-created Org via __org_donor__ must carry a creation note');
+    expect($note->body)->toBe('Imported from Donor Run (session: Org sentinel run)');
+    expect($note->import_source_id)->toBe($source->id);
+});
+
+it('writes an "Imported from {source}" creation note on Orgs auto-created via __org_contact__', function () {
+    $source = ImportSource::create(['name' => 'Contact Run']);
+
+    $path = orgSentinelCsv([
+        ['First Name', 'Email', 'Org'],
+        ['Alice', 'alice@example.com', 'Stub Org From Contacts'],
+    ]);
+
+    $log = ImportLog::create([
+        'model_type'         => 'contact',
+        'filename'           => basename($path),
+        'storage_path'       => $path,
+        'column_map'         => [
+            'First Name' => 'first_name',
+            'Email'      => 'email',
+            'Org'        => '__org_contact__',
+        ],
+        'relational_map'     => [
+            'Org' => ['type' => 'contact_organization', 'strategy' => 'auto_create'],
+        ],
+        'row_count'          => 1,
+        'duplicate_strategy' => 'skip',
+        'match_key'          => 'email',
+        'import_source_id'   => $source->id,
+        'status'             => 'pending',
+    ]);
+
+    $session = ImportSession::create([
+        'session_label'    => 'Contacts run',
+        'import_source_id' => $source->id,
+        'model_type'       => 'contact',
+        'status'           => 'pending',
+        'filename'         => $log->filename,
+        'row_count'        => 1,
+        'imported_by'      => $this->admin->id,
+    ]);
+
+    $page = new \App\Filament\Pages\ImportProgressPage();
+    $page->importLogId      = $log->id;
+    $page->importSessionId  = $session->id;
+    $page->importSourceId   = $source->id;
+    $page->mount();
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    $org = Organization::where('name', 'Stub Org From Contacts')->first();
+    expect($org)->not->toBeNull();
+
+    $note = $org->notes()->first();
+    expect($note)->not->toBeNull('Auto-created Org via __org_contact__ must carry a creation note');
+    expect($note->body)->toBe('Imported from Contact Run (session: Contacts run)');
+    expect($note->import_source_id)->toBe($source->id);
+});
+
+it('writes an "Imported from {source}" creation note on Contacts auto-created during donations import', function () {
+    $source = ImportSource::create(['name' => 'Auto-Create Donations']);
+
+    $path = orgSentinelCsv([
+        ['Email', 'Amount'],
+        ['fresh@example.com', '25.00'],
+    ]);
+
+    $log = orgSentinelImportLog('donation', $path, [
+        'Email'  => 'contact:email',
+        'Amount' => 'donation:amount',
+    ], [], 1, $source->id);
+
+    $session = orgSentinelSession($this->admin, 'donation', $source->id);
+
+    $page = new ImportDonationsProgressPage();
+    $page->importLogId      = $log->id;
+    $page->importSessionId  = $session->id;
+    $page->importSourceId   = $source->id;
+    $page->contactStrategy  = 'auto_create';
+    $page->mount();
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    // Auto-created Contact carries a pending import_session_id, so it's hidden
+    // by the hide_pending_imports global scope until the session is approved.
+    $contact = Contact::withoutGlobalScopes()->where('email', 'fresh@example.com')->first();
+    expect($contact)->not->toBeNull();
+
+    $creation = $contact->notes()
+        ->where('body', 'like', 'Imported from%')
+        ->first();
+    expect($creation)->not->toBeNull('Auto-created Contact via auto_create strategy must carry a creation note');
+    expect($creation->body)->toBe('Imported from Auto-Create Donations (session: Org sentinel run)');
+});

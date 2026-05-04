@@ -195,12 +195,16 @@ it('creates a Note polymorphically via __note_organization__', function () {
     runOrgImport($log, $session, $source->id);
 
     $org = Organization::first();
-    expect($org->notes()->count())->toBe(1);
+    // One creation note from the importer + one relational note from the CSV column.
+    expect($org->notes()->count())->toBe(2);
 
-    $note = $org->notes()->first();
-    expect($note->notable_type)->toBe(Organization::class);
-    expect($note->notable_id)->toBe($org->id);
-    expect($note->body)->toBe('Met at conference 2023');
+    $relational = $org->notes()->where('body', 'Met at conference 2023')->first();
+    expect($relational)->not->toBeNull();
+    expect($relational->notable_type)->toBe(Organization::class);
+    expect($relational->notable_id)->toBe($org->id);
+
+    $creation = $org->notes()->where('body', 'like', 'Imported from%')->first();
+    expect($creation)->not->toBeNull();
 });
 
 // ── Dedup × match key × strategy ─────────────────────────────────────────────
@@ -381,6 +385,33 @@ it('locks scrub_data orgs from transitioning out of scrub_data', function () {
 
 it('declares an empty scrubInheritsFrom array (top of source-policy graph)', function () {
     expect(Organization::scrubInheritsFrom())->toBe([]);
+});
+
+// ── Import-creation note: every imported Organization gets a timeline note ──
+
+it('writes an "Imported from {source}" creation note on every imported Organization', function () {
+    $source = ImportSource::create(['name' => 'Wild Apricot']);
+
+    $path = organizationsCsv([
+        ['Name'],
+        ['ACME Corp'],
+    ]);
+
+    $session = organizationsSession($this->admin, $source->id);
+    $log     = organizationsLog($path, [
+        'Name' => 'organization:name',
+    ], 1, sourceId: $source->id);
+
+    runOrgImport($log, $session, $source->id);
+
+    $org = Organization::where('name', 'ACME Corp')->first();
+    expect($org)->not->toBeNull();
+
+    $note = $org->notes()->first();
+    expect($note)->not->toBeNull('Org importer must write a creation note on the new Organization');
+    expect($note->body)->toBe('Imported from Wild Apricot (session: Organizations run)');
+    expect($note->author_id)->toBe($this->admin->id);
+    expect($note->import_source_id)->toBe($source->id);
 });
 
 // ── ImportModelType + Organization arm of ImportSessionActions ────────────────

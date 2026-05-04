@@ -573,6 +573,7 @@ class ImportProgressPage extends Page
             }
 
             $org = Organization::create(['name' => $orgName]);
+            $this->writeImportCreationNote($org);
         }
 
         return [
