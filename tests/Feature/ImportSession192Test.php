@@ -167,6 +167,57 @@ it('still flags duplicates when address-like headers appear alongside true dupli
     expect($findings[0]['headers'])->toBe(['Email', 'email']);
 });
 
+// ─── Carve-out: separator-agnostic address-line variants ─────────────────
+//
+// The address-line carve-out is the fragile bit of the duplicate detector —
+// it has been wiped out before by optimization passes that simplified the
+// regex. These tests pin every separator variant the per-resource exporters
+// can plausibly emit so a future refactor can't silently re-flag them.
+
+it('does not flag underscore-separated address-line headers as duplicates', function () {
+    $headers  = ['address_line_1', 'address_line_2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toBe([]);
+});
+
+it('does not flag underscored short-form address headers as duplicates', function () {
+    $headers  = ['address_1', 'address_2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toBe([]);
+});
+
+it('does not flag dash-separated address-line headers as duplicates', function () {
+    $headers  = ['address-line-1', 'address-line-2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toBe([]);
+});
+
+it('does not flag underscored street_address variants as duplicates', function () {
+    $headers  = ['street_address_1', 'street_address_2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toBe([]);
+});
+
+it('does not flag underscored street_1 / street_2 short form as duplicates', function () {
+    $headers  = ['street_1', 'street_2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toBe([]);
+});
+
+it('still flags non-address numbered pairs as duplicates regardless of separator', function () {
+    $headers  = ['phone_1', 'phone_2'];
+    $findings = DuplicateHeaderDetector::detect($headers);
+
+    expect($findings)->toHaveCount(1);
+    expect($findings[0]['rule'])->toBe('trailing_digit_suffix');
+    expect($findings[0]['headers'])->toBe(['phone_1', 'phone_2']);
+});
+
 // ─── Regression: the original WCG contacts export scenario ──────────────
 
 it('does not produce any findings for a mixed set of unrelated CRM headers', function () {

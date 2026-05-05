@@ -218,4 +218,23 @@ class OrganizationResource extends Resource
             'notes'  => Pages\OrganizationNotes::route('/{record}/notes'),
         ];
     }
+
+    public static function exportColumnSpec(): array
+    {
+        return [
+            ['key' => 'name',           'header' => 'name',           'value' => fn (Organization $o) => $o->name],
+            ['key' => 'type',           'header' => 'type',           'value' => fn (Organization $o) => $o->type],
+            ['key' => 'website',        'header' => 'website',        'value' => fn (Organization $o) => $o->website],
+            ['key' => 'phone',          'header' => 'phone',          'value' => fn (Organization $o) => $o->phone],
+            ['key' => 'email',          'header' => 'email',          'value' => fn (Organization $o) => $o->email],
+            ['key' => 'address_line_1', 'header' => 'address_line_1', 'value' => fn (Organization $o) => $o->address_line_1],
+            ['key' => 'address_line_2', 'header' => 'address_line_2', 'value' => fn (Organization $o) => $o->address_line_2],
+            ['key' => 'city',           'header' => 'city',           'value' => fn (Organization $o) => $o->city],
+            ['key' => 'state',          'header' => 'state',          'value' => fn (Organization $o) => $o->state],
+            ['key' => 'postal_code',    'header' => 'postal_code',    'value' => fn (Organization $o) => $o->postal_code],
+            ['key' => 'country',        'header' => 'country',        'value' => fn (Organization $o) => $o->country],
+            ['key' => 'external_id',    'header' => 'external_id',    'value' => fn (Organization $o) => $o->external_id],
+            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Organization $o) => $o->created_at?->toDateTimeString()],
+        ];
+    }
 }

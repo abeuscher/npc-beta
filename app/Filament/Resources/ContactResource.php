@@ -359,4 +359,21 @@ class ContactResource extends Resource
             'notes'     => Pages\ContactNotes::route('/{record}/notes'),
         ];
     }
+
+    public static function exportColumnSpec(): array
+    {
+        return [
+            ['key' => 'first_name',     'header' => 'first_name',     'value' => fn (Contact $c) => $c->first_name],
+            ['key' => 'last_name',      'header' => 'last_name',      'value' => fn (Contact $c) => $c->last_name],
+            ['key' => 'email',          'header' => 'email',          'value' => fn (Contact $c) => $c->email],
+            ['key' => 'phone',          'header' => 'phone',          'value' => fn (Contact $c) => $c->phone],
+            ['key' => 'address_line_1', 'header' => 'address_line_1', 'value' => fn (Contact $c) => $c->address_line_1],
+            ['key' => 'address_line_2', 'header' => 'address_line_2', 'value' => fn (Contact $c) => $c->address_line_2],
+            ['key' => 'city',           'header' => 'city',           'value' => fn (Contact $c) => $c->city],
+            ['key' => 'state',          'header' => 'state',          'value' => fn (Contact $c) => $c->state],
+            ['key' => 'postal_code',    'header' => 'postal_code',    'value' => fn (Contact $c) => $c->postal_code],
+            ['key' => 'date_of_birth',  'header' => 'date_of_birth',  'value' => fn (Contact $c) => $c->date_of_birth?->toDateString()],
+            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Contact $c) => $c->created_at?->toDateTimeString()],
+        ];
+    }
 }

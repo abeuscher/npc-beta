@@ -243,6 +243,27 @@ Closed at session 254. Three landed UX improvements applied as a shared pattern 
 
 ---
 
+### Members & Membership Export — Round-Trip Audit *(stub — pre-Beta 1, surfaced at session 261 close)*
+
+The 261 per-resource export pass deliberately scoped Members out of the 10-list shape and shipped Memberships as a flat list export. That leaves an asymmetry: bringing membership data **in** is well-supported (namespaced importer with tier resolution, contact-match keys, custom-field auto-create, `__org_member__` sentinel) but pulling it **out** in operator-meaningful shapes is not. The project's overall positioning leans on data portability — easy in, easy out — and the easy-out half of the membership story isn't there yet.
+
+The friction surfaced when scoping whether to add an Export action to the Members admin surface ([`MemberResource`](app/Filament/Resources/MemberResource.php)). Members runs against the `Contact` model with `getEloquentQuery()->isMember()` and projects per-row membership data (tier name / status / member_since via the contact's first active membership). Two non-trivial problems with bolting an export onto it:
+
+- **No clean round-trip target.** A Members export would carry contact columns plus the projected membership columns (tier / status / member_since). The Memberships importer wants those keyed on a Membership row, not a Contact-with-membership projection. Re-import becomes ambiguous on update-vs-create. The Contacts importer drops the membership columns entirely. Neither path round-trips.
+- **Permission-gate split.** Members gates on `view_any_member`, distinct from `view_any_contact` and `view_any_membership`, so an export there would inherit a permission orthogonal to the source models the data actually comes from. Same shape of friction that surfaced when removing the Import-Contacts link from the contacts ellipsis menu post-261.
+
+**Audit scope:**
+
+- **Question inventory.** Operator-meaningful question shapes the system should answer: "who are my current members?" / "what's the membership history of contact X?" / "who renewed in 2025?" / "who lapsed in 2025?" / "who has tier X expiring this fiscal year?" / "what's the tier-mix breakdown over time?" Map each to current surfaces (Contacts, Members, Memberships, Contact → memberships relation manager) and current 261 exports. Identify which questions can be answered cleanly today and which require the operator to assemble multiple exports themselves.
+- **Membership history per contact.** Contacts' edit page has a Memberships relation manager but no export from there; if an operator wants "Alice's full membership history" as a CSV, today they'd have to filter the Memberships list by Alice's email and export that. Decide whether that's good enough or whether per-contact membership-history export needs its own affordance.
+- **Members surface decision.** Three options to weigh: (a) add an export to Members with a defined member-centric projection, accepting that it's a one-way analysis export with no round-trip — frame it that way explicitly in the UI; (b) skip a Members export and write a runbook entry teaching operators "to answer X, filter Memberships by Y and export"; (c) replace the Members surface entirely with a Contacts table filter ("has active membership"), eliminating the projection ambiguity at the cost of breaking the existing surface.
+- **Permission-isolation discipline.** Whatever lands needs the permission gate to follow the data, not the surface. If the export carries contact data, gate on `view_any_contact`; membership data, `view_any_membership`. If it carries both, require both — same discipline that drove the 261 import-link removal.
+- **Round-trip rule.** Any export shape this audit lands either round-trips through an existing importer without ambiguity, or is explicitly labelled "analysis export — not re-importable" in the UI. No quietly-one-way exports.
+
+**Out of scope for this stub:** member-portal-side export (lives in F2 territory); soft-deleted membership history retrieval (its own can of worms — depends on retention-policy decisions); membership-tier-level reporting widgets (dashboard surface, not export). Out of scope for Beta-1 if the audit surfaces a meaningful redesign — the existing flat Memberships export from 261 covers the floor case for the migration-out narrative.
+
+---
+
 ### Random Data Generator as Dashboard Widget *(complete — closed at session 245)*
 
 Closed at session 245. See `sessions/release-plan.md` § A1 (✅) and `sessions/245. Random Data Generator as Dashboard Widget — Log.md` for the full landing.
@@ -516,6 +537,33 @@ Phase A complete (session 233): `source` column live across all four financial t
 
 - **Phase B — Admin gating generalization.** Lift the `! $record->stripe_id` action-visibility pattern from `TransactionResource` into a shared trait keyed off `source`. Apply to Donation and Membership Resources where action surfaces exist or are about to exist. Update Transaction's existing gates to read from `source` rather than `stripe_id` so the same predicate covers manual transactions correctly. No new actions land in this phase; this is the surface that future Refund/Cancel/Sync actions consume.
 - **Phase C — QuickBooks sync origin-awareness, email-trigger origin-awareness on admin-driven bulk send actions** (donation receipts, renewal nudges, dunning). Lands when those features arrive.
+
+### Disk-Capacity Attribution & Cleanup Discipline *(stub — post-Beta 1, surfaced at session 262 prompt-write)*
+
+The Fleet Manager contract surface already reports a whole-volume disk subcheck via [`HealthController::checkDisk()`](app/Http/Controllers/Api/Fleet/HealthController.php) — `disk_free_space('/')` / `disk_total_space('/')` with thresholds at 80% (yellow) / 95% (red), delivered through `/api/health` and surfaced fleet-wide by FM. That's the floor — operators get a master alert before the disk fills. What's not in place yet is **source attribution** (when the master alert trips, what's filling the disk?) and **scheduled cleanup discipline** (the only scheduled job today is `events:send-reminders` daily; nothing prunes anything).
+
+The forcing function: long-running operator installs accumulate transient state in several directories that have no enforced budgets and no scheduled sweepers. Likely accumulators: `/tmp/xlsx-*` (XLSX export temp files, post-262 — try/finally cleanup is load-bearing but exceptions during streamDownload's late-stage `readfile` could still leak); `storage/app/import-test-fixtures/` (G1 fixture generator output, retained per-shape per-seed); `storage/framework/cache/` and framework views; backup blobs from `bin/` scripts that didn't unwind on partial failure; media library orphans (the issue resolved earlier in the project that the user has flagged historically — kept this concern visible); Laravel log files under default rotation.
+
+**Scope:**
+
+- **Source attribution in the FM contract surface.** Either (a) extend the `disk` subcheck with a `breakdown` field listing top contributors by directory size, or (b) add a sibling subcheck (`disk_breakdown` or `storage_buckets`) that lists per-area usage. Option (a) keeps the contract narrow but makes the disk subcheck heavier; option (b) keeps subchecks single-purpose at the cost of adding a second subcheck. Decide at session start. Contract bump required either way (additive — minor version per the protocol).
+- **Scheduled cleanup commands.** Audit the directories that accumulate state and write artisan commands to sweep them on a sane cadence: `imports:prune-old-fixtures` (drop test fixtures older than N days), `temp:sweep-xlsx` (drop `/tmp/xlsx-*` older than 1 hour, in case streamDownload exceptions slipped past `try/finally`), `media:remove-orphans` (re-run the historical orphan-cleanup as a scheduled job, not a one-shot), `cache:prune-stale` if Laravel's built-in doesn't already cover it adequately. Each command idempotent + logged + permission-checked. Wire to `routes/console.php` Schedule with `->daily()` or `->weekly()` per cadence.
+- **Per-directory budgets.** Define soft thresholds per accumulating directory (e.g. `import-test-fixtures` capped at 1GB — warn beyond; `/tmp/xlsx-*` capped at 100MB — auto-sweep beyond). Surface these as additional yellow-status signals before the whole-volume threshold trips, not as hard quotas (no operator wants their export blocked at the kernel level by a soft-budget check).
+- **Failure-mode test discipline.** For every cleanup command, a Pest test that injects rows/files past the budget and asserts the sweeper does the right thing. The 262 cleanup-on-exception test for the XLSX writer is the pattern; this stub generalizes it across the cleanup commands.
+- **Operator runbook.** A `docs/runbooks/disk-capacity.md` doc explaining what each sweeper does, what the thresholds mean, how to pause/resume scheduled cleanup, and what to do when the FM master alert trips (correlate to the breakdown subcheck → identify the accumulator → run the appropriate sweeper manually if needed).
+
+**Open questions for whoever picks this up:**
+
+- Whether the FM contract bump for source-attribution is additive (minor) or warrants a major bump for clarity. Given the protocol's "Last boundary-touching session" discipline, a clean minor bump per the additive-changes rule is most likely correct.
+- Per-area thresholds: 1GB / 100MB / 5GB are starting guesses, not load-bearing. Tune with operator-test feedback once the breakdown subcheck is live.
+- Whether media-orphan cleanup belongs in this stub or stays separate — historically orphan-detection has been treated as a content-discipline question (the resolved earlier incident); from a disk-capacity lens it's just another accumulator and folds in cleanly. Lean: fold in.
+- Whether to introduce a generic "scheduled-task framework" (per-task-enabled flag in settings, last-run timestamp surface, manual-trigger UI for super-admins) or keep each sweeper as a standalone scheduled command. The framework path is bigger; the standalone path is faster. Lean: standalone for first round; lift to framework when there are 5+ sweepers.
+
+**Forcing function — not currently named.** Lands when (a) an operator install actually trips the master disk alert and the post-mortem reveals which accumulator was responsible, (b) the Fleet Manager dashboard wants per-area usage breakdowns to make the disk subcheck actionable rather than just "something is filling up," or (c) the disk-leak scenario the user has historically flagged recurs in production despite the per-session try/finally discipline.
+
+Not Beta-1 blocking — the master threshold subcheck covers the floor. Lifts post-release if any of the forcing functions surface; otherwise tracks alongside other operational-polish work.
+
+---
 
 ### CRM-side Super-Admin Audit Sink *(stub — post-Beta 1, surfaced at session 253)*
 

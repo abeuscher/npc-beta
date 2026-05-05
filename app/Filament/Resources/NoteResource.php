@@ -198,4 +198,22 @@ class NoteResource extends Resource
             'edit'   => Pages\EditNote::route('/{record}/edit'),
         ];
     }
+
+    public static function exportColumnSpec(): array
+    {
+        return [
+            ['key' => 'type',              'header' => 'type',              'value' => fn (Note $n) => $n->type],
+            ['key' => 'subject',           'header' => 'subject',           'value' => fn (Note $n) => $n->subject],
+            ['key' => 'status',            'header' => 'status',            'value' => fn (Note $n) => $n->status],
+            ['key' => 'body',              'header' => 'body',              'value' => fn (Note $n) => $n->body],
+            ['key' => 'occurred_at',       'header' => 'occurred_at',       'value' => fn (Note $n) => $n->occurred_at?->toDateTimeString()],
+            ['key' => 'follow_up_at',      'header' => 'follow_up_at',      'value' => fn (Note $n) => $n->follow_up_at?->toDateTimeString()],
+            ['key' => 'outcome',           'header' => 'outcome',           'value' => fn (Note $n) => $n->outcome],
+            ['key' => 'duration_minutes', 'header' => 'duration_minutes', 'value' => fn (Note $n) => $n->duration_minutes],
+            ['key' => 'external_id',       'header' => 'external_id',       'value' => fn (Note $n) => $n->external_id],
+            ['key' => 'contact_email',     'header' => 'contact_email',     'value' => fn (Note $n) => $n->notable_type === \App\Models\Contact::class ? $n->notable?->email : null],
+            ['key' => 'organization_name', 'header' => 'organization_name', 'value' => fn (Note $n) => $n->notable_type === \App\Models\Organization::class ? $n->notable?->name : null],
+            ['key' => 'created_at',        'header' => 'created_at',        'value' => fn (Note $n) => $n->created_at?->toDateTimeString()],
+        ];
+    }
 }

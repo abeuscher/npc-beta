@@ -140,13 +140,21 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **success criterion** *(closed at session 259)*: Five new per-importer mapper services at `app/Services/Import/<Type>FieldMapper.php` (Event / Donation / Membership / Invoice / Note) parallel to the existing Contacts `FieldMapper`; each page's `guessDestination()` delegates to its mapper; the trait passes `$sourcePreset` through. Floor preserved under all three presets (`generic` / `wild_apricot` / `bloomerang`); generic preset enriched with operator-realistic aliases including no-separator/underscored parity variants and entity-prefixed canonical labels matching each `*ImportFieldRegistry::flatFields()` output. Coverage shift on G1 messy fixtures vs ~10% baseline at 258: events 22%→**93%**, donations 44%→**83%**, memberships 67%→**83%**, invoice details 84%→**89%**, notes 93%. Contacts FieldMapper audited for missing common aliases — 27 generic-preset additions across 9 column groups including the `Postal Code` 258 finding plus the no-separator parity rule (`firstname`/`first_name`, `zipcode`/`zip_code`). +91 tests on the lift; +5 in-session-absorption tests; +1 pre-existing-bug regression test. Help-doc revision at `resources/docs/onboarding-migration.md` § "Some column names won't auto-recognize" softens the warning post-lift. **In-session absorptions:** events `status` case-normalization (`mapEventStatus()` mirroring `mapDonationStatus`/`mapMembershipStatus`); email whitespace trim at the contact-create / contact-update boundary in both `ImportContactsJob` and `ImportProgressPage::processOneRow`; pre-existing scope-shadow bug fix in `ImportInvoiceDetailsProgressPage::runCommit()` (foreach `$handle` shadowing the outer file resource — surfaced during user testing of the 259 changes with auto-create-CFs). **Sentinel-pattern parity** lifted to Out-of-Gate as a follow-on candidate (~2-4 hours plus design conversation).
 - **artifact:** the architectural lift; five per-importer mapper services + unit tests for header recognition under each preset; runbook revision. **Closed at session 259.** See `sessions/259. Importer Auto-Mapping Pattern Lift — Log.md` for the full landing.
 
-#### B2b. Export CSV actions for non-Contact list resources *(B2 follow-on)*
+#### B2b. Export CSV + JSON actions for non-Contact list resources *(B2 follow-on)* ✅
 
 - **gate:** release
 - **prerequisites:** B2 closed.
-- **success criterion:** Add operator-facing "Export CSV" admin actions, in the pattern of [`ContactResource\Pages\ListContacts::exportContacts`](../app/Filament/Resources/ContactResource/Pages/ListContacts.php), to every list resource that holds migration-relevant data: Organizations, Donations, Events, Memberships, Event Registrations, Transactions, Funds, Campaigns, Notes. Each export emits a CSV via `streamDownload`, runs against the current filtered+sorted query, and includes custom-field columns where the model supports them. Match the contacts exporter's behavior on naming, content-type, file-shape, and access-control gating.
-- **artifact:** the export actions themselves; per-resource standardized export pattern.
-- **estimated time cost:** 1 session, possibly 1–2 if custom-field flattening surfaces design questions per Rule 11.
+- **success criterion** *(closed at session 261)*: Operator-facing **Export CSV** and **Export JSON** admin actions added to every list resource that holds migration-relevant data — 10 list pages total: Contacts (already had CSV; gained JSON), Organizations, Donations, Events, Event Registrations (event-scoped), Memberships, Transactions, Funds, Campaigns, Notes. Shared `App\Services\ListExportService::stream()` writer abstraction with single format flag (`'csv' | 'json'`); per-resource `exportColumnSpec()` static methods declare the column shape. CSV flattens custom fields one-column-per-`CustomFieldDef`; JSON nests them under a `custom_fields` sub-object, omitting empty values. Permission gates per resource via `view_any_<resource>`. EventRegistration export event-scoped to the currently-viewed event. The original B2b spec was CSV-only; the user-agreed expansion at 260 close folded JSON into the same session and lifted XLSX to a follow-on (B2b'). 38 new tests landed: 9 service-level + 20 page-level (CSV+JSON × 10 resources) + 9 capability-gate tests. In-session absorptions: DuplicateHeaderDetector address-line carve-out widened from `\s` to `[\s_\-]` so underscored canonical exporter headers (`address_line_1` / `_2`) round-trip cleanly through the importer (6 regression tests + 1 still-flagged-non-address guard); Import Contacts link removed from the contacts ellipsis menu for permission-isolation discipline. Help-doc additive note in `resources/docs/onboarding-migration.md` § Migration-out registered via `help:sync`.
+- **artifact:** the feature itself; the `ListExportService` writer abstraction; per-resource standardized export pattern. **Closed at session 261.** See `sessions/261. List Resource Exports — CSV and JSON — Log.md` for the full landing.
+- **estimated time cost:** 1 session.
+
+#### B2b'. XLSX format add for list resources *(B2b follow-on, lifted from Out-of-Gate at session 261 close)*
+
+- **gate:** release
+- **prerequisites:** B2b closed (the 261 `ListExportService` writer abstraction is the load-bearing dependency).
+- **success criterion:** Add operator-facing **Export Excel** admin action to every list resource that already got the 261 CSV+JSON export pass — same 10 list pages. Shared `ListExportService::stream()` writer abstraction grows a third format flag (`'xlsx'`); per-page wireup adds one `Actions\Action::make('exportXlsx')` entry to the existing ellipsis ActionGroup. Library: `openspout/openspout` (already a transitive dependency via `filament/actions v3.3.49` — no Composer change). Streaming shape: OpenSpout writes to a temp file via `openToFile($tempPath)`, then `readfile($tempPath)` inside the `streamDownload` callback, with the entire write-and-stream sequence wrapped in `try { ... } finally { @unlink($tempPath); }` (load-bearing, addresses disk-leak concern). Cell-type semantics: Option B — additive `'type'` hint per column-spec entry, XLSX branch coerces values to native types (Carbon for dates, `(float)` for numerics, `(bool)` for booleans) before passing to OpenSpout's `Cell::fromValue`; CSV/JSON paths unchanged so 261's byte-for-byte output is preserved. CF flattening matches CSV (one column per `CustomFieldDef`), not the JSON-style nested object. Filename `<resource>-YYYY-MM-DD.xlsx`; MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. Permission gates inherit the per-resource `view_any_<resource>` pattern verbatim from 261. Tests: ~10 page-level XLSX tests (one per resource) + ~5–7 service-level tests including a load-bearing cleanup-on-exception test (snapshots `glob(sys_get_temp_dir() . '/xlsx-*')` before/after a thrown exception, asserts no stragglers).
+- **artifact:** the third format branch on `ListExportService`; per-resource column-spec `'type'` hints; updated ellipsis menus; cleanup-on-exception test as the regression-guard for the disk-leak class of bug.
+- **estimated time cost:** 1 session.
 
 ### Track C — Workflow rehearsals
 
@@ -434,35 +442,36 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 13. **G1.** Importer Test-Fixture Generator — CSV Foundation *(precedes B2 per request at 256 close: real-data scrub-and-reimport has stopped finding bugs; generated fixtures expand coverage)*
 14. **B2.** Onboarding rehearsal cluster *(closed at session 258 with two follow-on entries lifted)*
 15. **B2a.** Lift Contacts auto-mapping pattern to namespaced importers *(closed at session 259)*
-16. **B2b.** Export CSV actions for non-Contact list resources *(B2 follow-on)*
-17. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
-18. **E10.** Full-Width Architecture Enforcement
-19. **E11.** Page Builder Focus-Scroll Clamp
-20. **C1.** Notes Permissions (feature half)
-21. **E9.** Widget Help Authoring
-22. **C2.** Event Ticket Tiers
-23. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-24. **E4.** Stripe Checkout Branding *(precedes C4)*
-25. **C4.** Donation-to-acknowledgment loop
-26. **C5.** Event with everything
-27. **C6.** Membership renewal cycle
-28. **C7.** Email at volume
-29. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-30. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-31. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-32. **E8.** UI/UX Sprint
-33. **E12.** Housekeeping Batch 2
-34. **D1.** Scale rehearsal
-35. **D2.** Compatibility cluster
-36. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-37. **E13.** Help docs body content
-38. **E14.** Third-Party Licensing Compliance Audit
-39. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-40. **D4.** Test suite review — cost & shape
-41. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-42. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-43. **F3.** On-Demand E2E — Permission / role-gate matrix
-44. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+16. **B2b.** Export CSV + JSON actions for non-Contact list resources *(B2 follow-on; closed at session 261)*
+17. **B2b'.** XLSX format add for list resources *(B2b follow-on; lifted from Out-of-Gate at session 261 close)*
+18. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
+19. **E10.** Full-Width Architecture Enforcement
+20. **E11.** Page Builder Focus-Scroll Clamp
+21. **C1.** Notes Permissions (feature half)
+22. **E9.** Widget Help Authoring
+23. **C2.** Event Ticket Tiers
+24. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+25. **E4.** Stripe Checkout Branding *(precedes C4)*
+26. **C4.** Donation-to-acknowledgment loop
+27. **C5.** Event with everything
+28. **C6.** Membership renewal cycle
+29. **C7.** Email at volume
+30. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+31. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+32. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+33. **E8.** UI/UX Sprint
+34. **E12.** Housekeeping Batch 2
+35. **D1.** Scale rehearsal
+36. **D2.** Compatibility cluster
+37. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+38. **E13.** Help docs body content
+39. **E14.** Third-Party Licensing Compliance Audit
+40. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+41. **D4.** Test suite review — cost & shape
+42. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+43. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+44. **F3.** On-Demand E2E — Permission / role-gate matrix
+45. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
@@ -485,7 +494,7 @@ Items considered during 244 vetting and explicitly *not* in the working set. Eac
 - **A1 Random Data Generator's Faker unique-pool ceiling** *(B2 finding, surfaced during Migration-out planting)* — The contacts factory uses `fake()->unique()->numerify('.###')` (1,000-value pool) which overflows around ~1,200 contacts in a single PHP process. Multi-process planting works (each process gets a fresh Faker cache) but is operator-unfriendly. Replace the numerifier with a strategy that scales: UUID-suffixed emails, or a much wider numeric range, or per-batch unique-cache reset. Documents the "10K-record install" success-criterion bar properly. Follow-on; small-medium.
 - **Public-widget bundle / manifest mismatch on `/events`** *(B2 finding)* — Public `/events` page renders HTTP 200 with content but the browser console reports `NPWidgets is not defined` and `cfg is not defined`. Server-rendered content is unaffected, but any widget that depends on the JS bundle is at risk. Suggested first step: run `php artisan build:public` to refresh the manifest; if errors persist, it's a public-widget-bundle authoring or layout issue. Follow-on; investigation-shaped.
 - **B2 test-driver methodology lessons** *(B2 internal)* — Future rehearsal sessions that drive multiple importers in sequence should use **inline driver code** rather than layering pre-setup atop existing high-level helpers. Mixing `page.goto` + `fillUploadStep` calls between custom and helper code produced wizard-state collisions that halted 4 of 7 importer measurements at the test-driver layer. Documented in the B2 log and the playbook's methodology section. Not a working-set entry; a process note for the next rehearsal.
-- **XLSX export format on list resources** *(B2b follow-on, surfaced at session 260 close while drafting 261's prompt)* — Add XLSX as a third format alongside CSV + JSON on the per-resource list exporters built at session 261 (B2b, expanded to CSV+JSON in scope). Library: `openspout/openspout` (already pulled transitively via `filament/actions v3.3.49`; OpenSpout streams to a temp file and serves via `streamDownload`, so memory shape is safe through ~5K-10K row exports). Per-resource code change is small once 261's `ListExportService` writer abstraction is in place — the service grows a third format flag and the new XLSX branch. UI: a third action ("Export Excel") in each ellipsis ActionGroup. Tests parallel to 261's CSV/JSON tests, asserting cell values via OpenSpout's Reader. Rationale: nonprofit operators overwhelmingly prefer Excel-shape over CSV (UTF-8 BOM mishandling, semicolon-vs-comma locale issues, leading-zero ZIPs interpreted as numbers, dates auto-coerced by Excel). Lift cost: ~40-60% of B2b's CSV scope, single session. Candidate to lift if demonstrability/operator feedback forces it post-261.
+- **Importer duplicate-header detector — separator-agnostic address-line carve-out** *(B2b finding, surfaced at session 261, absorbed at session 261)* — `address_line_1`/`address_line_2`, `address_1`/`address_2`, `street_1`/`street_2`, `address-line-1`/`address-line-2` were getting flagged as duplicates by the importer's Review Data step despite living in distinct database columns. Root cause: the `isKnownLegitimateGroup()` carve-out in `App\Services\Import\DuplicateHeaderDetector` used `\s` as the line/digit separator (matching `Address 1`, `Address Line 2`) but missed `_` and `-` separators. Surfaced when round-tripping the new per-resource exporters (which emit `address_line_1`/`_2` as canonical headers) back through the Organizations importer. Fix: widened the regex to `[\s_\-]` for line/digit separators. Tests added in `tests/Feature/ImportSession192Test.php` § Carve-out: separator-agnostic address-line variants — six new tests pinning underscore + dash + short-form variants, plus one regression-guard asserting non-address numbered pairs (`phone_1`/`phone_2`) still surface as duplicates. The carve-out is the fragile bit of the detector — it has been wiped out before by optimization passes — so the test set is intentionally exhaustive across separator forms. ✅
 
 ---
 

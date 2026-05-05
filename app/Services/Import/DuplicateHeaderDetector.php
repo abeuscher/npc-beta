@@ -69,14 +69,17 @@ class DuplicateHeaderDetector
      * Carve-outs for header families that look duplicate-ish but represent
      * distinct fields. Currently: address-line columns (Address / Address 1
      * / Address 2 / Address Line 1, and the street/street-address variants).
+     * Separator-agnostic: matches `address line 1`, `address_line_1`, and
+     * `address-line-1` so the per-resource exporter's underscored canonical
+     * headers round-trip through the importer without a duplicate flag.
      */
     private static function isKnownLegitimateGroup(array $headers): bool
     {
         foreach ($headers as $header) {
             $normalized = strtolower(trim($header));
 
-            $isAddressLine = preg_match('/^address(\s+line)?(\s*\d+)?$/', $normalized)
-                || preg_match('/^street(\s+address)?(\s+line)?(\s*\d+)?$/', $normalized);
+            $isAddressLine = preg_match('/^address([\s_\-]+line)?[\s_\-]*\d*$/', $normalized)
+                || preg_match('/^street([\s_\-]+address)?([\s_\-]+line)?[\s_\-]*\d*$/', $normalized);
 
             if (! $isAddressLine) {
                 return false;

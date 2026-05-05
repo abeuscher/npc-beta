@@ -482,4 +482,44 @@ class EventResource extends Resource
             'registrations' => Pages\ViewRegistrations::route('/{record}/registrations'),
         ];
     }
+
+    public static function registrationExportColumnSpec(): array
+    {
+        return [
+            ['key' => 'event_id',            'header' => 'event_id',            'value' => fn (\App\Models\EventRegistration $r) => $r->event_id],
+            ['key' => 'name',                'header' => 'name',                'value' => fn (\App\Models\EventRegistration $r) => $r->name],
+            ['key' => 'email',               'header' => 'email',               'value' => fn (\App\Models\EventRegistration $r) => $r->email],
+            ['key' => 'phone',               'header' => 'phone',               'value' => fn (\App\Models\EventRegistration $r) => $r->phone],
+            ['key' => 'company',             'header' => 'company',             'value' => fn (\App\Models\EventRegistration $r) => $r->company],
+            ['key' => 'status',              'header' => 'status',              'value' => fn (\App\Models\EventRegistration $r) => $r->status],
+            ['key' => 'ticket_type',         'header' => 'ticket_type',         'value' => fn (\App\Models\EventRegistration $r) => $r->ticket_type],
+            ['key' => 'ticket_fee',          'header' => 'ticket_fee',          'value' => fn (\App\Models\EventRegistration $r) => $r->ticket_fee],
+            ['key' => 'payment_state',       'header' => 'payment_state',       'value' => fn (\App\Models\EventRegistration $r) => $r->payment_state],
+            ['key' => 'registered_at',       'header' => 'registered_at',       'value' => fn (\App\Models\EventRegistration $r) => $r->registered_at?->toDateTimeString()],
+            ['key' => 'contact_email',       'header' => 'contact_email',       'value' => fn (\App\Models\EventRegistration $r) => $r->contact?->email],
+            ['key' => 'organization_name',   'header' => 'organization_name',   'value' => fn (\App\Models\EventRegistration $r) => $r->organization?->name],
+            ['key' => 'created_at',          'header' => 'created_at',          'value' => fn (\App\Models\EventRegistration $r) => $r->created_at?->toDateTimeString()],
+        ];
+    }
+
+    public static function exportColumnSpec(): array
+    {
+        return [
+            ['key' => 'title',                     'header' => 'title',                     'value' => fn (Event $e) => $e->title],
+            ['key' => 'slug',                      'header' => 'slug',                      'value' => fn (Event $e) => $e->slug],
+            ['key' => 'description',               'header' => 'description',               'value' => fn (Event $e) => $e->description],
+            ['key' => 'status',                    'header' => 'status',                    'value' => fn (Event $e) => $e->status],
+            ['key' => 'starts_at',                 'header' => 'starts_at',                 'value' => fn (Event $e) => $e->starts_at?->toDateTimeString()],
+            ['key' => 'ends_at',                   'header' => 'ends_at',                   'value' => fn (Event $e) => $e->ends_at?->toDateTimeString()],
+            ['key' => 'address_line_1',            'header' => 'address_line_1',            'value' => fn (Event $e) => $e->address_line_1],
+            ['key' => 'address_line_2',            'header' => 'address_line_2',            'value' => fn (Event $e) => $e->address_line_2],
+            ['key' => 'city',                      'header' => 'city',                      'value' => fn (Event $e) => $e->city],
+            ['key' => 'state',                     'header' => 'state',                     'value' => fn (Event $e) => $e->state],
+            ['key' => 'zip',                       'header' => 'zip',                       'value' => fn (Event $e) => $e->zip],
+            ['key' => 'price',                     'header' => 'price',                     'value' => fn (Event $e) => $e->price],
+            ['key' => 'capacity',                  'header' => 'capacity',                  'value' => fn (Event $e) => $e->capacity],
+            ['key' => 'sponsor_organization_name', 'header' => 'sponsor_organization_name', 'value' => fn (Event $e) => $e->sponsorOrganization?->name],
+            ['key' => 'created_at',                'header' => 'created_at',                'value' => fn (Event $e) => $e->created_at?->toDateTimeString()],
+        ];
+    }
 }

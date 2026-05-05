@@ -2,12 +2,10 @@
 
 namespace App\Filament\Resources\ContactResource\Pages;
 
-use App\Filament\Pages\ImporterPage;
 use App\Filament\Resources\ContactResource;
-use App\Models\Contact;
 use App\Models\ContactDuplicateDismissal;
-use App\Models\CustomFieldDef;
 use App\Services\DuplicateContactService;
+use App\Services\ListExportService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -168,61 +166,33 @@ class ListContacts extends ListRecords
                     ->modalHeading('Review Duplicate Contacts')
                     ->modalWidth(MaxWidth::ThreeExtraLarge),
 
-                Actions\Action::make('importContacts')
-                    ->label('Import Contacts')
-                    ->icon('heroicon-o-arrow-up-tray')
-                    ->hidden(fn () => ! auth()->user()?->can('create_contact'))
-                    ->url(ImporterPage::getUrl()),
-
                 Actions\Action::make('exportContacts')
                     ->label('Export CSV')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->hidden(fn () => ! auth()->user()?->can('view_any_contact'))
                     ->action(function (HasTable $livewire): StreamedResponse {
-                    $query    = $livewire->getFilteredSortedTableQuery();
-                    $filename = 'contacts-' . now()->format('Y-m-d') . '.csv';
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: ContactResource::exportColumnSpec(),
+                            format: 'csv',
+                            filename: 'contacts-' . now()->format('Y-m-d') . '.csv',
+                            cfModelKey: 'contact',
+                        );
+                    }),
 
-                    $customDefs = CustomFieldDef::forModel('contact')->get();
-
-                    return response()->streamDownload(function () use ($query, $customDefs) {
-                        $handle = fopen('php://output', 'w');
-
-                        $standardHeaders = [
-                            'first_name', 'last_name', 'email', 'phone',
-                            'address_line_1', 'address_line_2', 'city', 'state',
-                            'postal_code', 'date_of_birth', 'created_at',
-                        ];
-
-                        fputcsv($handle, array_merge(
-                            $standardHeaders,
-                            $customDefs->pluck('label')->toArray()
-                        ));
-
-                        $query->orderBy('created_at')->each(function (Contact $contact) use ($handle, $customDefs) {
-                            $standardValues = [
-                                $contact->first_name,
-                                $contact->last_name,
-                                $contact->email,
-                                $contact->phone,
-                                $contact->address_line_1,
-                                $contact->address_line_2,
-                                $contact->city,
-                                $contact->state,
-                                $contact->postal_code,
-                                $contact->date_of_birth?->toDateString(),
-                                $contact->created_at?->toDateTimeString(),
-                            ];
-
-                            $customValues = $customDefs
-                                ->map(fn ($def) => $contact->custom_fields[$def->handle] ?? '')
-                                ->toArray();
-
-                            fputcsv($handle, array_merge($standardValues, $customValues));
-                        });
-
-                        fclose($handle);
-                    }, $filename, ['Content-Type' => 'text/csv']);
-                }),
+                Actions\Action::make('exportContactsJson')
+                    ->label('Export JSON')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_contact'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: ContactResource::exportColumnSpec(),
+                            format: 'json',
+                            filename: 'contacts-' . now()->format('Y-m-d') . '.json',
+                            cfModelKey: 'contact',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

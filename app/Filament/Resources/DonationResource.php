@@ -180,4 +180,20 @@ class DonationResource extends Resource
             'view'  => Pages\ViewDonation::route('/{record}'),
         ];
     }
+
+    public static function exportColumnSpec(): array
+    {
+        return [
+            ['key' => 'amount',                'header' => 'amount',                'value' => fn (Donation $d) => $d->amount],
+            ['key' => 'donated_at',            'header' => 'donated_at',            'value' => fn (Donation $d) => $d->started_at?->toDateTimeString()],
+            ['key' => 'type',                  'header' => 'type',                  'value' => fn (Donation $d) => $d->type],
+            ['key' => 'status',                'header' => 'status',                'value' => fn (Donation $d) => $d->status],
+            ['key' => 'frequency',             'header' => 'frequency',             'value' => fn (Donation $d) => $d->frequency],
+            ['key' => 'external_id',           'header' => 'external_id',           'value' => fn (Donation $d) => $d->external_id],
+            ['key' => 'contact_email',         'header' => 'contact_email',         'value' => fn (Donation $d) => $d->contact?->email],
+            ['key' => 'contact_external_id',   'header' => 'contact_external_id',   'value' => fn (Donation $d) => $d->contact?->external_id],
+            ['key' => 'organization_name',     'header' => 'organization_name',     'value' => fn (Donation $d) => $d->organization?->name],
+            ['key' => 'created_at',            'header' => 'created_at',            'value' => fn (Donation $d) => $d->created_at?->toDateTimeString()],
+        ];
+    }
 }
