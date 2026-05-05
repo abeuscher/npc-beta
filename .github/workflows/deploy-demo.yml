@@ -94,7 +94,7 @@ jobs:
             cd /opt/nonprofitcrm
             export IMAGE_TAG="$IMAGE_TAG"
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --wait --remove-orphans
             docker compose -f docker-compose.prod.yml exec -T app php artisan migrate --force
             docker compose -f docker-compose.prod.yml exec -T app php artisan storage:link
             docker compose -f docker-compose.prod.yml exec -T app php artisan view:clear
