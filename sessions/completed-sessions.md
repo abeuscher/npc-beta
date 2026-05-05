@@ -264,4 +264,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 259 | Importer Auto-Mapping Pattern Lift |
 | 260 | First-Deploy Migrate Race Fix |
 | 261 | List Resource Exports — CSV and JSON |
+| 262 | List Resource Exports — XLSX Format Add |
 

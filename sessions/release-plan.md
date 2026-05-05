@@ -68,11 +68,19 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **success criterion** *(closed at session 253)*: Operator-facing tooling and documentation for break-glass recovery from FM compromise — the case where the per-install trust-one-cert mTLS model needs an operator-driven cert swap across every CRM in the fleet. Three artifacts: (a) operator-facing rotation script at `bin/rotate-fm-cert.sh` (validates input PEM via `openssl x509`, atomic `mv` into `/opt/nonprofitcrm/nginx-certs/fm-client.crt`, `nginx -s reload`, host-side audit log at `/opt/nonprofitcrm/logs/fm-cert-rotations.log`); (b) compromise-recovery runbook at `docs/runbooks/fm-compromise-recovery.md` (pre-installation break-glass cert generation with cold-storage discipline + at-recovery-time per-CRM cert swap procedure + post-recovery cold-storage invariant restore); (c) additive Security Posture sub-section "Recovery posture and FM-side trust assumptions" in `docs/fleet-manager-agent-contract.md` naming the three trust-model properties (break-glass recovery path; FM's off-filesystem-key posture; audit-sink discipline) under a section-header rule labeling each item shipped vs FM-side intended-posture. Documentation revision under v2.1.0; no contract bump.
 - **artifact:** the script + runbook + spec doc revision. **Closed at session 253.** See `sessions/253. Fleet Manager Pivot Planning Session — Log.md` for the full landing.
 
+#### A1d. Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint *(lifted at session 262 close)*
+
+- **gate:** release
+- **prerequisites:** A1b (CRM-side v2.0.0 mTLS surface shipped at session 248); existing CRM-side backup infrastructure (spatie/laravel-backup config + `RecordBackupSuccess` listener + `last-backup-at` success-record file from CRM 242).
+- **success criterion:** Single mTLS-gated HTTP endpoint `POST /api/backup/trigger` that synchronously runs `Artisan::call('backup:run')` and returns a JSON envelope reporting the new `last_backup_at` timestamp. Additive contract bump v2.1.0 → v2.2.0 (v2.1.0 consumers continue working unchanged). Endpoint behaviors: throttle `6,1` per source IP; `set_time_limit(600)` + per-location `fastcgi_read_timeout 600;` for 10-minute backup ceiling; `request_terminate_timeout` confirmed-or-bumped to ≥ 600s; same nginx mTLS gate pattern as `/api/health` and `/api/logs`. **Success-record mtime cross-check (the integrity guard):** when `Artisan::call` returns 0, the controller cross-checks the `last-backup-at` file's contents against the request start time; if the recorded timestamp is null OR older than start, downgrades to `status: failed` with a "backup:run exited cleanly but success record was not updated" message — protects FM-side from showing a misleading success panel when the listener silently failed. Response always HTTP 200 with status-discriminated envelope (mirrors `/api/health`'s pattern). Error-message sanitisation: strip absolute application-root prefix only (relative paths from app root downward acceptable per open-source-app threat model); newline-collapse + 500-char cap; no stack traces. Two error sources feed the pipeline: `Artisan::output()` on non-zero exit, `\Throwable::getMessage()` on caught exception. Spec doc bumped to v2.2.0 with new endpoint section + CHANGELOG entry. Cross-Repo block in `session-outlines.md` bumped. Unblocks FM session 020 (operator-facing "Trigger backup now" affordance in the FM admin UI consuming this endpoint).
+- **artifact:** the new endpoint + controller + spec-doc revision; the cross-check integrity guard as the regression-guard for the misleading-success class of bug.
+- **estimated time cost:** 1 session.
+
 #### A2. Fleet Manager — node operations parity
 
 - **gate:** release
-- **prerequisites:** A1b (CRM-side v2.0.0 mTLS migration shipped at session 248); FM-side absorption at FM session 012 must complete before FM 013+ A2 affordance work begins.
-- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end, (b) trigger and verify a backup against a node, (c) restore a node from a backup blob, (d) fetch and surface application logs from a node without operator SSH. Each capability documented in the FM-side operator runbook.
+- **prerequisites:** A1b (CRM-side v2.0.0 mTLS migration shipped at session 248); A1d (CRM-side v2.2.0 backup-trigger endpoint — prerequisite for A2(b)); FM-side absorption at FM session 012 must complete before FM 013+ A2 affordance work begins.
+- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end *(FM-side; shipped at FM session 018)*, (b) trigger and verify a backup against a node *(CRM-side via A1d; FM-side absorption at FM session 020)*, (c) restore a node from a backup blob *(FM-side; future)*, (d) fetch and surface application logs from a node without operator SSH *(CRM-side via session 251 v2.1.0; FM-side absorption shipped at FM 013)*. Each capability documented in the FM-side operator runbook.
 - **artifact:** FM operator runbook covering all four capabilities.
 - **estimated time cost:** 2 sessions likely (install + backup + restore in one session; log-reading in a separate session — different surface). Per Rule 11, may split further if scope surfaces.
 
@@ -148,12 +156,12 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself; the `ListExportService` writer abstraction; per-resource standardized export pattern. **Closed at session 261.** See `sessions/261. List Resource Exports — CSV and JSON — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
-#### B2b'. XLSX format add for list resources *(B2b follow-on, lifted from Out-of-Gate at session 261 close)*
+#### B2b'. XLSX format add for list resources *(B2b follow-on)* ✅
 
 - **gate:** release
 - **prerequisites:** B2b closed (the 261 `ListExportService` writer abstraction is the load-bearing dependency).
-- **success criterion:** Add operator-facing **Export Excel** admin action to every list resource that already got the 261 CSV+JSON export pass — same 10 list pages. Shared `ListExportService::stream()` writer abstraction grows a third format flag (`'xlsx'`); per-page wireup adds one `Actions\Action::make('exportXlsx')` entry to the existing ellipsis ActionGroup. Library: `openspout/openspout` (already a transitive dependency via `filament/actions v3.3.49` — no Composer change). Streaming shape: OpenSpout writes to a temp file via `openToFile($tempPath)`, then `readfile($tempPath)` inside the `streamDownload` callback, with the entire write-and-stream sequence wrapped in `try { ... } finally { @unlink($tempPath); }` (load-bearing, addresses disk-leak concern). Cell-type semantics: Option B — additive `'type'` hint per column-spec entry, XLSX branch coerces values to native types (Carbon for dates, `(float)` for numerics, `(bool)` for booleans) before passing to OpenSpout's `Cell::fromValue`; CSV/JSON paths unchanged so 261's byte-for-byte output is preserved. CF flattening matches CSV (one column per `CustomFieldDef`), not the JSON-style nested object. Filename `<resource>-YYYY-MM-DD.xlsx`; MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. Permission gates inherit the per-resource `view_any_<resource>` pattern verbatim from 261. Tests: ~10 page-level XLSX tests (one per resource) + ~5–7 service-level tests including a load-bearing cleanup-on-exception test (snapshots `glob(sys_get_temp_dir() . '/xlsx-*')` before/after a thrown exception, asserts no stragglers).
-- **artifact:** the third format branch on `ListExportService`; per-resource column-spec `'type'` hints; updated ellipsis menus; cleanup-on-exception test as the regression-guard for the disk-leak class of bug.
+- **success criterion** *(closed at session 262)*: Operator-facing **Export Excel** admin action shipped on every list resource that got the 261 CSV+JSON export pass — same 10 list pages. Shared `ListExportService::stream()` grew a third format branch (`'xlsx'`); per-page wireup added one `Actions\Action::make('exportXlsx')` entry after the existing JSON action in each ellipsis ActionGroup (menu order CSV → JSON → Excel). Library: `openspout/openspout` (already a transitive dependency via `filament/actions v3.3.49` — no Composer change). Streaming shape: OpenSpout writes to `tempnam(sys_get_temp_dir(), 'xlsx-')` via `openToFile($tempPath)`, then `readfile($tempPath)` inside the `streamDownload` callback, with the entire write-and-stream sequence wrapped in `try { ... } finally { @unlink($tempPath); }` (load-bearing — disk-leak guard, exercised by the cleanup-on-exception regression test). Cell-type semantics: **Option B** — additive `'type'` hint per column-spec entry (`'date' | 'datetime' | 'number' | 'boolean'`); the XLSX branch's private `coerceForXlsx()` helper coerces the value-callable's string return back to native types (`Carbon::parse()` for dates/datetimes, `(float)` for numerics, `(bool)` for booleans) before passing to OpenSpout's `Cell::fromValue`; CSV/JSON paths unchanged so 261's byte-for-byte output is preserved (38 existing tests passed unchanged). Date/datetime cells additionally carry cached `Style` instances with `setFormat('yyyy-mm-dd')` / `'yyyy-mm-dd hh:mm:ss'` so Excel renders them as dates rather than as raw OOXML serial numbers (discovered during test-writing — without the format style, OpenSpout's DateTimeCell writes a number that Excel renders as `46036` not `2026-03-01`). ~30 `'type'` hints landed across the 10 specs (Contact 2, Org 1, Donation 3, Event 5 + 4 for registrations, Membership 4, Transaction 3, Fund 3, Campaign 5, Note 4). CF flattening matches CSV (one column per `CustomFieldDef`); permission gates inherit `view_any_<resource>` verbatim. Filename `<resource>-YYYY-MM-DD.xlsx`; MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. Tests: 16 added (10 page-level + 6 service-level including the cleanup-on-exception regression guard). Help-doc additive note in `resources/docs/onboarding-migration.md` § Migration-out (v0.2 → v0.3) registered via `help:sync`.
+- **artifact:** the third format branch on `ListExportService` + private `coerceForXlsx()` helper; per-resource column-spec `'type'` hints; updated ellipsis menus across 10 pages; cleanup-on-exception test as the regression-guard for the disk-leak class of bug. **Closed at session 262.** See `sessions/262. List Resource Exports — XLSX Format Add — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
 ### Track C — Workflow rehearsals
@@ -443,35 +451,36 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 14. **B2.** Onboarding rehearsal cluster *(closed at session 258 with two follow-on entries lifted)*
 15. **B2a.** Lift Contacts auto-mapping pattern to namespaced importers *(closed at session 259)*
 16. **B2b.** Export CSV + JSON actions for non-Contact list resources *(B2 follow-on; closed at session 261)*
-17. **B2b'.** XLSX format add for list resources *(B2b follow-on; lifted from Out-of-Gate at session 261 close)*
-18. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a)*
-19. **E10.** Full-Width Architecture Enforcement
-20. **E11.** Page Builder Focus-Scroll Clamp
-21. **C1.** Notes Permissions (feature half)
-22. **E9.** Widget Help Authoring
-23. **C2.** Event Ticket Tiers
-24. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-25. **E4.** Stripe Checkout Branding *(precedes C4)*
-26. **C4.** Donation-to-acknowledgment loop
-27. **C5.** Event with everything
-28. **C6.** Membership renewal cycle
-29. **C7.** Email at volume
-30. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-31. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-32. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-33. **E8.** UI/UX Sprint
-34. **E12.** Housekeeping Batch 2
-35. **D1.** Scale rehearsal
-36. **D2.** Compatibility cluster
-37. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-38. **E13.** Help docs body content
-39. **E14.** Third-Party Licensing Compliance Audit
-40. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-41. **D4.** Test suite review — cost & shape
-42. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-43. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-44. **F3.** On-Demand E2E — Permission / role-gate matrix
-45. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+17. **B2b'.** XLSX format add for list resources *(B2b follow-on; closed at session 262)*
+18. **A1d.** Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint *(lifted at session 262 close — execution-order deviation: A1d jumps the queue ahead of B1b on the grounds that FM session 020 is blocked CRM-side and cross-repo coordination cost outweighs the cost of reordering B1b)*
+19. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)*
+20. **E10.** Full-Width Architecture Enforcement
+21. **E11.** Page Builder Focus-Scroll Clamp
+22. **C1.** Notes Permissions (feature half)
+23. **E9.** Widget Help Authoring
+24. **C2.** Event Ticket Tiers
+25. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+26. **E4.** Stripe Checkout Branding *(precedes C4)*
+27. **C4.** Donation-to-acknowledgment loop
+28. **C5.** Event with everything
+29. **C6.** Membership renewal cycle
+30. **C7.** Email at volume
+31. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+32. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+33. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+34. **E8.** UI/UX Sprint
+35. **E12.** Housekeeping Batch 2
+36. **D1.** Scale rehearsal
+37. **D2.** Compatibility cluster
+38. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+39. **E13.** Help docs body content
+40. **E14.** Third-Party Licensing Compliance Audit
+41. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+42. **D4.** Test suite review — cost & shape
+43. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+44. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+45. **F3.** On-Demand E2E — Permission / role-gate matrix
+46. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
