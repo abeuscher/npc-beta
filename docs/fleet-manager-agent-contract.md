@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.1.0`
+**Contract Version:** `2.2.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -19,15 +19,16 @@ Both the CRM and Fleet Manager implement against this contract. The CRM emits th
 ## Endpoints
 
 ```
-GET /api/health
-GET /api/logs
+GET  /api/health
+GET  /api/logs
+POST /api/backup/trigger
 ```
 
-- Two routes, GET only.
+- Three routes. `/api/health` and `/api/logs` are GET-only; `/api/backup/trigger` is POST-only.
 - Stateless — no session cookie, no CSRF token, not in the web middleware group.
-- Both rate-limited at the application layer: **60 requests per minute per IP** (Laravel `throttle:60,1`). The throttle defends against authenticated polling-loop bugs on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
+- Each route carries its own rate-limit bucket. `/api/health` and `/api/logs` are rate-limited at **60 requests per minute per IP** (Laravel `throttle:60,1`); `/api/backup/trigger` is rate-limited at **6 requests per minute per IP** (`throttle:6,1`) because backups are expensive to run. The throttles defend against polling-loop bugs and accidental retrigger storms on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
 
-`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`.
+`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`. `/api/backup/trigger` is documented under `/api/backup/trigger — Request` and `/api/backup/trigger — Response`.
 
 ## Auth
 
@@ -35,10 +36,10 @@ GET /api/logs
 mTLS — terminated by nginx at the TLS layer.
 ```
 
-- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **both** `/api/health` and `/api/logs`. Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
+- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all three** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
 - Each CRM install trusts **exactly one** specific FM-side cert, configured at nginx via `ssl_client_certificate` pointed at `/etc/nginx/certs/fm-client.crt`. No CA, no PKI tooling, no chain. Direct trust against the per-install cert.
 - The FM operator pastes the trusted cert into the CRM droplet at `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container). Restart nginx to apply.
-- The application sees no auth signal. If the request reached the `HealthController`, nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
+- The application sees no auth signal. If the request reached the controller (any of the three), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
 - Authentication failures are emitted by nginx, not the application. With `ssl_verify_client optional` at the server level, the TLS handshake completes either way; nginx then returns an HTTP error before the request ever reaches PHP. The specific code depends on the failure mode:
   - **No client cert presented:** the per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` gate fires → `403 Forbidden`.
   - **A client cert is presented but does not match the trusted cert:** nginx's SSL error path fires → `400 Bad Request` with body "The SSL certificate error".
@@ -52,7 +53,7 @@ mTLS — terminated by nginx at the TLS layer.
   "status": "green|yellow|red",
   "version": "abc1234",
   "timestamp": "2026-04-30T15:42:00+00:00",
-  "contract_version": "2.0.0",
+  "contract_version": "2.2.0",
   "subchecks": {
     "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
     "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
@@ -85,7 +86,7 @@ Every subcheck — present and future — has the same four keys:
 | `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
-### Subchecks (v2.1.0 — six stable keys, unchanged from v1.2.0)
+### Subchecks (v2.2.0 — six stable keys, unchanged from v1.2.0)
 
 | Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
 |------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -211,26 +212,112 @@ Returned for non-integer, zero, or negative `lines` values. Values above the cap
 
 Returned for unexpected file I/O failures (file disappeared between existence check and open, OS-level read errors, etc.). The `message` carries the exception class name only — never the exception message, never a path, never a stack frame. Matches `HealthController` exception-message discipline.
 
+## `/api/backup/trigger` — Request
+
+```
+POST /api/backup/trigger
+```
+
+- POST-only. Non-POST requests do not invoke the controller — they fall through Laravel's route table and typically resolve to `404 Not Found` via the public-site page-slug catchall. FM consumers should not depend on a specific non-POST status code; the operative invariant is that the backup pipeline does not run for non-POST requests.
+- No request body. The endpoint takes no parameters. Any body sent is ignored.
+- mTLS-gated at nginx (same `fm-client.crt` as `/api/health` and `/api/logs`).
+- Throttled at **6 requests per minute per source IP** (`throttle:6,1`). Tighter than the polling endpoints' 60-rpm because each request runs a full backup pipeline.
+- **Synchronous, blocking.** The request runs `php artisan backup:run` inside the request lifecycle and does not return until the backup completes (or fails). Plan for FM-side HTTP timeouts of 10 minutes or more.
+
+### Operator semantics
+
+Triggering this endpoint is "back up now and wait for the result," distinct from `/api/health`'s passive read. Calling FM-side code should:
+
+- Use a per-request HTTP timeout of at least 600 seconds.
+- Rely on the response envelope's `status` field as the authoritative outcome — *not* on HTTP status alone (the endpoint always returns `200`; failure is signalled in the body, mirroring `/api/health`'s pattern).
+- Cross-check `last_backup_at` against the value `/api/health` reports immediately after the trigger; the integrity guard described under § Response semantics ensures the two sources agree on success.
+
+### Timeout characteristics
+
+- nginx applies a per-location `fastcgi_read_timeout 600;` override on `/api/backup/trigger` (other endpoints continue to use the server-wide 300s).
+- The controller calls `set_time_limit(600)` defensively at the top of the action so PHP's `max_execution_time` does not cap a long-running backup short.
+- PHP-FPM's `request_terminate_timeout` is unset (defaults to 0 — no PHP-FPM-imposed ceiling) on the upstream `php:8.4-fpm` image. The 10-minute ceiling is enforced by nginx + the in-PHP `set_time_limit(600)` only.
+- A backup that runs longer than 600 seconds will be cut off at the nginx timeout; the FM-side will see a connection-level timeout, not the response envelope. Operators with backup durations approaching the ceiling should investigate (large media, slow Spaces uploads) — the v2.2.0 ceiling is a deliberate scope choice for pre-Beta-1 droplets.
+
+## `/api/backup/trigger` — Response — `200 OK` (success)
+
+```json
+{
+  "contract_version": "2.2.0",
+  "status": "success",
+  "last_backup_at": "2026-05-05T14:23:08+00:00",
+  "duration_ms": 18742,
+  "message": null
+}
+```
+
+### Fields
+
+| Field              | Type            | Description                                                                                                                                                                  |
+|--------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `contract_version` | string          | Semver. Same value `/api/health` reports. Lets FM-side trigger paths verify version alignment without an extra `/api/health` round-trip.                                     |
+| `status`           | string          | `"success"` when the backup completed and the success-record file moved forward; `"failed"` otherwise. Top-level enum is `{success, failed}`.                                |
+| `last_backup_at`   | string \| null  | ISO 8601 timestamp of the just-completed backup (sourced from `storage/app/private/fleet/last-backup-at`, written by the `RecordBackupSuccess` listener).                    |
+| `duration_ms`      | integer         | Wall-clock time the controller spent running `backup:run`, in milliseconds. Includes the time spent in `Artisan::call`, success-record reads, and envelope composition.       |
+| `message`          | string \| null  | `null` on success. On failure, a sanitised single-line operator-readable error (see § Response — failed below).                                                              |
+
+## `/api/backup/trigger` — Response — `200 OK` (failed)
+
+```json
+{
+  "contract_version": "2.2.0",
+  "status": "failed",
+  "last_backup_at": "2026-05-04T14:00:00+00:00",
+  "duration_ms": 412,
+  "message": "Backup destination disk \"local\" is not writable | app/Services/Backup/Pipeline.php:74"
+}
+```
+
+### Failure modes
+
+The `failed` envelope is emitted under three distinct conditions:
+
+1. **`backup:run` exits non-zero.** Source for `message`: `Artisan::output()` (potentially multi-line). Sanitised per the pipeline below.
+2. **`Artisan::call` throws an exception.** Source for `message`: `\Throwable::getMessage()`. Same sanitisation pipeline.
+3. **Integrity guard — success-record mtime cross-check fails.** `Artisan::call` returns 0 cleanly, but the success-record file's contents are missing OR older than the request's start time. `message`: `"backup:run exited cleanly but success record was not updated"`. This protects FM-side from showing a "success" panel when the listener silently failed (e.g., misconfigured event subscription, filesystem write failure inside the listener). FM consumers should treat the `status` field as authoritative even when the upstream artisan call exited cleanly.
+
+### `last_backup_at` semantics on failure
+
+- On non-zero exit OR exception: `last_backup_at` reports the **last *known* successful backup** — the value of the success-record file as read at the start of the request (or `null` if no successful backup has ever completed). FM-side displays continue to surface the last-known-good value rather than going blank when a trigger fails.
+- On the integrity-guard branch (artisan exits 0 but cross-check fails): `last_backup_at` reports the (stale) value present in the success-record file at the moment of the post-call read — distinguishable in operator-facing UX as "the backup *says* it ran but our integrity guard caught a discrepancy."
+- HTTP status remains `200` on all failure paths (matches `/api/health`'s pattern of returning 200 with degraded-status envelopes; nginx 5xx is reserved for transport-level failures).
+
+### Error-message sanitisation pipeline
+
+Both error sources (`Artisan::output()` on non-zero exit; `\Throwable::getMessage()` on caught exception) flow through the same pipeline before reaching the response body:
+
+1. **Strip absolute application-root prefix** (e.g., `/var/www/html/`) so paths read app-root-relative (`app/Services/Foo.php` rather than `/var/www/html/app/Services/Foo.php`). Open-source application root means relative paths are public information; the absolute prefix strip is cosmetic, not security-critical.
+2. **Collapse newlines** to ` | ` so the message is single-line for envelope hygiene.
+3. **Cap at 500 characters**, truncating with a trailing `…` if longer.
+4. **No stack traces.** Exceptions: take only the topmost `getMessage()`. Artisan output: as-emitted (the command's own logging is what reaches the operator).
+
+The pipeline is intentionally lightweight — the goal is operator readability, not redaction. Application-root-relative paths and exception messages are public information for an open-source CRM.
+
 ## Response — auth-failure paths (nginx-emitted, not application)
 
-Applies to both `/api/health` and `/api/logs`. When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
+Applies to all three FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`). When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
 
 - **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
 - **`400 Bad Request`** — body "The SSL certificate error". A cert was presented but did not match the trusted cert at `ssl_client_certificate`. Fleet Manager seeing repeated `400`s should suspect cert misalignment (the FM-side cert no longer matches what the CRM trusts; the operator may need to re-paste).
 
 ## Response — `429 Too Many Requests`
 
-Applies to both endpoints (each has its own throttle bucket per the `throttle:60,1` middleware). Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The 60-rpm cap defends against authenticated polling-bug storms on the FM side; well-behaved consumers will never see this.
+Applies to all three FM agent endpoints (each has its own throttle bucket). `/api/health` and `/api/logs` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` uses `throttle:6,1` (6 rpm per IP) because backups are expensive. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
 
 ## Response — `503 Service Unavailable`
 
-**Reserved.** Not emitted by v2.1.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
+**Reserved.** Not emitted by v2.2.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
 
 ---
 
 ## Version negotiation
 
-Every `/api/health` response carries `contract_version`. (`/api/logs` does not — FM reads the version from `/api/health` on every poll and treats it as authoritative for the install.) Fleet Manager:
+Every `/api/health` response carries `contract_version`. (`/api/logs` does not. `/api/backup/trigger` does — its envelope carries `contract_version` so FM-side trigger paths can verify version alignment without an extra `/api/health` round-trip. FM treats `/api/health`'s value as authoritative for the install on every poll.) Fleet Manager:
 
 - Compares against the canonical version it fetches via `WebFetch` against `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md` at session-bootstrap time.
 - Logs a drift warning if the install's `contract_version` does not match the fleet baseline.
@@ -245,9 +332,9 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 
 - Authentication is enforced at the TLS layer by nginx. The application has no auth code path for `/api/health` or `/api/logs` — request arrival IS the auth proof.
 - Per-install cert trust: each CRM install trusts exactly one FM-side cert. Compromise of one install's cert does not cascade across the fleet.
-- Both routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
+- All three routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
 - No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** in `message` fields where useful. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
-- Both endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed.
+- All three endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` cap (`throttle:6,1`) is intentionally tighter than the polling endpoints' (`throttle:60,1`) because backups are expensive to run.
 - The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these two endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface.
 
@@ -264,6 +351,23 @@ These describe the v2.1.0 security posture; items carry status as either **shipp
 ---
 
 ## CHANGELOG
+
+### `2.2.0` — 2026-05-05 (session 263)
+
+**Additive within v2 major.** Adds a third endpoint, `POST /api/backup/trigger`, that synchronously runs the existing `backup:run` artisan command and returns a JSON envelope reporting the new `last_backup_at` timestamp. Unblocks FM session 020 (operator-facing "Trigger backup now" affordance in the FM admin UI consuming this endpoint).
+
+- New endpoint at `POST /api/backup/trigger`. POST-only; no request body. Response is a JSON envelope: `{ contract_version, status, last_backup_at, duration_ms, message }`. `status` is `success` or `failed`; HTTP status is always `200` on application-level conditions (matches `/api/health`'s 200-with-degraded-envelope pattern).
+- Reuses the existing nginx-terminated mTLS gate — a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate ships on `/api/backup/trigger` in both `docker/nginx/default.conf` (local) and `docker/nginx/prod.conf` (prod). Same trusted `fm-client.crt`; operators do not re-paste anything.
+- New per-location `fastcgi_read_timeout 600;` override on the trigger location so nginx does not kill the upstream connection at the default 300s while a backup is running. The default 300s on every other endpoint stays unchanged.
+- Tighter throttle than the polling endpoints: `throttle:6,1` (6 rpm per source IP) vs `throttle:60,1` on `/api/health` and `/api/logs`. Each route has its own throttle bucket.
+- 10-minute synchronous ceiling. The controller calls `set_time_limit(600)` defensively; PHP-FPM `request_terminate_timeout` is unset on the upstream `php:8.4-fpm` image (defaults to 0 — no PHP-FPM-imposed ceiling). The 600s wall is enforced by nginx + the in-PHP `set_time_limit(600)` only.
+- **Integrity guard — success-record mtime cross-check.** When `Artisan::call('backup:run')` exits 0, the controller cross-checks the contents of `storage/app/private/fleet/last-backup-at` against the request's start time. If the recorded timestamp is null OR older than start, the response downgrades to `status: failed` with `message: "backup:run exited cleanly but success record was not updated"`. Prevents the misleading-success class of bug where the artisan command exits cleanly but the `RecordBackupSuccess` listener silently failed (event-subscription misconfig, filesystem write failure inside the listener, etc.). Distinct from the other two failure modes (non-zero exit, caught exception) and documented as such for FM consumers.
+- **Error-message sanitisation pipeline.** Both error sources (`Artisan::output()` on non-zero exit, `\Throwable::getMessage()` on caught exception) flow through: strip absolute application-root prefix (`/var/www/html/`) → collapse newlines to ` | ` → cap at 500 characters with trailing `…` if longer → no stack traces. App-root-relative paths are kept; open-source-app threat model means they reveal nothing private.
+- `HealthController::CONTRACT_VERSION` bumps `2.1.0 → 2.2.0`. The new `BackupController` carries its own `CONTRACT_VERSION = '2.2.0'` constant — its envelope includes `contract_version` so FM-side trigger paths can verify version alignment without an extra `/api/health` round-trip.
+- Forward-compatible with v2.1.0 consumers. v2.1.0 consumers don't see the new endpoint and continue working unchanged. FM-side consumers wanting to use the new endpoint upgrade their HTTP client to handle the `/api/backup/trigger` shape.
+- Out of scope at v2.2: async / queued backup execution; backup blob download; per-bucket / per-destination targeting from the API; backup-status streaming during long runs. The endpoint runs the configured backup pipeline; switching destinations stays an operator-side `.env` change.
+
+**Scope note:** the v2.0.0-deferred FM-raised question of `last_backup_at` threshold-derivation ownership stays deferred — v2.2.0 is narrowly the backup-trigger addition. Threshold-derivation lands at a future v2.x bump when there's natural impetus.
 
 ### `2.1.0` revision — 2026-05-01 (session 253)
 
