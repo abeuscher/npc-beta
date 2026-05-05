@@ -44,6 +44,19 @@ class ListFunds extends ListRecords
                             filename: 'funds-' . now()->format('Y-m-d') . '.json',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_fund'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: FundResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'funds-' . now()->format('Y-m-d') . '.xlsx',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

@@ -334,17 +334,17 @@ class TransactionResource extends Resource
     {
         return [
             ['key' => 'external_id',       'header' => 'external_id',       'value' => fn (Transaction $t) => $t->external_id],
-            ['key' => 'amount',            'header' => 'amount',            'value' => fn (Transaction $t) => $t->amount],
+            ['key' => 'amount',            'header' => 'amount',            'value' => fn (Transaction $t) => $t->amount,                          'type' => 'number'],
             ['key' => 'type',              'header' => 'type',              'value' => fn (Transaction $t) => $t->type],
             ['key' => 'direction',         'header' => 'direction',         'value' => fn (Transaction $t) => $t->direction],
             ['key' => 'status',            'header' => 'status',            'value' => fn (Transaction $t) => $t->status],
-            ['key' => 'occurred_at',       'header' => 'occurred_at',       'value' => fn (Transaction $t) => $t->occurred_at?->toDateTimeString()],
+            ['key' => 'occurred_at',       'header' => 'occurred_at',       'value' => fn (Transaction $t) => $t->occurred_at?->toDateTimeString(), 'type' => 'datetime'],
             ['key' => 'payment_method',    'header' => 'payment_method',    'value' => fn (Transaction $t) => $t->payment_method],
             ['key' => 'payment_channel',   'header' => 'payment_channel',   'value' => fn (Transaction $t) => $t->payment_channel],
             ['key' => 'invoice_number',    'header' => 'invoice_number',    'value' => fn (Transaction $t) => $t->invoice_number],
             ['key' => 'contact_email',     'header' => 'contact_email',     'value' => fn (Transaction $t) => $t->contact?->email],
             ['key' => 'organization_name', 'header' => 'organization_name', 'value' => fn (Transaction $t) => $t->organization?->name],
-            ['key' => 'created_at',        'header' => 'created_at',        'value' => fn (Transaction $t) => $t->created_at?->toDateTimeString()],
+            ['key' => 'created_at',        'header' => 'created_at',        'value' => fn (Transaction $t) => $t->created_at?->toDateTimeString(),  'type' => 'datetime'],
         ];
     }
 }

@@ -68,6 +68,20 @@ class ListEvents extends ListRecords
                             cfModelKey: 'event',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_event'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: EventResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'events-' . now()->format('Y-m-d') . '.xlsx',
+                            cfModelKey: 'event',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

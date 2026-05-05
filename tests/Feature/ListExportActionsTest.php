@@ -24,7 +24,10 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Tests\TestCase;
+
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 uses(TestCase::class, RefreshDatabase::class);
 
@@ -43,6 +46,30 @@ function downloadedContent(\Livewire\Features\SupportTesting\Testable $test): st
 function parseCsv(string $body): array
 {
     return array_map('str_getcsv', preg_split("/\r\n|\n|\r/", trim($body)));
+}
+
+function parseXlsx(string $body): array
+{
+    $tempPath = tempnam(sys_get_temp_dir(), 'xlsx-page-test-');
+    file_put_contents($tempPath, $body);
+
+    $reader = new XlsxReader();
+    $reader->open($tempPath);
+
+    $rows = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = array_map(fn ($cell) => $cell->getValue(), $row->getCells());
+        }
+
+        break;
+    }
+
+    $reader->close();
+    @unlink($tempPath);
+
+    return $rows;
 }
 
 // ── Contacts ─────────────────────────────────────────────────────────────
@@ -410,3 +437,205 @@ it('denies the view_any capability to users without role permissions', function 
     'view_any_campaign',
     'view_any_note',
 ]);
+
+// ── XLSX exports (Phase 4 — one per resource) ────────────────────────────
+
+it('exports contacts as XLSX with native date and datetime cells', function () {
+    Contact::factory()->create([
+        'first_name'    => 'Ada',
+        'email'         => 'ada@example.com',
+        'date_of_birth' => '1815-12-10',
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListContacts::class)
+        ->callAction('exportContactsXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows = parseXlsx(downloadedContent($test));
+    expect($rows[0])->toContain('first_name', 'email', 'date_of_birth');
+    expect($rows[1][0])->toBe('Ada');
+
+    $dobIdx = array_search('date_of_birth', $rows[0], true);
+    expect($rows[1][$dobIdx])->toBeInstanceOf(\DateTimeInterface::class);
+});
+
+it('exports organizations as XLSX with custom field columns', function () {
+    CustomFieldDef::create([
+        'model_type' => 'organization',
+        'handle'     => 'industry',
+        'label'      => 'Industry',
+        'field_type' => 'text',
+        'sort_order' => 1,
+    ]);
+
+    Organization::factory()->create([
+        'name'          => 'Acme Corp',
+        'custom_fields' => ['industry' => 'Tech'],
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListOrganizations::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows = parseXlsx(downloadedContent($test));
+    expect($rows[0])->toContain('name', 'Industry');
+    expect($rows[1])->toContain('Acme Corp', 'Tech');
+});
+
+it('exports donations as XLSX with numeric amount cell', function () {
+    $contact = Contact::factory()->create(['email' => 'don@example.com']);
+    Donation::factory()->create(['contact_id' => $contact->id, 'amount' => 432.10]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListDonations::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows      = parseXlsx(downloadedContent($test));
+    $amountIdx = array_search('amount', $rows[0], true);
+
+    expect($rows[1][$amountIdx])->toBeFloat();
+    expect($rows[1][$amountIdx])->toEqual(432.10);
+});
+
+it('exports events as XLSX with native datetime cells', function () {
+    Event::factory()->create(['title' => 'Annual Gala', 'starts_at' => now()->addDays(7)]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListEvents::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows       = parseXlsx(downloadedContent($test));
+    $startsIdx  = array_search('starts_at', $rows[0], true);
+
+    expect($rows[1])->toContain('Annual Gala');
+    expect($rows[1][$startsIdx])->toBeInstanceOf(\DateTimeInterface::class);
+});
+
+it('exports event registrations as XLSX scoped to the parent event', function () {
+    $eventA = Event::factory()->create(['title' => 'Event A']);
+    $eventB = Event::factory()->create(['title' => 'Event B']);
+
+    EventRegistration::factory()->create(['event_id' => $eventA->id, 'name' => 'Alice']);
+    EventRegistration::factory()->create(['event_id' => $eventB->id, 'name' => 'Bob']);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ViewRegistrations::class, ['record' => $eventA])
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows = parseXlsx(downloadedContent($test));
+    expect($rows[0])->toContain('name', 'event_id');
+    expect(count($rows))->toBe(2);
+    expect($rows[1])->toContain('Alice');
+});
+
+it('exports memberships as XLSX with native date and number cells', function () {
+    Membership::factory()->create([
+        'status'      => 'active',
+        'amount_paid' => 100.50,
+        'starts_on'   => '2026-01-01',
+        'expires_on'  => '2027-01-01',
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListMemberships::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows         = parseXlsx(downloadedContent($test));
+    $startsIdx    = array_search('starts_on', $rows[0], true);
+    $amountIdx    = array_search('amount_paid', $rows[0], true);
+
+    expect($rows[1][$startsIdx])->toBeInstanceOf(\DateTimeInterface::class);
+    expect($rows[1][$amountIdx])->toBeFloat();
+});
+
+it('exports transactions as XLSX with numeric amount cell', function () {
+    Transaction::factory()->create(['amount' => 75.25, 'direction' => 'in', 'status' => 'completed']);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListTransactions::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows      = parseXlsx(downloadedContent($test));
+    $amountIdx = array_search('amount', $rows[0], true);
+
+    expect($rows[1][$amountIdx])->toBeFloat();
+    expect($rows[1][$amountIdx])->toEqual(75.25);
+});
+
+it('exports funds as XLSX with native boolean cells', function () {
+    Fund::factory()->create([
+        'name'        => 'General Fund',
+        'is_active'   => true,
+        'is_archived' => false,
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListFunds::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows         = parseXlsx(downloadedContent($test));
+    $isActiveIdx  = array_search('is_active', $rows[0], true);
+
+    expect($rows[1])->toContain('General Fund');
+    expect($rows[1][$isActiveIdx])->toBeBool();
+    expect($rows[1][$isActiveIdx])->toBeTrue();
+});
+
+it('exports campaigns as XLSX with native boolean and date cells', function () {
+    Campaign::factory()->create([
+        'name'        => 'Spring 2026',
+        'goal_amount' => 50000.50,
+        'starts_on'   => '2026-03-01',
+        'is_active'   => true,
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListCampaigns::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows         = parseXlsx(downloadedContent($test));
+    $isActiveIdx  = array_search('is_active', $rows[0], true);
+    $startsIdx    = array_search('starts_on', $rows[0], true);
+
+    expect($rows[1])->toContain('Spring 2026');
+    expect($rows[1][$isActiveIdx])->toBeBool();
+    expect($rows[1][$startsIdx])->toBeInstanceOf(\DateTimeInterface::class);
+});
+
+it('exports notes as XLSX with contact_email synthetic column', function () {
+    $contact = Contact::factory()->create(['email' => 'noted@example.com']);
+    Note::factory()->create([
+        'notable_type' => Contact::class,
+        'notable_id'   => $contact->id,
+        'subject'      => 'Followup call',
+        'type'         => 'call',
+    ]);
+
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListNotes::class)
+        ->callAction('exportXlsx');
+
+    $test->assertFileDownloaded(null, null, XLSX_MIME);
+
+    $rows = parseXlsx(downloadedContent($test));
+    expect($rows[0])->toContain('subject', 'contact_email', 'organization_name');
+    expect($rows[1])->toContain('Followup call', 'noted@example.com');
+});

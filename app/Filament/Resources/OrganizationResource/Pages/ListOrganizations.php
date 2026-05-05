@@ -46,6 +46,20 @@ class ListOrganizations extends ListRecords
                             cfModelKey: 'organization',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_organization'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: OrganizationResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'organizations-' . now()->format('Y-m-d') . '.xlsx',
+                            cfModelKey: 'organization',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

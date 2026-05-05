@@ -44,6 +44,19 @@ class ListCampaigns extends ListRecords
                             filename: 'campaigns-' . now()->format('Y-m-d') . '.json',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_campaign'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: CampaignResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'campaigns-' . now()->format('Y-m-d') . '.xlsx',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

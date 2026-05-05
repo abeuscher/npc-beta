@@ -193,6 +193,20 @@ class ListContacts extends ListRecords
                             cfModelKey: 'contact',
                         );
                     }),
+
+                Actions\Action::make('exportContactsXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_contact'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: ContactResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'contacts-' . now()->format('Y-m-d') . '.xlsx',
+                            cfModelKey: 'contact',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

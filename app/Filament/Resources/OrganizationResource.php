@@ -234,7 +234,7 @@ class OrganizationResource extends Resource
             ['key' => 'postal_code',    'header' => 'postal_code',    'value' => fn (Organization $o) => $o->postal_code],
             ['key' => 'country',        'header' => 'country',        'value' => fn (Organization $o) => $o->country],
             ['key' => 'external_id',    'header' => 'external_id',    'value' => fn (Organization $o) => $o->external_id],
-            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Organization $o) => $o->created_at?->toDateTimeString()],
+            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Organization $o) => $o->created_at?->toDateTimeString(), 'type' => 'datetime'],
         ];
     }
 }

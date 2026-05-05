@@ -84,11 +84,11 @@ class CampaignResource extends Resource
         return [
             ['key' => 'name',        'header' => 'name',        'value' => fn (Campaign $c) => $c->name],
             ['key' => 'description', 'header' => 'description', 'value' => fn (Campaign $c) => $c->description],
-            ['key' => 'goal_amount', 'header' => 'goal_amount', 'value' => fn (Campaign $c) => $c->goal_amount],
-            ['key' => 'starts_on',   'header' => 'starts_on',   'value' => fn (Campaign $c) => $c->starts_on?->toDateString()],
-            ['key' => 'ends_on',     'header' => 'ends_on',     'value' => fn (Campaign $c) => $c->ends_on?->toDateString()],
-            ['key' => 'is_active',   'header' => 'is_active',   'value' => fn (Campaign $c) => (int) (bool) $c->is_active],
-            ['key' => 'created_at',  'header' => 'created_at',  'value' => fn (Campaign $c) => $c->created_at?->toDateTimeString()],
+            ['key' => 'goal_amount', 'header' => 'goal_amount', 'value' => fn (Campaign $c) => $c->goal_amount,                       'type' => 'number'],
+            ['key' => 'starts_on',   'header' => 'starts_on',   'value' => fn (Campaign $c) => $c->starts_on?->toDateString(),       'type' => 'date'],
+            ['key' => 'ends_on',     'header' => 'ends_on',     'value' => fn (Campaign $c) => $c->ends_on?->toDateString(),         'type' => 'date'],
+            ['key' => 'is_active',   'header' => 'is_active',   'value' => fn (Campaign $c) => (int) (bool) $c->is_active,           'type' => 'boolean'],
+            ['key' => 'created_at',  'header' => 'created_at',  'value' => fn (Campaign $c) => $c->created_at?->toDateTimeString(),  'type' => 'datetime'],
         ];
     }
 }

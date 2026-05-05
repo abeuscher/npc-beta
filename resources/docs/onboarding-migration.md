@@ -2,7 +2,7 @@
 title: Onboarding — Migration
 description: Walkthrough for moving an organization's existing records into the CRM — what to expect, the order to run imports in, edge cases to watch for, and a checklist for a first migration.
 standalone: true
-version: "0.2"
+version: "0.3"
 updated: 2026-05-05
 tags: [onboarding, import, migration, csv, checklist]
 category: tools
@@ -67,7 +67,7 @@ For each importer:
 
 ## Migration out
 
-Every list page that holds migration-relevant data carries **Export CSV** and **Export JSON** actions under its ⋮ More actions menu. The list of pages with exports: Contacts, Organizations, Donations, Events, Memberships, Event Registrations (per-event), Transactions, Funds, Campaigns, Notes. Each export reflects the page's current filter and sort state and includes any custom fields configured for that record type — flattened into one column per field in CSV, nested under `custom_fields` in JSON. Useful as a sanity check after a migration in, or for a quick round-trip back into a spreadsheet for spot-fixing.
+Every list page that holds migration-relevant data carries **Export CSV**, **Export JSON**, and **Export Excel** actions under its ⋮ More actions menu. The list of pages with exports: Contacts, Organizations, Donations, Events, Memberships, Event Registrations (per-event), Transactions, Funds, Campaigns, Notes. Each export reflects the page's current filter and sort state and includes any custom fields configured for that record type — flattened into one column per field in CSV and Excel, nested under `custom_fields` in JSON. Excel preserves native types (dates as dates, amounts as numbers, yes/no as booleans) so the file opens cleanly in spreadsheet tools without manual reformatting. Useful as a sanity check after a migration in, or for a quick round-trip back into a spreadsheet for spot-fixing.
 
 Pulling all of an organization's records back out of the system in preparation for switching providers is a separate workflow with its own considerations (how to keep settings in payment providers and email tools, how to make a smooth handoff of financial records between systems, what to keep and what to retire). That guidance lives in a separate **Offboarding** doc — not yet published.
 

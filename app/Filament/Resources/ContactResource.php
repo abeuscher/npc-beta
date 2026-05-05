@@ -372,8 +372,8 @@ class ContactResource extends Resource
             ['key' => 'city',           'header' => 'city',           'value' => fn (Contact $c) => $c->city],
             ['key' => 'state',          'header' => 'state',          'value' => fn (Contact $c) => $c->state],
             ['key' => 'postal_code',    'header' => 'postal_code',    'value' => fn (Contact $c) => $c->postal_code],
-            ['key' => 'date_of_birth',  'header' => 'date_of_birth',  'value' => fn (Contact $c) => $c->date_of_birth?->toDateString()],
-            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Contact $c) => $c->created_at?->toDateTimeString()],
+            ['key' => 'date_of_birth',  'header' => 'date_of_birth',  'value' => fn (Contact $c) => $c->date_of_birth?->toDateString(),     'type' => 'date'],
+            ['key' => 'created_at',     'header' => 'created_at',     'value' => fn (Contact $c) => $c->created_at?->toDateTimeString(),  'type' => 'datetime'],
         ];
     }
 }

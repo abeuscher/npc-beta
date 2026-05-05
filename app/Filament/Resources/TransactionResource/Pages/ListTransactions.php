@@ -46,6 +46,20 @@ class ListTransactions extends ListRecords
                             cfModelKey: 'transaction',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
+                    ->action(function (HasTable $livewire): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: TransactionResource::exportColumnSpec(),
+                            format: 'xlsx',
+                            filename: 'transactions-' . now()->format('Y-m-d') . '.xlsx',
+                            cfModelKey: 'transaction',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

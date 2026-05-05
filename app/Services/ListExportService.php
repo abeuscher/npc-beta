@@ -3,9 +3,14 @@
 namespace App\Services;
 
 use App\Models\CustomFieldDef;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use OpenSpout\Common\Entity\Cell;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ListExportService
@@ -21,15 +26,19 @@ class ListExportService
             ? CustomFieldDef::forModel($cfModelKey)->get()
             : collect();
 
-        $contentType = $format === 'json' ? 'application/json' : 'text/csv';
+        $contentType = match ($format) {
+            'json' => 'application/json',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            default => 'text/csv',
+        };
 
         return response()->streamDownload(
             function () use ($query, $columnSpec, $customDefs, $format) {
-                if ($format === 'json') {
-                    $this->streamJson($query, $columnSpec, $customDefs);
-                } else {
-                    $this->streamCsv($query, $columnSpec, $customDefs);
-                }
+                match ($format) {
+                    'json' => $this->streamJson($query, $columnSpec, $customDefs),
+                    'xlsx' => $this->streamXlsx($query, $columnSpec, $customDefs),
+                    default => $this->streamCsv($query, $columnSpec, $customDefs),
+                };
             },
             $filename,
             ['Content-Type' => $contentType],
@@ -95,5 +104,65 @@ class ListExportService
         });
 
         echo ']';
+    }
+
+    private function streamXlsx(Builder $query, array $columnSpec, Collection $customDefs): void
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'xlsx-');
+
+        try {
+            $writer = new Writer();
+            $writer->openToFile($tempPath);
+
+            $dateStyle     = (new Style())->setFormat('yyyy-mm-dd');
+            $datetimeStyle = (new Style())->setFormat('yyyy-mm-dd hh:mm:ss');
+
+            $writer->addRow(Row::fromValues(array_merge(
+                array_column($columnSpec, 'header'),
+                $customDefs->pluck('label')->toArray(),
+            )));
+
+            $query->each(function (Model $model) use ($writer, $columnSpec, $customDefs, $dateStyle, $datetimeStyle) {
+                $cells = [];
+
+                foreach ($columnSpec as $col) {
+                    $type    = $col['type'] ?? null;
+                    $coerced = $this->coerceForXlsx(($col['value'])($model), $type);
+                    $style   = match ($type) {
+                        'date'     => $dateStyle,
+                        'datetime' => $datetimeStyle,
+                        default    => null,
+                    };
+
+                    $cells[] = Cell::fromValue($coerced, $style);
+                }
+
+                foreach ($customDefs as $def) {
+                    $cells[] = Cell::fromValue($model->custom_fields[$def->handle] ?? '');
+                }
+
+                $writer->addRow(new Row($cells));
+            });
+
+            $writer->close();
+
+            readfile($tempPath);
+        } finally {
+            @unlink($tempPath);
+        }
+    }
+
+    private function coerceForXlsx(mixed $value, ?string $type): bool|float|int|string|\DateTimeInterface|null
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        return match ($type) {
+            'date', 'datetime' => Carbon::parse($value),
+            'number' => (float) $value,
+            'boolean' => (bool) $value,
+            default => $value,
+        };
     }
 }

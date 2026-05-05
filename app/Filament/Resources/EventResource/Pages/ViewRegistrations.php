@@ -77,6 +77,20 @@ class ViewRegistrations extends Page implements HasTable
                             cfModelKey: 'event_registration',
                         );
                     }),
+
+                Actions\Action::make('exportXlsx')
+                    ->label('Export Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_event'))
+                    ->action(function (HasTable $livewire) use ($eventId): StreamedResponse {
+                        return app(ListExportService::class)->stream(
+                            query: $livewire->getFilteredSortedTableQuery()->orderBy('created_at'),
+                            columnSpec: EventResource::registrationExportColumnSpec(),
+                            format: 'xlsx',
+                            filename: "event-{$eventId}-registrations-" . now()->format('Y-m-d') . '.xlsx',
+                            cfModelKey: 'event_registration',
+                        );
+                    }),
             ])
             ->icon('heroicon-m-ellipsis-vertical')
             ->color('gray')

@@ -158,15 +158,15 @@ class MembershipResource extends Resource
         return [
             ['key' => 'tier',                'header' => 'tier',                'value' => fn (Membership $m) => $m->tier?->name],
             ['key' => 'status',              'header' => 'status',              'value' => fn (Membership $m) => $m->status],
-            ['key' => 'starts_on',           'header' => 'starts_on',           'value' => fn (Membership $m) => $m->starts_on?->toDateString()],
-            ['key' => 'expires_on',          'header' => 'expires_on',          'value' => fn (Membership $m) => $m->expires_on?->toDateString()],
-            ['key' => 'amount_paid',         'header' => 'amount_paid',         'value' => fn (Membership $m) => $m->amount_paid],
+            ['key' => 'starts_on',           'header' => 'starts_on',           'value' => fn (Membership $m) => $m->starts_on?->toDateString(),     'type' => 'date'],
+            ['key' => 'expires_on',          'header' => 'expires_on',          'value' => fn (Membership $m) => $m->expires_on?->toDateString(),    'type' => 'date'],
+            ['key' => 'amount_paid',         'header' => 'amount_paid',         'value' => fn (Membership $m) => $m->amount_paid,                    'type' => 'number'],
             ['key' => 'notes',               'header' => 'notes',               'value' => fn (Membership $m) => $m->notes],
             ['key' => 'external_id',         'header' => 'external_id',         'value' => fn (Membership $m) => $m->external_id],
             ['key' => 'contact_email',       'header' => 'contact_email',       'value' => fn (Membership $m) => $m->contact?->email],
             ['key' => 'contact_external_id', 'header' => 'contact_external_id', 'value' => fn (Membership $m) => $m->contact?->external_id],
             ['key' => 'organization_name',   'header' => 'organization_name',   'value' => fn (Membership $m) => $m->organization?->name],
-            ['key' => 'created_at',          'header' => 'created_at',          'value' => fn (Membership $m) => $m->created_at?->toDateTimeString()],
+            ['key' => 'created_at',          'header' => 'created_at',          'value' => fn (Membership $m) => $m->created_at?->toDateTimeString(), 'type' => 'datetime'],
         ];
     }
 }

@@ -165,9 +165,9 @@ class FundResource extends Resource
             ['key' => 'code',             'header' => 'code',             'value' => fn (Fund $f) => $f->code],
             ['key' => 'description',      'header' => 'description',      'value' => fn (Fund $f) => $f->description],
             ['key' => 'restriction_type', 'header' => 'restriction_type', 'value' => fn (Fund $f) => $f->restriction_type],
-            ['key' => 'is_active',        'header' => 'is_active',        'value' => fn (Fund $f) => (int) (bool) $f->is_active],
-            ['key' => 'is_archived',      'header' => 'is_archived',      'value' => fn (Fund $f) => (int) (bool) $f->is_archived],
-            ['key' => 'created_at',       'header' => 'created_at',       'value' => fn (Fund $f) => $f->created_at?->toDateTimeString()],
+            ['key' => 'is_active',        'header' => 'is_active',        'value' => fn (Fund $f) => (int) (bool) $f->is_active,             'type' => 'boolean'],
+            ['key' => 'is_archived',      'header' => 'is_archived',      'value' => fn (Fund $f) => (int) (bool) $f->is_archived,           'type' => 'boolean'],
+            ['key' => 'created_at',       'header' => 'created_at',       'value' => fn (Fund $f) => $f->created_at?->toDateTimeString(),    'type' => 'datetime'],
         ];
     }
 }
