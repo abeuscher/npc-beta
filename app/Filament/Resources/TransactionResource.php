@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\EventRegistration;
 use App\Models\Membership;
+use App\Models\Organization;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Transaction;
@@ -253,6 +254,11 @@ class TransactionResource extends Resource
                     ->options(fn () => Contact::orderByRaw("COALESCE(last_name, first_name)")
                         ->get()
                         ->mapWithKeys(fn ($c) => [$c->id => $c->display_name]))
+                    ->searchable(),
+
+                Tables\Filters\SelectFilter::make('organization_id')
+                    ->label('Organization')
+                    ->options(fn () => Organization::orderBy('name')->pluck('name', 'id'))
                     ->searchable(),
 
                 Tables\Filters\SelectFilter::make('product_id')

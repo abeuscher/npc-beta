@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Donation extends Model
@@ -81,5 +82,10 @@ class Donation extends Model
     public function transactions(): MorphMany
     {
         return $this->morphMany(Transaction::class, 'subject');
+    }
+
+    public function softCredits(): HasMany
+    {
+        return $this->hasMany(DonationCredit::class);
     }
 }

@@ -136,6 +136,11 @@ class Contact extends Model
         return $this->hasMany(Donation::class);
     }
 
+    public function softCreditsReceived(): MorphMany
+    {
+        return $this->morphMany(DonationCredit::class, 'attributable');
+    }
+
     public function importSession(): BelongsTo
     {
         return $this->belongsTo(ImportSession::class);

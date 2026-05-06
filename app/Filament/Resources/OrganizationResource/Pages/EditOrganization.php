@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\OrganizationResource\Pages;
 
 use App\Filament\Resources\OrganizationResource;
+use App\Filament\Resources\TransactionResource;
 use App\Models\Organization;
 use Filament\Actions;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
@@ -28,6 +29,14 @@ class EditOrganization extends ReadOnlyAwareEditRecord
                 }),
             Actions\ForceDeleteAction::make(),
             Actions\RestoreAction::make(),
+
+            Actions\ActionGroup::make([
+                Actions\Action::make('view_transactions')
+                    ->label('View transactions →')
+                    ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
+                    ->url(fn () => TransactionResource::getUrl('index')
+                        . '?tableFilters[organization_id][value]=' . $this->record->getKey()),
+            ]),
         ];
     }
 }

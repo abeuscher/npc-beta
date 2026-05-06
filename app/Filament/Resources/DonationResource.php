@@ -166,10 +166,11 @@ class DonationResource extends Resource
             ]);
     }
 
-    public static function getRelationManagers(): array
+    public static function getRelations(): array
     {
         return [
             RelationManagers\TransactionsRelationManager::class,
+            RelationManagers\SoftCreditsRelationManager::class,
         ];
     }
 

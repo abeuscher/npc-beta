@@ -72,6 +72,11 @@ class Organization extends Model
         return $this->hasMany(Donation::class);
     }
 
+    public function softCreditsReceived(): MorphMany
+    {
+        return $this->morphMany(DonationCredit::class, 'attributable');
+    }
+
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
