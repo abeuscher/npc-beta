@@ -190,7 +190,6 @@
       "Bash(chmod 700 storage/app/private/imports/bundles)"
     ],
     "deny": [
-      "Bash(git push:*)",
       "Bash(git merge:*)"
     ],
     "additionalDirectories": [
