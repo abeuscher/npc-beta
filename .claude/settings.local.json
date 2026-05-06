@@ -4,7 +4,8 @@
       "Bash(where php:*)",
       "Read(//c//**)",
       "Read(//c/laragon/bin/**)",
-      "Read(//c/xampp/**)"
+      "Read(//c/xampp/**)",
+      "Bash(git push:*)"
     ]
   }
 }
