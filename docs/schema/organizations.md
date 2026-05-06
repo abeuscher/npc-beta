@@ -7,6 +7,8 @@ Organizations that contacts can be affiliated with (companies, foundations, etc.
 | id | uuid | no | PK |
 | name | string | no | |
 | type | string | yes | values: nonprofit, for_profit, government, other |
+| industry | text | yes | Free-form industry / sector label. |
+| ein | text | yes | Employer Identification Number (US tax ID for orgs). |
 | website | string | yes | |
 | phone | string | yes | |
 | email | string | yes | |

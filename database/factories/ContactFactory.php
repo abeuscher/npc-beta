@@ -3,7 +3,9 @@
 namespace Database\Factories;
 
 use App\Data\SampleLibrary;
+use App\Models\Affiliation;
 use App\Models\Contact;
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ContactFactory extends Factory
@@ -55,6 +57,17 @@ class ContactFactory extends Factory
             $last  = preg_replace('/[^a-z0-9._-]/', '', strtolower($attributes['last_name']));
 
             return ['email' => "{$localPart}+{$first}_{$last}@gmail.com"];
+        });
+    }
+
+    public function withPrimaryAffiliation(Organization $organization): static
+    {
+        return $this->afterCreating(function (Contact $contact) use ($organization) {
+            Affiliation::create([
+                'contact_id'      => $contact->id,
+                'organization_id' => $organization->id,
+                'is_primary'      => true,
+            ]);
         });
     }
 }

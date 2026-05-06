@@ -1,7 +1,9 @@
 <?php
 
 use App\Filament\Resources\OrganizationResource;
+use App\Filament\Resources\OrganizationResource\RelationManagers\AffiliatedContactsRelationManager;
 use App\Filament\Resources\OrganizationResource\RelationManagers\EventsSponsoredRelationManager;
+use App\Models\Affiliation;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
@@ -21,10 +23,13 @@ beforeEach(function () {
     $this->actingAs($this->admin);
 });
 
-it('registers only the EventsSponsored panel on OrganizationResource', function () {
+it('registers AffiliatedContacts and EventsSponsored panels on OrganizationResource', function () {
     $relations = OrganizationResource::getRelations();
 
-    expect($relations)->toBe([EventsSponsoredRelationManager::class]);
+    expect($relations)->toBe([
+        AffiliatedContactsRelationManager::class,
+        EventsSponsoredRelationManager::class,
+    ]);
 });
 
 it('guardDeletion returns true for an Org with no related records', function () {
@@ -47,7 +52,7 @@ it('guardDeletion returns false and surfaces a notification when the Org has rel
         'source'          => Source::IMPORT,
     ]);
 
-    Contact::factory()->count(2)->create(['organization_id' => $org->id]);
+    Contact::factory()->count(2)->withPrimaryAffiliation($org)->create();
 
     expect(OrganizationResource::guardDeletion($org))->toBeFalse();
 });
@@ -56,7 +61,7 @@ it('counts each related-records bucket', function () {
     $org     = Organization::factory()->create();
     $contact = Contact::factory()->create();
 
-    Contact::factory()->count(2)->create(['organization_id' => $org->id]);
+    Contact::factory()->count(2)->withPrimaryAffiliation($org)->create();
     Donation::create([
         'contact_id'      => $contact->id,
         'organization_id' => $org->id,
@@ -90,7 +95,7 @@ it('counts each related-records bucket', function () {
 
 it('force-delete cascades SET NULL on every related record without deleting them', function () {
     $org     = Organization::factory()->create();
-    $contact = Contact::factory()->create(['organization_id' => $org->id]);
+    $contact = Contact::factory()->withPrimaryAffiliation($org)->create();
 
     $donation = Donation::create([
         'contact_id'      => $contact->id,
@@ -137,8 +142,11 @@ it('force-delete cascades SET NULL on every related record without deleting them
 
     expect(Organization::withTrashed()->find($org->id))->toBeNull();
 
-    // Every related record survives, with org link nulled.
-    expect(Contact::find($contact->id)->organization_id)->toBeNull();
+    // Contact survives; its affiliation row cascade-deletes with the org.
+    expect(Contact::find($contact->id))->not->toBeNull();
+    expect(Affiliation::where('contact_id', $contact->id)->exists())->toBeFalse();
+
+    // Every other related record survives, with org link nulled.
     expect(Donation::find($donation->id)->organization_id)->toBeNull();
     expect(Membership::find($membership->id)->organization_id)->toBeNull();
     expect(Event::find($event->id)->sponsor_organization_id)->toBeNull();

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -54,7 +55,6 @@ class Contact extends Model
     }
 
     protected $fillable = [
-        'organization_id',
         'household_id',      // self-referential FK → contacts.id; equals id when solo/head
         'prefix',
         'first_name',
@@ -89,9 +89,21 @@ class Contact extends Model
     // Relationships
     // -------------------------------------------------------------------------
 
-    public function organization(): BelongsTo
+    public function affiliations(): HasMany
     {
-        return $this->belongsTo(Organization::class);
+        return $this->hasMany(Affiliation::class);
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'affiliations')
+            ->withPivot(['role', 'is_primary'])
+            ->withTimestamps();
+    }
+
+    public function primaryAffiliation(): HasOne
+    {
+        return $this->hasOne(Affiliation::class)->where('is_primary', true);
     }
 
     public function head(): BelongsTo
@@ -205,5 +217,10 @@ class Contact extends Model
     public function getDisplayNameAttribute(): string
     {
         return implode(' ', array_filter([$this->first_name, $this->last_name]));
+    }
+
+    public function getPrimaryOrganizationAttribute(): ?Organization
+    {
+        return $this->primaryAffiliation?->organization;
     }
 }

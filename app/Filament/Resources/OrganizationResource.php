@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrganizationResource\Pages;
+use App\Filament\Resources\OrganizationResource\RelationManagers\AffiliatedContactsRelationManager;
 use App\Filament\Resources\OrganizationResource\RelationManagers\EventsSponsoredRelationManager;
 use App\Models\Organization;
 use Filament\Forms;
@@ -42,6 +43,15 @@ class OrganizationResource extends Resource
                             'other'      => 'Other',
                         ])
                         ->nullable()
+                        ->columnSpan(6),
+
+                    Forms\Components\TextInput::make('industry')
+                        ->maxLength(255)
+                        ->columnSpan(6),
+
+                    Forms\Components\TextInput::make('ein')
+                        ->label('EIN')
+                        ->maxLength(255)
                         ->columnSpan(6),
 
                     Forms\Components\TextInput::make('website')
@@ -144,7 +154,7 @@ class OrganizationResource extends Resource
                             if ($blocked->isNotEmpty()) {
                                 Notification::make()
                                     ->title('Cannot delete')
-                                    ->body($blocked->count() . ' organization(s) have linked members, donations, memberships, sponsored events, or invoices. Reassign or remove those records, or use Force Delete.')
+                                    ->body($blocked->count() . ' organization(s) have affiliated contacts, donations, memberships, sponsored events, or invoices. Reassign or remove those records, or use Force Delete.')
                                     ->danger()
                                     ->send();
 
@@ -159,7 +169,7 @@ class OrganizationResource extends Resource
 
     public static function countRelatedRecords(Organization $organization): int
     {
-        return $organization->contacts()->count()
+        return $organization->affiliations()->count()
             + $organization->donations()->count()
             + $organization->memberships()->count()
             + $organization->eventsSponsored()->count()
@@ -169,7 +179,7 @@ class OrganizationResource extends Resource
     public static function guardDeletion(Organization $organization): bool
     {
         $counts = [
-            'affiliated contacts' => $organization->contacts()->count(),
+            'affiliated contacts' => $organization->affiliations()->count(),
             'donations'           => $organization->donations()->count(),
             'memberships'         => $organization->memberships()->count(),
             'sponsored events'    => $organization->eventsSponsored()->count(),
@@ -189,7 +199,7 @@ class OrganizationResource extends Resource
 
         Notification::make()
             ->title('Cannot delete')
-            ->body('This organization has ' . implode(', ', $parts) . '. Reassign or remove these before deleting, or use Force Delete to keep the records and null their organization link.')
+            ->body('This organization has ' . implode(', ', $parts) . '. Reassign or remove these before deleting, or use Force Delete to remove the affiliations and null the organization link on the other records.')
             ->danger()
             ->send();
 
@@ -205,6 +215,7 @@ class OrganizationResource extends Resource
     public static function getRelations(): array
     {
         return [
+            AffiliatedContactsRelationManager::class,
             EventsSponsoredRelationManager::class,
         ];
     }

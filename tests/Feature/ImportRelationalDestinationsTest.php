@@ -99,9 +99,12 @@ it('auto_create strategy links rows to an existing Organization and creates miss
     $acme = Organization::where('name', 'ACME')->first();
     $blue = Organization::where('name', 'Blue Sky')->first();
 
+    $alice = Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first();
+    $bob   = Contact::withoutGlobalScopes()->where('email', 'b@example.com')->first();
+
     expect(Organization::count())->toBe(2)
-        ->and(Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first()->organization_id)->toBe($acme->id)
-        ->and(Contact::withoutGlobalScopes()->where('email', 'b@example.com')->first()->organization_id)->toBe($blue->id);
+        ->and(\App\Models\Affiliation::where('contact_id', $alice->id)->where('organization_id', $acme->id)->where('is_primary', true)->exists())->toBeTrue()
+        ->and(\App\Models\Affiliation::where('contact_id', $bob->id)->where('organization_id', $blue->id)->where('is_primary', true)->exists())->toBeTrue();
 });
 
 // ── Organization: match_only leaves unmatched rows unlinked ───────────────────
@@ -126,9 +129,12 @@ it('match_only strategy does not create new Organizations and leaves unmatched r
 
     $acme = Organization::where('name', 'ACME')->first();
 
+    $alice = Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first();
+    $bob   = Contact::withoutGlobalScopes()->where('email', 'b@example.com')->first();
+
     expect(Organization::count())->toBe(1) // Unknown Org NOT created
-        ->and(Contact::withoutGlobalScopes()->where('email', 'a@example.com')->first()->organization_id)->toBe($acme->id)
-        ->and(Contact::withoutGlobalScopes()->where('email', 'b@example.com')->first()->organization_id)->toBeNull();
+        ->and(\App\Models\Affiliation::where('contact_id', $alice->id)->where('organization_id', $acme->id)->where('is_primary', true)->exists())->toBeTrue()
+        ->and(\App\Models\Affiliation::where('contact_id', $bob->id)->exists())->toBeFalse();
 });
 
 // ── Organization: dry-run preview surfaces create/match/unmatched buckets ─────

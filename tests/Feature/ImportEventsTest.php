@@ -510,17 +510,17 @@ it('applies event tags (delimited) to the created Event via the __tag_event__ se
         ->and(Tag::where('type', 'event')->count())->toBe(3);
 });
 
-// ── Contact organization fill-blanks-only ────────────────────────────────────
+// ── Contact organization affiliation via __org_contact__ ────────────────────
 
-it('fills Contact.organization_id when blank using __org_contact__, never overwrites', function () {
+it('creates an affiliation via __org_contact__: primary if contact has none, additional otherwise', function () {
     $source = ImportSource::create(['name' => 'Org Source']);
 
-    // Contact A has no org; will get linked.
-    $a = Contact::factory()->create(['email' => 'a@example.com', 'organization_id' => null]);
+    // Contact A has no affiliations; the import becomes their primary.
+    $a = Contact::factory()->create(['email' => 'a@example.com']);
 
-    // Contact B already has an org; must not be overwritten.
+    // Contact B already has a primary affiliation; the import becomes a secondary affiliation.
     $existingOrg = Organization::create(['name' => 'Existing Org']);
-    $b = Contact::factory()->create(['email' => 'b@example.com', 'organization_id' => $existingOrg->id]);
+    $b = Contact::factory()->withPrimaryAffiliation($existingOrg)->create(['email' => 'b@example.com']);
 
     $path = eventsCsv([
         ['Event ID', 'Event title', 'Start date', 'Email', 'Organization'],
@@ -550,17 +550,26 @@ it('fills Contact.organization_id when blank using __org_contact__, never overwr
         $page->tick();
     }
 
-    $a->refresh();
-    $b->refresh();
-
-    $acme = Organization::whereRaw('LOWER(name) = ?', ['acme corp'])->first();
+    $acme  = Organization::whereRaw('LOWER(name) = ?', ['acme corp'])->first();
+    $other = Organization::whereRaw('LOWER(name) = ?', ['other corp'])->first();
 
     expect($acme)->not->toBeNull()
-        ->and($a->organization_id)->toBe($acme->id)
-        ->and($b->organization_id)->toBe($existingOrg->id) // NOT overwritten to "Other Corp"
-        // "Other Corp" is NOT created — we skip Organization creation entirely
-        // for contacts that already have a link, to avoid orphan rows.
-        ->and(Organization::whereRaw('LOWER(name) = ?', ['other corp'])->exists())->toBeFalse();
+        ->and($other)->not->toBeNull();
+
+    // Contact A: one affiliation, primary = Acme.
+    $aAffiliations = \App\Models\Affiliation::where('contact_id', $a->id)->get();
+    expect($aAffiliations)->toHaveCount(1)
+        ->and($aAffiliations->first()->organization_id)->toBe($acme->id)
+        ->and($aAffiliations->first()->is_primary)->toBeTrue();
+
+    // Contact B: two affiliations; primary stays Existing Org; Other Corp is non-primary.
+    $bPrimary   = \App\Models\Affiliation::where('contact_id', $b->id)->where('is_primary', true)->first();
+    $bSecondary = \App\Models\Affiliation::where('contact_id', $b->id)->where('is_primary', false)->first();
+
+    expect($bPrimary)->not->toBeNull()
+        ->and($bPrimary->organization_id)->toBe($existingOrg->id)
+        ->and($bSecondary)->not->toBeNull()
+        ->and($bSecondary->organization_id)->toBe($other->id);
 });
 
 it('saveMapping writes to events_* columns without touching contact-scoped columns', function () {

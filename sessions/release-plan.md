@@ -76,6 +76,14 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the new endpoint + controller + spec-doc revision; the mtime cross-check integrity guard as the regression-guard for the misleading-success class of bug.
 - **estimated time cost:** 1 session. **Closed at session 263.**
 
+#### A1d'. Backup notification hardening — FM 020 finding *(A1d follow-on)*
+
+- **gate:** release
+- **prerequisites:** A1d closed at session 263 (the backup-trigger endpoint surface this hardens against). FM 020 manual testing on 2026-05-05 surfaced the structural fragility this entry closes.
+- **success criterion:** Spatie's mail-channel notification dropped on the success path (`BackupWasSuccessfulNotification` / `HealthyBackupWasFoundNotification` / `CleanupWasSuccessfulNotification` flip from `['mail']` to `[]`) so it can no longer kneecap `RecordBackupSuccess` via listener-chain throw propagation. Failure-class notifications (`BackupHasFailedNotification` / `UnhealthyBackupWasFoundNotification` / `CleanupHasFailedNotification`) keep `['mail']` as the FM-down redundancy layer. `AppServiceProvider::boot()` gains three sibling overrides bridging `SiteSetting` into spatie's parallel `backup.notifications.mail.from.address` / `from.name` / `to` config keys (eliminates the `'your@example.com'` placeholder; uses the same SiteSetting-driven values as the rest of the app's mail). No agent contract change; no schema change; no FM-side change.
+- **artifact:** the config + service-provider edits + regression-guard tests against re-introducing either fragility (success-channel mail OR unbridged from-address).
+- **estimated time cost:** 1 session, small.
+
 #### A2. Fleet Manager — node operations parity
 
 - **gate:** release
@@ -130,7 +138,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** B1a (transactional FKs in place); B2 (onboarding rehearsal informs the junction shape).
-- **success criterion:** New `affiliations` junction table (`contact_id`, `organization_id`, `role`, `start_date`, `end_date`, `is_primary`) supporting multi-employer / multi-role Contact↔Org relationships. New `donation_credits` junction supporting soft-credit attribution (a single gift attributed to multiple parties — e.g., the giving Org plus the human who triggered it). One-time data migration of existing `Contact.organization_id` rows → `affiliations` rows with `is_primary = true`. `Contact.organization_id` then either derived (cached) or dropped per the migration shape that emerges. Org contact-info parity audit and gap-fill (Organization model already has phone / website / address / type / notes — confirm whether industry / EIN are needed and add accordingly). **Deletion-policy revision** — junction-aware deletion semantics: deleting an Org with affiliated Contacts surfaces the affiliations as well as the four transactional FKs; force-delete cascade rules need to handle the junction. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges.
+- **success criterion:** Split per Rule 11 — **structural half (affiliations + Org gaps + admin UI) shipped at session 264; soft-credit half (donation_credits) ships at session 265.** Final shape: `affiliations` junction table (`contact_id`, `organization_id`, `role`, `is_primary`) supporting multi-employer / multi-role Contact↔Org relationships (date-range columns dropped mid-264 as confusing-without-purpose). `Contact.organization_id` dropped outright with one-shot data migration to `affiliations` rows with `is_primary = true`. Five importer touch sites rerouted to `Affiliation::bindContactToOrganization` (Contacts importer + the four `__org_contact__` callers — Donations / Memberships / Events / Invoice Details). Contact admin form gains an affiliations Repeater. Org admin gains industry + EIN columns, an Affiliated Contacts panel (replacing the ellipsis-menu deep-link), and the deletion-guard count incorporates affiliations. `donation_credits` + soft-credit display land at 265. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges.
 - **artifact:** the feature itself; carries the affiliation modelling required for any sales narrative involving complex donor relationships.
 - **estimated time cost:** 1–2 sessions; may split per Rule 11.
 
@@ -453,34 +461,36 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 16. **B2b.** Export CSV + JSON actions for non-Contact list resources *(B2 follow-on; closed at session 261)*
 17. **B2b'.** XLSX format add for list resources *(B2b follow-on; closed at session 262)*
 18. **A1d.** Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint *(closed at session 263 — execution-order deviation: A1d jumped the queue ahead of B1b at 262 close to unblock FM session 020 CRM-side)* ✅
-19. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)*
-20. **E10.** Full-Width Architecture Enforcement
-21. **E11.** Page Builder Focus-Scroll Clamp
-22. **C1.** Notes Permissions (feature half)
-23. **E9.** Widget Help Authoring
-24. **C2.** Event Ticket Tiers
-25. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-26. **E4.** Stripe Checkout Branding *(precedes C4)*
-27. **C4.** Donation-to-acknowledgment loop
-28. **C5.** Event with everything
-29. **C6.** Membership renewal cycle
-30. **C7.** Email at volume
-31. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-32. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-33. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-34. **E8.** UI/UX Sprint
-35. **E12.** Housekeeping Batch 2
-36. **D1.** Scale rehearsal
-37. **D2.** Compatibility cluster
-38. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-39. **E13.** Help docs body content
-40. **E14.** Third-Party Licensing Compliance Audit
-41. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-42. **D4.** Test suite review — cost & shape
-43. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-44. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-45. **F3.** On-Demand E2E — Permission / role-gate matrix
-46. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+19. **B1b.** Affiliations Junction (structural half) *(closed at session 264; post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)* ✅
+20. **B1b.** Donation Credits — Soft-Credit Layer *(session 265; B1b's checkmark drops here per the Rule 11 split applied at 264)*
+21. **A1d'.** Backup notification hardening — FM 020 finding *(session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)*
+22. **E10.** Full-Width Architecture Enforcement
+23. **E11.** Page Builder Focus-Scroll Clamp
+24. **C1.** Notes Permissions (feature half)
+25. **E9.** Widget Help Authoring
+26. **C2.** Event Ticket Tiers
+27. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+28. **E4.** Stripe Checkout Branding *(precedes C4)*
+29. **C4.** Donation-to-acknowledgment loop
+30. **C5.** Event with everything
+31. **C6.** Membership renewal cycle
+32. **C7.** Email at volume
+33. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+34. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+35. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+36. **E8.** UI/UX Sprint
+37. **E12.** Housekeeping Batch 2
+38. **D1.** Scale rehearsal
+39. **D2.** Compatibility cluster
+40. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+41. **E13.** Help docs body content
+42. **E14.** Third-Party Licensing Compliance Audit
+43. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+44. **D4.** Test suite review — cost & shape
+45. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+46. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+47. **F3.** On-Demand E2E — Permission / role-gate matrix
+48. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
