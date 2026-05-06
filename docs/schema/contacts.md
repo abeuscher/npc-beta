@@ -5,7 +5,6 @@ Individual people in the CRM — donors, volunteers, members, etc.
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
 | id | uuid | no | PK |
-| organization_id | uuid | yes | FK→organizations, nullOnDelete |
 | household_id | uuid | yes | FK→contacts (self), nullOnDelete; equals `id` when contact is solo/head |
 | prefix | string | yes | |
 | first_name | string | yes | |

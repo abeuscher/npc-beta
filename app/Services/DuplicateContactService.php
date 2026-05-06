@@ -131,7 +131,7 @@ class DuplicateContactService
                 'prefix', 'first_name', 'last_name', 'email', 'phone',
                 'address_line_1', 'address_line_2', 'city', 'state',
                 'postal_code', 'date_of_birth', 'country',
-                'organization_id', 'household_id',
+                'household_id',
             ];
 
             foreach ($scalarFields as $field) {
@@ -189,6 +189,23 @@ class DuplicateContactService
             DB::table('event_registrations')
                 ->where('contact_id', $discardId)
                 ->update(['contact_id' => $survivorId]);
+
+            // Affiliations — move discard's affiliations whose org isn't already
+            // bound to the survivor; drop the duplicate-org rows. Moved rows lose
+            // is_primary so the partial unique index isn't tripped; operator can
+            // re-promote on the survivor afterwards.
+            $survivorOrgIds = DB::table('affiliations')
+                ->where('contact_id', $survivorId)
+                ->pluck('organization_id');
+
+            DB::table('affiliations')
+                ->where('contact_id', $discardId)
+                ->whereNotIn('organization_id', $survivorOrgIds)
+                ->update(['contact_id' => $survivorId, 'is_primary' => false]);
+
+            DB::table('affiliations')
+                ->where('contact_id', $discardId)
+                ->delete();
 
             $discard->delete();
         });

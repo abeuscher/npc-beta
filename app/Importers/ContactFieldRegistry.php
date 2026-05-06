@@ -17,7 +17,6 @@ class ContactFieldRegistry extends FieldRegistry
      * These are system-managed or require special handling outside the column map.
      */
     protected static array $excluded = [
-        'organization_id',
         'household_id',
         'custom_data',
         'custom_fields',

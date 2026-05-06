@@ -28,7 +28,7 @@ it('soft deletes an organization without destroying the record', function () {
 
 it('has many contacts', function () {
     $org = Organization::factory()->create();
-    Contact::factory()->count(3)->create(['organization_id' => $org->id]);
+    Contact::factory()->count(3)->withPrimaryAffiliation($org)->create();
 
     expect($org->contacts)->toHaveCount(3)
         ->and($org->contacts->first())->toBeInstanceOf(Contact::class);
@@ -36,8 +36,8 @@ it('has many contacts', function () {
 
 it('contacts relationship excludes soft-deleted contacts', function () {
     $org = Organization::factory()->create();
-    $active = Contact::factory()->create(['organization_id' => $org->id]);
-    $deleted = Contact::factory()->create(['organization_id' => $org->id]);
+    $active = Contact::factory()->withPrimaryAffiliation($org)->create();
+    $deleted = Contact::factory()->withPrimaryAffiliation($org)->create();
     $deleted->delete();
 
     expect($org->contacts)->toHaveCount(1)

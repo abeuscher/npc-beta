@@ -11,6 +11,7 @@ Last updated: 2026-04-22 (session 208 — migration squash)
 ## Table index
 
 - [activity_logs](activity_logs.md)
+- [affiliations](affiliations.md)
 - [cache](cache.md)
 - [cache_locks](cache_locks.md)
 - [campaigns](campaigns.md)

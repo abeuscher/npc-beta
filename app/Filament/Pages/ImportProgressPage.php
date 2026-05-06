@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Pages\Concerns\ImportDryRunRollback;
 use App\Filament\Pages\Concerns\InteractsWithImportProgress;
+use App\Models\Affiliation;
 use App\Models\Contact;
 use App\Models\ImportIdMap;
 use App\Models\ImportLog;
@@ -440,7 +441,10 @@ class ImportProgressPage extends Page
 
                 $orgOutcome = $this->applyOrganizationForContact($existing, $orgName, $context, stageUpdate: true);
                 if ($orgOutcome['id']) {
-                    $nonNull['organization_id'] = $orgOutcome['id'];
+                    $org = Organization::find($orgOutcome['id']);
+                    if ($org) {
+                        Affiliation::bindContactToOrganization($existing, $org);
+                    }
                 }
 
                 ImportStagedUpdate::create([
@@ -502,8 +506,10 @@ class ImportProgressPage extends Page
 
         $orgOutcome = $this->applyOrganizationForContact($contact, $orgName, $context, stageUpdate: false);
         if ($orgOutcome['id']) {
-            $contact->organization_id = $orgOutcome['id'];
-            $contact->save();
+            $org = Organization::find($orgOutcome['id']);
+            if ($org) {
+                Affiliation::bindContactToOrganization($contact, $org);
+            }
         }
 
         if (! empty($this->tagIds)) {

@@ -6,6 +6,7 @@ use App\Filament\Resources\ContactResource\Pages;
 use App\Forms\Components\TagSelect;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
+use App\Models\Organization;
 use App\Models\PortalAccount;
 use App\Services\QuickBooks\QuickBooksAuth;
 use App\Support\DateFormat;
@@ -180,16 +181,40 @@ class ContactResource extends Resource
                             ->nullable(),
                     ]),
 
-                Forms\Components\Section::make('Affiliation')
-                    ->collapsible()
-                    ->collapsed()
+                Forms\Components\Section::make('Affiliations')
                     ->schema([
-                        Forms\Components\Select::make('organization_id')
-                            ->label('Organization')
-                            ->relationship('organization', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->nullable(),
+                        Forms\Components\Repeater::make('affiliations')
+                            ->label('')
+                            ->relationship('affiliations')
+                            ->schema([
+                                Forms\Components\Select::make('organization_id')
+                                    ->label('Organization')
+                                    ->relationship('organization', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('role')
+                                    ->label('Role')
+                                    ->placeholder('e.g. Board member, Donor liaison'),
+
+                                Forms\Components\Toggle::make('is_primary')
+                                    ->label('Primary')
+                                    ->default(false),
+                            ])
+                            ->itemLabel(function (array $state): string {
+                                $org = filled($state['organization_id'] ?? null)
+                                    ? Organization::find($state['organization_id'])?->name
+                                    : null;
+                                $role = filled($state['role'] ?? null) ? $state['role'] : 'No role';
+
+                                return ($org ?? 'New affiliation') . ' — ' . $role;
+                            })
+                            ->collapsible()
+                            ->collapsed()
+                            ->reorderable(false)
+                            ->addActionLabel('Add affiliation')
+                            ->defaultItems(0),
                     ]),
 
                 Forms\Components\Section::make('QuickBooks')
@@ -307,9 +332,9 @@ class ContactResource extends Resource
                     ->label('In a household')
                     ->query(fn ($query) => $query->whereColumn('household_id', '!=', 'id')),
 
-                Tables\Filters\SelectFilter::make('organization_id')
+                Tables\Filters\SelectFilter::make('organization')
                     ->label('Organization')
-                    ->relationship('organization', 'name')
+                    ->relationship('organizations', 'name')
                     ->searchable()
                     ->preload(),
 

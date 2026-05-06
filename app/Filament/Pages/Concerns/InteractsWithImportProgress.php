@@ -815,7 +815,7 @@ trait InteractsWithImportProgress
 
     protected function applyContactOrganization(Contact $contact, ?string $orgName, array $context): void
     {
-        if (blank($orgName) || ! blank($contact->organization_id)) {
+        if (blank($orgName)) {
             return;
         }
 
@@ -825,12 +825,7 @@ trait InteractsWithImportProgress
             return;
         }
 
-        Contact::withoutGlobalScopes()
-            ->where('id', $contact->id)
-            ->whereNull('organization_id')
-            ->update(['organization_id' => $org->id]);
-
-        $contact->organization_id = $org->id;
+        \App\Models\Affiliation::bindContactToOrganization($contact, $org);
     }
 
     protected function resolveOrganizationByName(?string $orgName, array $context, string $relationalType): ?Organization

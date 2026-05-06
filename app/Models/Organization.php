@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -32,6 +33,8 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'type',
+        'industry',
+        'ein',
         'website',
         'phone',
         'email',
@@ -52,9 +55,16 @@ class Organization extends Model
         'custom_fields' => 'array',
     ];
 
-    public function contacts(): HasMany
+    public function affiliations(): HasMany
     {
-        return $this->hasMany(Contact::class);
+        return $this->hasMany(Affiliation::class);
+    }
+
+    public function contacts(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class, 'affiliations')
+            ->withPivot(['role', 'is_primary'])
+            ->withTimestamps();
     }
 
     public function donations(): HasMany
