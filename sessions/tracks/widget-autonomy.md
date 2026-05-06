@@ -8,9 +8,11 @@ This is a **process experiment** as much as a feature track. Whether it works is
 
 ## Status snapshot
 
-**Last update:** 2026-05-06 (track initiated).
+**Last update:** 2026-05-06 (track initiated; open questions resolved).
 
-**State:** Planning. No work landed. Pending user decisions (see Open questions) before the first session opens.
+**State:** Planning. No work landed. Open questions resolved (see Resolved decisions). Remaining blockers are operational, not architectural — see "Pre-launch blockers" below.
+
+**Destination repo for extracted widgets:** `https://github.com/abeuscher/npc-widgets` (currently blank).
 
 **Track owns:** all widget-touching work for the duration of the experiment — `app/Widgets/*`, the widget contract surface (`WidgetDefinition`, `WidgetRegistry`, `WidgetType`), the public widget asset bundle, and the page-builder Vue surfaces that consume widget definitions. Main track stops touching these surfaces while the experiment runs.
 
@@ -52,13 +54,12 @@ The track is also a chance to test multi-agent coordination on a low-risk surfac
 
 ## Sequence
 
-1. **Pending user decisions land.** Extract-first vs in-place, abort budget, autonomy-track exemption wording in CLAUDE.md.
-2. **Extraction (single session, main track, normal cadence).** If extract-first is chosen: move `app/Widgets/*` to its own package or sibling repo with composer-installed-back wiring; update autoload, namespaces, `WidgetServiceProvider`. Held on a long-lived branch (`widget-autonomy/extraction`) until the experiment validates — does **not** merge to main during the experiment.
-3. **E9 + E10 (contract-layer changes).** Single writer agent on each, sequenced not parallel. Establishes the contract surface per-widget agents will write against.
-4. **Stage 5d+ batches + Stage 6 browser UI.** Embarrassingly parallel. Multiple writer agents, one per widget batch or per Stage 6 phase. Gate agent enforces formal contract on every PR.
-5. **Stage 7 design session.** User in the loop. Security model, package format, trust posture nailed. Single session, normal cadence.
-6. **Stage 7 implementation.** Lands on the autonomy branch; does not merge to main until the experiment concludes.
-7. **Experiment conclusion.** Either merge accumulated work to main in coherent chunks (success) or abandon all autonomy branches (abort). See Exit / Suspend criteria.
+1. **Extraction (single session, main track, normal cadence).** Move `app/Widgets/*` to the `abeuscher/npc-widgets` composer package living at `https://github.com/abeuscher/npc-widgets`; update autoload, namespaces, `WidgetServiceProvider`; wire host `composer.json` to consume the new package. Held on a long-lived branch (`widget-autonomy/extraction`) until the experiment validates — does **not** merge to main during the experiment.
+2. **E9 + E10 (contract-layer changes).** Single writer agent on each, sequenced not parallel. Establishes the contract surface per-widget agents will write against.
+3. **Stage 5d+ batches + Stage 6 browser UI.** Embarrassingly parallel. Multiple writer agents, one per widget batch or per Stage 6 phase. Gate agent enforces formal contract on every PR.
+4. **Stage 7 design session.** User in the loop. Security model, package format, trust posture nailed. Single session, normal cadence.
+5. **Stage 7 implementation.** Lands on the autonomy branch; does not merge to main until the experiment concludes.
+6. **Experiment conclusion.** Either merge accumulated work to main in coherent chunks (success) or abandon all autonomy branches (abort). See Exit / Suspend criteria.
 
 Per-widget work (step 4) is the only step that runs multiple agents concurrently. Steps 2, 3, 5 are single-agent work that happens to live on the autonomy track for sequencing reasons.
 
@@ -153,8 +154,8 @@ Stage 8 is **not** in the exit criterion. It belongs to a later, less-autonomous
 
 The experiment aborts (autonomy branches dropped, work returns to main-track cadence) if any of the following hold:
 
-- **Calendar abort budget exceeded.** Set a number when the experiment opens. Recommended starting value: TBD (open question — see below). When the calendar trigger fires, abort is the default and re-commit is the explicit decision, not the other way around.
-- **Merge-gate backlog grows past a defined threshold.** If green PRs queue up faster than the user can review them, the experiment isn't reducing user load — it's deferring it. Threshold: TBD.
+- **Calendar abort budget exceeded.** Two calendar weeks from track open. If the experiment runs longer, it isn't winning. When the calendar trigger fires, abort is the default and re-commit is the explicit decision, not the other way around.
+- **Merge-gate backlog grows past five green PRs.** If green PRs queue up faster than the user can review them, the experiment isn't reducing user load — it's deferring it.
 - **Two contract-layer-conflict events in a single week.** Indicates the boundary isn't holding and agents are stepping on each other or on main-track work.
 - **The user finds themselves reviewing more agent output than they would have written themselves.** Subjective but real. If the experiment isn't a multiplier, it's a tax.
 - **A safety incident.** An agent ships something the gate didn't catch and the user catches it post-merge. One is data; two is abort.
@@ -197,15 +198,24 @@ Each session ends with:
 
 ---
 
-## Open questions (pending user decisions)
+## Resolved decisions
 
-These resolve before the first session opens.
+Captured at track open (2026-05-06), informed by the planning conversation.
 
-- **Extract-first or in-place?** Extract-first (move `app/Widgets/*` to its own package or sibling repo) is architecturally cleaner and matches the long-term marketplace direction; in-place is faster to start. Decision shapes step 2 of the sequence.
-- **Calendar abort budget.** N sessions or M weeks. Picked in advance, not after the fact. Recommended order-of-magnitude: 4–8 weeks or 6–10 sessions, whichever comes first.
-- **Merge-gate backlog threshold.** Number of green PRs the user is willing to carry without abort triggering. Recommended starting value: 5.
-- **Reviewer agent: ship in the first iteration or wait?** Recommended: wait. Start with writer + gate; add reviewer if the writer/gate loop is stable and convention drift is showing up in green PRs.
-- **CLAUDE.md rephrasing.** "Phase advancement requires explicit instruction" → "Milestone advancement requires explicit instruction," with milestone defined as "PR ready for review" rather than "code complete." Carve-out documented for the autonomy track.
+- **Extract-first.** `app/Widgets/*` lifts to `abeuscher/npc-widgets` (`https://github.com/abeuscher/npc-widgets`, currently blank) as a composer-installed package. Architecturally cleaner and matches the long-term marketplace direction.
+- **Calendar abort budget: two calendar weeks.** If the experiment runs longer, it isn't winning. Calendar trigger flips abort to default; re-commit is the explicit decision.
+- **Merge-gate backlog threshold: 5 green PRs.** Past that, abort triggers.
+- **Reviewer agent: deferred.** Start with writer + gate; add reviewer in a later iteration if the writer/gate loop is stable. The reviewer's eventual brief carries explicit user concerns: do not duplicate functionality, do not put code in markup when it can live in PHP/JS, do not let files run overly long, prune occasional test-doc and orphan-file accumulation. Worth doing eventually; not a first-iteration blocker.
+- **CLAUDE.md milestone rephrasing landed.** "Phase advancement requires explicit instruction" → "Milestone advancement requires explicit instruction," with milestone defined as "PR ready for review." Cross-track carve-out clause references this doc.
+
+## Pre-launch blockers
+
+Operational, not architectural. Surface and resolve before the first extraction session opens.
+
+- **`npc-widgets` repo access from this environment.** Repo is blank. Need clone + push credentials configured (SSH key or HTTPS credential helper) so the extraction session can land commits on it. User-side setup task.
+- **Composer linkage strategy during development.** Path repository (`composer.json` `repositories` entry pointing at a local checkout) for hot iteration vs VCS repository (commits to the new repo, slower iteration). Recommended: path repo until the package shape is stable, then switch to VCS. Decision lands inside the extraction session.
+- **Namespace strategy.** Either keep `App\Widgets` (host-tied namespace; complicates package portability) or rename to a package-owned namespace like `Npc\Widgets` (cleaner; cascade-renames ~40 widget folders + every `use App\Widgets\…` in the host repo). Recommended: rename. Real lift — every consumer in the Vue page-builder, every test, every service-provider boot line. Decision lands inside the extraction session, but worth flagging now because it expands the extraction's surface meaningfully.
+- **Auto-discovery vs hardcoded boot.** `WidgetServiceProvider::boot()` currently has 39 hardcoded `$registry->register(new XDefinition())` lines. Extraction either preserves that pattern (and the package's own service provider carries the list) or moves to filesystem auto-discovery (cleaner long-term; pre-stage to Stage 7's install/uninstall mechanics). Recommended: auto-discovery, since the package already implies a registration boundary.
 
 ---
 

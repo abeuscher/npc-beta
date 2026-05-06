@@ -1,6 +1,6 @@
 ## Session Pacing
 
-- Never advance to the next phase or step without an explicit user instruction. After completing any milestone, stop and wait.
+- Never advance to the next milestone without an explicit user instruction. A milestone is "PR ready for review" — implementation complete, tests green, build clean. After completing one, stop and wait. (Cross-track work like Widget Autonomy may carry its own milestone definition; see the relevant track doc.)
 - Never suggest, ask about, or initiate session close. The user initiates close explicitly. Wait in silence until told.
 
 ## Git Workflow
