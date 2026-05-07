@@ -348,11 +348,12 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Resolve where widget help lives, how it surfaces, the rollup story; land first 3–5 widget help entries to validate the chosen pattern.
 - **estimated time cost:** 1 session.
 
-#### E10. Full-Width Architecture Enforcement
+#### E10. Full-Width Architecture Enforcement ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub. Bind widgets to the page-layout's full-width contract at the architecture level so individual widget templates cannot bypass it.
+- **success criterion** *(closed at session 267)*: The single `full_width` toggle split into `background_full_width` + `content_full_width` on widgets (`page_widgets.appearance_config.layout`), column layouts (`page_layouts.layout_config`), and per-type defaults (`widget_types` column-replace migration). Render pipeline collapsed the prior three full-width read sites in `AppearanceStyleComposer` + `PageBlockRenderer` into one helper with column-child clamping and `(false, true) → (true, true)` normalization. The renderer separates layout appearance from grid display: `.page-layout` (bg) > optional `.site-container` (content) > `.layout-grid` (display). Bypass audit ran across all 38 widgets and came back clean — no per-template CSS escape patterns; structural enforcement is satisfied entirely by the converged read path. Editor parity in-session absorptions: `formatLayout()` ships a composed `inline_style` field (the editor reaches gradient/image parity with the public site without duplicating `GradientComposer` in JS); both Livewire bootstrap paths (`PageBuilder.php`, `RecordDetailViewBuilder.php`) gained `appearance_config` + `inline_style` on layout items so the editor renders correctly on first load (pre-existing gap surfaced + closed); `LayoutRegion.vue` split into outer `.layout-region__container` (appearance) + inner `.layout-region__grid` (display) so the bg and content toggles act on independent elements (parallel to the public-side three-element structure). Per-type defaults flipped uniformly to `(bg:true, content:false)` per user direction (the four `fullWidth(): true` overrides on Hero / Nav / BlogListing / EventsListing dropped). Per-instance values across all three jsonb surfaces + `widget_presets` rewritten in the same migration. Permanent regression coverage at `tests/e2e/page-builder/full-width-matrix.spec.ts` (20 specs). See `sessions/267. Full-Width Architecture Enforcement — Background and Content Split — Log.md` for the full landing.
+- **artifact:** the migration + composer/renderer convergence + admin-UI two-toggle inspector + Playwright matrix spec. **Closed at session 267.**
 - **estimated time cost:** 1 session.
 
 #### E11. Page Builder Focus-Scroll Clamp
@@ -473,7 +474,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 20. **B1b.** Donation Credits — Soft-Credit Layer *(session 265; B1b's checkmark drops here per the Rule 11 split applied at 264)*
 21. **A1d'.** Backup notification hardening — FM 020 finding *(closed at session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)* ✅
 22. **A1e.** Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint *(lifted at 266 close from FM 020 follow-on planning thread; CRM-side prerequisite for FM 021 + 022 restore-to-fresh-node primitive; A2(c) success-criterion enabler)*
-23. **E10.** Full-Width Architecture Enforcement
+23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
 24. **E11.** Page Builder Focus-Scroll Clamp
 25. **C1.** Notes Permissions (feature half)
 26. **E9.** Widget Help Authoring

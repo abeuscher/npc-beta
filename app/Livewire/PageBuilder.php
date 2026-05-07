@@ -10,6 +10,7 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
+use App\Services\AppearanceStyleComposer;
 use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
 use App\Models\Collection;
@@ -269,16 +270,18 @@ class PageBuilder extends Component
             }
 
             $items[] = [
-                'type'          => 'layout',
-                'id'            => $layout->id,
-                'owner_type'    => $layout->owner_type,
-                'owner_id'      => $layout->owner_id,
-                'label'         => $layout->label ?? '',
-                'display'       => $layout->display,
-                'columns'       => $layout->columns,
-                'layout_config' => $layout->layout_config ?? [],
-                'sort_order'    => $layout->sort_order ?? 0,
-                'slots'         => (object) $slots,
+                'type'              => 'layout',
+                'id'                => $layout->id,
+                'owner_type'        => $layout->owner_type,
+                'owner_id'          => $layout->owner_id,
+                'label'             => $layout->label ?? '',
+                'display'           => $layout->display,
+                'columns'           => $layout->columns,
+                'layout_config'     => $layout->layout_config ?? [],
+                'appearance_config' => (object) ($layout->appearance_config ?? []),
+                'inline_style'      => app(AppearanceStyleComposer::class)->composeForLayout($layout),
+                'sort_order'        => $layout->sort_order ?? 0,
+                'slots'             => (object) $slots,
             ];
         }
 

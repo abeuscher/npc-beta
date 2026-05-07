@@ -49,8 +49,9 @@ test.describe('Page builder — layout inspector', () => {
         await expect(tabStrip.getByRole('button', { name: 'Margin & Padding' })).toBeVisible();
         await expect(tabStrip.getByRole('button', { name: 'Background' })).toBeVisible();
 
-        // Column Settings tab is active by default — Full width checkbox lives there.
-        await expect(inspector.getByText('Full width')).toBeVisible();
+        // Column Settings tab is active by default — both full-width checkboxes live there.
+        await expect(inspector.getByText('Content fills page width')).toBeVisible();
+        await expect(inspector.getByText('Background fills page width')).toBeVisible();
 
         // Switch to Margin & Padding — the shared SectionLayoutPanel should mount.
         await tabStrip.getByRole('button', { name: 'Margin & Padding' }).click();
