@@ -76,19 +76,27 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the new endpoint + controller + spec-doc revision; the mtime cross-check integrity guard as the regression-guard for the misleading-success class of bug.
 - **estimated time cost:** 1 session. **Closed at session 263.**
 
-#### A1d'. Backup notification hardening — FM 020 finding *(A1d follow-on)*
+#### A1d'. Backup notification hardening — FM 020 finding ✅ *(A1d follow-on)*
 
 - **gate:** release
 - **prerequisites:** A1d closed at session 263 (the backup-trigger endpoint surface this hardens against). FM 020 manual testing on 2026-05-05 surfaced the structural fragility this entry closes.
-- **success criterion:** Spatie's mail-channel notification dropped on the success path (`BackupWasSuccessfulNotification` / `HealthyBackupWasFoundNotification` / `CleanupWasSuccessfulNotification` flip from `['mail']` to `[]`) so it can no longer kneecap `RecordBackupSuccess` via listener-chain throw propagation. Failure-class notifications (`BackupHasFailedNotification` / `UnhealthyBackupWasFoundNotification` / `CleanupHasFailedNotification`) keep `['mail']` as the FM-down redundancy layer. `AppServiceProvider::boot()` gains three sibling overrides bridging `SiteSetting` into spatie's parallel `backup.notifications.mail.from.address` / `from.name` / `to` config keys (eliminates the `'your@example.com'` placeholder; uses the same SiteSetting-driven values as the rest of the app's mail). No agent contract change; no schema change; no FM-side change.
+- **success criterion** *(closed at session 266)*: Spatie's mail-channel notification dropped on the success path (`BackupWasSuccessfulNotification` / `HealthyBackupWasFoundNotification` / `CleanupWasSuccessfulNotification` flipped from `['mail']` to `[]`) so it can no longer kneecap `RecordBackupSuccess` via listener-chain throw propagation. Failure-class notifications (`BackupHasFailedNotification` / `UnhealthyBackupWasFoundNotification` / `CleanupHasFailedNotification`) kept `['mail']` as the FM-down redundancy layer. `AppServiceProvider::boot()` gained three sibling overrides bridging `SiteSetting` into spatie's parallel `backup.notifications.mail.from.address` / `from.name` / `to` config keys (eliminated the `'your@example.com'` placeholder; uses the same SiteSetting-driven values as the rest of the app's mail). **Verify-at-start finding:** spatie's mail path reads `app(Spatie\Backup\Config\Config::class)`, not `config('backup.notifications.mail.*')` directly — but the binding is a `scoped` lazy singleton (`BackupServiceProvider::packageRegistered()`) built on first resolution at notification-dispatch time, well after `AppServiceProvider::boot()`, so runtime overrides do propagate. Phase 3 test #3 carries a `forgetInstance` + `app(SpatieBackupConfig::class)` assertion to prove the bridge reaches spatie's actual read path. No agent contract change; no schema change; no FM-side change. Manual deploy-side verification confirmed — FM 020's "Trigger backup now" against beuscher.net now returns a success envelope with the integrity guard no longer firing on the success path. See `sessions/266. Backup notification hardening — FM 020 finding — Log.md`.
 - **artifact:** the config + service-provider edits + regression-guard tests against re-introducing either fragility (success-channel mail OR unbridged from-address).
-- **estimated time cost:** 1 session, small.
+- **estimated time cost:** 1 session, small. **Closed at session 266.**
+
+#### A1e. Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint
+
+- **gate:** release
+- **prerequisites:** A1d closed at session 263 (this session extends the FM-agent endpoint set with the same nginx mTLS gate pattern). Spatie backup pipeline producing zips on `Storage::disk('local')` per existing `config/backup.php` (CRM 242). FM-side absorption is two sessions on the FM repo (FM 021 + FM 022), unblocked by this session's contract surface.
+- **success criterion:** New mTLS-gated HTTP endpoint `GET /api/backup/blob` shipped — streams the most recent backup zip from the configured backup destination disk to the FM caller. Additive contract bump v2.2.0 → v2.3.0 (v2.2.0 consumers continue working unchanged). Endpoint behaviors: same nginx mTLS gate as `/api/health` / `/api/logs` / `/api/backup/trigger` applied to both `docker/nginx/default.conf` and `docker/nginx/prod.conf`; throttle to be resolved at session start (likely `60,1` matching `/api/logs` since downloads are cheap relative to the backup-trigger's 6,1); response streams zip bytes with `Content-Type: application/zip`, `Content-Disposition: attachment; filename="<spatie-blob-filename>"`, `Content-Length: <bytes>` (the FM side verifies post-download integrity via length + optional SHA hash); locates the freshest blob via `Spatie\Backup\BackupDestination\BackupDestination::create($disk, $backupName)->backups()->newest()`. Source-disk preference: `local` first if configured in `BACKUP_DISKS`, else fall through to the next configured destination (e.g., `spaces`); the contract spec documents this fallback so FM consumers know which disk's blob they're getting. Returns 404 with JSON envelope `{error: "no_backup_available"}` if no backup exists yet (fresh install before scheduled / triggered run). `HealthController::CONTRACT_VERSION` bumped 2.2.0 → 2.3.0 (canonical field FM polls); `BackupController` already carries v2.3.0 if one constant; new `BackupBlobController` (or method on existing controller) carries `CONTRACT_VERSION = '2.3.0'` on its own envelope context. Spec doc gains new endpoint section + CHANGELOG entry above v2.2.0. Cross-Repo block in `session-outlines.md` bumped. **Out of scope at v2.3.0:** historical blob enumeration (FM gets latest only); per-disk targeting via query param (single-disk-fallback-rule covers the use cases); progress streaming during long downloads; range / resume support (operators with multi-GB blobs can revisit post-Beta).
+- **artifact:** the new endpoint + controller + spec-doc revision; FM-side absorption pending at FM 021 + 022.
+- **estimated time cost:** 1 session, small (smaller than A1d — no integrity-guard logic, no Artisan invocation, just stream the bytes).
 
 #### A2. Fleet Manager — node operations parity
 
 - **gate:** release
 - **prerequisites:** A1b (CRM-side v2.0.0 mTLS migration shipped at session 248); A1d (CRM-side v2.2.0 backup-trigger endpoint — prerequisite for A2(b)); FM-side absorption at FM session 012 must complete before FM 013+ A2 affordance work begins.
-- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end *(FM-side; shipped at FM session 018)*, (b) trigger and verify a backup against a node *(CRM-side shipped via A1d at session 263; FM-side absorption pending at FM session 020)*, (c) restore a node from a backup blob *(FM-side; future)*, (d) fetch and surface application logs from a node without operator SSH *(CRM-side via session 251 v2.1.0; FM-side absorption shipped at FM 013)*. Each capability documented in the FM-side operator runbook.
+- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end *(FM-side; shipped at FM session 018)*, (b) trigger and verify a backup against a node *(CRM-side shipped via A1d at session 263; FM-side absorption shipped at FM session 020 pending manual-test sign-off)*, (c) restore a node from a backup blob *(restore-to-fresh-node primitive: CRM-side blob endpoint pending via A1e; FM-side absorption pending FM 021 + 022; same-node click-restore stays explicitly out of scope per FM `session-outlines.md` and remains a manual `pg_restore` op)*, (d) fetch and surface application logs from a node without operator SSH *(CRM-side via session 251 v2.1.0; FM-side absorption shipped at FM 013)*. Each capability documented in the FM-side operator runbook.
 - **artifact:** FM operator runbook covering all four capabilities.
 - **estimated time cost:** 2 sessions likely (install + backup + restore in one session; log-reading in a separate session — different surface). Per Rule 11, may split further if scope surfaces.
 
@@ -266,7 +274,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** all of A, B, C, D1–D3, E closed — D4 reviews the suite as it'll ship; running it before late-cycle test additions land would re-bake the same cost analysis.
-- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests.
+- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests. **D4 also scopes Pest `--parallel` viability** — runs the cheap experiment (install paratest, `php artisan test --parallel --processes=4`, log failure surface) and decides whether the audit-driven trims recover enough runtime to defer parallelization, or whether to fold the test-isolation cleanup (filesystem-shared paths under `storage/app/private/`, the pre-existing `seedWidgetCollections` flake) into D4 or lift it as a follow-on per Rule 11. See the `Parallelization evaluation` sub-section in the outline stub for shape details. Carry-forward exception: if iteration friction during the C-track rehearsals starts costing real time before D4's slot lands, lift parallelization sooner as a standalone fix-shape session.
 - **artifact:** committed baseline timing snapshot, findings-and-gaps report at `sessions/NNN-test-audit-findings.md`, applied picks (each as its own commit), updated baseline snapshot.
 - **estimated time cost:** 1 session; per Rule 11, may extend if findings exceed in-session-fix capacity.
 
@@ -463,34 +471,35 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 18. **A1d.** Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint *(closed at session 263 — execution-order deviation: A1d jumped the queue ahead of B1b at 262 close to unblock FM session 020 CRM-side)* ✅
 19. **B1b.** Affiliations Junction (structural half) *(closed at session 264; post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)* ✅
 20. **B1b.** Donation Credits — Soft-Credit Layer *(session 265; B1b's checkmark drops here per the Rule 11 split applied at 264)*
-21. **A1d'.** Backup notification hardening — FM 020 finding *(session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)*
-22. **E10.** Full-Width Architecture Enforcement
-23. **E11.** Page Builder Focus-Scroll Clamp
-24. **C1.** Notes Permissions (feature half)
-25. **E9.** Widget Help Authoring
-26. **C2.** Event Ticket Tiers
-27. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-28. **E4.** Stripe Checkout Branding *(precedes C4)*
-29. **C4.** Donation-to-acknowledgment loop
-30. **C5.** Event with everything
-31. **C6.** Membership renewal cycle
-32. **C7.** Email at volume
-33. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-34. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-35. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-36. **E8.** UI/UX Sprint
-37. **E12.** Housekeeping Batch 2
-38. **D1.** Scale rehearsal
-39. **D2.** Compatibility cluster
-40. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-41. **E13.** Help docs body content
-42. **E14.** Third-Party Licensing Compliance Audit
-43. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-44. **D4.** Test suite review — cost & shape
-45. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-46. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-47. **F3.** On-Demand E2E — Permission / role-gate matrix
-48. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+21. **A1d'.** Backup notification hardening — FM 020 finding *(closed at session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)* ✅
+22. **A1e.** Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint *(lifted at 266 close from FM 020 follow-on planning thread; CRM-side prerequisite for FM 021 + 022 restore-to-fresh-node primitive; A2(c) success-criterion enabler)*
+23. **E10.** Full-Width Architecture Enforcement
+24. **E11.** Page Builder Focus-Scroll Clamp
+25. **C1.** Notes Permissions (feature half)
+26. **E9.** Widget Help Authoring
+27. **C2.** Event Ticket Tiers
+28. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+29. **E4.** Stripe Checkout Branding *(precedes C4)*
+30. **C4.** Donation-to-acknowledgment loop
+31. **C5.** Event with everything
+32. **C6.** Membership renewal cycle
+33. **C7.** Email at volume
+34. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+35. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+36. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+37. **E8.** UI/UX Sprint
+38. **E12.** Housekeeping Batch 2
+39. **D1.** Scale rehearsal
+40. **D2.** Compatibility cluster
+41. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+42. **E13.** Help docs body content
+43. **E14.** Third-Party Licensing Compliance Audit
+44. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+45. **D4.** Test suite review — cost & shape
+46. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+47. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+48. **F3.** On-Demand E2E — Permission / role-gate matrix
+49. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

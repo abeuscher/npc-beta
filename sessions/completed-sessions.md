@@ -267,4 +267,6 @@ A flat index of every completed session by number and title. Per-session detail 
 | 262 | List Resource Exports — XLSX Format Add |
 | 263 | Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint |
 | 264 | Affiliations Junction — Schema, Migration, Admin UI |
+| 265 | Donation Credits — Soft-Credit Layer |
+| 266 | Backup notification hardening — FM 020 finding |
 
