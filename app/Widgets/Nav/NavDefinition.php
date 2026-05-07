@@ -26,11 +26,6 @@ class NavDefinition extends WidgetDefinition
         return ['layout'];
     }
 
-    public function fullWidth(): bool
-    {
-        return true;
-    }
-
     public function assets(): array
     {
         return ['scss' => ['app/Widgets/Nav/styles.scss']];

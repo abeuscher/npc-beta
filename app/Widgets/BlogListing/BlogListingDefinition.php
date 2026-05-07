@@ -29,11 +29,6 @@ class BlogListingDefinition extends WidgetDefinition
         return ['blog'];
     }
 
-    public function fullWidth(): bool
-    {
-        return true;
-    }
-
     public function assets(): array
     {
         return [

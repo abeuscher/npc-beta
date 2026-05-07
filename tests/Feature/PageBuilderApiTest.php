@@ -531,16 +531,18 @@ it('accepts full_width on layout_config and strips pre-207 appearance keys', fun
     $this->actingAs(apiUser())
         ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
             'layout_config' => [
-                'full_width'       => true,
-                'background_color' => '#ff0000',
-                'padding_top'      => '20',
-                'margin_left'      => '10',
+                'background_full_width' => true,
+                'content_full_width'    => true,
+                'background_color'      => '#ff0000',
+                'padding_top'           => '20',
+                'margin_left'           => '10',
             ],
         ])
         ->assertOk();
 
     $layout->refresh();
-    expect($layout->layout_config['full_width'])->toBe(true);
+    expect($layout->layout_config['background_full_width'])->toBe(true);
+    expect($layout->layout_config['content_full_width'])->toBe(true);
     expect($layout->layout_config)->not->toHaveKey('background_color');
     expect($layout->layout_config)->not->toHaveKey('padding_top');
     expect($layout->layout_config)->not->toHaveKey('margin_left');

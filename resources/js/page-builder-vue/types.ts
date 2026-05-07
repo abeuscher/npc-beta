@@ -15,7 +15,8 @@ export interface WidgetAppearanceConfig {
     color?: string
   }
   layout?: {
-    full_width?: boolean
+    background_full_width?: boolean
+    content_full_width?: boolean
     padding?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
     margin?: { top?: string | number; right?: string | number; bottom?: string | number; left?: string | number }
   }
@@ -73,6 +74,7 @@ export interface PageLayout {
   columns: number
   layout_config: Record<string, any>
   appearance_config: LayoutAppearanceConfig
+  inline_style: string
   sort_order: number
   slots: Record<number, Widget[]>
 }
@@ -104,7 +106,8 @@ export interface WidgetType {
   config_schema: FieldDef[]
   collections: string[]
   assets: Record<string, any>
-  full_width: boolean
+  background_full_width: boolean
+  content_full_width: boolean
   default_open: boolean
   required_config: { keys: string[]; message: string } | null
   presets: WidgetPreset[]

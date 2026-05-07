@@ -29,11 +29,6 @@ class EventsListingDefinition extends WidgetDefinition
         return ['events'];
     }
 
-    public function fullWidth(): bool
-    {
-        return true;
-    }
-
     public function assets(): array
     {
         return [

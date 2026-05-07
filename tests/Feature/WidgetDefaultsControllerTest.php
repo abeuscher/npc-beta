@@ -130,7 +130,8 @@ it('export emits a defaultAppearanceConfig() method with the widget appearance m
     expect($appearance['layout']['margin'])->toBe([
         'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0,
     ]);
-    expect($appearance['layout']['full_width'])->toBeFalse();
+    expect($appearance['layout']['background_full_width'])->toBeTrue();
+    expect($appearance['layout']['content_full_width'])->toBeFalse();
     expect($appearance['background']['color'])->toBe('#ffffff');
     expect($appearance['text']['color'])->toBe('#000000');
 });

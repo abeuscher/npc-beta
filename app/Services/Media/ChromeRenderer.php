@@ -90,26 +90,34 @@ class ChromeRenderer
                         ? "<div style=\"{$inlineStyle}\">{$result['html']}</div>"
                         : $result['html'];
 
-                    $widgetType  = $pw->widgetType;
-                    $instanceFw  = $appearanceConfig['layout']['full_width'] ?? null;
-                    $isFullWidth = $instanceFw !== null
-                        ? (bool) $instanceFw
-                        : (bool) ($widgetType?->full_width ?? false);
+                    $widgetType = $pw->widgetType;
+                    $bgInstance = $appearanceConfig['layout']['background_full_width'] ?? null;
+                    $contentInstance = $appearanceConfig['layout']['content_full_width'] ?? null;
+                    $bgFw = $bgInstance !== null
+                        ? (bool) $bgInstance
+                        : (bool) ($widgetType?->background_full_width ?? false);
+                    $contentFw = $contentInstance !== null
+                        ? (bool) $contentInstance
+                        : (bool) ($widgetType?->content_full_width ?? false);
+                    if (! $bgFw && $contentFw) {
+                        $bgFw = true;
+                    }
 
-                    $html .= $isFullWidth
-                        ? $inner
-                        : '<div class="site-container">' . $inner . '</div>';
+                    $contentWrapped = $contentFw ? $inner : '<div class="site-container">' . $inner . '</div>';
+                    $html .= $bgFw ? $contentWrapped : '<div class="site-container">' . $contentWrapped . '</div>';
                 }
                 $styles  .= $result['styles'];
                 $scripts .= $result['scripts'];
                 WidgetRenderer::collectAssets($pw->widgetType, $assets);
             } else {
                 $layout = $item['data'];
-                $layoutHtml  = static::renderLayoutBlock($layout, $styles, $scripts, $assets);
-                $isFullWidth = (bool) (($layout->layout_config['full_width'] ?? false));
-                $html .= $isFullWidth
-                    ? $layoutHtml
-                    : '<div class="site-container">' . $layoutHtml . '</div>';
+                $layoutHtml = static::renderLayoutBlock($layout, $styles, $scripts, $assets);
+                $bgFw = (bool) ($layout->layout_config['background_full_width'] ?? false);
+                $contentFw = (bool) ($layout->layout_config['content_full_width'] ?? false);
+                if (! $bgFw && $contentFw) {
+                    $bgFw = true;
+                }
+                $html .= $bgFw ? $layoutHtml : '<div class="site-container">' . $layoutHtml . '</div>';
             }
         }
 
@@ -121,31 +129,32 @@ class ChromeRenderer
         $config  = $layout->layout_config ?? [];
         $display = $layout->display ?? 'grid';
 
-        $containerStyle = 'display:' . $display . ';';
+        $gridStyle = 'display:' . $display . ';';
 
         if ($display === 'grid') {
-            $containerStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
+            $gridStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
         }
 
         if (! empty($config['gap'])) {
-            $containerStyle .= 'gap:' . $config['gap'] . ';';
+            $gridStyle .= 'gap:' . $config['gap'] . ';';
         }
         if (! empty($config['align_items'])) {
-            $containerStyle .= 'align-items:' . $config['align_items'] . ';';
+            $gridStyle .= 'align-items:' . $config['align_items'] . ';';
         }
         if (! empty($config['justify_items'])) {
-            $containerStyle .= 'justify-items:' . $config['justify_items'] . ';';
+            $gridStyle .= 'justify-items:' . $config['justify_items'] . ';';
         }
         if (! empty($config['justify_content'])) {
-            $containerStyle .= 'justify-content:' . $config['justify_content'] . ';';
+            $gridStyle .= 'justify-content:' . $config['justify_content'] . ';';
         }
         if (! empty($config['grid_auto_rows'])) {
-            $containerStyle .= 'grid-auto-rows:' . $config['grid_auto_rows'] . ';';
+            $gridStyle .= 'grid-auto-rows:' . $config['grid_auto_rows'] . ';';
         }
         if (! empty($config['flex_wrap'])) {
-            $containerStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
+            $gridStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
         }
 
+        $appearanceStyle = '';
         $spacingKeys = [
             'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
             'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
@@ -155,11 +164,11 @@ class ChromeRenderer
         foreach ($spacingKeys as $key => $cssProp) {
             $val = isset($config[$key]) && $config[$key] !== '' ? (int) $config[$key] : null;
             if ($val !== null) {
-                $containerStyle .= $cssProp . ':' . $val . 'px;';
+                $appearanceStyle .= $cssProp . ':' . $val . 'px;';
             }
         }
         if (! empty($config['background_color'])) {
-            $containerStyle .= 'background-color:' . $config['background_color'] . ';';
+            $appearanceStyle .= 'background-color:' . $config['background_color'] . ';';
         }
 
         // Group children by column_index
@@ -195,7 +204,12 @@ class ChromeRenderer
             $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
         }
 
-        return '<div class="page-layout" style="' . e($containerStyle) . '">' . $columnHtml . '</div>';
+        $gridHtml = '<div class="layout-grid" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
+
+        $contentFw = (bool) ($config['content_full_width'] ?? false);
+        $innerHtml = $contentFw ? $gridHtml : '<div class="site-container">' . $gridHtml . '</div>';
+
+        return '<div class="page-layout"' . ($appearanceStyle ? ' style="' . e($appearanceStyle) . '"' : '') . '>' . $innerHtml . '</div>';
     }
 
     private static function buildInlineStyle(array $appearanceConfig): string

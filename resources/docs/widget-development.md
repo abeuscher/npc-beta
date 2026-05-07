@@ -595,7 +595,7 @@ Drafts live in the `widget_presets` table and are global per widget type (no per
 ## Quick-Start Checklist for a New Widget
 
 1. Create the widget folder at `app/Widgets/{PascalName}/`.
-2. Create `{PascalName}Definition.php` extending `App\Widgets\Contracts\WidgetDefinition` with `handle()`, `label()`, `description()`, `schema()`, and `defaults()`. Override optional methods (`category`, `collections`, `assets`, `fullWidth`, `defaultOpen`, `allowedPageTypes`, `requiredConfig`, `css`, `js`) as needed. Override manifest metadata (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) only when the defaults don't fit — see "Declaring manifest metadata" below.
+2. Create `{PascalName}Definition.php` extending `App\Widgets\Contracts\WidgetDefinition` with `handle()`, `label()`, `description()`, `schema()`, and `defaults()`. Override optional methods (`category`, `collections`, `assets`, `backgroundFullWidth`, `contentFullWidth`, `defaultOpen`, `allowedPageTypes`, `requiredConfig`, `css`, `js`) as needed. Override manifest metadata (`version`, `author`, `license`, `screenshots`, `keywords`, `presets`) only when the defaults don't fit — see "Declaring manifest metadata" below.
 3. Create `template.blade.php` in the same folder. The base-class default `template()` method will find it via the `widgets::` namespace.
 4. If the widget needs custom styles, create `styles.scss` in the same folder and return its path from `assets()`: `['scss' => ['app/Widgets/{PascalName}/styles.scss']]`.
 5. Register the definition in `WidgetServiceProvider::boot()`: `$registry->register(new \App\Widgets\{PascalName}\{PascalName}Definition());`
@@ -847,11 +847,11 @@ const previewStyle = computed(() => ({
 
 ## `AppearanceStyleComposer` — Server-Side Rendering
 
-`App\Services\AppearanceStyleComposer` translates a widget's `appearance_config` jsonb into an inline style string and a full-width flag. It is called by the public renderer (`page-widgets.blade.php`) for every widget on the page.
+`App\Services\AppearanceStyleComposer` translates a widget's `appearance_config` jsonb into an inline style string and the two full-width flags. It is called by the public renderer (`page-widgets.blade.php`) for every widget on the page.
 
 **File.** `app/Services/AppearanceStyleComposer.php`
 
-**Method.** `compose(PageWidget $pw): array` — returns `['inline_style' => string, 'is_full_width' => bool]`.
+**Method.** `compose(PageWidget $pw): array` — returns `['inline_style' => string, 'background_full_width' => bool, 'content_full_width' => bool]`.
 
 ### Rendering pipeline
 

@@ -25,17 +25,15 @@ class PageBlockRenderer
 
         $composed = $this->styleComposer->compose($pw);
 
-        $configFullWidth = $pw->config['full_width'] ?? null;
-        $fullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
-
         $block = [
-            'handle'       => $widgetType->handle,
-            'instance_id'  => $pw->id,
-            'html'         => $result['html'],
-            'css'          => $widgetType->css ?? '',
-            'js'           => $widgetType->js ?? '',
-            'inline_style' => $composed['inline_style'],
-            'full_width'   => $fullWidth,
+            'handle'                => $widgetType->handle,
+            'instance_id'           => $pw->id,
+            'html'                  => $result['html'],
+            'css'                   => $widgetType->css ?? '',
+            'js'                    => $widgetType->js ?? '',
+            'inline_style'          => $composed['inline_style'],
+            'background_full_width' => $composed['background_full_width'],
+            'content_full_width'    => $composed['content_full_width'],
         ];
 
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
@@ -46,35 +44,32 @@ class PageBlockRenderer
         $config = $layout->layout_config ?? [];
         $display = $layout->display ?? 'grid';
 
-        $containerStyle = 'display:' . $display . ';';
+        $gridStyle = 'display:' . $display . ';';
 
         if ($display === 'grid') {
-            $containerStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
+            $gridStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
         }
 
         if (! empty($config['gap'])) {
-            $containerStyle .= 'gap:' . $config['gap'] . ';';
+            $gridStyle .= 'gap:' . $config['gap'] . ';';
         }
         if (! empty($config['align_items'])) {
-            $containerStyle .= 'align-items:' . $config['align_items'] . ';';
+            $gridStyle .= 'align-items:' . $config['align_items'] . ';';
         }
         if (! empty($config['justify_items'])) {
-            $containerStyle .= 'justify-items:' . $config['justify_items'] . ';';
+            $gridStyle .= 'justify-items:' . $config['justify_items'] . ';';
         }
         if (! empty($config['justify_content'])) {
-            $containerStyle .= 'justify-content:' . $config['justify_content'] . ';';
+            $gridStyle .= 'justify-content:' . $config['justify_content'] . ';';
         }
         if (! empty($config['grid_auto_rows'])) {
-            $containerStyle .= 'grid-auto-rows:' . $config['grid_auto_rows'] . ';';
+            $gridStyle .= 'grid-auto-rows:' . $config['grid_auto_rows'] . ';';
         }
         if (! empty($config['flex_wrap'])) {
-            $containerStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
+            $gridStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
         }
 
         $appearanceStyle = $this->styleComposer->composeForLayout($layout);
-        if ($appearanceStyle !== '') {
-            $containerStyle .= $appearanceStyle . ';';
-        }
 
         $slots = [];
         foreach ($layout->widgets as $widget) {
@@ -106,16 +101,26 @@ class PageBlockRenderer
             $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
         }
 
-        $html = '<div class="page-layout" style="' . e($containerStyle) . '">' . $columnHtml . '</div>';
+        $gridHtml = '<div class="layout-grid" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
+
+        $fw = $this->styleComposer->resolveFullWidthForLayout($layout);
+
+        $innerHtml = $fw['content_full_width']
+            ? $gridHtml
+            : '<div class="site-container">' . $gridHtml . '</div>';
+
+        $outerStyle = $appearanceStyle;
+        $html = '<div class="page-layout"' . ($outerStyle ? ' style="' . e($outerStyle) . '"' : '') . '>' . $innerHtml . '</div>';
 
         return [
-            'handle'       => 'page_layout',
-            'instance_id'  => $layout->id,
-            'html'         => $html,
-            'css'          => '',
-            'js'           => '',
-            'inline_style' => '',
-            'full_width'   => (bool) ($config['full_width'] ?? false),
+            'handle'                => 'page_layout',
+            'instance_id'           => $layout->id,
+            'html'                  => $html,
+            'css'                   => '',
+            'js'                    => '',
+            'inline_style'          => '',
+            'background_full_width' => $fw['background_full_width'],
+            'content_full_width'    => $fw['content_full_width'],
         ];
     }
 }

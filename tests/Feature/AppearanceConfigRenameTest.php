@@ -29,7 +29,8 @@ it('hero widget no longer exposes background_color, text_color, background_image
         ->not->toContain('background_color')
         ->not->toContain('text_color')
         ->not->toContain('background_image')
-        ->not->toContain('full_width')
+        ->not->toContain('background_full_width')
+        ->not->toContain('content_full_width')
         ->not->toContain('overlay_opacity');
 });
 
@@ -42,7 +43,8 @@ it('product_carousel widget no longer exposes background_color, text_color, or f
     expect($keys)
         ->not->toContain('background_color')
         ->not->toContain('text_color')
-        ->not->toContain('full_width');
+        ->not->toContain('background_full_width')
+        ->not->toContain('content_full_width');
 });
 
 // ── Widget seeder diff: RENAMED keys ─────────────────────────────────────────

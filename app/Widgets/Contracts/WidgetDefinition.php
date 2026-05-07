@@ -42,7 +42,12 @@ abstract class WidgetDefinition
         return [];
     }
 
-    public function fullWidth(): bool
+    public function backgroundFullWidth(): bool
+    {
+        return true;
+    }
+
+    public function contentFullWidth(): bool
     {
         return false;
     }
@@ -229,9 +234,10 @@ abstract class WidgetDefinition
             ],
             'text'   => ['color' => '#000000'],
             'layout' => [
-                'full_width' => false,
-                'padding'    => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
-                'margin'     => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+                'background_full_width' => true,
+                'content_full_width'    => false,
+                'padding'               => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+                'margin'                => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
             ],
         ];
     }
@@ -262,9 +268,10 @@ abstract class WidgetDefinition
             'render_mode'        => $this->renderMode(),
             'collections'        => $this->collections(),
             'assets'             => $this->assets(),
-            'default_open'       => $this->defaultOpen(),
-            'full_width'         => $this->fullWidth(),
-            'config_schema'      => $this->schema(),
+            'default_open'          => $this->defaultOpen(),
+            'background_full_width' => $this->backgroundFullWidth(),
+            'content_full_width'    => $this->contentFullWidth(),
+            'config_schema'         => $this->schema(),
             'template'           => $this->template(),
             'required_config'    => $this->requiredConfig(),
             'css'                => $this->css(),

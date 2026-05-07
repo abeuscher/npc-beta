@@ -54,7 +54,6 @@ it('renders share links for all enabled platforms', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'mastodon.social',
         ]]
     );
@@ -78,7 +77,6 @@ it('omits disabled platforms', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'mastodon.social',
         ]]
     );
@@ -101,7 +99,6 @@ it('renders nothing when platforms array is empty', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'mastodon.social',
         ]]
     );
@@ -119,7 +116,6 @@ it('renders Alpine copy-link markup when copy_link is enabled', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'mastodon.social',
         ]]
     );
@@ -140,7 +136,6 @@ it('uses configured mastodon instance domain', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'fosstodon.org',
         ]]
     );
@@ -160,7 +155,6 @@ it('external share links have target blank and rel noopener', function () {
             'icon_size'         => 'small',
             'background_color'  => '',
             'text_color'        => '',
-            'full_width'        => false,
             'mastodon_instance' => 'mastodon.social',
         ]]
     );

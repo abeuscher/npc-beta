@@ -21,54 +21,66 @@ const isSelected = computed(
     store.selectedItemId === props.layout.id
 )
 
-const containerStyle = computed(() => {
+// Display + grid/flex come from layout_config (dynamic, computed in Vue
+// for live update during editing). Solid color + spacing from local
+// appearance_config — also live. Gradient + image styles ride along on the
+// API-baked inline_style string (AppearanceStyleComposer::composeForLayout
+// on the PHP side) so the editor reaches parity with the public site for
+// those; live update on those waits for the API roundtrip after a save.
+//
+// Order: API string first, local-computed declarations last — so local
+// edits override API output for shared properties (bg-color, padding,
+// margin) while gradient/image-only props (background-image, position,
+// size, repeat) come through unchallenged.
+const containerStyleString = computed(() => {
   const config = props.layout.layout_config ?? {}
   const appearance = props.layout.appearance_config ?? {}
   const display = props.layout.display ?? 'grid'
-  const styles: Record<string, string> = { display }
+  const parts: string[] = []
+
+  const apiStyle = (props.layout as any).inline_style ?? ''
+  if (apiStyle) parts.push(apiStyle.replace(/;\s*$/, ''))
+
+  parts.push(`display:${display}`)
 
   if (display === 'grid') {
-    styles.gridTemplateColumns =
-      config.grid_template_columns ??
+    const cols = config.grid_template_columns ??
       Array(props.layout.columns).fill('1fr').join(' ')
-    if (config.grid_auto_rows) styles.gridAutoRows = config.grid_auto_rows
-    if (config.justify_items) styles.justifyItems = config.justify_items
+    parts.push(`grid-template-columns:${cols}`)
+    if (config.grid_auto_rows) parts.push(`grid-auto-rows:${config.grid_auto_rows}`)
+    if (config.justify_items) parts.push(`justify-items:${config.justify_items}`)
   } else {
-    if (config.justify_content) styles.justifyContent = config.justify_content
-    if (config.flex_wrap) styles.flexWrap = config.flex_wrap
+    if (config.justify_content) parts.push(`justify-content:${config.justify_content}`)
+    if (config.flex_wrap) parts.push(`flex-wrap:${config.flex_wrap}`)
   }
 
-  if (config.gap) styles.gap = config.gap
-  if (config.align_items) styles.alignItems = config.align_items
+  if (config.gap) parts.push(`gap:${config.gap}`)
+  if (config.align_items) parts.push(`align-items:${config.align_items}`)
 
-  // Background + spacing live on appearance_config after session 207.
-  // Mirrors AppearanceStyleComposer::composeForLayout on the PHP side.
   const bgColor = appearance.background?.color
-  if (bgColor) styles.backgroundColor = bgColor
+  if (bgColor) parts.push(`background-color:${bgColor}`)
 
-  const sideMap = {
-    top: 'Top', right: 'Right', bottom: 'Bottom', left: 'Left',
-  } as const
+  const sideMap = { top: 'top', right: 'right', bottom: 'bottom', left: 'left' } as const
   const padding = appearance.layout?.padding ?? {}
-  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+  for (const side of Object.keys(sideMap) as (keyof typeof sideMap)[]) {
     const v = (padding as Record<string, any>)[side]
     if (v !== undefined && v !== null && v !== '') {
-      styles[`padding${suffix}`] = `${parseInt(v, 10)}px`
+      parts.push(`padding-${sideMap[side]}:${parseInt(v, 10)}px`)
     }
   }
   const margin = appearance.layout?.margin ?? {}
-  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+  for (const side of Object.keys(sideMap) as (keyof typeof sideMap)[]) {
     const v = (margin as Record<string, any>)[side]
     if (v !== undefined && v !== null && v !== '') {
-      styles[`margin${suffix}`] = `${parseInt(v, 10)}px`
+      parts.push(`margin-${sideMap[side]}:${parseInt(v, 10)}px`)
     }
   }
 
-  return styles
+  return parts.join(';')
 })
 
 const isFullWidth = computed(
-  () => !!props.layout.layout_config?.full_width
+  () => !!props.layout.layout_config?.background_full_width
 )
 
 function getSlot(slotIdx: number): Widget[] {
@@ -158,7 +170,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
         'layout-region__container--contained': !isFullWidth,
         'layout-region__container--dragging': store.dragging,
       }"
-      :style="containerStyle"
+      :style="containerStyleString"
     >
       <div
         v-for="i in layout.columns"

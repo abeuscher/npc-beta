@@ -15,6 +15,7 @@ use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\Template;
 use App\Models\WidgetType;
+use App\Services\AppearanceStyleComposer;
 use App\Services\PageBuilderDataSources;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
@@ -481,7 +482,7 @@ class PageBuilderApiController extends Controller
             $allowed = [
                 'grid_template_columns', 'gap', 'align_items', 'justify_items',
                 'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
-                'full_width',
+                'background_full_width', 'content_full_width',
             ];
             $sanitized = array_intersect_key(
                 $validated['layout_config'],
@@ -593,6 +594,7 @@ class PageBuilderApiController extends Controller
             'columns'           => $layout->columns,
             'layout_config'     => $layout->layout_config ?? [],
             'appearance_config' => (object) ($layout->appearance_config ?? []),
+            'inline_style'      => app(AppearanceStyleComposer::class)->composeForLayout($layout),
             'sort_order'        => $layout->sort_order ?? 0,
             'slots'             => (object) [],
         ];

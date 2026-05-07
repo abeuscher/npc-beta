@@ -23,12 +23,13 @@ beforeEach(function () {
     ]);
 
     $this->widgetType = WidgetType::create([
-        'handle'        => 'render_test_' . uniqid(),
-        'label'         => 'Render Test',
-        'render_mode'   => 'server',
-        'collections'   => [],
-        'config_schema' => [],
-        'full_width'    => false,
+        'handle'                => 'render_test_' . uniqid(),
+        'label'                 => 'Render Test',
+        'render_mode'           => 'server',
+        'collections'           => [],
+        'config_schema'         => [],
+        'background_full_width' => true,
+        'content_full_width'    => false,
     ]);
 });
 
@@ -165,15 +166,16 @@ it('renders each alignment value', function (string $alignment, string $position
     ['bottom-right',  '100% 100%'],
 ]);
 
-it('resolves full_width true at root', function () {
+it('resolves both full_width knobs from instance override at root', function () {
     $pw = renderWidget($this->page, $this->widgetType, [
-        'layout' => ['full_width' => true],
+        'layout' => ['background_full_width' => true, 'content_full_width' => true],
     ]);
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBeTrue();
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeTrue();
 });
 
-it('forces full_width false for column-child widget', function () {
+it('forces both full_width knobs false for column-child widget', function () {
     $layout = $this->page->layouts()->create([
         'label'         => 'Test Layout',
         'display'       => 'grid',
@@ -183,11 +185,12 @@ it('forces full_width false for column-child widget', function () {
     ]);
 
     $pw = renderWidget($this->page, $this->widgetType, [
-        'layout' => ['full_width' => true],
+        'layout' => ['background_full_width' => true, 'content_full_width' => true],
     ], $layout->id);
 
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBeFalse();
+    expect($result['background_full_width'])->toBeFalse();
+    expect($result['content_full_width'])->toBeFalse();
 });
 
 // ── use_current_page_header override ────────────────────────────────────────

@@ -733,7 +733,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   /**
    * Update a single nested path inside the widget's appearance_config and queue a debounced save.
-   * The path is a dot-separated string, e.g. 'background.color', 'layout.full_width', 'layout.padding.top'.
+   * The path is a dot-separated string, e.g. 'background.color', 'layout.content_full_width', 'layout.padding.top'.
    * Intermediate objects are created as needed; the rest of the bag is preserved.
    */
   function updateLocalAppearanceConfig(widgetId: string, path: string, value: any): void {

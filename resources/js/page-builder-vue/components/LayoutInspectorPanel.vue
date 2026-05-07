@@ -65,7 +65,14 @@ function setLayoutConfigKey(key: string, value: any) {
   })
 }
 
-const fullWidth = computed(() => !!layout.value?.layout_config?.full_width)
+const contentFullWidth = computed(() => !!layout.value?.layout_config?.content_full_width)
+const backgroundFullWidth = computed(() => !!layout.value?.layout_config?.background_full_width)
+const backgroundDisabled = computed(() => contentFullWidth.value)
+const backgroundDisabledReason = computed(() =>
+  contentFullWidth.value
+    ? 'Background fills page width automatically when content is set to fill page width.'
+    : undefined,
+)
 
 function setDisplay(display: 'flex' | 'grid') {
   if (!layout.value) return
@@ -204,18 +211,32 @@ function onLayoutUpdate(path: string, value: any) {
     <div class="layout-inspector__body">
       <!-- Column Settings tab -->
       <template v-if="activeTab === 'column-settings'">
-        <!-- Full width at the top — layout-behavior control -->
+        <!-- Full width at the top — layout-behavior controls -->
         <div class="layout-inspector__field">
           <label class="layout-inspector__checkbox-row">
             <input
               type="checkbox"
-              :checked="fullWidth"
+              :checked="contentFullWidth"
               class="layout-inspector__checkbox"
-              @change="setLayoutConfigKey('full_width', ($event.target as HTMLInputElement).checked)"
+              @change="setLayoutConfigKey('content_full_width', ($event.target as HTMLInputElement).checked)"
             >
-            <span>Full width</span>
+            <span>Content fills page width</span>
           </label>
-          <p class="layout-inspector__hint">When off, the layout is constrained to the site content container.</p>
+          <label
+            class="layout-inspector__checkbox-row"
+            :class="{ 'layout-inspector__checkbox-row--disabled': backgroundDisabled }"
+            :title="backgroundDisabledReason"
+          >
+            <input
+              type="checkbox"
+              :checked="backgroundFullWidth || contentFullWidth"
+              :disabled="backgroundDisabled"
+              class="layout-inspector__checkbox"
+              @change="setLayoutConfigKey('background_full_width', ($event.target as HTMLInputElement).checked)"
+            >
+            <span>Background fills page width</span>
+          </label>
+          <p class="layout-inspector__hint">When content is off, column tracks are constrained to the site content container.</p>
         </div>
 
         <!-- Display toggle -->
@@ -739,6 +760,11 @@ function onLayoutUpdate(path: string, value: any) {
   cursor: pointer;
   font-size: 0.875rem;
   color: #374151;
+}
+
+.layout-inspector__checkbox-row--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .layout-inspector__checkbox {
