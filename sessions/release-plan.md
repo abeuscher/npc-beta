@@ -356,12 +356,13 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **artifact:** the migration + composer/renderer convergence + admin-UI two-toggle inspector + Playwright matrix spec. **Closed at session 267.**
 - **estimated time cost:** 1 session.
 
-#### E11. Page Builder Focus-Scroll Clamp
+#### E11. Page Builder Focus-Scroll Clamp — closed without shipping at session 269
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub. Scroll lock once a widget is focused; tall-widget exception clamps the focused widget as a scroll container.
-- **estimated time cost:** 1 session.
+- **success criterion** *(closed at session 269 — no code shipped)*: Verify-at-start audits surfaced two factual errors in the prompt's design-decisions block (`paneEl` is not the scroll container — the document scrolls at `window` level; no `clearSelection` path exists — clicking the canvas background does nothing today). Closing-decision evaluation surfaced four paths: (A) ship as written retargeted to `window` (predicted jitter on Mac trackpad inertia), (B) ship only the tall-widget half (drop the short-widget lock that fights inertia), (C) restructure `.preview-canvas` into a real fixed-height `overflow-y: auto` container with `overscroll-behavior: contain` first (right shape, but bigger than this session's scope), (D) don't ship — reaffirm the 204 escape hatch. User chose **D**. The 204 framing stands: the must-have scroll-to-centre-on-selection (shipped at 204) suffices; the manageable UI doesn't justify scroll-jacking. Reopen only if user testing surfaces a concrete UX problem the must-have doesn't resolve. Internal-scroll-widget audit came back clean (every widget uses `overflow: hidden`; carousels use Swiper.js gestures). See `sessions/269. Page Builder Focus-Scroll Clamp — Log.md`.
+- **artifact:** none.
+- **estimated time cost:** 1 session *(spent on audit + decision; no implementation)*.
 
 #### E12. Housekeeping Batch 2
 
@@ -475,7 +476,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 21. **A1d'.** Backup notification hardening — FM 020 finding *(closed at session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)* ✅
 22. **A1e.** Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint *(closed at session 268; CRM-side prerequisite for FM 021 + 022 restore-to-fresh-node primitive; A2(c) success-criterion CRM-side half complete)* ✅
 23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
-24. **E11.** Page Builder Focus-Scroll Clamp
+24. **E11.** Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; verify-at-start audits reaffirmed the 204-time descoping rationale; user direction "D — don't ship"; the must-have scroll-to-centre from 204 suffices)*
 25. **C1.** Notes Permissions (feature half)
 26. **E9.** Widget Help Authoring
 27. **C2.** Event Ticket Tiers

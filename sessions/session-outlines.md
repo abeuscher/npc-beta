@@ -50,14 +50,80 @@ Phase 2 Backup Pipeline closed at session 242. Phase 3 mTLS Migration shipped at
 
 ---
 
-### Page Builder Focus-Scroll Clamp *(stub — pre-Beta 1, successor to session 204)*
+### Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; 204-rationale reaffirmed)*
 
-Session 204 shipped the scroll-to-viewport-centre-on-selection behaviour but descoped the stretch clamp before implementation. Stretch items still open:
+Reopened at session 269 to lift the descoped 204 stretch (scroll lock + tall-widget exception). Verify-at-start audits surfaced two factual errors in the prompt's design-decisions block:
 
-- **Scroll lock:** once a widget is focused, the viewport cannot scroll past it on wheel / touch. Implementation path: listen to `wheel` / `touchmove` on the canvas container and short-circuit events that would move the focused widget out of view.
-- **Tall-widget exception:** if the focused widget is taller than the viewport, the clamp behaves as a scroll container for that widget only — up-scroll locks at the widget top, down-scroll locks at the widget bottom; the rest of the page is inaccessible while focus holds.
+- **`paneEl` is not the scroll container.** `.preview-canvas` carries only `style="min-width: 0"`; its parent `.vue-editor__main` declares no overflow. The document scrolls at `window` level; the inspector stays visible via `position: sticky; height: calc(100vh - 2rem)`. Any clamp would need to listen on `window`, not `paneEl`.
+- **No `clearSelection` path exists.** The store has no such action; clicking the canvas background does nothing today (overlays use `@click.stop`). "De-selection un-clamps" would have required adding a new background-click affordance.
 
-Descoped in 204 on the grounds that wheel/touch interception fights browser inertial scrolling and the nested-scroll case inside column widgets is adversarial. Reopen only if user testing confirms the must-have scroll-to-centre isn't enough.
+Closing-decision evaluation surfaced four paths: (A) ship as written retargeted to `window` (predicted jitter on Mac trackpad inertia — the 204 prediction restated), (B) ship only the tall-widget half (drop the short-widget lock that fights inertia), (C) restructure `.preview-canvas` into a real fixed-height `overflow-y: auto` container with `overscroll-behavior: contain` first (right shape, but bigger than this session's scope and interacts with the Filament admin shell + sticky inspector + mobile breakpoint collapse + preview viewport math), (D) don't ship — reaffirm the 204 escape hatch.
+
+User chose **D**: *"This doesn't feel right and every tangential problem to the one we are solving has been resolved and frankly the UI is quite manageable now. I don't like the kind of problems we are running into and I don't like scroll jacking very much anyways."*
+
+Internal-scroll-widget audit came back clean (every widget uses `overflow: hidden`; carousels use Swiper.js gestures, not native scroll). Drag-drop interaction would have hooked naturally (selection only changes via `App.vue`'s `widget-created` handler at drop completion).
+
+Reopen only if user testing surfaces a concrete UX problem the must-have scroll-to-centre (shipped at 204) doesn't resolve. Path C is the structurally clean shape if it ever does — documented as forward context only; not a working-set entry. See `sessions/269. Page Builder Focus-Scroll Clamp — Log.md`.
+
+---
+
+### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 270 / 271 / 272 / 273)*
+
+Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208).
+
+Why four sessions rather than a single audit + apply pair: the window is 2.5× wider than 205/206 covered, with five net-new subsystems for deep walks (Fleet Manager API surface, Organizations / Affiliations / Donation Credits cluster, the importer convergence post-B2/B2a/B2b, the Page Builder Vue file growth, rich-text surfaces). Splitting the audit half across 270 + 271 keeps each session's scope tractable; apply (272) and squash (273) follow as their own sessions per the established pattern.
+
+Procedural precedent: **205 / 206** for the audit→apply pair shape (canonical); **178 / 179** as the older precedent. Squash precedent: **208** (most recent), with the squash recipe lineage **062 → 082 → 108 → 142 → 181 → 208 → 273**.
+
+#### 270 — Audit Part 1 (Foundations + Quantitative)
+
+Broad horizontal sweep + the new mechanical audits. Inherits 205's W1 / W5 / W6 / W9 / W10 numbering; subsystem walks deferred to 271.
+
+- **W1** Stale reference audit (post-208 onwards: deleted/renamed services, retired blade partials, broken `use` statements, retired Alpine state, the E10-time `full_width` → `background_full_width` / `content_full_width` rename, the B1c-time namespaced sentinel additions).
+- **W5** Dead code and orphaned files (PHP, blade, Vue/TS, SCSS, tests).
+- **W6** Permission and security audit (every Filament Resource has `canAccess()`; every action gated; portal `contact_id` scoping intact; new mutation surfaces from FM contract bumps + Organizations + B2 importers all gated).
+- **W9** Help docs / schema docs / routes (post-208 delta — Affiliations / Donation Credits / Organizations columns, the FM contract spec evolution, the `appearance_config` split per E10, the rich-text custom fields surface). Also pins the FM contract version-stamp parity (`HealthController::CONTRACT_VERSION` ↔ spec doc's `Contract Version:` field) — drift caught once at 268, worth structural fix at 271 W4.
+- **W10** Test health (Pest fast + slow, Playwright suites, builds). Pre-existing failures classified, not chased. Includes the Playwright teardown audit re-walk per the 208 Phase 1d shape (the page-builder spec set has grown).
+- **W11** *(new)* **File-length audit.** Average LOC per language (PHP / Blade / Vue / TS / SCSS — split because blades skew long), files >2× average with current LOC. Quantitative output: per-language summary block + numbered outlier list. The apply session targets outliers for extraction.
+- **W12** *(new)* **Inline-code-in-markup grep.** Lineage: sessions 142 / 181. Scans for inline `<script>` / `<style>` blocks in blades beyond a trivial-line threshold, multi-line CSS/HTML strings in PHP/TS, inline JS event handlers with non-trivial logic, widget-template inline assets that should live in widget asset declarations. Output: extraction-candidate table for the apply session.
+
+W7 (duplicated logic) + W8 (framework alignment) tables started this session, populated incrementally across 270 + 271, walked at 272.
+
+Output: log with per-workstream findings, starter W7 + W8 tables (broad-workstream rows), Open Flags block, W11 quantitative output, W12 candidate table. Drafts 271 docs at close — 271's "Pre-loaded findings (validate during the audit)" block carries forward subsystem-relevant findings from 270.
+
+#### 271 — Audit Part 2 (Subsystem Deep Walks)
+
+Per-subsystem deep passes. Produces the bulk of the W7 / W8 table rows + Open Flags. Numbering picks up 205's W2 / W3 / W4 slots and adds W4b / W4c.
+
+- **W2** CRM Importer subsystem revisit. Has the 206-applied aggregator-base / `ImportSessionActions` / `ImportSessionPreview` extraction held? Did B2a's contacts auto-mapping lift produce new drift? Did B1c's Organizations importer follow the namespaced shape cleanly? `ContactsImportProgressPage` — does it still warrant 206 Flag B's "leave as is" framing or has 11 more sessions of work made the convergence cheaper?
+- **W3** Organizations / Affiliations / Donation Credits subsystem. B1a / B1c / B1b are the largest model-shape addition since 205. Walk: Organization vs Contact pattern parity (importers, source policies, scrub inheritance, soft-credit attribution), Affiliations junction lifecycle, deletion-policy interactions.
+- **W4** Fleet Manager API surface. Four endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`) — divergence in error envelope shape, `contract_version` field handling on success vs error, `sanitise()` usage, throttle bucket consistency. Plus FM-contract doc / code drift structural fix (the 268-time finding deserves a pin, not just an audit verification).
+- **W4b** *(new)* Page Builder Vue subsystem. `PreviewCanvas.vue`, `LayoutRegion.vue`, `editor.ts` store growth (the store's `return {}` block reached ~70 keys post-267). Composables vs utils convention, `useViewport` / `useLibraryLoader` shape uniformity, the appearance-panel polymorphism that landed in 207. Cross-references W11 for size-driven candidates.
+- **W4c** *(new)* Rich-text surfaces. E3 added `rich_text` custom-field type. The session-250-time **Rich-Text Surface Sanitization Hardening** stub is still open in this file — confirm no surface added since has worsened the unsanitized-HTML round-trip pattern. Memo collection's Trix→Quill convergence (also stubbed) — verify its scope hasn't grown.
+
+Output: full W7 + W8 tables (270 starter rows + 271 subsystem rows merged), Open Flags block (everything from both audit sessions), handoff for 272.
+
+#### 272 — Code Review & Cleanup (Apply)
+
+Standard 206-shape. Walk Open Flags first; per-row decisions on W7 + W8; iteration-sliced commits (`session-272/1` … `/N`). Carve out any too-big-for-this-session items as their own dedicated sessions per Rule 11 (precedent: Flag A → 207).
+
+Decision points expected: at least one of the W4-driven Fleet Manager API findings will likely be flag-shaped (envelope-shape unification touches four controllers, a base class might emerge). The Organizations vs Contact pattern-parity findings (W3) may also flag-shape if soft-credit attribution turns out to need a dedicated path. The W11 file-length outliers and W12 inline-code-in-markup candidates feed the iteration plan as concrete extraction targets.
+
+Apply session does not bundle the migration squash — that's session 273.
+
+#### 273 — Migration Squash & Code Optimization
+
+208-shape exactly. Phase 1 inventory → Phase 2 user picks → Phase 3 apply → Phase 4 squash → Phase 5 verify. Squash itself follows the 181 procedure verbatim: `schema:dump` → delete all migration files → verify `migrate:fresh --seed` identity → update `docs/schema/README.md` squash-note block. Reference lineage in design-decisions block: **062 → 082 → 108 → 142 → 181 → 208 → 273**.
+
+Migration count to collapse: ~60 sessions of churn since the 208 baseline. Known shape additions: Affiliations junction (B1b), Donation Credits (B1b), Organizations columns + `custom_fields` surface (B1a / B1c), `appearance_config` jsonb on `page_layouts` (207), the E3 `custom_fields` rich-text surface, FM-contract-companion migrations if any.
+
+Optimization phase rides alongside per the 208 pattern — perf hot-spots surfaced by 270/271/272's refactors, help-docs coverage delta (anything 270's W9 found that didn't fit in apply), Playwright teardown audit re-walk (now that the page-builder spec set has grown).
+
+Pre-beta license applies throughout — no backward-compat shims, no deprecation periods. When the optimization phase identifies a column / method / route / config file that isn't pulling its weight, cut it. The squash absorbs the cut into the baseline; the old shape disappears from history.
+
+#### Distinct from T1 (terminal)
+
+The T1 stub below is the **absolute-final** code review + squash — it runs after every other release-plan entry has closed, per Rule 10. This 4-session cluster is a mid-cycle housekeeping pass; T1 still happens later. T1's scope is whatever has accumulated between this cluster and Beta-1 release.
 
 ---
 
