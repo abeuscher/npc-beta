@@ -44,9 +44,15 @@ services:
 
   # ─────────────────────────────────────────
   # PostgreSQL Database
+  #
+  # The major version here MUST match the `postgresql-client-N` apt package
+  # pinned in the Dockerfile (spatie/laravel-backup runs pg_dump from the
+  # app container against this server; mismatched majors produce dumps the
+  # older server cannot ingest). When bumping the major, follow
+  # docs/runbooks/postgres-major-upgrade.md for the data-dir migration.
   # ─────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: nonprofitcrm_postgres
     restart: unless-stopped
     environment:
