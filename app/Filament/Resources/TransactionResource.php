@@ -23,6 +23,11 @@ use Filament\Tables\Table;
 
 class TransactionResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_transaction') ?? false;
+    }
+
     protected static ?string $model = Transaction::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';

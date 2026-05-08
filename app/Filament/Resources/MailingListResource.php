@@ -14,6 +14,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MailingListResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_mailing_list') ?? false;
+    }
+
     protected static ?string $model = MailingList::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';

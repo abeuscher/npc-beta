@@ -18,6 +18,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PageResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_page') ?? false;
+    }
+
     use HasPageBuilderForm;
 
     protected static ?string $model = Page::class;

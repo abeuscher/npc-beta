@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ContactResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_contact') ?? false;
+    }
+
     protected static ?string $model = Contact::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';

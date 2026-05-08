@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\DB;
 
 class TagResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_tag') ?? false;
+    }
+
     protected static ?string $model = Tag::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';

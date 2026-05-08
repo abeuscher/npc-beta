@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class NoteResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_note') ?? false;
+    }
+
     protected static ?string $model = Note::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-ellipsis';

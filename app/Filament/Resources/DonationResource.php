@@ -15,6 +15,11 @@ use Filament\Tables\Table;
 
 class DonationResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_donation') ?? false;
+    }
+
     protected static ?string $model = Donation::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-heart';

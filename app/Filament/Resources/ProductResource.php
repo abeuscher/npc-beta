@@ -16,6 +16,11 @@ use Illuminate\Support\Str;
 
 class ProductResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_product') ?? false;
+    }
+
     protected static ?string $model = Product::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';

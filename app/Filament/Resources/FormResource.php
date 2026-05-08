@@ -17,6 +17,11 @@ use Illuminate\Support\Str;
 
 class FormResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_form') ?? false;
+    }
+
     protected static ?string $model = Form::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';

@@ -16,6 +16,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrganizationResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_organization') ?? false;
+    }
+
     protected static ?string $model = Organization::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office';

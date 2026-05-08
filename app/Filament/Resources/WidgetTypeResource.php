@@ -15,6 +15,11 @@ use Illuminate\Support\Str;
 
 class WidgetTypeResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_widget_type') ?? false;
+    }
+
     public const CATEGORY_OPTIONS = [
         'most_used'        => 'Most Used',
         'content'          => 'Content',
