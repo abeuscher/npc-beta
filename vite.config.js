@@ -13,6 +13,8 @@ export default defineConfig({
     laravel({
       input: [
         'resources/scss/public.scss',
+        'resources/scss/admin/invitation.scss',
+        'resources/scss/admin/record-timeline.scss',
         'resources/js/public.js',
         'resources/js/portal/password-mismatch.js',
         'resources/js/page-builder-vue/main.ts',
