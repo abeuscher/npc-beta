@@ -477,31 +477,32 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 22. **A1e.** Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint *(closed at session 268; CRM-side prerequisite for FM 021 + 022 restore-to-fresh-node primitive; A2(c) success-criterion CRM-side half complete)* ✅
 23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
 24. **E11.** Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; verify-at-start audits reaffirmed the 204-time descoping rationale; user direction "D — don't ship"; the must-have scroll-to-centre from 204 suffices)*
-25. **C1.** Notes Permissions (feature half)
-26. **E9.** Widget Help Authoring
-27. **C2.** Event Ticket Tiers
-28. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-29. **E4.** Stripe Checkout Branding *(precedes C4)*
-30. **C4.** Donation-to-acknowledgment loop
-31. **C5.** Event with everything
-32. **C6.** Membership renewal cycle
-33. **C7.** Email at volume
-34. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-35. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-36. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-37. **E8.** UI/UX Sprint
-38. **E12.** Housekeeping Batch 2
-39. **D1.** Scale rehearsal
-40. **D2.** Compatibility cluster
-41. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-42. **E13.** Help docs body content
-43. **E14.** Third-Party Licensing Compliance Audit
-44. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-45. **D4.** Test suite review — cost & shape
-46. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-47. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-48. **F3.** On-Demand E2E — Permission / role-gate matrix
-49. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+25. **A1e'.** PostgreSQL Major-Version Skew Fix *(closed at session 270; emergent unblocker for FM 021 manual testing 2026-05-08 — `pg_dump 17` from Trixie's `postgresql-client` meta-package produced dumps containing the PG17-only `transaction_timeout` directive that PG16 servers couldn't ingest; pinned `postgresql-client-17` in Dockerfile, bumped `postgres:17-alpine` in both compose files, added structural `PostgresVersionSkewTest`; both droplets wiped and redeployed via the destructive shortest path acceptable under pre-Beta no-live-data posture)* ✅
+26. **C1.** Notes Permissions (feature half)
+27. **E9.** Widget Help Authoring
+28. **C2.** Event Ticket Tiers
+29. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+30. **E4.** Stripe Checkout Branding *(precedes C4)*
+31. **C4.** Donation-to-acknowledgment loop
+32. **C5.** Event with everything
+33. **C6.** Membership renewal cycle
+34. **C7.** Email at volume
+35. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+36. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+37. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+38. **E8.** UI/UX Sprint
+39. **E12.** Housekeeping Batch 2
+40. **D1.** Scale rehearsal
+41. **D2.** Compatibility cluster
+42. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+43. **E13.** Help docs body content
+44. **E14.** Third-Party Licensing Compliance Audit
+45. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+46. **D4.** Test suite review — cost & shape
+47. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+48. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+49. **F3.** On-Demand E2E — Permission / role-gate matrix
+50. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

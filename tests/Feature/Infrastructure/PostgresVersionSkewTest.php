@@ -41,6 +41,7 @@ it('asserts pg_dump major version matches the postgres server major version', fu
         $serverMajor,
         "pg_dump major ({$clientMajor}) must match postgres server major ({$serverMajor}) — "
         . 'mismatched majors produce dumps the older server cannot ingest. '
-        . 'See docs/runbooks/postgres-major-upgrade.md.'
+        . 'Re-pin the `postgresql-client-N` apt package in the Dockerfile to match the '
+        . '`postgres:N-alpine` image in docker-compose.yml and docker-compose.prod.yml.'
     );
 });
