@@ -91,7 +91,7 @@ W7 (duplicated logic) + W8 (framework alignment) tables started this session, po
 
 Output: log with per-workstream findings, starter W7 + W8 tables (broad-workstream rows), Open Flags block, W11 quantitative output, W12 candidate table. Drafts 272 docs at close — 272's "Pre-loaded findings (validate during the audit)" block carries forward subsystem-relevant findings from 271.
 
-#### 272 — Audit Part 2 (Subsystem Deep Walks)
+#### 272 — Audit Part 2 (Subsystem Deep Walks) ✅ *(closed at session 272)*
 
 Per-subsystem deep passes. Produces the bulk of the W7 / W8 table rows + Open Flags. Numbering picks up 205's W2 / W3 / W4 slots and adds W4b / W4c.
 
