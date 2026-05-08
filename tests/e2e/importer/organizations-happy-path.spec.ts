@@ -97,18 +97,26 @@ test.describe('Organizations importer — happy path', () => {
         expect(fictionalTags).toEqual([]);
 
         // Note round-trip — Note rows with notable_type=Organization.
-        const orgNoteCount = await countNotesByNotableType('App\\Models\\Organization');
-        expect(orgNoteCount).toBe(Object.keys(EXPECTED.notesByExternalId).length);
+        // Every imported entity also receives a "Imported from … (session: …)" audit-trail
+        // note from writeImportCreationNote() in InteractsWithImportProgress; the CSV-only
+        // assertion filters that out by matching against the deterministic prefix.
+        const isCsvNote = (n: { body: string }) => !n.body.startsWith('Imported from ');
+
+        const allOrgNotes = await countNotesByNotableType('App\\Models\\Organization');
+        const expectedCsvNoteCount = Object.keys(EXPECTED.notesByExternalId).length;
+        // 5 import-creation notes (one per imported org) + the CSV notes.
+        expect(allOrgNotes).toBe(EXPECTED.organizationCount + expectedCsvNoteCount);
 
         for (const [externalId, expectedBody] of Object.entries(EXPECTED.notesByExternalId) as Array<[string, string]>) {
             const row = await findOrganizationByExternalId(sourceId!, externalId);
-            const notes = await getNotesForOrganization(row!.id as string);
-            expect(notes.length, `org ${externalId} note count`).toBe(1);
-            expect(notes[0].body).toBe(expectedBody);
+            const csvNotes = (await getNotesForOrganization(row!.id as string)).filter(isCsvNote);
+            expect(csvNotes.length, `org ${externalId} csv note count`).toBe(1);
+            expect(csvNotes[0].body).toBe(expectedBody);
         }
 
-        // Org without a note — Initech CSV row 3 — has empty Notes cell.
-        const initechNotes = await getNotesForOrganization(initech!.id as string);
-        expect(initechNotes).toEqual([]);
+        // Org without a CSV note — Initech CSV row 3 — has empty Notes cell.
+        // It still has the import-creation audit note, so filter to CSV-only.
+        const initechCsvNotes = (await getNotesForOrganization(initech!.id as string)).filter(isCsvNote);
+        expect(initechCsvNotes).toEqual([]);
     });
 });
