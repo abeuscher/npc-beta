@@ -273,4 +273,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 268 | Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint |
 | 269 | Page Builder Focus-Scroll Clamp (closed without shipping; 204-rationale reaffirmed) |
 | 270 | PostgreSQL Major-Version Skew Fix |
+| 271 | Code Review & Cleanup (Audit Part 1 — Foundations + Quantitative) |
 

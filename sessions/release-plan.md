@@ -478,31 +478,32 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
 24. **E11.** Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; verify-at-start audits reaffirmed the 204-time descoping rationale; user direction "D — don't ship"; the must-have scroll-to-centre from 204 suffices)*
 25. **A1e'.** PostgreSQL Major-Version Skew Fix *(closed at session 270; emergent unblocker for FM 021 manual testing 2026-05-08 — `pg_dump 17` from Trixie's `postgresql-client` meta-package produced dumps containing the PG17-only `transaction_timeout` directive that PG16 servers couldn't ingest; pinned `postgresql-client-17` in Dockerfile, bumped `postgres:17-alpine` in both compose files, added structural `PostgresVersionSkewTest`; both droplets wiped and redeployed via the destructive shortest path acceptable under pre-Beta no-live-data posture)* ✅
-26. **C1.** Notes Permissions (feature half)
-27. **E9.** Widget Help Authoring
-28. **C2.** Event Ticket Tiers
-29. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-30. **E4.** Stripe Checkout Branding *(precedes C4)*
-31. **C4.** Donation-to-acknowledgment loop
-32. **C5.** Event with everything
-33. **C6.** Membership renewal cycle
-34. **C7.** Email at volume
-35. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-36. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-37. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-38. **E8.** UI/UX Sprint
-39. **E12.** Housekeeping Batch 2
-40. **D1.** Scale rehearsal
-41. **D2.** Compatibility cluster
-42. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-43. **E13.** Help docs body content
-44. **E14.** Third-Party Licensing Compliance Audit
-45. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-46. **D4.** Test suite review — cost & shape
-47. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-48. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-49. **F3.** On-Demand E2E — Permission / role-gate matrix
-50. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+26. **Code Review & Cleanup — 4-session housekeeping cycle** *(sessions 271 / 272 / 273 / 274 — audit Part 1 → audit Part 2 → apply → squash; lifted at 269 close after E11 abandonment opened calendar; window covered 207 → 268 ~60 sessions of growth since last code review at 205/206 and last squash at 208; 271 ✅ closed, 272/273/274 queued)*
+27. **C1.** Notes Permissions (feature half)
+28. **E9.** Widget Help Authoring
+29. **C2.** Event Ticket Tiers
+30. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+31. **E4.** Stripe Checkout Branding *(precedes C4)*
+32. **C4.** Donation-to-acknowledgment loop
+33. **C5.** Event with everything
+34. **C6.** Membership renewal cycle
+35. **C7.** Email at volume
+36. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+37. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+38. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+39. **E8.** UI/UX Sprint
+40. **E12.** Housekeeping Batch 2
+41. **D1.** Scale rehearsal
+42. **D2.** Compatibility cluster
+43. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+44. **E13.** Help docs body content
+45. **E14.** Third-Party Licensing Compliance Audit
+46. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+47. **D4.** Test suite review — cost & shape
+48. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+49. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+50. **F3.** On-Demand E2E — Permission / role-gate matrix
+51. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

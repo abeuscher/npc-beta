@@ -67,15 +67,15 @@ Reopen only if user testing surfaces a concrete UX problem the must-have scroll-
 
 ---
 
-### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 270 / 271 / 272 / 273)*
+### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 271 / 272 / 273 / 274)*
 
-Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208).
+Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208). Originally planned as 270 / 271 / 272 / 273; renumbered after session 270 absorbed the PostgreSQL major-version-skew fix (an emergent unblocker for FM 021).
 
-Why four sessions rather than a single audit + apply pair: the window is 2.5× wider than 205/206 covered, with five net-new subsystems for deep walks (Fleet Manager API surface, Organizations / Affiliations / Donation Credits cluster, the importer convergence post-B2/B2a/B2b, the Page Builder Vue file growth, rich-text surfaces). Splitting the audit half across 270 + 271 keeps each session's scope tractable; apply (272) and squash (273) follow as their own sessions per the established pattern.
+Why four sessions rather than a single audit + apply pair: the window is 2.5× wider than 205/206 covered, with five net-new subsystems for deep walks (Fleet Manager API surface, Organizations / Affiliations / Donation Credits cluster, the importer convergence post-B2/B2a/B2b, the Page Builder Vue file growth, rich-text surfaces). Splitting the audit half across 271 + 272 keeps each session's scope tractable; apply (273) and squash (274) follow as their own sessions per the established pattern.
 
-Procedural precedent: **205 / 206** for the audit→apply pair shape (canonical); **178 / 179** as the older precedent. Squash precedent: **208** (most recent), with the squash recipe lineage **062 → 082 → 108 → 142 → 181 → 208 → 273**.
+Procedural precedent: **205 / 206** for the audit→apply pair shape (canonical); **178 / 179** as the older precedent. Squash precedent: **208** (most recent), with the squash recipe lineage **062 → 082 → 108 → 142 → 181 → 208 → 274**.
 
-#### 270 — Audit Part 1 (Foundations + Quantitative)
+#### 271 — Audit Part 1 (Foundations + Quantitative) ✅ *(closed at session 271)*
 
 Broad horizontal sweep + the new mechanical audits. Inherits 205's W1 / W5 / W6 / W9 / W10 numbering; subsystem walks deferred to 271.
 
@@ -89,9 +89,9 @@ Broad horizontal sweep + the new mechanical audits. Inherits 205's W1 / W5 / W6 
 
 W7 (duplicated logic) + W8 (framework alignment) tables started this session, populated incrementally across 270 + 271, walked at 272.
 
-Output: log with per-workstream findings, starter W7 + W8 tables (broad-workstream rows), Open Flags block, W11 quantitative output, W12 candidate table. Drafts 271 docs at close — 271's "Pre-loaded findings (validate during the audit)" block carries forward subsystem-relevant findings from 270.
+Output: log with per-workstream findings, starter W7 + W8 tables (broad-workstream rows), Open Flags block, W11 quantitative output, W12 candidate table. Drafts 272 docs at close — 272's "Pre-loaded findings (validate during the audit)" block carries forward subsystem-relevant findings from 271.
 
-#### 271 — Audit Part 2 (Subsystem Deep Walks)
+#### 272 — Audit Part 2 (Subsystem Deep Walks)
 
 Per-subsystem deep passes. Produces the bulk of the W7 / W8 table rows + Open Flags. Numbering picks up 205's W2 / W3 / W4 slots and adds W4b / W4c.
 
@@ -101,23 +101,23 @@ Per-subsystem deep passes. Produces the bulk of the W7 / W8 table rows + Open Fl
 - **W4b** *(new)* Page Builder Vue subsystem. `PreviewCanvas.vue`, `LayoutRegion.vue`, `editor.ts` store growth (the store's `return {}` block reached ~70 keys post-267). Composables vs utils convention, `useViewport` / `useLibraryLoader` shape uniformity, the appearance-panel polymorphism that landed in 207. Cross-references W11 for size-driven candidates.
 - **W4c** *(new)* Rich-text surfaces. E3 added `rich_text` custom-field type. The session-250-time **Rich-Text Surface Sanitization Hardening** stub is still open in this file — confirm no surface added since has worsened the unsanitized-HTML round-trip pattern. Memo collection's Trix→Quill convergence (also stubbed) — verify its scope hasn't grown.
 
-Output: full W7 + W8 tables (270 starter rows + 271 subsystem rows merged), Open Flags block (everything from both audit sessions), handoff for 272.
+Output: full W7 + W8 tables (271 starter rows + 272 subsystem rows merged), Open Flags block (everything from both audit sessions), handoff for 273.
 
-#### 272 — Code Review & Cleanup (Apply)
+#### 273 — Code Review & Cleanup (Apply)
 
-Standard 206-shape. Walk Open Flags first; per-row decisions on W7 + W8; iteration-sliced commits (`session-272/1` … `/N`). Carve out any too-big-for-this-session items as their own dedicated sessions per Rule 11 (precedent: Flag A → 207).
+Standard 206-shape. Walk Open Flags first; per-row decisions on W7 + W8; iteration-sliced commits (`session-273/1` … `/N`). Carve out any too-big-for-this-session items as their own dedicated sessions per Rule 11 (precedent: Flag A → 207).
 
 Decision points expected: at least one of the W4-driven Fleet Manager API findings will likely be flag-shaped (envelope-shape unification touches four controllers, a base class might emerge). The Organizations vs Contact pattern-parity findings (W3) may also flag-shape if soft-credit attribution turns out to need a dedicated path. The W11 file-length outliers and W12 inline-code-in-markup candidates feed the iteration plan as concrete extraction targets.
 
-Apply session does not bundle the migration squash — that's session 273.
+Apply session does not bundle the migration squash — that's session 274.
 
-#### 273 — Migration Squash & Code Optimization
+#### 274 — Migration Squash & Code Optimization
 
-208-shape exactly. Phase 1 inventory → Phase 2 user picks → Phase 3 apply → Phase 4 squash → Phase 5 verify. Squash itself follows the 181 procedure verbatim: `schema:dump` → delete all migration files → verify `migrate:fresh --seed` identity → update `docs/schema/README.md` squash-note block. Reference lineage in design-decisions block: **062 → 082 → 108 → 142 → 181 → 208 → 273**.
+208-shape exactly. Phase 1 inventory → Phase 2 user picks → Phase 3 apply → Phase 4 squash → Phase 5 verify. Squash itself follows the 181 procedure verbatim: `schema:dump` → delete all migration files → verify `migrate:fresh --seed` identity → update `docs/schema/README.md` squash-note block. Reference lineage in design-decisions block: **062 → 082 → 108 → 142 → 181 → 208 → 274**.
 
 Migration count to collapse: ~60 sessions of churn since the 208 baseline. Known shape additions: Affiliations junction (B1b), Donation Credits (B1b), Organizations columns + `custom_fields` surface (B1a / B1c), `appearance_config` jsonb on `page_layouts` (207), the E3 `custom_fields` rich-text surface, FM-contract-companion migrations if any.
 
-Optimization phase rides alongside per the 208 pattern — perf hot-spots surfaced by 270/271/272's refactors, help-docs coverage delta (anything 270's W9 found that didn't fit in apply), Playwright teardown audit re-walk (now that the page-builder spec set has grown).
+Optimization phase rides alongside per the 208 pattern — perf hot-spots surfaced by 271/272/273's refactors, help-docs coverage delta (anything 271's W9 found that didn't fit in apply), Playwright teardown audit re-walk (now that the page-builder spec set has grown).
 
 Pre-beta license applies throughout — no backward-compat shims, no deprecation periods. When the optimization phase identifies a column / method / route / config file that isn't pulling its weight, cut it. The squash absorbs the cut into the baseline; the old shape disappears from history.
 
