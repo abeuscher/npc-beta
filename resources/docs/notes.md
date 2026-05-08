@@ -3,9 +3,13 @@ title: Notes
 description: How to add and manage notes attached to contact records to track interactions, calls, and relationship history.
 version: "0.68"
 updated: 2026-04-01
-tags: [notes, crm, contacts]
+tags: [notes, crm, contacts, organizations]
 routes:
   - filament.admin.resources.contacts.notes
+  - filament.admin.resources.notes.index
+  - filament.admin.resources.notes.create
+  - filament.admin.resources.notes.edit
+  - filament.admin.resources.organizations.notes
 category: crm
 ---
 
