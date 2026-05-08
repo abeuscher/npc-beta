@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Observers\MembershipObserver;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[ObservedBy(MembershipObserver::class)]
 class Membership extends Model
 {
     use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;

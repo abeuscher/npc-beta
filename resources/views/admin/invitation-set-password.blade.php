@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Set your password &mdash; {{ config('app.name') }}</title>
+    @vite('resources/js/portal/password-mismatch.js')
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -109,16 +110,13 @@
     </div>
 
     <script>
-    (function () {
-        var password     = document.getElementById('password');
-        var confirmation = document.getElementById('password_confirmation');
-        var hint         = document.getElementById('mismatch-hint');
-        function check() {
-            hint.style.display = (confirmation.value.length > 0 && password.value !== confirmation.value) ? '' : 'none';
-        }
-        password.addEventListener('input', check);
-        confirmation.addEventListener('input', check);
-    }());
+    document.addEventListener('DOMContentLoaded', function () {
+        window.NPPasswordMismatch({
+            passwordEl: document.getElementById('password'),
+            confirmEl:  document.getElementById('password_confirmation'),
+            hintEl:     document.getElementById('mismatch-hint'),
+        });
+    });
     </script>
 </body>
 </html>

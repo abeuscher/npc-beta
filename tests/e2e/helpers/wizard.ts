@@ -52,19 +52,37 @@ export async function fillUploadStep(page: Page, opts: WizardOptions): Promise<v
         await selectExistingSource(page, opts.sourceName_reuse);
     }
 
+    // Wait for FilePond to mount and attach listeners before handing it
+    // files. FilePond is loaded via Filament's Alpine `x-load` lazy import;
+    // setInputFiles before initialization completes drops the change event
+    // on the floor and the upload pipeline never starts.
+    await expect(page.locator('.filepond--root')).toBeVisible({ timeout: 15_000 });
+
     const fileInput = page.locator('input[type=file]');
     await fileInput.setInputFiles(opts.csvPath);
 
     await expect(page.locator('p', { hasText: 'Uploading file' })).toBeHidden({ timeout: 30_000 });
     // Filepond's "Upload complete" toast is transient and can be missed under
-    // load. The persistent post-upload signal is the item's state attribute.
-    await expect(page.locator('[data-filepond-item-state="processing-complete"]')).toBeVisible({ timeout: 30_000 });
+    // load. The state attribute is more durable but Filament's `->live()`
+    // FileUpload triggers a Livewire roundtrip on completion that can briefly
+    // detach the item element. Poll-with-retries re-queries the DOM each
+    // interval, tolerating that re-render window. 90s tolerates the slowest
+    // suite-context runs we've observed.
+    await expect.poll(
+        async () => page.locator('[data-filepond-item-state="processing-complete"]').count(),
+        { timeout: 90_000, intervals: [200, 500, 1000] },
+    ).toBeGreaterThan(0);
     await page.waitForLoadState('networkidle');
 }
 
 async function selectExistingSource(page: Page, sourceName: string): Promise<void> {
     const selectEl = page.getByTestId('import-source-select').locator('select');
     await selectEl.selectOption({ label: sourceName });
+    // Choosing an existing source triggers a Livewire roundtrip that
+    // re-mounts the FilePond field with the prior mapping pre-loaded.
+    // Wait for it to settle before the caller hands files to the input —
+    // otherwise setInputFiles may bind to an about-to-be-replaced element.
+    await page.waitForLoadState('networkidle');
 }
 
 export async function advanceThroughMapping(page: Page, opts: WizardOptions): Promise<void> {

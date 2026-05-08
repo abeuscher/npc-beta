@@ -40,17 +40,4 @@
         </div>
     </form>
 
-    <script>
-    (function () {
-        var form = document.getElementById('portal-pw-form');
-        var pw   = document.getElementById('ppw_new');
-        var conf = document.getElementById('ppw_confirm');
-        var err  = document.getElementById('ppw-match-error');
-        function check() { err.style.display = (conf.value && pw.value !== conf.value) ? '' : 'none'; }
-        pw.addEventListener('input', check);
-        conf.addEventListener('input', check);
-        form.addEventListener('submit', function (e) { if (pw.value !== conf.value) { e.preventDefault(); err.style.display = ''; } });
-    }());
-    </script>
-
 @endif

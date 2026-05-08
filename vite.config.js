@@ -14,6 +14,7 @@ export default defineConfig({
       input: [
         'resources/scss/public.scss',
         'resources/js/public.js',
+        'resources/js/portal/password-mismatch.js',
         'resources/js/page-builder-vue/main.ts',
         'resources/js/theme-editor/main.ts',
         'resources/css/filament/admin/theme.css',
