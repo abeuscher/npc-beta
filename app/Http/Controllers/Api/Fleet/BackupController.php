@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Fleet;
 
+use App\Http\Controllers\Api\Fleet\Concerns\HasContractVersion;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Throwable;
 
 class BackupController extends Controller
 {
-    public const CONTRACT_VERSION = '2.3.0';
+    use HasContractVersion;
 
     private const TIMEOUT_SECONDS = 600;
     private const SUCCESS_RECORD_PATH = 'fleet/last-backup-at';
