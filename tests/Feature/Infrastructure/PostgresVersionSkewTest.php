@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Process\Process;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 it('asserts pg_dump major version matches the postgres server major version', function () {
     try {
