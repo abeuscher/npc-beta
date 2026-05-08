@@ -4,7 +4,6 @@ namespace App\Services\ImportExport;
 
 use App\Models\Collection;
 use App\Models\Page;
-use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\User;

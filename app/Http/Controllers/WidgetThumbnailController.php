@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\WidgetRegistry;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class WidgetThumbnailController extends Controller
 {

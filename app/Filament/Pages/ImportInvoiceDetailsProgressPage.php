@@ -7,7 +7,6 @@ use App\Filament\Pages\Concerns\InteractsWithImportProgress;
 use App\Importers\InvoiceImportFieldRegistry;
 use App\Models\Contact;
 use App\Models\ImportLog;
-use App\Models\ImportSession;
 use App\Models\ImportSource;
 use App\Models\Transaction;
 use App\Services\Import\FieldMapper;

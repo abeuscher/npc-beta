@@ -13,7 +13,6 @@ use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
-use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\AppearanceStyleComposer;
 use App\Services\PageBuilderDataSources;

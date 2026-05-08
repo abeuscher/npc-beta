@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MailingListResource\Pages;
 use App\Models\MailingList;
 use App\Services\MailingListFieldRegistry;
-use App\Services\MailingListQueryBuilder;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
