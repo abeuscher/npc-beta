@@ -270,4 +270,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 265 | Donation Credits — Soft-Credit Layer |
 | 266 | Backup notification hardening — FM 020 finding |
 | 267 | Full-Width Architecture Enforcement — Background and Content Split |
+| 268 | Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint |
 

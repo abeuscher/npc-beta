@@ -13,3 +13,6 @@ Route::middleware(['throttle:60,1'])
 
 Route::middleware(['throttle:6,1'])
     ->post('/backup/trigger', [BackupController::class, 'trigger']);
+
+Route::middleware(['throttle:60,1'])
+    ->get('/backup/blob', [BackupController::class, 'blob']);
