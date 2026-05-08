@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Filament\Pages\Concerns\ImportDryRunRollback;
 use App\Filament\Pages\Concerns\InteractsWithImportProgress;
 use App\Importers\InvoiceImportFieldRegistry;
-use App\Models\Contact;
 use App\Models\ImportLog;
 use App\Models\ImportSource;
 use App\Models\Transaction;
