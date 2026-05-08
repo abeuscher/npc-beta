@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Observers\OrganizationObserver;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
     use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;

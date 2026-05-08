@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Observers\DonationCreditObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+#[ObservedBy(DonationCreditObserver::class)]
 class DonationCredit extends Model
 {
     use HasFactory, HasUuids;
