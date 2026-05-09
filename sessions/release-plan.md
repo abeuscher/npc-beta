@@ -478,32 +478,33 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
 24. **E11.** Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; verify-at-start audits reaffirmed the 204-time descoping rationale; user direction "D — don't ship"; the must-have scroll-to-centre from 204 suffices)*
 25. **A1e'.** PostgreSQL Major-Version Skew Fix *(closed at session 270; emergent unblocker for FM 021 manual testing 2026-05-08 — `pg_dump 17` from Trixie's `postgresql-client` meta-package produced dumps containing the PG17-only `transaction_timeout` directive that PG16 servers couldn't ingest; pinned `postgresql-client-17` in Dockerfile, bumped `postgres:17-alpine` in both compose files, added structural `PostgresVersionSkewTest`; both droplets wiped and redeployed via the destructive shortest path acceptable under pre-Beta no-live-data posture)* ✅
-26. **Code Review & Cleanup — 4-session housekeeping cycle** *(sessions 271 / 272 / 273 / 274 — audit Part 1 → audit Part 2 → apply → squash; lifted at 269 close after E11 abandonment opened calendar; window covered 207 → 268 ~60 sessions of growth since last code review at 205/206 and last squash at 208; 271 ✅ closed; 272 ✅ closed — 5 subsystem walks (W2/W3/W4/W4b/W4c) delivered the merged W7/W8/Open-Flags inputs for 273; user accepted all recommendations, including a Rich-Text Sanitization carve-out to a dedicated successor session drafted at 273-close; 273/274 queued)*
-27. **C1.** Notes Permissions (feature half)
-28. **E9.** Widget Help Authoring
-29. **C2.** Event Ticket Tiers
-30. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-31. **E4.** Stripe Checkout Branding *(precedes C4)*
-32. **C4.** Donation-to-acknowledgment loop
-33. **C5.** Event with everything
-34. **C6.** Membership renewal cycle
-35. **C7.** Email at volume
-36. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-37. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-38. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-39. **E8.** UI/UX Sprint
-40. **E12.** Housekeeping Batch 2
-41. **D1.** Scale rehearsal
-42. **D2.** Compatibility cluster
-43. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-44. **E13.** Help docs body content
-45. **E14.** Third-Party Licensing Compliance Audit
-46. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-47. **D4.** Test suite review — cost & shape
-48. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-49. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-50. **F3.** On-Demand E2E — Permission / role-gate matrix
-51. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+26. **Code Review & Cleanup — 4-session housekeeping cycle** *(sessions 271 / 272 / 273 / 274 — audit Part 1 → audit Part 2 → apply → squash; lifted at 269 close after E11 abandonment opened calendar; window covered 207 → 268 ~60 sessions of growth since last code review at 205/206 and last squash at 208; 271 ✅ closed; 272 ✅ closed; 273 ✅ closed — 6 iterations on session-273/1 consumed the entire W7/W8/W11/W12/Open-Flags backlog (Flags A / W6/B / W4/A / W10/A applied; Flag B reaffirmed won't-fix; Flag W4c/A carved out to dedicated successor session at 273-close); fast Pest 2169/0; Playwright 42/0 (was 40/2); 274 queued)*
+27. **Rich-Text Surface Sanitization Hardening** *(session 275 — carved out at 273-close per Flag W4c/A; canonical 250-time stub implementation; one `App\Support\HtmlSanitizer` utility + ~7 model-boundary apply sites + `ContentImporter::sanitizeWidgetConfig` extension + per-importer custom_fields rich-text sanitisation + Memos Trix→Quill convergence with one-time data migration + comprehensive allow-list test suite as the security gate; runs after 274's squash so the data migration starts from a clean baseline)*
+28. **C1.** Notes Permissions (feature half)
+29. **E9.** Widget Help Authoring
+30. **C2.** Event Ticket Tiers
+31. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+32. **E4.** Stripe Checkout Branding *(precedes C4)*
+33. **C4.** Donation-to-acknowledgment loop
+34. **C5.** Event with everything
+35. **C6.** Membership renewal cycle
+36. **C7.** Email at volume
+37. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+38. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+39. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+40. **E8.** UI/UX Sprint
+41. **E12.** Housekeeping Batch 2
+42. **D1.** Scale rehearsal
+43. **D2.** Compatibility cluster
+44. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+45. **E13.** Help docs body content
+46. **E14.** Third-Party Licensing Compliance Audit
+47. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+48. **D4.** Test suite review — cost & shape
+49. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+50. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+51. **F3.** On-Demand E2E — Permission / role-gate matrix
+52. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

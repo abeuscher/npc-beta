@@ -275,4 +275,5 @@ A flat index of every completed session by number and title. Per-session detail 
 | 270 | PostgreSQL Major-Version Skew Fix |
 | 271 | Code Review & Cleanup (Audit Part 1 — Foundations + Quantitative) |
 | 272 | Code Review & Cleanup (Audit Part 2 — Subsystem Deep Walks) |
+| 273 | Code Review & Cleanup (Apply) |
 

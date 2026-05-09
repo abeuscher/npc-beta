@@ -67,7 +67,7 @@ Reopen only if user testing surfaces a concrete UX problem the must-have scroll-
 
 ---
 
-### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 271 / 272 / 273 / 274)*
+### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 271 / 272 / 273 / 274; 271 + 272 + 273 ✅ closed; 274 queued)*
 
 Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208). Originally planned as 270 / 271 / 272 / 273; renumbered after session 270 absorbed the PostgreSQL major-version-skew fix (an emergent unblocker for FM 021).
 
@@ -103,13 +103,9 @@ Per-subsystem deep passes. Produces the bulk of the W7 / W8 table rows + Open Fl
 
 Output: full W7 + W8 tables (271 starter rows + 272 subsystem rows merged), Open Flags block (everything from both audit sessions), handoff for 273.
 
-#### 273 — Code Review & Cleanup (Apply)
+#### 273 — Code Review & Cleanup (Apply) ✅ *(closed at session 273)*
 
-Standard 206-shape. Walk Open Flags first; per-row decisions on W7 + W8; iteration-sliced commits (`session-273/1` … `/N`). Carve out any too-big-for-this-session items as their own dedicated sessions per Rule 11 (precedent: Flag A → 207).
-
-Decision points expected: at least one of the W4-driven Fleet Manager API findings will likely be flag-shaped (envelope-shape unification touches four controllers, a base class might emerge). The Organizations vs Contact pattern-parity findings (W3) may also flag-shape if soft-credit attribution turns out to need a dedicated path. The W11 file-length outliers and W12 inline-code-in-markup candidates feed the iteration plan as concrete extraction targets.
-
-Apply session does not bundle the migration squash — that's session 274.
+Six iterations on `session-273/1` consumed the entire W7 / W8 / W11 / W12 / Open Flags backlog. /1 — Flag W10/A FilePond polling + W8 #1 ObservedBy + W7 #1 password-mismatch + W12 4-6. /2 — W12 1-3 SCSS extractions. /3 — Org cluster observers (W8 #2 / Flag W6/B). /4 — FM contract version-stamp consolidation (W8 #3 / Flag W4/A). /5 — `ImportSessionActions::cascadeForType()` + `LayoutColumnSettingsTab.vue` extraction (W7 #3 + W7 #5 / Flag A). /6 — `editor.ts` composable extraction (W7 #4) — 4 composables, 930 → 700 LOC. Plus a `.btn` SCSS specificity bugfix. Fast Pest 2169 / 0 (+5 from 272 baseline); Playwright 42 / 0 (was 40 / 2 — both flakes resolved). One residual cumulative-load FilePond flake carried to 274 as a Phase 1e status check; Flag W4c/A (Rich-Text Sanitization) carved out at close to a dedicated successor session. See `sessions/273. Code Review & Cleanup (Apply) — Log.md`.
 
 #### 274 — Migration Squash & Code Optimization
 
@@ -177,7 +173,7 @@ Complete the theme/template split started in session 182 by moving colour-relate
 
 `rich_text` custom-field type shipped at session 250. QuillEditor primitive on admin forms, HTML stored in the existing `custom_fields` JSONB column, render via `{!! !!}` matching every other rich-text surface. Importer auto-create + manual mapping both offer `rich_text` as a field type so HTML CSV cells round-trip cleanly. See `sessions/250. Rich Text Custom Fields — Log.md`.
 
-### Rich-Text Surface Sanitization Hardening *(stub — pre-Beta 1, surfaced at session 250)*
+### Rich-Text Surface Sanitization Hardening *(stub — pre-Beta 1, surfaced at session 250; carved out to dedicated session 275 at 273-close per Flag W4c/A; runs after 274's squash, before C1)*
 
 Today every rich-text surface in the app stores Quill output (or Trix output, in the [Memos collection](app/Models/Collection.php) case) verbatim and renders via `{!! !!}`. [ContentImporter::sanitizeWidgetConfig](app/Services/ImportExport/ContentImporter.php) does collection-handle remap + media-id clearing but **not** HTML sanitization, so HTML in widget config and (post-250) `custom_fields` round-trips byte-for-byte through page export/import. Quill v2 strips `<script>` tags client-side but that is a UX nicety, not a server-side guarantee — direct DB writes, importer payloads, and any future bypass of the editor would land unsanitized HTML.
 
