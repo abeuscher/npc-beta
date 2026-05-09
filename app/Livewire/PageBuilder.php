@@ -321,8 +321,6 @@ class PageBuilder extends Component
         $activeTemplate = $page?->template ?? Template::query()->default()->first();
         $themePalette = $activeTemplate?->resolvedPalette() ?? [];
 
-        $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
-
         // Page-only metadata; templates fall back to empty strings.
         $pageTitle  = $page?->title ?? ($template?->name ?? '');
         $pageAuthor = $page?->author?->name ?? '';
@@ -365,7 +363,6 @@ class PageBuilder extends Component
             'page_url'                => $pageUrl,
             'page_tags'               => $pageTags,
             'details_url'             => $detailsUrl,
-            'widgets'                 => $legacyWidgets,
             'items'                   => $items,
             'required_libs'           => array_values(array_unique($allLibs)),
             'widget_types'            => $this->widgetTypes,
