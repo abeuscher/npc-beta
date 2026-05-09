@@ -67,7 +67,7 @@ Reopen only if user testing surfaces a concrete UX problem the must-have scroll-
 
 ---
 
-### Code Review & Cleanup — 4-session housekeeping cycle *(stub — pre-Beta 1, sessions 271 / 272 / 273 / 274; 271 + 272 + 273 ✅ closed; 274 queued)*
+### Code Review & Cleanup — 4-session housekeeping cycle ✅ *(closed at session 274; sessions 271 / 272 / 273 / 274 all closed)*
 
 Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208). Originally planned as 270 / 271 / 272 / 273; renumbered after session 270 absorbed the PostgreSQL major-version-skew fix (an emergent unblocker for FM 021).
 
@@ -107,15 +107,9 @@ Output: full W7 + W8 tables (271 starter rows + 272 subsystem rows merged), Open
 
 Six iterations on `session-273/1` consumed the entire W7 / W8 / W11 / W12 / Open Flags backlog. /1 — Flag W10/A FilePond polling + W8 #1 ObservedBy + W7 #1 password-mismatch + W12 4-6. /2 — W12 1-3 SCSS extractions. /3 — Org cluster observers (W8 #2 / Flag W6/B). /4 — FM contract version-stamp consolidation (W8 #3 / Flag W4/A). /5 — `ImportSessionActions::cascadeForType()` + `LayoutColumnSettingsTab.vue` extraction (W7 #3 + W7 #5 / Flag A). /6 — `editor.ts` composable extraction (W7 #4) — 4 composables, 930 → 700 LOC. Plus a `.btn` SCSS specificity bugfix. Fast Pest 2169 / 0 (+5 from 272 baseline); Playwright 42 / 0 (was 40 / 2 — both flakes resolved). One residual cumulative-load FilePond flake carried to 274 as a Phase 1e status check; Flag W4c/A (Rich-Text Sanitization) carved out at close to a dedicated successor session. See `sessions/273. Code Review & Cleanup (Apply) — Log.md`.
 
-#### 274 — Migration Squash & Code Optimization
+#### 274 — Migration Squash & Code Optimization ✅ *(closed at session 274)*
 
-208-shape exactly. Phase 1 inventory → Phase 2 user picks → Phase 3 apply → Phase 4 squash → Phase 5 verify. Squash itself follows the 181 procedure verbatim: `schema:dump` → delete all migration files → verify `migrate:fresh --seed` identity → update `docs/schema/README.md` squash-note block. Reference lineage in design-decisions block: **062 → 082 → 108 → 142 → 181 → 208 → 274**.
-
-Migration count to collapse: ~60 sessions of churn since the 208 baseline. Known shape additions: Affiliations junction (B1b), Donation Credits (B1b), Organizations columns + `custom_fields` surface (B1a / B1c), `appearance_config` jsonb on `page_layouts` (207), the E3 `custom_fields` rich-text surface, FM-contract-companion migrations if any.
-
-Optimization phase rides alongside per the 208 pattern — perf hot-spots surfaced by 271/272/273's refactors, help-docs coverage delta (anything 271's W9 found that didn't fit in apply), Playwright teardown audit re-walk (now that the page-builder spec set has grown).
-
-Pre-beta license applies throughout — no backward-compat shims, no deprecation periods. When the optimization phase identifies a column / method / route / config file that isn't pulling its weight, cut it. The squash absorbs the cut into the baseline; the old shape disappears from history.
+Single iteration on `session-274/1` — 4 commits. Phase 1 inventory → Phase 2 user picks (B1 + C1 approved; B2 formally re-skipped) → Phase 3 apply → Phase 4 squash → Phase 5 verify. /1 — Phase 3 B1 (drop bootstrap `widgets` payload duplicate; resolves 208-deferred B4 — Vue editor store reads only `items`, never `widgets`). /2 — Phase 3 C1 (3 help-doc route registrations: `contacts.edit.view`, `templates.edit-page.chrome`, `templates.edit-page.scss`). Phase 4 squash — 18 migrations collapsed, schema dump 3544 → 3915 lines, `docs/schema/README.md` squash-note bumped 208/2026-04-22 → 274/2026-05-09, `migrate:fresh --seed` identity check clean. Phase 5 follow-up — deleted `BackfillCompletedDonationStatusesMigrationTest.php` (mirrors 208's `WidgetTokenMigrationTest` precedent: file `require`'d the deleted migration). Fast Pest 2166 / 0 (−3 from 273 baseline 2169 = the deleted obsolete test); Playwright 42 / 0 (273 baseline preserved); residual cumulative-load FilePond flake did not reappear. See `sessions/274. Migration Squash & Code Optimization — Log.md`.
 
 #### Distinct from T1 (terminal)
 
