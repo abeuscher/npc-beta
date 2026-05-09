@@ -8,6 +8,7 @@ routes:
   - filament.admin.resources.contacts.index
   - filament.admin.resources.contacts.create
   - filament.admin.resources.contacts.edit
+  - filament.admin.resources.contacts.edit.view
 category: crm
 ---
 

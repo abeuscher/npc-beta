@@ -7,6 +7,8 @@ routes:
   - filament.admin.resources.templates.create
   - filament.admin.resources.templates.edit-content
   - filament.admin.resources.templates.edit-page
+  - filament.admin.resources.templates.edit-page.chrome
+  - filament.admin.resources.templates.edit-page.scss
 category: cms
 ---
 
