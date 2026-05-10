@@ -33,20 +33,7 @@ class EmailTemplate extends Model implements HasMedia
 
     public function setBodyAttribute(?string $value): void
     {
-        if ($value === null) {
-            $this->attributes['body'] = null;
-            return;
-        }
-
-        $sanitized = HtmlSanitizer::sanitize($value);
-
-        // DOMDocument percent-encodes {{ and }} inside URL attribute values; the
-        // seeded password-reset / invitation templates rely on tokens like
-        // {{reset_url}} surviving inside <a href="..."> for replaceTokens at
-        // render time. Decode them back.
-        $sanitized = preg_replace('/%7B%7B([a-zA-Z0-9_]+)%7D%7D/', '{{$1}}', $sanitized);
-
-        $this->attributes['body'] = $sanitized;
+        $this->attributes['body'] = $value === null ? null : HtmlSanitizer::sanitize($value);
     }
 
     public function registerMediaCollections(): void

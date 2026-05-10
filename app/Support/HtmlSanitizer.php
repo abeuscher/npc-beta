@@ -64,7 +64,7 @@ final class HtmlSanitizer
             $out .= $dom->saveHTML($child);
         }
 
-        return $out;
+        return preg_replace('/%7B%7B([a-zA-Z0-9_.\-]+)%7D%7D/', '{{$1}}', $out) ?? $out;
     }
 
     private static function walk(DOMElement $element, bool $inHeroicon): void
