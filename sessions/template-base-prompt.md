@@ -8,12 +8,13 @@ We are about to begin a new session: **NNN. Session Title**.
 
 Before doing anything else:
 
-1. Read `sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, and `sessions/template-session-log.md`. These files are the **canonical format reference** for all session documents. Do not infer format from previous session logs — the templates take precedence.
+1. Re-read the session templates (`sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, `sessions/template-session-log.md`) only if the format has changed since your last session or you're uncertain about a structural detail. They remain the **canonical format reference** — do not infer format from previous session logs — but the templates are stable as of session 276 and don't need a re-read every session.
 2. Read `sessions/session-outlines.md` (the roadmap) for the active-tracks block and the Beta 1 stub for this session.
-3. If this session belongs to an active track, read that track's planning doc at `sessions/tracks/{track-name}.md` — status snapshot, phase retrospectives (closed-phase history), and the forward plan all live there.
-4. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
-5. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
-6. Summarise your understanding and confirm you are ready to proceed.
+3. If this session executes a `sessions/release-plan.md` entry, read that entry. It is canonical for scope, success criterion, prerequisites, and artifact. The session prompt is a delta against the plan entry, not a replacement for it.
+4. If this session belongs to an active track, read that track's planning doc at `sessions/tracks/{track-name}.md` — status snapshot, phase retrospectives (closed-phase history), and the forward plan all live there.
+5. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
+6. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
+7. Note any drift between the session prompt and the actual code in a brief work-log entry; proceed unless something requires a decision per the drift and decision-threshold rules below.
 
 ---
 
@@ -21,8 +22,10 @@ Before doing anything else:
 
 - **Before writing any code**, read every file you intend to modify.
 - **Before implementing any integration** (email, file storage, authentication, payments, queues, or any other infrastructure), ask the user what existing system handles it. This project has accumulated significant infrastructure — assume something already exists before building new. Do not implement from scratch until you have confirmed no existing system covers the use case.
-- **Pause and ask** any time a decision point arises that is not covered by the agreed prompt.
+- **Pause and ask** any time a decision point arises that is not covered by the agreed prompt. *See the drift and decision-threshold rules below for the calibration of what counts as a decision point worth surfacing.*
 - **Surface architectural choices before going deep.** "Should I use X or Y here" is a question for the user, not something to commit to and unwind later. This includes data model shape, new abstractions, framework patterns that will propagate, and any decision that's expensive to reverse. Cheap and local — just decide.
+- **Adapt to drift; don't ask about it.** A session prompt is a snapshot of the code at time of writing. Expect small inaccuracies in field names, payload shapes, method signatures, and similar surface details vs the actual code. Default to adapting silently to match what's there and note the adaptation in one line in your work log. Only flag drift when it requires a decision: two reasonable interpretations would produce meaningfully different behavior, the drift reveals a likely bug in spec or code, resolving it would expand scope beyond the session, or the spec describes behavior the system doesn't have and you can't tell whether to build it or treat it as a misread. Heuristic: *fix vs. decide — if you can resolve it by editing your own output without changing the system's intent, just fix it.*
+- **Decision threshold scales with project maturity.** This project is well past its loose phase — conventions are established, the app's shape is settled, phases are well-defined. Reserve "pause and ask" for decisions that are genuinely expensive to reverse: data model shape, new abstractions, framework patterns that will propagate, anything cross-cutting. For local decisions with an obvious answer given existing code (naming, file placement, which existing helper to use, structural mirror of nearby code), just decide and note it. Heuristic: *if a reasonable reading of the surrounding code would land on the same answer, you don't need to ask.*
 - **If any external service is unavailable**, stop and ask — do not attempt to troubleshoot.
 - **Run migrations via Docker** after writing them: `docker compose exec app php artisan migrate` (or `migrate:fresh --seed` when appropriate). Do not pause to ask first.
 - **Update `docs/schema/`** after writing any migration — add, modify, or remove the relevant table file(s) under `docs/schema/` to reflect the final column state. If adding a new table, create a new file and add it to `docs/schema/README.md`.
@@ -50,12 +53,12 @@ Do not ask whether to close. Do not suggest it. Do not pipeline into these steps
 
 ### Phase 1 — Attenuate and prepare next session
 
-After implementation and manual testing are complete, Claude stops and waits. The user reviews the changes and brings up the next session's prompt when ready. No merge, push, or deploy happens at this stage unless the user explicitly requests it (e.g. for deploy-server testing or structural changes that affect CI).
-
-Claude then drafts the next session's documents:
+After implementation and manual testing are complete, draft the next session's documents:
 
 - **Next session base prompt**: copy `sessions/template-base-prompt.md` to `sessions/(NNN+1). base-prompt.md`, updating the session number, title, and any session-specific read-list items.
-- **Next session prompt**: draft `sessions/(NNN+1). Session Title.md` using `sessions/template-session-prompt.md` as the format reference. Base it on the relevant stub in `session-outlines.md`, informed by what was learned during this session. This may take iteration with the user.
+- **Next session prompt**: draft `sessions/(NNN+1). Session Title.md` using `sessions/template-session-prompt.md` as the format reference. Base it on the relevant entry in `sessions/release-plan.md` (canonical) and the relevant stub in `sessions/session-outlines.md`, informed by what was learned during this session.
+
+Then stop. The user reviews the work and the next session's drafts, and initiates close when ready. No merge, push, or deploy happens at this stage unless the user explicitly requests it (e.g. for deploy-server testing or structural changes that affect CI).
 
 ### Phase 2 — Close
 

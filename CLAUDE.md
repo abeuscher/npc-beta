@@ -7,6 +7,10 @@
 
 Branches use the convention `session-NNN/N` where NNN is the session number and N is the iteration (1, 2, 3, …). Each iteration is a self-contained set of changes that can be merged to main independently. (Cross-track work — e.g. the Widget Autonomy track — uses its own prefix per the relevant track doc; the rules below apply uniformly across prefixes.)
 
+**Parallel / out-of-flow sessions** — maintenance passes, cloud-based ad-hoc work, or anything that runs alongside an in-flight numbered session — use a **fractional session number** keyed to the in-flight session: `session-NNN.M/N` (e.g. `session-276.5/1` runs alongside session 276). The fraction signals "parallel to NNN, not in the release plan, not part of the main numbered sequence." The iteration suffix (`/N`) works the same as for numbered sessions. Use sparingly; most work belongs in the numbered sequence.
+
+**At the close of any fractional / browser / parallel session, open a PR against `main`** alongside the push. Because these sessions run out-of-flow, the PR is how the user tracks them and routes them through the same review surface as numbered sessions. Numbered sessions follow the standard "push branch, user opens PR if they want one" pattern; the PR-at-close requirement applies to fractional/parallel sessions only.
+
 - **Starting a session:** `git checkout main && git checkout -b session-NNN/1`
 - **Committing:** Commit whenever a set of changes is ready for the user to deploy and test. One or more commits per branch is fine — whatever makes sense for the changeset.
 - **Pushing:** push the current branch to its same-named remote when work is ready for the user to review (typically after commit, or at session close). Required preconditions, checked every push:
