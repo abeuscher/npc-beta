@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MailingListResource\Pages;
 use App\Models\MailingList;
 use App\Services\MailingListFieldRegistry;
-use App\Services\MailingListQueryBuilder;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -15,6 +14,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MailingListResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_mailing_list') ?? false;
+    }
+
     protected static ?string $model = MailingList::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';

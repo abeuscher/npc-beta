@@ -31,3 +31,6 @@ Indexes:
 - `(fund_id)` — `donations_fund_id_index`.
 - `(import_source_id, external_id)` — `donations_import_external_idx`.
 - `(source)` — `donations_source_index`.
+
+Related tables:
+- [donation_credits](donation_credits.md) — polymorphic soft-credit attribution layer (recipient is Contact or Organization). Cascade-deletes when the parent donation is force-deleted. See `Donation->softCredits` relation.

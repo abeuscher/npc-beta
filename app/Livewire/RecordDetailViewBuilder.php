@@ -7,6 +7,7 @@ use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
+use App\Services\AppearanceStyleComposer;
 use App\Services\WidgetPreviewRenderer;
 use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
 use App\WidgetPrimitive\Views\RecordDetailView;
@@ -168,6 +169,7 @@ class RecordDetailViewBuilder extends Component
                 'columns'           => $layout->columns,
                 'layout_config'     => $layout->layout_config ?? [],
                 'appearance_config' => (object) ($layout->appearance_config ?? []),
+                'inline_style'      => app(AppearanceStyleComposer::class)->composeForLayout($layout),
                 'sort_order'        => $layout->sort_order ?? 0,
                 'slots'             => (object) $slots,
             ];

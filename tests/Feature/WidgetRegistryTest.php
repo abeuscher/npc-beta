@@ -65,7 +65,8 @@ it('sync() writes registered widgets to the widget_types table', function () {
 
     $row = WidgetType::where('handle', 'nav')->firstOrFail();
     expect($row->label)->toBe('Navigation');
-    expect($row->full_width)->toBeTrue();
+    expect($row->background_full_width)->toBeTrue();
+    expect($row->content_full_width)->toBeFalse();
     expect($row->category)->toBe(['layout']);
     expect($row->template)->toBe("@include('widgets::Nav.template')");
     expect($row->required_config)->toBe(['keys' => ['navigation_menu_id'], 'message' => 'Select a navigation menu.']);
@@ -100,7 +101,8 @@ it('seeder-sourced nav row matches registry-sourced nav row', function () {
     expect($row->label)->toBe($expected['label']);
     expect($row->description)->toBe($expected['description']);
     expect($row->category)->toBe($expected['category']);
-    expect($row->full_width)->toBe($expected['full_width']);
+    expect($row->background_full_width)->toBe($expected['background_full_width']);
+    expect($row->content_full_width)->toBe($expected['content_full_width']);
     expect($row->assets)->toBe($expected['assets']);
     expect($row->template)->toBe($expected['template']);
     expect($row->required_config)->toBe($expected['required_config']);

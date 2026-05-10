@@ -10,6 +10,11 @@ use Filament\Tables\Table;
 
 class ContentCollectionResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_collection') ?? false;
+    }
+
     protected static ?string $model = Collection::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-square-3-stack-3d';

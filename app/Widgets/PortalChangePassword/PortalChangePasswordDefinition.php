@@ -40,4 +40,9 @@ class PortalChangePasswordDefinition extends WidgetDefinition
     {
         return [];
     }
+
+    public function assets(): array
+    {
+        return ['js' => ['app/Widgets/PortalChangePassword/script.js']];
+    }
 }

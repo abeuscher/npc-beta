@@ -20,12 +20,13 @@ beforeEach(function () {
     ]);
 
     $this->widgetType = WidgetType::create([
-        'handle'        => 'test_widget_' . uniqid(),
-        'label'         => 'Test Widget',
-        'render_mode'   => 'server',
-        'collections'   => [],
-        'config_schema' => [],
-        'full_width'    => false,
+        'handle'                => 'test_widget_' . uniqid(),
+        'label'                 => 'Test Widget',
+        'render_mode'           => 'server',
+        'collections'           => [],
+        'config_schema'         => [],
+        'background_full_width' => false,
+        'content_full_width'    => false,
     ]);
 });
 
@@ -49,7 +50,8 @@ it('returns empty style for empty appearance_config', function () {
     $pw = makeWidget($this->page, $this->widgetType, []);
     $result = $this->composer->compose($pw);
     expect($result['inline_style'])->toBe('');
-    expect($result['is_full_width'])->toBeFalse();
+    expect($result['background_full_width'])->toBeFalse();
+    expect($result['content_full_width'])->toBeFalse();
 });
 
 // ── Color ───────────────────────────────────────────────────────────────────
@@ -102,31 +104,43 @@ it('casts spacing to int', function () {
     expect($result['inline_style'])->toContain('padding-top:15px');
 });
 
-// ── Full width ──────────────────────────────────────────────────────────────
+// ── Full width — two-knob shape ─────────────────────────────────────────────
 
-it('resolves full_width true from appearance_config', function () {
+it('resolves both full_width knobs from per-instance override', function () {
     $pw = makeWidget($this->page, $this->widgetType, [
-        'layout' => ['full_width' => true],
+        'layout' => ['background_full_width' => true, 'content_full_width' => true],
     ]);
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBeTrue();
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeTrue();
 });
 
-it('falls back to widget_type default for full_width', function () {
+it('resolves background-only override leaving content from per-type default', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['background_full_width' => true],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeFalse();
+});
+
+it('falls back to widget_type defaults for both knobs', function () {
     $wt = WidgetType::create([
-        'handle'        => 'fw_widget_' . uniqid(),
-        'label'         => 'Full Width Widget',
-        'render_mode'   => 'server',
-        'collections'   => [],
-        'config_schema' => [],
-        'full_width'    => true,
+        'handle'                => 'fw_widget_' . uniqid(),
+        'label'                 => 'Full Width Widget',
+        'render_mode'           => 'server',
+        'collections'           => [],
+        'config_schema'         => [],
+        'background_full_width' => true,
+        'content_full_width'    => true,
     ]);
     $pw = makeWidget($this->page, $wt, []);
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBeTrue();
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeTrue();
 });
 
-it('forces full_width false for column-child widget', function () {
+it('clamps both knobs to false for column-child widget', function () {
     $layout = $this->page->layouts()->create([
         'label'         => 'Test Layout',
         'display'       => 'grid',
@@ -136,19 +150,40 @@ it('forces full_width false for column-child widget', function () {
     ]);
 
     $pw = makeWidget($this->page, $this->widgetType, [
-        'layout' => ['full_width' => true],
+        'layout' => ['background_full_width' => true, 'content_full_width' => true],
     ], $layout->id);
 
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBeFalse();
+    expect($result['background_full_width'])->toBeFalse();
+    expect($result['content_full_width'])->toBeFalse();
 });
 
-it('treats malformed full_width as fallback to widget_type default', function () {
+it('normalizes (bg:false, content:true) to (bg:true, content:true)', function () {
     $pw = makeWidget($this->page, $this->widgetType, [
-        'layout' => ['full_width' => null],
+        'layout' => ['background_full_width' => false, 'content_full_width' => true],
     ]);
     $result = $this->composer->compose($pw);
-    expect($result['is_full_width'])->toBe($this->widgetType->full_width);
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeTrue();
+});
+
+it('treats null override as fallback to widget_type defaults', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['background_full_width' => null, 'content_full_width' => null],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['background_full_width'])->toBe($this->widgetType->background_full_width);
+    expect($result['content_full_width'])->toBe($this->widgetType->content_full_width);
+});
+
+it('resolveFullWidthForWidget agrees with compose() shape', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['background_full_width' => true, 'content_full_width' => false],
+    ]);
+    $direct = $this->composer->resolveFullWidthForWidget($pw);
+    $composed = $this->composer->compose($pw);
+    expect($direct['background_full_width'])->toBe($composed['background_full_width']);
+    expect($direct['content_full_width'])->toBe($composed['content_full_width']);
 });
 
 // ── Gradient only ───────────────────────────────────────────────────────────
@@ -348,12 +383,12 @@ it('emits gradient with position, size, repeat on a layout', function () {
         ->toContain('background-repeat:no-repeat');
 });
 
-it('does not emit text color, text shadow, or full_width on layouts', function () {
-    // These keys either belong to widgets only (text) or to layout_config (full_width).
+it('does not emit text color, text shadow, or full_width knobs on layouts', function () {
+    // These keys either belong to widgets only (text) or to layout_config (the full_width knobs).
     // Passing them via appearance_config should have no effect on composeForLayout output.
     $layout = makeLayout($this->page, [
         'text'   => ['color' => '#00ff00', 'shadow' => true],
-        'layout' => ['full_width' => true],
+        'layout' => ['background_full_width' => true, 'content_full_width' => true],
     ]);
     $style = $this->composer->composeForLayout($layout);
     expect($style)

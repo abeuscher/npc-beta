@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers\Api\Fleet;
 
+use App\Http\Controllers\Api\Fleet\Concerns\HasContractVersion;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Backup\BackupDestination\BackupDestination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class BackupController extends Controller
 {
-    public const CONTRACT_VERSION = '2.2.0';
+    use HasContractVersion;
 
     private const TIMEOUT_SECONDS = 600;
     private const SUCCESS_RECORD_PATH = 'fleet/last-backup-at';
@@ -52,6 +55,80 @@ class BackupController extends Controller
             'duration_ms'      => $this->durationMs($startTime),
             'message'          => null,
         ]);
+    }
+
+    public function blob(Request $request): StreamedResponse|JsonResponse
+    {
+        $disks = $this->resolveBackupDiskOrder();
+
+        if ($disks === []) {
+            return response()->json([
+                'error'   => 'backup_destinations_not_configured',
+                'message' => 'BACKUP_DISKS env var resolves to an empty disk list',
+            ], 500);
+        }
+
+        $backupName = (string) config('backup.backup.name');
+
+        foreach ($disks as $diskName) {
+            try {
+                $destination = BackupDestination::create($diskName, $backupName);
+
+                if ($destination->connectionError !== null) {
+                    continue;
+                }
+
+                $newest = $destination->backups()->newest();
+            } catch (Throwable $e) {
+                return response()->json([
+                    'error'   => 'backup_disk_error',
+                    'message' => $this->sanitise($e->getMessage()),
+                ], 500);
+            }
+
+            if ($newest === null) {
+                continue;
+            }
+
+            try {
+                return Storage::disk($diskName)->download(
+                    $newest->path(),
+                    basename($newest->path()),
+                    [
+                        'Content-Type'  => 'application/zip',
+                        'Cache-Control' => 'no-store',
+                    ],
+                );
+            } catch (Throwable $e) {
+                return response()->json([
+                    'error'   => 'backup_disk_error',
+                    'message' => $this->sanitise($e->getMessage()),
+                ], 500);
+            }
+        }
+
+        return response()->json([
+            'error'   => 'no_backup_available',
+            'message' => sprintf('No backup found for backup name "%s" on any configured disk', $backupName),
+        ], 404);
+    }
+
+    /** @return array<int, string> */
+    private function resolveBackupDiskOrder(): array
+    {
+        $disks = array_values(array_filter(
+            array_map('trim', (array) config('backup.backup.destination.disks', [])),
+            fn ($d) => is_string($d) && $d !== '',
+        ));
+
+        if (in_array('local', $disks, true)) {
+            $disks = array_merge(
+                ['local'],
+                array_values(array_filter($disks, fn ($d) => $d !== 'local')),
+            );
+        }
+
+        return $disks;
     }
 
     private function readSuccessRecord(): ?Carbon

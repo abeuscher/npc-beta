@@ -20,9 +20,17 @@ const emit = defineEmits<{
   update: [path: string, value: any]
 }>()
 
-const fullWidth = computed(() => !!props.config?.layout?.full_width)
+const contentFullWidth = computed(() => !!props.config?.layout?.content_full_width)
+const backgroundFullWidth = computed(() => !!props.config?.layout?.background_full_width)
 const padding = computed(() => props.config?.layout?.padding ?? {})
 const margin  = computed(() => props.config?.layout?.margin ?? {})
+
+const backgroundDisabled = computed(() => props.fullWidthDisabled || contentFullWidth.value)
+const backgroundDisabledReason = computed(() => {
+  if (props.fullWidthDisabled) return props.fullWidthDisabledReason ?? undefined
+  if (contentFullWidth.value) return 'Background fills page width automatically when content is set to fill page width.'
+  return undefined
+})
 
 function update(path: string, value: any) {
   emit('update', path, value)
@@ -47,12 +55,26 @@ function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
       >
         <input
           type="checkbox"
-          :checked="fullWidth"
+          :checked="contentFullWidth"
           :disabled="fullWidthDisabled"
           class="inspector-checkbox"
-          @change="update('full_width', ($event.target as HTMLInputElement).checked)"
+          @change="update('content_full_width', ($event.target as HTMLInputElement).checked)"
         >
-        <span>Full width</span>
+        <span>Content fills page width</span>
+      </label>
+      <label
+        class="layout-panel__toggle"
+        :class="{ 'layout-panel__toggle--disabled': backgroundDisabled }"
+        :title="backgroundDisabledReason"
+      >
+        <input
+          type="checkbox"
+          :checked="backgroundFullWidth || contentFullWidth"
+          :disabled="backgroundDisabled"
+          class="inspector-checkbox"
+          @change="update('background_full_width', ($event.target as HTMLInputElement).checked)"
+        >
+        <span>Background fills page width</span>
       </label>
     </div>
 
@@ -94,6 +116,7 @@ function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
 .layout-panel__section {
   display: flex;
   flex-direction: column;
+  gap: 0.375rem;
 }
 
 .layout-panel__toggle {

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\EventObserver;
+use App\Support\HtmlSanitizer;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
@@ -28,6 +30,7 @@ class Event extends Model implements HasMedia
     use HasSourcePolicy;
     use HasUuids;
     use InteractsWithMedia;
+    use SanitisesRichTextCustomFields;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,
@@ -82,6 +85,16 @@ class Event extends Model implements HasMedia
     // ──────────────────────────────────────────────────────────
     // Computed accessors (derived from field presence / price)
     // ──────────────────────────────────────────────────────────
+
+    public function setDescriptionAttribute(?string $value): void
+    {
+        $this->attributes['description'] = $value === null ? null : HtmlSanitizer::sanitize($value);
+    }
+
+    public function setMeetingDetailsAttribute(?string $value): void
+    {
+        $this->attributes['meeting_details'] = $value === null ? null : HtmlSanitizer::sanitize($value);
+    }
 
     public function getIsInPersonAttribute(): bool
     {

@@ -10,6 +10,7 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
+use App\Services\AppearanceStyleComposer;
 use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
 use App\Models\Collection;
@@ -269,16 +270,18 @@ class PageBuilder extends Component
             }
 
             $items[] = [
-                'type'          => 'layout',
-                'id'            => $layout->id,
-                'owner_type'    => $layout->owner_type,
-                'owner_id'      => $layout->owner_id,
-                'label'         => $layout->label ?? '',
-                'display'       => $layout->display,
-                'columns'       => $layout->columns,
-                'layout_config' => $layout->layout_config ?? [],
-                'sort_order'    => $layout->sort_order ?? 0,
-                'slots'         => (object) $slots,
+                'type'              => 'layout',
+                'id'                => $layout->id,
+                'owner_type'        => $layout->owner_type,
+                'owner_id'          => $layout->owner_id,
+                'label'             => $layout->label ?? '',
+                'display'           => $layout->display,
+                'columns'           => $layout->columns,
+                'layout_config'     => $layout->layout_config ?? [],
+                'appearance_config' => (object) ($layout->appearance_config ?? []),
+                'inline_style'      => app(AppearanceStyleComposer::class)->composeForLayout($layout),
+                'sort_order'        => $layout->sort_order ?? 0,
+                'slots'             => (object) $slots,
             ];
         }
 
@@ -317,8 +320,6 @@ class PageBuilder extends Component
         // For template-owned stacks we use the default page template's palette.
         $activeTemplate = $page?->template ?? Template::query()->default()->first();
         $themePalette = $activeTemplate?->resolvedPalette() ?? [];
-
-        $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
 
         // Page-only metadata; templates fall back to empty strings.
         $pageTitle  = $page?->title ?? ($template?->name ?? '');
@@ -362,7 +363,6 @@ class PageBuilder extends Component
             'page_url'                => $pageUrl,
             'page_tags'               => $pageTags,
             'details_url'             => $detailsUrl,
-            'widgets'                 => $legacyWidgets,
             'items'                   => $items,
             'required_libs'           => array_values(array_unique($allLibs)),
             'widget_types'            => $this->widgetTypes,

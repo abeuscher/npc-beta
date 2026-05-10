@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.2.0`
+**Contract Version:** `2.3.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -22,13 +22,14 @@ Both the CRM and Fleet Manager implement against this contract. The CRM emits th
 GET  /api/health
 GET  /api/logs
 POST /api/backup/trigger
+GET  /api/backup/blob
 ```
 
-- Three routes. `/api/health` and `/api/logs` are GET-only; `/api/backup/trigger` is POST-only.
+- Four routes. `/api/health`, `/api/logs`, and `/api/backup/blob` are GET-only; `/api/backup/trigger` is POST-only.
 - Stateless — no session cookie, no CSRF token, not in the web middleware group.
-- Each route carries its own rate-limit bucket. `/api/health` and `/api/logs` are rate-limited at **60 requests per minute per IP** (Laravel `throttle:60,1`); `/api/backup/trigger` is rate-limited at **6 requests per minute per IP** (`throttle:6,1`) because backups are expensive to run. The throttles defend against polling-loop bugs and accidental retrigger storms on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
+- Each route carries its own rate-limit bucket. `/api/health`, `/api/logs`, and `/api/backup/blob` are rate-limited at **60 requests per minute per IP** (Laravel `throttle:60,1`); `/api/backup/trigger` is rate-limited at **6 requests per minute per IP** (`throttle:6,1`) because backups are expensive to run. The throttles defend against polling-loop bugs and accidental retrigger storms on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
 
-`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`. `/api/backup/trigger` is documented under `/api/backup/trigger — Request` and `/api/backup/trigger — Response`.
+`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`. `/api/backup/trigger` is documented under `/api/backup/trigger — Request` and `/api/backup/trigger — Response`. `/api/backup/blob` is documented under `/api/backup/blob — Request` and `/api/backup/blob — Response`.
 
 ## Auth
 
@@ -36,10 +37,10 @@ POST /api/backup/trigger
 mTLS — terminated by nginx at the TLS layer.
 ```
 
-- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all three** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
+- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all four** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
 - Each CRM install trusts **exactly one** specific FM-side cert, configured at nginx via `ssl_client_certificate` pointed at `/etc/nginx/certs/fm-client.crt`. No CA, no PKI tooling, no chain. Direct trust against the per-install cert.
 - The FM operator pastes the trusted cert into the CRM droplet at `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container). Restart nginx to apply.
-- The application sees no auth signal. If the request reached the controller (any of the three), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
+- The application sees no auth signal. If the request reached the controller (any of the four), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
 - Authentication failures are emitted by nginx, not the application. With `ssl_verify_client optional` at the server level, the TLS handshake completes either way; nginx then returns an HTTP error before the request ever reaches PHP. The specific code depends on the failure mode:
   - **No client cert presented:** the per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` gate fires → `403 Forbidden`.
   - **A client cert is presented but does not match the trusted cert:** nginx's SSL error path fires → `400 Bad Request` with body "The SSL certificate error".
@@ -53,7 +54,7 @@ mTLS — terminated by nginx at the TLS layer.
   "status": "green|yellow|red",
   "version": "abc1234",
   "timestamp": "2026-04-30T15:42:00+00:00",
-  "contract_version": "2.2.0",
+  "contract_version": "2.3.0",
   "subchecks": {
     "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
     "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
@@ -86,7 +87,7 @@ Every subcheck — present and future — has the same four keys:
 | `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
-### Subchecks (v2.2.0 — six stable keys, unchanged from v1.2.0)
+### Subchecks (v2.3.0 — six stable keys, unchanged from v1.2.0)
 
 | Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
 |------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -243,7 +244,7 @@ Triggering this endpoint is "back up now and wait for the result," distinct from
 
 ```json
 {
-  "contract_version": "2.2.0",
+  "contract_version": "2.3.0",
   "status": "success",
   "last_backup_at": "2026-05-05T14:23:08+00:00",
   "duration_ms": 18742,
@@ -265,7 +266,7 @@ Triggering this endpoint is "back up now and wait for the result," distinct from
 
 ```json
 {
-  "contract_version": "2.2.0",
+  "contract_version": "2.3.0",
   "status": "failed",
   "last_backup_at": "2026-05-04T14:00:00+00:00",
   "duration_ms": 412,
@@ -298,26 +299,120 @@ Both error sources (`Artisan::output()` on non-zero exit; `\Throwable::getMessag
 
 The pipeline is intentionally lightweight — the goal is operator readability, not redaction. Application-root-relative paths and exception messages are public information for an open-source CRM.
 
+## `/api/backup/blob` — Request
+
+```
+GET /api/backup/blob
+```
+
+- GET-only. Non-GET requests do not invoke the controller — they fall through Laravel's route table and typically resolve to `404 Not Found` via the public-site page-slug catchall (same path-shape behaviour as `/api/backup/trigger` against non-POST). FM consumers should not depend on a specific non-GET status code; the operative invariant is that the blob lookup does not run for non-GET requests.
+- No request body. No query parameters at v2.3.0 (`?disk=`, `?date=`, blob enumeration are out of scope; see § Out of scope at the end of this section).
+- mTLS-gated at nginx (same `fm-client.crt` as `/api/health` / `/api/logs` / `/api/backup/trigger`).
+- Throttled at **60 requests per minute per source IP** (`throttle:60,1`). Matches `/api/logs` rather than `/api/backup/trigger`'s `throttle:6,1` because blob fetches are I/O-bound and cheap relative to the trigger endpoint's synchronous backup pipeline. The expected FM-side burst pattern is "one fetch after a successful trigger, with maybe one or two retries on transient failure" — 60/min is generous for that.
+- nginx applies a per-location `fastcgi_read_timeout 600;` override on `/api/backup/blob` (mirroring `/api/backup/trigger`'s 600s ceiling). The default 300s server-wide timeout is the *between-packets* idle timeout, not total request time, but a multi-GB blob streaming over a slow FM-side network with PHP buffer backpressure can plausibly stall a single read window past 300s. 600s is cheap insurance with no downside on the success path.
+
+### Disk-fallback rule — two layers, both load-bearing
+
+The endpoint resolves the source disk through a deterministic two-layer rule. FM consumers do not pass a disk preference — the rule is server-authoritative — but the rule is documented here so FM consumers can trace which disk the blob came from when investigating an operator question.
+
+- **Layer A — preference.** Read `BACKUP_DISKS` (already CSV-parsed in `config/backup.php`). If `local` appears anywhere in the list, it is moved to the front of the resolution order regardless of authored position. Remaining disks follow in their authored order. Empty / whitespace-only entries are dropped.
+- **Layer B — fallthrough-on-empty.** Iterate the resolved order. For each disk, ask `BackupDestination::create($disk, config('backup.backup.name'))->backups()->newest()`. If non-null, stream from that disk. If null, continue to the next disk in the resolved order. The 404 envelope (see below) is returned only when all configured disks are exhausted.
+
+The response does not expose which disk the blob came from — FM treats the blob as opaque-by-source. The disk choice is observable to the operator via the CRM's nginx access log and via direct disk inspection.
+
+### Operator semantics
+
+Calling `/api/backup/blob` is "give me the freshest blob the install knows about, from whichever disk the resolution rule lands on." Calling FM-side code should:
+
+- Use a per-request HTTP timeout matching the 600s server ceiling.
+- Treat HTTP status as authoritative for outcome classification (200 / 404 / 500 are distinct cases — see Response sections below).
+- Verify the downloaded blob's `Content-Length` matches the actual byte count received (transport integrity); SHA verification is FM-side optional.
+
+## `/api/backup/blob` — Response — `200 OK` (success)
+
+The response body is the raw zip stream. Headers:
+
+| Header                | Value                                                                                                                       |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `Content-Type`        | `application/zip`                                                                                                            |
+| `Content-Disposition` | `attachment; filename="<spatie-blob-filename>"` (see filename pattern below)                                                  |
+| `Content-Length`      | byte count of the zip on disk                                                                                                |
+| `Cache-Control`       | `no-store` (defensive — prevents intermediate caching layers from retaining the blob; Laravel may append additional directives such as `private` per the API middleware group, which is harmless) |
+
+### Filename pattern
+
+The filename emitted in `Content-Disposition` is the spatie-default `Y-m-d-H-i-s.zip` — for example, `2026-05-08-12-30-00.zip`. There is **no `<backup-name>-` prefix**: spatie stores blobs at disk-relative path `<backup_name>/<filename>`, but the `Content-Disposition` filename is just the basename (the timestamp + `.zip`). Per the spatie default, `config/backup.php`'s `filename_prefix` is empty; if a future session sets a non-empty prefix, the filename emitted here changes accordingly.
+
+FM-side stores blobs by this filename for round-trip parity; if FM stores blobs from multiple installs, FM-side prefixing (e.g., `<install-slug>-<filename>`) is FM's concern — the CRM emits what spatie generates.
+
+## `/api/backup/blob` — Response — `404 Not Found`
+
+```json
+{
+  "error": "no_backup_available",
+  "message": "No backup found for backup name \"NonProfitCRM\" on any configured disk"
+}
+```
+
+Returned when **all** configured disks (resolved per the disk-fallback rule above) have no recognized backup blobs. Recovery is operator-side: trigger a backup via `POST /api/backup/trigger` (or wait for the next scheduled run) and retry. FM consumers should classify this as recoverable.
+
+The envelope shape mirrors the `/api/logs` 404 — `{error, message}` only, no `contract_version` field. v2.3.0 does not change the cross-endpoint error-envelope shape; if a future revision adds `contract_version` to error envelopes, that will be a deliberate cross-endpoint sweep.
+
+## `/api/backup/blob` — Response — `500 Internal Server Error`
+
+Two distinct cases, both with sanitised single-line `message` (same pipeline as `/api/backup/trigger`'s `message` field — application-root prefix strip, newline collapse to ` | `, 500-char cap with trailing `…`):
+
+### `backup_destinations_not_configured`
+
+```json
+{
+  "error": "backup_destinations_not_configured",
+  "message": "BACKUP_DISKS env var resolves to an empty disk list"
+}
+```
+
+Returned when no disk is configured (the `BACKUP_DISKS` env var is unset, empty, or contains only whitespace entries). Distinct from 404 because the operator action is different — a 500 here means the install is not configured for backup destinations at all (operator must set `BACKUP_DISKS`), while a 404 means the install is configured but no backups have been produced yet (trigger one and retry).
+
+### `backup_disk_error`
+
+```json
+{
+  "error": "backup_disk_error",
+  "message": "<sanitised exception or driver-error message>"
+}
+```
+
+Returned when the storage layer surfaces a synchronous exception during disk resolution or download invocation (e.g., a misconfigured S3 endpoint that throws on `mimeType()` or `size()`, a filesystem permission error during `download()`). Note: spatie's `BackupDestination` swallows some asynchronous errors internally (e.g., `allFiles()` exceptions during enumeration); those manifest as 404 with the no-backup-available envelope, not as a 500. The catch blocks defending the disk-lookup and `Storage::disk()->download()` paths handle the synchronous exception class.
+
+### Status-code semantics for FM consumers
+
+| Code  | Meaning                                                                              | Recovery                                                                         |
+|-------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `200` | Blob streamed.                                                                       | None.                                                                            |
+| `404` | All configured disks are empty of backups.                                           | Trigger a backup via `/api/backup/trigger` (or wait for schedule) and retry.    |
+| `500` `backup_destinations_not_configured` | Install has no backup disks configured.                            | Operator sets `BACKUP_DISKS` in the install's `.env` and reloads.               |
+| `500` `backup_disk_error`                  | Storage driver surfaced a synchronous exception.                   | Operator action likely required (check disk credentials, paths, permissions).   |
+
 ## Response — auth-failure paths (nginx-emitted, not application)
 
-Applies to all three FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`). When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
+Applies to all four FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`). When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
 
 - **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
 - **`400 Bad Request`** — body "The SSL certificate error". A cert was presented but did not match the trusted cert at `ssl_client_certificate`. Fleet Manager seeing repeated `400`s should suspect cert misalignment (the FM-side cert no longer matches what the CRM trusts; the operator may need to re-paste).
 
 ## Response — `429 Too Many Requests`
 
-Applies to all three FM agent endpoints (each has its own throttle bucket). `/api/health` and `/api/logs` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` uses `throttle:6,1` (6 rpm per IP) because backups are expensive. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
+Applies to all four FM agent endpoints (each has its own throttle bucket). `/api/health`, `/api/logs`, and `/api/backup/blob` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` uses `throttle:6,1` (6 rpm per IP) because backups are expensive. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
 
 ## Response — `503 Service Unavailable`
 
-**Reserved.** Not emitted by v2.2.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
+**Reserved.** Not emitted by v2.3.0. Future versions may use `503` to signal an explicit endpoint-disabled state (e.g., maintenance mode).
 
 ---
 
 ## Version negotiation
 
-Every `/api/health` response carries `contract_version`. (`/api/logs` does not. `/api/backup/trigger` does — its envelope carries `contract_version` so FM-side trigger paths can verify version alignment without an extra `/api/health` round-trip. FM treats `/api/health`'s value as authoritative for the install on every poll.) Fleet Manager:
+Every `/api/health` response carries `contract_version`. (`/api/logs` does not. `/api/backup/trigger` does — its envelope carries `contract_version` so FM-side trigger paths can verify version alignment without an extra `/api/health` round-trip. `/api/backup/blob` does not — the success response is a binary stream and the error envelopes mirror `/api/logs`' shape; FM-side blob paths re-poll `/api/health` if version verification is wanted. FM treats `/api/health`'s value as authoritative for the install on every poll.) Fleet Manager:
 
 - Compares against the canonical version it fetches via `WebFetch` against `https://raw.githubusercontent.com/abeuscher/npc-beta/main/docs/fleet-manager-agent-contract.md` at session-bootstrap time.
 - Logs a drift warning if the install's `contract_version` does not match the fleet baseline.
@@ -330,17 +425,17 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 
 ## Security posture
 
-- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for `/api/health` or `/api/logs` — request arrival IS the auth proof.
+- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for any of the four FM endpoints — request arrival IS the auth proof.
 - Per-install cert trust: each CRM install trusts exactly one FM-side cert. Compromise of one install's cert does not cascade across the fleet.
-- All three routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
-- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** in `message` fields where useful. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
-- All three endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` cap (`throttle:6,1`) is intentionally tighter than the polling endpoints' (`throttle:60,1`) because backups are expensive to run.
-- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these two endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
-- `/api/logs` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface.
+- All four routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
+- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** (or sanitised `message` strings on `/api/backup/trigger` and `/api/backup/blob`) where useful. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
+- All four endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` cap (`throttle:6,1`) is intentionally tighter than the others' (`throttle:60,1`) because backups are expensive to run; blob downloads are I/O-bound and cheap, hence the 60/min ceiling on `/api/backup/blob`.
+- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these four endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
+- `/api/logs` is read-only. `/api/backup/blob` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface; there is no blob-write, blob-delete, or blob-mutation affordance on `/api/backup/blob` (write is mediated by `/api/backup/trigger` only).
 
 ### Recovery posture and FM-side trust assumptions
 
-These describe the v2.1.0 security posture; items carry status as either **shipped at this revision** (item 1) or **FM-side intended posture, Beta-1 scope** (items 2 + 3). FM-side absorption sessions promote the intended items to shipped status; this section updates without a contract bump as that happens.
+These describe the v2.1.0 security posture; items carry status as either **shipped at this revision** (item 1) or **FM-side intended posture, Beta-1 scope** (items 2 + 3). FM-side absorption sessions promote the intended items to shipped status; this section updates without a contract bump as that happens. v2.3.0 (this revision) adds the FM-side-readable half of the restore primitive via `/api/backup/blob` — restore execution itself remains manual `pg_restore` operator-side per the existing posture; FM 022 wraps the blob fetch + manual restore drill into an operator-facing affordance, but the CRM never executes restore on its own behalf.
 
 1. **Break-glass recovery path.** Each CRM install trusts exactly one FM-side cert. If FM is compromised, recovery is operator SSH + cert swap on every CRM install, not a contract-level rotation flow. The CRM-side rotation script (`bin/rotate-fm-cert.sh`) and the recovery runbook (`docs/runbooks/fm-compromise-recovery.md`) document the per-install procedure.
 
@@ -351,6 +446,29 @@ These describe the v2.1.0 security posture; items carry status as either **shipp
 ---
 
 ## CHANGELOG
+
+### `2.3.0` — 2026-05-08 (session 268)
+
+**Additive within v2 major.** Adds a fourth endpoint, `GET /api/backup/blob`, that streams the freshest backup zip from the configured backup destination disk to the FM caller. CRM-side prerequisite for FM 021 (`BackupBlobClient`) + FM 022 (operator-facing restore-to-fresh-node affordance) — together they satisfy the (c) cell of the Track A operations-parity success criterion in the CRM-side release plan.
+
+- New endpoint at `GET /api/backup/blob`. GET-only; no request body; no query parameters at v2.3.0. Response on success is a raw zip stream with `Content-Type: application/zip`, `Content-Disposition: attachment; filename="<spatie-blob-filename>"`, `Content-Length: <bytes>`, `Cache-Control: no-store`.
+- Reuses the existing nginx-terminated mTLS gate — a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate ships on `/api/backup/blob` in both `docker/nginx/default.conf` (local) and `docker/nginx/prod.conf` (prod). Same trusted `fm-client.crt`; operators do not re-paste anything.
+- New per-location `fastcgi_read_timeout 600;` override on the blob location, mirroring `/api/backup/trigger`'s 600s ceiling. Defends against multi-GB blobs streaming through PHP buffer backpressure to slow FM-side networks (the default 300s ceiling is between-packets, not total request, but a single read window stalling past 300s is plausible and cheap to defend against).
+- Throttle: `throttle:60,1` (60 rpm per source IP), matching `/api/logs` rather than `/api/backup/trigger`'s 6,1. Blob downloads are I/O-bound and cheap; the expected FM-side burst pattern is "one fetch after a successful trigger plus maybe one retry," and 60/min is generous for that.
+- **Disk-fallback rule — two layers.** Layer A (preference): if `local` is present anywhere in `BACKUP_DISKS`, it is tried first regardless of authored order; remaining disks follow in their authored order. Layer B (fallthrough-on-empty): if the preferred disk has no blobs (`->newest()` returns null), resolution falls through to the next disk in the resolved order. The 404 envelope is emitted only when all configured disks are exhausted. The contract spec documents the rule so FM consumers can trace which disk's blob they're reading. The response itself does not expose the source disk — FM treats the blob as opaque-by-source.
+- **Filename in `Content-Disposition` is the spatie default `Y-m-d-H-i-s.zip`** — for example, `2026-05-08-12-30-00.zip`. There is no `<backup-name>-` prefix at the spatie default (`config/backup.php`'s `filename_prefix` is empty); the `<backup_name>` portion is a directory inside the disk, not part of the filename. FM-side prefixing for multi-install storage is FM's concern.
+- **Status-code semantics:**
+  - `200` — blob streamed.
+  - `404` `no_backup_available` — all configured disks empty; recoverable via `/api/backup/trigger` + retry.
+  - `500` `backup_destinations_not_configured` — `BACKUP_DISKS` resolves to an empty list; operator action required (set `BACKUP_DISKS`).
+  - `500` `backup_disk_error` — synchronous storage exception during disk resolution or download invocation; sanitised single-line `message` (same pipeline as `/api/backup/trigger`'s `message`: app-root prefix strip, newline collapse to ` | `, 500-char cap).
+- Error envelopes (404 / 500) follow the `/api/logs` shape: `{error, message}` only, no `contract_version` field. v2.3.0 does not change cross-endpoint error-envelope shape; if a future revision adds `contract_version` to error envelopes, that lands as a deliberate cross-endpoint sweep.
+- `HealthController::CONTRACT_VERSION` bumps `2.2.0 → 2.3.0` (the canonical field FM polls). `BackupController::CONTRACT_VERSION` bumps the same — its trigger envelope's `contract_version` field moves to `2.3.0` automatically. `/api/backup/blob`'s success response carries no envelope (raw stream); its error envelopes do not carry `contract_version`.
+- Forward-compatible with v2.2.0 consumers. v2.2.0 consumers don't see the new endpoint and continue working unchanged. FM-side consumers wanting to use the new endpoint upgrade their HTTP client to handle the binary-stream + 404/500 envelope shape.
+- **Implementation note — sibling method on `BackupController`.** The new action lives as `BackupController::blob()` next to `BackupController::trigger()`. The two share the existing `sanitise()` helper and `MAX_MESSAGE_LENGTH` constant; no new controller class, no new service.
+- **Out of scope at v2.3:** historical blob enumeration (FM gets latest only; restore-from-an-older-blob remains a manual operator drill); per-disk targeting via query (`?disk=spaces`); progress streaming during long downloads; Range / resume support (HTTP 206 partial content); CRM-side restore primitives (restore stays manual `pg_restore` per A2(c) framing); cross-endpoint addition of `contract_version` to error envelopes.
+
+**Scope note:** the v2.0.0-deferred FM-raised question of `last_backup_at` threshold-derivation ownership stays deferred — v2.3.0 is narrowly the blob-download addition. Threshold-derivation lands at a future v2.x bump when there's natural impetus.
 
 ### `2.2.0` — 2026-05-05 (session 263)
 

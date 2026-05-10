@@ -23,6 +23,11 @@ use Filament\Tables\Table;
 
 class EventResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_event') ?? false;
+    }
+
     use HasPageBuilderForm;
 
     protected static ?string $model = Event::class;

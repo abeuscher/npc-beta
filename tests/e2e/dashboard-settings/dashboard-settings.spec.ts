@@ -28,7 +28,7 @@ test.describe('Dashboard View', () => {
         expect(configId).not.toBeNull();
 
         const before = await countDashboardWidgets(configId!);
-        expect(before).toBe(3);
+        expect(before).toBe(5);
 
         await page.goto('/admin/dashboard-view');
         await expect(page.getByText('Dashboard arrangement')).toBeVisible({ timeout: 15_000 });

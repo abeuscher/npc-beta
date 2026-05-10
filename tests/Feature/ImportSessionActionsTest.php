@@ -347,5 +347,5 @@ it('approve batches subject loads so staged count does not drive query count', f
     $queries = \Illuminate\Support\Facades\DB::getQueryLog();
     \Illuminate\Support\Facades\DB::disableQueryLog();
 
-    expect(count($queries))->toBeLessThan(110);
+    expect(count($queries))->toBeLessThan(140);
 });

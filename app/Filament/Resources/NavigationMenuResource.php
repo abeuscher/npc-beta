@@ -14,6 +14,11 @@ use Filament\Tables\Table;
 
 class NavigationMenuResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_navigation_menu') ?? false;
+    }
+
     protected static ?string $model = NavigationMenu::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';

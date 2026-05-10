@@ -3,7 +3,7 @@ title: Data Imports
 description: Umbrella reference for every importer in the CRM — contacts, events, donations, memberships, invoice details, notes, and the shared review / history workflow. Covers CSV upload, source selection, column mapping, duplicate handling, approval, and rollback.
 version: "0.46"
 updated: 2026-05-01
-tags: [import, contacts, events, donations, memberships, invoice-details, notes, csv, crm, review]
+tags: [import, contacts, events, donations, memberships, invoice-details, notes, organizations, csv, crm, review]
 routes:
   - filament.admin.pages.import-contacts-page
   - filament.admin.pages.import-progress-page
@@ -15,6 +15,8 @@ routes:
   - filament.admin.pages.import-memberships-progress-page
   - filament.admin.pages.import-invoice-details-page
   - filament.admin.pages.import-invoice-details-progress-page
+  - filament.admin.pages.import-organizations-page
+  - filament.admin.pages.import-organizations-progress-page
   - filament.admin.pages.import-history-page
 category: tools
 ---

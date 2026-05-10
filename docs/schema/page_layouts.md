@@ -24,7 +24,7 @@ Layout containers (column layouts) that hold widgets in a multi-column arrangeme
 
 Session 207 split the layout's configuration into two columns with separate contracts:
 
-- `layout_config` holds layout-behavior keys only: `full_width`, `display` (mirrored here for historical reasons; the column is authoritative), `columns` (same), `gap`, `grid_template_columns`, `grid_auto_rows`, `align_items`, `justify_items`, `justify_content`, `flex_wrap`, `flex_basis[]`.
+- `layout_config` holds layout-behavior keys only: `background_full_width`, `content_full_width`, `display` (mirrored here for historical reasons; the column is authoritative), `columns` (same), `gap`, `grid_template_columns`, `grid_auto_rows`, `align_items`, `justify_items`, `justify_content`, `flex_wrap`, `flex_basis[]`.
 - `appearance_config` holds per-layout appearance values that the renderer emits as inline styles. Whitelist is `['background', 'layout']` — no `text` subtree (layouts have no text controls). The shape matches `page_widgets.appearance_config`:
   ```
   {
@@ -40,6 +40,6 @@ Session 207 split the layout's configuration into two columns with separate cont
     }
   }
   ```
-  `full_width` intentionally stays on `layout_config`, not on `appearance_config.layout`, because it is a layout-behavior toggle rather than an appearance override.
+  `background_full_width` and `content_full_width` intentionally stay on `layout_config`, not on `appearance_config.layout`, because they are layout-behavior toggles rather than appearance overrides. Session 267 split the historical single `full_width` knob into the two-knob shape; the rendering pipeline applies the same normalization rule as widgets — `(bg:false, content:true)` is rewritten to `(bg:true, content:true)`.
 
 The 207 data migration moved the pre-existing `layout_config.background_color`, `padding_{top,right,bottom,left}`, and `margin_{top,right,bottom,left}` keys into `appearance_config` under the shape above, then removed them from `layout_config`.

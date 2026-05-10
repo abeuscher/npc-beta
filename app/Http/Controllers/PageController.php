@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
-use App\Models\PageLayout;
 use App\Models\Template;
 use App\Services\PageBlockRenderer;
 use App\Services\PageContext;

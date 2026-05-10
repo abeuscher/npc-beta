@@ -21,54 +21,73 @@ const isSelected = computed(
     store.selectedItemId === props.layout.id
 )
 
-const containerStyle = computed(() => {
-  const config = props.layout.layout_config ?? {}
+// The editor mirrors the public-side structure so the bg and content
+// full-width knobs act on independent elements:
+//
+//   .layout-region__container  ← appearance (bg + padding + margin),
+//                                width-constrained when !bg_full_width
+//     .layout-region__grid     ← display:grid + column tracks,
+//                                width-constrained when !content_full_width
+//
+// API-baked inline_style (composeForLayout) ships gradient/image styles for
+// parity with the public site; local appearance_config drives live editing
+// for color/padding/margin (last-wins ordering vs the API string).
+const appearanceStyleString = computed(() => {
   const appearance = props.layout.appearance_config ?? {}
-  const display = props.layout.display ?? 'grid'
-  const styles: Record<string, string> = { display }
+  const parts: string[] = []
 
-  if (display === 'grid') {
-    styles.gridTemplateColumns =
-      config.grid_template_columns ??
-      Array(props.layout.columns).fill('1fr').join(' ')
-    if (config.grid_auto_rows) styles.gridAutoRows = config.grid_auto_rows
-    if (config.justify_items) styles.justifyItems = config.justify_items
-  } else {
-    if (config.justify_content) styles.justifyContent = config.justify_content
-    if (config.flex_wrap) styles.flexWrap = config.flex_wrap
-  }
+  const apiStyle = (props.layout as any).inline_style ?? ''
+  if (apiStyle) parts.push(apiStyle.replace(/;\s*$/, ''))
 
-  if (config.gap) styles.gap = config.gap
-  if (config.align_items) styles.alignItems = config.align_items
-
-  // Background + spacing live on appearance_config after session 207.
-  // Mirrors AppearanceStyleComposer::composeForLayout on the PHP side.
   const bgColor = appearance.background?.color
-  if (bgColor) styles.backgroundColor = bgColor
+  if (bgColor) parts.push(`background-color:${bgColor}`)
 
-  const sideMap = {
-    top: 'Top', right: 'Right', bottom: 'Bottom', left: 'Left',
-  } as const
+  const sideMap = { top: 'top', right: 'right', bottom: 'bottom', left: 'left' } as const
   const padding = appearance.layout?.padding ?? {}
-  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+  for (const side of Object.keys(sideMap) as (keyof typeof sideMap)[]) {
     const v = (padding as Record<string, any>)[side]
     if (v !== undefined && v !== null && v !== '') {
-      styles[`padding${suffix}`] = `${parseInt(v, 10)}px`
+      parts.push(`padding-${sideMap[side]}:${parseInt(v, 10)}px`)
     }
   }
   const margin = appearance.layout?.margin ?? {}
-  for (const [side, suffix] of Object.entries(sideMap) as [keyof typeof sideMap, string][]) {
+  for (const side of Object.keys(sideMap) as (keyof typeof sideMap)[]) {
     const v = (margin as Record<string, any>)[side]
     if (v !== undefined && v !== null && v !== '') {
-      styles[`margin${suffix}`] = `${parseInt(v, 10)}px`
+      parts.push(`margin-${sideMap[side]}:${parseInt(v, 10)}px`)
     }
   }
 
-  return styles
+  return parts.join(';')
 })
 
-const isFullWidth = computed(
-  () => !!props.layout.layout_config?.full_width
+const gridStyleString = computed(() => {
+  const config = props.layout.layout_config ?? {}
+  const display = props.layout.display ?? 'grid'
+  const parts: string[] = [`display:${display}`]
+
+  if (display === 'grid') {
+    const cols = config.grid_template_columns ??
+      Array(props.layout.columns).fill('1fr').join(' ')
+    parts.push(`grid-template-columns:${cols}`)
+    if (config.grid_auto_rows) parts.push(`grid-auto-rows:${config.grid_auto_rows}`)
+    if (config.justify_items) parts.push(`justify-items:${config.justify_items}`)
+  } else {
+    if (config.justify_content) parts.push(`justify-content:${config.justify_content}`)
+    if (config.flex_wrap) parts.push(`flex-wrap:${config.flex_wrap}`)
+  }
+
+  if (config.gap) parts.push(`gap:${config.gap}`)
+  if (config.align_items) parts.push(`align-items:${config.align_items}`)
+
+  return parts.join(';')
+})
+
+const bgFullWidth = computed(
+  () => !!props.layout.layout_config?.background_full_width
+)
+const contentFullWidth = computed(
+  () => !!props.layout.layout_config?.content_full_width
 )
 
 function getSlot(slotIdx: number): Widget[] {
@@ -151,47 +170,56 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
       </span>
     </div>
 
-    <!-- Layout container with column slots -->
+    <!-- Outer container — carries appearance (bg + padding + margin).
+         Width-constrained when bg is NOT full-width. -->
     <div
       class="layout-region__container"
       :class="{
-        'layout-region__container--contained': !isFullWidth,
+        'layout-region__container--contained': !bgFullWidth,
         'layout-region__container--dragging': store.dragging,
       }"
-      :style="containerStyle"
+      :style="appearanceStyleString"
     >
+      <!-- Inner grid — carries display:grid + column tracks.
+           Width-constrained when content is NOT full-width. -->
       <div
-        v-for="i in layout.columns"
-        :key="i - 1"
-        class="layout-region__slot"
-        :style="slotStyle(i - 1)"
+        class="layout-region__grid"
+        :class="{ 'layout-region__grid--contained': !contentFullWidth }"
+        :style="gridStyleString"
       >
-        <draggable
-          :list="getSlot(i - 1)"
-          :group="{ name: 'page-items', pull: true, put: slotPutFilter }"
-          item-key="id"
-          :animation="200"
-          :fallback-on-body="true"
-          :swap-threshold="0.65"
-          ghost-class="preview-region--ghost"
-          class="layout-region__slot-list"
-          @start="onSlotDragStart"
-          @end="onSlotDragEnd"
+        <div
+          v-for="i in layout.columns"
+          :key="i - 1"
+          class="layout-region__slot"
+          :style="slotStyle(i - 1)"
         >
-          <template #item="{ element }">
-            <PreviewRegion :widget="element" />
-          </template>
-          <template #footer>
-            <button
-              v-if="getSlot(i - 1).length === 0"
-              type="button"
-              class="layout-region__add-widget"
-              @click.stop="openSlotPicker(i - 1)"
-            >
-              + Add widget
-            </button>
-          </template>
-        </draggable>
+          <draggable
+            :list="getSlot(i - 1)"
+            :group="{ name: 'page-items', pull: true, put: slotPutFilter }"
+            item-key="id"
+            :animation="200"
+            :fallback-on-body="true"
+            :swap-threshold="0.65"
+            ghost-class="preview-region--ghost"
+            class="layout-region__slot-list"
+            @start="onSlotDragStart"
+            @end="onSlotDragEnd"
+          >
+            <template #item="{ element }">
+              <PreviewRegion :widget="element" />
+            </template>
+            <template #footer>
+              <button
+                v-if="getSlot(i - 1).length === 0"
+                type="button"
+                class="layout-region__add-widget"
+                @click.stop="openSlotPicker(i - 1)"
+              >
+                + Add widget
+              </button>
+            </template>
+          </draggable>
+        </div>
       </div>
     </div>
   </div>
@@ -300,8 +328,12 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
 
 /* Mirrors .site-container behaviour: 90% width up to a viewport-derived max-width.
    The max-width comes from a CSS variable set on .widget-preview-scope by
-   PreviewCanvas, so it tracks the active viewport preset (1920 → 1320, 1024 → 960, etc.). */
-.layout-region__container--contained {
+   PreviewCanvas, so it tracks the active viewport preset (1920 → 1320, 1024 → 960, etc.).
+   Outer --contained boxes the bg + appearance; inner __grid--contained boxes the
+   column tracks independently — together they mirror the public-side three-state
+   matrix (boxed / bg-bleed-content-boxed / full-bleed). */
+.layout-region__container--contained,
+.layout-region__grid--contained {
   width: 90%;
   max-width: var(--np-preview-container-max-width, 100%);
   margin-left: auto;

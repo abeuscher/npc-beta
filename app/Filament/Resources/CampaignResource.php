@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class CampaignResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_campaign') ?? false;
+    }
+
     protected static ?string $model = Campaign::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';

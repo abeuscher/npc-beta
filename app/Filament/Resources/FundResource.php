@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Cache;
 
 class FundResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_fund') ?? false;
+    }
+
     protected static ?string $model = Fund::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';

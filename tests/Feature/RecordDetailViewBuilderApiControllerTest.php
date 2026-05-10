@@ -153,7 +153,7 @@ it('strips appearance_config keys outside background/text on update', function (
             'appearance_config' => [
                 'background' => ['color' => '#ff0000'],
                 'text'       => ['color' => '#00ff00'],
-                'layout'     => ['full_width' => true, 'padding' => ['top' => 99]],
+                'layout'     => ['background_full_width' => true, 'content_full_width' => true, 'padding' => ['top' => 99]],
             ],
         ])
         ->assertOk();

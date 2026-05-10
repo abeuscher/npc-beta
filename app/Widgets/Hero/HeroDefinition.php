@@ -27,11 +27,6 @@ class HeroDefinition extends WidgetDefinition
         return ['content','most_used'];
     }
 
-    public function fullWidth(): bool
-    {
-        return true;
-    }
-
     public function schema(): array
     {
         return [

@@ -358,7 +358,8 @@ it('renders chrome layout edge-to-edge when full_width is true', function () {
         'columns'       => 1,
         'layout_config' => [
             'grid_template_columns' => '1fr',
-            'full_width'            => true,
+            'background_full_width' => true,
+            'content_full_width'    => true,
         ],
         'sort_order'    => 0,
     ]);

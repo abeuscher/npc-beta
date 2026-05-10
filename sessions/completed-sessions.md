@@ -266,6 +266,17 @@ A flat index of every completed session by number and title. Per-session detail 
 | 261 | List Resource Exports — CSV and JSON |
 | 262 | List Resource Exports — XLSX Format Add |
 | 263 | Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint |
+| 264 | Affiliations Junction — Schema, Migration, Admin UI |
+| 265 | Donation Credits — Soft-Credit Layer |
+| 266 | Backup notification hardening — FM 020 finding |
+| 267 | Full-Width Architecture Enforcement — Background and Content Split |
+| 268 | Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint |
+| 269 | Page Builder Focus-Scroll Clamp (closed without shipping; 204-rationale reaffirmed) |
+| 270 | PostgreSQL Major-Version Skew Fix |
+| 271 | Code Review & Cleanup (Audit Part 1 — Foundations + Quantitative) |
+| 272 | Code Review & Cleanup (Audit Part 2 — Subsystem Deep Walks) |
+| 273 | Code Review & Cleanup (Apply) |
+| 274 | Migration Squash & Code Optimization |
 
 ---
 

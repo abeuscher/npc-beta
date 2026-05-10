@@ -5,9 +5,6 @@
       "Read(//c//**)",
       "Read(//c/laragon/bin/**)",
       "Read(//c/xampp/**)",
-      "Bash(chmod +x /home/user/npc-beta/bin/git-hooks/pre-push)",
-      "Bash(cp /home/user/npc-beta/bin/git-hooks/pre-push /home/user/npc-beta/.git/hooks/pre-push)",
-      "Bash(chmod +x /home/user/npc-beta/.git/hooks/pre-push)",
       "Bash(git push:*)"
     ]
   }

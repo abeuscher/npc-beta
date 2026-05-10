@@ -26,7 +26,7 @@ class AppearanceStyleComposer
     /**
      * Compose inline style and layout flags from a widget's appearance_config.
      *
-     * @return array{inline_style: string, is_full_width: bool}
+     * @return array{inline_style: string, background_full_width: bool, content_full_width: bool}
      */
     public function compose(PageWidget $pw): array
     {
@@ -71,19 +71,73 @@ class AppearanceStyleComposer
             }
         }
 
-        // Full width resolution
-        $instanceFullWidth = $ac['layout']['full_width'] ?? null;
-        $typeFullWidth = $pw->widgetType?->full_width ?? false;
-        $isFullWidth = $instanceFullWidth !== null ? (bool) $instanceFullWidth : $typeFullWidth;
+        $fw = $this->resolveFullWidthForWidget($pw);
 
-        // Column-child widgets cannot be full-width
+        return [
+            'inline_style'          => implode(';', $styleProps),
+            'background_full_width' => $fw['background_full_width'],
+            'content_full_width'    => $fw['content_full_width'],
+        ];
+    }
+
+    /**
+     * Canonical resolution chain for a widget's two full-width knobs:
+     *   per-instance override → per-type default → false-false fallback.
+     *
+     * Column-child widgets are clamped to (false, false).
+     * (background:false, content:true) is normalized to (true, true) — this state
+     * is UI-prevented but may appear in legacy/seed/test data.
+     *
+     * @return array{background_full_width: bool, content_full_width: bool}
+     */
+    public function resolveFullWidthForWidget(PageWidget $pw): array
+    {
+        $ac = $pw->appearance_config ?? [];
+
+        $bgInstance      = $ac['layout']['background_full_width'] ?? null;
+        $contentInstance = $ac['layout']['content_full_width']    ?? null;
+
+        $bgType      = $pw->widgetType?->background_full_width ?? false;
+        $contentType = $pw->widgetType?->content_full_width    ?? false;
+
+        $bg      = $bgInstance      !== null ? (bool) $bgInstance      : $bgType;
+        $content = $contentInstance !== null ? (bool) $contentInstance : $contentType;
+
         if ($pw->layout_id !== null) {
-            $isFullWidth = false;
+            $bg = false;
+            $content = false;
+        }
+
+        if (! $bg && $content) {
+            $bg = true;
         }
 
         return [
-            'inline_style'  => implode(';', $styleProps),
-            'is_full_width' => $isFullWidth,
+            'background_full_width' => $bg,
+            'content_full_width'    => $content,
+        ];
+    }
+
+    /**
+     * Canonical resolution chain for a column layout's two full-width knobs.
+     * Same normalization rule as widgets.
+     *
+     * @return array{background_full_width: bool, content_full_width: bool}
+     */
+    public function resolveFullWidthForLayout(PageLayout $layout): array
+    {
+        $config = $layout->layout_config ?? [];
+
+        $bg      = (bool) ($config['background_full_width'] ?? false);
+        $content = (bool) ($config['content_full_width']    ?? false);
+
+        if (! $bg && $content) {
+            $bg = true;
+        }
+
+        return [
+            'background_full_width' => $bg,
+            'content_full_width'    => $content,
         ];
     }
 

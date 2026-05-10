@@ -2,13 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Contact;
-use App\Models\Donation;
-use App\Models\Membership;
 use App\Models\SiteSetting;
-use App\Observers\ContactObserver;
-use App\Observers\DonationObserver;
-use App\Observers\MembershipObserver;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -30,10 +24,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Contact::observe(ContactObserver::class);
-        Membership::observe(MembershipObserver::class);
-        Donation::observe(DonationObserver::class);
-
         BasePage::formActionsAlignment(Alignment::End);
 
         // Filament's built-in JS pickers (not browser-native)
@@ -72,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
                 'mail.default'      => $settings->get('mail_driver')?->value      ?? 'log',
                 'mail.from.address' => $settings->get('mail_from_address')?->value ?: 'hello@example.com',
                 'mail.from.name'    => $settings->get('mail_from_name')?->value    ?: config('app.name'),
+                'backup.notifications.mail.from.address' => $settings->get('mail_from_address')?->value ?: 'hello@example.com',
+                'backup.notifications.mail.from.name'    => $settings->get('mail_from_name')?->value    ?: config('app.name'),
+                'backup.notifications.mail.to'           => $settings->get('contact_email')?->value     ?: 'hello@example.com',
                 'services.resend.key'               => $settings->get('resend_api_key')?->value           ?? '',
                 'services.mailchimp.api_key'        => $settings->get('mailchimp_api_key')?->value        ?? '',
                 'services.mailchimp.server_prefix'  => $settings->get('mailchimp_server_prefix')?->value  ?? '',

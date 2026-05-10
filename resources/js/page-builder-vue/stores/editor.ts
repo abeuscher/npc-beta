@@ -6,7 +6,6 @@ import type {
   PageLayout,
   PageItem,
   WidgetType,
-  WidgetPreset,
   Collection,
   Tag,
   PageRef,
@@ -20,7 +19,11 @@ import type {
   ReorderItem,
   EditorMode,
 } from '../types'
-import { ApiError, createApiClient, type ApiClient } from '../api'
+import { createApiClient, type ApiClient } from '../api'
+import { useDebouncedSave } from '../composables/useDebouncedSave'
+import { useRefreshPreview } from '../composables/useRefreshPreview'
+import { useUploadActions } from '../composables/useUploadActions'
+import { usePresetActions } from '../composables/usePresetActions'
 
 export const useEditorStore = defineStore('editor', () => {
   // Core data
@@ -104,24 +107,8 @@ export const useEditorStore = defineStore('editor', () => {
   // doesn't intercept drops when an empty slot is the target.
   const dragging = ref(false)
 
-  // Debounced save state
-  let debounceSaveTimer: ReturnType<typeof setTimeout> | null = null
-  const pendingConfigChanges = ref<Record<string, Record<string, any>>>({})
-
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
-
-  // Per-widget preview refresh tracking (counter, abort, indicator stages, errors)
-  const refreshCounts = ref<Record<string, number>>({})
-  const abortControllers = new Map<string, AbortController>()
-  const blurTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  const spinnerTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  const indicatorStage = ref<Record<string, 0 | 1 | 2>>({})
-  const previewErrors = ref<Record<string, string | null>>({})
-
-  const BLUR_DELAY_MS = 250
-  const SPINNER_DELAY_MS = 500
-  const DEBOUNCE_SAVE_MS = 350
 
   // ── Getters ────────────────────────────────────────────────────────────
 
@@ -164,6 +151,24 @@ export const useEditorStore = defineStore('editor', () => {
 
   // No more column widgets — kept for backward compat with any stale references.
   const columnTargets = computed(() => [] as Widget[])
+
+  // ── Composable wiring (forward-referenced for circular deps) ───────────
+  // useDebouncedSave's afterSave callback references refreshPreview, which
+  // in turn awaits flushPendingSaves. Both reach for each other across the
+  // wiring boundary, so we capture them via a forward `let` and assign once
+  // both composables are constructed. The closures don't fire until user
+  // interaction, by which point both sides are wired.
+  let refreshPreviewRef: ((id: string) => Promise<void>) | null = null
+  let flushPendingSavesRef: (() => Promise<void>) | null = null
+
+  function payloadAffectsPreview(payload: UpdateWidgetPayload): boolean {
+    // Label-only edits don't change rendered HTML, so skip the auto-refresh.
+    return (
+      payload.config !== undefined ||
+      payload.appearance_config !== undefined ||
+      payload.query_config !== undefined
+    )
+  }
 
   // ── Actions ────────────────────────────────────────────────────────────
 
@@ -407,127 +412,45 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
-  function clearIndicatorTimers(id: string): void {
-    const bt = blurTimers.get(id)
-    if (bt) {
-      clearTimeout(bt)
-      blurTimers.delete(id)
-    }
-    const st = spinnerTimers.get(id)
-    if (st) {
-      clearTimeout(st)
-      spinnerTimers.delete(id)
-    }
-  }
+  // ── Composable wiring (post-CRUD so updateWidget is in scope) ──────────
 
-  function incrementRefreshCount(id: string): void {
-    const next = (refreshCounts.value[id] ?? 0) + 1
-    refreshCounts.value[id] = next
-    if (next === 1) {
-      // 0 → 1 transition: arm the cascading indicator timers
-      indicatorStage.value[id] = 0
-      blurTimers.set(
-        id,
-        setTimeout(() => {
-          if ((refreshCounts.value[id] ?? 0) > 0) {
-            indicatorStage.value[id] = 1
-          }
-        }, BLUR_DELAY_MS)
-      )
-      spinnerTimers.set(
-        id,
-        setTimeout(() => {
-          if ((refreshCounts.value[id] ?? 0) > 0) {
-            indicatorStage.value[id] = 2
-          }
-        }, SPINNER_DELAY_MS)
-      )
-    }
-  }
-
-  function decrementRefreshCount(id: string): void {
-    const next = (refreshCounts.value[id] ?? 1) - 1
-    if (next <= 0) {
-      refreshCounts.value[id] = 0
-      clearIndicatorTimers(id)
-      indicatorStage.value[id] = 0
-    } else {
-      refreshCounts.value[id] = next
-    }
-  }
-
-  async function flushPendingSaves(): Promise<void> {
-    if (debounceSaveTimer) {
-      clearTimeout(debounceSaveTimer)
-      debounceSaveTimer = null
-    }
-    const pending = { ...pendingConfigChanges.value }
-    pendingConfigChanges.value = {}
-
-    const savePromises = Object.entries(pending).map(([widgetId, payload]) =>
-      updateWidget(widgetId, payload).catch((e) =>
-        console.error('Pending save failed:', e)
-      )
-    )
-    if (savePromises.length > 0) {
-      await Promise.all(savePromises)
-    }
-  }
-
-  async function refreshPreview(id: string): Promise<void> {
-    await flushPendingSaves()
-
-    // Abort any in-flight refresh for the same widget so a stale render
-    // can't overwrite a newer one.
-    const existing = abortControllers.get(id)
-    if (existing) {
-      existing.abort()
-      abortControllers.delete(id)
-    }
-
-    const controller = new AbortController()
-    abortControllers.set(id, controller)
-    incrementRefreshCount(id)
-
-    try {
-      const res = await requireApi().getPreview(id, controller.signal)
-      if (widgets.value[id]) {
-        widgets.value[id].preview_html = res.html
+  const debounced = useDebouncedSave({
+    updateWidget: (id, payload) => updateWidget(id, payload),
+    afterSave: (id, payload) => {
+      if (payloadAffectsPreview(payload)) {
+        refreshPreviewRef?.(id)
       }
-      dirtyWidgets.value.delete(id)
-      previewErrors.value[id] = null
-    } catch (e: any) {
-      if (e?.name === 'AbortError') {
-        // Superseded by a newer refresh — silent.
-        return
-      }
-      const message =
-        e instanceof ApiError
-          ? e.message
-          : e?.message
-            ? e.message
-            : 'Network error'
-      previewErrors.value[id] = message
-      console.error('Preview refresh failed:', e)
-    } finally {
-      if (abortControllers.get(id) === controller) {
-        abortControllers.delete(id)
-      }
-      decrementRefreshCount(id)
-    }
-  }
+    },
+  })
+  flushPendingSavesRef = debounced.flushPendingSaves
 
-  function widgetRefreshing(id: string): boolean {
-    return (refreshCounts.value[id] ?? 0) > 0
-  }
+  const refresh = useRefreshPreview({
+    widgets,
+    dirtyWidgets,
+    requireApi,
+    flushPendingSaves: () => flushPendingSavesRef!(),
+  })
+  refreshPreviewRef = refresh.refreshPreview
 
-  function widgetIndicatorStage(id: string): 0 | 1 | 2 {
-    return indicatorStage.value[id] ?? 0
-  }
+  const uploads = useUploadActions({
+    widgets,
+    dirtyWidgets,
+    saving,
+    requireApi,
+    refreshPreview: refresh.refreshPreview,
+  })
 
-  function widgetPreviewError(id: string): string | null {
-    return previewErrors.value[id] ?? null
-  }
+  const presets = usePresetActions({
+    widgets,
+    dirtyWidgets,
+    widgetTypes,
+    requireApi,
+    flushPendingSaves: debounced.flushPendingSaves,
+    flushDebouncedSave: debounced.flushDebouncedSave,
+  })
+
+  // ── Local config / appearance / query / layout mutations ───────────────
+  // Each route a debounced API save through `debounced.flushDebouncedSave`.
 
   /**
    * Update a widget's config locally (instant UI update) and queue a debounced API save.
@@ -545,14 +468,14 @@ export const useEditorStore = defineStore('editor', () => {
     if (label !== undefined && key === null) {
       // Label change
       w.label = label
-      flushDebouncedSave(widgetId, { label })
+      debounced.flushDebouncedSave(widgetId, { label })
       return
     }
 
     if (key !== null) {
       w.config = { ...w.config, [key]: value }
       dirtyWidgets.value.add(widgetId)
-      flushDebouncedSave(widgetId, { config: { ...w.config } })
+      debounced.flushDebouncedSave(widgetId, { config: { ...w.config } })
     }
   }
 
@@ -561,39 +484,7 @@ export const useEditorStore = defineStore('editor', () => {
     if (!w) return
     w.config = {}
     dirtyWidgets.value.add(widgetId)
-    flushDebouncedSave(widgetId, { config: {} })
-  }
-
-  function payloadAffectsPreview(payload: UpdateWidgetPayload): boolean {
-    // Label-only edits don't change rendered HTML, so skip the auto-refresh.
-    return (
-      payload.config !== undefined ||
-      payload.appearance_config !== undefined ||
-      payload.query_config !== undefined
-    )
-  }
-
-  function flushDebouncedSave(widgetId: string, changes: UpdateWidgetPayload): void {
-    // Merge pending changes for this widget
-    const pending = pendingConfigChanges.value[widgetId] ?? {}
-    pendingConfigChanges.value[widgetId] = { ...pending, ...changes }
-
-    if (debounceSaveTimer) clearTimeout(debounceSaveTimer)
-    debounceSaveTimer = setTimeout(() => {
-      const toSave = { ...pendingConfigChanges.value }
-      pendingConfigChanges.value = {}
-      debounceSaveTimer = null
-
-      for (const [id, payload] of Object.entries(toSave)) {
-        updateWidget(id, payload)
-          .then(() => {
-            if (payloadAffectsPreview(payload)) {
-              refreshPreview(id)
-            }
-          })
-          .catch((e) => console.error('Debounced save failed:', e))
-      }
-    }, DEBOUNCE_SAVE_MS)
+    debounced.flushDebouncedSave(widgetId, { config: {} })
   }
 
   /**
@@ -669,71 +560,9 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }, 500)
 
-  async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
-    saving.value = true
-    try {
-      const res = await requireApi().uploadImage(widgetId, key, file)
-      if (widgets.value[widgetId]) {
-        const w = widgets.value[widgetId]
-        w.config = { ...w.config, [key]: res.media_id }
-        w.image_urls = { ...w.image_urls, [key]: res.url }
-      }
-      dirtyWidgets.value.add(widgetId)
-      refreshPreview(widgetId)
-      return res.url
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function removeImage(widgetId: string, key: string): Promise<void> {
-    saving.value = true
-    try {
-      await requireApi().removeImage(widgetId, key)
-      if (widgets.value[widgetId]) {
-        const w = widgets.value[widgetId]
-        w.config = { ...w.config, [key]: null }
-        w.image_urls = { ...w.image_urls, [key]: null }
-      }
-      dirtyWidgets.value.add(widgetId)
-      refreshPreview(widgetId)
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function uploadAppearanceImage(widgetId: string, file: File): Promise<string | null> {
-    saving.value = true
-    try {
-      const res = await requireApi().uploadAppearanceImage(widgetId, file)
-      if (widgets.value[widgetId]) {
-        widgets.value[widgetId].appearance_image_url = res.url
-      }
-      dirtyWidgets.value.add(widgetId)
-      refreshPreview(widgetId)
-      return res.url
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function removeAppearanceImage(widgetId: string): Promise<void> {
-    saving.value = true
-    try {
-      await requireApi().removeAppearanceImage(widgetId)
-      if (widgets.value[widgetId]) {
-        widgets.value[widgetId].appearance_image_url = null
-      }
-      dirtyWidgets.value.add(widgetId)
-      refreshPreview(widgetId)
-    } finally {
-      saving.value = false
-    }
-  }
-
   /**
    * Update a single nested path inside the widget's appearance_config and queue a debounced save.
-   * The path is a dot-separated string, e.g. 'background.color', 'layout.full_width', 'layout.padding.top'.
+   * The path is a dot-separated string, e.g. 'background.color', 'layout.content_full_width', 'layout.padding.top'.
    * Intermediate objects are created as needed; the rest of the bag is preserved.
    */
   function updateLocalAppearanceConfig(widgetId: string, path: string, value: any): void {
@@ -753,66 +582,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     w.appearance_config = next as any
     dirtyWidgets.value.add(widgetId)
-    flushDebouncedSave(widgetId, { appearance_config: next as any })
-  }
-
-  async function saveDraftPreset(widgetId: string): Promise<void> {
-    const w = widgets.value[widgetId]
-    if (!w) return
-
-    await flushPendingSaves()
-
-    const res = await requireApi().createDraftPreset(w.widget_type_id, widgetId)
-    const wt = widgetTypes.value.find((t) => t.id === w.widget_type_id)
-    if (wt) {
-      const next = [...(wt.draft_presets ?? []), res.preset]
-      wt.draft_presets = next
-    }
-  }
-
-  async function renameDraftPreset(
-    presetId: string,
-    payload: { label?: string; description?: string | null; handle?: string }
-  ): Promise<void> {
-    const res = await requireApi().updateDraftPreset(presetId, payload)
-    for (const wt of widgetTypes.value) {
-      const drafts = wt.draft_presets ?? []
-      const idx = drafts.findIndex((d) => d.id === presetId)
-      if (idx !== -1) {
-        const next = drafts.slice()
-        next[idx] = res.preset
-        wt.draft_presets = next
-        break
-      }
-    }
-  }
-
-  async function deleteDraftPreset(presetId: string): Promise<void> {
-    await requireApi().deleteDraftPreset(presetId)
-    for (const wt of widgetTypes.value) {
-      const drafts = wt.draft_presets ?? []
-      const idx = drafts.findIndex((d) => d.id === presetId)
-      if (idx !== -1) {
-        wt.draft_presets = drafts.filter((d) => d.id !== presetId)
-        break
-      }
-    }
-  }
-
-  function applyPreset(widgetId: string, preset: WidgetPreset): void {
-    const w = widgets.value[widgetId]
-    if (!w) return
-
-    const nextConfig = { ...(w.config ?? {}), ...preset.config }
-    const nextAppearance = { ...preset.appearance_config } as any
-
-    w.config = nextConfig
-    w.appearance_config = nextAppearance
-    dirtyWidgets.value.add(widgetId)
-    flushDebouncedSave(widgetId, {
-      config: nextConfig,
-      appearance_config: nextAppearance,
-    })
+    debounced.flushDebouncedSave(widgetId, { appearance_config: next as any })
   }
 
   function updateLocalQueryConfig(
@@ -825,7 +595,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     w.query_config = { ...w.query_config, [key]: value }
     dirtyWidgets.value.add(widgetId)
-    flushDebouncedSave(widgetId, { query_config: { ...w.query_config } })
+    debounced.flushDebouncedSave(widgetId, { query_config: { ...w.query_config } })
   }
 
   async function saveColorSwatchesAction(swatches: string[]): Promise<void> {
@@ -888,9 +658,9 @@ export const useEditorStore = defineStore('editor', () => {
     childrenOf,
     isWidgetDirty,
     columnTargets,
-    widgetRefreshing,
-    widgetIndicatorStage,
-    widgetPreviewError,
+    widgetRefreshing: refresh.widgetRefreshing,
+    widgetIndicatorStage: refresh.widgetIndicatorStage,
+    widgetPreviewError: refresh.widgetPreviewError,
 
     // Actions
     configureApi,
@@ -913,18 +683,18 @@ export const useEditorStore = defineStore('editor', () => {
     updateLocalLayout,
     updateLocalLayoutAppearance,
     deleteLayout,
-    refreshPreview,
-    flushPendingSaves,
-    uploadImage,
-    removeImage,
-    uploadAppearanceImage,
-    removeAppearanceImage,
+    refreshPreview: refresh.refreshPreview,
+    flushPendingSaves: debounced.flushPendingSaves,
+    uploadImage: uploads.uploadImage,
+    removeImage: uploads.removeImage,
+    uploadAppearanceImage: uploads.uploadAppearanceImage,
+    removeAppearanceImage: uploads.removeAppearanceImage,
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
-    applyPreset,
-    saveDraftPreset,
-    renameDraftPreset,
-    deleteDraftPreset,
+    applyPreset: presets.applyPreset,
+    saveDraftPreset: presets.saveDraftPreset,
+    renameDraftPreset: presets.renameDraftPreset,
+    deleteDraftPreset: presets.deleteDraftPreset,
     saveColorSwatches: saveColorSwatchesAction,
   }
 })

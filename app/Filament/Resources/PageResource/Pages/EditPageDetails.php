@@ -5,7 +5,6 @@ namespace App\Filament\Resources\PageResource\Pages;
 use App\Filament\Resources\PageResource;
 use App\Filament\Pages\Settings\CmsSettingsPage;
 use App\Models\PageWidget;
-use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Rules\ValidHtmlSnippet;
 use App\Services\ImportExport\ContentExporter;

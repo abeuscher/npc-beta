@@ -14,7 +14,8 @@ Definitions of available widget types for pages (server-rendered or client-rende
 | collections | jsonb | no | default: [] |
 | assets | jsonb | no | default: {}; keys: css (string[]), js (string[]), scss (string[]) — external file paths loaded by the layout; libs (string[]) — JS library identifiers for admin preview loading (e.g. "swiper", "chart.js", "jcalendar") |
 | default_open | boolean | no | default: false |
-| full_width | boolean | no | default: false; when true, widget renders without the page content container |
+| background_full_width | boolean | no | default: true; when true, the widget's background extends edge-to-edge instead of being constrained to the page content container |
+| content_full_width | boolean | no | default: false; when true, the widget's inner content extends edge-to-edge instead of being constrained to the page content container. The (bg:false, content:true) state is render-time normalized to (bg:true, content:true) |
 | config_schema | jsonb | no | default: [] |
 | template | text | yes | |
 | css | text | yes | |

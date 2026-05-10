@@ -123,7 +123,7 @@ class Collection extends Model
 
             $component = match ($type) {
                 'textarea'  => Forms\Components\Textarea::make("data.{$key}"),
-                'rich_text' => Forms\Components\RichEditor::make("data.{$key}"),
+                'rich_text' => \App\Forms\Components\QuillEditor::make("data.{$key}"),
                 'number'    => Forms\Components\TextInput::make("data.{$key}")->numeric(),
                 'date'      => Forms\Components\DatePicker::make("data.{$key}"),
                 'toggle'    => Forms\Components\Toggle::make("data.{$key}"),

@@ -125,7 +125,8 @@ public function defaultAppearanceConfig(): array
             'color' => '#000000',
         ],
         'layout'     => [
-            'full_width' => false,
+            'background_full_width' => true,
+            'content_full_width'    => false,
             'padding'    => [
                 'top'    => 50,
                 'right'  => 0,

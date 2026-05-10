@@ -414,7 +414,6 @@ class ImportEventsProgressPage extends Page
             // Event tags (applied additively — reruns reuse existing tags).
             $this->applyEventTags($event, $eventTags);
 
-            // Contact organization: fill-blanks-only on contact.organization_id.
             $this->applyContactOrganization($contact, $contactOrgName, $context);
 
             $entities = [

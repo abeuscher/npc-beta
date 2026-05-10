@@ -127,7 +127,8 @@ class BarChartDefinition extends WidgetDefinition
                 'right'  => '25',
                 'bottom' => '25',
             ],
-            'full_width' => false,
+            'background_full_width' => true,
+            'content_full_width'    => false,
         ],
         'background' => [
             'color' => '#ffffff',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Models\User;
 use App\Observers\PageObserver;
 use App\Services\Media\ImageSizeProfile;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -27,7 +27,7 @@ use Spatie\Sluggable\SlugOptions;
 #[ObservedBy(PageObserver::class)]
 class Page extends Model implements HasMedia
 {
-    use EnforcesScrubInheritance, HasFactory, HasSlug, HasSourcePolicy, HasUuids, InteractsWithMedia, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSlug, HasSourcePolicy, HasUuids, InteractsWithMedia, SanitisesRichTextCustomFields, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::DEMO,

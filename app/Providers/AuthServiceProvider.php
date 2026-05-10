@@ -16,6 +16,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Note::class           => \App\Policies\NotePolicy::class,
         \App\Models\Tag::class            => \App\Policies\TagPolicy::class,
         \App\Models\Donation::class       => \App\Policies\DonationPolicy::class,
+        \App\Models\DonationCredit::class => \App\Policies\DonationCreditPolicy::class,
         \App\Models\Transaction::class    => \App\Policies\TransactionPolicy::class,
         \App\Models\Fund::class           => \App\Policies\FundPolicy::class,
         \App\Models\Campaign::class       => \App\Policies\CampaignPolicy::class,

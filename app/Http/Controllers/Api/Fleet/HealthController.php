@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Fleet;
 
+use App\Http\Controllers\Api\Fleet\Concerns\HasContractVersion;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -12,7 +13,7 @@ use Throwable;
 
 class HealthController extends Controller
 {
-    public const CONTRACT_VERSION = '2.2.0';
+    use HasContractVersion;
 
     private const DISK_YELLOW_THRESHOLD = 80;
     private const DISK_RED_THRESHOLD = 95;

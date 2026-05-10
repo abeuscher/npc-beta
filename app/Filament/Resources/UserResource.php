@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Mail;
 
 class UserResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_user') ?? false;
+    }
+
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';

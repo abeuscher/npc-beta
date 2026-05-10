@@ -26,25 +26,33 @@ class WidgetPreviewRenderer
 
             $composed = $this->styleComposer->compose($pw);
             $inlineStyle = $composed['inline_style'];
+            $bgFullWidth = $composed['background_full_width'];
+            $contentFullWidth = $composed['content_full_width'];
 
-            $configFullWidth = $pw->config['full_width'] ?? null;
-            $isFullWidth = $configFullWidth !== null ? (bool) $configFullWidth : $composed['is_full_width'];
+            $rawHtml = preg_replace('#<script\b(?![^>]*type=["\']application/json["\'])[^>]*>.*?</script>#si', '', $result['html']);
 
-            // Column children render without .site-container: the enclosing
-            // .layout-column handles layout, matching PageController.
-            $innerHtml = ($isFullWidth || $pw->layout_id !== null)
-                ? $result['html']
-                : '<div class="site-container">' . $result['html'] . '</div>';
+            $widgetDiv = '<div class="widget widget--' . e($widgetType->handle) . '"'
+                . ' id="widget-' . e($pw->id) . '"'
+                . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
+                . '>';
 
-            $innerHtml = preg_replace('#<script\b(?![^>]*type=["\']application/json["\'])[^>]*>.*?</script>#si', '', $innerHtml);
+            if ($pw->layout_id !== null) {
+                // Column children render without wrappers: the enclosing
+                // .layout-column handles layout, matching PageController.
+                $rendered = $widgetDiv . $rawHtml . '</div>';
+            } else {
+                $innerHtml = $contentFullWidth
+                    ? $rawHtml
+                    : '<div class="site-container">' . $rawHtml . '</div>';
+
+                $rendered = $bgFullWidth
+                    ? $widgetDiv . $innerHtml . '</div>'
+                    : '<div class="site-container">' . $widgetDiv . $innerHtml . '</div></div>';
+            }
 
             $styles = $result['styles'] ? '<style>' . $result['styles'] . '</style>' : '';
 
-            return $styles
-                . '<div class="widget widget--' . e($widgetType->handle) . '"'
-                . ' id="widget-' . e($pw->id) . '"'
-                . ($inlineStyle ? ' style="' . e($inlineStyle) . '"' : '')
-                . '>' . $innerHtml . '</div>';
+            return $styles . $rendered;
         } catch (\Throwable $e) {
             return '<div class="widget-preview-notice widget-preview-notice--error">Preview error: ' . e($e->getMessage()) . '</div>';
         }

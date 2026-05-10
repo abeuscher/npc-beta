@@ -45,17 +45,18 @@ Widgets placed on a widget stack, ordered by sort_order. The stack is owned poly
     shadow
   },
   layout: {
-    full_width,
+    background_full_width,
+    content_full_width,
     padding: { top, right, bottom, left },
     margin:  { top, right, bottom, left }
   }
 }
 ```
 
-Session 162 wrote the keys actually in use: `background.color`, `text.color`, `text.shadow`, `layout.full_width`, `layout.padding.{top,right,bottom,left}`, `layout.margin.{top,right,bottom,left}`. Session 168 added `text.shadow` (boolean, default absent/falsy; when true the renderer emits `text-shadow: 0 1px 3px rgba(0,0,0,0.6)`). Session 164 added `background.gradient` (with per-stop `from_alpha` / `to_alpha` integer fields, range `[0, 100]`, default `100`), `background.alignment` (9-point string: `top-left`, `top-center`, `top-right`, `middle-left`, `center`, `middle-right`, `bottom-left`, `bottom-center`, `bottom-right`), and `background.fit` (`cover` or `contain`).
+Session 162 wrote the keys actually in use: `background.color`, `text.color`, `text.shadow`, `layout.full_width`, `layout.padding.{top,right,bottom,left}`, `layout.margin.{top,right,bottom,left}`. Session 168 added `text.shadow` (boolean, default absent/falsy; when true the renderer emits `text-shadow: 0 1px 3px rgba(0,0,0,0.6)`). Session 164 added `background.gradient` (with per-stop `from_alpha` / `to_alpha` integer fields, range `[0, 100]`, default `100`), `background.alignment` (9-point string: `top-left`, `top-center`, `top-right`, `middle-left`, `center`, `middle-right`, `bottom-left`, `bottom-center`, `bottom-right`), and `background.fit` (`cover` or `contain`). Session 267 split `layout.full_width` into `layout.background_full_width` + `layout.content_full_width`.
 
 **Background image:** The background image is **not** stored in the jsonb bag — there is no `background.image_id` key. Image presence is owned exclusively by the `appearance_background_image` Spatie media collection on `PageWidget` (single-file, Option B). The renderer detects an image via `$pw->getFirstMedia('appearance_background_image')`, and the Vue inspector detects it via the `appearance_image_url` field in the `formatWidget` API response.
 
 **Overlay:** There is no `background.overlay` key. The overlay concept is implemented via gradients with per-stop alpha — a gradient with `from_alpha` / `to_alpha` < 100 paints a semi-transparent tint over the background image.
 
-`layout.full_width` overrides the `widget_types.full_width` default per instance. Spacing values are integer pixel counts; the renderer casts to int and emits as `{prop}: {n}px`. Color values must match a hex pattern before being written into inline styles.
+`layout.background_full_width` and `layout.content_full_width` override the `widget_types.background_full_width` / `widget_types.content_full_width` per-type defaults per instance. Render-time normalization rewrites `(bg:false, content:true)` to `(bg:true, content:true)` (this state is UI-prevented but may appear in legacy/seed data). Column-child widgets are clamped to `(false, false)` regardless of overrides — the column track owns the layout boundary. Spacing values are integer pixel counts; the renderer casts to int and emits as `{prop}: {n}px`. Color values must match a hex pattern before being written into inline styles.

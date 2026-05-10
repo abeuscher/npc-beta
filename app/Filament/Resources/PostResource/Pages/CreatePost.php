@@ -5,9 +5,7 @@ namespace App\Filament\Resources\PostResource\Pages;
 use App\Filament\Resources\PostResource;
 use App\Models\Page;
 use App\Models\PageWidget;
-use App\Models\SiteSetting;
 use App\Models\Template;
-use App\Models\WidgetType;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
 

@@ -66,7 +66,8 @@ class TextBlockDefinition extends WidgetDefinition
                 'color' => '#000000',
             ],
             'layout'     => [
-                'full_width' => false,
+                'background_full_width' => true,
+                'content_full_width'    => false,
                 'padding'    => [
                     'top'    => 150,
                     'right'  => 0,

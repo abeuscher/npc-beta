@@ -154,7 +154,7 @@ const isNarrowViewport = computed(() => presetViewport.value < 1920)
 // CSS max-width for "contained" layouts inside the preview, mirroring the public
 // .site-container breakpoints (which are keyed off real browser width). The preview
 // uses a fixed pixel viewport, so we resolve the breakpoint up-front and pass it as
-// a CSS variable for any contained block (e.g. a column layout with full_width: false).
+// a CSS variable for any contained block (e.g. a column layout with content_full_width: false).
 const previewContainerMaxWidth = computed(() => {
   const w = presetViewport.value
   if (w >= 1400) return '1320px'

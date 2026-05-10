@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\EventRegistrationObserver;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
@@ -19,6 +20,7 @@ class EventRegistration extends Model
     use HasFactory;
     use HasSourcePolicy;
     use HasUuids;
+    use SanitisesRichTextCustomFields;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,

@@ -454,3 +454,126 @@ export async function deleteContactsByEmails(emails: string[]): Promise<void> {
         await client.query('DELETE FROM contacts WHERE id = ANY($1::uuid[])', [contactIds]);
     });
 }
+
+export async function findWidgetTypeIdByHandle(handle: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id FROM widget_types WHERE handle = $1 LIMIT 1',
+            [handle],
+        );
+        return res.rows[0]?.id ?? null;
+    });
+}
+
+export async function listWidgetHandles(): Promise<string[]> {
+    return withClient(async (client) => {
+        const res = await client.query<{ handle: string }>(
+            'SELECT handle FROM widget_types ORDER BY handle',
+        );
+        return res.rows.map((r) => r.handle);
+    });
+}
+
+export async function createWidgetOnPage(
+    pageId: string,
+    handle: string,
+    appearanceConfig: Record<string, unknown> = {},
+    layoutId: string | null = null,
+    columnIndex: number | null = null,
+): Promise<string> {
+    const widgetTypeId = await findWidgetTypeIdByHandle(handle);
+    if (!widgetTypeId) {
+        throw new Error(`No widget_type with handle "${handle}"`);
+    }
+
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            `INSERT INTO page_widgets
+                (id, owner_type, owner_id, widget_type_id, layout_id, column_index,
+                 label, config, query_config, appearance_config,
+                 sort_order, is_active, created_at, updated_at)
+             VALUES
+                (gen_random_uuid(), 'App\\Models\\Page', $1, $2, $3, $4,
+                 $5, '{}', '{}', $6,
+                 0, true, NOW(), NOW())
+             RETURNING id`,
+            [
+                pageId,
+                widgetTypeId,
+                layoutId,
+                columnIndex,
+                `e2e-${handle}`,
+                JSON.stringify(appearanceConfig),
+            ],
+        );
+        return res.rows[0].id;
+    });
+}
+
+export async function deleteWidget(widgetId: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query('DELETE FROM page_widgets WHERE id = $1', [widgetId]);
+    });
+}
+
+export async function updateLayoutConfig(
+    layoutId: string,
+    layoutConfig: Record<string, unknown>,
+): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            'UPDATE page_layouts SET layout_config = $1, updated_at = NOW() WHERE id = $2',
+            [JSON.stringify(layoutConfig), layoutId],
+        );
+    });
+}
+
+export async function updateLayoutAppearanceConfig(
+    layoutId: string,
+    appearanceConfig: Record<string, unknown>,
+): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            'UPDATE page_layouts SET appearance_config = $1, updated_at = NOW() WHERE id = $2',
+            [JSON.stringify(appearanceConfig), layoutId],
+        );
+    });
+}
+
+export async function getPageSlug(pageId: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ slug: string }>(
+            'SELECT slug FROM pages WHERE id = $1 LIMIT 1',
+            [pageId],
+        );
+        return res.rows[0]?.slug ?? null;
+    });
+}
+
+export async function findCollectionIdByHandle(handle: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id FROM collections WHERE handle = $1 LIMIT 1',
+            [handle],
+        );
+        return res.rows[0]?.id ?? null;
+    });
+}
+
+export async function findCollectionItemByTitle(collectionId: string, title: string): Promise<{ id: string; data: Record<string, unknown> } | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string; data: Record<string, unknown> }>(
+            `SELECT id, data FROM collection_items
+             WHERE collection_id = $1 AND data->>'title' = $2
+             LIMIT 1`,
+            [collectionId, title],
+        );
+        return res.rows[0] ?? null;
+    });
+}
+
+export async function deleteCollectionItem(itemId: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query('DELETE FROM collection_items WHERE id = $1', [itemId]);
+    });
+}

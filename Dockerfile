@@ -42,7 +42,14 @@ ARG BUILD_ENV=production
 
 ARG APP_VERSION=dev
 
-# System dependencies
+# System dependencies.
+#
+# postgresql-client-17 is pinned to the major version explicitly. The pg_dump
+# binary used by spatie/laravel-backup MUST match the postgres server's major
+# version (mismatched majors produce dumps containing directives the older
+# server cannot ingest, e.g. PG17's `transaction_timeout` against a PG16
+# server). When bumping this pin, also bump the `image: postgres:N-alpine`
+# in docker-compose.yml and docker-compose.prod.yml to the same major.
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -57,7 +64,7 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     zip \
     unzip \
-    postgresql-client \
+    postgresql-client-17 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict 05BkKqnyCtPIJUhqwcO3OjKptZLieFa8VmJQ1SdOdZFh70IkypSOHrr3BKLGEyY
+\restrict bkgzD1dKCYnWTwlxswggzwfj0INKlIXdd3N9pT1oc4tBVpw06jC8HzzAGDQyzzo
 
--- Dumped from database version 16.13
+-- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
 
 SET statement_timeout = 0;
@@ -57,6 +57,21 @@ CREATE SEQUENCE public.activity_logs_id_seq
 --
 
 ALTER SEQUENCE public.activity_logs_id_seq OWNED BY public.activity_logs.id;
+
+
+--
+-- Name: affiliations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.affiliations (
+    id uuid NOT NULL,
+    contact_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    role text,
+    is_primary boolean DEFAULT false NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
 
 
 --
@@ -146,7 +161,8 @@ CREATE TABLE public.collections (
     is_active boolean DEFAULT true NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    deleted_at timestamp(0) without time zone,
+    accepted_sources jsonb DEFAULT '["human"]'::jsonb NOT NULL
 );
 
 
@@ -186,7 +202,6 @@ CREATE TABLE public.contacts (
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
     deleted_at timestamp(0) without time zone,
-    organization_id uuid,
     household_id uuid,
     custom_fields jsonb,
     mailing_list_opt_in boolean DEFAULT false NOT NULL,
@@ -231,6 +246,35 @@ CREATE SEQUENCE public.custom_field_defs_id_seq
 --
 
 ALTER SEQUENCE public.custom_field_defs_id_seq OWNED BY public.custom_field_defs.id;
+
+
+--
+-- Name: dashboard_views; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dashboard_views (
+    id uuid NOT NULL,
+    role_id bigint NOT NULL,
+    label character varying(255),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: donation_credits; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.donation_credits (
+    id uuid NOT NULL,
+    donation_id uuid NOT NULL,
+    attributable_type character varying(255) NOT NULL,
+    attributable_id uuid NOT NULL,
+    credit_pct numeric(5,2) NOT NULL,
+    credit_role text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
 
 
 --
@@ -289,7 +333,9 @@ CREATE TABLE public.donations (
     import_source_id uuid,
     import_session_id uuid,
     external_id character varying(255),
-    custom_fields jsonb
+    custom_fields jsonb,
+    source character varying(255) DEFAULT 'stripe_webhook'::character varying NOT NULL,
+    organization_id uuid
 );
 
 
@@ -365,6 +411,8 @@ CREATE TABLE public.event_registrations (
     transaction_id uuid,
     import_session_id uuid,
     custom_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    organization_id uuid,
     CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY['pending'::text, 'registered'::text, 'waitlisted'::text, 'cancelled'::text, 'attended'::text])))
 );
 
@@ -410,6 +458,9 @@ CREATE TABLE public.events (
     registrants_deleted_at timestamp(0) without time zone,
     author_id bigint NOT NULL,
     import_session_id uuid,
+    published_at timestamp(0) without time zone,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    sponsor_organization_id uuid,
     CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
     CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
 );
@@ -707,7 +758,10 @@ CREATE TABLE public.import_sources (
     invoices_contact_match_key character varying(255),
     notes_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
     notes_custom_field_map jsonb DEFAULT '{}'::jsonb NOT NULL,
-    notes_contact_match_key character varying(255)
+    notes_contact_match_key character varying(255),
+    organizations_field_map jsonb,
+    organizations_custom_field_map jsonb,
+    organizations_match_key character varying(255)
 );
 
 
@@ -932,7 +986,9 @@ CREATE TABLE public.memberships (
     import_source_id uuid,
     import_session_id uuid,
     external_id character varying(255),
-    custom_fields jsonb
+    custom_fields jsonb,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    organization_id uuid
 );
 
 
@@ -1064,10 +1120,17 @@ CREATE TABLE public.organizations (
     state character varying(255),
     postal_code character varying(255),
     country character varying(255) DEFAULT 'US'::character varying,
-    notes text,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    deleted_at timestamp(0) without time zone
+    deleted_at timestamp(0) without time zone,
+    email character varying(255),
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    custom_fields jsonb,
+    import_source_id uuid,
+    import_session_id uuid,
+    external_id character varying(255),
+    industry text,
+    ein text
 );
 
 
@@ -1134,6 +1197,7 @@ CREATE TABLE public.pages (
     head_snippet text,
     body_snippet text,
     template_id uuid,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
     CONSTRAINT pages_type_check CHECK (((type)::text = ANY (ARRAY[('default'::character varying)::text, ('post'::character varying)::text, ('event'::character varying)::text, ('member'::character varying)::text, ('system'::character varying)::text])))
 );
 
@@ -1280,7 +1344,9 @@ CREATE TABLE public.products (
     sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    is_archived boolean DEFAULT false NOT NULL
+    is_archived boolean DEFAULT false NOT NULL,
+    published_at timestamp(0) without time zone,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL
 );
 
 
@@ -1297,6 +1363,22 @@ CREATE TABLE public.purchases (
     amount_paid numeric(10,2) NOT NULL,
     status character varying(255) DEFAULT 'active'::character varying NOT NULL,
     occurred_at timestamp(0) without time zone NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: record_detail_views; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.record_detail_views (
+    id uuid NOT NULL,
+    handle character varying(255) NOT NULL,
+    record_type character varying(255) NOT NULL,
+    label character varying(255) NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    layout_config jsonb,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone
 );
@@ -1501,7 +1583,9 @@ CREATE TABLE public.transactions (
     payment_channel character varying(255),
     invoice_number character varying(255),
     line_items jsonb,
-    custom_fields jsonb
+    custom_fields jsonb,
+    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    organization_id uuid
 );
 
 
@@ -1595,8 +1679,9 @@ CREATE TABLE public.widget_types (
     category jsonb DEFAULT '["content"]'::jsonb NOT NULL,
     allowed_page_types jsonb,
     description text,
-    full_width boolean DEFAULT false NOT NULL,
     required_config jsonb,
+    background_full_width boolean DEFAULT true NOT NULL,
+    content_full_width boolean DEFAULT false NOT NULL,
     CONSTRAINT widget_types_render_mode_check CHECK (((render_mode)::text = ANY (ARRAY[('server'::character varying)::text, ('client'::character varying)::text])))
 );
 
@@ -1743,6 +1828,14 @@ ALTER TABLE ONLY public.activity_logs
 
 
 --
+-- Name: affiliations affiliations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.affiliations
+    ADD CONSTRAINT affiliations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: allocations allocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1836,6 +1929,30 @@ ALTER TABLE ONLY public.custom_field_defs
 
 ALTER TABLE ONLY public.custom_field_defs
     ADD CONSTRAINT custom_field_defs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dashboard_views dashboard_configs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_views
+    ADD CONSTRAINT dashboard_configs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: dashboard_views dashboard_configs_role_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.dashboard_views
+    ADD CONSTRAINT dashboard_configs_role_id_unique UNIQUE (role_id);
+
+
+--
+-- Name: donation_credits donation_credits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donation_credits
+    ADD CONSTRAINT donation_credits_pkey PRIMARY KEY (id);
 
 
 --
@@ -2311,6 +2428,22 @@ ALTER TABLE ONLY public.purchases
 
 
 --
+-- Name: record_detail_views record_detail_views_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.record_detail_views
+    ADD CONSTRAINT record_detail_views_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: record_detail_views record_detail_views_record_type_handle_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.record_detail_views
+    ADD CONSTRAINT record_detail_views_record_type_handle_unique UNIQUE (record_type, handle);
+
+
+--
 -- Name: role_has_permissions role_has_permissions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2493,6 +2626,27 @@ CREATE INDEX activity_logs_subject_type_subject_id_index ON public.activity_logs
 
 
 --
+-- Name: affiliations_contact_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX affiliations_contact_id_index ON public.affiliations USING btree (contact_id);
+
+
+--
+-- Name: affiliations_one_primary_per_contact; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX affiliations_one_primary_per_contact ON public.affiliations USING btree (contact_id) WHERE (is_primary = true);
+
+
+--
+-- Name: affiliations_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX affiliations_organization_id_index ON public.affiliations USING btree (organization_id);
+
+
+--
 -- Name: cache_expiration_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2528,10 +2682,17 @@ CREATE INDEX contacts_import_session_id_index ON public.contacts USING btree (im
 
 
 --
--- Name: contacts_organization_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: donation_credits_attributable_type_attributable_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX contacts_organization_id_index ON public.contacts USING btree (organization_id);
+CREATE INDEX donation_credits_attributable_type_attributable_id_index ON public.donation_credits USING btree (attributable_type, attributable_id);
+
+
+--
+-- Name: donation_credits_donation_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX donation_credits_donation_id_index ON public.donation_credits USING btree (donation_id);
 
 
 --
@@ -2563,10 +2724,52 @@ CREATE INDEX donations_import_external_idx ON public.donations USING btree (impo
 
 
 --
+-- Name: donations_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX donations_organization_id_index ON public.donations USING btree (organization_id);
+
+
+--
+-- Name: donations_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX donations_source_index ON public.donations USING btree (source);
+
+
+--
+-- Name: event_registrations_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_registrations_organization_id_index ON public.event_registrations USING btree (organization_id);
+
+
+--
+-- Name: event_registrations_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX event_registrations_source_index ON public.event_registrations USING btree (source);
+
+
+--
 -- Name: events_landing_page_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX events_landing_page_id_index ON public.events USING btree (landing_page_id);
+
+
+--
+-- Name: events_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_source_index ON public.events USING btree (source);
+
+
+--
+-- Name: events_sponsor_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_sponsor_organization_id_index ON public.events USING btree (sponsor_organization_id);
 
 
 --
@@ -2682,6 +2885,20 @@ CREATE INDEX memberships_import_external_idx ON public.memberships USING btree (
 
 
 --
+-- Name: memberships_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX memberships_organization_id_index ON public.memberships USING btree (organization_id);
+
+
+--
+-- Name: memberships_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX memberships_source_index ON public.memberships USING btree (source);
+
+
+--
 -- Name: model_has_permissions_model_id_model_type_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2759,6 +2976,20 @@ CREATE INDEX notes_type_index ON public.notes USING btree (type);
 
 
 --
+-- Name: organizations_import_external_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX organizations_import_external_idx ON public.organizations USING btree (import_source_id, external_id);
+
+
+--
+-- Name: organizations_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX organizations_source_index ON public.organizations USING btree (source);
+
+
+--
 -- Name: page_layouts_owner_type_owner_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2770,6 +3001,13 @@ CREATE INDEX page_layouts_owner_type_owner_id_index ON public.page_layouts USING
 --
 
 CREATE INDEX page_widgets_owner_type_owner_id_index ON public.page_widgets USING btree (owner_type, owner_id);
+
+
+--
+-- Name: pages_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX pages_source_index ON public.pages USING btree (source);
 
 
 --
@@ -2794,6 +3032,13 @@ CREATE INDEX product_prices_product_id_index ON public.product_prices USING btre
 
 
 --
+-- Name: products_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX products_source_index ON public.products USING btree (source);
+
+
+--
 -- Name: purchases_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2812,6 +3057,20 @@ CREATE INDEX purchases_product_id_index ON public.purchases USING btree (product
 --
 
 CREATE INDEX purchases_product_price_id_index ON public.purchases USING btree (product_price_id);
+
+
+--
+-- Name: record_detail_views_handle_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX record_detail_views_handle_index ON public.record_detail_views USING btree (handle);
+
+
+--
+-- Name: record_detail_views_record_type_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX record_detail_views_record_type_index ON public.record_detail_views USING btree (record_type);
 
 
 --
@@ -2850,6 +3109,20 @@ CREATE INDEX transactions_import_external_idx ON public.transactions USING btree
 
 
 --
+-- Name: transactions_organization_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX transactions_organization_id_index ON public.transactions USING btree (organization_id);
+
+
+--
+-- Name: transactions_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX transactions_source_index ON public.transactions USING btree (source);
+
+
+--
 -- Name: transactions_subject_type_subject_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2868,6 +3141,22 @@ CREATE INDEX waitlist_entries_contact_id_index ON public.waitlist_entries USING 
 --
 
 CREATE INDEX waitlist_entries_product_id_index ON public.waitlist_entries USING btree (product_id);
+
+
+--
+-- Name: affiliations affiliations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.affiliations
+    ADD CONSTRAINT affiliations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE CASCADE;
+
+
+--
+-- Name: affiliations affiliations_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.affiliations
+    ADD CONSTRAINT affiliations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 
 --
@@ -2943,11 +3232,19 @@ ALTER TABLE ONLY public.contacts
 
 
 --
--- Name: contacts contacts_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: dashboard_views dashboard_configs_role_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.contacts
-    ADD CONSTRAINT contacts_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+ALTER TABLE ONLY public.dashboard_views
+    ADD CONSTRAINT dashboard_configs_role_id_foreign FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
+
+
+--
+-- Name: donation_credits donation_credits_donation_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donation_credits
+    ADD CONSTRAINT donation_credits_donation_id_foreign FOREIGN KEY (donation_id) REFERENCES public.donations(id) ON DELETE CASCADE;
 
 
 --
@@ -2991,6 +3288,14 @@ ALTER TABLE ONLY public.donations
 
 
 --
+-- Name: donations donations_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.donations
+    ADD CONSTRAINT donations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+
+--
 -- Name: event_registrations event_registrations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3012,6 +3317,14 @@ ALTER TABLE ONLY public.event_registrations
 
 ALTER TABLE ONLY public.event_registrations
     ADD CONSTRAINT event_registrations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_registrations event_registrations_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_registrations
+    ADD CONSTRAINT event_registrations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
 
 
 --
@@ -3044,6 +3357,14 @@ ALTER TABLE ONLY public.events
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_landing_page_id_foreign FOREIGN KEY (landing_page_id) REFERENCES public.pages(id) ON DELETE SET NULL;
+
+
+--
+-- Name: events events_sponsor_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_sponsor_organization_id_foreign FOREIGN KEY (sponsor_organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
 
 
 --
@@ -3167,6 +3488,14 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: memberships memberships_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+
+--
 -- Name: memberships memberships_tier_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3236,6 +3565,22 @@ ALTER TABLE ONLY public.notes
 
 ALTER TABLE ONLY public.notes
     ADD CONSTRAINT notes_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
+
+
+--
+-- Name: organizations organizations_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT organizations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: organizations organizations_import_source_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT organizations_import_source_id_foreign FOREIGN KEY (import_source_id) REFERENCES public.import_sources(id) ON DELETE SET NULL;
 
 
 --
@@ -3391,6 +3736,14 @@ ALTER TABLE ONLY public.transactions
 
 
 --
+-- Name: transactions transactions_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+
+--
 -- Name: waitlist_entries waitlist_entries_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3418,15 +3771,15 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 05BkKqnyCtPIJUhqwcO3OjKptZLieFa8VmJQ1SdOdZFh70IkypSOHrr3BKLGEyY
+\unrestrict bkgzD1dKCYnWTwlxswggzwfj0INKlIXdd3N9pT1oc4tBVpw06jC8HzzAGDQyzzo
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict bc2Yy8Fcrz5sTfo47j3deNbO2Vd8XaOfeeHXfGU3gfal8biPdUD6oq57d1kSiho
+\restrict 8VxmJLjDv0YH1ZGYCT5IAAEx2QyTz8OcL3P0npOQx7l1ACxdG8oBe8x1JglemsA
 
--- Dumped from database version 16.13
+-- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
 
 SET statement_timeout = 0;
@@ -3526,6 +3879,24 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 78	2026_04_20_120100_add_external_id_to_notes	15
 79	2026_04_20_120200_add_notes_scope_to_import_sources	15
 80	2026_04_21_120000_add_appearance_config_to_page_layouts	15
+81	2026_04_23_214505_add_accepted_sources_to_collections	16
+82	2026_04_24_022229_create_dashboard_configs_table	16
+83	2026_04_25_113841_flatten_page_widgets_query_config_to_top_level	16
+84	2026_04_26_200905_add_published_at_to_events_and_products	16
+85	2026_04_27_021839_create_record_detail_views_table	16
+86	2026_04_27_195450_add_source_to_financial_tables	16
+87	2026_04_28_011618_rename_dashboard_configs_to_dashboard_views	16
+88	2026_04_28_185924_backfill_completed_donation_statuses_to_active	16
+89	2026_04_29_120000_add_source_to_events	16
+90	2026_04_29_130000_add_source_to_pages	16
+91	2026_04_29_140000_add_source_to_products	16
+92	2026_05_01_120000_add_organization_id_to_transactional_tables	16
+93	2026_05_01_140000_add_email_and_normalize_types_on_organizations	16
+94	2026_05_01_160000_drop_notes_column_from_organizations	16
+95	2026_05_02_133230_add_importer_columns_to_organizations_and_import_sources	16
+96	2026_05_05_120000_add_affiliations_drop_contact_organization_id_add_org_gaps	16
+97	2026_05_06_120000_add_donation_credits_table	16
+98	2026_05_07_120000_split_full_width_into_background_and_content	16
 \.
 
 
@@ -3533,12 +3904,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 80, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 98, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bc2Yy8Fcrz5sTfo47j3deNbO2Vd8XaOfeeHXfGU3gfal8biPdUD6oq57d1kSiho
+\unrestrict 8VxmJLjDv0YH1ZGYCT5IAAEx2QyTz8OcL3P0npOQx7l1ACxdG8oBe8x1JglemsA
 

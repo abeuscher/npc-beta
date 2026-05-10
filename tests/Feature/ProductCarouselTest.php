@@ -86,7 +86,8 @@ it('seeder creates product_carousel with correct config schema', function () {
         ->toContain('success_page')
         ->not->toContain('background_color')
         ->not->toContain('text_color')
-        ->not->toContain('full_width');
+        ->not->toContain('background_full_width')
+        ->not->toContain('content_full_width');
 });
 
 // ── Blade template rendering through the contract resolver ──────────────────

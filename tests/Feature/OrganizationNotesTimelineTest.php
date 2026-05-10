@@ -56,6 +56,7 @@ it('getTimeline surfaces polymorphic notes filed against the Organization', func
 
     $page = new OrganizationNotes();
     $page->mount($this->org);
+    $page->filter = 'notes';
 
     $items = $page->getTimeline();
 
@@ -84,6 +85,7 @@ it('getTimeline does not leak Notes filed against other notable types', function
 
     $page = new OrganizationNotes();
     $page->mount($this->org);
+    $page->filter = 'notes';
 
     $items = $page->getTimeline();
 
@@ -101,6 +103,7 @@ it('Type filter scopes the timeline by Note.type', function () {
 
     $page = new OrganizationNotes();
     $page->mount($this->org);
+    $page->filter = 'notes';
     $page->typeFilter = 'call';
 
     $items = $page->getTimeline();

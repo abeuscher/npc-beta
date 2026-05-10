@@ -47,22 +47,31 @@ test.describe('Donations importer — Map Columns row indicator', () => {
         const externalIdColIndex = 3;
         const externalIdRow = page.getByTestId(`map-column-${externalIdColIndex}`).locator('xpath=ancestor::*[contains(@class, "np-import-map-row")][1]');
 
-        await expect(externalIdRow).toHaveClass(/np-import-map-row--incomplete/);
-
         // Filament's Choices.js wraps the underlying <select> and hides it; setting Livewire
         // state directly is the robust path against the form's $entangle binding.
-        await page.evaluate(async ({ colIdx, value }) => {
-            const livewire = (window as any).Livewire;
-            const components = livewire?.all?.() ?? [];
-            for (const c of components) {
-                const data = c.$wire?.$get?.('data');
-                if (data && Object.prototype.hasOwnProperty.call(data, 'column_map')) {
-                    await c.$wire.set(`data.column_map.col_${colIdx}`, value);
-                    return;
+        const setMapping = async (value: string) => {
+            await page.evaluate(async ({ colIdx, value }) => {
+                const livewire = (window as any).Livewire;
+                const components = livewire?.all?.() ?? [];
+                for (const c of components) {
+                    const data = c.$wire?.$get?.('data');
+                    if (data && Object.prototype.hasOwnProperty.call(data, 'column_map')) {
+                        await c.$wire.set(`data.column_map.col_${colIdx}`, value);
+                        return;
+                    }
                 }
-            }
-        }, { colIdx: externalIdColIndex, value: 'donation:external_id' });
-        await page.waitForLoadState('networkidle');
+            }, { colIdx: externalIdColIndex, value });
+            await page.waitForLoadState('networkidle');
+        };
+
+        // The "External ID" header auto-maps to donation:external_id post-B2a (session 259);
+        // explicitly unmap first so the test exercises the incomplete → complete transition
+        // rather than asserting against the auto-mapped initial state.
+        await setMapping('');
+
+        await expect(externalIdRow).toHaveClass(/np-import-map-row--incomplete/);
+
+        await setMapping('donation:external_id');
 
         await expect(externalIdRow).toHaveClass(/np-import-map-row--complete/);
         await expect(externalIdRow).not.toHaveClass(/np-import-map-row--incomplete/);

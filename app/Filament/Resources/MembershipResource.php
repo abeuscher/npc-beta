@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class MembershipResource extends Resource
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_membership') ?? false;
+    }
+
     protected static ?string $model = Membership::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-identification';

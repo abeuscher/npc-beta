@@ -80,102 +80,80 @@ class ImportSessionActions
 
     public function rollback(ImportSession $session): void
     {
-        if ($session->model_type === ImportModelType::Event) {
-            $this->rollBackEventSession($session);
-            $session->delete();
-            return;
-        }
+        $this->cascadeForType($session);
 
-        if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
-            $this->rollBackFinancialSession($session);
-            $session->delete();
-            return;
-        }
+        if ($session->model_type === ImportModelType::Contact) {
+            $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
+            $subjects      = $this->preloadStagedSubjects($staged);
+            $sourceName    = $session->importSource?->name;
+            $sourceId      = $session->importSource?->id;
+            $sessionLabel  = $session->session_label ?: $session->filename;
+            $sourceDisplay = $sourceName ?: 'unknown source';
 
-        if ($session->model_type === ImportModelType::Note) {
-            $this->rollBackNoteSession($session);
-            $session->delete();
-            return;
-        }
+            foreach ($staged as $update) {
+                $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
 
-        if ($session->model_type === ImportModelType::Organization) {
-            $this->rollBackOrganizationSession($session);
-            $session->delete();
-            return;
-        }
-
-        // Contacts (default)
-        $contactIds = Contact::withoutGlobalScopes()
-            ->where('import_session_id', $session->id)
-            ->pluck('id')
-            ->toArray();
-
-        if (! empty($contactIds)) {
-            DB::table('taggables')
-                ->whereIn('taggable_id', $contactIds)
-                ->where('taggable_type', Contact::class)
-                ->delete();
-
-            Contact::withoutGlobalScopes()
-                ->whereIn('id', $contactIds)
-                ->forceDelete();
-        }
-
-        $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
-        $subjects      = $this->preloadStagedSubjects($staged);
-        $sourceName    = $session->importSource?->name;
-        $sourceId      = $session->importSource?->id;
-        $sessionLabel  = $session->session_label ?: $session->filename;
-        $sourceDisplay = $sourceName ?: 'unknown source';
-
-        foreach ($staged as $update) {
-            $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
-
-            if ($subject instanceof Contact) {
-                Note::create([
-                    'notable_type'     => Contact::class,
-                    'notable_id'       => $subject->id,
-                    'author_id'        => auth()->id(),
-                    'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
-                    'occurred_at'      => now(),
-                    'import_source_id' => $sourceId,
-                ]);
+                if ($subject instanceof Contact) {
+                    Note::create([
+                        'notable_type'     => Contact::class,
+                        'notable_id'       => $subject->id,
+                        'author_id'        => auth()->id(),
+                        'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
+                        'occurred_at'      => now(),
+                        'import_source_id' => $sourceId,
+                    ]);
+                }
             }
+
+            $staged->each->delete();
         }
 
-        $staged->each->delete();
-
-        // Delete the session itself — import_id_maps are preserved
+        // import_id_maps are preserved
         $session->delete();
     }
 
     public function delete(ImportSession $session): void
     {
+        $this->cascadeForType($session);
+
+        if ($session->model_type === ImportModelType::Contact) {
+            ImportStagedUpdate::where('import_session_id', $session->id)->delete();
+        }
+
+        $session->delete();
+    }
+
+    /**
+     * Per-model_type destructive cascade. Removes all rows owned by the
+     * session (events / financials / notes / orgs / contacts) plus any
+     * type-specific bookkeeping (taggables, related transactions, id_maps,
+     * notes-on-orgs). Does NOT delete the session itself or — for the
+     * Contact path — the staged updates: the caller decides whether the
+     * staged-update cleanup writes discard-notes (rollback) or not (delete).
+     */
+    private function cascadeForType(ImportSession $session): void
+    {
         if ($session->model_type === ImportModelType::Event) {
             $this->rollBackEventSession($session);
-            $session->delete();
             return;
         }
 
         if (in_array($session->model_type, [ImportModelType::Donation, ImportModelType::Membership, ImportModelType::InvoiceDetail], true)) {
             $this->rollBackFinancialSession($session);
-            $session->delete();
             return;
         }
 
         if ($session->model_type === ImportModelType::Note) {
             $this->rollBackNoteSession($session);
-            $session->delete();
             return;
         }
 
         if ($session->model_type === ImportModelType::Organization) {
             $this->rollBackOrganizationSession($session);
-            $session->delete();
             return;
         }
 
-        // Contacts (default)
+        // Contacts
         $contactIds = Contact::withoutGlobalScopes()
             ->where('import_session_id', $session->id)
             ->pluck('id')
@@ -191,10 +169,6 @@ class ImportSessionActions
                 ->whereIn('id', $contactIds)
                 ->forceDelete();
         }
-
-        ImportStagedUpdate::where('import_session_id', $session->id)->delete();
-
-        $session->delete();
     }
 
     public function approveDescription(ImportSession $session): string

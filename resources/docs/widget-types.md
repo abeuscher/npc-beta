@@ -158,7 +158,8 @@ Every `page_widgets` row has an `appearance_config` jsonb column (default `{}`).
   },
   "text": { "color": "#1f2937" },
   "layout": {
-    "full_width": true,
+    "background_full_width": true,
+    "content_full_width": false,
     "padding": { "top": "24", "right": "16", "bottom": "24", "left": "16" },
     "margin":  { "top": "0",  "right": "",  "bottom": "0",  "left": "" }
   }

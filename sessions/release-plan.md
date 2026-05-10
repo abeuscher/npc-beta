@@ -76,11 +76,27 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the new endpoint + controller + spec-doc revision; the mtime cross-check integrity guard as the regression-guard for the misleading-success class of bug.
 - **estimated time cost:** 1 session. **Closed at session 263.**
 
+#### A1d'. Backup notification hardening — FM 020 finding ✅ *(A1d follow-on)*
+
+- **gate:** release
+- **prerequisites:** A1d closed at session 263 (the backup-trigger endpoint surface this hardens against). FM 020 manual testing on 2026-05-05 surfaced the structural fragility this entry closes.
+- **success criterion** *(closed at session 266)*: Spatie's mail-channel notification dropped on the success path (`BackupWasSuccessfulNotification` / `HealthyBackupWasFoundNotification` / `CleanupWasSuccessfulNotification` flipped from `['mail']` to `[]`) so it can no longer kneecap `RecordBackupSuccess` via listener-chain throw propagation. Failure-class notifications (`BackupHasFailedNotification` / `UnhealthyBackupWasFoundNotification` / `CleanupHasFailedNotification`) kept `['mail']` as the FM-down redundancy layer. `AppServiceProvider::boot()` gained three sibling overrides bridging `SiteSetting` into spatie's parallel `backup.notifications.mail.from.address` / `from.name` / `to` config keys (eliminated the `'your@example.com'` placeholder; uses the same SiteSetting-driven values as the rest of the app's mail). **Verify-at-start finding:** spatie's mail path reads `app(Spatie\Backup\Config\Config::class)`, not `config('backup.notifications.mail.*')` directly — but the binding is a `scoped` lazy singleton (`BackupServiceProvider::packageRegistered()`) built on first resolution at notification-dispatch time, well after `AppServiceProvider::boot()`, so runtime overrides do propagate. Phase 3 test #3 carries a `forgetInstance` + `app(SpatieBackupConfig::class)` assertion to prove the bridge reaches spatie's actual read path. No agent contract change; no schema change; no FM-side change. Manual deploy-side verification confirmed — FM 020's "Trigger backup now" against beuscher.net now returns a success envelope with the integrity guard no longer firing on the success path. See `sessions/266. Backup notification hardening — FM 020 finding — Log.md`.
+- **artifact:** the config + service-provider edits + regression-guard tests against re-introducing either fragility (success-channel mail OR unbridged from-address).
+- **estimated time cost:** 1 session, small. **Closed at session 266.**
+
+#### A1e. Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint ✅
+
+- **gate:** release
+- **prerequisites:** A1d closed at session 263 (this session extends the FM-agent endpoint set with the same nginx mTLS gate pattern). Spatie backup pipeline producing zips on `Storage::disk('local')` per existing `config/backup.php` (CRM 242). FM-side absorption is two sessions on the FM repo (FM 021 + FM 022), unblocked by this session's contract surface.
+- **success criterion** *(closed at session 268)*: New mTLS-gated HTTP endpoint `GET /api/backup/blob` shipped — streams the freshest backup zip from the resolved source disk to the FM caller. Additive contract bump v2.2.0 → v2.3.0 (v2.2.0 consumers continue working unchanged). Endpoint behaviors: same nginx mTLS gate as the other three FM endpoints applied to both `docker/nginx/default.conf` and `docker/nginx/prod.conf`; per-location `fastcgi_read_timeout 600;` mirroring the trigger ceiling; `throttle:60,1` matching `/api/logs`; success response streams zip bytes with `Content-Type: application/zip`, `Content-Disposition: attachment; filename="<spatie-blob-filename>"`, `Content-Length: <bytes>`, `Cache-Control: no-store` (Laravel API middleware appends `private`, harmless). Streaming via `Storage::disk($d)->download($newest->path(), basename($newest->path()), [...])` — Laravel's wrapper auto-sets length + disposition; the explicit Content-Type override pins `application/zip`. **Disk-fallback rule, two layers, both load-bearing:** Layer A preference moves `local` to the front of `BACKUP_DISKS` regardless of authored position if it's present; Layer B falls through on empty (`->newest()` null) across the resolved order. The blob controller is a sibling method on `BackupController` (`blob()` next to `trigger()`), reusing the existing `sanitise()` helper and `MAX_MESSAGE_LENGTH` constant; no new controller class. **404 `no_backup_available`** envelope when all configured disks are empty (recoverable; FM triggers + retries). **500 `backup_destinations_not_configured`** envelope when `BACKUP_DISKS` resolves to an empty list (operator must set the env var). **500 `backup_disk_error`** envelope for synchronous storage exceptions (sanitised single-line message via the existing pipeline). 404 / 500 envelopes match `/api/logs`' shape — no `contract_version` field on errors; cross-endpoint addition of contract_version to error envelopes deferred. `HealthController::CONTRACT_VERSION` and `BackupController::CONTRACT_VERSION` both bumped 2.2.0 → 2.3.0. Spec doc gained new endpoint section + status-code semantics table + CHANGELOG entry above v2.2.0; Recovery posture sub-section gained a v2.3.0 note framing the new endpoint as the FM-readable half of the restore primitive. Cross-Repo block bumped (last boundary-touching → 268; FM-side absorption pending at FM 021 `BackupBlobClient` + FM 022 restore affordance). **Finding (in-session):** spatie's actual filename format is `Y-m-d-H-i-s.zip` (no `<backup-name>-` prefix); the session prompt's `nonprofitcrm-…` example was wrong. `<backup_name>` is a directory inside the disk; `basename()` strips it. Spec doc + CHANGELOG explicit so FM consumers don't expect the prefix. **Test pattern resolved:** `Storage::fake('local')->put('<backup_name>/<Y-m-d-H-i-s>.zip', $bytes)` registers as a recognized backup because spatie's `isZipFile` returns true on `.zip` extension alone (no body read); 11 fast tests + 1 slow test cover success / fallback / 404 / 500 / method enforcement / throttle. **Out of scope at v2.3.0:** historical blob enumeration; per-disk targeting via query; progress streaming; Range / resume; CRM-side restore primitives. Manual curl smoke test against a real 4.5GB dev backup blob confirmed the streaming pipeline (Content-Length match, Content-Disposition correct, Cache-Control present). Unblocks FM 021 + FM 022. See `sessions/268. Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint — Log.md`.
+- **artifact:** the new endpoint + sibling-method controller + spec-doc revision + Cross-Repo block bump; FM-side absorption pending at FM 021 + 022.
+- **estimated time cost:** 1 session. **Closed at session 268.**
+
 #### A2. Fleet Manager — node operations parity
 
 - **gate:** release
 - **prerequisites:** A1b (CRM-side v2.0.0 mTLS migration shipped at session 248); A1d (CRM-side v2.2.0 backup-trigger endpoint — prerequisite for A2(b)); FM-side absorption at FM session 012 must complete before FM 013+ A2 affordance work begins.
-- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end *(FM-side; shipped at FM session 018)*, (b) trigger and verify a backup against a node *(CRM-side shipped via A1d at session 263; FM-side absorption pending at FM session 020)*, (c) restore a node from a backup blob *(FM-side; future)*, (d) fetch and surface application logs from a node without operator SSH *(CRM-side via session 251 v2.1.0; FM-side absorption shipped at FM 013)*. Each capability documented in the FM-side operator runbook.
+- **success criterion:** From the FM admin UI, an operator can (a) provision a new CRM node from a clean droplet end-to-end *(FM-side; shipped at FM session 018)*, (b) trigger and verify a backup against a node *(CRM-side shipped via A1d at session 263; FM-side absorption shipped at FM session 020 pending manual-test sign-off)*, (c) restore a node from a backup blob *(restore-to-fresh-node primitive: CRM-side blob endpoint shipped via A1e at session 268; FM-side absorption pending FM 021 + 022; same-node click-restore stays explicitly out of scope per FM `session-outlines.md` and remains a manual `pg_restore` op)*, (d) fetch and surface application logs from a node without operator SSH *(CRM-side via session 251 v2.1.0; FM-side absorption shipped at FM 013)*. Each capability documented in the FM-side operator runbook.
 - **artifact:** FM operator runbook covering all four capabilities.
 - **estimated time cost:** 2 sessions likely (install + backup + restore in one session; log-reading in a separate session — different surface). Per Rule 11, may split further if scope surfaces.
 
@@ -130,7 +146,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** B1a (transactional FKs in place); B2 (onboarding rehearsal informs the junction shape).
-- **success criterion:** New `affiliations` junction table (`contact_id`, `organization_id`, `role`, `start_date`, `end_date`, `is_primary`) supporting multi-employer / multi-role Contact↔Org relationships. New `donation_credits` junction supporting soft-credit attribution (a single gift attributed to multiple parties — e.g., the giving Org plus the human who triggered it). One-time data migration of existing `Contact.organization_id` rows → `affiliations` rows with `is_primary = true`. `Contact.organization_id` then either derived (cached) or dropped per the migration shape that emerges. Org contact-info parity audit and gap-fill (Organization model already has phone / website / address / type / notes — confirm whether industry / EIN are needed and add accordingly). **Deletion-policy revision** — junction-aware deletion semantics: deleting an Org with affiliated Contacts surfaces the affiliations as well as the four transactional FKs; force-delete cascade rules need to handle the junction. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges.
+- **success criterion:** Split per Rule 11 — **structural half (affiliations + Org gaps + admin UI) shipped at session 264; soft-credit half (donation_credits) ships at session 265.** Final shape: `affiliations` junction table (`contact_id`, `organization_id`, `role`, `is_primary`) supporting multi-employer / multi-role Contact↔Org relationships (date-range columns dropped mid-264 as confusing-without-purpose). `Contact.organization_id` dropped outright with one-shot data migration to `affiliations` rows with `is_primary = true`. Five importer touch sites rerouted to `Affiliation::bindContactToOrganization` (Contacts importer + the four `__org_contact__` callers — Donations / Memberships / Events / Invoice Details). Contact admin form gains an affiliations Repeater. Org admin gains industry + EIN columns, an Affiliated Contacts panel (replacing the ellipsis-menu deep-link), and the deletion-guard count incorporates affiliations. `donation_credits` + soft-credit display land at 265. Out of scope: Org-Org relationships (parent / subsidiary / fiscal sponsor) — defer until forcing function emerges.
 - **artifact:** the feature itself; carries the affiliation modelling required for any sales narrative involving complex donor relationships.
 - **estimated time cost:** 1–2 sessions; may split per Rule 11.
 
@@ -258,7 +274,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** all of A, B, C, D1–D3, E closed — D4 reviews the suite as it'll ship; running it before late-cycle test additions land would re-bake the same cost analysis.
-- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests.
+- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests. **D4 also scopes Pest `--parallel` viability** — runs the cheap experiment (install paratest, `php artisan test --parallel --processes=4`, log failure surface) and decides whether the audit-driven trims recover enough runtime to defer parallelization, or whether to fold the test-isolation cleanup (filesystem-shared paths under `storage/app/private/`, the pre-existing `seedWidgetCollections` flake) into D4 or lift it as a follow-on per Rule 11. See the `Parallelization evaluation` sub-section in the outline stub for shape details. Carry-forward exception: if iteration friction during the C-track rehearsals starts costing real time before D4's slot lands, lift parallelization sooner as a standalone fix-shape session.
 - **artifact:** committed baseline timing snapshot, findings-and-gaps report at `sessions/NNN-test-audit-findings.md`, applied picks (each as its own commit), updated baseline snapshot.
 - **estimated time cost:** 1 session; per Rule 11, may extend if findings exceed in-session-fix capacity.
 
@@ -332,19 +348,21 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Resolve where widget help lives, how it surfaces, the rollup story; land first 3–5 widget help entries to validate the chosen pattern.
 - **estimated time cost:** 1 session.
 
-#### E10. Full-Width Architecture Enforcement
+#### E10. Full-Width Architecture Enforcement ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub. Bind widgets to the page-layout's full-width contract at the architecture level so individual widget templates cannot bypass it.
+- **success criterion** *(closed at session 267)*: The single `full_width` toggle split into `background_full_width` + `content_full_width` on widgets (`page_widgets.appearance_config.layout`), column layouts (`page_layouts.layout_config`), and per-type defaults (`widget_types` column-replace migration). Render pipeline collapsed the prior three full-width read sites in `AppearanceStyleComposer` + `PageBlockRenderer` into one helper with column-child clamping and `(false, true) → (true, true)` normalization. The renderer separates layout appearance from grid display: `.page-layout` (bg) > optional `.site-container` (content) > `.layout-grid` (display). Bypass audit ran across all 38 widgets and came back clean — no per-template CSS escape patterns; structural enforcement is satisfied entirely by the converged read path. Editor parity in-session absorptions: `formatLayout()` ships a composed `inline_style` field (the editor reaches gradient/image parity with the public site without duplicating `GradientComposer` in JS); both Livewire bootstrap paths (`PageBuilder.php`, `RecordDetailViewBuilder.php`) gained `appearance_config` + `inline_style` on layout items so the editor renders correctly on first load (pre-existing gap surfaced + closed); `LayoutRegion.vue` split into outer `.layout-region__container` (appearance) + inner `.layout-region__grid` (display) so the bg and content toggles act on independent elements (parallel to the public-side three-element structure). Per-type defaults flipped uniformly to `(bg:true, content:false)` per user direction (the four `fullWidth(): true` overrides on Hero / Nav / BlogListing / EventsListing dropped). Per-instance values across all three jsonb surfaces + `widget_presets` rewritten in the same migration. Permanent regression coverage at `tests/e2e/page-builder/full-width-matrix.spec.ts` (20 specs). See `sessions/267. Full-Width Architecture Enforcement — Background and Content Split — Log.md` for the full landing.
+- **artifact:** the migration + composer/renderer convergence + admin-UI two-toggle inspector + Playwright matrix spec. **Closed at session 267.**
 - **estimated time cost:** 1 session.
 
-#### E11. Page Builder Focus-Scroll Clamp
+#### E11. Page Builder Focus-Scroll Clamp — closed without shipping at session 269
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub. Scroll lock once a widget is focused; tall-widget exception clamps the focused widget as a scroll container.
-- **estimated time cost:** 1 session.
+- **success criterion** *(closed at session 269 — no code shipped)*: Verify-at-start audits surfaced two factual errors in the prompt's design-decisions block (`paneEl` is not the scroll container — the document scrolls at `window` level; no `clearSelection` path exists — clicking the canvas background does nothing today). Closing-decision evaluation surfaced four paths: (A) ship as written retargeted to `window` (predicted jitter on Mac trackpad inertia), (B) ship only the tall-widget half (drop the short-widget lock that fights inertia), (C) restructure `.preview-canvas` into a real fixed-height `overflow-y: auto` container with `overscroll-behavior: contain` first (right shape, but bigger than this session's scope), (D) don't ship — reaffirm the 204 escape hatch. User chose **D**. The 204 framing stands: the must-have scroll-to-centre-on-selection (shipped at 204) suffices; the manageable UI doesn't justify scroll-jacking. Reopen only if user testing surfaces a concrete UX problem the must-have doesn't resolve. Internal-scroll-widget audit came back clean (every widget uses `overflow: hidden`; carousels use Swiper.js gestures). See `sessions/269. Page Builder Focus-Scroll Clamp — Log.md`.
+- **artifact:** none.
+- **estimated time cost:** 1 session *(spent on audit + decision; no implementation)*.
 
 #### E12. Housekeeping Batch 2
 
@@ -453,34 +471,40 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 16. **B2b.** Export CSV + JSON actions for non-Contact list resources *(B2 follow-on; closed at session 261)*
 17. **B2b'.** XLSX format add for list resources *(B2b follow-on; closed at session 262)*
 18. **A1d.** Fleet Manager Contract v2.2.0 — Backup Trigger Endpoint *(closed at session 263 — execution-order deviation: A1d jumped the queue ahead of B1b at 262 close to unblock FM session 020 CRM-side)* ✅
-19. **B1b.** Affiliations Junction & Soft-Credit Layer *(post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)*
-20. **E10.** Full-Width Architecture Enforcement
-21. **E11.** Page Builder Focus-Scroll Clamp
-22. **C1.** Notes Permissions (feature half)
-23. **E9.** Widget Help Authoring
-24. **C2.** Event Ticket Tiers
-25. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-26. **E4.** Stripe Checkout Branding *(precedes C4)*
-27. **C4.** Donation-to-acknowledgment loop
-28. **C5.** Event with everything
-29. **C6.** Membership renewal cycle
-30. **C7.** Email at volume
-31. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-32. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-33. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-34. **E8.** UI/UX Sprint
-35. **E12.** Housekeeping Batch 2
-36. **D1.** Scale rehearsal
-37. **D2.** Compatibility cluster
-38. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-39. **E13.** Help docs body content
-40. **E14.** Third-Party Licensing Compliance Audit
-41. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-42. **D4.** Test suite review — cost & shape
-43. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-44. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-45. **F3.** On-Demand E2E — Permission / role-gate matrix
-46. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+19. **B1b.** Affiliations Junction (structural half) *(closed at session 264; post-B2 follow-up to B1a; moved from position 18 at session 262 close to make room for A1d)* ✅
+20. **B1b.** Donation Credits — Soft-Credit Layer *(session 265; B1b's checkmark drops here per the Rule 11 split applied at 264)*
+21. **A1d'.** Backup notification hardening — FM 020 finding *(closed at session 266; A1d follow-on; lifted at 264 close from FM 020 manual-testing finding 2026-05-05)* ✅
+22. **A1e.** Fleet Manager Contract v2.3.0 — Backup Blob Download Endpoint *(closed at session 268; CRM-side prerequisite for FM 021 + 022 restore-to-fresh-node primitive; A2(c) success-criterion CRM-side half complete)* ✅
+23. **E10.** Full-Width Architecture Enforcement *(closed at session 267 — folded in the background_full_width / content_full_width split + bypass-audit clean finding + editor-parity in-session absorptions; see log for the full landing)* ✅
+24. **E11.** Page Builder Focus-Scroll Clamp *(closed at session 269 — no code shipped; verify-at-start audits reaffirmed the 204-time descoping rationale; user direction "D — don't ship"; the must-have scroll-to-centre from 204 suffices)*
+25. **A1e'.** PostgreSQL Major-Version Skew Fix *(closed at session 270; emergent unblocker for FM 021 manual testing 2026-05-08 — `pg_dump 17` from Trixie's `postgresql-client` meta-package produced dumps containing the PG17-only `transaction_timeout` directive that PG16 servers couldn't ingest; pinned `postgresql-client-17` in Dockerfile, bumped `postgres:17-alpine` in both compose files, added structural `PostgresVersionSkewTest`; both droplets wiped and redeployed via the destructive shortest path acceptable under pre-Beta no-live-data posture)* ✅
+26. **Code Review & Cleanup — 4-session housekeeping cycle** *(sessions 271 / 272 / 273 / 274 — audit Part 1 → audit Part 2 → apply → squash; lifted at 269 close after E11 abandonment opened calendar; window covered 207 → 268 ~60 sessions of growth since last code review at 205/206 and last squash at 208; 271 ✅ closed; 272 ✅ closed; 273 ✅ closed — 6 iterations on session-273/1 consumed the entire W7/W8/W11/W12/Open-Flags backlog (Flags A / W6/B / W4/A / W10/A applied; Flag B reaffirmed won't-fix; Flag W4c/A carved out to dedicated successor session at 273-close); 274 ✅ closed — 4 commits on session-274/1 consumed Phase 3 picks (B1 bootstrap-widgets-duplicate drop = 208-deferred B4 resolved; C1 three help-doc route registrations) + Phase 4 squash (18 migrations collapsed, schema dump 3544→3915 lines, squash-note bumped 208/2026-04-22 → 274/2026-05-09) + Phase 5 obsolete-migration-test deletion; fast Pest 2166/0 (−3 from 273); Playwright 42/0 (273 baseline preserved); residual cumulative-load FilePond flake did not reappear)* ✅
+27. **Rich-Text Surface Sanitization Hardening** *(session 275 — closed; carved out at 273-close per Flag W4c/A; canonical 250-time stub implementation; `App\Support\HtmlSanitizer` utility + 8 model-boundary apply sites with companion regression-guard tests + `ContentImporter::sanitizeWidgetConfig` extension + Memos Trix→Quill convergence with one-time data migration absorbed by next squash + 71-case allow-list test suite + 2 new Playwright specs; mid-session bug fix for `SanitisesRichTextCustomFields` trait FQCN-vs-codebase-convention drift; fast Pest 2277/0 (+111 over 274 baseline); Playwright 44/0)* ✅
+28. **C1.** Notes Permissions (feature half)
+29. **E9.** Widget Help Authoring
+30. **C2.** Event Ticket Tiers
+31. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+32. **E4.** Stripe Checkout Branding *(precedes C4)*
+33. **C4.** Donation-to-acknowledgment loop
+34. **C5.** Event with everything
+35. **C6.** Membership renewal cycle
+36. **C7.** Email at volume
+37. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+38. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+39. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+40. **E8.** UI/UX Sprint
+41. **E12.** Housekeeping Batch 2
+42. **D1.** Scale rehearsal
+43. **D2.** Compatibility cluster
+44. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+45. **E13.** Help docs body content
+46. **E14.** Third-Party Licensing Compliance Audit
+47. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+48. **D4.** Test suite review — cost & shape
+49. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+50. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+51. **F3.** On-Demand E2E — Permission / role-gate matrix
+52. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

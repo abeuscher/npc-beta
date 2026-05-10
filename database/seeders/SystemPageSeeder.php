@@ -133,7 +133,8 @@ class SystemPageSeeder extends Seeder
                 'grid_template_columns' => 'auto 1fr',
                 'gap'                   => '1rem',
                 'align_items'           => 'center',
-                'full_width'            => true,
+                'background_full_width' => true,
+                'content_full_width'    => false,
             ],
             'appearance_config' => [
                 'layout' => [
