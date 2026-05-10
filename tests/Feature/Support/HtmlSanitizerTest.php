@@ -250,14 +250,18 @@ it('id and name attributes are stripped', function () {
     expect(HtmlSanitizer::sanitize('<p id="hijack" name="x">y</p>'))->toBe('<p>y</p>');
 });
 
-it('class attribute filters to ql- tokens only', function () {
-    expect(HtmlSanitizer::sanitize('<p class="evil ql-align-center">x</p>'))
-        ->toBe('<p class="ql-align-center">x</p>');
+it('class attribute preserves arbitrary tokens', function () {
+    expect(HtmlSanitizer::sanitize('<p class="card meta ql-align-center">x</p>'))
+        ->toBe('<p class="card meta ql-align-center">x</p>');
 });
 
-it('class attribute is dropped entirely if no ql- tokens remain', function () {
-    expect(HtmlSanitizer::sanitize('<p class="evil malicious">x</p>'))
-        ->toBe('<p>x</p>');
+it('empty class attribute is dropped', function () {
+    expect(HtmlSanitizer::sanitize('<p class="   ">x</p>'))->toBe('<p>x</p>');
+});
+
+it('class whitespace is collapsed to single spaces', function () {
+    expect(HtmlSanitizer::sanitize('<p class="  card    meta  ">x</p>'))
+        ->toBe('<p class="card meta">x</p>');
 });
 
 it('img with data: src strips src, retains tag', function () {
@@ -280,21 +284,21 @@ it('bare svg outside heroicon span is stripped', function () {
         ->toBe('');
 });
 
-it('div tag drops keeping inner text', function () {
-    expect(HtmlSanitizer::sanitize('<div>hello</div>'))->toBe('hello');
+it('div tag round-trips (structural HTML allowed for widget templates)', function () {
+    expect(HtmlSanitizer::sanitize('<div>hello</div>'))->toBe('<div>hello</div>');
+});
+
+it('article and section round-trip', function () {
+    expect(HtmlSanitizer::sanitize('<article class="card"><section>x</section></article>'))
+        ->toBe('<article class="card"><section>x</section></article>');
 });
 
 it('font tag drops keeping inner text', function () {
     expect(HtmlSanitizer::sanitize('<font color="red">x</font>'))->toBe('x');
 });
 
-it('div with allowed children unwraps preserving children', function () {
-    expect(HtmlSanitizer::sanitize('<div><p>hello</p></div>'))->toBe('<p>hello</p>');
-});
-
-it('nested disallowed tags drop preserving deep text', function () {
-    expect(HtmlSanitizer::sanitize('<div><section><span>hi</span></section></div>'))
-        ->toBe('<span>hi</span>');
+it('marquee drops keeping inner text', function () {
+    expect(HtmlSanitizer::sanitize('<marquee>scroll</marquee>'))->toBe('scroll');
 });
 
 it('unknown attribute on allowed tag is stripped', function () {
@@ -330,10 +334,10 @@ it('xss input autofocus onfocus payload is neutralised', function () {
     expect($out)->toBe('');
 });
 
-it('xss details ontoggle payload is neutralised', function () {
-    $out = HtmlSanitizer::sanitize('<details open ontoggle="alert(1)">');
+it('xss details ontoggle payload is neutralised (handler stripped, tag retained)', function () {
+    $out = HtmlSanitizer::sanitize('<details open ontoggle="alert(1)">x</details>');
     expect($out)->not->toContain('ontoggle')
-        ->and($out)->not->toContain('details');
+        ->and($out)->not->toContain('alert');
 });
 
 it('xss vbscript href is neutralised', function () {
@@ -367,9 +371,9 @@ it('entity-encoded script text passes through as text', function () {
     expect(HtmlSanitizer::sanitize($input))->toBe($expected);
 });
 
-it('script tag inside disallowed wrapper is dropped (not unwrapped)', function () {
+it('script tag inside allowed wrapper is dropped, sibling text preserved', function () {
     expect(HtmlSanitizer::sanitize('<div><script>alert(1)</script>after</div>'))
-        ->toBe('after');
+        ->toBe('<div>after</div>');
 });
 
 it('multiple xss vectors in one document are all neutralised', function () {

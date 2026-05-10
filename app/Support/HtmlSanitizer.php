@@ -15,6 +15,13 @@ final class HtmlSanitizer
         'blockquote', 'pre', 'code',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'a', 'span', 'img',
+        'div', 'section', 'article', 'header', 'footer', 'nav', 'aside', 'main',
+        'figure', 'figcaption',
+        'hr',
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th',
+        'dl', 'dt', 'dd',
+        'mark', 'small', 'sub', 'sup', 'time', 'cite', 'abbr', 'q',
+        'details', 'summary',
         'svg', 'path',
     ];
 
@@ -170,12 +177,7 @@ final class HtmlSanitizer
     private static function filterClassTokens(string $class): string
     {
         $tokens = preg_split('/\s+/', trim($class), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $kept   = array_values(array_filter(
-            $tokens,
-            static fn (string $t): bool => preg_match('/^ql-[\w-]+$/', $t) === 1,
-        ));
-
-        return implode(' ', $kept);
+        return implode(' ', $tokens);
     }
 
     private static function isAllowedHrefUri(string $url): bool
