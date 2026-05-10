@@ -8,6 +8,7 @@ use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\WidgetType;
+use App\Support\HtmlSanitizer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -434,12 +435,22 @@ class ContentImporter
 
         // Image/video config keys hold media ids that are about to be replaced
         // by the rewiring step. Clear them now so we never serve a stale id.
+        // Richtext config keys are sanitised via the same allow-list the model
+        // saving boundary uses — defence-in-depth at the import seam.
         foreach ($widgetType->config_schema ?? [] as $field) {
-            if (in_array($field['type'] ?? '', ['image', 'video'], true)) {
-                $key = $field['key'] ?? null;
-                if ($key && isset($config[$key])) {
-                    $config[$key] = null;
-                }
+            $type = $field['type'] ?? '';
+            $key  = $field['key'] ?? null;
+            if (! $key) {
+                continue;
+            }
+
+            if (in_array($type, ['image', 'video'], true) && isset($config[$key])) {
+                $config[$key] = null;
+                continue;
+            }
+
+            if ($type === 'richtext' && isset($config[$key]) && is_string($config[$key])) {
+                $config[$key] = HtmlSanitizer::sanitize($config[$key]);
             }
         }
 

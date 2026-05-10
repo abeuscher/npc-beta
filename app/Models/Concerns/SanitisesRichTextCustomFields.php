@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\CustomFieldDef;
 use App\Support\HtmlSanitizer;
+use Illuminate\Support\Str;
 
 trait SanitisesRichTextCustomFields
 {
@@ -15,8 +16,10 @@ trait SanitisesRichTextCustomFields
                 return;
             }
 
+            $modelType = Str::snake(class_basename($model::class));
+
             $richTextHandles = CustomFieldDef::query()
-                ->where('model_type', $model::class)
+                ->where('model_type', $modelType)
                 ->where('field_type', 'rich_text')
                 ->pluck('handle')
                 ->all();

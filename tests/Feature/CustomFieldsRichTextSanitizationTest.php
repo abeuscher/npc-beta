@@ -9,7 +9,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 it('sanitises rich_text custom_fields on save', function () {
     CustomFieldDef::create([
-        'model_type' => Contact::class,
+        'model_type' => 'contact',
         'handle'     => 'bio',
         'label'      => 'Bio',
         'field_type' => 'rich_text',
@@ -28,7 +28,7 @@ it('sanitises rich_text custom_fields on save', function () {
 
 it('leaves non-rich_text custom_fields untouched', function () {
     CustomFieldDef::create([
-        'model_type' => Contact::class,
+        'model_type' => 'contact',
         'handle'     => 'newsletter_topic',
         'label'      => 'Newsletter topic',
         'field_type' => 'text',
@@ -47,7 +47,7 @@ it('leaves non-rich_text custom_fields untouched', function () {
 
 it('sanitises rich_text custom_fields on update', function () {
     CustomFieldDef::create([
-        'model_type' => Contact::class,
+        'model_type' => 'contact',
         'handle'     => 'bio',
         'label'      => 'Bio',
         'field_type' => 'rich_text',
