@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
@@ -9,6 +10,12 @@ use Illuminate\Support\Facades\Crypt;
 class SiteSetting extends Model
 {
     protected $fillable = ['key', 'value', 'group', 'type'];
+
+    public const RICH_TEXT_KEYS = [
+        'dashboard_welcome',
+        'system_page_content_reset_password',
+        'system_page_content_email_verify',
+    ];
 
     /**
      * Read a setting from cache/DB, returning $default if the key doesn't exist.
@@ -34,6 +41,10 @@ class SiteSetting extends Model
     public static function set(string $key, mixed $value): void
     {
         $setting = static::where('key', $key)->first();
+
+        if (in_array($key, self::RICH_TEXT_KEYS, true) && is_string($value)) {
+            $value = HtmlSanitizer::sanitize($value);
+        }
 
         $storedValue = ($setting?->type === 'encrypted' && filled($value))
             ? Crypt::encryptString((string) $value)
