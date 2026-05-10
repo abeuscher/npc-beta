@@ -182,12 +182,12 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 ### Track C — Workflow rehearsals
 
-#### C1. Notes Permissions (feature half) *(prerequisite stub for C3)*
+#### C1. Notes Permissions (feature half) *(prerequisite stub for C3)* ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per the *feature half* of the existing Notes Permissions & Permissions Audit stub: finer-grained permission gates around the structured-interactions surface (subtype, direction, outcome, participants), `edit-only-by-creator` opt-in tenant setting (auth user must equal `notes.author_id` to edit), manager override permission. The audit half of the original stub is consumed by C3.
-- **artifact:** the feature itself.
+- **success criterion** *(closed at session 276)*: Three concrete pieces shipped — `edit_others_note` permission registered in `PermissionSeeder` and granted to `developer` (super_admin gets it via Gate::before bypass); `notes_edit_only_by_creator` SiteSetting on `GeneralSettingsPage` (string `'true'`/`'false'`, default `'false'`, super-admin-gated section); `NotePolicy::update` and `::delete` extended with three-step shape (outer capability → toggle read → author OR override). Timeline UI rewired so Contact / Organization Timeline edit/delete affordances compose the policy. 21 Pest tests cover the full matrix; 3 Playwright specs verify the UI gate end-to-end. Fast Pest 2304/0 (+27 over 275 baseline). See `sessions/276. Notes Permissions (feature half) — Log.md` for the full landing.
+- **artifact:** the feature itself. **Closed at session 276.**
 - **estimated time cost:** 1 session.
 
 #### C2. Event Ticket Tiers *(prerequisite stub for C5)*
@@ -480,7 +480,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 25. **A1e'.** PostgreSQL Major-Version Skew Fix *(closed at session 270; emergent unblocker for FM 021 manual testing 2026-05-08 — `pg_dump 17` from Trixie's `postgresql-client` meta-package produced dumps containing the PG17-only `transaction_timeout` directive that PG16 servers couldn't ingest; pinned `postgresql-client-17` in Dockerfile, bumped `postgres:17-alpine` in both compose files, added structural `PostgresVersionSkewTest`; both droplets wiped and redeployed via the destructive shortest path acceptable under pre-Beta no-live-data posture)* ✅
 26. **Code Review & Cleanup — 4-session housekeeping cycle** *(sessions 271 / 272 / 273 / 274 — audit Part 1 → audit Part 2 → apply → squash; lifted at 269 close after E11 abandonment opened calendar; window covered 207 → 268 ~60 sessions of growth since last code review at 205/206 and last squash at 208; 271 ✅ closed; 272 ✅ closed; 273 ✅ closed — 6 iterations on session-273/1 consumed the entire W7/W8/W11/W12/Open-Flags backlog (Flags A / W6/B / W4/A / W10/A applied; Flag B reaffirmed won't-fix; Flag W4c/A carved out to dedicated successor session at 273-close); 274 ✅ closed — 4 commits on session-274/1 consumed Phase 3 picks (B1 bootstrap-widgets-duplicate drop = 208-deferred B4 resolved; C1 three help-doc route registrations) + Phase 4 squash (18 migrations collapsed, schema dump 3544→3915 lines, squash-note bumped 208/2026-04-22 → 274/2026-05-09) + Phase 5 obsolete-migration-test deletion; fast Pest 2166/0 (−3 from 273); Playwright 42/0 (273 baseline preserved); residual cumulative-load FilePond flake did not reappear)* ✅
 27. **Rich-Text Surface Sanitization Hardening** *(session 275 — closed; carved out at 273-close per Flag W4c/A; canonical 250-time stub implementation; `App\Support\HtmlSanitizer` utility + 8 model-boundary apply sites with companion regression-guard tests + `ContentImporter::sanitizeWidgetConfig` extension + Memos Trix→Quill convergence with one-time data migration absorbed by next squash + 71-case allow-list test suite + 2 new Playwright specs; mid-session bug fix for `SanitisesRichTextCustomFields` trait FQCN-vs-codebase-convention drift; fast Pest 2277/0 (+111 over 274 baseline); Playwright 44/0)* ✅
-28. **C1.** Notes Permissions (feature half)
+28. **C1.** Notes Permissions (feature half) *(session 276 — closed; `edit_others_note` permission to developer, `notes_edit_only_by_creator` SiteSetting toggle on GeneralSettingsPage, `NotePolicy::update`/`::delete` extended with toggle + override gate, Timeline UI rewired to compose policy; fast Pest 2304/0 (+27 over 275), 3 new Playwright specs)* ✅
 29. **E9.** Widget Help Authoring
 30. **C2.** Event Ticket Tiers
 31. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure

@@ -277,6 +277,8 @@ A flat index of every completed session by number and title. Per-session detail 
 | 272 | Code Review & Cleanup (Audit Part 2 — Subsystem Deep Walks) |
 | 273 | Code Review & Cleanup (Apply) |
 | 274 | Migration Squash & Code Optimization |
+| 275 | Rich-Text Surface Sanitization Hardening |
+| 276 | Notes Permissions (feature half) |
 
 ---
 

@@ -279,7 +279,9 @@
       "Bash(awk '/CREATE TABLE.*\\\\bnotes\\\\b/{flag=1} flag{print; if \\(/^\\);/\\) exit}' /home/al/nonprofitcrm/database/schema/pgsql-schema.sql)",
       "Bash(cp /home/al/nonprofitcrm/.claude/settings.json /tmp/settings-good.json && wc -l /tmp/settings-good.json)",
       "Bash(wc -l .claude/settings.json; echo \"---\"; grep -n \"Bash\\(git push\" .claude/settings.json | head -5; echo \"deny block:\"; sed -n '/\"deny\": \\\\[/,/\\\\]/p' .claude/settings.json | head -10)",
-      "Bash(grep -n 'RICH_TEXT_KEYS\\\\|public static function set\\\\|public static function get\\\\|protected $casts' /home/al/nonprofitcrm/app/Models/SiteSetting.php)"
+      "Bash(grep -n 'RICH_TEXT_KEYS\\\\|public static function set\\\\|public static function get\\\\|protected $casts' /home/al/nonprofitcrm/app/Models/SiteSetting.php)",
+      "Bash(git merge *)",
+      "Bash(awk -F: '$1 >= 480')"
     ],
     "deny": [],
     "additionalDirectories": [
