@@ -549,3 +549,31 @@ export async function getPageSlug(pageId: string): Promise<string | null> {
         return res.rows[0]?.slug ?? null;
     });
 }
+
+export async function findCollectionIdByHandle(handle: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id FROM collections WHERE handle = $1 LIMIT 1',
+            [handle],
+        );
+        return res.rows[0]?.id ?? null;
+    });
+}
+
+export async function findCollectionItemByTitle(collectionId: string, title: string): Promise<{ id: string; data: Record<string, unknown> } | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string; data: Record<string, unknown> }>(
+            `SELECT id, data FROM collection_items
+             WHERE collection_id = $1 AND data->>'title' = $2
+             LIMIT 1`,
+            [collectionId, title],
+        );
+        return res.rows[0] ?? null;
+    });
+}
+
+export async function deleteCollectionItem(itemId: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query('DELETE FROM collection_items WHERE id = $1', [itemId]);
+    });
+}

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Media\ImageSizeProfile;
+use App\Support\HtmlSanitizer;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -43,6 +44,33 @@ class CollectionItem extends Model implements HasMedia
         'data'         => 'array',
         'is_published' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (CollectionItem $item) {
+            $collection = $item->collection;
+            if (! $collection) {
+                return;
+            }
+
+            $data = $item->data ?? [];
+            if (! is_array($data) || $data === []) {
+                return;
+            }
+
+            foreach ($collection->fields ?? [] as $field) {
+                if (($field['type'] ?? '') !== 'rich_text') {
+                    continue;
+                }
+                $key = $field['key'] ?? null;
+                if ($key !== null && isset($data[$key]) && is_string($data[$key])) {
+                    $data[$key] = HtmlSanitizer::sanitize($data[$key]);
+                }
+            }
+
+            $item->data = $data;
+        });
+    }
 
     public function collection(): BelongsTo
     {
