@@ -48,8 +48,8 @@ The recalibration is not about removing guardrails — it's about distinguishing
 
 #### `CLAUDE.md`
 
-- **Added fractional-session convention** to the Git Workflow section. Parallel / out-of-flow sessions (maintenance passes, cloud-based ad-hoc work) use `session-NNN.M/N` keyed to the in-flight session — e.g. `session-276.5/1` runs alongside session 276. The fraction signals "parallel to NNN, not in the release plan, not part of the main numbered sequence."
-- **Added PR-at-close convention for fractional/browser sessions.** Because these run out-of-flow and outside the normal session-close cadence, they end with a PR opened against `main` so the user can track and merge them through the same review surface as numbered sessions. Numbered sessions still follow the standard "push branch, user opens PR if they want one" pattern.
+- **Added fractional-session convention** to the Git Workflow section, scoped to **browser-run parallel sessions only** — sessions run via the claude.ai/code browser surface alongside an in-flight local-CLI session. They use `session-NNN.M/N` keyed to the in-flight session (e.g. `session-276.5/1` runs alongside session 276 from the browser). The fraction signals "parallel to NNN, originated browser-side." Local-CLI maintenance passes alongside a numbered session do NOT get a fractional number — they live on the in-flight session's branch or get their own numbered slot.
+- **Added PR-at-close convention for browser-run parallel sessions only.** Because those run outside the normal local-CLI close cadence, they end with a PR opened against `main` so the user can track and merge them through the same review surface as numbered sessions. Numbered local-CLI sessions still follow the standard "push branch, user opens PR if they want one" pattern. *(Note: the initial CLAUDE.md draft over-broadened this rule to "maintenance passes, cloud-based ad-hoc work" generally; corrected to browser-run-only when the FM-side absorption surfaced the ambiguity at FM session 023.)*
 
 ### What was considered and explicitly not changed
 
