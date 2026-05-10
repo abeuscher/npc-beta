@@ -79,6 +79,26 @@ it('relative anchor link round-trips', function () {
         ->toBe('<a href="#section">x</a>');
 });
 
+it('template token in href round-trips (DOMDocument percent-encoding undone)', function () {
+    expect(HtmlSanitizer::sanitize('<a href="{{url}}">x</a>'))
+        ->toBe('<a href="{{url}}">x</a>');
+});
+
+it('dot-bearing template token in href round-trips', function () {
+    expect(HtmlSanitizer::sanitize('<a href="{{item.url}}">x</a>'))
+        ->toBe('<a href="{{item.url}}">x</a>');
+});
+
+it('underscore-bearing template token in href round-trips', function () {
+    expect(HtmlSanitizer::sanitize('<a href="{{reset_url}}">x</a>'))
+        ->toBe('<a href="{{reset_url}}">x</a>');
+});
+
+it('template token in img src round-trips', function () {
+    expect(HtmlSanitizer::sanitize('<img src="{{logo_url}}" alt="">'))
+        ->toBe('<img src="{{logo_url}}" alt="">');
+});
+
 it('link title attribute round-trips', function () {
     expect(HtmlSanitizer::sanitize('<a href="/x" title="t">x</a>'))
         ->toBe('<a href="/x" title="t">x</a>');
