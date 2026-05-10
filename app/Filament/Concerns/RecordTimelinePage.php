@@ -75,6 +75,8 @@ abstract class RecordTimelinePage extends Page implements HasActions
             ? User::whereIn('id', $adminIds)->get()->keyBy('id')
             : collect();
 
+        $actor = auth()->user();
+
         $noteItems = $notes->map(fn ($n) => (object) [
             '_type'              => 'note',
             'id'                 => $n->id,
@@ -93,6 +95,8 @@ abstract class RecordTimelinePage extends Page implements HasActions
             'import_source_url'  => $n->importSource
                 ? \App\Filament\Pages\ImportHistoryPage::getUrl(['source' => $n->importSource->id])
                 : null,
+            'can_edit'           => $actor?->can('update', $n) ?? false,
+            'can_delete'         => $actor?->can('delete', $n) ?? false,
         ]);
 
         $logItems = $logs->map(fn ($l) => (object) [

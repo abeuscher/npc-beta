@@ -105,18 +105,22 @@
                                 @endif
                                 <span class="np-timeline-timestamp">{{ $relativeTime($item->occurred_at) }}</span>
                                 <div class="np-timeline-menu">
-                                    <button
-                                        type="button"
-                                        wire:click="mountAction('editNote', @js(['note' => $item->id]))"
-                                        class="np-timeline-menu__btn"
-                                        title="Edit"
-                                    >Edit</button>
-                                    <button
-                                        type="button"
-                                        wire:click="mountAction('deleteNote', @js(['note' => $item->id]))"
-                                        class="np-timeline-menu__btn np-timeline-menu__btn--danger"
-                                        title="Delete"
-                                    >Delete</button>
+                                    @if ($item->can_edit ?? false)
+                                        <button
+                                            type="button"
+                                            wire:click="mountAction('editNote', @js(['note' => $item->id]))"
+                                            class="np-timeline-menu__btn"
+                                            title="Edit"
+                                        >Edit</button>
+                                    @endif
+                                    @if ($item->can_delete ?? false)
+                                        <button
+                                            type="button"
+                                            wire:click="mountAction('deleteNote', @js(['note' => $item->id]))"
+                                            class="np-timeline-menu__btn np-timeline-menu__btn--danger"
+                                            title="Delete"
+                                        >Delete</button>
+                                    @endif
                                 </div>
                             </div>
                         </div>

@@ -44,6 +44,12 @@ These rich-text fields control the content displayed on system pages that cannot
 - **Reset password page** — content rendered above the reset-password form.
 - **Email verification page** — content rendered above the email address and logout button on the verification notice.
 
+## Notes
+
+Tenant-wide settings for the Notes (Timeline) surface — the structured-interaction stream attached to every contact and organization.
+
+- **Restrict note edits to author** — when on, users can only edit or delete notes they authored themselves; non-author users see no Edit / Delete affordances on the Timeline. Default off (preserves the pre-restriction behaviour where any user with the `update_note` / `delete_note` capability can edit any note). Users granted the **Edit any note** permission (`edit_others_note`) bypass the restriction. Useful for tenants who want each operator's interaction history to be tamper-evident — managers retain edit reach via the override permission, but everyone else can only revise what they wrote.
+
 ## Integrations
 
 API keys for external payment and accounting integrations. These fields are placeholders for future finance sessions — the Stripe and QuickBooks integrations are not yet active.

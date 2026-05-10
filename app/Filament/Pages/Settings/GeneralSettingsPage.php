@@ -55,6 +55,7 @@ class GeneralSettingsPage extends Page
             'donations_prefix'    => SiteSetting::get('donations_prefix', 'donate'),
             'system_page_content_reset_password' => SiteSetting::get('system_page_content_reset_password', '<h1>Set a new password</h1>'),
             'system_page_content_email_verify'   => SiteSetting::get('system_page_content_email_verify', '<h1>Verify your email</h1>'),
+            'notes_edit_only_by_creator'         => SiteSetting::get('notes_edit_only_by_creator', 'false') === 'true',
         ]);
     }
 
@@ -218,6 +219,18 @@ class GeneralSettingsPage extends Page
                     ])
                     ->visible($isSuperAdmin),
 
+                Forms\Components\Section::make('Notes')
+                    ->description('Tenant-wide settings for the Notes (Timeline) surface.')
+                    ->schema([
+                        Forms\Components\Toggle::make('notes_edit_only_by_creator')
+                            ->label('Restrict note edits to author')
+                            ->helperText('When on, users can only edit or delete notes they authored. Users with the "Edit any note" permission bypass this restriction.')
+                            ->columnSpanFull(),
+
+                        $this->sectionSaveAction('notes', 'Notes')->columnSpanFull(),
+                    ])
+                    ->visible($isSuperAdmin),
+
             ])
             ->statePath('data');
     }
@@ -305,6 +318,7 @@ class GeneralSettingsPage extends Page
             SiteSetting::set('admin_primary_color', $data['admin_primary_color'] ?? '#f59e0b');
             SiteSetting::set('admin_secondary_color', $data['admin_secondary_color'] ?? '#73bbbb');
             SiteSetting::set('horizon_enabled', ($data['horizon_enabled'] ?? false) ? 'true' : 'false');
+            SiteSetting::set('notes_edit_only_by_creator', ($data['notes_edit_only_by_creator'] ?? false) ? 'true' : 'false');
         }
 
         Artisan::call('config:clear');
@@ -344,6 +358,10 @@ class GeneralSettingsPage extends Page
                 if (! $isSuperAdmin) return;
                 SiteSetting::set('system_page_content_reset_password', $data['system_page_content_reset_password'] ?? '');
                 SiteSetting::set('system_page_content_email_verify',   $data['system_page_content_email_verify'] ?? '');
+            })(),
+            'notes' => (function () use ($data, $isSuperAdmin) {
+                if (! $isSuperAdmin) return;
+                SiteSetting::set('notes_edit_only_by_creator', ($data['notes_edit_only_by_creator'] ?? false) ? 'true' : 'false');
             })(),
         };
     }

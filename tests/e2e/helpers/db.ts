@@ -577,3 +577,118 @@ export async function deleteCollectionItem(itemId: string): Promise<void> {
         await client.query('DELETE FROM collection_items WHERE id = $1', [itemId]);
     });
 }
+
+export async function findUserIdByEmail(email: string): Promise<string | null> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            'SELECT id::text AS id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1',
+            [email],
+        );
+        return res.rows[0]?.id ?? null;
+    });
+}
+
+export async function createUserWithRole(
+    email: string,
+    plainPassword: string,
+    roleName: string,
+    name: string = 'Test Operator',
+): Promise<string> {
+    const hash = execFileSync(
+        'docker',
+        [
+            'compose',
+            'exec',
+            '-T',
+            'app',
+            'php',
+            '-r',
+            `echo password_hash('${plainPassword}', PASSWORD_BCRYPT);`,
+        ],
+        { cwd: PROJECT_ROOT },
+    )
+        .toString()
+        .trim();
+
+    return withClient(async (client) => {
+        const insert = await client.query<{ id: string }>(
+            `INSERT INTO users (name, email, password, is_active, email_verified_at, created_at, updated_at)
+             VALUES ($1, $2, $3, true, NOW(), NOW(), NOW())
+             RETURNING id::text AS id`,
+            [name, email, hash],
+        );
+        const userId = insert.rows[0].id;
+
+        const role = await client.query<{ id: string }>(
+            'SELECT id::text AS id FROM roles WHERE name = $1 AND guard_name = $2 LIMIT 1',
+            [roleName, 'web'],
+        );
+        if (role.rows.length === 0) {
+            throw new Error(`Role '${roleName}' not found.`);
+        }
+
+        await client.query(
+            `INSERT INTO model_has_roles (role_id, model_type, model_id)
+             VALUES ($1, 'App\\Models\\User', $2)`,
+            [role.rows[0].id, userId],
+        );
+
+        return userId;
+    });
+}
+
+export async function createContactWithDisplayName(firstName: string, lastName: string): Promise<string> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            `INSERT INTO contacts (id, source, first_name, last_name, created_at, updated_at)
+             VALUES (gen_random_uuid(), 'manual', $1, $2, NOW(), NOW())
+             RETURNING id::text AS id`,
+            [firstName, lastName],
+        );
+        return res.rows[0].id;
+    });
+}
+
+export async function createNoteForContact(
+    contactId: string,
+    authorId: string,
+    body: string,
+    subject: string | null = null,
+): Promise<string> {
+    return withClient(async (client) => {
+        const res = await client.query<{ id: string }>(
+            `INSERT INTO notes (id, notable_type, notable_id, author_id, type, status, subject, body, occurred_at, created_at, updated_at)
+             VALUES (gen_random_uuid(), 'App\\Models\\Contact', $1, $2, 'note', 'completed', $3, $4, NOW(), NOW(), NOW())
+             RETURNING id::text AS id`,
+            [contactId, authorId, subject, body],
+        );
+        return res.rows[0].id;
+    });
+}
+
+export async function grantPermissionToUser(userId: string, permissionName: string): Promise<void> {
+    await withClient(async (client) => {
+        const perm = await client.query<{ id: string }>(
+            'SELECT id::text AS id FROM permissions WHERE name = $1 AND guard_name = $2 LIMIT 1',
+            [permissionName, 'web'],
+        );
+        if (perm.rows.length === 0) {
+            throw new Error(`Permission '${permissionName}' not found.`);
+        }
+
+        await client.query(
+            `INSERT INTO model_has_permissions (permission_id, model_type, model_id)
+             VALUES ($1, 'App\\Models\\User', $2)
+             ON CONFLICT DO NOTHING`,
+            [perm.rows[0].id, userId],
+        );
+    });
+}
+
+export function clearSiteSettingCache(): void {
+    execFileSync(
+        'docker',
+        ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'cache:clear'],
+        { cwd: PROJECT_ROOT, stdio: 'inherit' },
+    );
+}
