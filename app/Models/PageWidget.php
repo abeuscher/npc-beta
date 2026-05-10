@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Media\ImageSizeProfile;
+use App\Support\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,6 +37,36 @@ class PageWidget extends Model implements HasMedia
         'appearance_config' => 'array',
         'is_active'         => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (PageWidget $widget) {
+            $widget->config = self::sanitizeConfigRichTextFields(
+                $widget->config ?? [],
+                $widget->widgetType
+            );
+        });
+    }
+
+    private static function sanitizeConfigRichTextFields(array $config, ?WidgetType $type): array
+    {
+        if (! $type) {
+            return $config;
+        }
+
+        foreach ($type->config_schema ?? [] as $field) {
+            if (($field['type'] ?? '') !== 'richtext') {
+                continue;
+            }
+
+            $key = $field['key'] ?? null;
+            if ($key !== null && isset($config[$key]) && is_string($config[$key])) {
+                $config[$key] = HtmlSanitizer::sanitize($config[$key]);
+            }
+        }
+
+        return $config;
+    }
 
     public function scopeForOwner($query, Model $owner)
     {
