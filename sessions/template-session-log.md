@@ -23,10 +23,9 @@ Copy this file to `NNN. Session Title — Log.md` when closing a session. Fill i
 
 ---
 
-## Security checklist — verified
+## Security considerations
 
-- [x] Item 1
-- [x] Item 2
+A short prose statement of what was reviewed on the security axis this session — what the change touched, what was checked, what's intentionally unchanged. Write "None beyond standard convention." for sessions with no security surface. Avoid mechanical box-checking; surface active concerns only.
 
 ---
 
