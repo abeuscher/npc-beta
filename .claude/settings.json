@@ -251,7 +251,6 @@
       "Bash(grep -rn 'BelongsToManyRelationManager\\\\|belongsToMany.*relationship\\\\|protected static string $relationship' app/Filament '--include=*.php')"
     ],
     "deny": [
-      "Bash(git push:*)",
       "Bash(git merge:*)"
     ],
     "additionalDirectories": [
