@@ -248,7 +248,37 @@
       "Bash(grep -A 30 'protected $fillable\\\\|protected.*$fillable' /home/al/nonprofitcrm/app/Models/Fund.php /home/al/nonprofitcrm/app/Models/Campaign.php /home/al/nonprofitcrm/app/Models/Transaction.php /home/al/nonprofitcrm/app/Models/EventRegistration.php)",
       "Bash(grep -n \"^## \\\\|^### \\\\|^---$\" /home/al/nonprofitcrm/resources/docs/onboarding-migration.md)",
       "Bash(grep -rEn \"->organization\\($|[^a-zA-Z_]\\)\" app/ tests/ database/ resources/views/ --include=\"*.php\" --include=\"*.blade.php\")",
-      "Bash(grep -rn 'BelongsToManyRelationManager\\\\|belongsToMany.*relationship\\\\|protected static string $relationship' app/Filament '--include=*.php')"
+      "Bash(grep -rn 'BelongsToManyRelationManager\\\\|belongsToMany.*relationship\\\\|protected static string $relationship' app/Filament '--include=*.php')",
+      "Bash(docker compose *)",
+      "Bash(sed -n '120,140p' app/Widgets/Carousel/CarouselDefinition.php)",
+      "Bash(sed -n '120,140p' app/Widgets/BarChart/BarChartDefinition.php)",
+      "Bash(curl -s -o /dev/null -w 'http_code=%{http_code}\\\\ncontent_type=%{content_type}\\\\ncontent_length=%{size_download}\\\\nfilename=%{filename_effective}\\\\n' http://localhost/api/backup/blob)",
+      "Bash(curl -sI http://localhost/api/backup/blob)",
+      "Bash(python3 -c ' *)",
+      "Bash(grep -nB1 \"requiresConfirmation\\\\|->action\" app/Filament/Pages/ImporterPage.php)",
+      "Bash(python3 -c \"import zipfile; zipfile.ZipFile\\('/home/al/nonprofitcrm/test-results/importer-contacts-update-s-2d297-es-and-approve-applies-them-chromium/trace.zip'\\).extractall\\('.'\\)\")",
+      "Bash(python3 -c \"import zipfile; zipfile.ZipFile\\('/home/al/nonprofitcrm/test-results/importer-contacts-update-s-2d297-es-and-approve-applies-them-chromium/trace.zip'\\).extractall\\('/tmp/pwtrace'\\)\")",
+      "Bash(grep -aoE \"filepond[^\\\\\"]{0,80}\" /tmp/pwtrace/1-trace.trace)",
+      "Bash(grep -aoE \"filepond--item[^\\\\\"]{0,200}\" /tmp/pwtrace/1-trace.trace)",
+      "Bash(grep -aoE \"livewire/upload-file[^\\\\\"]{0,80}|status\\\\\":[0-9]+|method\\\\\":\\\\\"[A-Z]+\\\\\"\" /tmp/pwtrace/0-trace.network)",
+      "Bash(grep -aoE \"POST[^\\\\\"]{0,80}\\\\\",\\\\\"status[^,]+|upload-file[^\\\\\"]{0,100}\" /tmp/pwtrace/0-trace.network)",
+      "Bash(python3 -c \"import zipfile; zipfile.ZipFile\\('/home/al/nonprofitcrm/test-results/importer-memberships-updat-2b887-anges-approval-applies-them-chromium/trace.zip'\\).extractall\\('/tmp/pwtrace2'\\)\")",
+      "Bash(grep -aB 2 -A 8 \"✗\\\\|⨯\\\\|FAIL \" /tmp/claude-1000/-home-al-nonprofitcrm/7ac80b00-0021-4394-912d-81bc9f4f5bd8/tasks/b96wrdqqw.output)",
+      "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost/admin/login)",
+      "Bash(curl -sS -k -o /dev/null -w \"HTTPS %{http_code}\\\\n\" https://localhost/admin/login)",
+      "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost/)",
+      "Bash(curl -sS -o /dev/null -w \"127.0.0.1:80 → HTTP %{http_code}\\\\n\" http://127.0.0.1/)",
+      "Bash(curl -sS -o /dev/null -w \"After restart: HTTP %{http_code}\\\\n\" http://localhost/)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(grep -l '$css\\\\|$js' 'app/Widgets/*/Definition.php')",
+      "Bash(grep -nE '^\\\\s*$table->\\(jsonb|string|foreignUuid|timestamp|index\\)\\\\\\(' database/migrations/2026_05_02_133230_add_importer_columns_to_organizations_and_import_sources.php database/migrations/2026_04_27_021839_create_record_detail_views_table.php database/migrations/2026_04_24_022229_create_dashboard_configs_table.php)",
+      "Bash(awk '{for\\(i=1;i<=NF;i++\\) if\\($i ~ /^filament\\\\.admin\\\\./\\) print $i}')",
+      "Bash(python3 -c 'import json,sys; data=json.load\\(sys.stdin\\); names=[r[\"name\"] for r in data if r.get\\(\"name\"\\) and r[\"name\"].startswith\\(\"filament.admin.\"\\)]; print\\(\"\\\\n\".join\\(sorted\\(set\\(names\\)\\)\\)\\)')",
+      "Bash(rm database/migrations/2026_*.php && ls -la database/migrations/)",
+      "Bash(php -r 'var_dump\\(class_exists\\(\"DOMDocument\"\\)\\);')",
+      "Bash(awk '/CREATE TABLE.*\\\\bnotes\\\\b/{flag=1} flag{print; if \\(/^\\);/\\) exit}' /home/al/nonprofitcrm/database/schema/pgsql-schema.sql)",
+      "Bash(cp /home/al/nonprofitcrm/.claude/settings.json /tmp/settings-good.json && wc -l /tmp/settings-good.json)",
+      "Bash(wc -l .claude/settings.json; echo \"---\"; grep -n \"Bash\\(git push\" .claude/settings.json | head -5; echo \"deny block:\"; sed -n '/\"deny\": \\\\[/,/\\\\]/p' .claude/settings.json | head -10)"
     ],
     "deny": [
       "Bash(git merge:*)"
@@ -267,7 +297,9 @@
       "/home/al/.claude/projects/-home-al-nonprofitcrm",
       "/home/al/nonprofitcrm/storage/app/private/NonProfitCRM",
       "/home/al/nonprofitcrm/storage/app",
-      "/home/al/nonprofitcrm/app/Services/Import/Fixtures"
+      "/home/al/nonprofitcrm/app/Services/Import/Fixtures",
+      "/home/al/nonprofitcrm/database/migrations",
+      "/home/al/nonprofitcrm/.claude"
     ]
   }
 }
