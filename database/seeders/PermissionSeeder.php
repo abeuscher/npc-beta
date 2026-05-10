@@ -124,6 +124,11 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        Permission::firstOrCreate([
+            'name'       => 'edit_others_note',
+            'guard_name' => 'web',
+        ]);
+
         // Tier 2 — standalone capabilities for features converted from super_admin-only
         foreach ([
             'manage_custom_fields',
@@ -298,6 +303,7 @@ class PermissionSeeder extends Seeder
                 'manage_cms_settings',
                 'manage_mail_settings',
                 'manage_membership_tiers',
+                'edit_others_note',
             ],
         ));
 

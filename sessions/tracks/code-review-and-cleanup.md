@@ -123,6 +123,7 @@ Lifted from Cycle 2's blind-spot list and process incidents:
 - **W11 outlier auto-skip-with-note.** Outliers >5× language average that pre-existed two cycles ago and aren't in active work skip with a brief reaffirmation note. Cuts re-litigation time. Lift only when a forcing function emerges (a feature touching the file, a flag finally maturing).
 - **Pest + Playwright sequential run discipline.** Already locked in as `feedback_test_runs_not_parallel.md`. No new action; standing rule.
 - **Squash session keeps Phase 5 as a buffer.** Cycle 2's squash needed a follow-on commit to delete an obsolete migration test file (3 tests). Keep the Phase 5 slot for fallout from the squash; don't bundle into the squash commit itself.
+- **Boolean SiteSetting / config-shape consistency audit.** Cycle 3 audit pass should sweep every boolean-shaped tenant setting and per-model boolean field for read/write shape drift — `'1'`/`'0'` vs. `'true'`/`'false'` vs. native `bool` casts vs. `filter_var(..., FILTER_VALIDATE_BOOLEAN)`. Today's `horizon_enabled` is the local `'true'`/`'false'` precedent for `SiteSetting` boolean keys and was followed for `notes_edit_only_by_creator` at session 276; codify the convention and surface every diverging call site as an Apply pick. Lifted from session 276 design discussion — there is no benefit to two storage shapes, and cross-shape comparison bugs are silent.
 
 ### Permanent inter-cycle artifacts
 
