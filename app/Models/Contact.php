@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\ContactObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ use Spatie\SchemalessAttributes\Casts\SchemalessAttributes;
 #[ObservedBy(ContactObserver::class)]
 class Contact extends Model
 {
-    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SanitisesRichTextCustomFields, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::IMPORT,

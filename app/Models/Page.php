@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Models\User;
 use App\Observers\PageObserver;
 use App\Services\Media\ImageSizeProfile;
@@ -26,7 +27,7 @@ use Spatie\Sluggable\SlugOptions;
 #[ObservedBy(PageObserver::class)]
 class Page extends Model implements HasMedia
 {
-    use EnforcesScrubInheritance, HasFactory, HasSlug, HasSourcePolicy, HasUuids, InteractsWithMedia, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSlug, HasSourcePolicy, HasUuids, InteractsWithMedia, SanitisesRichTextCustomFields, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::DEMO,

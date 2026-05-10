@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\OrganizationObserver;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[ObservedBy(OrganizationObserver::class)]
 class Organization extends Model
 {
-    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SanitisesRichTextCustomFields, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,

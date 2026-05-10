@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\EventObserver;
 use App\Support\HtmlSanitizer;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
@@ -29,6 +30,7 @@ class Event extends Model implements HasMedia
     use HasSourcePolicy;
     use HasUuids;
     use InteractsWithMedia;
+    use SanitisesRichTextCustomFields;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,

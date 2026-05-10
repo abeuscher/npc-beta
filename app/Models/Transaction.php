@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Jobs\SyncTransactionToQuickBooks;
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Transaction extends Model
 {
-    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SanitisesRichTextCustomFields;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,

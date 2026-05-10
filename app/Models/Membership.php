@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SanitisesRichTextCustomFields;
 use App\Observers\MembershipObserver;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[ObservedBy(MembershipObserver::class)]
 class Membership extends Model
 {
-    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SoftDeletes;
+    use EnforcesScrubInheritance, HasFactory, HasSourcePolicy, HasUuids, SanitisesRichTextCustomFields, SoftDeletes;
 
     public const ACCEPTED_SOURCES = [
         Source::HUMAN,
