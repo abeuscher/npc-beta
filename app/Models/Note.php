@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\NoteObserver;
+use App\Support\HtmlSanitizer;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,6 +41,11 @@ class Note extends Model
         'duration_minutes' => 'integer',
         'meta'             => 'array',
     ];
+
+    public function setBodyAttribute(?string $value): void
+    {
+        $this->attributes['body'] = $value === null ? null : HtmlSanitizer::sanitize($value);
+    }
 
     public function notable(): MorphTo
     {
