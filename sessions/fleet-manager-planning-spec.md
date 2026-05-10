@@ -250,6 +250,17 @@ The CRM emits the contract; the FM repo consumes it. So:
 
 If the FM repo ever needs to express a contract requirement (e.g., "FM needs a new subcheck the CRM doesn't currently expose"), the request lands as a CRM-side issue — the CRM authors the contract change, then FM consumes the new version.
 
+### Session-document template coordination
+
+Distinct from the HTTP contract above. The two repos run parallel agentic workstreams against their own session-document templates (`sessions/template-base-prompt.md`, `template-session-prompt.md`, `template-session-log.md`) and their own `sessions/template-rationale.md`. Templates rightly differ by project shape — this section names the discipline that keeps the two from drifting in spirit even as the surface differs.
+
+- **No single canonical template.** Each repo owns and authors its own templates. Unlike the HTTP contract, there is no shared canonical doc — the templates are *process artifacts*, not *wire surface*. Template changes never trigger a `docs/fleet-manager-agent-contract.md` bump.
+- **Project-agnostic rules land in both.** Specifically: the **drift rule** ("adapt to drift; don't ask about it") and the **decision-threshold rule** ("decision threshold scales with project maturity"), introduced in CRM-side session 276.5. These are calibrations for the agent's interaction style, not for any project's conventions, and should appear in both repos' base-prompt templates. Future project-agnostic rules surfaced by either repo's recalibration land symmetrically.
+- **Project-specific rules stay local.** Anything keyed to one repo's conventions (CRM's `build:public`, FM's mTLS cert paste flow, repo-specific style rules) stays in that repo's templates and does not propagate.
+- **`template-rationale.md` is the hand-off artifact.** Each repo keeps its own rationale doc as a maintenance log for its templates. When one repo runs a recalibration pass, its rationale doc is the brief for the sibling repo's recalibration session — the *why* is portable even when the *what* isn't.
+- **Cadence stays loosely aligned.** When one repo recalibrates, the other does a sibling pass within a session or two — same way contract bumps trigger paired Cross-Repo block updates. Each repo's rationale doc names the sibling repo's last recalibration session by number so future-self can trace the cadence.
+- **No status block, no version field.** Template coordination is light-touch. The discipline is "when you touch templates, consider whether the sibling needs a paired pass" — not a versioned dependency.
+
 ---
 
 ## Local Development Scheme

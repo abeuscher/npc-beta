@@ -4,6 +4,8 @@ This doc is the maintenance log for the three session-document templates (`templ
 
 The templates are the system that produces the work. Treat changes to them as maintenance, not features.
 
+**Cross-repo coordination.** The Fleet Manager repo carries its own session-document templates and its own `template-rationale.md` — templates rightly differ by project shape, but the discipline is shared. The project-agnostic rules introduced here (drift, decision-threshold) should appear in both repos' base prompts; project-specific rules stay local. When one repo recalibrates, the sibling repo does a paired pass within a session or two. See `sessions/fleet-manager-planning-spec.md` § "Session-document template coordination" for the full discipline. The FM repo's last recalibration session number is named here once the paired pass lands.
+
 ---
 
 ## Recalibration pass — session 276.5 (2026-05-10)
