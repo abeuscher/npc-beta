@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Note;
+use App\Models\SiteSetting;
 use App\Models\User;
 
 class NotePolicy
@@ -24,12 +25,28 @@ class NotePolicy
 
     public function update(User $user, Note $note): bool
     {
-        return $user->can('update_note');
+        if (! $user->can('update_note')) {
+            return false;
+        }
+
+        if (SiteSetting::get('notes_edit_only_by_creator', 'false') !== 'true') {
+            return true;
+        }
+
+        return $user->id === $note->author_id || $user->can('edit_others_note');
     }
 
     public function delete(User $user, Note $note): bool
     {
-        return $user->can('delete_note');
+        if (! $user->can('delete_note')) {
+            return false;
+        }
+
+        if (SiteSetting::get('notes_edit_only_by_creator', 'false') !== 'true') {
+            return true;
+        }
+
+        return $user->id === $note->author_id || $user->can('edit_others_note');
     }
 
     public function deleteAny(User $user): bool

@@ -249,7 +249,18 @@ abstract class RecordTimelinePage extends Page implements HasActions
         $notableType = $this->notableType();
 
         return Action::make('editNote')
-            ->hidden(fn () => ! auth()->user()?->can('update_note'))
+            ->hidden(function (array $arguments) use ($notableType): bool {
+                $note = Note::where('id', $arguments['note'] ?? null)
+                    ->where('notable_type', $notableType)
+                    ->where('notable_id', $this->record->id)
+                    ->first();
+
+                if ($note === null) {
+                    return ! auth()->user()?->can('update_note');
+                }
+
+                return ! auth()->user()?->can('update', $note);
+            })
             ->modalHeading('Edit Note')
             ->modalWidth('2xl')
             ->fillForm(function (array $arguments) use ($notableType): array {
@@ -271,13 +282,14 @@ abstract class RecordTimelinePage extends Page implements HasActions
             })
             ->form(NoteResource::coreFormSchema())
             ->action(function (array $data, array $arguments) use ($notableType): void {
-                abort_unless(auth()->user()?->can('update_note'), 403);
-
-                Note::where('id', $arguments['note'])
+                $note = Note::where('id', $arguments['note'])
                     ->where('notable_type', $notableType)
                     ->where('notable_id', $this->record->id)
-                    ->firstOrFail()
-                    ->update($data);
+                    ->firstOrFail();
+
+                abort_unless(auth()->user()?->can('update', $note), 403);
+
+                $note->update($data);
 
                 Notification::make()
                     ->success()
@@ -291,19 +303,31 @@ abstract class RecordTimelinePage extends Page implements HasActions
         $notableType = $this->notableType();
 
         return Action::make('deleteNote')
-            ->hidden(fn () => ! auth()->user()?->can('delete_note'))
+            ->hidden(function (array $arguments) use ($notableType): bool {
+                $note = Note::where('id', $arguments['note'] ?? null)
+                    ->where('notable_type', $notableType)
+                    ->where('notable_id', $this->record->id)
+                    ->first();
+
+                if ($note === null) {
+                    return ! auth()->user()?->can('delete_note');
+                }
+
+                return ! auth()->user()?->can('delete', $note);
+            })
             ->requiresConfirmation()
             ->modalHeading('Delete Note')
             ->modalDescription('Are you sure you want to delete this note? This cannot be undone.')
             ->color('danger')
             ->action(function (array $arguments) use ($notableType): void {
-                abort_unless(auth()->user()?->can('delete_note'), 403);
-
-                Note::where('id', $arguments['note'])
+                $note = Note::where('id', $arguments['note'])
                     ->where('notable_type', $notableType)
                     ->where('notable_id', $this->record->id)
-                    ->firstOrFail()
-                    ->delete();
+                    ->firstOrFail();
+
+                abort_unless(auth()->user()?->can('delete', $note), 403);
+
+                $note->delete();
 
                 Notification::make()
                     ->success()
