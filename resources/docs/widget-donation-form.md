@@ -4,6 +4,7 @@ description: Configuring the donation form's preset amounts, monthly and annual 
 tags: [widget, page-builder, donation-form, donations, forms, cms]
 category: cms
 standalone: true
+parent: widgets
 ---
 
 # Donation Form Widget

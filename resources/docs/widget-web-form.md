@@ -4,6 +4,7 @@ description: Embedding a form built in the Form Manager on a CMS page — select
 tags: [widget, page-builder, web-form, forms, cms]
 category: cms
 standalone: true
+parent: widgets
 ---
 
 # Web Form Widget

@@ -4,6 +4,7 @@ description: Configuring the interactive calendar view of published events — h
 tags: [widget, page-builder, event-calendar, events, cms]
 category: cms
 standalone: true
+parent: widgets
 ---
 
 # Event Calendar Widget

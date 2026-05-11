@@ -61,3 +61,20 @@ it('persists the search_weight from frontmatter into help_articles', function ()
     expect(HelpArticle::where('slug', 'widgets')->value('search_weight'))->toBe(100)
         ->and(HelpArticle::where('slug', 'widget-bar-chart')->value('search_weight'))->toBe(0);
 });
+
+it('persists parent_slug from frontmatter and resolves parent() to the canonical Widgets article', function () {
+    $barChart = HelpArticle::where('slug', 'widget-bar-chart')->first();
+
+    expect($barChart->parent_slug)->toBe('widgets')
+        ->and($barChart->parent()?->slug)->toBe('widgets')
+        ->and(HelpArticle::where('slug', 'widgets')->value('parent_slug'))->toBeNull();
+});
+
+it('renders the breadcrumb chain Help > CMS > Widgets > Bar Chart Widget for widget-bar-chart', function () {
+    $page = new \App\Filament\Pages\HelpArticlePage();
+    $page->article = HelpArticle::where('slug', 'widget-bar-chart')->first();
+
+    $titles = array_values($page->getBreadcrumbs());
+
+    expect($titles)->toBe(['Help', 'CMS', 'Widgets', 'Bar Chart Widget']);
+});

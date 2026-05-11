@@ -4,6 +4,7 @@ description: Configuring data sources, axes, colours, and chart-display options 
 tags: [widget, page-builder, bar-chart, charts, cms]
 category: cms
 standalone: true
+parent: widgets
 ---
 
 # Bar Chart Widget

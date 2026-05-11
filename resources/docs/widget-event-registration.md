@@ -4,6 +4,7 @@ description: Configuring the sign-up form for a single event, including the even
 tags: [widget, page-builder, event-registration, events, forms, cms]
 category: cms
 standalone: true
+parent: widgets
 ---
 
 # Event Registration Form Widget

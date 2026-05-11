@@ -18,6 +18,7 @@ class HelpArticle extends Model
         'category',
         'embedding',
         'search_weight',
+        'parent_slug',
     ];
 
     protected $casts = [
@@ -29,5 +30,14 @@ class HelpArticle extends Model
     public function routes(): HasMany
     {
         return $this->hasMany(HelpArticleRoute::class);
+    }
+
+    public function parent(): ?self
+    {
+        if (! $this->parent_slug) {
+            return null;
+        }
+
+        return static::where('slug', $this->parent_slug)->first();
     }
 }

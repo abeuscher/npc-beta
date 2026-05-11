@@ -49,6 +49,18 @@ class HelpArticlePage extends Page
             $crumbs[HelpCategoryPage::categoryUrl($this->article->category)] = HelpCategoryPage::categoryLabel($this->article->category);
         }
 
+        $ancestors = [];
+        $cursor = $this->article->parent();
+        $guard = 0;
+        while ($cursor && $guard++ < 10) {
+            $ancestors[] = $cursor;
+            $cursor = $cursor->parent();
+        }
+
+        foreach (array_reverse($ancestors) as $ancestor) {
+            $crumbs[self::articleUrl($ancestor->slug)] = $ancestor->title;
+        }
+
         $crumbs[] = $this->article->title;
 
         return $crumbs;
