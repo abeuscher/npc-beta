@@ -15,6 +15,8 @@ category: cms
 
 Pages are the public-facing content pages of your website. Each page has a URL slug, a title, and a body made up of content blocks assembled with the page builder.
 
+> **Widget Help.** For per-widget configuration help, see the [Widget Catalog](/admin/help/widget-catalog) — a sortable index of widgets with detailed configuration articles.
+
 ## Page List
 
 The Pages index shows all pages with their slug, title, and published status. Use the **New Page** button to create a page.
