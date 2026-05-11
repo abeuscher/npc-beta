@@ -354,6 +354,75 @@ class EventResource extends Resource
                                     ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
                             ]),
                     ]),
+
+                    Forms\Components\Section::make('Ticket Tiers')
+                        ->description('Tiers carry the price + capacity for this event. An event with no tiers is free and uncapped; a single tier defines the price for all registrants; add multiple tiers to offer ticket levels (General / VIP / Member / etc).')
+                        ->visible(fn (Get $get) => ! in_array($get('registration_mode'), ['external', 'none']))
+                        ->schema([
+                            Forms\Components\Repeater::make('ticketTiers')
+                                ->label('')
+                                ->relationship('ticketTiers')
+                                ->reorderable('sort_order')
+                                ->orderColumn('sort_order')
+                                ->rules([
+                                    function () {
+                                        return function (string $attribute, $value, \Closure $fail) {
+                                            if (! is_array($value)) {
+                                                return;
+                                            }
+                                            $names = array_filter(array_map(
+                                                fn ($row) => is_array($row) ? strtolower(trim((string) ($row['name'] ?? ''))) : '',
+                                                $value
+                                            ));
+                                            if (count($names) !== count(array_unique($names))) {
+                                                $fail('Tier names must be unique within an event.');
+                                            }
+                                        };
+                                    },
+                                ])
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Name')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->placeholder('e.g. General, VIP, Member')
+                                        ->columnSpan(4),
+
+                                    Forms\Components\TextInput::make('price')
+                                        ->label('Price')
+                                        ->prefix('$')
+                                        ->numeric()
+                                        ->required()
+                                        ->default(0)
+                                        ->minValue(0)
+                                        ->step(0.01)
+                                        ->columnSpan(3),
+
+                                    Forms\Components\TextInput::make('capacity')
+                                        ->label('Capacity')
+                                        ->numeric()
+                                        ->nullable()
+                                        ->minValue(1)
+                                        ->helperText('Leave blank for unlimited.')
+                                        ->columnSpan(5),
+                                ])
+                                ->columns(12)
+                                ->itemLabel(function (array $state): ?string {
+                                    $name = $state['name'] ?? null;
+                                    if (blank($name)) {
+                                        return null;
+                                    }
+                                    $price = $state['price'] ?? null;
+                                    if ($price === null || $price === '') {
+                                        return $name;
+                                    }
+                                    return $name . ' — $' . number_format((float) $price, 2);
+                                })
+                                ->defaultItems(0)
+                                ->addActionLabel('Add tier')
+                                ->collapsible()
+                                ->cloneable(),
+                        ]),
                 ],
                 imageFields: [
                     SpatieMediaLibraryFileUpload::make('event_thumbnail')
