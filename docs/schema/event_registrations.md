@@ -7,6 +7,7 @@ Registrations submitted for an event.
 | id | uuid | no | PK |
 | event_id | uuid | no | FK→events, cascade |
 | ticket_tier_id | uuid | yes | FK→ticket_tiers, nullOnDelete. The tier this registration is for. Null only for registrations on tier-less (truly free + uncapped) events. |
+| quantity | smallint (unsigned) | no | default: 1. Number of tickets on this purchase line. A multi-quantity purchase produces one row per `(buyer, tier)` pair, each with its own quantity. Per-tier capacity aggregates via `sum(quantity)` over active statuses (pending/registered/waitlisted/attended). |
 | contact_id | uuid | yes | FK→contacts, nullOnDelete |
 | organization_id | uuid | yes | FK→organizations, nullOnDelete; set when the registrant party is an Org rather than a person. Schema-only at session 255 — admin UI sets manually; no importer sentinel ships this session. |
 | name | string | no | |

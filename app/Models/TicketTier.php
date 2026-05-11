@@ -43,10 +43,10 @@ class TicketTier extends Model
             return false;
         }
 
-        $count = $this->registrations()
+        $registered = (int) $this->registrations()
             ->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])
-            ->count();
+            ->sum('quantity');
 
-        return $count >= $this->capacity;
+        return $registered >= $this->capacity;
     }
 }

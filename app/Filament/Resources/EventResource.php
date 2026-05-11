@@ -549,6 +549,7 @@ class EventResource extends Resource
             ['key' => 'phone',               'header' => 'phone',               'value' => fn (\App\Models\EventRegistration $r) => $r->phone],
             ['key' => 'company',             'header' => 'company',             'value' => fn (\App\Models\EventRegistration $r) => $r->company],
             ['key' => 'status',              'header' => 'status',              'value' => fn (\App\Models\EventRegistration $r) => $r->status],
+            ['key' => 'quantity',            'header' => 'quantity',            'value' => fn (\App\Models\EventRegistration $r) => $r->quantity,                       'type' => 'number'],
             ['key' => 'ticket_type',         'header' => 'ticket_type',         'value' => fn (\App\Models\EventRegistration $r) => $r->ticket_type],
             ['key' => 'ticket_fee',          'header' => 'ticket_fee',          'value' => fn (\App\Models\EventRegistration $r) => $r->ticket_fee,                     'type' => 'number'],
             ['key' => 'payment_state',       'header' => 'payment_state',       'value' => fn (\App\Models\EventRegistration $r) => $r->payment_state],

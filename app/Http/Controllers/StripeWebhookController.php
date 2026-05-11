@@ -65,7 +65,7 @@ class StripeWebhookController extends Controller
         }
 
         // ── Event registration ───────────────────────────────────────────────
-        if (! empty($metadata->event_registration_id)) {
+        if (! empty($metadata->event_registration_checkout)) {
             return $this->handleEventRegistrationCheckout($session, $metadata);
         }
 
@@ -142,37 +142,39 @@ class StripeWebhookController extends Controller
 
     private function handleEventRegistrationCheckout(object $session, object $metadata): Response
     {
-        $registrationId = $metadata->event_registration_id;
-        $registration   = EventRegistration::find($registrationId);
+        $sessionId = $session->id;
 
-        if (! $registration) {
-            Log::warning('Stripe event registration checkout: registration not found', ['event_registration_id' => $registrationId]);
-            return response('OK', 200);
-        }
+        $registrations = EventRegistration::where('stripe_session_id', $sessionId)
+            ->where('status', 'pending')
+            ->get();
 
-        if ($registration->status !== 'pending') {
+        if ($registrations->isEmpty()) {
+            Log::warning('Stripe event registration checkout: no pending registrations found', ['stripe_session_id' => $sessionId]);
             return response('OK', 200);
         }
 
         $intentId    = $session->payment_intent;
         $amountTotal = $session->amount_total ?? 0;
 
-        $contact = $registration->contact_id
-            ? $registration->contact
+        $first   = $registrations->first();
+        $contact = $first->contact_id
+            ? $first->contact
             : $this->findOrCreateContact($session->customer_details ?? null);
 
-        if ($contact && ! $registration->contact_id) {
-            $registration->contact_id = $contact->id;
+        foreach ($registrations as $registration) {
+            $registration->update([
+                'status'                   => 'registered',
+                'stripe_payment_intent_id' => $intentId,
+                'contact_id'               => $registration->contact_id ?? $contact?->id,
+            ]);
         }
 
-        $registration->update([
-            'status'                   => 'registered',
-            'stripe_payment_intent_id' => $intentId,
-        ]);
-
+        // One Transaction records the order total; subject linkage stays single-
+        // valued (the first registration on the session). Sibling rows share
+        // the linkage implicitly via the shared stripe_session_id.
         Transaction::recordStripe([
             'subject_type' => EventRegistration::class,
-            'subject_id'   => $registration->id,
+            'subject_id'   => $first->id,
             'contact_id'   => $contact?->id,
             'amount'       => $amountTotal / 100,
             'stripe_id'    => $intentId,

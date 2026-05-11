@@ -118,6 +118,16 @@ class ViewRegistrations extends Page implements HasTable
                 Tables\Columns\TextColumn::make('company')
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                Tables\Columns\TextColumn::make('ticketTier.name')
+                    ->label('Tier')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('quantity')
+                    ->label('Tickets')
+                    ->numeric()
+                    ->alignRight()
+                    ->sortable(),
+
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'gray'    => 'pending',

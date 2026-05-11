@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { resetAndLogin } from '../helpers/auth.js';
-import { createPublishedEventWithTiers, cleanupEventsBySlugPrefix } from '../helpers/db.js';
+import { createPublishedEventWithTiers, cleanupEventsBySlugPrefix, fillTierToCapacity } from '../helpers/db.js';
 
 test.describe.configure({ mode: 'serial' });
 
-test.describe('Event registration — ticket tier picker', () => {
-    const SLUG_PREFIX = '278-tier-picker-';
+test.describe('Event registration — quantity spinner', () => {
+    const SLUG_PREFIX = '279-quantity-spinner-';
 
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
@@ -16,7 +16,7 @@ test.describe('Event registration — ticket tier picker', () => {
         await cleanupEventsBySlugPrefix(SLUG_PREFIX);
     });
 
-    test('free event with no tiers renders no tier picker', async ({ page }) => {
+    test('free event with no tiers renders no quantities UI', async ({ page }) => {
         const { landingPageSlug } = await createPublishedEventWithTiers(
             'Free Community Event',
             `${SLUG_PREFIX}free-uncapped`,
@@ -27,11 +27,11 @@ test.describe('Event registration — ticket tier picker', () => {
         await page.goto(`/${landingPageSlug}`);
 
         await expect(page.getByRole('heading', { name: 'Register', exact: true })).toBeVisible();
-        await expect(page.locator('input[name="ticket_tier_id"]')).toHaveCount(0);
+        await expect(page.locator('input[name^="quantities["]')).toHaveCount(0);
         await expect(page.locator('button[type="submit"]', { hasText: 'Register for this event' })).toBeVisible();
     });
 
-    test('single-tier paid event renders hidden tier_id input and price', async ({ page }) => {
+    test('single-tier paid event renders one quantity spinner with default 1 and a live subtotal', async ({ page }) => {
         const { landingPageSlug, tierIds } = await createPublishedEventWithTiers(
             'Annual Gala',
             `${SLUG_PREFIX}single-paid`,
@@ -41,15 +41,24 @@ test.describe('Event registration — ticket tier picker', () => {
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
 
-        await expect(page.getByText('Registration fee:').first()).toBeVisible();
-        await expect(page.getByText('$25.00').first()).toBeVisible();
-        const hidden = page.locator('input[type="hidden"][name="ticket_tier_id"]');
-        await expect(hidden).toHaveCount(1);
-        await expect(hidden).toHaveValue(tierIds[0]);
+        const input = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
+        await expect(input).toHaveCount(1);
+        await expect(input).toHaveAttribute('type', 'number');
+        await expect(input).toHaveValue('1');
+        await expect(input).toHaveAttribute('max', '100');
+
+        // Subtotal renders at $25.00 for default qty=1
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('25.00');
+
+        // Bumping the spinner updates the subtotal live
+        await input.fill('3');
+        await input.dispatchEvent('input');
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('75.00');
+
         await expect(page.locator('button[type="submit"]', { hasText: 'Register & pay' })).toBeVisible();
     });
 
-    test('multi-tier paid event renders radio picker with prices and selects first available', async ({ page }) => {
+    test('multi-tier event renders one spinner per tier and sums the subtotal across them', async ({ page }) => {
         const { landingPageSlug, tierIds } = await createPublishedEventWithTiers(
             'Conference 2026',
             `${SLUG_PREFIX}multi-paid`,
@@ -62,21 +71,51 @@ test.describe('Event registration — ticket tier picker', () => {
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
 
-        await expect(page.getByText('Choose ticket type').first()).toBeVisible();
+        const general = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
+        const vip     = page.locator(`input[name="quantities[${tierIds[1]}]"]`);
 
-        const radios = page.locator('input[type="radio"][name="ticket_tier_id"]');
-        await expect(radios).toHaveCount(2);
+        await expect(general).toHaveCount(1);
+        await expect(vip).toHaveCount(1);
+        // Default 0 in multi-tier mode
+        await expect(general).toHaveValue('0');
+        await expect(vip).toHaveValue('0');
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('0.00');
 
-        // The first radio is checked by default
-        await expect(radios.first()).toBeChecked();
-        await expect(radios.first()).toHaveValue(tierIds[0]);
+        // 2 General + 1 VIP → $50 + $100 = $150.00
+        await general.fill('2');
+        await general.dispatchEvent('input');
+        await vip.fill('1');
+        await vip.dispatchEvent('input');
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('150.00');
 
-        // Tier labels render with name + price
-        await expect(page.getByText('General — $25.00')).toBeVisible();
-        await expect(page.getByText('VIP — $100.00')).toBeVisible();
+        await expect(page.getByText('General').first()).toBeVisible();
+        await expect(page.getByText('VIP').first()).toBeVisible();
+    });
 
-        // Switching to the VIP tier wires the radio
-        await radios.nth(1).check();
-        await expect(radios.nth(1)).toBeChecked();
+    test('sold-out tier disables the spinner at max=0', async ({ page }) => {
+        const { landingPageSlug, tierIds } = await createPublishedEventWithTiers(
+            'Sold Out Tier Event',
+            `${SLUG_PREFIX}sold-out`,
+            [
+                { name: 'General', price: 25.0, capacity: 5 },
+                { name: 'VIP', price: 100.0, capacity: 1 },
+            ],
+        );
+
+        // Fill the VIP tier to capacity directly.
+        await fillTierToCapacity(`${SLUG_PREFIX}sold-out`, tierIds[1], 1);
+
+        await page.context().clearCookies();
+        await page.goto(`/${landingPageSlug}`);
+
+        const general = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
+        const vip     = page.locator(`input[name="quantities[${tierIds[1]}]"]`);
+
+        await expect(general).toBeEnabled();
+        await expect(general).toHaveAttribute('max', '5');
+
+        await expect(vip).toBeDisabled();
+        await expect(vip).toHaveAttribute('max', '0');
+        await expect(page.getByText('(sold out)').first()).toBeVisible();
     });
 });

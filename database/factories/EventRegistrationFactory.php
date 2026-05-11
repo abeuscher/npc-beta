@@ -16,6 +16,7 @@ class EventRegistrationFactory extends Factory
             'email'      => $this->faker->safeEmail(),
             'phone'      => $this->faker->optional()->phoneNumber(),
             'company'    => $this->faker->optional()->company(),
+            'quantity'   => 1,
             'status'     => 'registered',
             'registered_at' => now(),
         ];

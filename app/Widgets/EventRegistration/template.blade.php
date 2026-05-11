@@ -7,7 +7,6 @@
         $isFree         = (bool) $item['is_free'];
         $tiers          = $item['tiers'] ?? [];
         $tierCount      = count($tiers);
-        $availableTiers = array_values(array_filter($tiers, fn ($t) => ! $t['is_at_capacity']));
         $regOpen        = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
         $portalUser     = auth('portal')->user();
         $portalContact  = $portalUser?->contact;
@@ -65,52 +64,70 @@
         @if ($errors->has('register'))
             <div role="alert" class="alert alert--error">{{ $errors->first('register') }}</div>
         @endif
-
-        @if ($tierCount === 1 && $singleIsPaid)
-            <p class="text-muted" style="margin-bottom: 1rem;">Registration fee: <strong>${{ number_format((float) $singleTier['price'], 2) }}</strong></p>
+        @if ($errors->has('quantities'))
+            <div role="alert" class="alert alert--error">{{ $errors->first('quantities') }}</div>
         @endif
 
         @php
             $renderTierPicker = function () use ($tiers, $tierCount) {
-                if ($tierCount <= 1) {
-                    if ($tierCount === 1) {
-                        echo '<input type="hidden" name="ticket_tier_id" value="' . e($tiers[0]['id']) . '">';
-                    }
+                if ($tierCount === 0) {
                     return;
                 }
-                $selected = old('ticket_tier_id');
-                if (! $selected) {
-                    foreach ($tiers as $t) {
-                        if (! $t['is_at_capacity']) {
-                            $selected = $t['id'];
-                            break;
-                        }
-                    }
-                }
+
+                $singleDefault = $tierCount === 1 ? 1 : 0;
+
                 echo '<fieldset class="form-fieldset col-12 widget-event-registration__tier-picker">';
-                echo '<legend class="form-label">Choose ticket type <span aria-hidden="true" class="required-star">*</span></legend>';
+                if ($tierCount > 1) {
+                    echo '<legend class="form-label">Select tickets <span aria-hidden="true" class="required-star">*</span></legend>';
+                }
+
                 foreach ($tiers as $tier) {
-                    $disabled = $tier['is_at_capacity'];
-                    $checked  = (string) $tier['id'] === (string) $selected;
-                    $priceStr = ((float) $tier['price']) > 0 ? ' — $' . number_format((float) $tier['price'], 2) : ' — Free';
-                    $soldOut  = $disabled ? ' <span class="text-muted">(sold out)</span>' : '';
-                    echo '<label class="widget-event-registration__tier-option">';
-                    echo '<input type="radio" name="ticket_tier_id" value="' . e($tier['id']) . '"';
-                    if ($disabled) { echo ' disabled'; }
-                    if ($checked) { echo ' checked'; }
-                    echo ' required>';
-                    echo ' <span class="widget-event-registration__tier-label">' . e($tier['name']) . $priceStr . $soldOut . '</span>';
+                    $isOut       = (bool) $tier['is_at_capacity'];
+                    $remaining   = $tier['remaining_capacity'] ?? null;
+                    $max         = $isOut ? 0 : ($remaining !== null ? (int) $remaining : 99);
+                    $priceCents  = (int) round((float) $tier['price'] * 100);
+                    $priceStr    = ((float) $tier['price']) > 0 ? '$' . number_format((float) $tier['price'], 2) : 'Free';
+                    $oldQty      = old('quantities.' . $tier['id']);
+                    $defaultQty  = $oldQty !== null ? max(0, (int) $oldQty) : $singleDefault;
+                    if ($defaultQty > $max) {
+                        $defaultQty = $max;
+                    }
+
+                    echo '<div class="widget-event-registration__tier-row">';
+                    echo '<label for="qty_' . e($tier['id']) . '" class="widget-event-registration__tier-label">';
+                    echo '<strong>' . e($tier['name']) . '</strong> &mdash; ' . e($priceStr);
+                    if ($isOut) {
+                        echo ' <span class="text-muted">(sold out)</span>';
+                    } elseif ($remaining !== null) {
+                        echo ' <span class="text-muted">&mdash; ' . (int) $remaining . ' left</span>';
+                    }
                     echo '</label>';
+                    echo '<input type="number"';
+                    echo ' id="qty_' . e($tier['id']) . '"';
+                    echo ' name="quantities[' . e($tier['id']) . ']"';
+                    echo ' min="0" max="' . (int) $max . '" step="1"';
+                    echo ' value="' . (int) $defaultQty . '"';
+                    echo ' inputmode="numeric"';
+                    echo ' data-tier-price-cents="' . (int) $priceCents . '"';
+                    echo ' class="widget-event-registration__tier-quantity"';
+                    if ($isOut) { echo ' disabled aria-disabled="true"'; }
+                    echo '>';
+                    echo '</div>';
+                }
+
+                $anyPaid = false;
+                foreach ($tiers as $t) { if (((float) $t['price']) > 0) { $anyPaid = true; break; } }
+                if ($anyPaid) {
+                    echo '<div class="widget-event-registration__subtotal" aria-live="polite">';
+                    echo 'Subtotal: <strong>$<span data-event-registration-subtotal>0.00</span></strong>';
+                    echo '</div>';
                 }
                 echo '</fieldset>';
-                if (request()->session()->get('errors')?->has('ticket_tier_id')) {
-                    echo '<div role="alert" class="form-error">' . e(request()->session()->get('errors')->first('ticket_tier_id')) . '</div>';
-                }
             };
         @endphp
 
         @if ($portalUser)
-            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid" style="margin-bottom: 0.5rem;"
+            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid widget-event-registration__form" style="margin-bottom: 0.5rem;"
                   onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
                 @csrf
                 @php $renderTierPicker(); @endphp
@@ -137,7 +154,7 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid"
+            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid widget-event-registration__form"
                   onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
                 @csrf
 
@@ -235,5 +252,30 @@
                 </div>
             </form>
         @endif
+
+        <script>
+        (function () {
+            var forms = document.querySelectorAll('form.widget-event-registration__form');
+            forms.forEach(function (form) {
+                var subtotalEl = form.querySelector('[data-event-registration-subtotal]');
+                var inputs = form.querySelectorAll('input[data-tier-price-cents]');
+                if (inputs.length === 0) { return; }
+                function recalc() {
+                    var cents = 0;
+                    inputs.forEach(function (i) {
+                        var q = parseInt(i.value || '0', 10) || 0;
+                        var p = parseInt(i.getAttribute('data-tier-price-cents') || '0', 10) || 0;
+                        if (q < 0) q = 0;
+                        cents += q * p;
+                    });
+                    if (subtotalEl) {
+                        subtotalEl.textContent = (cents / 100).toFixed(2);
+                    }
+                }
+                inputs.forEach(function (i) { i.addEventListener('input', recalc); });
+                recalc();
+            });
+        })();
+        </script>
     @endif
 @endif

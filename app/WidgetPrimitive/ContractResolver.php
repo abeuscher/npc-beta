@@ -202,7 +202,7 @@ final class ContractResolver
 
     /**
      * Resolve a single Event by slug. Aggregate `is_at_capacity` derived via
-     * withCount on event_registrations — one coordinated query, no N+1.
+     * withSum on event_registrations.quantity — one coordinated query, no N+1.
      *
      * Per-request slug-keyed cache so EventDescription + EventRegistration
      * targeting the same event landing page hit one query.
@@ -224,7 +224,7 @@ final class ContractResolver
                 ->with([
                     'media',
                     'landingPage',
-                    'ticketTiers' => fn ($q) => $q->withCount(['registrations as registered_count' => fn ($r) => $r->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])]),
+                    'ticketTiers' => fn ($q) => $q->withSum(['registrations as registered_count' => fn ($r) => $r->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])], 'quantity'),
                 ])
                 ->first();
         }

@@ -135,12 +135,12 @@ it('registration is blocked when capacity is reached', function () {
     ]);
 
     $this->post(route('events.register', $event->slug), [
-        'name'           => 'Extra Person',
-        'email'          => 'extra@example.com',
-        'ticket_tier_id' => $tier->id,
-        '_form_start'    => time() - 10,
-        '_hp_name'       => '',
-    ])->assertRedirect()->assertSessionHasErrors('register');
+        'name'        => 'Extra Person',
+        'email'       => 'extra@example.com',
+        'quantities'  => [$tier->id => 1],
+        '_form_start' => time() - 10,
+        '_hp_name'    => '',
+    ])->assertRedirect()->assertSessionHasErrors('quantities');
 
     expect(EventRegistration::count())->toBe(1);
 });

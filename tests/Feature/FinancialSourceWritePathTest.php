@@ -103,7 +103,7 @@ it('paid event checkout via EventCheckoutController writes source=stripe_webhook
     $this->post(route('events.checkout', $event->slug), [
         'name'           => 'Paid User',
         'email'          => 'paid@example.com',
-        'ticket_tier_id' => $tier->id,
+        'quantities'     => [$tier->id => 1],
     ]);
 
     expect($captured)->toBe(Source::STRIPE_WEBHOOK);
@@ -122,7 +122,7 @@ it('portal paid event checkout via Portal\\EventCheckoutController writes source
     });
 
     $this->actingAs($account, 'portal')
-        ->post(route('portal.events.checkout', $event->slug), ['ticket_tier_id' => $tier->id]);
+        ->post(route('portal.events.checkout', $event->slug), ['quantities' => [$tier->id => 1]]);
 
     expect($captured)->toBe(Source::STRIPE_WEBHOOK);
 });

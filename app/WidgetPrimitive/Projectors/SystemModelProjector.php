@@ -175,9 +175,10 @@ final class SystemModelProjector
 
     /**
      * Project the event's ticket tiers as a flat array, ordered by sort_order.
-     * Each row carries the tier's id, name, price, capacity, and per-tier
-     * `is_at_capacity` derived from the eager-loaded `registered_count`.
-     * Returns an empty array when ticketTiers is not eager-loaded.
+     * Each row carries the tier's id, name, price, capacity, remaining_capacity,
+     * and per-tier `is_at_capacity` derived from the eager-loaded
+     * `registered_count` (sum of registration quantities). Returns an empty
+     * array when ticketTiers is not eager-loaded.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -191,14 +192,18 @@ final class SystemModelProjector
             $registered = (int) ($tier->getAttribute('registered_count') ?? 0);
             $capacity   = $tier->capacity;
             $isAtCap    = $capacity !== null && $registered >= (int) $capacity;
+            $remaining  = $capacity === null
+                ? null
+                : max(0, (int) $capacity - $registered);
 
             return [
-                'id'             => $tier->id,
-                'name'           => (string) $tier->name,
-                'price'          => (string) $tier->price,
-                'capacity'       => $capacity,
-                'registered'     => $registered,
-                'is_at_capacity' => $isAtCap,
+                'id'                 => $tier->id,
+                'name'               => (string) $tier->name,
+                'price'              => (string) $tier->price,
+                'capacity'           => $capacity,
+                'registered'         => $registered,
+                'remaining_capacity' => $remaining,
+                'is_at_capacity'     => $isAtCap,
             ];
         })->values()->all();
     }

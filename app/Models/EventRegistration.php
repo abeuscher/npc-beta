@@ -37,6 +37,7 @@ class EventRegistration extends Model
     protected $fillable = [
         'event_id',
         'ticket_tier_id',
+        'quantity',
         'contact_id',
         'organization_id',
         'name',
@@ -67,6 +68,7 @@ class EventRegistration extends Model
         'registered_at'       => 'datetime',
         'mailing_list_opt_in' => 'boolean',
         'ticket_fee'          => 'decimal:2',
+        'quantity'            => 'integer',
         'custom_fields'       => 'array',
     ];
 

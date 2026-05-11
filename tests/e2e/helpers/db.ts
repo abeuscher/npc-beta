@@ -753,6 +753,16 @@ export async function createPublishedEventWithTiers(
     });
 }
 
+export async function fillTierToCapacity(eventSlug: string, tierId: string, quantity = 1): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            `INSERT INTO event_registrations (id, event_id, ticket_tier_id, name, email, status, source, quantity, registered_at, created_at, updated_at, custom_fields)
+             VALUES (gen_random_uuid(), (SELECT id FROM events WHERE slug = $1), $2, 'Existing', $3, 'registered', 'human', $4, NOW(), NOW(), NOW(), '{}'::jsonb)`,
+            [eventSlug, tierId, `existing-${tierId}@example.com`, quantity],
+        );
+    });
+}
+
 export async function cleanupEventsBySlugPrefix(prefix: string): Promise<void> {
     await withClient(async (client) => {
         await client.query(
