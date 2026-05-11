@@ -320,6 +320,13 @@ html:not(.dark) .fi-radio-input {
     border-radius: 3px;
     font-size: 0.8rem;
 }
+.help-panel-body a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+.help-panel-body a:hover { color: #1d4ed8; }
+html.dark .help-panel-body a { color: #60a5fa; }
+html.dark .help-panel-body a:hover { color: #93c5fd; }
 
 .help-panel-footer {
     padding: 0.75rem 1.5rem;
@@ -544,6 +551,14 @@ html.dark .help-page-content td { border-color: rgb(75 85 99); }
     font-weight: 600;
 }
 html.dark .help-page-content th { background: rgb(55 65 81); }
+
+.help-page-content a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+.help-page-content a:hover { color: #1d4ed8; }
+html.dark .help-page-content a { color: #60a5fa; }
+html.dark .help-page-content a:hover { color: #93c5fd; }
 
 .help-related-article {
     display: block;
