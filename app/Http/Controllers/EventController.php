@@ -47,6 +47,7 @@ class EventController extends Controller
             'state'          => ['nullable', 'string', 'max:100'],
             'zip'                => ['nullable', 'string', 'max:20'],
             'mailing_list_opt_in' => ['nullable', 'boolean'],
+            'notes'              => ['nullable', 'string', 'max:2000'],
             'ticket_tier_id'      => $tierIdRule,
         ]);
 
@@ -77,10 +78,6 @@ class EventController extends Controller
             return back()->withErrors(['register' => $tier
                 ? 'This ticket tier is at capacity.'
                 : 'This event is at capacity.']);
-        }
-
-        if (EventRegistration::where('event_id', $event->id)->where('email', $validated['email'])->exists()) {
-            return redirect($eventPageUrl)->with('registration_success', true);
         }
 
         EventRegistration::create([

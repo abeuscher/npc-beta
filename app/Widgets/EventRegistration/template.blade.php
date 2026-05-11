@@ -110,9 +110,17 @@
         @endphp
 
         @if ($portalUser)
-            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid" style="margin-bottom: 0.5rem;">
+            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid" style="margin-bottom: 0.5rem;"
+                  onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
                 @csrf
                 @php $renderTierPicker(); @endphp
+
+                <div class="col-12">
+                    <label for="reg_notes_member" class="form-label">Notes <span class="text-muted-light" style="font-weight: normal;">(optional)</span></label>
+                    <textarea id="reg_notes_member" name="notes" rows="3"
+                              placeholder="Anything we should know? Additional attendees, dietary needs, accessibility, etc.">{{ old('notes') }}</textarea>
+                </div>
+
                 <div class="col-12">
                     <button type="submit" class="btn btn--primary">
                         {{ $memberSubmitLabel }}
@@ -129,7 +137,8 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid">
+            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid"
+                  onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -212,6 +221,12 @@
                         </label>
                     </div>
                 @endif
+
+                <div class="col-12">
+                    <label for="reg_notes" class="form-label">Notes <span class="text-muted-light" style="font-weight: normal;">(optional)</span></label>
+                    <textarea id="reg_notes" name="notes" rows="3"
+                              placeholder="Anything we should know? Additional attendees, dietary needs, accessibility, etc.">{{ old('notes') }}</textarea>
+                </div>
 
                 <div class="col-12">
                     <button type="submit" class="btn btn--primary">

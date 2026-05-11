@@ -152,6 +152,35 @@ it('allows registration on a non-full tier even when a sibling tier is full', fu
     expect(EventRegistration::where('email', 'jane@example.com')->first()->ticket_tier_id)->toBe($open->id);
 });
 
+// ── Notes field passthrough ──────────────────────────────────────────────────
+
+it('persists the notes field when submitted with the free registration', function () {
+    $event = Event::factory()->create(['status' => 'published']);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        'notes'       => 'Bringing a +1; vegetarian; wheelchair accessible please.',
+        '_form_start' => time() - 10,
+    ])->assertRedirect();
+
+    $reg = EventRegistration::where('email', 'jane@example.com')->first();
+    expect($reg->notes)->toBe('Bringing a +1; vegetarian; wheelchair accessible please.');
+});
+
+it('caps the notes field at 2000 chars', function () {
+    $event = Event::factory()->create(['status' => 'published']);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        'notes'       => str_repeat('x', 2001),
+        '_form_start' => time() - 10,
+    ])->assertSessionHasErrors('notes');
+
+    expect(EventRegistration::count())->toBe(0);
+});
+
 // ── Contract / template surface ──────────────────────────────────────────────
 
 it('projects tiers onto the EventRegistration contract', function () {

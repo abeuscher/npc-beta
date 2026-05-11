@@ -100,23 +100,25 @@ it('counts pending registrations toward capacity', function () {
     expect($event->isAtCapacity())->toBeTrue();
 });
 
-it('silently succeeds for duplicate event checkout', function () {
-    config(['services.stripe.secret' => 'sk_test_fake']);
-    $event = Event::factory()->paid(25.00)->create();
-    $tier  = $event->ticketTiers()->first();
+it('allows free-path repeat registrations from the same email', function () {
+    // session-278: the absolute email-uniqueness silent-success was dropped.
+    // A repeat registration creates a new row — the buyer is allowed to come
+    // back later for another ticket. Double-click protection is client-side.
+    $event = Event::factory()->create(['status' => 'published']);
+
     EventRegistration::factory()->create([
         'event_id' => $event->id,
-        'email'    => 'dupe@example.com',
+        'email'    => 'repeat@example.com',
     ]);
 
-    $response = $this->post(route('events.checkout', $event->slug), [
-        'name'           => 'Test User',
-        'email'          => 'dupe@example.com',
-        'ticket_tier_id' => $tier->id,
-    ]);
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Repeat User',
+        'email'       => 'repeat@example.com',
+        '_form_start' => time() - 10,
+        '_hp_name'    => '',
+    ])->assertRedirect();
 
-    $response->assertRedirect();
-    expect(EventRegistration::where('email', 'dupe@example.com')->count())->toBe(1);
+    expect(EventRegistration::where('email', 'repeat@example.com')->count())->toBe(2);
 });
 
 // ── Webhook — event registration checkout completed ─────────────────────────

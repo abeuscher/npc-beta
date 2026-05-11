@@ -39,6 +39,7 @@ class EventCheckoutController extends Controller
 
         $validated = $request->validate([
             'ticket_tier_id' => ['required', 'uuid', Rule::exists('ticket_tiers', 'id')->where('event_id', $event->id)],
+            'notes'          => ['nullable', 'string', 'max:2000'],
         ]);
 
         $tier = TicketTier::findOrFail($validated['ticket_tier_id']);
@@ -49,11 +50,6 @@ class EventCheckoutController extends Controller
 
         if ($tier->isAtCapacity()) {
             return back()->withErrors(['register' => 'This ticket tier is at capacity.']);
-        }
-
-        // Duplicate check
-        if (EventRegistration::where('event_id', $event->id)->where('contact_id', $contact->id)->exists()) {
-            return redirect($eventPageUrl)->with('registration_success', true);
         }
 
         $secret = config('services.stripe.secret');
@@ -70,6 +66,7 @@ class EventCheckoutController extends Controller
             'status'         => 'pending',
             'source'         => Source::STRIPE_WEBHOOK,
             'registered_at'  => now(),
+            'notes'          => $validated['notes'] ?? null,
         ]);
 
         $amountCents = (int) round((float) $tier->price * 100);

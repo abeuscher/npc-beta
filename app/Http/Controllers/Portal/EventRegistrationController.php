@@ -49,6 +49,7 @@ class EventRegistrationController extends Controller
 
         $validated = $request->validate([
             'ticket_tier_id' => $tierIdRule,
+            'notes'          => ['nullable', 'string', 'max:2000'],
         ]);
 
         $tier = isset($validated['ticket_tier_id'])
@@ -66,10 +67,6 @@ class EventRegistrationController extends Controller
                 : 'This event is at capacity.']);
         }
 
-        if (EventRegistration::where('event_id', $event->id)->where('contact_id', $contact->id)->exists()) {
-            return redirect($eventPageUrl)->with('registration_success', true);
-        }
-
         EventRegistration::create([
             'event_id'       => $event->id,
             'ticket_tier_id' => $tier?->id,
@@ -79,6 +76,7 @@ class EventRegistrationController extends Controller
             'status'         => 'registered',
             'source'         => Source::HUMAN,
             'registered_at'  => now(),
+            'notes'          => $validated['notes'] ?? null,
         ]);
 
         return redirect($eventPageUrl)->with('registration_success', true);
