@@ -6,6 +6,7 @@ Registrations submitted for an event.
 |---|---|---|---|
 | id | uuid | no | PK |
 | event_id | uuid | no | FK→events, cascade |
+| ticket_tier_id | uuid | yes | FK→ticket_tiers, nullOnDelete. The tier this registration is for. Null only for registrations on tier-less (truly free + uncapped) events. |
 | contact_id | uuid | yes | FK→contacts, nullOnDelete |
 | organization_id | uuid | yes | FK→organizations, nullOnDelete; set when the registrant party is an Org rather than a person. Schema-only at session 255 — admin UI sets manually; no importer sentinel ships this session. |
 | name | string | no | |
@@ -24,8 +25,8 @@ Registrations submitted for an event.
 | stripe_session_id | string | yes | Stripe Checkout session ID for paid registrations |
 | mailing_list_opt_in | boolean | no | default: false |
 | notes | text | yes | |
-| ticket_type | string | yes | Denormalized snapshot of the ticket tier (free/paid/member/etc). Populated by the events importer. |
-| ticket_fee | decimal(10,2) | yes | Denormalized fee amount from the source. Authoritative amount lives on the linked Transaction when present. |
+| ticket_type | string | yes | Denormalized snapshot of the ticket tier name. Populated by the events importer; the canonical tier reference is `ticket_tier_id`. Retained for import-provenance traceability after rename/delete. |
+| ticket_fee | decimal(10,2) | yes | Denormalized fee amount from the source. Authoritative amount lives on the linked Transaction when present; the canonical price lives on the linked `ticket_tier`. |
 | payment_state | string | yes | Denormalized payment-state snapshot from the source (e.g. "Paid", "Free"). Authoritative state lives on the Transaction when present. |
 | transaction_id | uuid | yes | FK→transactions, nullOnDelete. Set when the events importer created or matched a Transaction for this registration. |
 | import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for registrations created by the events importer so rollback can cascade correctly. |

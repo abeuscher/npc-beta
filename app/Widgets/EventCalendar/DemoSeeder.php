@@ -64,7 +64,6 @@ class DemoSeeder extends Seeder
                     'state'             => $occurrence['state'],
                     'starts_at'         => $startsAt,
                     'ends_at'           => $startsAt->copy()->addHours(2),
-                    'price'             => 0,
                     'registration_mode' => 'open',
                 ]
             );

@@ -17,7 +17,7 @@ uses(TestCase::class, RefreshDatabase::class);
 // ── Free paths (no Stripe) — direct HTTP route assertions ────────────────────
 
 it('free event registration via EventController gets source=human', function () {
-    $event = Event::factory()->create(['price' => 0]);
+    $event = Event::factory()->create();
 
     $this->post(route('events.register', $event->slug), [
         'name'  => 'Free User',
@@ -33,7 +33,7 @@ it('free event registration via EventController gets source=human', function () 
 it('portal member free event registration via Portal\\EventRegistrationController gets source=human', function () {
     $contact = Contact::factory()->create(['email' => 'portalfree@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
-    $event   = Event::factory()->create(['price' => 0]);
+    $event   = Event::factory()->create();
 
     $this->actingAs($account, 'portal')
         ->post(route('portal.events.register', $event->slug))
@@ -92,7 +92,7 @@ it('paid donation checkout via DonationCheckoutController writes source=stripe_w
 
 it('paid event checkout via EventCheckoutController writes source=stripe_webhook', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
-    $event = Event::factory()->create(['price' => 25]);
+    $event = Event::factory()->paid(25.00)->create();
 
     $captured = null;
     EventRegistration::creating(function (EventRegistration $r) use (&$captured) {
@@ -111,7 +111,7 @@ it('portal paid event checkout via Portal\\EventCheckoutController writes source
     config(['services.stripe.secret' => 'sk_test_fake']);
     $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
-    $event   = Event::factory()->create(['price' => 25]);
+    $event   = Event::factory()->paid(25.00)->create();
 
     $captured = null;
     EventRegistration::creating(function (EventRegistration $r) use (&$captured) {

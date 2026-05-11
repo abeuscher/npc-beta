@@ -47,10 +47,6 @@
             <div role="alert" class="alert alert--error">{{ $errors->first('register') }}</div>
         @endif
 
-        @if ($isPaid)
-            <p class="text-muted" style="margin-bottom: 1rem;">Registration fee: <strong>${{ number_format((float) $item['price'], 2) }}</strong></p>
-        @endif
-
         @if ($portalUser)
             <form method="POST" action="{{ $isPaid ? route('portal.events.checkout', $item['slug']) : route('portal.events.register', $item['slug']) }}" style="margin-bottom: 0.5rem;">
                 @csrf

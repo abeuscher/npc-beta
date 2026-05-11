@@ -341,23 +341,6 @@ class EventResource extends Resource
                                     ->helperText('Registrants will be redirected to this URL.')
                                     ->visible(fn (Get $get) => $get('registration_mode') === 'external'),
 
-                                Forms\Components\TextInput::make('capacity')
-                                    ->numeric()
-                                    ->minValue(1)
-                                    ->nullable()
-                                    ->helperText('Leave blank for unlimited capacity.')
-                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
-
-                                Forms\Components\TextInput::make('price')
-                                    ->label('Ticket price')
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->default(0)
-                                    ->minValue(0)
-                                    ->step(0.01)
-                                    ->helperText('Set to 0 for a free event.')
-                                    ->disabled(fn (Get $get) => in_array($get('registration_mode'), ['external', 'none'])),
-
                                 Forms\Components\Toggle::make('auto_create_contacts')
                                     ->label('Automatically add registrants to Contacts')
                                     ->default(true)
@@ -521,8 +504,6 @@ class EventResource extends Resource
             ['key' => 'city',                      'header' => 'city',                      'value' => fn (Event $e) => $e->city],
             ['key' => 'state',                     'header' => 'state',                     'value' => fn (Event $e) => $e->state],
             ['key' => 'zip',                       'header' => 'zip',                       'value' => fn (Event $e) => $e->zip],
-            ['key' => 'price',                     'header' => 'price',                     'value' => fn (Event $e) => $e->price,                          'type' => 'number'],
-            ['key' => 'capacity',                  'header' => 'capacity',                  'value' => fn (Event $e) => $e->capacity,                       'type' => 'number'],
             ['key' => 'sponsor_organization_name', 'header' => 'sponsor_organization_name', 'value' => fn (Event $e) => $e->sponsorOrganization?->name],
             ['key' => 'created_at',                'header' => 'created_at',                'value' => fn (Event $e) => $e->created_at?->toDateTimeString(), 'type' => 'datetime'],
         ];

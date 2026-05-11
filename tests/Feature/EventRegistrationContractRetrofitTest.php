@@ -21,23 +21,24 @@ beforeEach(function () {
 
 // guards: EventRegistration whitelist (capacity-aware single-row DTO with is_at_capacity aggregate, address_line_1/meeting_url/description non-leak); N>=2 redundant for ContractResolver mutations per session-241 audit.
 it('projects only contract-declared fields onto the EventRegistration single-row DTO with is_at_capacity aggregate', function () {
-    $event = Event::factory()->create([
+    $event = Event::factory()->paid(25.00, 2)->create([
         'title'                     => 'Capacity Test Event',
         'slug'                      => 'capacity-test',
         'status'                    => 'published',
         'starts_at'                 => now()->addDays(5),
-        'capacity'                  => 2,
-        'price'                     => 25.00,
         'registration_mode'         => 'open',
         'external_registration_url' => 'https://example.test/register',
         'address_line_1'            => '999 Capacity Way',
         'meeting_url'               => 'https://meet.example.test/full',
     ]);
 
+    $tier = $event->ticketTiers()->first();
+
     foreach (range(1, 3) as $i) {
         EventRegistration::factory()->create([
-            'event_id' => $event->id,
-            'status'   => 'registered',
+            'event_id'       => $event->id,
+            'ticket_tier_id' => $tier->id,
+            'status'         => 'registered',
         ]);
     }
 
@@ -50,41 +51,42 @@ it('projects only contract-declared fields onto the EventRegistration single-row
         ->and(array_keys($dto['item']))->toEqualCanonicalizing([
             'slug', 'title', 'status', 'registration_mode', 'is_free',
             'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url',
-            'price', 'is_at_capacity',
+            'is_at_capacity',
         ])
         ->and($dto['item'])->not->toHaveKey('address_line_1')
         ->and($dto['item'])->not->toHaveKey('meeting_url')
         ->and($dto['item'])->not->toHaveKey('description')
+        ->and($dto['item'])->not->toHaveKey('price')
         ->and($dto['item']['is_at_capacity'])->toBeTrue()
         ->and($dto['item']['is_free'])->toBeFalse()
-        ->and($dto['item']['price'])->toBeString()->toBe('25.00')
         ->and($dto['item']['external_registration_url'])->toBe('https://example.test/register')
         ->and($dto['item']['slug'])->toBe('capacity-test');
 });
 
-// guards: EventRegistration query pattern (events query with withCount as sole path to is_at_capacity, no standalone event_registrations select); N>=2 redundant for ContractResolver mutations per session-241 audit.
-it('renders EventRegistration through the contract resolver with withCount as the only path to is_at_capacity', function () {
+// guards: EventRegistration query pattern (events query is plain; is_at_capacity comes from one ticket_tiers eager-load with withCount on registrations; no standalone event_registrations select outside the tier eager load).
+it('renders EventRegistration through the contract resolver with a single coordinated tier query for is_at_capacity', function () {
     $landing = Page::factory()->create([
         'title'  => 'Reg Landing',
         'slug'   => 'reg-landing',
         'status' => 'published',
     ]);
 
-    $event = Event::factory()->create([
+    $event = Event::factory()->withCapacity(10)->create([
         'title'             => 'Open Registration Event',
         'slug'              => 'open-reg-event',
         'status'            => 'published',
         'starts_at'         => now()->addDays(10),
-        'capacity'          => 10,
-        'price'             => 0,
         'registration_mode' => 'closed',
         'landing_page_id'   => $landing->id,
     ]);
 
+    $tier = $event->ticketTiers()->first();
+
     foreach (range(1, 3) as $i) {
         EventRegistration::factory()->create([
-            'event_id' => $event->id,
-            'status'   => 'registered',
+            'event_id'       => $event->id,
+            'ticket_tier_id' => $tier->id,
+            'status'         => 'registered',
         ]);
     }
 
@@ -119,16 +121,23 @@ it('renders EventRegistration through the contract resolver with withCount as th
             && str_contains($sql, '"id" in');
     }));
 
+    $tierSelects = array_values(array_filter($queries, function ($q) {
+        $sql = $q['query'];
+        return str_starts_with($sql, 'select')
+            && str_contains($sql, 'from "ticket_tiers"');
+    }));
+
     $standaloneRegistrationSelects = array_values(array_filter($queries, function ($q) {
         $sql = $q['query'];
         return str_starts_with($sql, 'select')
             && str_contains($sql, 'from "event_registrations"')
-            && ! str_contains($sql, 'from "events"');
+            && ! str_contains($sql, 'from "ticket_tiers"');
     }));
 
     expect(count($eventSelects))->toBe(1)
-        ->and($eventSelects[0]['query'])->toContain('from "event_registrations"')
-        ->and($eventSelects[0]['query'])->toContain('as "registered_count"')
+        ->and(count($tierSelects))->toBe(1)
+        ->and($tierSelects[0]['query'])->toContain('from "event_registrations"')
+        ->and($tierSelects[0]['query'])->toContain('as "registered_count"')
         ->and(count($mediaSelects))->toBe(1)
         ->and(count($landingPageSelects))->toBe(1)
         ->and(count($standaloneRegistrationSelects))->toBe(0);

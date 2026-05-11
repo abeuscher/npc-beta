@@ -63,7 +63,7 @@ class EventRegistrationDefinition extends WidgetDefinition
         return new DataContract(
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
-            fields: ['slug', 'title', 'status', 'registration_mode', 'is_free', 'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url', 'price', 'is_at_capacity'],
+            fields: ['slug', 'title', 'status', 'registration_mode', 'is_free', 'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url', 'is_at_capacity'],
             filters: ['slug' => (string) ($config['event_slug'] ?? '')],
             model: 'event',
             cardinality: DataContract::CARDINALITY_ONE,

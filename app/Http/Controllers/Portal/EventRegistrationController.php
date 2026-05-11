@@ -52,14 +52,17 @@ class EventRegistrationController extends Controller
             return redirect($eventPageUrl)->with('registration_success', true);
         }
 
+        $tier = $event->ticketTiers()->orderBy('sort_order')->first();
+
         EventRegistration::create([
-            'event_id'      => $event->id,
-            'contact_id'    => $contact->id,
-            'name'          => $contact->display_name,
-            'email'         => $contact->email,
-            'status'        => 'registered',
-            'source'        => Source::HUMAN,
-            'registered_at' => now(),
+            'event_id'       => $event->id,
+            'ticket_tier_id' => $tier?->id,
+            'contact_id'     => $contact->id,
+            'name'           => $contact->display_name,
+            'email'          => $contact->email,
+            'status'         => 'registered',
+            'source'         => Source::HUMAN,
+            'registered_at'  => now(),
         ]);
 
         return redirect($eventPageUrl)->with('registration_success', true);

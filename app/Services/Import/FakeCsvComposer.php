@@ -64,7 +64,6 @@ class FakeCsvComposer
             $eventExternalId = 'E-' . $this->faker->unique()->numerify('######');
             $isFree          = $this->faker->boolean(40);
             $price           = $isFree ? '0.00' : (string) $this->faker->numberBetween(5, 100);
-            $capacity        = $this->faker->boolean(50) ? (string) $this->faker->numberBetween(20, 200) : null;
             $blankOnly       = ($groupSize === 1) && $this->faker->boolean(30);
 
             $eventFields = [
@@ -79,8 +78,6 @@ class FakeCsvComposer
                 'Event Zip'            => $this->faker->postcode(),
                 'Event Starts At'      => $startsAt->format('Y-m-d H:i:s'),
                 'Event Ends At'        => $endsAt->format('Y-m-d H:i:s'),
-                'Event Price'              => $price,
-                'Event Capacity'           => $capacity,
                 'Event External ID'        => $eventExternalId,
             ];
 

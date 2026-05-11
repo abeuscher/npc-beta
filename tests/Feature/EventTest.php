@@ -124,12 +124,14 @@ it('registration redirects to the landing page when one exists', function () {
 });
 
 it('registration is blocked when capacity is reached', function () {
-    $event = Event::factory()->withCapacity(1)->create(['status' => 'published', 'is_free' => true]);
+    $event = Event::factory()->withCapacity(1)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
 
     // Fill capacity
     EventRegistration::factory()->create([
-        'event_id' => $event->id,
-        'status'   => 'registered',
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $tier->id,
+        'status'         => 'registered',
     ]);
 
     $this->post(route('events.register', $event->slug), [
@@ -185,15 +187,20 @@ it('timing check blocks submissions under 3 seconds without creating a registrat
 
 // ── Event model methods ───────────────────────────────────────────────────────
 
-it('isAtCapacity returns false when capacity is null', function () {
-    $event = Event::factory()->create(['capacity' => null]);
+it('isAtCapacity returns false when event has no tiers', function () {
+    $event = Event::factory()->create();
     expect($event->isAtCapacity())->toBeFalse();
 });
 
 it('isAtCapacity returns true when registrations fill capacity', function () {
-    $event = Event::factory()->withCapacity(2)->create(['status' => 'published', 'is_free' => true]);
+    $event = Event::factory()->withCapacity(2)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
 
-    EventRegistration::factory()->count(2)->create(['event_id' => $event->id, 'status' => 'registered']);
+    EventRegistration::factory()->count(2)->create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $tier->id,
+        'status'         => 'registered',
+    ]);
 
     expect($event->fresh()->isAtCapacity())->toBeTrue();
 });

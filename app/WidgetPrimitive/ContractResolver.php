@@ -221,8 +221,11 @@ final class ContractResolver
         if (! array_key_exists($key, $cache)) {
             $cache[$key] = Event::published()
                 ->where('slug', $slug)
-                ->withCount(['registrations as registered_count' => fn ($q) => $q->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])])
-                ->with(['media', 'landingPage'])
+                ->with([
+                    'media',
+                    'landingPage',
+                    'ticketTiers' => fn ($q) => $q->withCount(['registrations as registered_count' => fn ($r) => $r->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])]),
+                ])
                 ->first();
         }
 

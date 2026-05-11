@@ -53,8 +53,6 @@ class Event extends Model implements HasMedia
         'meeting_url',
         'meeting_label',
         'meeting_details',
-        'price',
-        'capacity',
         'registration_mode',
         'external_registration_url',
         'auto_create_contacts',
@@ -72,8 +70,6 @@ class Event extends Model implements HasMedia
 
     protected $casts = [
         'custom_fields'               => 'array',
-        'capacity'                    => 'integer',
-        'price'                       => 'decimal:2',
         'auto_create_contacts'        => 'boolean',
         'mailing_list_opt_in_enabled' => 'boolean',
         'registrants_deleted_at'      => 'datetime',
@@ -108,7 +104,11 @@ class Event extends Model implements HasMedia
 
     public function getIsFreeAttribute(): bool
     {
-        return ($this->attributes['price'] ?? 0) == 0;
+        if ($this->relationLoaded('ticketTiers')) {
+            return $this->ticketTiers->every(fn ($tier) => (float) $tier->price <= 0.0);
+        }
+
+        return $this->ticketTiers()->where('price', '>', 0)->doesntExist();
     }
 
     // ──────────────────────────────────────────────────────────
@@ -128,6 +128,11 @@ class Event extends Model implements HasMedia
     public function registrations(): HasMany
     {
         return $this->hasMany(EventRegistration::class);
+    }
+
+    public function ticketTiers(): HasMany
+    {
+        return $this->hasMany(TicketTier::class)->orderBy('sort_order');
     }
 
     public function landingPage(): BelongsTo
@@ -192,15 +197,19 @@ class Event extends Model implements HasMedia
 
     public function isAtCapacity(): bool
     {
-        if ($this->capacity === null) {
+        $tiers = $this->ticketTiers;
+
+        if ($tiers->isEmpty()) {
             return false;
         }
 
-        $registered = $this->registrations()
-            ->whereIn('status', ['pending', 'registered', 'waitlisted', 'attended'])
-            ->count();
+        foreach ($tiers as $tier) {
+            if (! $tier->isAtCapacity()) {
+                return false;
+            }
+        }
 
-        return $registered >= $this->capacity;
+        return true;
     }
 
 }

@@ -36,6 +36,7 @@ class EventRegistration extends Model
 
     protected $fillable = [
         'event_id',
+        'ticket_tier_id',
         'contact_id',
         'organization_id',
         'name',
@@ -76,6 +77,11 @@ class EventRegistration extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function ticketTier(): BelongsTo
+    {
+        return $this->belongsTo(TicketTier::class);
     }
 
     public function contact(): BelongsTo

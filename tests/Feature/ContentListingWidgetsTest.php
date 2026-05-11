@@ -215,7 +215,6 @@ it('events listing widget renders with default content template', function () {
         'status'    => 'published',
         'starts_at' => now()->addWeek(),
         'ends_at'   => now()->addWeek()->addHours(2),
-        'price'     => 0,
     ]);
 
     $html = Blade::render(
@@ -247,7 +246,6 @@ it('events listing widget applies token replacement correctly', function () {
         'status'         => 'published',
         'starts_at'      => now()->addWeek(),
         'ends_at'        => now()->addWeek()->addHours(2),
-        'price'          => 0,
         'address_line_1' => '123 Main St',
         'city'           => 'Springfield',
     ]);
@@ -419,7 +417,6 @@ it('events listing renders default spaceBetween when gap is not set', function (
         'status'    => 'published',
         'starts_at' => now()->addWeek(),
         'ends_at'   => now()->addWeek()->addHours(2),
-        'price'     => 0,
     ]);
 
     $html = Blade::render(
@@ -447,7 +444,6 @@ it('events listing renders custom spaceBetween from gap config', function () {
         'status'    => 'published',
         'starts_at' => now()->addWeek(),
         'ends_at'   => now()->addWeek()->addHours(2),
-        'price'     => 0,
     ]);
 
     $html = Blade::render(

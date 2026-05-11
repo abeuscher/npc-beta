@@ -52,17 +52,20 @@ class EventCheckoutController extends Controller
             return back()->withErrors(['register' => 'Payment processing is not configured.']);
         }
 
+        $tier = $event->ticketTiers()->where('price', '>', 0)->orderBy('sort_order')->first();
+
         $registration = EventRegistration::create([
-            'event_id'      => $event->id,
-            'contact_id'    => $contact->id,
-            'name'          => $contact->display_name,
-            'email'         => $contact->email,
-            'status'        => 'pending',
-            'source'        => Source::STRIPE_WEBHOOK,
-            'registered_at' => now(),
+            'event_id'       => $event->id,
+            'ticket_tier_id' => $tier?->id,
+            'contact_id'     => $contact->id,
+            'name'           => $contact->display_name,
+            'email'          => $contact->email,
+            'status'         => 'pending',
+            'source'         => Source::STRIPE_WEBHOOK,
+            'registered_at'  => now(),
         ]);
 
-        $amountCents = (int) round((float) $event->price * 100);
+        $amountCents = (int) round((float) $tier->price * 100);
 
         try {
             $session = (new StripeCheckoutService())->createSession(

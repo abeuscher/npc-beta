@@ -15,7 +15,7 @@ uses(TestCase::class, RefreshDatabase::class);
 // ── EventCheckoutController — validation ─────────────────────────────────────
 
 it('rejects event checkout when event is free', function () {
-    $event = Event::factory()->create(['price' => 0]);
+    $event = Event::factory()->create();
 
     $response = $this->post(route('events.checkout', $event->slug), [
         'name'  => 'Test User',
@@ -27,7 +27,7 @@ it('rejects event checkout when event is free', function () {
 });
 
 it('rejects event checkout when event is cancelled', function () {
-    $event = Event::factory()->cancelled()->create(['price' => 25.00]);
+    $event = Event::factory()->cancelled()->paid(25.00)->create();
 
     $response = $this->post(route('events.checkout', $event->slug), [
         'name'  => 'Test User',
@@ -38,8 +38,13 @@ it('rejects event checkout when event is cancelled', function () {
 });
 
 it('rejects event checkout when event is at capacity', function () {
-    $event = Event::factory()->withCapacity(1)->create(['price' => 25.00]);
-    EventRegistration::factory()->create(['event_id' => $event->id, 'status' => 'registered']);
+    $event = Event::factory()->paid(25.00, 1)->create();
+    $tier  = $event->ticketTiers()->first();
+    EventRegistration::factory()->create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $tier->id,
+        'status'         => 'registered',
+    ]);
 
     $response = $this->post(route('events.checkout', $event->slug), [
         'name'  => 'Test User',
@@ -51,7 +56,7 @@ it('rejects event checkout when event is at capacity', function () {
 
 it('rejects event checkout when stripe is not configured', function () {
     config(['services.stripe.secret' => null]);
-    $event = Event::factory()->create(['price' => 25.00]);
+    $event = Event::factory()->paid(25.00)->create();
 
     $response = $this->post(route('events.checkout', $event->slug), [
         'name'  => 'Test User',
@@ -63,7 +68,7 @@ it('rejects event checkout when stripe is not configured', function () {
 
 it('creates a pending registration for paid event checkout', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
-    $event = Event::factory()->create(['price' => 25.00]);
+    $event = Event::factory()->paid(25.00)->create();
 
     // Stripe call will fail with a fake key, which deletes the registration.
     // Test the model layer directly instead.
@@ -80,16 +85,17 @@ it('creates a pending registration for paid event checkout', function () {
 });
 
 it('counts pending registrations toward capacity', function () {
-    $event = Event::factory()->withCapacity(2)->create(['price' => 25.00]);
-    EventRegistration::factory()->create(['event_id' => $event->id, 'status' => 'registered']);
-    EventRegistration::factory()->create(['event_id' => $event->id, 'status' => 'pending']);
+    $event = Event::factory()->paid(25.00, 2)->create();
+    $tier  = $event->ticketTiers()->first();
+    EventRegistration::factory()->create(['event_id' => $event->id, 'ticket_tier_id' => $tier->id, 'status' => 'registered']);
+    EventRegistration::factory()->create(['event_id' => $event->id, 'ticket_tier_id' => $tier->id, 'status' => 'pending']);
 
     expect($event->isAtCapacity())->toBeTrue();
 });
 
 it('silently succeeds for duplicate event checkout', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
-    $event = Event::factory()->create(['price' => 25.00]);
+    $event = Event::factory()->paid(25.00)->create();
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'dupe@example.com',
@@ -108,7 +114,7 @@ it('silently succeeds for duplicate event checkout', function () {
 
 it('completes event registration and creates transaction on webhook', function () {
     $contact = Contact::factory()->create(['email' => 'paid@example.com']);
-    $event   = Event::factory()->create(['price' => 50.00]);
+    $event   = Event::factory()->paid(50.00)->create();
 
     $registration = EventRegistration::factory()->create([
         'event_id'   => $event->id,
@@ -146,7 +152,7 @@ it('completes event registration and creates transaction on webhook', function (
 // ── Free event registration still works ──────────────────────────────────────
 
 it('free event registration still works through existing path', function () {
-    $event = Event::factory()->create(['price' => 0]);
+    $event = Event::factory()->create();
 
     $response = $this->post(route('events.register', $event->slug), [
         'name'  => 'Free User',
@@ -160,7 +166,7 @@ it('free event registration still works through existing path', function () {
 });
 
 it('paid event redirects from free register route', function () {
-    $event = Event::factory()->create(['price' => 25.00]);
+    $event = Event::factory()->paid(25.00)->create();
 
     $response = $this->post(route('events.register', $event->slug), [
         'name'  => 'Paid User',
@@ -357,7 +363,7 @@ it('signup without tier creates no membership', function () {
 it('portal member can access paid event checkout', function () {
     $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
-    $event   = Event::factory()->create(['price' => 25.00]);
+    $event   = Event::factory()->paid(25.00)->create();
 
     config(['services.stripe.secret' => 'sk_test_fake']);
 
@@ -372,7 +378,7 @@ it('portal member can access paid event checkout', function () {
 it('portal member free event registration still works', function () {
     $contact = Contact::factory()->create(['email' => 'portalmember@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
-    $event   = Event::factory()->create(['price' => 0]);
+    $event   = Event::factory()->create();
 
     $response = $this->actingAs($account, 'portal')
         ->post(route('portal.events.register', $event->slug));

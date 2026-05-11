@@ -70,9 +70,12 @@ class EventController extends Controller
             return redirect($eventPageUrl)->with('registration_success', true);
         }
 
+        $tier = $event->ticketTiers()->orderBy('sort_order')->first();
+
         EventRegistration::create([
             ...$validated,
             'event_id'           => $event->id,
+            'ticket_tier_id'     => $tier?->id,
             'contact_id'         => null,
             'registered_at'      => now(),
             'status'             => 'registered',

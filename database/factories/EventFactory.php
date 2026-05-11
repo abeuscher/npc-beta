@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Data\SampleLibrary;
+use App\Models\Event;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -22,8 +23,6 @@ class EventFactory extends Factory
             'address_line_1'    => $this->faker->streetAddress(),
             'city'              => $this->faker->city(),
             'state'             => $this->faker->stateAbbr(),
-            'price'             => 0,
-            'capacity'          => null,
             'registration_mode' => 'open',
             'starts_at'         => now()->addDays(7),
         ];
@@ -49,7 +48,26 @@ class EventFactory extends Factory
 
     public function withCapacity(int $capacity): static
     {
-        return $this->state(['capacity' => $capacity]);
+        return $this->afterCreating(function (Event $event) use ($capacity) {
+            $event->ticketTiers()->create([
+                'name'       => 'General',
+                'price'      => 0,
+                'capacity'   => $capacity,
+                'sort_order' => 0,
+            ]);
+        });
+    }
+
+    public function paid(float $price = 25.00, ?int $capacity = null): static
+    {
+        return $this->afterCreating(function (Event $event) use ($price, $capacity) {
+            $event->ticketTiers()->create([
+                'name'       => 'General',
+                'price'      => $price,
+                'capacity'   => $capacity,
+                'sort_order' => 0,
+            ]);
+        });
     }
 
     public function closedFull(): static

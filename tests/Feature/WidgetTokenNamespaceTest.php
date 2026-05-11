@@ -43,7 +43,6 @@ it('events listing renders per-event title when the hosting page title would col
         'status'         => 'published',
         'starts_at'      => now()->addWeek(),
         'ends_at'        => now()->addWeek()->addHours(2),
-        'price'          => 0,
         'address_line_1' => '500 Main St',
         'city'           => 'Portland',
     ]);

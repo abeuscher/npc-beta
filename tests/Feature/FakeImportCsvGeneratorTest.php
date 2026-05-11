@@ -148,7 +148,7 @@ it('events.csv groups rows by event with consistent event-level fields', functio
         $groups[$row['Event External ID']][] = $row;
     }
 
-    $eventFields = ['Event Title', 'Event Slug', 'Event Description', 'Event Status', 'Event Starts At', 'Event Ends At', 'Event Price'];
+    $eventFields = ['Event Title', 'Event Slug', 'Event Description', 'Event Status', 'Event Starts At', 'Event Ends At'];
 
     foreach ($groups as $externalId => $rows) {
         $size = count($rows);

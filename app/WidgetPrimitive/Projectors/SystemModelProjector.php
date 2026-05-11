@@ -140,9 +140,7 @@ final class SystemModelProjector
             ? url('/' . $event->landingPage->slug)
             : url('/' . $eventsPrefix);
 
-        $capacity = $event->getAttribute('capacity');
-        $registeredCount = (int) ($event->getAttribute('registered_count') ?? 0);
-        $isAtCapacity = $capacity !== null && $registeredCount >= (int) $capacity;
+        $isAtCapacity = $this->eventIsAtCapacity($event);
 
         $eventDateFormat = $this->resolveFormatHint($formatHints, 'event_date', DateFormat::eventDateOptions(), DateFormat::EVENT_TILE_DATE);
 
@@ -170,9 +168,40 @@ final class SystemModelProjector
             'registration_mode'           => (string) ($event->getAttribute('registration_mode') ?? ''),
             'mailing_list_opt_in_enabled' => (bool) $event->getAttribute('mailing_list_opt_in_enabled'),
             'external_registration_url'   => (string) ($event->getAttribute('external_registration_url') ?? ''),
-            'price'                       => (string) ($event->getAttribute('price') ?? '0.00'),
             'status'                      => (string) ($event->getAttribute('status') ?? ''),
         ];
+    }
+
+    /**
+     * Compute is_at_capacity from eager-loaded ticketTiers. An event is at
+     * capacity iff every tier is at capacity. A tier with null capacity is
+     * unlimited (never at capacity). An event with no tiers is never at
+     * capacity (truly-free-and-uncapped). Returns false when ticketTiers was
+     * not eager-loaded — the listing path doesn't load tier-aware counts to
+     * avoid N+1, and the per-tier "full" notice is single-event-page surface.
+     */
+    private function eventIsAtCapacity(Event $event): bool
+    {
+        if (! $event->relationLoaded('ticketTiers')) {
+            return false;
+        }
+
+        $tiers = $event->ticketTiers;
+        if ($tiers->isEmpty()) {
+            return false;
+        }
+
+        foreach ($tiers as $tier) {
+            if ($tier->capacity === null) {
+                return false;
+            }
+            $count = (int) ($tier->getAttribute('registered_count') ?? 0);
+            if ($count < (int) $tier->capacity) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

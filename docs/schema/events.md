@@ -1,6 +1,8 @@
 ## events
 
-Events with dates, registration, and venue information.
+Events with dates, registration, and venue information. Per-event price and
+capacity live on [ticket_tiers](ticket_tiers.md) — an event with zero tiers is
+free and uncapped.
 
 | Column | Type | Nullable | Notes |
 |---|---|---|---|
@@ -25,8 +27,6 @@ Events with dates, registration, and venue information.
 | meeting_details | text | yes | |
 | starts_at | timestamp | no | |
 | ends_at | timestamp | yes | |
-| price | decimal(8,2) | no | default: 0 |
-| capacity | unsignedInteger | yes | |
 | registration_mode | string | no | default: 'open' |
 | external_registration_url | string | yes | |
 | auto_create_contacts | boolean | no | default: true |
