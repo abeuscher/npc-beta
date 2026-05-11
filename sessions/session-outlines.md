@@ -288,7 +288,7 @@ Closed at session 267, lifted alongside the two-knob split fold-in. The session 
 
 ---
 
-### Widget Help Authoring & Help-System Integration *(stub — pre-Beta 1, design discussion)*
+### Widget Help Authoring & Help-System Integration *(complete — closed at session 277)*
 
 Widgets vary in self-evidence — most are obvious from their name and inspector (`text_block`, `image`, `hero`), but some (`bar_chart`, `event_calendar`, `donation_form`, `web_form`, `event_registration`) have configuration surfaces complex enough to warrant explanatory help. Today the help system (`help_articles` + admin help-doc routes) lives separately from the widget definition pipeline. The session needs to resolve **how widgets carry their help info and how it surfaces**:
 
