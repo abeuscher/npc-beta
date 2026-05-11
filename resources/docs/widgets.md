@@ -1,18 +1,24 @@
 ---
-title: Widget Catalog
-description: A sortable index of every widget that has detailed configuration help.
-tags: [widget, page-builder, catalog, cms]
+title: Widgets
+description: Introduction to page-builder widgets — what they are, where they appear, and where to find help for specific widget types.
+tags: [widget, page-builder, cms]
 category: cms
 standalone: true
 ---
 
-# Widget Catalog
+# Widgets
 
-Most page-builder widgets are self-explanatory from their label and inspector fields. A handful have enough configuration depth to warrant a dedicated help article — those are listed below.
+Widgets are the building blocks of pages on your public website. Every CMS page — the homepage, blog posts, event pages, contact pages — is assembled from widgets dropped onto the page in the page builder. A widget might be a simple text block or image, or a more involved piece like a donation form, an event calendar, or a chart pulling from a collection.
 
-The table is sortable: click a column header to re-sort. Search from the help top-bar also works for finding a specific widget by name (e.g. "bar chart").
+## Using widgets in the page builder
 
-If the widget you're looking for isn't here, the inspector itself is usually the best reference — every field has a label and most have a one-line helper underneath.
+When you edit a CMS page, the **+ Widget** button below the preview opens the widget picker. Pick a widget to add it to the page, click it to select, and use the inspector panel on the right to configure its content and appearance. See the [Pages](/admin/help/cms-pages) article for the full page-builder workflow.
+
+Each widget has two inspector tabs — **Content** (the widget's data and copy) and **Appearance** (background, padding, full-width). Every inspector field has a label, and most have a one-line helper underneath that explains what the field controls. For most widgets that's enough.
+
+## Widgets with detailed help
+
+A handful of widgets have enough configuration surface to warrant a dedicated help article. The list below is sortable — click a column header to re-sort, click again to reverse. Click a widget's help link to open its article.
 
 <div
     x-data="{
@@ -69,6 +75,4 @@ If the widget you're looking for isn't here, the inspector itself is usually the
     </table>
 </div>
 
-## Adding a widget to this catalog
-
-When a new widget gains a detailed help doc, the author appends a row to the table above. The catalog is hand-curated on purpose — it lists only widgets where the configuration surface justifies a separate article, rather than mirroring every row in `widget_types`. Widgets without detailed docs surface through the picker's built-in label and description.
+Widgets not on the list use the inspector itself as the reference. Detailed articles get added as widget complexity warrants them — when a new widget gains a dedicated help doc, the author appends a row to the table above.

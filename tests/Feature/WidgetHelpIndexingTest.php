@@ -14,9 +14,9 @@ beforeEach(function () {
     $this->artisan('help:sync')->assertSuccessful();
 });
 
-it('indexes the widget catalog and the five widget help articles after help:sync', function () {
+it('indexes the canonical widgets article and the five widget help articles after help:sync', function () {
     $expected = [
-        'widget-catalog',
+        'widgets',
         'widget-bar-chart',
         'widget-donation-form',
         'widget-event-calendar',
@@ -28,9 +28,6 @@ it('indexes the widget catalog and the five widget help articles after help:sync
         expect(HelpArticle::where('slug', $slug)->exists())
             ->toBeTrue("expected help article '{$slug}' to be indexed after help:sync");
     }
-
-    expect(HelpArticle::where('slug', 'like', 'widget-%')->count())
-        ->toBeGreaterThanOrEqual(6);
 });
 
 it('returns the bar-chart widget article when searching for "bar chart"', function () {
