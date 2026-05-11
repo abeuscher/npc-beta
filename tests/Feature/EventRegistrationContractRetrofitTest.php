@@ -51,7 +51,7 @@ it('projects only contract-declared fields onto the EventRegistration single-row
         ->and(array_keys($dto['item']))->toEqualCanonicalizing([
             'slug', 'title', 'status', 'registration_mode', 'is_free',
             'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url',
-            'is_at_capacity',
+            'is_at_capacity', 'tiers',
         ])
         ->and($dto['item'])->not->toHaveKey('address_line_1')
         ->and($dto['item'])->not->toHaveKey('meeting_url')
@@ -60,7 +60,10 @@ it('projects only contract-declared fields onto the EventRegistration single-row
         ->and($dto['item']['is_at_capacity'])->toBeTrue()
         ->and($dto['item']['is_free'])->toBeFalse()
         ->and($dto['item']['external_registration_url'])->toBe('https://example.test/register')
-        ->and($dto['item']['slug'])->toBe('capacity-test');
+        ->and($dto['item']['slug'])->toBe('capacity-test')
+        ->and($dto['item']['tiers'])->toHaveCount(1)
+        ->and($dto['item']['tiers'][0]['name'])->toBe('General')
+        ->and($dto['item']['tiers'][0]['is_at_capacity'])->toBeTrue();
 });
 
 // guards: EventRegistration query pattern (events query is plain; is_at_capacity comes from one ticket_tiers eager-load with withCount on registrations; no standalone event_registrations select outside the tier eager load).

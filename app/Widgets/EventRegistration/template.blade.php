@@ -1,13 +1,32 @@
 @php $item = $widgetData['item'] ?? null; @endphp
 @if ($item)
     @php
-        $isCancelled  = $item['status'] === 'cancelled';
-        $isAtCapacity = (bool) $item['is_at_capacity'];
-        $mode         = $item['registration_mode'] ?? 'open';
-        $isPaid       = ! $item['is_free'];
-        $regOpen      = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
-        $portalUser   = auth('portal')->user();
-        $portalContact = $portalUser?->contact;
+        $isCancelled    = $item['status'] === 'cancelled';
+        $isAtCapacity   = (bool) $item['is_at_capacity'];
+        $mode           = $item['registration_mode'] ?? 'open';
+        $isFree         = (bool) $item['is_free'];
+        $tiers          = $item['tiers'] ?? [];
+        $tierCount      = count($tiers);
+        $availableTiers = array_values(array_filter($tiers, fn ($t) => ! $t['is_at_capacity']));
+        $regOpen        = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
+        $portalUser     = auth('portal')->user();
+        $portalContact  = $portalUser?->contact;
+
+        $singleTier  = $tierCount === 1 ? $tiers[0] : null;
+        $singleIsPaid = $singleTier ? ((float) $singleTier['price']) > 0 : false;
+
+        $submitLabel = match (true) {
+            $tierCount === 0          => 'Register for this event',
+            $tierCount === 1 && $singleIsPaid => 'Register & pay',
+            $tierCount === 1          => 'Register for this event',
+            default                   => 'Register',
+        };
+        $memberSubmitLabel = match (true) {
+            $tierCount === 0          => 'Register as member',
+            $tierCount === 1 && $singleIsPaid => 'Register & pay as member',
+            $tierCount === 1          => 'Register as member',
+            default                   => 'Register as member',
+        };
     @endphp
 
     @if (session('registration_success') || request()->query('registration') === 'success')
@@ -47,12 +66,58 @@
             <div role="alert" class="alert alert--error">{{ $errors->first('register') }}</div>
         @endif
 
+        @if ($tierCount === 1 && $singleIsPaid)
+            <p class="text-muted" style="margin-bottom: 1rem;">Registration fee: <strong>${{ number_format((float) $singleTier['price'], 2) }}</strong></p>
+        @endif
+
+        @php
+            $renderTierPicker = function () use ($tiers, $tierCount) {
+                if ($tierCount <= 1) {
+                    if ($tierCount === 1) {
+                        echo '<input type="hidden" name="ticket_tier_id" value="' . e($tiers[0]['id']) . '">';
+                    }
+                    return;
+                }
+                $selected = old('ticket_tier_id');
+                if (! $selected) {
+                    foreach ($tiers as $t) {
+                        if (! $t['is_at_capacity']) {
+                            $selected = $t['id'];
+                            break;
+                        }
+                    }
+                }
+                echo '<fieldset class="form-fieldset col-12 widget-event-registration__tier-picker">';
+                echo '<legend class="form-label">Choose ticket type <span aria-hidden="true" class="required-star">*</span></legend>';
+                foreach ($tiers as $tier) {
+                    $disabled = $tier['is_at_capacity'];
+                    $checked  = (string) $tier['id'] === (string) $selected;
+                    $priceStr = ((float) $tier['price']) > 0 ? ' — $' . number_format((float) $tier['price'], 2) : ' — Free';
+                    $soldOut  = $disabled ? ' <span class="text-muted">(sold out)</span>' : '';
+                    echo '<label class="widget-event-registration__tier-option">';
+                    echo '<input type="radio" name="ticket_tier_id" value="' . e($tier['id']) . '"';
+                    if ($disabled) { echo ' disabled'; }
+                    if ($checked) { echo ' checked'; }
+                    echo ' required>';
+                    echo ' <span class="widget-event-registration__tier-label">' . e($tier['name']) . $priceStr . $soldOut . '</span>';
+                    echo '</label>';
+                }
+                echo '</fieldset>';
+                if (request()->session()->get('errors')?->has('ticket_tier_id')) {
+                    echo '<div role="alert" class="form-error">' . e(request()->session()->get('errors')->first('ticket_tier_id')) . '</div>';
+                }
+            };
+        @endphp
+
         @if ($portalUser)
-            <form method="POST" action="{{ $isPaid ? route('portal.events.checkout', $item['slug']) : route('portal.events.register', $item['slug']) }}" style="margin-bottom: 0.5rem;">
+            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid" style="margin-bottom: 0.5rem;">
                 @csrf
-                <button type="submit" class="btn btn--primary">
-                    {{ $isPaid ? 'Register & pay as member' : 'Register as member' }}
-                </button>
+                @php $renderTierPicker(); @endphp
+                <div class="col-12">
+                    <button type="submit" class="btn btn--primary">
+                        {{ $memberSubmitLabel }}
+                    </button>
+                </div>
             </form>
             <form method="POST" action="{{ route('portal.logout') }}">
                 @csrf
@@ -64,7 +129,7 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ $isPaid ? route('events.checkout', $item['slug']) : route('events.register', $item['slug']) }}" class="form-grid">
+            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -73,6 +138,8 @@
                     <input type="text" id="_hp_name" name="_hp_name" tabindex="-1" autocomplete="off">
                 </div>
                 <input type="hidden" name="_form_start" value="{{ time() }}">
+
+                @php $renderTierPicker(); @endphp
 
                 <div class="col-{{ \App\Support\FormFieldConfig::width('name') }}">
                     <label for="reg_name" class="form-label">Full Name <span aria-hidden="true" class="required-star">*</span></label>
@@ -148,7 +215,7 @@
 
                 <div class="col-12">
                     <button type="submit" class="btn btn--primary">
-                        {{ $isPaid ? 'Register & pay' : 'Register for this event' }}
+                        {{ $submitLabel }}
                     </button>
                 </div>
             </form>

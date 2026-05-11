@@ -1,0 +1,174 @@
+<?php
+
+use App\Models\Event;
+use App\Models\EventRegistration;
+use App\Models\TicketTier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+// ── Free path (zero tiers / one $0 tier / picked $0 tier) ────────────────────
+
+it('zero-tier event accepts registration without ticket_tier_id', function () {
+    $event = Event::factory()->create(['status' => 'published']);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        '_form_start' => time() - 10,
+    ])->assertRedirect();
+
+    $reg = EventRegistration::where('email', 'jane@example.com')->first();
+    expect($reg)->not->toBeNull()
+        ->and($reg->ticket_tier_id)->toBeNull();
+});
+
+it('single-tier free event sets ticket_tier_id on the registration', function () {
+    $event = Event::factory()->withCapacity(50)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    $this->post(route('events.register', $event->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $tier->id,
+        '_form_start'    => time() - 10,
+    ])->assertRedirect();
+
+    $reg = EventRegistration::where('email', 'jane@example.com')->first();
+    expect($reg->ticket_tier_id)->toBe($tier->id);
+});
+
+// ── Validation: ticket_tier_id must belong to the event ──────────────────────
+
+it('rejects a ticket_tier_id from a different event', function () {
+    $eventA  = Event::factory()->withCapacity(50)->create(['status' => 'published']);
+    $eventB  = Event::factory()->withCapacity(50)->create(['status' => 'published']);
+    $foreign = $eventB->ticketTiers()->first();
+
+    $this->post(route('events.register', $eventA->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $foreign->id,
+        '_form_start'    => time() - 10,
+    ])->assertSessionHasErrors('ticket_tier_id');
+
+    expect(EventRegistration::count())->toBe(0);
+});
+
+it('requires ticket_tier_id when the event has any tiers', function () {
+    $event = Event::factory()->withCapacity(50)->create(['status' => 'published']);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        '_form_start' => time() - 10,
+    ])->assertSessionHasErrors('ticket_tier_id');
+
+    expect(EventRegistration::count())->toBe(0);
+});
+
+// ── Paid path (chosen tier price > 0 routes to Stripe) ───────────────────────
+
+it('routes to checkout when the chosen tier is paid', function () {
+    config(['services.stripe.secret' => 'sk_test_fake']);
+    $event = Event::factory()->paid(25.00)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    $this->post(route('events.register', $event->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $tier->id,
+        '_form_start'    => time() - 10,
+    ])->assertRedirect();
+
+    // Free path did not land a registration; the redirect handed off to checkout.
+    expect(EventRegistration::where('email', 'jane@example.com')->where('source', 'human')->count())->toBe(0);
+});
+
+it('checkout rejects a $0 tier with a register-this-is-free error', function () {
+    $event = Event::factory()->withCapacity(20)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    $this->post(route('events.checkout', $event->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $tier->id,
+    ])->assertSessionHasErrors('register');
+});
+
+it('checkout rejects a ticket_tier_id from a different event', function () {
+    $eventA  = Event::factory()->paid(25.00)->create(['status' => 'published']);
+    $eventB  = Event::factory()->paid(50.00)->create(['status' => 'published']);
+    $foreign = $eventB->ticketTiers()->first();
+
+    $this->post(route('events.checkout', $eventA->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $foreign->id,
+    ])->assertSessionHasErrors('ticket_tier_id');
+});
+
+// ── Per-tier capacity check ──────────────────────────────────────────────────
+
+it('rejects registration when the chosen tier is at capacity', function () {
+    $event = Event::factory()->withCapacity(1)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    EventRegistration::factory()->create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $tier->id,
+        'status'         => 'registered',
+    ]);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $tier->id,
+        '_form_start'    => time() - 10,
+    ])->assertSessionHasErrors('register');
+
+    expect(EventRegistration::count())->toBe(1);
+});
+
+it('allows registration on a non-full tier even when a sibling tier is full', function () {
+    $event = Event::factory()->create(['status' => 'published']);
+    $full  = TicketTier::factory()->for($event)->create(['name' => 'General', 'capacity' => 1, 'sort_order' => 0]);
+    $open  = TicketTier::factory()->for($event)->create(['name' => 'VIP', 'capacity' => 5, 'sort_order' => 1]);
+
+    EventRegistration::factory()->create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $full->id,
+        'status'         => 'registered',
+    ]);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'           => 'Jane',
+        'email'          => 'jane@example.com',
+        'ticket_tier_id' => $open->id,
+        '_form_start'    => time() - 10,
+    ])->assertRedirect();
+
+    expect(EventRegistration::where('email', 'jane@example.com')->first()->ticket_tier_id)->toBe($open->id);
+});
+
+// ── Contract / template surface ──────────────────────────────────────────────
+
+it('projects tiers onto the EventRegistration contract', function () {
+    $event = Event::factory()->paid(25.00, 10)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    $contract = (new \App\Widgets\EventRegistration\EventRegistrationDefinition())
+        ->dataContract(['event_slug' => $event->slug]);
+
+    $context = new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext());
+    $dto = app(\App\WidgetPrimitive\ContractResolver::class)->resolve([$contract], $context)[0];
+
+    expect($dto['item'])->toHaveKey('tiers')
+        ->and($dto['item']['tiers'])->toHaveCount(1)
+        ->and($dto['item']['tiers'][0]['id'])->toBe($tier->id)
+        ->and($dto['item']['tiers'][0]['name'])->toBe('General')
+        ->and((float) $dto['item']['tiers'][0]['price'])->toBe(25.00)
+        ->and($dto['item']['tiers'][0]['capacity'])->toBe(10)
+        ->and($dto['item']['tiers'][0]['is_at_capacity'])->toBeFalse();
+});

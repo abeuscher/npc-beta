@@ -169,7 +169,38 @@ final class SystemModelProjector
             'mailing_list_opt_in_enabled' => (bool) $event->getAttribute('mailing_list_opt_in_enabled'),
             'external_registration_url'   => (string) ($event->getAttribute('external_registration_url') ?? ''),
             'status'                      => (string) ($event->getAttribute('status') ?? ''),
+            'tiers'                       => $this->projectTiers($event),
         ];
+    }
+
+    /**
+     * Project the event's ticket tiers as a flat array, ordered by sort_order.
+     * Each row carries the tier's id, name, price, capacity, and per-tier
+     * `is_at_capacity` derived from the eager-loaded `registered_count`.
+     * Returns an empty array when ticketTiers is not eager-loaded.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function projectTiers(Event $event): array
+    {
+        if (! $event->relationLoaded('ticketTiers')) {
+            return [];
+        }
+
+        return $event->ticketTiers->map(function ($tier) {
+            $registered = (int) ($tier->getAttribute('registered_count') ?? 0);
+            $capacity   = $tier->capacity;
+            $isAtCap    = $capacity !== null && $registered >= (int) $capacity;
+
+            return [
+                'id'             => $tier->id,
+                'name'           => (string) $tier->name,
+                'price'          => (string) $tier->price,
+                'capacity'       => $capacity,
+                'registered'     => $registered,
+                'is_at_capacity' => $isAtCap,
+            ];
+        })->values()->all();
     }
 
     /**

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\TicketTier;
 use App\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EventCheckoutController extends Controller
 {
@@ -41,6 +43,7 @@ class EventCheckoutController extends Controller
             'state'               => ['nullable', 'string', 'max:100'],
             'zip'                 => ['nullable', 'string', 'max:20'],
             'mailing_list_opt_in' => ['nullable', 'boolean'],
+            'ticket_tier_id'      => ['required', 'uuid', Rule::exists('ticket_tiers', 'id')->where('event_id', $event->id)],
         ]);
 
         if ($event->status !== 'published') {
@@ -51,12 +54,14 @@ class EventCheckoutController extends Controller
             return back()->withErrors(['register' => 'Registration for this event is currently closed.']);
         }
 
-        if ($event->is_free) {
-            return back()->withErrors(['register' => 'This event is free — no payment required.']);
+        $tier = TicketTier::findOrFail($validated['ticket_tier_id']);
+
+        if (((float) $tier->price) <= 0) {
+            return back()->withErrors(['register' => 'This tier is free — no payment required.']);
         }
 
-        if ($event->isAtCapacity()) {
-            return back()->withErrors(['register' => 'This event is at capacity.']);
+        if ($tier->isAtCapacity()) {
+            return back()->withErrors(['register' => 'This ticket tier is at capacity.']);
         }
 
         // Duplicate check — silently succeed if already registered
@@ -69,12 +74,10 @@ class EventCheckoutController extends Controller
             return back()->withErrors(['register' => 'Payment processing is not configured.']);
         }
 
-        $tier = $event->ticketTiers()->where('price', '>', 0)->orderBy('sort_order')->first();
-
         $registration = EventRegistration::create([
             ...$validated,
             'event_id'            => $event->id,
-            'ticket_tier_id'      => $tier?->id,
+            'ticket_tier_id'      => $tier->id,
             'contact_id'          => null,
             'registered_at'       => now(),
             'status'              => 'pending',
@@ -90,7 +93,7 @@ class EventCheckoutController extends Controller
                     'price_data' => [
                         'currency'     => 'usd',
                         'unit_amount'  => $amountCents,
-                        'product_data' => ['name' => $event->title . ' — Registration'],
+                        'product_data' => ['name' => $event->title . ' — ' . $tier->name],
                     ],
                     'quantity' => 1,
                 ]],

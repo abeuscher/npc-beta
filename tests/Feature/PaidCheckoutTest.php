@@ -15,11 +15,13 @@ uses(TestCase::class, RefreshDatabase::class);
 // ── EventCheckoutController — validation ─────────────────────────────────────
 
 it('rejects event checkout when event is free', function () {
-    $event = Event::factory()->create();
+    $event = Event::factory()->withCapacity(50)->create();
+    $tier  = $event->ticketTiers()->first();
 
     $response = $this->post(route('events.checkout', $event->slug), [
-        'name'  => 'Test User',
-        'email' => 'test@example.com',
+        'name'           => 'Test User',
+        'email'          => 'test@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     $response->assertSessionHasErrors('register');
@@ -28,10 +30,12 @@ it('rejects event checkout when event is free', function () {
 
 it('rejects event checkout when event is cancelled', function () {
     $event = Event::factory()->cancelled()->paid(25.00)->create();
+    $tier  = $event->ticketTiers()->first();
 
     $response = $this->post(route('events.checkout', $event->slug), [
-        'name'  => 'Test User',
-        'email' => 'test@example.com',
+        'name'           => 'Test User',
+        'email'          => 'test@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     $response->assertSessionHasErrors('register');
@@ -47,8 +51,9 @@ it('rejects event checkout when event is at capacity', function () {
     ]);
 
     $response = $this->post(route('events.checkout', $event->slug), [
-        'name'  => 'Test User',
-        'email' => 'test@example.com',
+        'name'           => 'Test User',
+        'email'          => 'test@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     $response->assertSessionHasErrors('register');
@@ -57,10 +62,12 @@ it('rejects event checkout when event is at capacity', function () {
 it('rejects event checkout when stripe is not configured', function () {
     config(['services.stripe.secret' => null]);
     $event = Event::factory()->paid(25.00)->create();
+    $tier  = $event->ticketTiers()->first();
 
     $response = $this->post(route('events.checkout', $event->slug), [
-        'name'  => 'Test User',
-        'email' => 'test@example.com',
+        'name'           => 'Test User',
+        'email'          => 'test@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     $response->assertSessionHasErrors('register');
@@ -96,14 +103,16 @@ it('counts pending registrations toward capacity', function () {
 it('silently succeeds for duplicate event checkout', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
     $event = Event::factory()->paid(25.00)->create();
+    $tier  = $event->ticketTiers()->first();
     EventRegistration::factory()->create([
         'event_id' => $event->id,
         'email'    => 'dupe@example.com',
     ]);
 
     $response = $this->post(route('events.checkout', $event->slug), [
-        'name'  => 'Test User',
-        'email' => 'dupe@example.com',
+        'name'           => 'Test User',
+        'email'          => 'dupe@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     $response->assertRedirect();
@@ -167,10 +176,12 @@ it('free event registration still works through existing path', function () {
 
 it('paid event redirects from free register route', function () {
     $event = Event::factory()->paid(25.00)->create();
+    $tier  = $event->ticketTiers()->first();
 
     $response = $this->post(route('events.register', $event->slug), [
-        'name'  => 'Paid User',
-        'email' => 'paid@example.com',
+        'name'           => 'Paid User',
+        'email'          => 'paid@example.com',
+        'ticket_tier_id' => $tier->id,
     ]);
 
     // Should redirect to checkout controller
@@ -364,11 +375,12 @@ it('portal member can access paid event checkout', function () {
     $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
     $event   = Event::factory()->paid(25.00)->create();
+    $tier    = $event->ticketTiers()->first();
 
     config(['services.stripe.secret' => 'sk_test_fake']);
 
     $response = $this->actingAs($account, 'portal')
-        ->post(route('portal.events.checkout', $event->slug));
+        ->post(route('portal.events.checkout', $event->slug), ['ticket_tier_id' => $tier->id]);
 
     // Stripe call fails with fake key, so registration is cleaned up.
     // Verify the route exists and the controller runs validation.

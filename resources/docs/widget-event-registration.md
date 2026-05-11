@@ -21,7 +21,7 @@ Use Event Registration Form on a dedicated event-detail page when you want the r
 
 - **Event** — pick the event to register against. The dropdown lists every event in the CRM, regardless of status. Required — until an event is picked, the widget shows a setup notice in the editor.
 
-Once an event is picked, every behaviour of the form (free vs. paid, capacity, attendee fields, external-registration redirect) is driven by that event's configuration. The widget has no event-specific overrides.
+Once an event is picked, every behaviour of the form (free vs. paid, ticket tiers, capacity, attendee fields, external-registration redirect) is driven by that event's configuration. The widget has no event-specific overrides.
 
 ## Inspector — Appearance tab
 
@@ -33,8 +33,12 @@ The event's configuration drives the form's shape:
 
 - **Status.** Only events with status `published` show a registration form. Drafts and scheduled events render a "registration not yet open" notice.
 - **Registration mode.** Events can be configured for *internal* registration (this form is the registration surface) or *external* registration (the form redirects to a configured external URL like Eventbrite or a Google Form). When external, the widget renders a "Register on (external site)" button instead of a form.
-- **Free vs. paid.** Free events skip Stripe Checkout — submission lands a Registration record and shows an in-line confirmation. Paid events redirect to Stripe Checkout for payment; the Registration is finalised on Stripe webhook receipt.
-- **Capacity.** Events with a capacity that's been reached render a "registration full" notice in place of the form. Visitors cannot submit even if they bypass the UI.
+- **Ticket tiers.** The widget reads the event's ticket tiers and renders the form accordingly:
+  - **No tiers** — the event is free and uncapped; the form shows just the attendee fields and a "Register for this event" button.
+  - **One tier** — the tier is auto-selected via a hidden input. If the tier has a price > 0, the button reads "Register & pay" and the price displays above the form; otherwise it reads "Register for this event".
+  - **Two or more tiers** — a radio picker appears above the attendee fields. Each option shows the tier name, price, and "(sold out)" when that tier is at capacity. The first non-sold-out tier is pre-selected. The submit button reads "Register" and the eventual flow (free or paid) is decided server-side from the chosen tier's price.
+- **Free vs. paid.** A registration whose chosen tier has price 0 lands directly and shows an in-line confirmation. A registration whose chosen tier has price > 0 redirects to Stripe Checkout for payment; the Registration is finalised on Stripe webhook receipt.
+- **Capacity.** Capacity is per-tier. A tier with `capacity` reached renders as "(sold out)" in the picker (disabled). When every tier on the event is at capacity, the form is replaced with a "registration full" notice. Capacity is re-checked server-side on submit, so a visitor who loaded the page before the tier filled gets the "(sold out)" notice on submit.
 - **Mailing-list opt-in.** Events configured with `mailing_list_opt_in_enabled` add a checkbox to the form for the attendee to subscribe to the chosen mailing list.
 
 ## Common patterns
@@ -45,8 +49,8 @@ The event's configuration drives the form's shape:
 
 ## Gotchas
 
-- **Capacity is enforced at registration time, not at page-load time.** A visitor who loads the page before the event hits capacity and submits after may still see the "registration full" notice on submit. The form re-checks capacity server-side.
+- **Capacity is enforced at registration time, not at page-load time.** A visitor who loads the page before a tier hits capacity and submits after may still see the "this ticket tier is at capacity" error on submit. The form re-checks capacity server-side per-tier.
 - **Paid events require Stripe configured.** Same as Donation Form — Stripe keys must be set in Finance Settings before paid-event registration will complete.
 - **Re-pointing the widget to a different event.** Changing the **Event** dropdown swaps the form's target event but does not retroactively touch existing registrations from prior submissions — those are tied to the *event*, not the *widget instance*.
 - **Cancelled or deleted events.** If the event is cancelled, the widget renders a "registration closed" notice. If the event is deleted, the widget shows the setup notice (event no longer exists).
-- **Ticket tiers are not on this widget today.** All registrations for a given paid event are a single price. Multi-tier ticketing (general / VIP / member-discount) is on the roadmap; see the Event Ticket Tiers release entry. When that lands, the widget will surface tier selection — current widget instances will continue to work with a single tier.
+- **Mixed-price tier sets.** Events with a mix of free and paid tiers are supported — the same form submits to a single endpoint, and the server decides whether to land the registration directly or redirect to Stripe based on the chosen tier's price. Operators configuring such events should know that the submit-button label stays neutral ("Register") because the action depends on which tier the visitor picks.

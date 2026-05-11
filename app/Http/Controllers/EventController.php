@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\EventCheckoutController;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Models\TicketTier;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class EventController extends Controller
 {
@@ -30,6 +32,10 @@ class EventController extends Controller
         }
         // ────────────────────────────────────────────────────────────────
 
+        $tierIdRule = $event->ticketTiers()->exists()
+            ? ['required', 'uuid', Rule::exists('ticket_tiers', 'id')->where('event_id', $event->id)]
+            : ['nullable'];
+
         $validated = $request->validate([
             'name'           => ['required', 'string', 'max:255'],
             'email'          => ['required', 'email', 'max:255'],
@@ -41,6 +47,7 @@ class EventController extends Controller
             'state'          => ['nullable', 'string', 'max:100'],
             'zip'                => ['nullable', 'string', 'max:20'],
             'mailing_list_opt_in' => ['nullable', 'boolean'],
+            'ticket_tier_id'      => $tierIdRule,
         ]);
 
         if ($event->status === 'cancelled') {
@@ -57,20 +64,24 @@ class EventController extends Controller
             return back()->withErrors(['register' => $message]);
         }
 
-        if (! $event->is_free) {
+        $tier = isset($validated['ticket_tier_id'])
+            ? TicketTier::find($validated['ticket_tier_id'])
+            : null;
+
+        if ($tier && ((float) $tier->price) > 0) {
             return redirect()->action([EventCheckoutController::class, 'store'], ['slug' => $slug])
                 ->withInput();
         }
 
-        if ($event->isAtCapacity()) {
-            return back()->withErrors(['register' => 'This event is at capacity.']);
+        if ($tier ? $tier->isAtCapacity() : $event->isAtCapacity()) {
+            return back()->withErrors(['register' => $tier
+                ? 'This ticket tier is at capacity.'
+                : 'This event is at capacity.']);
         }
 
         if (EventRegistration::where('event_id', $event->id)->where('email', $validated['email'])->exists()) {
             return redirect($eventPageUrl)->with('registration_success', true);
         }
-
-        $tier = $event->ticketTiers()->orderBy('sort_order')->first();
 
         EventRegistration::create([
             ...$validated,

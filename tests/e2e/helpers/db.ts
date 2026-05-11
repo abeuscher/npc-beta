@@ -692,3 +692,76 @@ export function clearSiteSettingCache(): void {
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
 }
+
+export async function createPublishedEventWithTiers(
+    title: string,
+    slug: string,
+    tiers: Array<{ name: string; price: number; capacity: number | null }>,
+): Promise<{ eventId: string; landingPageSlug: string; tierIds: string[] }> {
+    return withClient(async (client) => {
+        const author = await client.query<{ id: number }>('SELECT id FROM users ORDER BY id LIMIT 1');
+        if (author.rows.length === 0) {
+            throw new Error('No users found — run resetAndLogin first to seed an admin user.');
+        }
+        const authorId = author.rows[0].id;
+
+        const event = await client.query<{ id: string }>(
+            `INSERT INTO events (id, title, slug, status, starts_at, author_id, registration_mode, source, is_in_person, is_virtual, is_free, is_recurring, auto_create_contacts, mailing_list_opt_in_enabled, custom_fields, created_at, updated_at, published_at)
+             VALUES (gen_random_uuid(), $1, $2, 'published', NOW() + INTERVAL '7 days', $3, 'open', 'human', false, false, true, false, true, false, '{}'::jsonb, NOW(), NOW(), NOW())
+             RETURNING id::text AS id`,
+            [title, slug, authorId],
+        );
+        const eventId = event.rows[0].id;
+
+        const tierIds: string[] = [];
+        for (let i = 0; i < tiers.length; i++) {
+            const tier = tiers[i];
+            const res = await client.query<{ id: string }>(
+                `INSERT INTO ticket_tiers (id, event_id, name, price, capacity, sort_order, created_at, updated_at)
+                 VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW())
+                 RETURNING id::text AS id`,
+                [eventId, tier.name, tier.price, tier.capacity, i],
+            );
+            tierIds.push(res.rows[0].id);
+        }
+
+        const landingPageSlug = `events/${slug}`;
+        const page = await client.query<{ id: string }>(
+            `INSERT INTO pages (id, title, slug, type, status, author_id, created_at, updated_at, published_at)
+             VALUES (gen_random_uuid(), $1, $2, 'event', 'published', $3, NOW(), NOW(), NOW())
+             RETURNING id::text AS id`,
+            [title, landingPageSlug, authorId],
+        );
+        const pageId = page.rows[0].id;
+
+        await client.query('UPDATE events SET landing_page_id = $1 WHERE id = $2', [pageId, eventId]);
+
+        const wt = await client.query<{ id: string }>(
+            "SELECT id::text AS id FROM widget_types WHERE handle = 'event_registration' LIMIT 1",
+        );
+        if (wt.rows.length === 0) {
+            throw new Error("widget_type 'event_registration' not registered — run WidgetTypeSeeder.");
+        }
+
+        await client.query(
+            `INSERT INTO page_widgets (id, owner_type, owner_id, widget_type_id, label, config, sort_order, is_active, created_at, updated_at)
+             VALUES (gen_random_uuid(), 'App\\Models\\Page', $1, $2, 'Event Registration', $3::jsonb, 0, true, NOW(), NOW())`,
+            [pageId, wt.rows[0].id, JSON.stringify({ event_slug: slug })],
+        );
+
+        return { eventId, landingPageSlug, tierIds };
+    });
+}
+
+export async function cleanupEventsBySlugPrefix(prefix: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            `DELETE FROM events WHERE slug LIKE $1`,
+            [`${prefix}%`],
+        );
+        await client.query(
+            `DELETE FROM pages WHERE slug LIKE $1`,
+            [`events/${prefix}%`],
+        );
+    });
+}
