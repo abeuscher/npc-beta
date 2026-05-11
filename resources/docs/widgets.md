@@ -4,6 +4,7 @@ description: Introduction to page-builder widgets — what they are, where they 
 tags: [widget, page-builder, cms]
 category: cms
 standalone: true
+search_weight: 100
 ---
 
 # Widgets

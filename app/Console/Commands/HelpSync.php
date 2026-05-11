@@ -80,6 +80,7 @@ class HelpSync extends Command
                         'app_version' => $frontmatter['version'] ?? null,
                         'last_updated' => isset($frontmatter['updated']) ? $frontmatter['updated'] : null,
                         'category'    => $category,
+                        'search_weight' => isset($frontmatter['search_weight']) ? (int) $frontmatter['search_weight'] : 0,
                     ]
                 );
 

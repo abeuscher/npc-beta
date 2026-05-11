@@ -17,6 +17,7 @@ class HelpArticle extends Model
         'last_updated',
         'category',
         'embedding',
+        'search_weight',
     ];
 
     protected $casts = [

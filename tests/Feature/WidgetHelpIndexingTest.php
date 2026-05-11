@@ -47,3 +47,17 @@ it('returns the donation-form widget article when searching for "donation form"'
 
     expect($slugs)->toContain('widget-donation-form');
 });
+
+it('ranks the canonical Widgets article first when searching for "widget"', function () {
+    $component = Livewire::test(HelpSearch::class)
+        ->set('query', 'widget');
+
+    $slugs = collect($component->get('results'))->pluck('slug')->all();
+
+    expect($slugs[0])->toBe('widgets');
+});
+
+it('persists the search_weight from frontmatter into help_articles', function () {
+    expect(HelpArticle::where('slug', 'widgets')->value('search_weight'))->toBe(100)
+        ->and(HelpArticle::where('slug', 'widget-bar-chart')->value('search_weight'))->toBe(0);
+});

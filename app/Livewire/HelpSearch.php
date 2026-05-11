@@ -36,6 +36,7 @@ class HelpSearch extends Component
                 ELSE 4
             END AS search_rank", [$like, $like, $like])
             ->orderBy('search_rank')
+            ->orderByDesc('search_weight')
             ->orderBy('title')
             ->limit(8)
             ->get()
