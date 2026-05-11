@@ -155,9 +155,35 @@ All three entries are canonical in [`release-plan.md`](release-plan.md) § B1a /
 
 ---
 
-### Event Ticket Tiers *(stub — pre-Beta 1)*
+### Event Ticket Tiers *(✅ closed at session 278; C2 in `release-plan.md`)*
 
-Promote ticket pricing from a single `price` field on Events into a tiered structure. Events hasMany `TicketTier` (name, price, capacity, sort order). EventRegistration picks up a `ticket_tier_id` FK. Admin event form gets a repeater for tiers. Public registration flow shows tier options. Data migration: existing events with a non-zero price get a single "General" tier created on migrate. Session 189's Events importer already carries `ticket_type` + `ticket_fee` on registrations; this session retroactively links those to Tier rows where the names match and back-fills where they don't. Priority: needed before event-registration imports become truly first-class, and before any nonprofit with tiered memberships (almost all of them) can demo the product.
+Shipped at session 278. Shape (A) chosen: tier-canonical; `events.price` and `events.capacity` dropped; price + capacity live on `ticket_tiers` only; an event with zero tiers is free and uncapped. `Event::is_free` and `Event::isAtCapacity` walk tiers. Admin EventResource gains a `Repeater::make('ticketTiers')` with name/price/capacity/sort_order + cross-row uniqueness rule. Public registration widget renders three modes (0 tier: no UI; 1 tier: hidden id + price; 2+ tiers: radio picker with name + price + "(sold out)"); single form action per surface, server-side routes free vs. paid by chosen tier's price. Per-tier capacity replaces event-level. Stripe Checkout line-item product name reads `"{event} — {tier}"`. Migration backfills one General tier per priced-or-capped event and retroactively links pre-existing event_registrations with `ticket_type` to matching-or-newly-created tiers. Iteration /4 added a `notes` textarea on the public form (workaround for missing per-attendee data) and dropped the absolute email-uniqueness silent-success dedup (was blocking legitimate repeat registrations and would have blocked multi-quantity purchases the same way). Fast Pest 2341 / 0 (+30 over 277 baseline); +1 Playwright spec covering all three picker modes. See `sessions/278. Event Ticket Tiers — Log.md`.
+
+---
+
+### Multi-Quantity Event Ticket Purchase *(stub — pre-Beta 1; C2a in `release-plan.md`; follow-on to C2)*
+
+278's single-quantity tier picker is the floor — operators selling priced events typically need "buy N General + M Senior tickets in one transaction." Shape (A) chosen for the data model at 278-close (after weighing it against a parent-orders shape): add `quantity` smallint (default 1) to `event_registrations`, switch the per-tier capacity aggregate from `withCount('registrations')` to `withSum('registrations', 'quantity')`, treat each registration row as a purchase line (one row per `(buyer, tier)` pair with its quantity). Mixed-tier purchases produce multiple rows under one shared `stripe_session_id`. Stripe Checkout already supports multi-line-item sessions natively — `StripeCheckoutService::createSession` accepts a `$lineItems` array — so the Stripe-side change is just assembling N line items, one per chosen tier with `quantity`. Webhook generalizes from "find one pending registration by metadata id" to "find all pending registrations sharing this stripe_session_id, promote them, record one transaction at the order total."
+
+Public widget: replace the radio picker with per-tier quantity spinners (number input or +/- buttons), live subtotal display, "≥ 1 ticket total" client + server validation, "(sold out)" still disables a tier at quantity 0.
+
+Importer: no change required. The existing one-row-per-CSV-row flow maps directly to quantity=1; historical Wild Apricot / Bloomerang field mappings are single-attendee-per-row.
+
+Admin "View Registrants": add a `tickets` column reading the new `quantity` field — operators want "Jane Doe — 3 tickets" as one row, not three rows for Jane.
+
+Sized 2–3 iterations (schema + controllers + webhook + capacity-aggregate-swap; then widget UI + Playwright update; optional polish on the admin registrants surface). C2a's design notes preserve the "buyer-level, not attendee-level" framing — per-attendee data lives in the post-1.0 "Event Registration Depth" stub below.
+
+---
+
+### Event Registration Depth — Per-Attendee Data, Partial Refunds, Semantic Disambiguation *(stub — post-1.0)*
+
+Lifted from 278-close as the natural home for three related concerns that don't justify pre-beta scope individually but ought to land together once the registration surface has matured:
+
+- **Per-attendee data inside the registration flow.** Today (and after C2a) the registration row is buyer-shaped: name / email / address / notes per purchase, not per attendee. The 278 notes textarea is the near-term workaround. Lift attendee-level fields (name, dietary needs, accessibility, custom registration questions) into proper sub-rows so an event with "3 General tickets" can collect "Alice / Bob / Charlie" + each one's preferences. Schema: an `event_attendees` table FK'd to `event_registrations`, with one row per attendee (quantity attendees per registration). The event's admin can configure which fields to ask per-attendee. Reasonable home for the eventually-needed "nametag print" / "per-seat check-in" features.
+- **Partial cancellation and refund.** Today operators can only do "full refund + repurchase remaining" — pain when a buyer of 3 tickets needs to drop 1. Add a "cancel N of M tickets on this purchase" affordance that mutates the registration's `quantity` (or splits into a cancelled-tail row), with Stripe partial-refund integration. Touches the EventCancellation email content (today fires once per registration; under partial it fires with the affected attendee count).
+- **`EventRegistration` semantic disambiguation.** Under (A) the model represents a *purchase line* (tier × quantity), not an attendee. The class name keeps fitting in shorthand but reads wrong once per-attendee sub-rows land. Rename — likely `EventTicketPurchase` or `EventOrderLine` — plus a structural pass on the EventRegistration table (`ticket_type` and `ticket_fee` snapshot columns may be obsoleted by then; the new `event_attendees` sub-row carries per-person fields cleanly).
+
+All three want to land together because they share a shape: the data model graduates from "row = purchase" to "row = purchase line + N attendee sub-rows." Post-1.0 because the current shape ships demo-ready and the workarounds (notes field, full-refund-then-rebuy) survive a launch window.
 
 ---
 

@@ -280,6 +280,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 275 | Rich-Text Surface Sanitization Hardening |
 | 276 | Notes Permissions (feature half) |
 | 277 | Widget Help Authoring & Help-System Integration |
+| 278 | Event Ticket Tiers |
 
 ---
 

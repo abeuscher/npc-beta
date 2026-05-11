@@ -190,13 +190,21 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself. **Closed at session 276.**
 - **estimated time cost:** 1 session.
 
-#### C2. Event Ticket Tiers *(prerequisite stub for C5)*
+#### C2. Event Ticket Tiers *(prerequisite stub for C5)* ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Per existing stub in `session-outlines.md` § Event Ticket Tiers. `TicketTier` model, `Event hasMany TicketTier`, `EventRegistration.ticket_tier_id` FK, admin form repeater, public registration tier picker, data migration that creates a "General" tier for existing priced events, retroactive linkage of session 189's `ticket_type` + `ticket_fee` import fields to Tier rows.
-- **artifact:** the feature itself.
+- **success criterion** *(closed at session 278)*: Shape (A) chosen — tier-canonical. `ticket_tiers` table (uuid, event_id FK cascade, name, price, capacity, sort_order, timestamps) + `event_registrations.ticket_tier_id` nullable FK shipped in one atomic migration that also backfills one `{name: 'General'}` tier per priced-or-capped event, retroactively links existing `event_registrations` with `ticket_type` to matching-or-newly-created tiers, and drops `events.price` + `events.capacity`. `Event::is_free` and `Event::isAtCapacity` walk tiers. Filament `Repeater::make('ticketTiers')` on EventResource with cross-row uniqueness rule. Public widget renders three modes (0 tier: no UI / 1 tier: hidden id + price / 2+ tiers: radio picker + "(sold out)" labels); single form action per surface, server-side routes free vs. paid by chosen tier's price. Per-tier capacity replaces event-level. Iteration /4 added a `notes` textarea on the public form (interim workaround for missing per-attendee data) and dropped the absolute email-uniqueness silent-success dedup (was blocking legitimate repeat registrations). Fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec (3 scenarios). See `sessions/278. Event Ticket Tiers — Log.md`.
+- **artifact:** the feature itself. **Closed at session 278.**
 - **estimated time cost:** 1 session.
+
+#### C2a. Multi-Quantity Event Ticket Purchase *(C2 follow-on)*
+
+- **gate:** release
+- **prerequisites:** C2 (tier-canonical schema shipped)
+- **success criterion:** Buyer can purchase N tickets across one or more tiers in a single transaction. Shape (A) chosen at 278-close: `event_registrations.quantity` smallint default 1; per-tier capacity aggregate switches from `withCount` to `withSum('registrations', 'quantity')`; mixed-tier purchases produce multiple registration rows sharing a `stripe_session_id`. Public widget gains per-tier quantity spinners + live subtotal + ≥ 1-ticket-total validation. Stripe Checkout assembles multi-line-item sessions (one line per chosen tier with `quantity`). Webhook generalizes to "find all pending registrations on this stripe_session_id, promote them, record one transaction at the order total." Admin "View Registrants" gains a `tickets` column reading `quantity`. Importer unchanged (one-row-per-CSV-row → quantity=1).
+- **artifact:** the feature itself.
+- **estimated time cost:** 2–3 iterations (schema + controllers + webhook; widget UI + Playwright; optional admin polish).
 
 #### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded)*
 
@@ -483,29 +491,30 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 27. **Rich-Text Surface Sanitization Hardening** *(session 275 — closed; carved out at 273-close per Flag W4c/A; canonical 250-time stub implementation; `App\Support\HtmlSanitizer` utility + 8 model-boundary apply sites with companion regression-guard tests + `ContentImporter::sanitizeWidgetConfig` extension + Memos Trix→Quill convergence with one-time data migration absorbed by next squash + 71-case allow-list test suite + 2 new Playwright specs; mid-session bug fix for `SanitisesRichTextCustomFields` trait FQCN-vs-codebase-convention drift; fast Pest 2277/0 (+111 over 274 baseline); Playwright 44/0)* ✅
 28. **C1.** Notes Permissions (feature half) *(session 276 — closed; `edit_others_note` permission to developer, `notes_edit_only_by_creator` SiteSetting toggle on GeneralSettingsPage, `NotePolicy::update`/`::delete` extended with toggle + override gate, Timeline UI rewired to compose policy; fast Pest 2304/0 (+27 over 275), 3 new Playwright specs)* ✅
 29. **E9.** Widget Help Authoring *(session 277 — closed; 5 widget detail docs + canonical `widgets.md` with sortable Alpine table + 2 additive `help_articles` migrations (`search_weight` tiebreaker, `parent_slug` breadcrumb chain) + cms-pages callout + scoped help-page link CSS; fast Pest 2311/0 (+7 over 276 baseline))* ✅
-30. **C2.** Event Ticket Tiers
-31. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
-32. **E4.** Stripe Checkout Branding *(precedes C4)*
-33. **C4.** Donation-to-acknowledgment loop
-34. **C5.** Event with everything
-35. **C6.** Membership renewal cycle
-36. **C7.** Email at volume
-37. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-38. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-39. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-40. **E8.** UI/UX Sprint
-41. **E12.** Housekeeping Batch 2
-42. **D1.** Scale rehearsal
-43. **D2.** Compatibility cluster
-44. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-45. **E13.** Help docs body content
-46. **E14.** Third-Party Licensing Compliance Audit
-47. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-48. **D4.** Test suite review — cost & shape
-49. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-50. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-51. **F3.** On-Demand E2E — Permission / role-gate matrix
-52. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+30. **C2.** Event Ticket Tiers *(session 278 — closed; shape (A) tier-canonical; `events.price` and `events.capacity` dropped; `ticket_tiers` table + `event_registrations.ticket_tier_id` FK + General-tier backfill + retroactive importer linkage in one atomic migration; Filament tier repeater on EventResource; public widget with three picker modes; per-tier capacity; `notes` field added to public form as interim workaround for per-attendee data; email-uniqueness silent-success dedup dropped; fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec / 3 scenarios)* ✅
+31. **C2a.** Multi-Quantity Event Ticket Purchase *(C2 follow-on lifted at 278-close per user manual-testing feedback — shape (A) data-model picked over a parent-orders shape; `event_registrations.quantity` + `withSum` capacity + multi-line-item Stripe + quantity-spinner widget; 2–3 iterations)*
+32. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+33. **E4.** Stripe Checkout Branding *(precedes C4)*
+34. **C4.** Donation-to-acknowledgment loop
+35. **C5.** Event with everything
+36. **C6.** Membership renewal cycle
+37. **C7.** Email at volume
+38. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
+39. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
+40. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
+41. **E8.** UI/UX Sprint
+42. **E12.** Housekeeping Batch 2
+43. **D1.** Scale rehearsal
+44. **D2.** Compatibility cluster
+45. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+46. **E13.** Help docs body content
+47. **E14.** Third-Party Licensing Compliance Audit
+48. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+49. **D4.** Test suite review — cost & shape
+50. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+51. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+52. **F3.** On-Demand E2E — Permission / role-gate matrix
+53. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
