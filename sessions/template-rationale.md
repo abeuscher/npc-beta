@@ -90,3 +90,47 @@ Items the user holds veto on (do not land changes without explicit sign-off):
 - The FM cross-repo flag.
 - The manual-testing pause language.
 - The portal security rule in Style rules.
+
+---
+
+## Recalibration pass — session 279/2 (2026-05-11)
+
+### Triggering observation
+
+The 276.5 pass added two CLAUDE.md rules scoped to "browser-run parallel sessions only": the fractional-session-number convention (`session-NNN.M/N`) and the PR-at-close requirement. Across the 50-ish sessions that have run since they landed, the convention has been exercised **once** — the originating session 276.5 itself. Every other session has been local-CLI, single-stream, no parallel branch, no PR.
+
+The failure mode the rules were preventing — "how to coordinate a browser-side parallel session with an in-flight local-CLI session" — turned out to be a problem the project does not have in practice. The user's external evidence and personal experience have continued to negate the parallel-workstream premise: the coordination tax and conflict-surface cost of running two streams against the same repo exceeds the throughput gain.
+
+The cost of keeping the rule on the books, even unused, was demonstrated concretely at **session 279/1 → 279/2**: the doctrinal mention of PRs in CLAUDE.md (and the natural PR-link in `git push` output) contaminated the agent's mental model for numbered sessions. The agent treated `session-279/1` as a long-lived PR-style branch that could absorb iteration /2 as additional commits, instead of following the canonical "each iteration is its own branch off main" pattern. Combined with the IDE auto-checking-out main after the user merged iteration /1, the contamination produced a commit-on-main violation (recovered without data loss, but a real protocol breach).
+
+The diagnosis: the cloud-session exception was the only place in CLAUDE.md where PRs were *required*, and its presence pulled PR-shape thinking into the rest of the doc. Removing the exception removes the PR-shape entirely. One workflow, consistently described.
+
+### What changed
+
+#### `CLAUDE.md`
+
+- **Removed the fractional-session-number convention.** The paragraph describing `session-NNN.M/N` for browser-run parallel sessions is gone. The session-naming rule is now simply `session-NNN/N` (iteration), uniform across all sessions.
+- **Removed the PR-at-close convention.** The paragraph requiring a PR for browser-run parallel sessions is gone. PRs are no longer mentioned anywhere in the active workflow.
+- **Softened "Merge to main is the user's job, always. Open a PR if appropriate; do not merge it."** to **"Merge to main is the user's job, always. Do not merge to main yourself."** — drops the PR mention entirely.
+- **Softened the session-pacing milestone language** from `"PR ready for review"` to `"iteration ready for the user to deploy and test"`. The state the milestone names is unchanged (implementation complete + tests green + build clean); the framing no longer borrows PR-vocabulary.
+
+#### Templates
+
+- **No template edits.** The three session templates (`template-base-prompt.md`, `template-session-prompt.md`, `template-session-log.md`) do not mention parallel sessions, fractional numbering, or PRs. They were already clean.
+
+### What was considered and explicitly not changed
+
+- **Historical references to "276.5"** in `sessions/278. base-prompt.md`, `sessions/279. base-prompt.md`, and `sessions/fleet-manager-planning-spec.md`. These are historical attributions ("the drift rule was introduced at 276.5") — the rules they attribute are still load-bearing; only the parallel-session-number convention is gone. The "276.5" label remains valid as a point-in-time identifier for that recalibration pass. **Untouched.**
+- **The 276.5 entry above in this rationale doc.** The drift rule and decision-threshold rule introduced in that pass are still load-bearing and earning their keep. Only the two parallel-session-specific bullets in the 276.5 entry (lines describing the fractional-session and PR-at-close additions) are now superseded by this entry. The 276.5 entry stays as historical record of what was added; this entry records what was removed and why.
+- **`sessions/test-runner-brief.md`** — references PRs as part of the runner-experiment workflow ("Open the PR with test handoff" at line 372). The brief is a planning document for a not-yet-active workflow. The user's evidence stack ("Continued external evidence and personal experience are really negating this premise very rapidly") may indicate the runner experiment itself is in question, but that's a separate decision than this CLAUDE.md cleanup. The brief is left intact pending a separate decision about whether to pursue the runner experiment.
+- **The `bin/git-hooks/pre-push` hook.** Already correct — refuses pushes to `main` / `master`. Unchanged.
+
+### Provenance
+
+User-initiated at session 279/2 after the bugfix iteration revealed the cost of the cloud-session exception's bleed into numbered-session workflow. The PR mention in iteration /1's push output and the agent's subsequent treatment of `session-279/1` as a PR-shaped container were the concrete evidence.
+
+### Forward signal — when to recalibrate next
+
+The 276.5 cadence (every ~50 sessions or on forcing function) still holds. The next scheduled pass remains **no later than session 326**.
+
+Specific signal to watch: if any future session prompts mention browser-side or parallel work, treat as a forcing function and re-evaluate from scratch — don't just re-add the rules. The cost ledger this pass produced should be revisited with fresh evidence.

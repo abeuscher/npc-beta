@@ -1,15 +1,11 @@
 ## Session Pacing
 
-- Never advance to the next milestone without an explicit user instruction. A milestone is "PR ready for review" — implementation complete, tests green, build clean. After completing one, stop and wait. (Cross-track work like Widget Autonomy may carry its own milestone definition; see the relevant track doc.)
+- Never advance to the next milestone without an explicit user instruction. A milestone is "iteration ready for the user to deploy and test" — implementation complete, tests green, build clean. After completing one, stop and wait. (Cross-track work like Widget Autonomy may carry its own milestone definition; see the relevant track doc.)
 - Never suggest, ask about, or initiate session close. The user initiates close explicitly. Wait in silence until told.
 
 ## Git Workflow
 
 Branches use the convention `session-NNN/N` where NNN is the session number and N is the iteration (1, 2, 3, …). Each iteration is a self-contained set of changes that can be merged to main independently. (Cross-track work — e.g. the Widget Autonomy track — uses its own prefix per the relevant track doc; the rules below apply uniformly across prefixes.)
-
-**Browser-run parallel sessions** — sessions run via the claude.ai/code browser surface alongside an in-flight local-CLI session — use a **fractional session number** keyed to the in-flight session: `session-NNN.M/N` (e.g. `session-276.5/1` runs alongside session 276 from the browser). The fraction signals "parallel to NNN, originated browser-side, not in the release plan, not part of the main numbered sequence." The iteration suffix (`/N`) works the same as for numbered sessions. Local-CLI maintenance passes alongside a numbered session do NOT get a fractional number — they live on the in-flight session's branch or get their own numbered slot.
-
-**At the close of any browser-run parallel session, open a PR against `main`** alongside the push. Because these sessions run out-of-flow and outside the normal local-CLI close cadence, the PR is how the user tracks them and routes them through the same review surface as numbered sessions. Numbered local-CLI sessions still follow the standard "push branch, user opens PR if they want one" pattern; the PR-at-close requirement applies to browser-run parallel sessions only.
 
 - **Starting a session:** `git checkout main && git checkout -b session-NNN/1`
 - **Committing:** Commit whenever a set of changes is ready for the user to deploy and test. One or more commits per branch is fine — whatever makes sense for the changeset.
@@ -23,7 +19,7 @@ Branches use the convention `session-NNN/N` where NNN is the session number and 
   - `git checkout main` except as the immediate prelude to `git checkout -b <new-branch>` (branch, then leave; never commit while on main).
   - `git merge` into main, locally or remotely.
   - `git commit` while on main.
-- **Merge to main is the user's job, always.** Open a PR if appropriate; do not merge it.
+- **Merge to main is the user's job, always.** Do not merge to main yourself.
 - **Next iteration:** After the user merges and reports back, start from main: `git checkout main && git pull && git checkout -b session-NNN/2`. Repeat as needed.
 - **Session close documents** (log, outlines update, next-session prompt) go on the final iteration branch for the session.
 - **Only branch from main.** Never create a branch off another branch.
