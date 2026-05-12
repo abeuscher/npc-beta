@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Portal\EventCheckoutController;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\EventRegistrationQuantities;
+use App\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,27 +71,63 @@ class EventRegistrationController extends Controller
 
         $quantities = EventRegistrationQuantities::fromRequest($event, $request);
 
-        if ($quantities->isPaid()) {
-            return redirect()
-                ->action([EventCheckoutController::class, 'store'], ['slug' => $slug])
-                ->withInput();
+        if (! $quantities->isPaid()) {
+            foreach ($quantities->lines as $line) {
+                EventRegistration::create([
+                    'event_id'       => $event->id,
+                    'ticket_tier_id' => $line['tier']->id,
+                    'quantity'       => $line['quantity'],
+                    'contact_id'     => $contact->id,
+                    'name'           => $contact->display_name,
+                    'email'          => $contact->email,
+                    'status'         => 'registered',
+                    'source'         => Source::HUMAN,
+                    'registered_at'  => now(),
+                    'notes'          => $validated['notes'] ?? null,
+                ]);
+            }
+
+            return redirect($eventPageUrl)->with('registration_success', true);
         }
 
+        $secret = config('services.stripe.secret');
+        if (empty($secret)) {
+            return back()->withErrors(['register' => 'Payment processing is not configured.']);
+        }
+
+        $registrations = [];
         foreach ($quantities->lines as $line) {
-            EventRegistration::create([
+            $registrations[] = EventRegistration::create([
                 'event_id'       => $event->id,
                 'ticket_tier_id' => $line['tier']->id,
                 'quantity'       => $line['quantity'],
                 'contact_id'     => $contact->id,
                 'name'           => $contact->display_name,
                 'email'          => $contact->email,
-                'status'         => 'registered',
-                'source'         => Source::HUMAN,
+                'status'         => 'pending',
+                'source'         => Source::STRIPE_WEBHOOK,
                 'registered_at'  => now(),
                 'notes'          => $validated['notes'] ?? null,
             ]);
         }
 
-        return redirect($eventPageUrl)->with('registration_success', true);
+        try {
+            $session = (new StripeCheckoutService())->createSession(
+                lineItems: $quantities->stripeLineItems($event->title),
+                metadata: ['event_registration_checkout' => '1'],
+                successUrl: $eventPageUrl . '?registration=success',
+                cancelUrl: $eventPageUrl . '?registration=cancelled',
+            );
+        } catch (\Throwable $e) {
+            foreach ($registrations as $registration) {
+                $registration->delete();
+            }
+            return back()->withErrors(['register' => 'Could not initiate checkout. Please try again.']);
+        }
+
+        EventRegistration::whereIn('id', array_map(static fn ($r) => $r->id, $registrations))
+            ->update(['stripe_session_id' => $session->id]);
+
+        return redirect()->away($session->url);
     }
 }

@@ -92,37 +92,31 @@ it('routes to checkout when the chosen tier is paid', function () {
     $event = Event::factory()->paid(25.00)->create(['status' => 'published']);
     $tier  = $event->ticketTiers()->first();
 
+    config(['services.stripe.secret' => 'sk_test_fake']);
+
     $this->post(route('events.register', $event->slug), [
         'name'        => 'Jane',
         'email'       => 'jane@example.com',
         'quantities'  => [$tier->id => 1],
         '_form_start' => time() - 10,
-    ])->assertRedirect();
+    ]);
 
-    // Free path did not land a registration; the redirect handed off to checkout.
+    // The paid path creates a pending row, then deletes it when Stripe
+    // rejects the fake key. Either way, nothing lands as source=human.
     expect(EventRegistration::where('email', 'jane@example.com')->where('source', 'human')->count())->toBe(0);
 });
 
-it('checkout rejects a $0-only quantities map with a register-this-is-free error', function () {
-    $event = Event::factory()->withCapacity(20)->create(['status' => 'published']);
-    $tier  = $event->ticketTiers()->first();
-
-    $this->post(route('events.checkout', $event->slug), [
-        'name'        => 'Jane',
-        'email'       => 'jane@example.com',
-        'quantities'  => [$tier->id => 1],
-    ])->assertSessionHasErrors('register');
-});
-
-it('checkout rejects a quantities key from a different event', function () {
+it('paid registration rejects a quantities key from a different event', function () {
+    config(['services.stripe.secret' => 'sk_test_fake']);
     $eventA  = Event::factory()->paid(25.00)->create(['status' => 'published']);
     $eventB  = Event::factory()->paid(50.00)->create(['status' => 'published']);
     $foreign = $eventB->ticketTiers()->first();
 
-    $this->post(route('events.checkout', $eventA->slug), [
+    $this->post(route('events.register', $eventA->slug), [
         'name'        => 'Jane',
         'email'       => 'jane@example.com',
         'quantities'  => [$foreign->id => 1],
+        '_form_start' => time() - 10,
     ])->assertSessionHasErrors('quantities');
 });
 

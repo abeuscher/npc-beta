@@ -309,6 +309,33 @@ it('portal member free multi-tier purchase creates one row per tier', function (
         ->and($rows->where('ticket_tier_id', $b->id)->first()->quantity)->toBe(1);
 });
 
+// ── Regression guards: merged single-controller flow ────────────────────────
+
+it('events.checkout and portal.events.checkout routes no longer exist', function () {
+    expect(\Illuminate\Support\Facades\Route::getRoutes()->getByName('events.checkout'))->toBeNull();
+    expect(\Illuminate\Support\Facades\Route::getRoutes()->getByName('portal.events.checkout'))->toBeNull();
+});
+
+it('paid registration does not internally redirect to a removed events.checkout endpoint', function () {
+    // Bug guard for the 278-introduced 302 → GET /events/{slug}/checkout
+    // failure mode that landed users on a 404. The merged 279 controller
+    // must complete the paid flow inline and either 302 to an absolute
+    // Stripe URL or back() with a register error (when Stripe rejects).
+    config(['services.stripe.secret' => 'sk_test_fake']);
+    $event = Event::factory()->paid(25.00)->create(['status' => 'published']);
+    $tier  = $event->ticketTiers()->first();
+
+    $response = $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        'quantities'  => [$tier->id => 1],
+        '_form_start' => time() - 10,
+    ]);
+
+    $location = $response->headers->get('Location') ?? '';
+    expect($location)->not->toContain("/events/{$event->slug}/checkout");
+});
+
 // ── Max-quantity bound ──────────────────────────────────────────────────────
 
 it('rejects a quantity above the 999 hard ceiling', function () {

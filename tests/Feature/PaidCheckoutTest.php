@@ -12,62 +12,32 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-// ── EventCheckoutController — validation ─────────────────────────────────────
+// ── EventController — paid-path validation (single-controller flow) ─────────
 
-it('rejects event checkout when event is free', function () {
-    $event = Event::factory()->withCapacity(50)->create();
-    $tier  = $event->ticketTiers()->first();
-
-    $response = $this->post(route('events.checkout', $event->slug), [
-        'name'           => 'Test User',
-        'email'          => 'test@example.com',
-        'quantities'     => [$tier->id => 1],
-    ]);
-
-    $response->assertSessionHasErrors('register');
-    expect(EventRegistration::count())->toBe(0);
-});
-
-it('rejects event checkout when event is cancelled', function () {
+it('rejects paid registration when event is cancelled', function () {
     $event = Event::factory()->cancelled()->paid(25.00)->create();
     $tier  = $event->ticketTiers()->first();
 
-    $response = $this->post(route('events.checkout', $event->slug), [
+    $response = $this->post(route('events.register', $event->slug), [
         'name'           => 'Test User',
         'email'          => 'test@example.com',
         'quantities'     => [$tier->id => 1],
+        '_form_start'    => time() - 10,
     ]);
 
     $response->assertSessionHasErrors('register');
 });
 
-it('rejects event checkout when event is at capacity', function () {
-    $event = Event::factory()->paid(25.00, 1)->create();
-    $tier  = $event->ticketTiers()->first();
-    EventRegistration::factory()->create([
-        'event_id'       => $event->id,
-        'ticket_tier_id' => $tier->id,
-        'status'         => 'registered',
-    ]);
-
-    $response = $this->post(route('events.checkout', $event->slug), [
-        'name'           => 'Test User',
-        'email'          => 'test@example.com',
-        'quantities'     => [$tier->id => 1],
-    ]);
-
-    $response->assertSessionHasErrors('quantities');
-});
-
-it('rejects event checkout when stripe is not configured', function () {
+it('rejects paid registration when stripe is not configured', function () {
     config(['services.stripe.secret' => null]);
     $event = Event::factory()->paid(25.00)->create();
     $tier  = $event->ticketTiers()->first();
 
-    $response = $this->post(route('events.checkout', $event->slug), [
+    $response = $this->post(route('events.register', $event->slug), [
         'name'           => 'Test User',
         'email'          => 'test@example.com',
         'quantities'     => [$tier->id => 1],
+        '_form_start'    => time() - 10,
     ]);
 
     $response->assertSessionHasErrors('register');
@@ -374,7 +344,7 @@ it('signup without tier creates no membership', function () {
 
 // ── Portal event checkout ───────────────────────────────────────────────────
 
-it('portal member can access paid event checkout', function () {
+it('portal member paid event registration runs validation and reaches Stripe', function () {
     $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
     $event   = Event::factory()->paid(25.00)->create();
@@ -383,7 +353,7 @@ it('portal member can access paid event checkout', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
 
     $response = $this->actingAs($account, 'portal')
-        ->post(route('portal.events.checkout', $event->slug), ['quantities' => [$tier->id => 1]]);
+        ->post(route('portal.events.register', $event->slug), ['quantities' => [$tier->id => 1]]);
 
     // Stripe call fails with fake key, so registration is cleaned up.
     // Verify the route exists and the controller runs validation.

@@ -90,7 +90,7 @@ it('paid donation checkout via DonationCheckoutController writes source=stripe_w
     expect($captured)->toBe(Source::STRIPE_WEBHOOK);
 });
 
-it('paid event checkout via EventCheckoutController writes source=stripe_webhook', function () {
+it('paid event registration via EventController writes source=stripe_webhook', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
     $event = Event::factory()->paid(25.00)->create();
     $tier  = $event->ticketTiers()->first();
@@ -100,16 +100,17 @@ it('paid event checkout via EventCheckoutController writes source=stripe_webhook
         $captured = $r->source;
     });
 
-    $this->post(route('events.checkout', $event->slug), [
+    $this->post(route('events.register', $event->slug), [
         'name'           => 'Paid User',
         'email'          => 'paid@example.com',
         'quantities'     => [$tier->id => 1],
+        '_form_start'    => time() - 10,
     ]);
 
     expect($captured)->toBe(Source::STRIPE_WEBHOOK);
 });
 
-it('portal paid event checkout via Portal\\EventCheckoutController writes source=stripe_webhook', function () {
+it('portal paid event registration via Portal\\EventRegistrationController writes source=stripe_webhook', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
     $contact = Contact::factory()->create(['email' => 'portalpaid@example.com']);
     $account = PortalAccount::factory()->create(['contact_id' => $contact->id]);
@@ -122,7 +123,7 @@ it('portal paid event checkout via Portal\\EventCheckoutController writes source
     });
 
     $this->actingAs($account, 'portal')
-        ->post(route('portal.events.checkout', $event->slug), ['quantities' => [$tier->id => 1]]);
+        ->post(route('portal.events.register', $event->slug), ['quantities' => [$tier->id => 1]]);
 
     expect($captured)->toBe(Source::STRIPE_WEBHOOK);
 });
