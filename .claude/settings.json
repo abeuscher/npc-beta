@@ -283,7 +283,8 @@
       "Bash(git merge *)",
       "Bash(awk -F: '$1 >= 480')",
       "Bash(grep -rn '$event->price\\\\|$event->capacity\\\\|\\\\->price\\\\|\\\\->capacity' /home/al/nonprofitcrm/app '--include=*.php')",
-      "Bash(grep -rEn '\\\\$event->\\(price|capacity\\)|\\\\$record->\\(price|capacity\\)' /home/al/nonprofitcrm/app '--include=*.php')"
+      "Bash(grep -rEn '\\\\$event->\\(price|capacity\\)|\\\\$record->\\(price|capacity\\)' /home/al/nonprofitcrm/app '--include=*.php')",
+      "Bash(grep -n '^        $role\\\\|->givePermissionTo\\\\|^        // ──\\\\|protected function\\\\|public function' /home/al/nonprofitcrm/database/seeders/PermissionSeeder.php)"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -206,16 +206,16 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself.
 - **estimated time cost:** 2–3 iterations (schema + controllers + webhook; widget UI + Playwright; optional admin polish).
 
-#### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded)*
+#### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded; pre-emptively split at 279-close — audit half is #32, concurrent-editing + exposure half is #32b)*
 
 - **gate:** release
 - **prerequisites:** C1 (Notes feature gates landed); A1 (synthetic data for adversarial-edit attempts)
 - **success criterion:**
-  - **Permission audit:** every admin action (Filament resources, pages, actions, bulk actions, header actions) has a documented permission gate enforced at both UI and controller layers, walked from volunteer / board-read-only / staff-admin / public-visitor perspectives. Permission matrix table produced. Findings fixed in-session per Rule 2.
-  - **Concurrent admin editing:** two admin sessions edit the same contact simultaneously → behavior is documented + predictable (last-write-wins or conflict warning); no data corruption. Same for CMS page edits during publish.
-  - **Accidental public exposure:** attempts to mark sensitive fields public (home addresses, donor amounts, internal notes) hit a warning/confirmation gate or are impossible. Each sensitive field's protection mechanism documented. Public-content indicator visible on every record/widget surface that has potential to leak.
-- **artifact:** permission matrix at `docs/runbooks/permission-matrix.md` + data-classification notes in same file.
-- **estimated time cost:** 1–2 sessions; may split if audit findings exceed in-session-fix capacity per Rules 2 + 11.
+  - **Permission audit** *(closed by session 280 — execution-order #32)*: every admin action (Filament resources, pages, actions, bulk actions, header actions) has a documented permission gate enforced at both UI and controller layers, walked from volunteer / board-read-only / staff-admin / public-visitor perspectives. Permission matrix table produced. Findings fixed in-session per Rule 2.
+  - **Concurrent admin editing** *(deferred to #32b)*: two admin sessions edit the same contact simultaneously → behavior is documented + predictable (last-write-wins or conflict warning); no data corruption. Same for CMS page edits during publish.
+  - **Accidental public exposure** *(deferred to #32b)*: attempts to mark sensitive fields public (home addresses, donor amounts, internal notes) hit a warning/confirmation gate or are impossible. Each sensitive field's protection mechanism documented. Public-content indicator visible on every record/widget surface that has potential to leak.
+- **artifact:** permission matrix at `docs/runbooks/permission-matrix.md` (matrix landed by #32; data-classification notes appended by #32b).
+- **estimated time cost:** 2 sessions per the pre-emptive split (audit + concurrent/exposure). Original estimate was 1–2 sessions undivided.
 
 #### C4. Donation-to-acknowledgment loop
 
@@ -492,8 +492,9 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 28. **C1.** Notes Permissions (feature half) *(session 276 — closed; `edit_others_note` permission to developer, `notes_edit_only_by_creator` SiteSetting toggle on GeneralSettingsPage, `NotePolicy::update`/`::delete` extended with toggle + override gate, Timeline UI rewired to compose policy; fast Pest 2304/0 (+27 over 275), 3 new Playwright specs)* ✅
 29. **E9.** Widget Help Authoring *(session 277 — closed; 5 widget detail docs + canonical `widgets.md` with sortable Alpine table + 2 additive `help_articles` migrations (`search_weight` tiebreaker, `parent_slug` breadcrumb chain) + cms-pages callout + scoped help-page link CSS; fast Pest 2311/0 (+7 over 276 baseline))* ✅
 30. **C2.** Event Ticket Tiers *(session 278 — closed; shape (A) tier-canonical; `events.price` and `events.capacity` dropped; `ticket_tiers` table + `event_registrations.ticket_tier_id` FK + General-tier backfill + retroactive importer linkage in one atomic migration; Filament tier repeater on EventResource; public widget with three picker modes; per-tier capacity; `notes` field added to public form as interim workaround for per-attendee data; email-uniqueness silent-success dedup dropped; fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec / 3 scenarios)* ✅
-31. **C2a.** Multi-Quantity Event Ticket Purchase *(C2 follow-on lifted at 278-close per user manual-testing feedback — shape (A) data-model picked over a parent-orders shape; `event_registrations.quantity` + `withSum` capacity + multi-line-item Stripe + quantity-spinner widget; 2–3 iterations)*
-32. **C3.** Permission audit + Concurrent admin editing + Accidental public exposure
+31. **C2a.** Multi-Quantity Event Ticket Purchase *(closed at session 279; shape (A) shipped — `event_registrations.quantity smallint default 1`; `withSum` per-tier capacity; merged checkout controllers via iteration /2 bugfix that fixed a 278-introduced 302→GET 404 dispatch bug; quantity-spinner widget with live subtotal; admin Tickets column; iteration /3 cleaned cloud-session/parallel-session/PR rules from CLAUDE.md per user evidence on parallel-workstream cost; fast Pest 2355/0 sequential)* ✅
+32. **C3.** Permission audit *(audit half of original C3, pre-emptively split at 279-close per Rule 11 — concurrent editing + accidental exposure split to 32b; walks 27 Filament resources × 24 pages × 8 shipped roles + unauthenticated; produces `docs/runbooks/permission-matrix.md`; audit-style absorption per Rule 2)*
+32b. **C3-deferred.** Concurrent admin editing + Accidental public exposure *(deferred half of original C3, lifted at 279-close — runs after #32 closes; concurrent-edit policy + sensitive-field-toggle gating + public-content indicators; extends the permission matrix doc with data-classification notes)*
 33. **E4.** Stripe Checkout Branding *(precedes C4)*
 34. **C4.** Donation-to-acknowledgment loop
 35. **C5.** Event with everything
