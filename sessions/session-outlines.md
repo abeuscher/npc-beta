@@ -167,20 +167,52 @@ Shipped at session 279. Shape (A) chosen at 278-close: `event_registrations.quan
 
 ---
 
-### Permission Audit *(stub — pre-Beta 1; #32 in `release-plan.md` execution order; audit half of C3)*
+### Permission Audit *(✅ closed at session 280; #32 in `release-plan.md` execution order; audit half of C3)*
 
-Lifted at 279-close. Pre-emptive split of the original C3 entry under release-plan Rule 11 — the audit surface (27 Filament resources × 24 Filament pages × 8 shipped roles + unauthenticated) is wide enough that giving it room to expand is cleaner than fighting a mid-session split. Walk every Filament resource, page, sub-page, and any non-Filament admin-shaped controller to verify both the UI-layer gate (`canViewAny()` / `canAccess()` / `canEdit()` / `canDelete()` / table-action `hidden()` callbacks) and the controller-layer gate (direct-URL reachability bypassing the UI). Produce `docs/runbooks/permission-matrix.md` with one row per `(resource × role)` cell carrying both gate statuses + notes. Persona-vs-role mismatch from the C3 plan-entry text (volunteer / board-read-only / staff-admin / public-visitor vs the 8 shipped roles) resolves at session start; lean toward "walk shipped roles, cross-reference personas." Audit-style absorption rule applies (release-plan Rule 2) — small fixes inline, larger findings to follow-on. Standing rule `feedback_audit_findings_default_to_fix.md` applies — surface inclusively, let apply walkthrough decide won't-fix. Codify the matrix as a Pest spec where the per-cell test would catch a future regression; otherwise leave the matrix as documentation. See `sessions/280. base-prompt.md` and `sessions/280. Permission Audit.md`.
+Walked 27 Filament resources, 28 Filament pages, all resource sub-pages, and every admin-shaped controller in `app/Http/Controllers/Admin/` from the 8 shipped roles + unauthenticated. Produced `docs/runbooks/permission-matrix.md` with per-group resource matrices, per-page matrices, a role-grants summary, and 7 audit findings (3 OK-by-design, 4 open flags). Codified 16 load-bearing probes at `tests/Feature/PermissionMatrixTest.php`.
+
+Key empirical finding: `Resource::canAccess()` runs as a Livewire mount hook before any per-page authorizeAccess (via Filament's `CanAuthorizeResourceAccess` trait on the base `Resources\Pages\Page`). This means the `canAccess` override is a universal URL gate — covers list, create, edit, all sub-pages. The "no policy + permissive `canCreate`/`canEdit` default" pattern I'd theorized as a possible bypass is NOT a bypass in practice; verified by test.
+
+Bottom line: the gating is structurally sound. No bypass exists for any of the 27 resources audited. All findings are documentation flags rather than security holes. Fast Pest 2371/0 (+15 over 279 baseline, +16 new minus one ledger-drift entry). See `sessions/archived/280. Permission Audit — Log.md`.
 
 ---
 
-### Concurrent Admin Editing + Accidental Public Exposure *(stub — pre-Beta 1; #32b in `release-plan.md` execution order; deferred half of C3)*
+### Concurrent Admin Editing *(stub — pre-Beta 1; #32b in `release-plan.md` execution order)*
 
-Lifted at 279-close (pre-emptive split of C3 alongside the Permission Audit half above). Two concerns folded:
+Lifted at 279-close as the deferred half of C3, then further split at 280-close into its own session when the design grew substantial scope through the session-prep conversation. Shipping shape resolved during 280-close:
 
-- **Concurrent admin editing.** Two admin sessions edit the same contact / page simultaneously → behavior is documented + predictable (last-write-wins or conflict warning); no data corruption. Same for CMS page edits during publish. Likely lands as either a minimal `version` column + optimistic locking + warning UX, or a documented "last-write-wins is the policy" + automated regression test. Decision at session start.
-- **Accidental public exposure.** Attempts to mark sensitive fields public (home addresses, donor amounts, internal notes) hit a warning/confirmation gate or are impossible. Each sensitive field's protection mechanism documented in `docs/runbooks/permission-matrix.md` (extending the doc the audit half produces). Public-content indicator visible on every record/widget surface that has potential to leak.
+- **Pessimistic lock on edit-page mount.** Lock key = user + record + (session_id if needed). Acquired when an admin opens the edit page; released on save or cancel.
+- **Optimistic version check at save** as the safety-net layer — if two editors somehow both have the page open (lock-acquire race), the second save gets a "this record changed while you were editing" warning and is forced to re-open the record.
+- **Super-admin takeover anytime**, including against other super-admins. We assume super-admins know what they're doing.
+- **Non-super-admin takeover after 5+ minutes since the last save** on the locked record. The original editor's window gets a save-time warning (not active force-close — that costs a websocket/poll layer that doesn't pay for itself).
+- **List-view "locked by X" indicator** across content types, so editors can see lock status before clicking through.
+- **`beforeunload` + `sendBeacon` JS hook** to release the lock proactively on tab close. Reliable ~95% of the time; the 5-min idle expiry catches the rest.
+- **Centralized polymorphic lock table + shared trait/service** — one implementation across all admin-editable resources. New resources opt into locking via a flag.
+- **Portal users excluded.** Locks apply within the admin panel only; portal edits use last-write-wins.
 
-Sized 1 session if findings stay narrow; may split if the data-classification work surfaces design questions about which fields warrant which protection level. The Permission Audit (32) closes first and may fold relevant findings into 32b's intake.
+Sized 1 session. Migration + backend service + Filament trait + Pest tests + Playwright two-tab test. See `sessions/281. base-prompt.md` and `sessions/281. Concurrent Admin Editing.md`.
+
+---
+
+### Accidental Public Exposure *(stub — pre-Beta 1; #32c in `release-plan.md` execution order)*
+
+Lifted at 280-close as the further-split tail of the original 32b combined stub. Documentation-shaped walk that extends `docs/runbooks/permission-matrix.md` with the data-classification section the audit half stubbed out. For each public-flip surface in the system — `pages.is_published`, `posts.is_published`, `collection_items.is_public`, `page_widgets.is_public`, `events.is_published`, contact public toggles if any exist, donation visibility on contact-detail — document who can flip the toggle, what becomes publicly visible, and whether a confirmation gate exists today. Small in-session fixes per release-plan Rule 2 for missing gates on sensitive flips.
+
+May absorb the carry-forward findings from session 280 (`manage_dashboard_config` / `manage_record_detail_views` unassigned to any role, `household` permission family with no admin surface, "board-read-only" persona unfilled). Decision at session start.
+
+Sized 1 session if findings stay narrow; may split per Rule 11 if field-level visibility-per-role design surfaces as needed. See `sessions/282. base-prompt.md` and `sessions/282. Accidental Public Exposure.md`.
+
+---
+
+### Deploy-Time Admin Behavior — Discussion *(stub — pre-Beta 1, discussion item not yet scheduled)*
+
+Surfaced at 280-close during the concurrent-editing design conversation. Open question: what should happen to active admin sessions during an app deploy?
+
+Current state: deploy interrupts in-flight requests; admin users see whatever browser-level error their request hits (502, connection drop, etc.); reload after deploy works. Admin locks acquired before the deploy persist in the lock table until their idle-expiry sweep.
+
+User's current leaning: shut down the backend gracefully via Fleet Manager during deploys — drain in-flight requests, display a maintenance banner, optionally release locks held by users mid-edit. Mechanism likely sits on the Fleet Manager side (it owns deploy orchestration today).
+
+Lift to a release-plan entry once direction is decided. Likely 1 session of work if the FM-driven drain is the path — maintenance-mode middleware on the CRM side + an FM-side coordination step. Could grow if the desired UX includes per-admin notifications or save-and-restore-form-state work.
 
 ---
 

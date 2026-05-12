@@ -282,6 +282,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 277 | Widget Help Authoring & Help-System Integration |
 | 278 | Event Ticket Tiers |
 | 279 | Multi-Quantity Event Ticket Purchase |
+| 280 | Permission Audit |
 
 ---
 
