@@ -329,7 +329,11 @@
       "Bash(awk '/Lifted at 279-close \\\\\\(pre-emptive split of C3 alongside the Permission Audit half above\\\\\\)/,/^### /' /home/al/nonprofitcrm/sessions/session-outlines.md)",
       "Bash(awk '/^#### C3\\\\./,/^#### C4\\\\./' /home/al/nonprofitcrm/sessions/release-plan.md)",
       "Bash(grep -n \"Track [A-G]\\\\|track [a-z]\\\\{2,\\\\}\\\\| track\\\\.\" /home/al/nonprofitcrm/sessions/release-plan.md)",
-      "Bash(grep -E \"^[0-9]{3,4}:\")"
+      "Bash(grep -E \"^[0-9]{3,4}:\")",
+      "Bash(awk '{print $NF}')",
+      "Bash(grep -E \"\\\\.md$\")",
+      "Bash(awk '{$1=$2=$3=$4=$5=$6=$7=$8=\"\"; print $0}')",
+      "Bash(awk '{print $5, $6, $7, $9, $10, $11, $12, $13, $14}')"
     ],
     "deny": [],
     "additionalDirectories": [
