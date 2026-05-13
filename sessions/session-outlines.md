@@ -37,6 +37,12 @@ Two parallel agentic workstreams run across two repos (this CRM repo and a separ
 
 ---
 
+## Housekeeping Inbox
+
+Small items noticed between sessions live in `sessions/housekeeping-inbox.md` until they get folded into a batch session, promoted to a release-plan entry, or dropped. The inbox is the only home for items that are *small enough to bundle but large enough to break scope when absorbed mid-session*. Walk it at session start/close.
+
+---
+
 ## Housekeeping & Review — Beta 1 Scope
 
 *Ordered by priority.*

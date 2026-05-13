@@ -1,0 +1,67 @@
+# Housekeeping Inbox
+
+Small items noticed between sessions. One bullet per item, free-form text. When the inbox accumulates 5–10 items, batch them into a housekeeping session (e.g. Phase E's E12 "Housekeeping Batch 2"). Items that grow into "own session" shape get promoted to `release-plan.md` entries.
+
+This file is the only home for items that are *small enough to bundle but large enough to break scope when absorbed mid-session by a feature*.
+
+---
+
+## Inbox
+
+*(Items destined for the next housekeeping batch session.)*
+
+- Hero widget: button-group alignment control (left / right / center).
+- Text editor: changing text color should not change the editor's own preview color — white text becomes illegible on the light editor background.
+- Default paragraph and list-item padding: replace the zero-reset with ~6px top / ~12px bottom on `p` and `li`.
+- Hero widget: expose a control for how the hero text block's max-width is bound inside the widget.
+- Random Data Generator widget: add Organizations to the entity-generation list.
+- Logo widget: respond to the hero widget's text-color override when the logo sits on a full-bleed hero (so the logo doesn't fight the chosen text color).
+- Logo widget: default `href` = site home, with override available in the inspector.
+- Default logo image: ship a placeholder logo asset so a fresh install has one.
+- Logo widget: text field → rich text + appearance control (small scope; just enough to set color / weight / size).
+- Default button style refresh — quick visual pass (not blue-on-blue, gentle gradients, hover states). Pre-design-system-editor stopgap.
+- Column layouts: default `layout_config.background_full_width` to `true` for parity with widget defaults shipped at E10 (verified s282 — widget_types ships bg=true/content=false; column layouts still fall back to bg=false in `AppearanceStyleComposer::resolveColumnLayoutFullWidth`).
+
+---
+
+## Promotion candidates (need release-plan.md entries)
+
+*(Items too big to bundle. Need their own entry before scheduling.)*
+
+- **Table widget.** Full feature, not housekeeping. Probably 1–2 sessions. Decide: standalone Phase E entry OR fold into the Page Builder roadmap.
+- **Header / footer defaults overhaul.** Header not-full-width by default + footer nav added with stacking (vs current drops) + redo header/footer defaults. Multiple sub-pieces; own narrowly-scoped session.
+- **Borders on widget controls + columns.** Top/bottom + likely left/right inset. Touches many widgets uniformly. Could fold into the design-system editor track OR ship as a standalone visual pass.
+
+---
+
+## Folded into existing entries
+
+*(Items absorbed by an existing release-plan entry — captured here as a paper trail.)*
+
+- **Text editor reachability fix + Quill full-screen button + Playwright usability test** → folded into **E8 (UI/UX Sprint)**. E8 already covers Quill drag-resize handle; expand its scope at session start.
+- **Default button style long-term parameterization** → folded into the **Design System Editor** track (already on radar — "buttons first").
+
+---
+
+## Recently dispositioned
+
+*(Log of what left the inbox and where it went. Keep the last ~2 batches' worth.)*
+
+- **2026-05-13 (session 282 close):** 16 housekeeping items surfaced from operator running list:
+  - 11 → Inbox (above)
+  - 3 → Promotion candidates (Table widget; Header/footer overhaul; Borders pass)
+  - 2 → Folded (E8 absorbs text-editor scope; Design System Editor absorbs button parameterization)
+  - 1 → Verified as already shipped at E10 for widgets (s267); column-layouts parity gap lifted into Inbox as its own item.
+
+---
+
+## Disposition rules
+
+When walking the inbox at session start / close, each item leaves via one of:
+
+- **(a)** Fold into the next available housekeeping batch session (the default for inbox items).
+- **(b)** Fold into an existing planned entry — note here under "Folded into existing entries" and cross-ref in the target entry's session prompt.
+- **(c)** Promote to its own `release-plan.md` entry — move from Inbox to "Promotion candidates" first, then add the entry, then remove from this file.
+- **(d)** Drop as no-longer-relevant — note briefly under "Recently dispositioned" with the date.
+
+No states, no priorities, no timestamps beyond "Recently dispositioned." The list is the system.
