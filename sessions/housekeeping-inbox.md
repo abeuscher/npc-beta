@@ -8,13 +8,13 @@ This file is the only home for items that are *small enough to bundle but large 
 
 ## Inbox
 
-*(Items destined for the next housekeeping batch session.)*
+*(Items destined for the next housekeeping batch session. Items default to **pre-Public-Website-Complete** unless tagged `[post-milestone]` — see Rule 12 in `release-plan.md`.)*
 
 - Hero widget: button-group alignment control (left / right / center).
 - Text editor: changing text color should not change the editor's own preview color — white text becomes illegible on the light editor background.
 - Default paragraph and list-item padding: replace the zero-reset with ~6px top / ~12px bottom on `p` and `li`.
 - Hero widget: expose a control for how the hero text block's max-width is bound inside the widget.
-- Random Data Generator widget: add Organizations to the entity-generation list.
+- `[post-milestone]` Random Data Generator widget: add Organizations to the entity-generation list. *(Admin tool — doesn't block the public website demo.)*
 - Logo widget: respond to the hero widget's text-color override when the logo sits on a full-bleed hero (so the logo doesn't fight the chosen text color).
 - Logo widget: default `href` = site home, with override available in the inspector.
 - Default logo image: ship a placeholder logo asset so a fresh install has one.
@@ -28,9 +28,9 @@ This file is the only home for items that are *small enough to bundle but large 
 
 *(Items too big to bundle. Need their own entry before scheduling.)*
 
-- **Table widget.** Full feature, not housekeeping. Probably 1–2 sessions. Decide: standalone Phase E entry OR fold into the Page Builder roadmap.
-- **Header / footer defaults overhaul.** Header not-full-width by default + footer nav added with stacking (vs current drops) + redo header/footer defaults. Multiple sub-pieces; own narrowly-scoped session.
-- **Borders on widget controls + columns.** Top/bottom + likely left/right inset. Touches many widgets uniformly. Could fold into the design-system editor track OR ship as a standalone visual pass.
+- ~~**Table widget.**~~ Promoted at 282 audit → **E15** in `release-plan.md`. Pre-Public-Website-Complete.
+- ~~**Header / footer defaults overhaul.**~~ Promoted at 282 audit → **E16**. Pre-Public-Website-Complete.
+- ~~**Borders on widget controls + columns.**~~ Promoted at 282 audit → **E17**. Pre-Public-Website-Complete (may fold into Design System Editor track if it lands first).
 
 ---
 

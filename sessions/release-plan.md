@@ -27,6 +27,7 @@ The 11 discipline rules below govern how sessions interact with the plan. Sessio
 9. **Integration retest runs absolutely last.** D3 runs against a near-final surface — it's the final tire-kicking pass before the terminal session.
 10. **Code Review + Migration Squash is terminal.** T1 is the final session before Beta-1 release. Every other entry must close first.
 11. **Session count is always flexible.** A session that surfaces unforeseen work splits into multiple sessions rather than overloading a single context window. The plan doc tracks the *work*, not the session count. When a session splits, update the execution-order list to reflect the new shape — do not compress work to hit a target count.
+12. **Public Website Complete is the first pre-Beta milestone.** Lifted at session 282 close: the investment conversation is blocked on a credible-looking public website, and that website is built via the CMS. Entries that block the CMS from looking demo-ready (E4–E8, E12, E15–E17) land before non-public-website work. The execution-order list marks the boundary with a `── PUBLIC WEBSITE COMPLETE ──` divider; below it execution continues to Beta 1. No scope was added — the rule re-sequences existing pre-Beta work plus the three housekeeping-promoted entries (E15 Table widget, E16 Header/footer overhaul, E17 Borders pass).
 
 ---
 
@@ -413,6 +414,30 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Swiper.js MIT compliance verified; all npm + Composer dependencies reviewed for license compatibility with a commercial product.
 - **estimated time cost:** 1 session.
 
+#### E15. Table widget *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)*
+
+- **gate:** release
+- **prerequisites:** none
+- **success criterion:** New Table widget for the Page Builder — admin authoring affordances for row/column add + header-row toggle + basic cell alignment + optional border style; public render with responsive overflow (mobile-friendly horizontal scroll). Cell content uses the existing rich-text primitive so links/emphasis work consistently with the rest of the CMS.
+- **artifact:** the widget itself.
+- **estimated time cost:** 1–2 sessions.
+
+#### E16. Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)*
+
+- **gate:** release
+- **prerequisites:** none
+- **success criterion:** Header default changes — no longer full-width; reasonable centered chrome. Footer gains a stacking nav option (vertically stacked links instead of horizontal drop) and the default footer template includes the new stacking nav out of the box. Site chrome defaults reviewed for sensible production-ready appearance on a fresh install.
+- **artifact:** the feature itself.
+- **estimated time cost:** 1 session.
+
+#### E17. Borders pass — widget controls + columns *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)*
+
+- **gate:** release
+- **prerequisites:** none; may coordinate with the Design System Editor track if it lands first
+- **success criterion:** Standard widget controls and columns gain consistent border options — top/bottom default; left/right inset available. Uniform visual polish pass across widgets that surface in the page builder. If the Design System Editor track promotes pre-Beta, this entry may fold into that track's "buttons first" pass per session sequencing.
+- **artifact:** the feature itself.
+- **estimated time cost:** 1 session.
+
 ### Phase G — Test-Data Generation Infrastructure
 
 Multi-session phase for generating adversarial fixtures the importer can be tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns and let us harden the importer ahead of B2 (Onboarding rehearsal cluster) and any future importer-touching session.
@@ -484,11 +509,11 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 1. **A1.** Random Data Generator as Dashboard Widget
 2. **A1b.** Fleet Manager Contract v2.0.0 — mTLS Migration *(closed at 248; A2 prerequisite)*
 3. **A1c.** Fleet Manager Compromise Recovery Infrastructure *(closed at 253; documentation revision under v2.1.0, no contract bump)*
-4. **A2.** Fleet Manager — node operations parity *(may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
+4. ~~**A2.** Fleet Manager — node operations parity~~ *(moved to post-Public-Website-Complete; see new position 42 — Phase A infra work doesn't block the public website demo per Rule 12)*
 5. **E1.** Onboarding/Install Dashboard Widget *(precedes A3 for first-run experience)*
-6. **A3.** Multi-node operational readiness
-7. **A4.** DB wipe + backup recovery — runbook polish
-8. **A5.** 2FA for admin accounts
+6. ~~**A3.** Multi-node operational readiness~~ *(moved to post-Public-Website-Complete; see new position 43)*
+7. ~~**A4.** DB wipe + backup recovery — runbook polish~~ *(moved to post-Public-Website-Complete; see new position 44)*
+8. ~~**A5.** 2FA for admin accounts~~ *(moved to post-Public-Website-Complete; see new position 45)*
 9. **E3.** Rich Text Custom Fields *(precedes B2 — HTML in import data)*
 10. **E2.** Importer Mapping Page UX *(closed at 254; precedes B2)*
 11. **B1a.** Organizations Model Overhaul (Min) *(closed at 255)*
@@ -513,32 +538,48 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 30. **C2.** Event Ticket Tiers *(session 278 — closed; shape (A) tier-canonical; `events.price` and `events.capacity` dropped; `ticket_tiers` table + `event_registrations.ticket_tier_id` FK + General-tier backfill + retroactive importer linkage in one atomic migration; Filament tier repeater on EventResource; public widget with three picker modes; per-tier capacity; `notes` field added to public form as interim workaround for per-attendee data; email-uniqueness silent-success dedup dropped; fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec / 3 scenarios)* ✅
 31. **C2a.** Multi-Quantity Event Ticket Purchase *(closed at session 279; shape (A) shipped — `event_registrations.quantity smallint default 1`; `withSum` per-tier capacity; merged checkout controllers via iteration /2 bugfix that fixed a 278-introduced 302→GET 404 dispatch bug; quantity-spinner widget with live subtotal; admin Tickets column; iteration /3 cleaned cloud-session/parallel-session/PR rules from CLAUDE.md per user evidence on parallel-workstream cost; fast Pest 2355/0 sequential)* ✅
 32. **C3.** Permission audit *(closed at session 280; walked 27 Filament resources + 28 Filament pages + sub-pages + admin controllers across 8 shipped roles + unauthenticated; produced `docs/runbooks/permission-matrix.md` + `tests/Feature/PermissionMatrixTest.php` with 16 codified probes; key empirical finding — `Resource::canAccess()` runs as a Livewire mount hook so it's a universal URL gate, no bypass via no-policy-permissive-default pattern; 7 findings surfaced — 3 OK-by-design, 4 open flags for follow-on; fast Pest 2371/0 sequential)* ✅
-32a. **C3a.** Page-action accountability + audit trail *(TBD session — feature half lifted at 282 audit as prereq for #32c; actor stamps on publish/unpublish + notification email + page_action_log table; precedes #32c)*
-32b. **C3-deferred-concurrent.** Concurrent admin editing *(TBD session — slim (b) refit at 282 audit; last-write-wins documented + lightweight "currently being edited by X (HH:MM ago)" indicator on edit pages; no pessimistic locking. Note: session 281 was scheduled for the original (a)-scope plan but was never executed; (b) refit starts from scratch.)*
-32c. **C3-deferred-exposure.** Accidental public exposure *(TBD session — Path-A scope refit at 282 audit; protect endemic non-public fields from public flip + per-field protection-mechanism documentation + public-content indicator. Out-of-scope-now: accountability/notification/audit-trail = C3a. Session 282 was the original slot but was retconned as Phase C audit.)*
-32d. **C3b.** Auto tax receipt email *(TBD session — feature half lifted at 282 audit as prereq for C4; precedes C4)*
-32e. **C3c.** Comp-tier polish + skip-Stripe-on-zero-total *(TBD session — feature half lifted at 282 audit as prereq for C5; precedes C5)*
-33. **E4.** Stripe Checkout Branding *(precedes C4)*
-34. **C4.** Donation-to-acknowledgment loop *(slim — depends on C3b)*
-35. **C5.** Event with everything *(slim — depends on C3c)*
-~~36. **C6.** Membership renewal cycle~~ *(LIFTED POST-BETA at 282 audit — see post-Beta backlog in `session-outlines.md`)*
-~~37. **C7.** Email at volume~~ *(DROPPED at 282 audit — Mailchimp coverage absorbs into D3)*
-38. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
-39. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
-40. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
-41. **E8.** UI/UX Sprint
-42. **E12.** Housekeeping Batch 2
-43. **D1.** Scale rehearsal
-44. **D2.** Compatibility cluster
-45. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-46. **E13.** Help docs body content
-47. **E14.** Third-Party Licensing Compliance Audit
-48. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-49. **D4.** Test suite review — cost & shape
-50. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-51. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-52. **F3.** On-Demand E2E — Permission / role-gate matrix
-53. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+### Public Website Complete — milestone work *(sequenced first per Rule 12; lifted at 282 audit)*
+
+33. **E4.** Stripe Checkout Branding *(1-session entry — qualifies for pre-milestone per user direction at 282 audit)*
+34. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8 — slots pre-milestone)*
+35. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8 — slots pre-milestone)*
+36. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8 — slots pre-milestone)*
+37. **E8.** UI/UX Sprint
+38. **E12.** Housekeeping Batch 2 *(absorbs the public-website-blocking subset of `sessions/housekeeping-inbox.md` items)*
+39. **E15.** Table widget *(promoted from housekeeping inbox at 282 audit)*
+40. **E16.** Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit)*
+41. **E17.** Borders pass — widget controls + columns *(promoted from housekeeping inbox at 282 audit)*
+
+── PUBLIC WEBSITE COMPLETE ──
+
+### Post-milestone — continues to Beta 1
+
+42. **A2.** Fleet Manager — node operations parity *(moved here from position 4 at 282 audit; may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
+43. **A3.** Multi-node operational readiness *(moved here from position 6 at 282 audit)*
+44. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
+45. **A5.** 2FA for admin accounts *(moved here from position 8 at 282 audit)*
+46. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
+47. **C3-deferred-concurrent.** Concurrent admin editing *(slim (b) refit at 282 audit; #32b. Note: session 281 was scheduled for the original (a)-scope plan but was never executed.)*
+48. **C3-deferred-exposure.** Accidental public exposure *(Path-A scope refit at 282 audit; #32c; depends on C3a)*
+49. **C3b.** Auto tax receipt email *(feature half lifted at 282 audit; prereq for C4)*
+50. **C3c.** Comp-tier polish + skip-Stripe-on-zero-total *(feature half lifted at 282 audit; prereq for C5)*
+51. **C4.** Donation-to-acknowledgment loop *(slim — depends on C3b)*
+52. **C5.** Event with everything *(slim — depends on C3c)*
+53. **D1.** Scale rehearsal
+54. **D2.** Compatibility cluster
+55. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+56. **E13.** Help docs body content
+57. **E14.** Third-Party Licensing Compliance Audit
+58. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+59. **D4.** Test suite review — cost & shape
+60. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+61. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+62. **F3.** On-Demand E2E — Permission / role-gate matrix
+63. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+
+── BETA 1 RELEASE ──
+
+*(C6 Membership renewal cycle was lifted post-Beta at 282 audit; C7 Email at volume was dropped at 282 audit. See entries above and `session-outlines.md` post-Beta backlog.)*
 
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 

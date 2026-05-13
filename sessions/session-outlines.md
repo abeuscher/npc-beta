@@ -8,6 +8,7 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 - **Completed-sessions index** — flat lookup table in `sessions/completed-sessions.md`. One row per session, title + number.
 - **Tracks** — long-running architectural arcs that span multiple sessions and (eventually) multiple releases live in `sessions/tracks/{name}.md`. Each track doc carries a status snapshot, compressed phase retrospectives (history), and the forward plan. **When a phase inside a track closes, its history compresses into the track doc and its entry in this roadmap collapses to a one-liner.**
 - **Releases** — per-release scope will eventually live in `sessions/releases/{version}.md`. Not in use yet — emerges when a release approaches.
+- **Public Website Complete milestone** *(lifted at session 282 audit)* — the first pre-Beta milestone, sequenced inside Beta 1 scope. Lands when the CMS surface is polished enough to build a credible-looking public website for the investment-conversation demo. Same total scope as before, just front-loaded. The boundary is marked with a `── PUBLIC WEBSITE COMPLETE ──` divider in `release-plan.md`'s execution-order list and is governed by Rule 12.
 - **Beta One milestone** — the first shippable, demonstrable version: a live hosted site and a live install demo performable for prospects in real time. All sessions before the Beta 1 marker below are planned for Beta 1 delivery; sessions after the marker are deferred until post-Beta 1.
 
 ---
