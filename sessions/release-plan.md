@@ -22,8 +22,8 @@ The 11 discipline rules below govern how sessions interact with the plan. Sessio
 4. **Per-rehearsal artifact required.** Each rehearsal lands a runbook / sizing doc / playbook / matrix in a documented location (typically `docs/runbooks/` or referenced in `docs/app-reference.md`). "Green check" alone is not a close condition.
 5. **Plan doc is source of truth.** Every session in the plan reads `release-plan.md` at start to know its prerequisites + success criterion + artifact location. Drift between session prompt and plan doc resolves against the plan.
 6. **Plan doc is append-only in flight.** Checkmarks land on close. The plan doc is not edited mid-session except to record findings or surface a needed prerequisite that wasn't captured.
-7. **Track A blocks Track B/C/D execution.** Operational foundations (Random Data Generator, Fleet Manager node ops, multi-node provisioning, Capsize runbook polish, 2FA) must be in place before rehearsals run. Rehearsals don't have a meaningful environment without them.
-8. **Compatibility runs last.** D2 always runs against the surface as it'll ship. Items in Track E that affect mobile / typography / theme / column collapse must close before D2 starts.
+7. **Phase A blocks Phase B/C/D execution.** Operational foundations (Random Data Generator, Fleet Manager node ops, multi-node provisioning, Capsize runbook polish, 2FA) must be in place before rehearsals run. Rehearsals don't have a meaningful environment without them.
+8. **Compatibility runs last.** D2 always runs against the surface as it'll ship. Items in Phase E that affect mobile / typography / theme / column collapse must close before D2 starts.
 9. **Integration retest runs absolutely last.** D3 runs against a near-final surface — it's the final tire-kicking pass before the terminal session.
 10. **Code Review + Migration Squash is terminal.** T1 is the final session before Beta-1 release. Every other entry must close first.
 11. **Session count is always flexible.** A session that surfaces unforeseen work splits into multiple sessions rather than overloading a single context window. The plan doc tracks the *work*, not the session count. When a session splits, update the execution-order list to reflect the new shape — do not compress work to hit a target count.
@@ -44,7 +44,7 @@ Items that must be live before Beta-1 release but are tracked outside the sessio
 
 Each entry carries: gate, prerequisites, success criterion, artifact, estimated time cost. All entries are gated on `release` only — investment-gate subset selection is a follow-up conversation against this doc; the structural slot exists per Rule 6 if/when it's wanted.
 
-### Track A — Operational foundations
+### Phase A — Operational foundations
 
 #### A1. Random Data Generator as Dashboard Widget ✅
 
@@ -124,7 +124,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself, plus help-doc entry on enrollment.
 - **estimated time cost:** 1 session.
 
-### Track B — Onboarding cluster
+### Phase B — Onboarding cluster
 
 #### B1a. Organizations Model Overhaul (Min) ✅
 
@@ -138,7 +138,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** B1a (Org peer-record family in place)
-- **success criterion** *(closed at session 256)*: Top-level CSV importer for Organizations under the Tools group, mirroring the namespaced importer pattern (Memberships shape — single-entity, no contact-match bucket). Five new schema columns on `organizations` (`source` NOT NULL default `'human'`, `custom_fields` jsonb, `import_source_id`, `import_session_id`, `external_id`) + composite index. Three new mapping-save columns on `import_sources` (`organizations_field_map` / `organizations_custom_field_map` / `organizations_match_key`). Three new sentinels (`__custom_organization__` / `__tag_organization__` / `__note_organization__`). `Organization` model gains `EnforcesScrubInheritance` + `HasSourcePolicy` with `scrubInheritsFrom() === []` (top of source-policy graph); `ACCEPTED_SOURCES = [HUMAN, IMPORT, SCRUB_DATA]`. `ImportModelType::Organization` enum case + `ImportSessionActions` / `ImportSessionPreview` arms. In-session lifts: pre-existing trait bug fixed (`serializeColumnMaps` was zeroing custom-field sentinel in column_map, silently dropping custom-field columns under all five namespaced importers' UI flows); pre-existing `donations-mapping-indicator.spec.ts` Choices.js `selectOption` pattern fixed; Filepond upload-completion wait hardened; `@on-demand` Playwright tag + project introduced; Track F + Track G lifted into the release plan; session 257 prompts drafted. See `sessions/256. Organizations Importer — Log.md` for the full landing.
+- **success criterion** *(closed at session 256)*: Top-level CSV importer for Organizations under the Tools group, mirroring the namespaced importer pattern (Memberships shape — single-entity, no contact-match bucket). Five new schema columns on `organizations` (`source` NOT NULL default `'human'`, `custom_fields` jsonb, `import_source_id`, `import_session_id`, `external_id`) + composite index. Three new mapping-save columns on `import_sources` (`organizations_field_map` / `organizations_custom_field_map` / `organizations_match_key`). Three new sentinels (`__custom_organization__` / `__tag_organization__` / `__note_organization__`). `Organization` model gains `EnforcesScrubInheritance` + `HasSourcePolicy` with `scrubInheritsFrom() === []` (top of source-policy graph); `ACCEPTED_SOURCES = [HUMAN, IMPORT, SCRUB_DATA]`. `ImportModelType::Organization` enum case + `ImportSessionActions` / `ImportSessionPreview` arms. In-session lifts: pre-existing trait bug fixed (`serializeColumnMaps` was zeroing custom-field sentinel in column_map, silently dropping custom-field columns under all five namespaced importers' UI flows); pre-existing `donations-mapping-indicator.spec.ts` Choices.js `selectOption` pattern fixed; Filepond upload-completion wait hardened; `@on-demand` Playwright tag + project introduced; Phase F + Phase G lifted into the release plan; session 257 prompts drafted. See `sessions/256. Organizations Importer — Log.md` for the full landing.
 - **artifact:** the feature itself; required for B2 to land real-shape exports with full Org metadata. **Closed at session 256.**
 - **estimated time cost:** 1 session.
 
@@ -180,7 +180,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the third format branch on `ListExportService` + private `coerceForXlsx()` helper; per-resource column-spec `'type'` hints; updated ellipsis menus across 10 pages; cleanup-on-exception test as the regression-guard for the disk-leak class of bug. **Closed at session 262.** See `sessions/262. List Resource Exports — XLSX Format Add — Log.md` for the full landing.
 - **estimated time cost:** 1 session.
 
-### Track C — Workflow rehearsals
+### Phase C — Workflow rehearsals
 
 #### C1. Notes Permissions (feature half) *(prerequisite stub for C3)* ✅
 
@@ -198,58 +198,77 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** the feature itself. **Closed at session 278.**
 - **estimated time cost:** 1 session.
 
-#### C2a. Multi-Quantity Event Ticket Purchase *(C2 follow-on)*
+#### C2a. Multi-Quantity Event Ticket Purchase ✅ *(C2 follow-on)*
 
 - **gate:** release
 - **prerequisites:** C2 (tier-canonical schema shipped)
-- **success criterion:** Buyer can purchase N tickets across one or more tiers in a single transaction. Shape (A) chosen at 278-close: `event_registrations.quantity` smallint default 1; per-tier capacity aggregate switches from `withCount` to `withSum('registrations', 'quantity')`; mixed-tier purchases produce multiple registration rows sharing a `stripe_session_id`. Public widget gains per-tier quantity spinners + live subtotal + ≥ 1-ticket-total validation. Stripe Checkout assembles multi-line-item sessions (one line per chosen tier with `quantity`). Webhook generalizes to "find all pending registrations on this stripe_session_id, promote them, record one transaction at the order total." Admin "View Registrants" gains a `tickets` column reading `quantity`. Importer unchanged (one-row-per-CSV-row → quantity=1).
-- **artifact:** the feature itself.
-- **estimated time cost:** 2–3 iterations (schema + controllers + webhook; widget UI + Playwright; optional admin polish).
+- **success criterion** *(closed at session 279)*: Buyer can purchase N tickets across one or more tiers in a single transaction. Shape (A) chosen at 278-close and shipped: `event_registrations.quantity` smallint default 1; per-tier capacity aggregate switches from `withCount` to `withSum('registrations', 'quantity')`; mixed-tier purchases produce multiple registration rows sharing a `stripe_session_id`. Public widget gains per-tier quantity spinners + live subtotal + ≥ 1-ticket-total validation. Stripe Checkout assembles multi-line-item sessions (one line per chosen tier with `quantity`). Webhook generalizes to "find all pending registrations on this stripe_session_id, promote them, record one transaction at the order total." Admin "View Registrants" gains a `tickets` column reading `quantity`. Importer unchanged (one-row-per-CSV-row → quantity=1). Fast Pest 2355/0 (+14 over 278 baseline). See `sessions/archived/279. Multi-Quantity Event Ticket Purchase — Log.md` for the full landing.
+- **artifact:** the feature itself. **Closed at session 279.**
+- **estimated time cost:** 1 session.
 
-#### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded; pre-emptively split at 279-close into #32 + #32b; #32b further split at 280-close into #32b + #32c when the concurrent-editing design grew substantial scope)*
+#### C3. Permission audit + Concurrent admin editing + Accidental public exposure *(folded; pre-emptively split at 279-close into #32 + #32b; #32b further split at 280-close into #32b + #32c; both #32b and #32c scopes refit at 282 Phase C audit — see notes below)*
 
 - **gate:** release
-- **prerequisites:** C1 (Notes feature gates landed); A1 (synthetic data for adversarial-edit attempts)
+- **prerequisites:** C1 (Notes feature gates landed); A1 (synthetic data for adversarial-edit attempts); C3a (page-action accountability + audit trail — prereq stub for #32c, lifted at 282 audit)
 - **success criterion:**
   - **Permission audit** *(closed by session 280 — execution-order #32)*: every admin action (Filament resources, pages, actions, bulk actions, header actions) has a documented permission gate enforced at both UI and controller layers, walked from volunteer / board-read-only / staff-admin / public-visitor perspectives. Permission matrix table produced. Findings fixed in-session per Rule 2.
-  - **Concurrent admin editing** *(deferred to #32b — session 281)*: two admin sessions edit the same contact simultaneously → behavior is documented + predictable. Lands as pessimistic locking on edit-page mount + optimistic version-check safety net at save + super-admin takeover anytime + non-super-admin takeover after 5-min idle + list-view "locked by X" indicator + `beforeunload`+`sendBeacon` JS hook for proactive release on tab close + centralized polymorphic lock table shared across admin-editable resources. Portal users out of scope.
-  - **Accidental public exposure** *(deferred to #32c — session 282)*: attempts to mark sensitive fields public (home addresses, donor amounts, internal notes) hit a warning/confirmation gate or are impossible. Each sensitive field's protection mechanism documented. Public-content indicator visible on every record/widget surface that has potential to leak.
-- **artifact:** permission matrix at `docs/runbooks/permission-matrix.md` (matrix landed by #32; data-classification notes appended by #32c). #32b additionally produces a small admin-concurrent-editing runbook entry or extends the matrix doc with the lock-system documentation.
-- **estimated time cost:** 3 sessions per the further split at 280-close (audit + concurrent + exposure). Original estimate was 1–2 sessions undivided.
+  - **Concurrent admin editing** *(deferred to #32b — TBD session; scope refit at 282 audit to slim-(b) path)*: two admin sessions editing the same record simultaneously have visible-but-not-prevented collisions — last-write-wins is documented in the admin runbook, and a lightweight "currently being edited by X (HH:MM ago)" indicator appears on edit pages of records currently being edited by another admin. No pessimistic locking, no polymorphic lock table, no takeover rules — those were the over-scoped (a) path that the 282 audit retired in favor of the minimum-viable visibility affordance. **Note:** session 281 was originally scheduled for the (a)-scope work but was never executed; the (b) refit starts from scratch.
+  - **Accidental public exposure** *(deferred to #32c — TBD session; scope refit at 282 audit to Path-A only)*: attempts to mark sensitive fields public (home addresses, donor amounts, internal notes) hit a warning/confirmation gate or are impossible. Each sensitive field's protection mechanism documented. Public-content indicator visible on every record/widget surface that has potential to leak. **Out of #32c scope (lifted to C3a as prereq):** page-action accountability (actor stamped on publish/unpublish), actor notification of action, and the broader page-action audit trail — those land first as feature-half work in C3a.
+- **artifact:** permission matrix at `docs/runbooks/permission-matrix.md` (matrix landed by #32; #32b adds a brief admin-concurrent-editing runbook entry; data-classification notes appended by #32c).
+- **estimated time cost:** 1 session for #32b (slim refit); 1 session for #32c (Path-A refit); 1–2 sessions for C3a prereq. Original undivided estimate was 1–2 sessions; 282 audit reset the budget to ~3–4 sessions across the family.
 
-#### C4. Donation-to-acknowledgment loop
+#### C3a. Page-action accountability + audit trail *(feature half — prerequisite stub for #32c drill, lifted at 282 audit)*
 
 - **gate:** release
-- **prerequisites:** A1; E4 (Stripe Checkout Branding) for the narrative arc
-- **success criterion:** Donor donates via public form → Stripe charges → CRM records donation + Transaction → tax receipt email sent → QuickBooks sync (if connected) → year-end statement. Refund path: process partial refund → corrected acknowledgment sent → CRM + QB stay consistent. All steps verified end-to-end; receipt email content matches donor + amount + date exactly.
+- **prerequisites:** none (independent feature build)
+- **success criterion:** Three pieces shipped together as the prereq to the #32c accidental-exposure drill:
+  - **Accountability:** every publish/unpublish action on a public-flip-bearing record (Page, Post, Event, Product, Collection, Form — verify the full list at session start against the permission matrix doc) stamps `published_by_user_id` + `published_at` + corresponding `unpublished_*` columns on the record. Surfaced on the record's edit page ("Published by X on Y" / "Unpublished by X on Y") so the current state is visible without leaving the record.
+  - **Notification:** the acting user receives a transactional email confirming the publish/unpublish they just performed, with timestamp and a direct link to the record. Intentional accountability — not interruptive but reviewable in their inbox.
+  - **Audit trail:** every page-shape action (create, update, publish flip, delete) writes to a `page_action_log` table — actor, action type, record type+id, timestamp, optional changed-field summary. Queryable via an admin Tools-group resource. Retention follows the existing data-retention policy.
+- **artifact:** the feature itself + a brief audit-log runbook entry at `docs/runbooks/page-action-audit.md`.
+- **estimated time cost:** 1–2 sessions.
+
+#### C3b. Auto tax receipt email *(feature half — prerequisite stub for C4 rehearsal, lifted at 282 audit)*
+
+- **gate:** release
+- **prerequisites:** none
+- **success criterion:** Successful donation (via Stripe Checkout webhook) automatically dispatches a tax-receipt email to the donor — donor name, amount, date, transaction id, fund (if specified), org tax-id/EIN, IRS-compliant language. Email template configurable via the existing `manage_email_templates` admin surface. Today's manual "Send Receipts" admin action on the DonorsPage stays as a backfill / one-off resend affordance but is no longer the only path to a receipt.
+- **artifact:** the feature itself.
+- **estimated time cost:** 1 session.
+
+#### C3c. Comp-tier polish + skip-Stripe-on-zero-total *(feature half — prerequisite stub for C5 rehearsal, lifted at 282 audit)*
+
+- **gate:** release
+- **prerequisites:** C2a (multi-quantity tickets shipped)
+- **success criterion:** Event-registration flow handles comp tickets cleanly — when the chosen tier(s) total $0 (whether a comp-only tier or a free-event single-tier), the public flow skips Stripe Checkout entirely and confirms the registration server-side, sending the thank-you email immediately. No empty Stripe sessions, no $0 line items in the dashboard. Admin can mark a tier `is_complimentary` (label in the picker; behavior driven by zero-price). Mixed-tier orders (e.g. 1 comp + 1 paid) continue through Stripe with the $0 line item as today (no change).
+- **artifact:** the feature itself.
+- **estimated time cost:** 1 session.
+
+#### C4. Donation-to-acknowledgment loop *(scope refit at 282 audit — see below)*
+
+- **gate:** release
+- **prerequisites:** A1; C3b (auto tax receipt email feature half); E4 (Stripe Checkout Branding) for the narrative arc
+- **success criterion:** Donor donates via public form → Stripe charges → CRM records donation + Transaction → tax receipt email sent automatically → QuickBooks sync (if connected). All steps verified end-to-end; receipt email content matches donor + amount + date exactly. **Lifted to post-Beta at 282 audit:** year-end statement generation (December-cycle work, not Beta 1 critical); partial-refund corrected-acknowledgment automation (refunds are rare — document the manual procedure for Beta 1).
 - **artifact:** donation runbook at `docs/runbooks/donation-acknowledgment.md` + sales-narrative scaffold derived from the runbook.
 - **estimated time cost:** 1 session.
 
-#### C5. Event with everything
+#### C5. Event with everything *(scope refit at 282 audit — see below)*
 
 - **gate:** release
-- **prerequisites:** C2 (Tiers feature shipped); A1
-- **success criterion:** Event configured with paid tiers + comp tickets + waitlist + custom registration questions + capacity. Each path runs (paid pays Stripe, comp gets free seat, capacity hit triggers waitlist, waitlist promotion works on cancellation). Day-of check-in flow runs on a mobile device. Post-event sequence (thank-you email, attendance log) fires.
+- **prerequisites:** C2 (Tiers feature shipped); C2a (multi-quantity tickets shipped); C3c (comp-tier polish); A1
+- **success criterion:** Event configured with paid tiers + comp tickets + capacity. Each path runs (paid pays Stripe with multi-quantity support, comp gets a free seat via the C3c zero-total flow, capacity hit blocks the registration with a clear error). Post-registration thank-you email fires. **Lifted to post-Beta at 282 audit:** waitlist + waitlist-promotion-on-cancellation (real nonprofit use case but not table-stakes for v1.0 demo); per-event custom registration questions (per-attendee data); day-of check-in flow (paper check-in acceptable for Beta 1); attendance log (couples with check-in).
 - **artifact:** event runbook at `docs/runbooks/event-with-everything.md`.
 - **estimated time cost:** 1 session.
 
-#### C6. Membership renewal cycle
+#### C6. Membership renewal cycle *(LIFTED POST-BETA at 282 audit)*
 
-- **gate:** release
-- **prerequisites:** A1
-- **success criterion:** Simulate signups → renewal-due → renewal-paid → grace → lapse → reactivation → dues-change → payment-failure across a synthetic cohort. Each transition triggers the right system email; portal reflects the right state; admin UI shows lifecycle correctly. State machine gaps logged as findings (and fixed in-session if small per Rule 2; otherwise lifted to follow-on tickets).
-- **artifact:** membership runbook at `docs/runbooks/membership-renewal.md`.
-- **estimated time cost:** 1–2 sessions; year-of-lifecycle compression is fixture-heavy.
+- **status:** Lifted entirely to post-Beta backlog at 282 audit. The lifecycle state machine the rehearsal would walk (renewal-due, grace, lapse, reactivation, dues-change, payment-failure handling for memberships, lifecycle transition emails) is almost entirely absent from the code today. Building it pre-Beta is the wrong shape — a multi-session feature build disguised as a rehearsal. Beta 1 memberships work as one-time charges with portal-displayed tier; the full lifecycle (and a real rehearsal of it) lands post-Beta. See post-Beta backlog in `session-outlines.md`.
 
-#### C7. Email at volume
+#### C7. Email at volume *(DROPPED at 282 audit)*
 
-- **gate:** release
-- **prerequisites:** A3 (production-infra send is the meaningful test)
-- **success criterion:** 5K-recipient newsletter with personalization + images + unsubscribe link sends in under 30 minutes via Resend with no rate-limit failures. DKIM/SPF/DMARC verified at sender side via mail-tester.com (90+ score). Bounce handling parses bounces correctly. Unsubscribe link works and persists.
-- **artifact:** email runbook at `docs/runbooks/email-at-volume.md` + deliverability checklist.
-- **estimated time cost:** 1 session.
+- **status:** Dropped entirely at 282 audit. The original framing pre-supposed a built-in broadcast-mail feature (mass-send, unsubscribe-token surface, Resend bounce handler, throttled queue) that doesn't exist and isn't planned — bulk emails go through Mailchimp via the existing webhook integration. Mailchimp-as-an-integration coverage absorbs into D3 (Integration retest — coordinated tire-kicking) where every external integration is exercised end-to-end. No replacement entry needed.
 
-### Track D — Late-cycle drills
+### Phase D — Late-cycle drills
 
 #### D1. Scale rehearsal
 
@@ -262,11 +281,11 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 #### D2. Compatibility cluster *(Browser bingo + Accessibility + Flaky connection — folded)*
 
 - **gate:** release
-- **prerequisites:** Track E mobile/typography/theme items must close first per Rule 8 — specifically E5 (Mobile Type Scaling), E6 (Theme Colors Refactor), E7 (Column-Layout Mobile Collapse). Plus the entire workflow track (C1–C7) must close so the surface is final.
+- **prerequisites:** Phase E mobile/typography/theme items must close first per Rule 8 — specifically E5 (Mobile Type Scaling), E6 (Theme Colors Refactor), E7 (Column-Layout Mobile Collapse). Plus the remaining Phase C work must close (C3a / C3b / C3c feature halves; C4 and C5 rehearsals; #32b and #32c — note C6 was lifted post-Beta and C7 was dropped at 282 audit, so the original "C1–C7 must close" requirement no longer applies).
 - **success criterion:**
   - **Browser bingo:** admin + public surfaces tested across Chrome / Safari / Firefox (current), iPad (one-version-old), Pixel (current), and Windows machine running 2-major-versions-back Chrome. Each combination passes or has documented known issues. Mobile type scaling, column collapse, and Quill-rendered content explicitly checked.
   - **Accessibility:** public site passes WCAG AA on the five seeded starter pages + admin contact form via axe-core; manual screen-reader pass through donation flow + event registration succeeds (NVDA + VoiceOver). Keyboard-only navigation works on the same flows.
-  - **Flaky connection:** Chrome DevTools throttling (Slow 3G + 30% packet loss) for day-of check-in flow. Check-ins succeed eventually or fail predictably; no double check-ins on retry; admin sees clear connection-state feedback. Same simulation against admin contact-edit doesn't lose data.
+  - **Flaky connection:** Chrome DevTools throttling (Slow 3G + 30% packet loss) for mobile donation submit (highest-stakes public flow). Submits succeed eventually or fail predictably; no double-charges on retry; donor sees clear connection-state feedback. Same simulation against admin contact-edit doesn't lose data. *(Original criterion named the day-of event check-in flow; that flow was lifted to post-Beta at 282 audit and replaced here with donation submit.)*
 - **artifact:** compatibility matrix + WCAG-AA compliance summary + graceful-degradation runbook, all at `docs/runbooks/compatibility.md`.
 - **estimated time cost:** 1–2 sessions; may split into Browser+Accessibility / Flaky-connection halves if scope inflates per Rule 11.
 
@@ -274,7 +293,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** all of A, B, C, D1, D2 closed (D3 runs against the surface as it'll ship)
-- **success criterion:** Every external integration (Stripe / Resend / DigitalOcean Spaces / QuickBooks / Google Calendar / others identified at session time) exercised end-to-end. Per-integration: tire-kick steps + green criterion + red criterion documented. Audit-style per Rule 2 — small fixes absorb in-session.
+- **success criterion:** Every external integration exercised end-to-end. Integrations to walk (confirmed at 282 audit against current code): Stripe (Checkout + webhooks), Resend (transactional send), Mailchimp (list sync + inbound unsubscribe webhook), QuickBooks (donation/transaction sync via `SyncTransactionToQuickBooks` job), DigitalOcean Spaces (media + backup blob via the `spaces` s3-driver disk), Slack (admin notifications), Build Server (deploy automation), Fleet Manager mTLS surface (health + logs + backup trigger + backup blob — current contract v2.3.0). Per-integration: tire-kick steps + green criterion + red criterion documented. Audit-style per Rule 2 — small fixes absorb in-session. **Removed from earlier scope at 282 audit:** Google Calendar (integration does not exist in code; "add to calendar" public-side ICS export feature lifted to post-Beta backlog); Postmark and SES (Laravel mail drivers configured by default but no integration planned).
 - **artifact:** per-integration runbook entries at `docs/runbooks/integrations/{integration}.md`.
 - **estimated time cost:** 1 session.
 
@@ -282,11 +301,11 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 - **gate:** release
 - **prerequisites:** all of A, B, C, D1–D3, E closed — D4 reviews the suite as it'll ship; running it before late-cycle test additions land would re-bake the same cost analysis.
-- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests. **D4 also scopes Pest `--parallel` viability** — runs the cheap experiment (install paratest, `php artisan test --parallel --processes=4`, log failure surface) and decides whether the audit-driven trims recover enough runtime to defer parallelization, or whether to fold the test-isolation cleanup (filesystem-shared paths under `storage/app/private/`, the pre-existing `seedWidgetCollections` flake) into D4 or lift it as a follow-on per Rule 11. See the `Parallelization evaluation` sub-section in the outline stub for shape details. Carry-forward exception: if iteration friction during the C-track rehearsals starts costing real time before D4's slot lands, lift parallelization sooner as a standalone fix-shape session.
+- **success criterion:** Per the existing `Test Suite Audit — Cost, Coverage, and Shape` stub in `session-outlines.md` — measurement-first pass with the three rubrics (runtime budget per shape, assertion density, setup-to-assertion ratio). User-supplied surface list drives the coverage-gap phase. Outcome target: trim measurable runtime or redundancy without losing meaningful coverage. The slow group's full-suite cost is the specific question the user surfaced at session 251 close — D4 either confirms it earned its weight or drops/restructures the heaviest tests. **D4 also scopes Pest `--parallel` viability** — runs the cheap experiment (install paratest, `php artisan test --parallel --processes=4`, log failure surface) and decides whether the audit-driven trims recover enough runtime to defer parallelization, or whether to fold the test-isolation cleanup (filesystem-shared paths under `storage/app/private/`, the pre-existing `seedWidgetCollections` flake) into D4 or lift it as a follow-on per Rule 11. See the `Parallelization evaluation` sub-section in the outline stub for shape details. Carry-forward exception: if iteration friction during the Phase-C rehearsals starts costing real time before D4's slot lands, lift parallelization sooner as a standalone fix-shape session.
 - **artifact:** committed baseline timing snapshot, findings-and-gaps report at `sessions/NNN-test-audit-findings.md`, applied picks (each as its own commit), updated baseline snapshot.
 - **estimated time cost:** 1 session; per Rule 11, may extend if findings exceed in-session-fix capacity.
 
-### Track E — Demonstrability polish
+### Phase E — Demonstrability polish
 
 All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal dependencies are positioned to land before those rehearsals (see execution order). Detailed scope for each entry lives in the corresponding stub in `session-outlines.md`; entries below carry only the metadata that connects them to the plan.
 
@@ -394,11 +413,11 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** Per existing stub. Swiper.js MIT compliance verified; all npm + Composer dependencies reviewed for license compatibility with a commercial product.
 - **estimated time cost:** 1 session.
 
-### Track G — Test-Data Generation Infrastructure
+### Phase G — Test-Data Generation Infrastructure
 
-Multi-session track for generating adversarial fixtures the importer can be tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns and let us harden the importer ahead of B2 (Onboarding rehearsal cluster) and any future importer-touching session.
+Multi-session phase for generating adversarial fixtures the importer can be tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns and let us harden the importer ahead of B2 (Onboarding rehearsal cluster) and any future importer-touching session.
 
-Track G's pre-Beta-1 scope is the foundational generator + a follow-on session for cross-importer pairs / replay / adversarial dedup. Format extensions beyond CSV (XLSX, JSON, source-system-specific shapes like Salesforce) live in the post-release section.
+Phase G's pre-Beta-1 scope is the foundational generator + a follow-on session for cross-importer pairs / replay / adversarial dedup. Format extensions beyond CSV (XLSX, JSON, source-system-specific shapes like Salesforce) live in the post-release section.
 
 #### G1. Importer Test-Fixture Generator — CSV Foundation ✅
 
@@ -416,9 +435,9 @@ Track G's pre-Beta-1 scope is the foundational generator + a follow-on session f
 - **artifact:** the extended generator + the additional fixture sets + the extended Pest runner.
 - **estimated time cost:** 1 session.
 
-### Track F — On-Demand E2E Coverage
+### Phase F — On-Demand E2E Coverage
 
-Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each F-track session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
+Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each Phase-F session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
 
 The on-demand category was introduced at session 256 close after the Organizations importer's deep Playwright pass surfaced two pre-existing bugs that earlier per-importer tests had missed (a `serializeColumnMaps` regression silently dropping custom-field columns, and a Choices.js `selectOption` pattern broken across multiple importer specs). The pattern is: deep, fixture-heavy, judgment-led — better suited to occasional sweeps than per-merge regression.
 
@@ -494,13 +513,16 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 30. **C2.** Event Ticket Tiers *(session 278 — closed; shape (A) tier-canonical; `events.price` and `events.capacity` dropped; `ticket_tiers` table + `event_registrations.ticket_tier_id` FK + General-tier backfill + retroactive importer linkage in one atomic migration; Filament tier repeater on EventResource; public widget with three picker modes; per-tier capacity; `notes` field added to public form as interim workaround for per-attendee data; email-uniqueness silent-success dedup dropped; fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec / 3 scenarios)* ✅
 31. **C2a.** Multi-Quantity Event Ticket Purchase *(closed at session 279; shape (A) shipped — `event_registrations.quantity smallint default 1`; `withSum` per-tier capacity; merged checkout controllers via iteration /2 bugfix that fixed a 278-introduced 302→GET 404 dispatch bug; quantity-spinner widget with live subtotal; admin Tickets column; iteration /3 cleaned cloud-session/parallel-session/PR rules from CLAUDE.md per user evidence on parallel-workstream cost; fast Pest 2355/0 sequential)* ✅
 32. **C3.** Permission audit *(closed at session 280; walked 27 Filament resources + 28 Filament pages + sub-pages + admin controllers across 8 shipped roles + unauthenticated; produced `docs/runbooks/permission-matrix.md` + `tests/Feature/PermissionMatrixTest.php` with 16 codified probes; key empirical finding — `Resource::canAccess()` runs as a Livewire mount hook so it's a universal URL gate, no bypass via no-policy-permissive-default pattern; 7 findings surfaced — 3 OK-by-design, 4 open flags for follow-on; fast Pest 2371/0 sequential)* ✅
-32b. **C3-deferred-concurrent.** Concurrent admin editing *(deferred from C3, further split at 280-close — session 281; pessimistic locking + optimistic safety-net + super-admin takeover + non-super-admin takeover after 5-min idle + list-view lock indicator + beforeunload JS hook; centralized polymorphic lock table; portal users excluded)*
-32c. **C3-deferred-exposure.** Accidental public exposure *(deferred from C3, further split at 280-close — session 282; data-classification walk extending the permission matrix doc; may absorb 280 carry-forward findings — `manage_dashboard_config` / `manage_record_detail_views` unassignments, `household` permission orphan, board-read-only persona gap)*
+32a. **C3a.** Page-action accountability + audit trail *(TBD session — feature half lifted at 282 audit as prereq for #32c; actor stamps on publish/unpublish + notification email + page_action_log table; precedes #32c)*
+32b. **C3-deferred-concurrent.** Concurrent admin editing *(TBD session — slim (b) refit at 282 audit; last-write-wins documented + lightweight "currently being edited by X (HH:MM ago)" indicator on edit pages; no pessimistic locking. Note: session 281 was scheduled for the original (a)-scope plan but was never executed; (b) refit starts from scratch.)*
+32c. **C3-deferred-exposure.** Accidental public exposure *(TBD session — Path-A scope refit at 282 audit; protect endemic non-public fields from public flip + per-field protection-mechanism documentation + public-content indicator. Out-of-scope-now: accountability/notification/audit-trail = C3a. Session 282 was the original slot but was retconned as Phase C audit.)*
+32d. **C3b.** Auto tax receipt email *(TBD session — feature half lifted at 282 audit as prereq for C4; precedes C4)*
+32e. **C3c.** Comp-tier polish + skip-Stripe-on-zero-total *(TBD session — feature half lifted at 282 audit as prereq for C5; precedes C5)*
 33. **E4.** Stripe Checkout Branding *(precedes C4)*
-34. **C4.** Donation-to-acknowledgment loop
-35. **C5.** Event with everything
-36. **C6.** Membership renewal cycle
-37. **C7.** Email at volume
+34. **C4.** Donation-to-acknowledgment loop *(slim — depends on C3b)*
+35. **C5.** Event with everything *(slim — depends on C3c)*
+~~36. **C6.** Membership renewal cycle~~ *(LIFTED POST-BETA at 282 audit — see post-Beta backlog in `session-outlines.md`)*
+~~37. **C7.** Email at volume~~ *(DROPPED at 282 audit — Mailchimp coverage absorbs into D3)*
 38. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8)*
 39. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8)*
 40. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8)*
@@ -548,6 +570,6 @@ Items considered during 244 vetting and explicitly *not* in the working set. Eac
 - **Investment-gate subset selection.** This plan structurally supports a future subset selection (every working-set entry's `gate:` line could flip from `release` to `release, investment` for items in the subset). The user's stance at session 244: skip the subset selection for now — the full plan as-shown is sufficient to seek investment against.
 - **Operator master runbook / SOPs scope.** Recorded in pre-release requirements register. TBD whether this work lives in this project or a separate non-technical project. Revisit before Beta-1 release.
 - **A2 split shape.** FM node operations parity may run as one session or two (install + backup + restore in one; log-reading separately). Decide at A2 session start based on FM-side codebase state.
-- **C3 split shape.** Permission audit + concurrent + exposure originally folded. Pre-emptively split at 279-close into #32 (audit, closed by session 280) + #32b (concurrent + exposure). Further split at 280-close into #32b (concurrent editing — session 281) + #32c (accidental public exposure — session 282) when the concurrent-editing design grew substantial scope through 281 session-prep conversation.
+- **C3 split shape.** Permission audit + concurrent + exposure originally folded. Pre-emptively split at 279-close into #32 (audit, closed by session 280) + #32b (concurrent + exposure). Further split at 280-close into #32b (concurrent editing — session 281) + #32c (accidental public exposure — session 282) when the concurrent-editing design grew substantial scope through 281 session-prep conversation. Both #32b and #32c scopes were refit at the 282 Phase C audit: session 281 was scheduled for the over-scoped (a) locking plan but never executed; #32b refit to slim (b) (last-write-wins + indicator); #32c refit to Path-A (protection + per-field docs + indicator) with accountability/notification/audit-trail lifted to a new prereq stub C3a. Session 282 itself was retconned at the audit's close from "#32c implementation" into "Phase C + D audit + planning-doc cleanup." See `sessions/282. ... — Log.md` for the audit findings and the slim entries C3a / C3b / C3c added.
 - **D2 split shape.** Compatibility cluster is folded; may split into Browser+Accessibility / Flaky-connection halves if scope inflates.
 - **E12 (Housekeeping Batch 2) shape.** May split per Rule 11 if any item turns out to need design-level conversation. The dev-environment orphan media cleanup item reopened at session 252 (original 247 `app:reset` fix reverted — see the reopened stub in `session-outlines.md`); the next attempt is design-shaped and likely wants its own session.

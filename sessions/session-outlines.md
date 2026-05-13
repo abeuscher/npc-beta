@@ -179,28 +179,61 @@ Bottom line: the gating is structurally sound. No bypass exists for any of the 2
 
 ### Concurrent Admin Editing *(stub — pre-Beta 1; #32b in `release-plan.md` execution order)*
 
-Lifted at 279-close as the deferred half of C3, then further split at 280-close into its own session when the design grew substantial scope through the session-prep conversation. Shipping shape resolved during 280-close:
+Lifted at 279-close as the deferred half of C3, further split at 280-close, scope refit at 282 Phase C audit to the slim **(b) path**. Shipping shape:
 
-- **Pessimistic lock on edit-page mount.** Lock key = user + record + (session_id if needed). Acquired when an admin opens the edit page; released on save or cancel.
-- **Optimistic version check at save** as the safety-net layer — if two editors somehow both have the page open (lock-acquire race), the second save gets a "this record changed while you were editing" warning and is forced to re-open the record.
-- **Super-admin takeover anytime**, including against other super-admins. We assume super-admins know what they're doing.
-- **Non-super-admin takeover after 5+ minutes since the last save** on the locked record. The original editor's window gets a save-time warning (not active force-close — that costs a websocket/poll layer that doesn't pay for itself).
-- **List-view "locked by X" indicator** across content types, so editors can see lock status before clicking through.
-- **`beforeunload` + `sendBeacon` JS hook** to release the lock proactively on tab close. Reliable ~95% of the time; the 5-min idle expiry catches the rest.
-- **Centralized polymorphic lock table + shared trait/service** — one implementation across all admin-editable resources. New resources opt into locking via a flag.
-- **Portal users excluded.** Locks apply within the admin panel only; portal edits use last-write-wins.
+- **Last-write-wins documented** in the admin runbook. Two admins editing the same record simultaneously each see their own work; the later save wins.
+- **Lightweight "currently being edited by X (HH:MM ago)" indicator** on edit pages of records currently being edited by another admin — gives admins visibility before they start editing.
+- **No pessimistic locking**, no polymorphic lock table, no takeover rules, no `beforeunload` hook. Those were the over-scoped **(a) path** the 282 audit retired in favor of the minimum-viable visibility affordance for a small-team admin context.
 
-Sized 1 session. Migration + backend service + Filament trait + Pest tests + Playwright two-tab test. See `sessions/281. base-prompt.md` and `sessions/281. Concurrent Admin Editing.md`.
+Sized 1 session. Small migration (`currently_editing_by_user_id` + `currently_editing_at` columns on admin-editable records or a small global table), Filament trait that updates timestamps on edit-page mount, Pest tests, optional Playwright spec.
+
+**Note:** session 281 was originally scheduled for the (a)-scope work but never executed; no record_locks migration, no RecordLock model, no close commit exists. The (b) refit at 282 audit starts from scratch. Session 281's planning files (`sessions/281. Concurrent Admin Editing.md` + `sessions/281. base-prompt.md`) reflect the abandoned (a) plan and should be archived as historical record of the planned-but-not-executed scope.
 
 ---
 
 ### Accidental Public Exposure *(stub — pre-Beta 1; #32c in `release-plan.md` execution order)*
 
-Lifted at 280-close as the further-split tail of the original 32b combined stub. Documentation-shaped walk that extends `docs/runbooks/permission-matrix.md` with the data-classification section the audit half stubbed out. For each public-flip surface in the system — `pages.is_published`, `posts.is_published`, `collection_items.is_public`, `page_widgets.is_public`, `events.is_published`, contact public toggles if any exist, donation visibility on contact-detail — document who can flip the toggle, what becomes publicly visible, and whether a confirmation gate exists today. Small in-session fixes per release-plan Rule 2 for missing gates on sensitive flips.
+Lifted at 280-close as the further-split tail of the original 32b combined stub. Scope refit at 282 Phase C audit to **Path A only** — the original release-plan bullet:
+
+- **Protect endemic non-public fields** from being flipped public. Each protected field carries a warning/confirmation gate or is structurally impossible to flip public.
+- **Per-field protection-mechanism documented** in the permission matrix doc's data-classification section.
+- **Public-content indicator** visible on every record/widget surface with a public flag (Pages / Posts / Events / Products / Collections / Forms — verify the list against the matrix doc).
+
+**Out of #32c scope** (lifted to C3a as prereq stub at 282 audit): page-action accountability (actor stamped on publish/unpublish), actor notification of action, and the broader page-action audit trail.
 
 May absorb the carry-forward findings from session 280 (`manage_dashboard_config` / `manage_record_detail_views` unassigned to any role, `household` permission family with no admin surface, "board-read-only" persona unfilled). Decision at session start.
 
-Sized 1 session if findings stay narrow; may split per Rule 11 if field-level visibility-per-role design surfaces as needed. See `sessions/282. base-prompt.md` and `sessions/282. Accidental Public Exposure.md`.
+Sized 1 session post-C3a. See `sessions/release-plan.md` § C3's "Accidental public exposure" bullet for the success criterion.
+
+**Note:** session 282 was originally scheduled for #32c implementation but was retconned at its audit-time open into the Phase C + D audit + planning-doc cleanup session. Session 282's planning files (`sessions/282. base-prompt.md` + `sessions/282. Accidental Public Exposure.md`) reflect the pre-retcon scope and will be archived alongside the session 282 log.
+
+---
+
+### Page-Action Accountability + Audit Trail *(stub — pre-Beta 1; C3a in `release-plan.md`; prereq stub for #32c)*
+
+Lifted at 282 Phase C audit as the prereq for the #32c accidental-exposure drill. Three pieces ship together:
+
+- **Accountability:** every publish/unpublish action on a public-flip-bearing record (Page, Post, Event, Product, Collection, Form — verify list at session start against the matrix doc) stamps `published_by_user_id` + `published_at` (and corresponding `unpublished_*`) on the record. Surfaced on the record's edit page.
+- **Notification:** the acting user receives a transactional email confirming the publish/unpublish they just performed, with timestamp and a direct link to the record.
+- **Audit trail:** every page-shape action (create, update, publish flip, delete) writes to `page_action_log` — actor, action type, record type+id, timestamp, optional changed-field summary. Queryable via an admin Tools-group resource. Retention follows existing data-retention policy.
+
+Sized 1–2 sessions. Migration + observer/listener wiring + email template + Tools-group resource + Pest tests + Playwright spec. See `sessions/release-plan.md` § C3a.
+
+---
+
+### Auto Tax Receipt Email *(stub — pre-Beta 1; C3b in `release-plan.md`; prereq stub for C4 rehearsal)*
+
+Lifted at 282 Phase C audit. Successful donation (via Stripe Checkout webhook) automatically dispatches a tax-receipt email — donor name, amount, date, transaction id, fund (if specified), org tax-id/EIN, IRS-compliant language. Email template configurable via existing `manage_email_templates` admin surface. The current manual "Send Receipts" admin action on DonorsPage stays as a backfill/resend affordance.
+
+Sized 1 session. See `sessions/release-plan.md` § C3b.
+
+---
+
+### Comp-Tier Polish + Skip-Stripe-on-Zero-Total *(stub — pre-Beta 1; C3c in `release-plan.md`; prereq stub for C5 rehearsal)*
+
+Lifted at 282 Phase C audit. Event-registration flow handles comp tickets cleanly — when chosen tier(s) total $0, the public flow skips Stripe Checkout entirely and confirms the registration server-side, sending the thank-you email immediately. Admin can mark a tier `is_complimentary` (label in the picker; behavior driven by zero-price). Mixed-tier orders (e.g. 1 comp + 1 paid) continue through Stripe unchanged.
+
+Sized 1 session. See `sessions/release-plan.md` § C3c.
 
 ---
 
@@ -474,14 +507,14 @@ See `sessions/release-plan.md` § C3.
 #### C4. Donation-to-acknowledgment loop
 See `sessions/release-plan.md` § C4.
 
-#### C5. Event with everything
-See `sessions/release-plan.md` § C5.
+#### C5. Event with everything *(scope slim at 282 audit)*
+See `sessions/release-plan.md` § C5. Waitlist + per-event custom registration questions + day-of check-in + attendance log lifted to post-Beta at 282 audit; comp-tier polish lifted to C3c prereq stub.
 
-#### C6. Membership renewal cycle
-See `sessions/release-plan.md` § C6.
+#### C6. Membership renewal cycle *(LIFTED POST-BETA at 282 audit)*
+Lifted entirely to post-Beta backlog. See the "Workflows — Post-Beta 1" section below; `release-plan.md` § C6 carries the tombstone.
 
-#### C7. Email at volume
-See `sessions/release-plan.md` § C7.
+#### C7. Email at volume *(DROPPED at 282 audit)*
+Dropped entirely. Bulk emails go through Mailchimp via the existing webhook integration; Mailchimp-as-an-integration coverage absorbs into D3 (Integration retest).
 
 #### D1. Scale rehearsal
 See `sessions/release-plan.md` § D1.
@@ -518,7 +551,7 @@ See `sessions/release-plan.md` § D3.
 
 ## Test-Data Generation Infrastructure — Beta 1 Scope
 
-Track G in [`release-plan.md`](release-plan.md). Multi-session track for generating adversarial fixtures the importer is tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings any more. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns.
+Phase G in [`release-plan.md`](release-plan.md). Multi-session phase for generating adversarial fixtures the importer is tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings any more. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns.
 
 Track scope (pre-Beta-1):
 - **G1** — CSV foundation: per-importer fixtures across five shapes (clean / messy / corrupt / pii / stress), source-preset variance, encoding variance, manifest sidecars, parametrized Pest runner. Lands before B2.
@@ -543,7 +576,7 @@ Pest runner extended to consume pair manifests and assert dedup behavior.
 
 ## On-Demand E2E Coverage — Beta 1 Scope
 
-Track F in [`release-plan.md`](release-plan.md). Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
+Phase F in [`release-plan.md`](release-plan.md). Pre-T1 deep Playwright sweeps for surfaces that don't earn full regression-suite coverage but want a one-shot validation pass before release. Each session lands a `tests/e2e/{area}/` spec set tagged `@on-demand`, runnable via `npm run test:e2e:on-demand`. Default `npm run test:e2e` runs exclude these specs.
 
 Track introduced at session 256 close after the Organizations importer's deep Playwright pass surfaced two pre-existing bugs that earlier per-importer tests had missed (a `serializeColumnMaps` regression silently dropping custom-field columns; a Choices.js `selectOption` pattern broken across multiple importer specs). Pattern is: deep, fixture-heavy, judgment-led — better suited to occasional sweeps than per-merge regression. Three slots on the working set: payments, portal, role gates.
 
@@ -655,9 +688,9 @@ Scope (refine before lifting):
 
 Not a release gate. Schedules whenever the offboarding workflow earns operator focus, ideally after at least one real-customer offboarding has happened so the guide reflects lived experience rather than theory. Forcing function: a customer asks how they'd leave.
 
-### Test-Data Generator — Salesforce Export Shape Support *(post-Beta 1, deferred from Track G at session 256 close)*
+### Test-Data Generator — Salesforce Export Shape Support *(post-Beta 1, deferred from Phase G at session 256 close)*
 
-Salesforce / NPSP exports are a high-value source preset for the importer fixture generator (Track G). Salesforce's export format is publicly documented (their Reports/Data Loader output schemas are stable and well-defined), so adding a `salesforce_npsp` preset to `import-fixtures:generate` is a tractable post-release addition without depending on us getting our hands on a real export.
+Salesforce / NPSP exports are a high-value source preset for the importer fixture generator (Phase G). Salesforce's export format is publicly documented (their Reports/Data Loader output schemas are stable and well-defined), so adding a `salesforce_npsp` preset to `import-fixtures:generate` is a tractable post-release addition without depending on us getting our hands on a real export.
 
 Scope:
 - New `--source-preset=salesforce_npsp` option emits CSVs with NPSP-canonical headers (`Account.Name` / `Contact.FirstName` / `npe01__One2OneContact__c` / `npo02__OppAmount__c` / etc.) for each importer that has an NPSP analog.
@@ -1100,6 +1133,38 @@ Second path to success for messy incoming data. Publish a help article (plus a l
 Context from implementation discussion: a veteran of 5M-contact migrations confirms this is the standard approach the author already uses personally. Making it a first-class supported path — not a hack — is a real competitive advantage against the 6-8-week "data migration consulting" model. Pairs with the downloadable CSV templates from session 191.
 
 Not a code session — a content session. Ships as a help article + a short screencast.
+
+---
+
+## Workflows — Post-Beta 1
+
+*Items lifted out of Phase C scope at the 282 Phase C audit because the underlying features didn't exist or were too large to justify pre-Beta-1 inclusion. Each becomes its own multi-session effort or scheduled session post-Beta.*
+
+### Membership Renewal Cycle *(post-Beta 1; lifted from C6 at 282 audit)*
+
+Full membership-lifecycle state machine: renewal-due → renewal-paid → grace → lapse → reactivation → dues-change → payment-failure-for-memberships. Each transition emits the right system email; portal reflects state; admin UI shows lifecycle. The C6 entry in release-plan.md is the rehearsal of this lifecycle once built; both the build and the rehearsal land post-Beta as a multi-session phase.
+
+Beta 1 memberships work as one-time charges with portal-displayed tier — no lifecycle automation. The lifecycle build is a multi-session effort: schema additions (state machine, grace/lapse columns, dues-change history), webhook handling for subscription invoice events, scheduled jobs for lapse transitions, ~5–7 transition emails, portal lifecycle messaging, admin lifecycle display.
+
+### Donation Year-End Statement *(post-Beta 1; lifted from C4 at 282 audit)*
+
+Admin-side December-cycle workflow: generate per-donor year-end giving statements (total giving by year, itemized list) as PDF or formatted email. Sized 1 session if leaning on Browsershot or similar; somewhat more if cleanly integrating with the donation runbook flow.
+
+### Donation Partial-Refund Corrected Acknowledgment *(post-Beta 1; lifted from C4 at 282 audit)*
+
+When a Stripe partial refund is processed via webhook, automatically emit a corrected acknowledgment to the donor reflecting the new effective amount. Today the refund records correctly but no follow-up email fires. Sized 1 session.
+
+### Event Waitlist + Promotion *(post-Beta 1; lifted from C5 at 282 audit)*
+
+Waitlist for full-capacity events with auto-promotion on cancellation. `WaitlistEntry` model already exists in code but targets Products only; needs wiring for Events with admin-side management UI and email notifications on promotion. Real nonprofit use case but not Beta 1 critical. Sized 1–2 sessions.
+
+### Event Day-of Check-in + Attendance Log *(post-Beta 1; lifted from C5 at 282 audit)*
+
+Mobile-friendly check-in flow (sets `event_registrations.checked_in_at`) + post-event attendance export. Paper check-in is acceptable for Beta 1. Sized 1 session. (Per-event custom registration questions — also lifted from C5 at 282 audit — fold into the existing "Event Registration Depth" post-1.0 stub above.)
+
+### Add-to-Calendar on Event Pages *(post-Beta 1; lifted from D3 audit at 282 Phase D audit)*
+
+iCal/ICS export from public event pages with platform-targeted buttons — Apple Calendar, Microsoft Outlook, Google Calendar, and Proton Calendar if its format is compatible. Public-side feature, not an admin integration. The 282 audit removed Google Calendar sync from D3's integration list (no integration exists in code) and re-scoped this as the public-side affordance the user actually wants. Sized 1 session.
 
 ---
 
