@@ -8,26 +8,29 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 
 ## PMW1 findings
 
-### G1 — Layout-level `appearance_config` does not round-trip through export/import
+### G1 — Layout-level `appearance_config` does not round-trip through export/import ✅ resolved at 285
 
 - **What was attempted:** setting `background.color: #d4d4f2` on a column layout so the "What it does" section's 2-column grid sits on the same tinted slab as its heading, per the brief's *"Background lives on the type: 'layout' block, not on the widgets inside it"* convention.
 - **What blocked it:** `App\Services\ImportExport\ContentExporter::serializeLayout` does not emit a layout's `appearance_config`. The renderer (`AppearanceStyleComposer::composeForLayout`) reads from it; the `page_layouts` table has the column; the admin UI can set it. Only the bundle round-trip drops the value silently. Confirmed by reading the importer (`ContentImporter::hydrateLayout`) — `appearance_config` is not passed to `$owner->layouts()->create`.
 - **Workaround used:** kept the existing pattern on the home page (heading-tinted slab, grid widgets on white per-widget backgrounds). Tinted band ends at the heading, not at the grid. Per-widget `background.color` carries the slab tint where needed.
 - **Recommended action:** extend `ContentExporter::serializeLayout` to include `appearance_config`, and extend `ContentImporter::hydrateLayout` to pass it through on layout creation. **High priority for the track** — the brief's "background lives on the layout block" convention is the canonical pattern for section-band slabs across all five marketing pages. Without this fix, every roundtripped page silently loses its layout-level styling, including pages that are perfectly authored in the admin but exported/re-imported for backup.
+- **Resolution (285):** exporter emits and importer hydrates `appearance_config` on column layouts. Two Pest round-trip cases cover populated and empty payloads.
 
-### G2 — Dark-band widget cannot carry a CTA
+### G2 — Dark-band widget cannot carry a CTA ✅ resolved at 285
 
 - **What was attempted:** adding the `[More about how this works →]` CTA that copy.md specifies at the end of the "This is not a SaaS company" dark band.
 - **What blocked it:** the dark band renders via `text_block`, which has no `ctas` schema field — only `hero` carries CTAs. Converting the dark band to a `hero` would swap widget types and absorb rendering differences (hero's bg-image / video / overlap-nav behaviors don't all fit a section band).
 - **Workaround used:** dark band ships CTA-less in this iteration.
 - **Recommended action:** either (a) add CTA capability to `text_block` (small schema add), or (b) add a lightweight standalone-CTA widget that sits beneath a text block, or (c) convert the dark band to `hero` and accept the rendering differences. (b) is closer to the brief's no-invented-widgets posture; (a) is the most flexible. Decision can wait — the band reads fine without the CTA in the meantime.
+- **Resolution (285):** path (a). TextBlock gained a `ctas` field mirroring Hero's full shape plus a `cta_alignment` field (`inherit / left / center / right`; inherit follows Quill `ql-align-*` classes).
 
-### G3 — Buttons need a "regular + night-mode" colorway per variant
+### G3 — Buttons need a "regular + night-mode" colorway per variant ✅ interim path resolved at 285; long-term direction open
 
 - **What was attempted:** placing primary + secondary CTAs on Hero 1's blue gradient and planning the dark-band CTA from G2. Both surface the same underlying problem: every button variant is colored for light backgrounds only.
 - **What blocked it:** the five button variants (`primary`, `secondary`, `text`, `destructive`, `link`) are each a single colorway. `primary` solid blue reads ok on light, off-tone on dark gradients. `secondary` transparent + gray-border disappears against anything dark. `text` blue is low-contrast on dark. No variant has a "ghost on dark" companion.
 - **Workaround used (interim, session 284 explicit ask):** tuned `secondary` to a white-fill pill with dark border + dark text (`bg #ffffff, text #111827, border #111827`). Reads on light *and* dark backgrounds. Loses some of the "ghost" feel on light but stays consistent. Persisted in the `button_styles` SiteSetting; public CSS bundle rebuilt.
 - **Recommended action (long-term, user direction at session 284):** **per-variant "regular + night-mode" colorways.** Each of the five variants gains a paired dark-bg colorway (`primary-dark`, `secondary-dark`, etc.) — or the system gains a single colorway-pair shape on each variant. Operator picks which colorway to use per CTA (Hero CTAs already have a "Button Style" select per CTA — extend the options list). Open architectural question: does the operator pick explicitly, or does the system infer from the surrounding band's background tone? Inference is friendlier but couples button rendering to surrounding-widget context. Explicit is simpler but doubles the dropdown options. **High priority — this is the underlying pattern behind G2, G3, G13 below, and likely more as About / Pricing / Demo land.**
+- **Resolution (285, interim path):** one new `secondary-dark` variant added — transparent fill, white text, white outline, opacity hover. Surfaced in DesignSystemPage as "Secondary (Dark)" and selectable in Hero + TextBlock CTA style pickers. Bundle rebuilt. The long-term direction (per-variant pairing or context-aware inference) stays open as a future session.
 
 ### G4 — `mailto:` address is a placeholder
 
@@ -92,16 +95,18 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 - **Workaround used:** **toggled Hero 1's `overlap_nav: true → false`** in the cleaned home. The hero gradient now starts below the page header. Logo sits on the template's (light) header background, regains its native contrast. Cleared `nav_link_color` / `nav_hover_color` on Hero 1 since they're moot when nav doesn't overlap. Side effect: lost the "gradient bleeds behind nav" full-bleed look — none of the four reference pages do this, so the trade-off is reference-aligned.
 - **Recommended action:** **two paths, dependent on G3's resolution.** (a) If G3's per-variant night-mode colorways land, generalize the same pattern to Logo (`appearance_config.text.color_dark`?) — or add a Hero-widget `nav_logo_color` knob that wires through to a `--logo-color` CSS variable the Logo SCSS honors. (b) If overlap-nav is rarely needed, accept the workaround as the convention. The references suggest (b) is the right call.
 
-### G13 — Hero headline scale undersized vs reference pages
+### G13 — Hero headline scale undersized vs reference pages ✅ resolved at 285
 
 - **What was attempted:** identifying differences between the cleaned home and the four reference pages (Attio / Marketo / Clay / Gong). Hero headline reads "small" by comparison.
 - **What blocked it:** `TypographyResolver` defaults set `h1 = 2.5rem` (40px) and `h2 = 2.0rem` (32px). Reference hero headlines run ~50–80px (Attio ~50px h1; Clay ~80px; Gong ~70px uppercase; Marketo ~36px h2). The existing home Hero 1 uses `<h2>` (32px), which is at the small end of all four references. References generally use 3–5× body size for hero headlines; NPC default is 2×.
 - **Workaround used:** none this phase. Surfaced for the user's decision before tuning typography defaults.
 - **Recommended action:** **tune typography defaults via the Theme page** (CMS → Theme → Text Styles). Suggested deltas to consider: `h1 → 4rem` (64px), `h2 → 2.75rem` (44px), `h3 → 1.875rem` (30px). Margin-bottom on headings (currently 0) → `1.25rem` so headings breathe before body. Aligns with E5 (Mobile Type Scaling), which is sequenced after PMW1 specifically so PMW1's audit informs it. This is a track-wide tuning decision — touches every page, not just the home.
+- **Resolution (285):** pushed `h1 → 3.5rem` (56px), `h2 → 2.5rem` (40px), `h3 → 1.75rem` (28px) via the `typography` SiteSetting JSON. H2↔H3 gap widened from 0.5rem to 0.75rem so the step-down reads cleaner. Heading margin-bottoms covered under G14.
 
-### G14 — Intra-section vertical rhythm is tighter than reference pages
+### G14 — Intra-section vertical rhythm is tighter than reference pages ✅ resolved at 285
 
 - **What was attempted:** sizing the gap between heading, body, and CTAs within a band against the reference pages.
 - **What blocked it:** `TypographyResolver` sets all element margins (top / right / bottom / left) to 0 by default. Inside Quill content, this defers to browser-default margins (~1em on `<p>`, browser-specific on headings). The references show generous gaps — 24–40px between heading and body, 32–48px between body and CTA buttons. NPC's default is at-or-below browser defaults.
 - **Workaround used:** none this phase. Same surface as G13 — tunes once at the theme level.
 - **Recommended action:** alongside G13's scale tuning, set heading margin-bottom: `h1 1.5rem`, `h2 1.25rem`, `h3 1rem`. Paragraph margin-bottom: `1rem`. Hero widget's `.hero-ctas` margin-top: ~`2rem` (template SCSS, not typography). These are global tuning decisions — discuss before committing.
+- **Resolution (285):** pushed all four margin-bottom values (`h1 1.5rem / h2 1.25rem / h3 1rem / p 1rem`) into the `typography` SiteSetting. Hero `.hero-ctas` margin-top was not touched this session — TextBlock got its own `.widget-text-block__ctas` margin-top of `1.5rem` for its new CTA wrapper, which is the closer analogue.

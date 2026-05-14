@@ -22,14 +22,14 @@ When a phase closes, its retrospective lands here and its release-plan position 
 
 ## Status snapshot
 
-**Last update:** 2026-05-14 (PMW1 closed at session 284; sessions 285 and 286 queued before PMW2).
+**Last update:** 2026-05-14 (PMW1 closed at 284; CMS-fixes session 285 closed; home rebuild session 286 queued next).
 
-**State:** PMW1 closed. The audit summary, cleaned home.json, gap report (10 rows), and a layout spec authored for the home page (`sessions/public website/homepage-layout-spec.md`) are in the working folder. Two follow-on sessions are queued before PMW2 begins: 285 lifts the four CMS-side blockers PMW1 surfaced (G1 layout `appearance_config` round-trip; G2 Text widget CTAs; G3 ghost-on-dark button variant; G13 / G14 typography tuning) plus an Image-widget audit; 286 rebuilds the home against the layout spec using the CMS surface that lands at 285. Both 285 and 286 sit between PMW1 and the E-series tuning sessions so their output informs E5 / E6 / E7 / E8 design.
+**State:** PMW1 closed; the five CMS-side blockers PMW1 surfaced are landed in code as of session 285. The audit summary, cleaned home.json, gap report (10 rows — G1 / G2 / G3-interim / G13 / G14 marked ✅ resolved; the remaining rows stay open), and the layout spec (`sessions/public website/homepage-layout-spec.md`) are in the working folder. Session 285 also added an in-scope addition to the Image widget (aspect_ratio + max_width) that the audit surfaced. Session 286 rebuilds the home against the layout spec using the now-available CMS surface. Both 285 and 286 sit between PMW1 and the E-series tuning sessions so their output informs E5 / E6 / E7 / E8 design.
 
 **Phase status:**
 
 - **Phase 1 — Audit + Home cleanup.** ✅ Closed at session 284. Audit summary + structurally cleaned home + first 10 gap-report rows landed.
-- **Session 285 — CMS Fixes Before Home Rebuild.** Queued. Lifted-gap session (outside the track's phase count per gap-resolution discipline). Lifts G1 / G2 / G3-interim / G13 / G14 from PMW1's gap report.
+- **Session 285 — CMS Fixes Before Home Rebuild.** ✅ Closed. Lifted-gap session (outside the track's phase count per gap-resolution discipline). Shipped G1 layout `appearance_config` round-trip + G2 TextBlock CTAs + G3-interim `secondary-dark` button variant + G13/G14 typography defaults + Image widget aspect_ratio + max_width. Fast Pest 2408 / 0 (baseline 2390 + 18 new).
 - **Session 286 — Home Layout Rebuild.** Queued. Rebuilds the home against the layout spec at `sessions/public website/homepage-layout-spec.md` using the CMS surface that lands at 285. The layout spec doubles as the pattern test for the spec-driven approach that will repeat for About / Pricing / Contact / Demo in later phases.
 - **Phase 2 — Pricing build-out + About extend.** Not started.
 - **Phase 3 — Contact + Demo (greenfield).** Not started.
