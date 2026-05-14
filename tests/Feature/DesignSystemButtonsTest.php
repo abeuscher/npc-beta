@@ -40,13 +40,41 @@ it('saves button styles to site settings as json', function () {
 it('applies default values when no settings exist', function () {
     $defaults = DesignSystemPage::defaultButtonStyles();
 
-    expect($defaults)->toHaveKeys(['primary', 'secondary', 'text', 'destructive', 'link']);
+    expect($defaults)->toHaveKeys(['primary', 'secondary', 'secondary-dark', 'text', 'destructive', 'link']);
     expect($defaults['primary']['bg_color'])->toBe('#0172ad');
     expect($defaults['primary']['text_color'])->toBe('#ffffff');
     expect($defaults['primary']['font_weight'])->toBe('600');
     expect($defaults['secondary']['border_width'])->toBe('1px');
     expect($defaults['destructive']['bg_color'])->toBe('#dc2626');
     expect($defaults['link']['font_weight'])->toBe('400');
+});
+
+it('ships the secondary-dark ghost-on-dark variant in defaults', function () {
+    $defaults = DesignSystemPage::defaultButtonStyles();
+
+    expect($defaults)->toHaveKey('secondary-dark');
+    expect($defaults['secondary-dark']['bg_color'])->toBeNull();
+    expect($defaults['secondary-dark']['text_color'])->toBe('#ffffff');
+    expect($defaults['secondary-dark']['border_color'])->toBe('#ffffff');
+    expect($defaults['secondary-dark']['border_width'])->toBe('1px');
+});
+
+it('emits secondary-dark CSS custom properties in the public bundle', function () {
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+
+    Livewire::actingAs($user)
+        ->test(DesignSystemPage::class)
+        ->call('save');
+
+    $buildService = new \App\Services\AssetBuildService();
+    $method = new \ReflectionMethod($buildService, 'generateButtonOverrideCss');
+    $css = $method->invoke($buildService);
+
+    expect($css)
+        ->toContain('--btn-secondary-dark-color: #ffffff')
+        ->toContain('--btn-secondary-dark-border-color: #ffffff')
+        ->toContain('--btn-secondary-dark-border-width: 1px');
 });
 
 it('loads saved settings merged with defaults on mount', function () {

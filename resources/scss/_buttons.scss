@@ -94,6 +94,16 @@
         --btn-text-transform: var(--btn-secondary-text-transform, none);
     }
 
+    &--secondary-dark {
+        --btn-bg: var(--btn-secondary-dark-bg, transparent);
+        --btn-color: var(--btn-secondary-dark-color, #ffffff);
+        --btn-radius: var(--btn-secondary-dark-radius, #{$radius});
+        --btn-border-width: var(--btn-secondary-dark-border-width, 1px);
+        --btn-border-color: var(--btn-secondary-dark-border-color, #ffffff);
+        --btn-font-weight: var(--btn-secondary-dark-font-weight, 600);
+        --btn-text-transform: var(--btn-secondary-dark-text-transform, none);
+    }
+
     &--text {
         --btn-bg: var(--btn-text-bg, transparent);
         --btn-color: var(--btn-text-color, #{$color-primary});

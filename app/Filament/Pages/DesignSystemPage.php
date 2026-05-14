@@ -199,6 +199,16 @@ class DesignSystemPage extends Page
                 'font_weight'   => '600',
                 'text_transform' => 'none',
             ],
+            'secondary-dark' => [
+                'border_radius' => 'slightly-rounded',
+                'bg_color'      => null,
+                'text_color'    => '#ffffff',
+                'border_color'  => '#ffffff',
+                'border_width'  => '1px',
+                'hover'         => 'opacity',
+                'font_weight'   => '600',
+                'text_transform' => 'none',
+            ],
             'text' => [
                 'border_radius' => 'slightly-rounded',
                 'bg_color'      => null,
@@ -251,11 +261,12 @@ class DesignSystemPage extends Page
     protected static function buttonFormSchema(): array
     {
         $variants = [
-            'primary'     => 'Primary',
-            'secondary'   => 'Secondary',
-            'text'        => 'Text',
-            'destructive' => 'Destructive',
-            'link'        => 'Link',
+            'primary'        => 'Primary',
+            'secondary'      => 'Secondary',
+            'secondary-dark' => 'Secondary (Dark)',
+            'text'           => 'Text',
+            'destructive'    => 'Destructive',
+            'link'           => 'Link',
         ];
 
         $radiusOptions = [

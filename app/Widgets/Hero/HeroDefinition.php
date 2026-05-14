@@ -47,9 +47,10 @@ class HeroDefinition extends WidgetDefinition
                 ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
                 ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
                 ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
-                    'primary'   => 'Primary',
-                    'secondary' => 'Secondary',
-                    'text'      => 'Text Only',
+                    'primary'        => 'Primary',
+                    'secondary'      => 'Secondary',
+                    'secondary-dark' => 'Secondary (Dark)',
+                    'text'           => 'Text Only',
                 ]],
             ]],
             ['key' => 'fullscreen',       'type' => 'toggle',  'label' => 'Full Viewport Height', 'default' => false, 'helper' => 'Makes the hero fill the entire browser window (100vh)', 'group' => 'appearance'],

@@ -490,7 +490,7 @@ JS,
             'pill'             => '999px',
         ];
 
-        $variantHandles = ['primary', 'secondary', 'text', 'destructive', 'link'];
+        $variantHandles = ['primary', 'secondary', 'secondary-dark', 'text', 'destructive', 'link'];
         $lines = [":root {\n"];
 
         foreach ($variantHandles as $handle) {
