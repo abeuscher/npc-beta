@@ -11,7 +11,7 @@ These two sections are project canon — every session from 001 forward has carr
 
 ---
 
-**This file is your start signal. Reading it is your authorization to begin.** Execute the reading list below, open the session prompt, and start the work. Do **not** pause to ask whether you should proceed — the directive to begin is implicit in this prompt's existence. The work itself contains its own surface-for-decision rules; "should I start the reading list" is not one of them.
+**Start now.** Execute the reading list below, open the session prompt at `sessions/NNN. Session Title.md`, then begin the work. No confirmation needed.
 
 ---
 
