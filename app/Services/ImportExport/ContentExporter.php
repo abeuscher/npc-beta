@@ -253,13 +253,14 @@ class ContentExporter
         }
 
         return [
-            'type'          => 'layout',
-            'label'         => $layout->label,
-            'display'       => $layout->display,
-            'columns'       => $layout->columns,
-            'layout_config' => $layout->layout_config ?? [],
-            'sort_order'    => $layout->sort_order,
-            'slots'         => $slots,
+            'type'              => 'layout',
+            'label'             => $layout->label,
+            'display'           => $layout->display,
+            'columns'           => $layout->columns,
+            'layout_config'     => $layout->layout_config ?? [],
+            'appearance_config' => $layout->appearance_config ?? [],
+            'sort_order'        => $layout->sort_order,
+            'slots'             => $slots,
         ];
     }
 

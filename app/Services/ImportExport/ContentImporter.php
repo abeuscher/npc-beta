@@ -363,11 +363,12 @@ class ContentImporter
     {
         $label = $label ?? ($owner->name ?? (string) $owner->getKey());
         $layout = $owner->layouts()->create([
-            'label'         => $item['label'] ?? null,
-            'display'       => $item['display'] ?? 'grid',
-            'columns'       => $item['columns'] ?? 2,
-            'layout_config' => $item['layout_config'] ?? [],
-            'sort_order'    => $item['sort_order'] ?? 0,
+            'label'             => $item['label'] ?? null,
+            'display'           => $item['display'] ?? 'grid',
+            'columns'           => $item['columns'] ?? 2,
+            'layout_config'     => $item['layout_config'] ?? [],
+            'appearance_config' => $item['appearance_config'] ?? [],
+            'sort_order'        => $item['sort_order'] ?? 0,
         ]);
 
         foreach ($item['slots'] ?? [] as $columnIndex => $slotWidgets) {

@@ -139,6 +139,85 @@ it('round-trips a page with a column layout containing widgets', function () {
     expect($children[1]->config['content'])->toBe('<p>Right col</p>');
 });
 
+// ── Round-trip: layout appearance_config (G1 fix) ───────────────────────────
+
+it('round-trips a layout\'s appearance_config through export/import', function () {
+    $page = Page::factory()->create(['slug' => 'round-trip-layout-appearance', 'status' => 'published']);
+
+    $appearance = [
+        'background' => ['color' => '#d4d4f2'],
+        'layout'     => [
+            'padding' => ['top' => 150, 'right' => 0, 'bottom' => 150, 'left' => 0],
+            'margin'  => ['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0],
+        ],
+    ];
+
+    $layout = $page->layouts()->create([
+        'label'             => 'Tinted Band',
+        'display'           => 'grid',
+        'columns'           => 2,
+        'layout_config'     => ['grid_template_columns' => '1fr 1fr', 'gap' => '1rem'],
+        'appearance_config' => $appearance,
+        'sort_order'        => 0,
+    ]);
+
+    $textWt = WidgetType::where('handle', 'text_block')->first();
+    $page->widgets()->create([
+        'layout_id' => $layout->id, 'column_index' => 0,
+        'widget_type_id' => $textWt->id, 'label' => 'Col A',
+        'config' => ['content' => '<p>A</p>'],
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    // Bundle should carry the layout's appearance_config.
+    $exportedLayout = $bundle['payload']['pages'][0]['widgets'][0];
+    expect($exportedLayout['type'])->toBe('layout');
+    expect($exportedLayout['appearance_config'])->toEqual($appearance);
+
+    // Wipe and re-import.
+    PageWidget::forOwner($page)->delete();
+    PageLayout::forOwner($page)->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = PageLayout::forOwner($page)->first();
+    expect($reloaded)->not->toBeNull();
+    expect($reloaded->appearance_config)->toEqual($appearance);
+});
+
+it('preserves an empty appearance_config on round-trip', function () {
+    $page = Page::factory()->create(['slug' => 'round-trip-empty-appearance', 'status' => 'published']);
+
+    $layout = $page->layouts()->create([
+        'label'             => 'Plain Row',
+        'display'           => 'grid',
+        'columns'           => 2,
+        'layout_config'     => [],
+        'appearance_config' => [],
+        'sort_order'        => 0,
+    ]);
+
+    $textWt = WidgetType::where('handle', 'text_block')->first();
+    $page->widgets()->create([
+        'layout_id' => $layout->id, 'column_index' => 0,
+        'widget_type_id' => $textWt->id, 'label' => 'Col',
+        'config' => ['content' => '<p>X</p>'],
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    PageWidget::forOwner($page)->delete();
+    PageLayout::forOwner($page)->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = PageLayout::forOwner($page)->first();
+    expect($reloaded->appearance_config)->toBe([]);
+});
+
 // ── Round-trip: media reference (Tier 1 rewiring) ───────────────────────────
 
 it('round-trips a page with a logo widget media reference', function () {
