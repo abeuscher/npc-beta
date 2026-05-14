@@ -2,9 +2,22 @@
 
 Copy this file to `NNN. base-prompt.md` at the start of each session. Replace `NNN` with the session number and update the session title.
 
+Two structural sections are **required** in every session's base prompt and must be filled in (they are not optional, even though the template body marks them with placeholder text):
+
+- The **opening qualifier block** — three paragraphs after the "We are about to begin…" line, covering (1) execution-order position and milestone/track relationship, (2) boundary-touching status and CRM contract version, (3) session shape and one-sentence summary of the work. The agent reads this before the file-by-file reading list and uses it to orient on what kind of session this is.
+- The **Starting state inherited from session (NNN-1)** section — between the reading list and Process rules. A short bulleted state-handoff covering CRM contract status, schema baseline, fast Pest baseline, Playwright baseline, any planning-doc changes since last session, and housekeeping inbox posture for this session shape.
+
+These two sections are project canon — every session from 001 forward has carried some form of them, and removing them empirically degrades agent orientation. Update the template body below as conventions evolve; do not strip these sections from individual session prompts.
+
 ---
 
 We are about to begin a new session: **NNN. Session Title**.
+
+This is **execution-order position N** in `sessions/release-plan.md` — **{plan-entry ID + title}**, {phase or milestone context if any}. *(Required: this paragraph anchors the agent to where the session sits in the larger plan. Reference Rule numbers, milestone dividers, or track-doc phases as relevant.)*
+
+This session is **{NOT / IS} boundary-touching** — {if NOT: no Fleet Manager surface is in scope; if IS: name the affected contract surface and note the version-bump posture}. CRM contract stays at {current version} {or: bumps from X.Y.Z → A.B.C — describe additive-vs-breaking}. *(Required: explicit boundary-touching statement governs whether the Cross-Repo block in `sessions/session-outlines.md` and `docs/fleet-manager-agent-contract.md` need updating.)*
+
+**Session shape:** {feature-style / audit-style / content-style / housekeeping / track-phase / migration-squash}. {One-sentence summary of the work — what gets built, lifted, audited, or shipped.} *(Required: shape tag drives the test-coverage rule, the housekeeping-inbox rule, and the close-gate documentation pattern.)*
 
 Before doing anything else:
 
@@ -15,6 +28,19 @@ Before doing anything else:
 5. Read `docs/app-reference.md` for environment names, container names, view-to-file mappings, and key dependencies. Read `docs/schema/README.md` for the table index, then read the individual table files under `docs/schema/` relevant to this session's scope.
 6. Open `sessions/NNN. Session Title.md` and read the session prompt carefully.
 7. Note any drift between the session prompt and the actual code in a brief work-log entry; proceed unless something requires a decision per the drift and decision-threshold rules below.
+
+---
+
+## Starting state inherited from session (NNN-1)
+
+*(Required section. Bulleted state-handoff that distills what last session left for this one. Each bullet is one-line; don't narrate, just state the fact and any session-N consequence.)*
+
+- **CRM contract at vX.Y.Z** — {unchanged / bumped from prior; one-sentence summary of what session (NNN-1) did and whether it touched the boundary}.
+- **Schema baseline:** {no schema changes since session NNN / new tables since session NNN — list them}.
+- **Fast test suite green at N / 0 sequential** ({last-close baseline}). {Expected delta this session, e.g. "no new tests expected — content-only work" or "new tests expected for the X / Y / Z surfaces"}.
+- **Playwright suite** — {baseline preserved from session NNN / N specs added at session NNN — list them}. {Whether Playwright runs this session and why / why not}.
+- **Planning state:** {anything that changed in `sessions/release-plan.md` or `sessions/session-outlines.md` since last session — milestone refits, phase splits, track lifts, etc. Omit if no planning changes}.
+- **Housekeeping inbox** at `sessions/housekeeping-inbox.md` — {whether this session shape absorbs items per Rule 2, and which items if so}.
 
 ---
 

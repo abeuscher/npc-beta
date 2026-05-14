@@ -335,7 +335,9 @@
       "Bash(awk '{$1=$2=$3=$4=$5=$6=$7=$8=\"\"; print $0}')",
       "Bash(awk '{print $5, $6, $7, $9, $10, $11, $12, $13, $14}')",
       "Bash(ls -la \"/mnt/c/Users/Al/Desktop/files\" 2>&1)",
-      "Read(//mnt/c/Users/Al/Desktop/files/**)"
+      "Read(//mnt/c/Users/Al/Desktop/files/**)",
+      "Bash(grep -n \"^## \\\\|^---$\\\\|We are about to begin\" /home/al/nonprofitcrm/sessions/284. base-prompt.md)",
+      "Bash(grep -n \"^## \\\\|^---$\\\\|We are about to begin\" \"/home/al/nonprofitcrm/sessions/284. base-prompt.md\")"
     ],
     "deny": [],
     "additionalDirectories": [
