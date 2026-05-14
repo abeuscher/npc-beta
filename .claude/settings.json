@@ -333,7 +333,9 @@
       "Bash(awk '{print $NF}')",
       "Bash(grep -E \"\\\\.md$\")",
       "Bash(awk '{$1=$2=$3=$4=$5=$6=$7=$8=\"\"; print $0}')",
-      "Bash(awk '{print $5, $6, $7, $9, $10, $11, $12, $13, $14}')"
+      "Bash(awk '{print $5, $6, $7, $9, $10, $11, $12, $13, $14}')",
+      "Bash(ls -la \"/mnt/c/Users/Al/Desktop/files\" 2>&1)",
+      "Read(//mnt/c/Users/Al/Desktop/files/**)"
     ],
     "deny": [],
     "additionalDirectories": [

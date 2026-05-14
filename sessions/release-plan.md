@@ -438,6 +438,42 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **artifact:** the feature itself.
 - **estimated time cost:** 1 session.
 
+#### Public Marketing Website track *(lifted at session 283 mid-session; pre-Public-Website-Complete)*
+
+Four-phase track building the five-page nonprofitcrm.com marketing site inside the product's own page builder. Distinct shape from the rest of Phase E: the deliverables are page JSON exports, screenshots, and a gap report — no production code unless a gap-report row gets lifted into a follow-on session. Track doc at `sessions/tracks/public-marketing-website.md`. Working folder at `sessions/public website/` (brief, copy, references, produced JSON, screenshots, gap report).
+
+##### PMW1. Public Marketing Website — Audit + Home cleanup
+
+- **gate:** release
+- **prerequisites:** none; sequenced before E5 / E6 / E7 / E8 so the audit output informs their design choices
+- **success criterion:** System-understanding summary written (type scales, button styles, appearance config schema, available widget inventory, sample image library). Existing home page export edited to align with the brief's section-band / padding / appearance-config-as-text-color conventions, re-imported, screenshot captured. `gap-report.md` scaffolded with first findings.
+- **artifact:** the audit summary + cleaned-up `home.json` + first gap-report rows.
+- **estimated time cost:** 1 session.
+
+##### PMW2. Public Marketing Website — Pricing build-out + About extend
+
+- **gate:** release
+- **prerequisites:** PMW1 (audit output + home as established structural pattern); user exports current Pricing and About from admin into the working folder before session start
+- **success criterion:** `pricing.json` complete against the structure in `copy.md`. `about.json` extended; links to in-product demo LPs (`/my-nonprofit`, `/my-nonprofit-workshop`) added. Both pages re-imported, screenshots captured. Gap report extended.
+- **artifact:** `pricing.json` + `about.json` + screenshots + extended gap report.
+- **estimated time cost:** 1 session.
+
+##### PMW3. Public Marketing Website — Contact + Demo (greenfield)
+
+- **gate:** release
+- **prerequisites:** PMW1
+- **success criterion:** `contact.json` and `demo.json` built greenfield. Demo includes a Form widget configured for demo-access intake (name / email / interest / message — all fields optional per copy). Both pages imported, screenshots captured. Gap report extended.
+- **artifact:** `contact.json` + `demo.json` + screenshots + extended gap report.
+- **estimated time cost:** 1 session.
+
+##### PMW4. Public Marketing Website — Page-capture harness + close-out
+
+- **gate:** release
+- **prerequisites:** PMW1, PMW2, PMW3
+- **success criterion:** `scripts/generate-page-screenshots.js` (or equivalent) renders each of the five marketing pages at their published URLs and writes `sessions/public website/screenshots/page-{slug}.png`. Distinct from `scripts/generate-thumbnails.js` (which targets dev-mode widget previews). All five screenshots committed. `build-summary.md` close-out doc written. Track-closure entry lands in `sessions/tracks/public-marketing-website.md`.
+- **artifact:** the capture script + five committed screenshots + `build-summary.md`.
+- **estimated time cost:** 1 session.
+
 ### Phase G — Test-Data Generation Infrastructure
 
 Multi-session phase for generating adversarial fixtures the importer can be tested against. Lifted at session 256 close: the project has only two real-world data sets, both repeatedly scrubbed-and-re-imported, neither generating new findings. Real data has stopped paying for itself as a test input. Adversarial generated fixtures expand coverage without privacy concerns and let us harden the importer ahead of B2 (Onboarding rehearsal cluster) and any future importer-touching session.
@@ -538,44 +574,48 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 30. **C2.** Event Ticket Tiers *(session 278 — closed; shape (A) tier-canonical; `events.price` and `events.capacity` dropped; `ticket_tiers` table + `event_registrations.ticket_tier_id` FK + General-tier backfill + retroactive importer linkage in one atomic migration; Filament tier repeater on EventResource; public widget with three picker modes; per-tier capacity; `notes` field added to public form as interim workaround for per-attendee data; email-uniqueness silent-success dedup dropped; fast Pest 2341/0 (+30 over 277 baseline); +1 Playwright spec / 3 scenarios)* ✅
 31. **C2a.** Multi-Quantity Event Ticket Purchase *(closed at session 279; shape (A) shipped — `event_registrations.quantity smallint default 1`; `withSum` per-tier capacity; merged checkout controllers via iteration /2 bugfix that fixed a 278-introduced 302→GET 404 dispatch bug; quantity-spinner widget with live subtotal; admin Tickets column; iteration /3 cleaned cloud-session/parallel-session/PR rules from CLAUDE.md per user evidence on parallel-workstream cost; fast Pest 2355/0 sequential)* ✅
 32. **C3.** Permission audit *(closed at session 280; walked 27 Filament resources + 28 Filament pages + sub-pages + admin controllers across 8 shipped roles + unauthenticated; produced `docs/runbooks/permission-matrix.md` + `tests/Feature/PermissionMatrixTest.php` with 16 codified probes; key empirical finding — `Resource::canAccess()` runs as a Livewire mount hook so it's a universal URL gate, no bypass via no-policy-permissive-default pattern; 7 findings surfaced — 3 OK-by-design, 4 open flags for follow-on; fast Pest 2371/0 sequential)* ✅
-### Public Website Complete — milestone work *(sequenced first per Rule 12; lifted at 282 audit)*
+### Public Website Complete — milestone work *(sequenced first per Rule 12; lifted at 282 audit; PMW track interleaved at 283 mid-session)*
 
-33. **E4.** Stripe Checkout Branding *(1-session entry — qualifies for pre-milestone per user direction at 282 audit)*
-34. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8 — slots pre-milestone)*
-35. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8 — slots pre-milestone)*
-36. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8 — slots pre-milestone)*
-37. **E8.** UI/UX Sprint
-38. **E12.** Housekeeping Batch 2 *(absorbs the public-website-blocking subset of `sessions/housekeeping-inbox.md` items)*
-39. **E15.** Table widget *(promoted from housekeeping inbox at 282 audit)*
-40. **E16.** Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit)*
-41. **E17.** Borders pass — widget controls + columns *(promoted from housekeeping inbox at 282 audit)*
+33. **E4.** Stripe Checkout Branding *(1-session entry — qualifies for pre-milestone per user direction at 282 audit; in flight at session 283; manual deploy-server test pending before close)*
+34. **PMW1.** Public Marketing Website — Audit + Home cleanup *(track lifted at 283 mid-session; sequenced before E5–E8 so its audit output informs their design choices)*
+35. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
+36. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
+37. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
+38. **E8.** UI/UX Sprint
+39. **PMW2.** Public Marketing Website — Pricing + About *(prereq: PMW1; runs after E5–E8 so the page polish lands against finalized type / color / collapse decisions)*
+40. **PMW3.** Public Marketing Website — Contact + Demo (greenfield) *(prereq: PMW1)*
+41. **PMW4.** Public Marketing Website — Page-capture harness + close-out *(prereq: PMW1, PMW2, PMW3)*
+42. **E12.** Housekeeping Batch 2 *(absorbs the public-website-blocking subset of `sessions/housekeeping-inbox.md` items)*
+43. **E15.** Table widget *(promoted from housekeeping inbox at 282 audit)*
+44. **E16.** Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit)*
+45. **E17.** Borders pass — widget controls + columns *(promoted from housekeeping inbox at 282 audit)*
 
 ── PUBLIC WEBSITE COMPLETE ──
 
 ### Post-milestone — continues to Beta 1
 
-42. **A2.** Fleet Manager — node operations parity *(moved here from position 4 at 282 audit; may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
-43. **A3.** Multi-node operational readiness *(moved here from position 6 at 282 audit)*
-44. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
-45. **A5.** 2FA for admin accounts *(moved here from position 8 at 282 audit)*
-46. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
-47. **C3-deferred-concurrent.** Concurrent admin editing *(slim (b) refit at 282 audit; #32b. Note: session 281 was scheduled for the original (a)-scope plan but was never executed.)*
-48. **C3-deferred-exposure.** Accidental public exposure *(Path-A scope refit at 282 audit; #32c; depends on C3a)*
-49. **C3b.** Auto tax receipt email *(feature half lifted at 282 audit; prereq for C4)*
-50. **C3c.** Comp-tier polish + skip-Stripe-on-zero-total *(feature half lifted at 282 audit; prereq for C5)*
-51. **C4.** Donation-to-acknowledgment loop *(slim — depends on C3b)*
-52. **C5.** Event with everything *(slim — depends on C3c)*
-53. **D1.** Scale rehearsal
-54. **D2.** Compatibility cluster
-55. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
-56. **E13.** Help docs body content
-57. **E14.** Third-Party Licensing Compliance Audit
-58. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
-59. **D4.** Test suite review — cost & shape
-60. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
-61. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
-62. **F3.** On-Demand E2E — Permission / role-gate matrix
-63. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
+46. **A2.** Fleet Manager — node operations parity *(moved here from position 4 at 282 audit; may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
+47. **A3.** Multi-node operational readiness *(moved here from position 6 at 282 audit)*
+48. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
+49. **A5.** 2FA for admin accounts *(moved here from position 8 at 282 audit)*
+50. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
+51. **C3-deferred-concurrent.** Concurrent admin editing *(slim (b) refit at 282 audit; #32b. Note: session 281 was scheduled for the original (a)-scope plan but was never executed.)*
+52. **C3-deferred-exposure.** Accidental public exposure *(Path-A scope refit at 282 audit; #32c; depends on C3a)*
+53. **C3b.** Auto tax receipt email *(feature half lifted at 282 audit; prereq for C4)*
+54. **C3c.** Comp-tier polish + skip-Stripe-on-zero-total *(feature half lifted at 282 audit; prereq for C5)*
+55. **C4.** Donation-to-acknowledgment loop *(slim — depends on C3b)*
+56. **C5.** Event with everything *(slim — depends on C3c)*
+57. **D1.** Scale rehearsal
+58. **D2.** Compatibility cluster
+59. **D3.** Integration retest *(absolute last rehearsal per Rule 9)*
+60. **E13.** Help docs body content
+61. **E14.** Third-Party Licensing Compliance Audit
+62. **G2.** Importer Test-Fixture Generator — Cross-importer Pairs, Replay, Adversarial Dedup
+63. **D4.** Test suite review — cost & shape
+64. **F1.** On-Demand E2E — Donation / payment-flow integration depth pass
+65. **F2.** On-Demand E2E — Member portal self-service & contact-scoping security
+66. **F3.** On-Demand E2E — Permission / role-gate matrix
+67. **T1.** Code Review & Cleanup + Migration Squash *(terminal per Rule 10)*
 
 ── BETA 1 RELEASE ──
 
