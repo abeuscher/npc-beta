@@ -118,8 +118,11 @@ class MembershipCheckoutController extends Controller
 
         $isSubscription = in_array($tier->billing_interval, ['monthly', 'annual']);
 
+        $imageUrl  = StripeCheckoutService::defaultImageUrl('membership');
+        $imagesArr = $imageUrl !== null ? ['images' => [$imageUrl]] : [];
+
         try {
-            $checkout = new StripeCheckoutService();
+            $checkout = app(StripeCheckoutService::class);
 
             if ($isSubscription) {
                 $interval = $tier->billing_interval === 'annual' ? 'year' : 'month';
@@ -129,7 +132,7 @@ class MembershipCheckoutController extends Controller
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
-                            'product_data' => ['name' => $tier->name . ' Membership'],
+                            'product_data' => ['name' => $tier->name . ' Membership'] + $imagesArr,
                             'recurring'    => ['interval' => $interval],
                         ],
                         'quantity' => 1,
@@ -146,13 +149,14 @@ class MembershipCheckoutController extends Controller
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
-                            'product_data' => ['name' => $tier->name . ' Membership'],
+                            'product_data' => ['name' => $tier->name . ' Membership'] + $imagesArr,
                         ],
                         'quantity' => 1,
                     ]],
                     metadata: ['membership_id' => $membership->id],
                     successUrl: $successUrl,
                     cancelUrl: $cancelUrl,
+                    submitType: 'pay',
                 );
             }
         } catch (\Throwable $e) {

@@ -62,6 +62,17 @@ class CmsSettingsPage extends Page
             'default_content_template_post'    => SiteSetting::get('default_content_template_post', ''),
             'default_content_template_event'   => SiteSetting::get('default_content_template_event', ''),
             'noindex_global'  => SiteSetting::get('noindex_global', 'false') === 'true',
+            'stripe_checkout_submit_text'           => SiteSetting::get('stripe_checkout_submit_text', ''),
+            'stripe_checkout_after_submit_text'     => SiteSetting::get('stripe_checkout_after_submit_text', ''),
+            'stripe_checkout_terms_acceptance_text' => SiteSetting::get('stripe_checkout_terms_acceptance_text', ''),
+            'stripe_tos_url_configured'             => SiteSetting::get('stripe_tos_url_configured', 'false') === 'true',
+            'stripe_dashboard_branding_confirmed'   => SiteSetting::get('stripe_dashboard_branding_confirmed', 'false') === 'true',
+            'stripe_statement_descriptor'           => SiteSetting::get('stripe_statement_descriptor', ''),
+            'stripe_statement_descriptor_suffix'    => SiteSetting::get('stripe_statement_descriptor_suffix', ''),
+            'stripe_default_donation_image_upload'   => null,
+            'stripe_default_event_image_upload'      => null,
+            'stripe_default_product_image_upload'    => null,
+            'stripe_default_membership_image_upload' => null,
         ]);
     }
 
@@ -320,8 +331,110 @@ class CmsSettingsPage extends Page
 
                         $this->sectionSaveAction('image-sizes', 'Image Sizes')->columnSpanFull(),
                     ]),
+
+                Forms\Components\Section::make('Stripe Checkout — Branding')
+                    ->description('Copy strings, statement descriptor, and per-flow default images sent to Stripe Checkout. Logo, brand color, business name, support email, and Terms / Privacy URLs are configured in your Stripe Dashboard — see the help doc.')
+                    ->schema([
+                        Forms\Components\Toggle::make('stripe_dashboard_branding_confirmed')
+                            ->label('I have configured branding in my Stripe Dashboard')
+                            ->helperText('Flip this on after you have set logo, brand color, business name, support email, and (if applicable) Terms / Privacy URLs at https://dashboard.stripe.com/settings/branding and Public Details. Clears the matching item from the Onboarding Checklist.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('stripe_checkout_submit_text')
+                            ->label('Submit-button helper text')
+                            ->helperText('Plain text or limited Markdown ( **bold**, *italic*, [link](https://url) ). Renders above the Pay/Donate button on every Checkout session. Max 1200 characters.')
+                            ->maxLength(1200)
+                            ->rows(2)
+                            ->nullable()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('stripe_checkout_after_submit_text')
+                            ->label('Post-submit helper text')
+                            ->helperText('Renders briefly after the buyer submits, before redirect. Same Markdown rules. Max 1200 characters.')
+                            ->maxLength(1200)
+                            ->rows(2)
+                            ->nullable()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Toggle::make('stripe_tos_url_configured')
+                            ->label('I have configured Terms of Service and Privacy Policy URLs in Stripe Dashboard')
+                            ->helperText('Enable only after pasting both URLs into Stripe Dashboard → Settings → Public Details. Stripe will reject Checkout sessions if this is on without those URLs in place.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('stripe_checkout_terms_acceptance_text')
+                            ->label('Terms-of-service acceptance text')
+                            ->helperText('Optional copy beside the ToS checkbox. Only sent when the toggle above is on. Same Markdown rules. Max 1200 characters.')
+                            ->maxLength(1200)
+                            ->rows(2)
+                            ->nullable()
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('stripe_statement_descriptor')
+                            ->label('Statement descriptor (one-off charges)')
+                            ->helperText('Appears on the buyer\'s bank statement for one-off donations, event tickets, and product purchases. 5–22 characters, letters / numbers / spaces only — no punctuation. Leave blank to use the Stripe Account default. Recurring donations and paid memberships use the Stripe Account default regardless.')
+                            ->minLength(5)
+                            ->maxLength(22)
+                            ->regex('/^[A-Za-z0-9 ]*$/')
+                            ->validationMessages(['regex' => 'Only letters, numbers, and spaces are allowed.'])
+                            ->nullable()
+                            ->columnSpan(6),
+
+                        Forms\Components\TextInput::make('stripe_statement_descriptor_suffix')
+                            ->label('Statement descriptor suffix')
+                            ->helperText('Appended to your Stripe Account\'s default descriptor. Same character rules as the full descriptor.')
+                            ->maxLength(22)
+                            ->regex('/^[A-Za-z0-9 ]*$/')
+                            ->validationMessages(['regex' => 'Only letters, numbers, and spaces are allowed.'])
+                            ->nullable()
+                            ->columnSpan(6),
+
+                        Forms\Components\Placeholder::make('stripe_default_image_intro')
+                            ->label('Default Checkout images')
+                            ->content('Optional fallback images sent to Stripe Checkout as the line-item thumbnail. Events use the event\'s thumbnail when set; products use the product image when set; both fall back to the defaults below. Donations and memberships always use these defaults.')
+                            ->columnSpanFull(),
+
+                        $this->stripeBrandingImageBlock('donation', 'Donation default image'),
+                        $this->stripeBrandingImageBlock('event', 'Event default image (when no event thumbnail is set)'),
+                        $this->stripeBrandingImageBlock('product', 'Product default image (when no product image is set)'),
+                        $this->stripeBrandingImageBlock('membership', 'Membership default image'),
+
+                        $this->sectionSaveAction('stripe-checkout-branding', 'Stripe Checkout Branding')->columnSpanFull(),
+                    ])
+                    ->columns(12),
             ])
             ->statePath('data');
+    }
+
+    private function stripeBrandingImageBlock(string $flow, string $label): Forms\Components\Group
+    {
+        $settingKey  = "stripe_default_{$flow}_image";
+        $uploadKey   = "stripe_default_{$flow}_image_upload";
+
+        return Forms\Components\Group::make([
+            Forms\Components\Placeholder::make("{$settingKey}_preview")
+                ->label($label)
+                ->content(function () use ($settingKey) {
+                    $path = SiteSetting::get($settingKey, '');
+                    if (! $path) {
+                        return 'No image set.';
+                    }
+
+                    return new \Illuminate\Support\HtmlString(
+                        '<img src="' . e(\Illuminate\Support\Facades\Storage::disk('public')->url($path)) . '" style="max-height:5rem;">'
+                    );
+                })
+                ->columnSpanFull(),
+
+            Forms\Components\FileUpload::make($uploadKey)
+                ->label('Upload')
+                ->nullable()
+                ->disk('public')
+                ->directory('site/stripe-branding')
+                ->visibility('public')
+                ->image()
+                ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                ->columnSpanFull(),
+        ])->columnSpan(6);
     }
 
     protected function getFormActions(): array
@@ -398,10 +511,31 @@ class CmsSettingsPage extends Page
         }
         \Illuminate\Support\Facades\Cache::forget('site_setting:image_breakpoints');
 
+        $this->persistStripeCheckoutBranding($data);
+
         Notification::make()
             ->title('Settings saved')
             ->success()
             ->send();
+    }
+
+    private function persistStripeCheckoutBranding(array $data): void
+    {
+        SiteSetting::set('stripe_dashboard_branding_confirmed', ! empty($data['stripe_dashboard_branding_confirmed']) ? 'true' : 'false');
+        SiteSetting::set('stripe_checkout_submit_text', $data['stripe_checkout_submit_text'] ?? '');
+        SiteSetting::set('stripe_checkout_after_submit_text', $data['stripe_checkout_after_submit_text'] ?? '');
+        SiteSetting::set('stripe_checkout_terms_acceptance_text', $data['stripe_checkout_terms_acceptance_text'] ?? '');
+        SiteSetting::set('stripe_tos_url_configured', ! empty($data['stripe_tos_url_configured']) ? 'true' : 'false');
+        SiteSetting::set('stripe_statement_descriptor', $data['stripe_statement_descriptor'] ?? '');
+        SiteSetting::set('stripe_statement_descriptor_suffix', $data['stripe_statement_descriptor_suffix'] ?? '');
+
+        foreach (['donation', 'event', 'product', 'membership'] as $flow) {
+            $uploadKey = "stripe_default_{$flow}_image_upload";
+            $settingKey = "stripe_default_{$flow}_image";
+            if (! empty($data[$uploadKey])) {
+                SiteSetting::set($settingKey, $data[$uploadKey]);
+            }
+        }
     }
 
     protected function persistSection(string $id): void
@@ -453,6 +587,9 @@ class CmsSettingsPage extends Page
                 if (! empty($data['site_default_og_image'])) {
                     SiteSetting::set('site_default_og_image', $data['site_default_og_image']);
                 }
+            })(),
+            'stripe-checkout-branding' => (function () use ($data) {
+                $this->persistStripeCheckoutBranding($data);
             })(),
             'image-sizes' => (function () use ($data) {
                 $breakpoints = collect($data['image_breakpoints'] ?? [])

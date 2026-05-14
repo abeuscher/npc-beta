@@ -804,6 +804,8 @@ Allow admins to group and arrange custom contact fields into labelled sections w
 
 All five starter pages in a published state. Default seed includes one sample event and one sample blog post so all major features are demonstrated on a fresh install. Add an install option to skip default content for users who prefer a blank slate.
 
+**Privacy Policy + Terms of Use as default starter pages** *(lifted at session 283 — must land before Public Website Complete milestone closes)*. Both pages seed in published state with placeholder body copy that's clearly marked for the operator to fill in (boilerplate + "[ORG NAME]" / "[CONTACT EMAIL]" tokens). Both excluded from the main site navigation. Both linked from the footer navigation that the E16 header/footer overhaul is building. Rationale surfaced during session 283 (Stripe Checkout Branding): Stripe Dashboard's Public Details requires a Terms of Service URL and a Privacy Policy URL for the branded checkout experience to render correctly; if those pages don't exist on a fresh install the operator has no URL to paste. Pairs naturally with E16 since the footer-nav structure lands there.
+
 ### Installer
 
 Guided first-run setup: database connection, mail provider configuration, admin user creation, initial seed. Must be fast enough to run live during a sales pitch — a prospect-facing demo that ends with their own configured install at a fresh URL.

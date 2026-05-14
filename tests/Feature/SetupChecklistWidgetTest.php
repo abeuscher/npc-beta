@@ -106,6 +106,7 @@ it('widget template — health-check mode shows the all-clear copy when nothing 
     \App\Models\Fund::factory()->create();
     SiteSetting::set('stripe_publishable_key', 'pk_live_x');
     SiteSetting::set('stripe_secret_key', 'sk_live_y');
+    SiteSetting::set('stripe_dashboard_branding_confirmed', 'true');
     SiteSetting::set('qb_realm_id', '9341454300000000');
     SiteSetting::set('mailchimp_api_key', 'abc-us14');
     SiteSetting::set('admin_logo_path', 'site/logo.png');

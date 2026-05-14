@@ -91,17 +91,24 @@ class EventRegistrationQuantities
      *
      * @return array<int, array<string, mixed>>
      */
-    public function stripeLineItems(string $eventTitle): array
+    public function stripeLineItems(string $eventTitle, ?string $imageUrl = null): array
     {
         return array_map(
-            static fn ($line) => [
-                'price_data' => [
-                    'currency'     => 'usd',
-                    'unit_amount'  => (int) round((float) $line['tier']->price * 100),
-                    'product_data' => ['name' => $eventTitle . ' — ' . $line['tier']->name],
-                ],
-                'quantity' => (int) $line['quantity'],
-            ],
+            static function ($line) use ($eventTitle, $imageUrl) {
+                $productData = ['name' => $eventTitle . ' — ' . $line['tier']->name];
+                if ($imageUrl !== null && $imageUrl !== '') {
+                    $productData['images'] = [$imageUrl];
+                }
+
+                return [
+                    'price_data' => [
+                        'currency'     => 'usd',
+                        'unit_amount'  => (int) round((float) $line['tier']->price * 100),
+                        'product_data' => $productData,
+                    ],
+                    'quantity' => (int) $line['quantity'],
+                ];
+            },
             $this->lines,
         );
     }

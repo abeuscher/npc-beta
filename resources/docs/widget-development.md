@@ -922,3 +922,30 @@ Session 162 renamed the `style_config` column to `appearance_config` and restruc
 | `events_listing` | — | — | Same dead-reference cleanup as `blog_listing` |
 
 Removed keys are now provided by the universal Appearance layer (`appearance_config`). Renamed keys were disambiguated to avoid collision with the universal layer's similarly-named controls.
+
+---
+
+## Stripe Checkout Integration
+
+If your widget posts to a custom checkout endpoint (rather than the built-in Donation Form, Event Registration, Product Checkout, or Membership Form widgets), here's how to participate in the site-wide Stripe Checkout branding.
+
+**Use the shared service.** All Stripe Checkout sessions across the app route through `App\Services\StripeCheckoutService::createSession()`. Call it from your endpoint instead of constructing a `Stripe\StripeClient` directly. The service applies the operator's configured branding fields (`custom_text` strings, `consent_collection.terms_of_service`, `payment_intent_data.statement_descriptor[_suffix]`), the configured payment-method types, and the subscription-mode payment-method intersection automatically.
+
+**What you pass in vs. what the service adds.**
+
+| You pass | Service adds automatically |
+|---|---|
+| `lineItems` — array of Stripe line items | `payment_method_types` (from `SiteSetting('stripe_payment_method_types')`) |
+| `metadata` — your own webhook-routing keys | `custom_text` (from CMS Settings → Stripe Checkout — Branding) |
+| `successUrl`, `cancelUrl` | `payment_intent_data.statement_descriptor[_suffix]` (payment mode only) |
+| `mode` — `'payment'` (default) or `'subscription'` | `consent_collection.terms_of_service` (when the operator has confirmed ToS URL is set in Dashboard) |
+| `submitType` — `'donate' \| 'pay' \| 'book' \| 'subscribe' \| 'auto'` (payment mode only; ignored on subscription) | |
+| `extra` — any additional top-level Stripe params (e.g. `customer_creation`) | |
+
+**Line-item images.** Stripe renders an optional ~80×80 thumbnail beside each line item. Build line items with `price_data.product_data.images` set to an array of one publicly-reachable URL. To respect the operator's per-flow default image, call `StripeCheckoutService::defaultImageUrl($flow)` where `$flow` is one of `'donation' | 'event' | 'product' | 'membership'`. If your widget's domain object has a per-record image (e.g. a custom `event_thumbnail` collection), prefer that and fall back to the default — that's the pattern the built-in checkouts follow.
+
+**What you cannot override per-widget.** The branding fields the service adds (custom_text, statement descriptors, ToS consent) are site-wide by design — the operator owns them. Don't try to pass `custom_text` or `payment_intent_data` through `extra` to override them; that path will work mechanically but breaks the operator's expectation that one branding configuration applies to every Checkout session.
+
+**Format constraints to surface to your widget author UI.** If your widget exposes any operator-facing copy that ends up in `custom_text` or as a line-item name/description, mirror Stripe's constraints in your inspector helper text: plain text or limited Markdown (`**bold**`, `*italic*`, `[link](https://url)`); no HTML; max 1200 characters per `custom_text` slot. Statement descriptors are 5–22 characters, alphanumeric + spaces only, no punctuation.
+
+**See also:** the operator-facing [Stripe Checkout Branding](stripe-checkout-branding.md) help doc covers the Dashboard half (logo, brand color, business name, support email, ToS / Privacy URLs, account-level subscription statement descriptor) — work the operator does outside this app.

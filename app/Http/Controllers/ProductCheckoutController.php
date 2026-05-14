@@ -34,6 +34,10 @@ class ProductCheckoutController extends Controller
             : $referer . '?checkout=success';
         $cancelUrl  = $referer . '?checkout=cancelled';
 
+        $productImage = $product->getFirstMediaUrl('product_image')
+            ?: StripeCheckoutService::defaultImageUrl('product');
+        $imagesArr = filled($productImage) ? ['images' => [$productImage]] : [];
+
         $lineItem = $price->stripe_price_id
             ? ['price' => $price->stripe_price_id, 'quantity' => 1]
             : [
@@ -42,17 +46,18 @@ class ProductCheckoutController extends Controller
                     'unit_amount'  => 0,
                     'product_data' => [
                         'name' => $product->name . ' — ' . $price->label,
-                    ],
+                    ] + $imagesArr,
                 ],
                 'quantity' => 1,
             ];
 
         try {
-            $session = (new StripeCheckoutService())->createSession(
+            $session = app(StripeCheckoutService::class)->createSession(
                 lineItems: [$lineItem],
                 metadata: ['product_price_id' => $price->id],
                 successUrl: $successUrl,
                 cancelUrl: $cancelUrl,
+                submitType: 'pay',
             );
         } catch (\Throwable $e) {
             return back()->withErrors(['checkout' => 'Could not initiate checkout. Please try again.']);

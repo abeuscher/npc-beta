@@ -38,6 +38,7 @@ class SetupChecklist
             $this->checkMailDriverLive(),
             $this->checkDefaultFund(),
             $this->checkStripe(),
+            $this->checkStripeDashboardBranding(),
             $this->checkQuickBooks(),
             $this->checkMailchimp(),
             $this->checkLogo(),
@@ -193,6 +194,21 @@ class SetupChecklist
             'status'        => $status,
             'configure_url' => FinanceSettingsPage::getUrl(),
             'message'       => $message,
+        ];
+    }
+
+    private function checkStripeDashboardBranding(): array
+    {
+        $confirmed = SiteSetting::get('stripe_dashboard_branding_confirmed', 'false') === 'true';
+
+        return [
+            'key'           => 'stripe_dashboard_branding',
+            'title'         => 'Stripe Dashboard branding',
+            'description'   => 'Logo, brand color, business name, support email, and Terms / Privacy URLs are set in your Stripe Dashboard so the hosted Checkout pages match your organization. Mark this complete on the CMS Settings → Stripe Checkout — Branding section after configuring.',
+            'category'      => self::CATEGORY_OPTIONAL,
+            'status'        => $confirmed ? self::STATUS_DONE : self::STATUS_OPTIONAL,
+            'configure_url' => CmsSettingsPage::getUrl(),
+            'message'       => null,
         ];
     }
 

@@ -43,8 +43,11 @@ class DonationCheckoutController extends Controller
 
         $amountCents = (int) round($validated['amount'] * 100);
 
+        $imageUrl  = StripeCheckoutService::defaultImageUrl('donation');
+        $imagesArr = $imageUrl !== null ? ['images' => [$imageUrl]] : [];
+
         try {
-            $checkout = new StripeCheckoutService();
+            $checkout = app(StripeCheckoutService::class);
 
             if ($validated['type'] === 'one_off') {
                 $session = $checkout->createSession(
@@ -52,13 +55,14 @@ class DonationCheckoutController extends Controller
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
-                            'product_data' => ['name' => 'Donation'],
+                            'product_data' => ['name' => 'Donation'] + $imagesArr,
                         ],
                         'quantity' => 1,
                     ]],
                     metadata: ['donation_id' => $donation->id],
                     successUrl: $successUrl,
                     cancelUrl: $cancelUrl,
+                    submitType: 'donate',
                 );
             } else {
                 $interval = $validated['frequency'] === 'annual' ? 'year' : 'month';
@@ -68,7 +72,7 @@ class DonationCheckoutController extends Controller
                         'price_data' => [
                             'currency'     => 'usd',
                             'unit_amount'  => $amountCents,
-                            'product_data' => ['name' => 'Recurring Donation'],
+                            'product_data' => ['name' => 'Recurring Donation'] + $imagesArr,
                             'recurring'    => ['interval' => $interval],
                         ],
                         'quantity' => 1,

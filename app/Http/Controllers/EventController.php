@@ -121,12 +121,16 @@ class EventController extends Controller
             ]);
         }
 
+        $eventImage = $event->getFirstMediaUrl('event_thumbnail')
+            ?: StripeCheckoutService::defaultImageUrl('event');
+
         try {
-            $session = (new StripeCheckoutService())->createSession(
-                lineItems: $quantities->stripeLineItems($event->title),
+            $session = app(StripeCheckoutService::class)->createSession(
+                lineItems: $quantities->stripeLineItems($event->title, $eventImage ?: null),
                 metadata: ['event_registration_checkout' => '1'],
                 successUrl: $eventPageUrl . '?registration=success',
                 cancelUrl: $eventPageUrl . '?registration=cancelled',
+                submitType: 'pay',
             );
         } catch (\Throwable $e) {
             foreach ($registrations as $registration) {

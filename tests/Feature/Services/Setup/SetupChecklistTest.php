@@ -42,8 +42,8 @@ it('returns items ordered: required_to_boot → required_for_feature → optiona
     expect($categories)->toBe($sortedCopy);
 });
 
-it('returns 14 items', function () {
-    expect((new SetupChecklist())->items())->toHaveCount(14);
+it('returns 15 items', function () {
+    expect((new SetupChecklist())->items())->toHaveCount(15);
 });
 
 it('checkAdminUser — done when an active super_admin exists', function () {
