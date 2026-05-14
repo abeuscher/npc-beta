@@ -408,11 +408,9 @@ Bring concrete examples to scope: bar_chart's many `chart_config` knobs, event_c
 
 ---
 
-### Stripe Checkout Branding *(stub — pre-Beta 1, standalone session)*
+### Stripe Checkout Branding *(complete — closed at session 283)*
 
-The product checkout, donation checkout, event checkout, and membership checkout flows all redirect to Stripe-hosted checkout pages today. These pages carry minimal CRM-side branding — Stripe controls the surface, with limited customization available via the Stripe Dashboard (logo, primary color, business name) and via API parameters at checkout-session creation time. The ask: figure out how much additional branding we can inject given Stripe's API constraints, then implement it consistently across all four checkout flows.
-
-Touch points: `ProductCheckoutController`, `DonationCheckoutController`, `EventCheckoutController`, `MembershipCheckoutController`, plus the Stripe-account-level settings the operator configures. Possible levers: `custom_text` on session creation (header / submit / shipping-address / terms), `payment_method_options.card.statement_descriptor`, `customer_update` for stronger customer-facing identity, line-item description/image overrides. Standalone session because it requires Stripe-API exploration to know what is actually possible before committing scope. Out of scope: building a Stripe-account-onboarding wizard (post-Beta-1 in the Integration Setup Wizards stub).
+Closed at session 283. Audit at session start found the shared helper already lifted (all five Stripe Checkout call sites — Donation / Product / Membership / public Event / portal Event — already route through `StripeCheckoutService`); extended that service rather than building a new one. Per-flow `submit_type`, `custom_text` strings, `payment_intent_data.statement_descriptor[_suffix]` (payment mode only — subscription mode inherits from Stripe Account default per Stripe's API constraints), `consent_collection.terms_of_service` (gated on operator confirming Dashboard ToS URL), per-record / per-flow line-item images. Operator UI on `CmsSettingsPage` (gated by `manage_cms_settings`); manual-acknowledgement Onboarding Checklist item; operator help doc at `resources/docs/stripe-checkout-branding.md` walking both halves (Dashboard + in-app); widget-development.md addition for widget authors. Deploy-server tested with live Stripe. See `sessions/release-plan.md` § E4 (✅) and `sessions/283. Stripe Checkout Branding — Log.md`.
 
 ---
 

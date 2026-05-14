@@ -284,6 +284,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 279 | Multi-Quantity Event Ticket Purchase |
 | 280 | Permission Audit |
 | 282 | Phase C + D Audit + Planning-Doc Cleanup |
+| 283 | Stripe Checkout Branding |
 
 ---
 

@@ -2,6 +2,12 @@
 
 The canonical planning + history doc for the Public Marketing Website track — building the five-page nonprofitcrm.com marketing site inside the product's own page builder, dogfooding the CMS surface that nonprofit customers will use.
 
+## What this is, in plain terms
+
+We are designing a marketing site **for the product**. We are using a small set of well-known B2B SaaS marketing pages as **structural design guides** — lifting their basic layouts and section rhythm, assuming standard asset delivery, using FPO (placeholder) images from the sample-image library, and applying that design pattern to **the supplied copy**.
+
+The brief explicitly limits the borrow to structure, not surface: section-as-slab layouts, alternating background bands, generous whitespace, restrained type scale, no animations. Surface decoration (custom illustration, marketing-bright saturation, abstract metaphor imagery) is the opposite of where this site lands. Reference images in `sessions/public website/references/` are structural specs only. Real photography (staged-stock-photo with the founder as subject) lands post-track.
+
 This is a **content + visual-build track**, not an architectural arc. Distinct in shape from Widget Primitive and Fleet Manager Agent (both code-architecture tracks): the deliverable is page JSON exports, screenshots, and a gap report. Code only changes when the gap report surfaces a forcing function (missing widget, missing button style, missing config option) and the user approves the lift — those become independent follow-on sessions outside this track.
 
 This doc carries three things:
@@ -89,7 +95,9 @@ Why home first: the brief calls out "may need structural cleanup to align with c
 
 ### Phase 2 — Pricing build-out + About extend *(estimated 1 session)*
 
-Both are extensions of pages that already exist in the system. Pricing is partial; complete against the structure in `copy.md`. About expands on the "This is not a SaaS company" theme and links to the two in-product demo LPs (`/my-nonprofit`, `/my-nonprofit-workshop`).
+Both are extensions of pages that already exist in the system. Pricing is partial in the system AND copy-incomplete in places — `copy.md` carries the structural spec but as the page is built against the SaaS-pattern references, gaps in copy may surface (band heading mismatches, missing supporting sentences, transitions between bands that don't read as drafted). About expands on the "This is not a SaaS company" theme and links to the two in-product demo LPs (`/my-nonprofit`, `/my-nonprofit-workshop`).
+
+**Copy supplementation discipline.** When the build hits a copy gap, the agent does **not** invent copy. Two paths: (a) flag the gap in the gap report with a recommendation for what kind of copy is needed and let the user supply it before the page closes, or (b) if the gap is small and editorial (a connecting sentence, a heading variant), surface the proposed wording to the user inline and proceed only on approval. Voice protection rule applies: `copy.md` is the canonical voice; any supplementation matches that voice.
 
 Pre-work: export current Pricing and About from the admin into the working folder as `existing-pricing-page-export.json` and `existing-about-page-export.json` (the brief calls these out as required inputs). The user runs the export action; the agent treats those files as ground truth.
 
@@ -97,9 +105,11 @@ Both pages absorb gap report rows as discovered.
 
 ### Phase 3 — Contact + Demo *(estimated 1 session)*
 
-Both greenfield. Contact is deliberately simple (hero band + email band + optional "what I respond to fastest" band). Demo is the conversion point and includes a Form widget configured for demo-access intake (name / email / interest / message — all optional per copy).
+Both greenfield — neither page exists in the system yet. Contact is deliberately simple (hero band + email band + optional "what I respond to fastest" band). **Demo is the CTA destination for every marketing CTA across all five pages** — the conversion linchpin — and it does not yet exist as a published page in the CMS. Built fresh from `copy.md` as the starting point.
 
-Demo's form-widget configuration is the most concrete piece of "real product configuration" in the track — it tests whether the existing Form widget can express the all-fields-optional shape with a helper-text underneath the email field, or whether that surfaces a gap.
+Demo includes a Form widget configured for demo-access intake (name / email / interest / message — all optional per copy). The form-widget configuration is the most concrete piece of "real product configuration" in the track — it tests whether the existing Form widget can express the all-fields-optional shape with a helper-text underneath the email field, or whether that surfaces a gap.
+
+**Copy supplementation likely.** Demo is greenfield, and `copy.md`'s Demo section may not survive contact with the SaaS-pattern reference layouts intact — the structural shape of a "form + reassurance + privacy" page, when laid out against the references, may want supporting copy that the doc doesn't carry (transition lines between bands, micro-copy near the form fields beyond the email helper, a closing line near the privacy band). Same supplementation discipline as Phase 2: the agent does not invent — flag in the gap report or surface inline for user approval.
 
 ### Phase 4 — Page-capture harness + screenshots + close-out *(estimated 1 session)*
 
