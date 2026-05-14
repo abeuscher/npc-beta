@@ -184,3 +184,47 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Quill rich-text list rendering
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Quill v2 emits every list as <ol>, distinguishing bullet vs ordered via a
+// data-list attribute on each <li>. Without these rules, bullet-marked items
+// still inherit the parent <ol>'s numeric markers and the result is a
+// double-rendered marker (number under bullet). Below: suppress the native
+// marker whenever data-list is present and draw the Quill-style marker via
+// ::before. Lists without data-list fall through to native browser markers.
+.np-site {
+    ol:has(li[data-list]) {
+        list-style: none;
+        counter-reset: quill-list;
+        padding-left: 1.5rem;
+    }
+
+    li[data-list] {
+        list-style: none;
+    }
+
+    li[data-list]::marker {
+        content: "";
+    }
+
+    li[data-list="bullet"]::before {
+        content: "•";
+        display: inline-block;
+        width: 1.5rem;
+        margin-left: -1.5rem;
+    }
+
+    li[data-list="ordered"] {
+        counter-increment: quill-list;
+    }
+
+    li[data-list="ordered"]::before {
+        content: counter(quill-list) ". ";
+        display: inline-block;
+        width: 1.5rem;
+        margin-left: -1.5rem;
+    }
+}

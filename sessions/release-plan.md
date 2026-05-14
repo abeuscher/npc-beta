@@ -447,8 +447,24 @@ Four-phase track building the five-page nonprofitcrm.com marketing site inside t
 
 - **gate:** release
 - **prerequisites:** none; sequenced before E5 / E6 / E7 / E8 so the audit output informs their design choices
-- **success criterion:** System-understanding summary written (type scales, button styles, appearance config schema, available widget inventory, sample image library). Existing home page export edited to align with the brief's section-band / padding / appearance-config-as-text-color conventions, re-imported, screenshot captured. `gap-report.md` scaffolded with first findings.
-- **artifact:** the audit summary + cleaned-up `home.json` + first gap-report rows.
+- **success criterion** *(closed at session 284)*: System-understanding summary written (type scales, button styles, appearance config schema, available widget inventory, sample image library, page-JSON import mechanism). Existing home page export edited to align with the brief's section-band / padding / appearance-config-as-text-color conventions, re-imported (0 warnings; 6 root widgets + 3 layouts + 7 nested), informal screenshot reviewed by the user. `gap-report.md` scaffolded with ten initial rows (G1 layout `appearance_config` round-trip; G2 Text widget CTAs; G3 night-mode button variants — interim + long-term; G4–G14 spanning misc UX gaps surfaced during cleanup + reference comparison). Two homepage iterations applied on top: structural cleanup pass and a logo-contrast / button-contrast / Hero-CTA-alignment fix. Mid-session: footer redesigned (`#d4d4f2` band, centered nav + copyright); chrome-wrapper bug fixed in `public.blade.php` (chrome HTML now wrapped in `<header>` / `<footer>` to match the fallback partials so the template `*_bg_color` rules find a target); Quill bullet-bug fixed (HtmlSanitizer + public CSS); `homepage-layout-spec.md` authored and evaluated by the agent across two revisions. Fast Pest 2390 / 0 sequential preserved.
+- **artifact:** the audit summary + cleaned-up `home.json` + 10-row gap report + `homepage-layout-spec.md`. **Closed at session 284.**
+- **estimated time cost:** 1 session.
+
+##### 285. Public Marketing Website — CMS Fixes Before Home Rebuild *(lifted-gap session, outside the track's phase count)*
+
+- **gate:** release
+- **prerequisites:** PMW1 (gap-report rows G1, G2, G3-interim path, G13, G14 surfaced + an Image-widget capability audit deferred to session start)
+- **success criterion:** Five contained fixes that unblock the home rebuild at session 286. (1) Image-widget audit at session start — confirm clean rendering at 4:3, 1:1, 4:5 aspect ratios; if a ratio is broken, surface to the user for in-session vs deferred decision. (2) G1 — `ContentExporter::serializeLayout` emits layout `appearance_config`; `ContentImporter::hydrateLayout` passes it through; round-trip test added. (3) G2 — Text widget gains a `ctas` schema field mirroring Hero's CTA shape; template renders CTAs below rich-text content; rendering test added. (4) G3 interim — one new ghost-on-dark button variant added to `button_styles` SiteSetting defaults, exposed in DesignSystemPage UI, available in Hero/Text CTA style picker; public CSS bundle rebuilt. (5) G13 / G14 — typography defaults tuned at the Theme page (H1 ≈ 3.5rem, heading margin-bottoms 1.5 / 1.25 / 1rem, paragraph margin-bottom 1rem; values confirmed with the user at session start). Fast Pest at 284-close baseline (2390 / 0) plus +5 to +10 new tests for G1 / G2 / G3.
+- **artifact:** the four code-side fixes (exporter / importer / widget definition / sanitizer-and-button-style additions) + typography SiteSetting update + 285's session log + gap-report rows G1 / G2 / G3-interim / G13 / G14 marked ✅ resolved.
+- **estimated time cost:** 1 session.
+
+##### 286. Public Marketing Website — Home Layout Rebuild
+
+- **gate:** release
+- **prerequisites:** PMW1; session 285 (CMS fixes that the layout spec assumes)
+- **success criterion:** `sessions/public website/home.json` rebuilt against `sessions/public website/homepage-layout-spec.md` — eight bands per the spec, with images placed in five cells (placeholders from the sample image library, labeled for eventual photo swap), bands using the new ghost-on-dark variant where the spec calls for dark-band CTAs, typography rendering at the tuned scale, and layout-level backgrounds round-tripping correctly through export / import. Re-imported into the live local DB; informal screenshot reviewed by the user. Gap report extended with any new rows the rebuild surfaces.
+- **artifact:** updated `home.json` + screenshot + extended gap report. Validates the spec-driven approach that will repeat for About / Pricing / Contact / Demo in PMW2 / PMW3 / PMW4.
 - **estimated time cost:** 1 session.
 
 ##### PMW2. Public Marketing Website — Pricing build-out + About extend
@@ -578,8 +594,10 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 ### Public Website Complete — milestone work *(sequenced first per Rule 12; lifted at 282 audit; PMW track interleaved at 283 mid-session)*
 
 33. **E4.** Stripe Checkout Branding *(closed at session 283; shared helper already lifted at audit start so the work was extension not lifting; five call sites wired with per-flow `submit_type` + per-record / per-flow images; CmsSettingsPage Branding section + SetupChecklist item + operator help doc + widget-dev-doc integration section; ten new SiteSetting keys; deploy-server tested with live Stripe; fast Pest 2390 / 0 sequential, +19; session also lifted the Public Marketing Website track mid-session per the 4-phase plan in `sessions/tracks/public-marketing-website.md`)* ✅
-34. **PMW1.** Public Marketing Website — Audit + Home cleanup *(track lifted at 283 mid-session; sequenced before E5–E8 so its audit output informs their design choices)*
-35. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
+34. **PMW1.** Public Marketing Website — Audit + Home cleanup *(closed at session 284; audit summary + cleaned home.json + 10-row gap report + homepage-layout-spec.md authored in working folder; mid-session bugs lifted: chrome-wrapper missing `<header>` / `<footer>` in `public.blade.php` fixed; Quill bullet-render bug fixed in HtmlSanitizer + public SCSS; fast Pest 2390 / 0 preserved)* ✅
+34a. **285.** Public Marketing Website — CMS Fixes Before Home Rebuild *(lifted-gap session sequenced between PMW1 and 286; lifts G1 layout `appearance_config` round-trip + G2 Text widget CTAs + G3-interim ghost-on-dark variant + G13 / G14 typography tuning + Image-widget audit; outside the track's phase count per gap-resolution discipline)*
+34b. **286.** Public Marketing Website — Home Layout Rebuild *(rebuilds home.json against `sessions/public website/homepage-layout-spec.md` using the CMS surface that lands at 285; spec-driven approach pattern-tested here for the four pages that follow)*
+35. **E5.** Mobile Type Scaling *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit + 285 typography tuning)*
 36. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
 37. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
 38. **E8.** UI/UX Sprint

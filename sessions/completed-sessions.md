@@ -285,6 +285,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 280 | Permission Audit |
 | 282 | Phase C + D Audit + Planning-Doc Cleanup |
 | 283 | Stripe Checkout Branding |
+| 284 | Public Marketing Website — Audit + Home Cleanup |
 
 ---
 

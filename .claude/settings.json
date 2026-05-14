@@ -337,7 +337,11 @@
       "Bash(ls -la \"/mnt/c/Users/Al/Desktop/files\" 2>&1)",
       "Read(//mnt/c/Users/Al/Desktop/files/**)",
       "Bash(grep -n \"^## \\\\|^---$\\\\|We are about to begin\" /home/al/nonprofitcrm/sessions/284. base-prompt.md)",
-      "Bash(grep -n \"^## \\\\|^---$\\\\|We are about to begin\" \"/home/al/nonprofitcrm/sessions/284. base-prompt.md\")"
+      "Bash(grep -n \"^## \\\\|^---$\\\\|We are about to begin\" \"/home/al/nonprofitcrm/sessions/284. base-prompt.md\")",
+      "Bash(python3 -c \"import json; d = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Valid JSON. format_version:', d['format_version'], 'page count:', len\\(d['payload']['pages']\\), 'widget count:', len\\(d['payload']['pages'][0]['widgets']\\)\\)\")",
+      "Bash(python3 -c \"import json; d = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Valid JSON. format_version:', d['format_version'], 'page count:', len\\(d['payload']['pages']\\), 'widget+layout blocks:', len\\(d['payload']['pages'][0]['widgets']\\)\\); print\\('Block labels in order:'\\); [print\\(' ', i, w.get\\('label', '?'\\), '[' + w.get\\('type', '?'\\) + ']'\\) for i, w in enumerate\\(d['payload']['pages'][0]['widgets']\\)]\")",
+      "Bash(curl -sk https://localhost/)",
+      "Bash(python3)"
     ],
     "deny": [],
     "additionalDirectories": [

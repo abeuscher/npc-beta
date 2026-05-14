@@ -22,13 +22,15 @@ When a phase closes, its retrospective lands here and its release-plan position 
 
 ## Status snapshot
 
-**Last update:** 2026-05-13 (track lifted at session 283 close-window, before E5).
+**Last update:** 2026-05-14 (PMW1 closed at session 284; sessions 285 and 286 queued before PMW2).
 
-**State:** Planning. Brief, copy, references, and one canonical export landed in `sessions/public website/` from an outside-agent collaboration. No phase has run.
+**State:** PMW1 closed. The audit summary, cleaned home.json, gap report (10 rows), and a layout spec authored for the home page (`sessions/public website/homepage-layout-spec.md`) are in the working folder. Two follow-on sessions are queued before PMW2 begins: 285 lifts the four CMS-side blockers PMW1 surfaced (G1 layout `appearance_config` round-trip; G2 Text widget CTAs; G3 ghost-on-dark button variant; G13 / G14 typography tuning) plus an Image-widget audit; 286 rebuilds the home against the layout spec using the CMS surface that lands at 285. Both 285 and 286 sit between PMW1 and the E-series tuning sessions so their output informs E5 / E6 / E7 / E8 design.
 
 **Phase status:**
 
-- **Phase 1 — Audit + Home cleanup.** Not started. Sequenced first because the audit output (type scales, button styles, appearance config inventory, available widgets) is load-bearing for E5 / E6 / E7 design choices.
+- **Phase 1 — Audit + Home cleanup.** ✅ Closed at session 284. Audit summary + structurally cleaned home + first 10 gap-report rows landed.
+- **Session 285 — CMS Fixes Before Home Rebuild.** Queued. Lifted-gap session (outside the track's phase count per gap-resolution discipline). Lifts G1 / G2 / G3-interim / G13 / G14 from PMW1's gap report.
+- **Session 286 — Home Layout Rebuild.** Queued. Rebuilds the home against the layout spec at `sessions/public website/homepage-layout-spec.md` using the CMS surface that lands at 285. The layout spec doubles as the pattern test for the spec-driven approach that will repeat for About / Pricing / Contact / Demo in later phases.
 - **Phase 2 — Pricing build-out + About extend.** Not started.
 - **Phase 3 — Contact + Demo (greenfield).** Not started.
 - **Phase 4 — Page-capture harness + screenshots + build summary.** Not started.

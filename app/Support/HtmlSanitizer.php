@@ -35,6 +35,7 @@ final class HtmlSanitizer
         'img'  => ['src', 'alt', 'width', 'height', 'style', 'class'],
         'svg'  => ['xmlns', 'viewbox', 'fill', 'stroke', 'stroke-width', 'aria-hidden'],
         'path' => ['d', 'stroke-linecap', 'stroke-linejoin', 'fill', 'stroke', 'stroke-width'],
+        'li'   => ['class', 'data-list'],
     ];
 
     public static function sanitize(string $html): string

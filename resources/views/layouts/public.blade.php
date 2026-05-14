@@ -216,7 +216,7 @@
         @if (view()->exists('custom.header'))
             @include('custom.header')
         @elseif ($__chromeHeader)
-            {!! $__chromeHeader['html'] !!}
+            <header class="site-header">{!! $__chromeHeader['html'] !!}</header>
         @else
             @include('components.site-header')
         @endif
@@ -229,7 +229,7 @@
     @if (view()->exists('custom.footer'))
         @include('custom.footer')
     @elseif ($__chromeFooter)
-        {!! $__chromeFooter['html'] !!}
+        <footer class="site-footer">{!! $__chromeFooter['html'] !!}</footer>
     @else
         @include('components.site-footer')
     @endif
