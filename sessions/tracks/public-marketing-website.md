@@ -154,6 +154,8 @@ These are decided. Track does not re-decide them per page.
 
 **CTAs.** Every marketing CTA routes to `/demo`. Exceptions: "See the Code" → public GitHub repo; "Email me" → `mailto:` placeholder.
 
+**Authority hierarchy** *(per brief)*. When sources conflict: **(1)** existing exported pages in the system are ground truth for what the system actually produces — preserve their structure when extending; **(2)** written copy in `copy.md` is the words — do not paraphrase; **(3)** reference images are structural specs only — section ordering, column counts, padding rhythm, not color / font / imagery style; **(4)** the agent's own design instinct is the last resort — substantive choices made at this level are flagged as gaps for review.
+
 ---
 
 ## Gap-resolution discipline
