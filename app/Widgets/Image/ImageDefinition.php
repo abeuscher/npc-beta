@@ -37,20 +37,32 @@ class ImageDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'image',      'type' => 'image',  'label' => 'Image', 'group' => 'content'],
-            ['key' => 'alt_text',   'type' => 'text',   'label' => 'Alt text', 'group' => 'content'],
-            ['key' => 'object_fit', 'type' => 'select', 'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain'], 'group' => 'appearance'],
-            ['key' => 'link_url',   'type' => 'url',    'label' => 'Link URL', 'group' => 'content'],
+            ['key' => 'image',        'type' => 'image',  'label' => 'Image', 'group' => 'content'],
+            ['key' => 'alt_text',     'type' => 'text',   'label' => 'Alt text', 'group' => 'content'],
+            ['key' => 'link_url',     'type' => 'url',    'label' => 'Link URL', 'group' => 'content'],
+            ['key' => 'aspect_ratio', 'type' => 'select', 'label' => 'Aspect ratio', 'default' => 'auto', 'options' => [
+                'auto' => 'Auto (source)',
+                '1:1'  => 'Square (1:1)',
+                '4:3'  => 'Landscape (4:3)',
+                '3:2'  => 'Landscape (3:2)',
+                '16:9' => 'Widescreen (16:9)',
+                '4:5'  => 'Portrait (4:5)',
+                '3:4'  => 'Portrait (3:4)',
+            ], 'helper' => 'When set, the image renders at this ratio regardless of source. Use Image fit (cover/contain) to control crop vs. letterbox.', 'group' => 'appearance'],
+            ['key' => 'object_fit',   'type' => 'select', 'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain'], 'helper' => 'How the source image fills the box when an aspect ratio is enforced.', 'group' => 'appearance'],
+            ['key' => 'max_width',    'type' => 'text',   'label' => 'Max width', 'default' => '', 'helper' => 'Optional CSS length (e.g. 400px, 60%, 20rem). Leave blank to fill the container.', 'group' => 'appearance'],
         ];
     }
 
     public function defaults(): array
     {
         return [
-            'image'      => null,
-            'alt_text'   => '',
-            'object_fit' => 'cover',
-            'link_url'   => '',
+            'image'        => null,
+            'alt_text'     => '',
+            'link_url'     => '',
+            'aspect_ratio' => 'auto',
+            'object_fit'   => 'cover',
+            'max_width'    => '',
         ];
     }
 

@@ -11,3 +11,20 @@
 .widget-image--contain {
     object-fit: contain;
 }
+
+.widget-image--ratio-1-1,
+.widget-image--ratio-4-3,
+.widget-image--ratio-3-2,
+.widget-image--ratio-16-9,
+.widget-image--ratio-4-5,
+.widget-image--ratio-3-4 {
+    width: 100%;
+    height: auto;
+}
+
+.widget-image--ratio-1-1  { aspect-ratio: 1 / 1; }
+.widget-image--ratio-4-3  { aspect-ratio: 4 / 3; }
+.widget-image--ratio-3-2  { aspect-ratio: 3 / 2; }
+.widget-image--ratio-16-9 { aspect-ratio: 16 / 9; }
+.widget-image--ratio-4-5  { aspect-ratio: 4 / 5; }
+.widget-image--ratio-3-4  { aspect-ratio: 3 / 4; }
