@@ -151,6 +151,10 @@
     &--vertical-top    { justify-content: flex-start; }
     &--vertical-middle { justify-content: center; }
     &--vertical-bottom { justify-content: flex-end; }
+
+    &__ctas {
+        margin-top: 1.5rem;
+    }
 }
 
 // ── Scroll indicator ────────────────────────────────────────────────────────

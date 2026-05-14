@@ -36,6 +36,22 @@ class TextBlockDefinition extends WidgetDefinition
     {
         return [
             ['key' => 'content', 'type' => 'richtext', 'label' => 'Content', 'group' => 'content'],
+            ['key' => 'ctas', 'type' => 'buttons', 'label' => 'Buttons', 'group' => 'content', 'fields' => [
+                ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                    'primary'        => 'Primary',
+                    'secondary'      => 'Secondary',
+                    'secondary-dark' => 'Secondary (Dark)',
+                    'text'           => 'Text Only',
+                ]],
+            ]],
+            ['key' => 'cta_alignment', 'type' => 'select', 'label' => 'Button Alignment', 'default' => 'inherit', 'options' => [
+                'inherit' => 'Match content',
+                'left'    => 'Left',
+                'center'  => 'Center',
+                'right'   => 'Right',
+            ], 'helper' => 'Horizontal alignment for the buttons. "Match content" follows the surrounding text alignment.', 'group' => 'appearance'],
             ['key' => 'vertical_align', 'type' => 'select', 'label' => 'Vertical Alignment', 'default' => 'middle', 'options' => ['top' => 'Top', 'middle' => 'Middle', 'bottom' => 'Bottom'], 'helper' => 'Vertical position of content within the widget. Visible when the widget shares a column-layout row with a taller neighbor.', 'group' => 'appearance'],
         ];
     }
@@ -44,6 +60,8 @@ class TextBlockDefinition extends WidgetDefinition
     {
         return [
             'content'        => '',
+            'ctas'           => '',
+            'cta_alignment'  => 'inherit',
             'vertical_align' => 'middle',
         ];
     }
