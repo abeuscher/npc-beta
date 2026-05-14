@@ -341,7 +341,11 @@
       "Bash(python3 -c \"import json; d = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Valid JSON. format_version:', d['format_version'], 'page count:', len\\(d['payload']['pages']\\), 'widget count:', len\\(d['payload']['pages'][0]['widgets']\\)\\)\")",
       "Bash(python3 -c \"import json; d = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Valid JSON. format_version:', d['format_version'], 'page count:', len\\(d['payload']['pages']\\), 'widget+layout blocks:', len\\(d['payload']['pages'][0]['widgets']\\)\\); print\\('Block labels in order:'\\); [print\\(' ', i, w.get\\('label', '?'\\), '[' + w.get\\('type', '?'\\) + ']'\\) for i, w in enumerate\\(d['payload']['pages'][0]['widgets']\\)]\")",
       "Bash(curl -sk https://localhost/)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Pages:', len\\(data['payload']['pages']\\)\\); print\\('Widgets:', len\\(data['payload']['pages'][0]['widgets']\\)\\); print\\('Sort orders:', [w.get\\('sort_order'\\) for w in data['payload']['pages'][0]['widgets']]\\)\")",
+      "Bash(curl -s -o /tmp/home-rendered.html -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" http://localhost/)",
+      "Bash(grep -oE '<h1[^>]*>[^<]+|<h2[^>]*>.{0,80}|<img [^>]*src=\"[^\"]+\"|class=\"cta cta--[a-z-]+|widget-image--ratio-[0-9-]+' /tmp/home-rendered.html)",
+      "Bash(grep -oE '<h1[^>]*>.{0,120}|<a [^>]*class=\"btn[^\"]+\"[^>]*>[^<]+' /tmp/home-rendered.html)"
     ],
     "deny": [],
     "additionalDirectories": [

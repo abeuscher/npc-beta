@@ -21,37 +21,31 @@
                 "media": [],
                 "widgets": [
                     {
-                        "type": "widget",
-                        "handle": "hero",
-                        "label": "Hero 1",
-                        "config": {
-                            "ctas": [
-                                {
-                                    "url": "/demo",
-                                    "text": "Try the Demo",
-                                    "style": "primary"
-                                },
-                                {
-                                    "url": "https://github.com/abeuscher/npc-beta/",
-                                    "text": "See the Code",
-                                    "style": "secondary"
-                                }
-                            ],
-                            "content": "<h2 class=\"ql-align-center\"><strong style=\"background-color: transparent;\">A combination CMS, CRM, and a few other tools to help nonprofits manage their business.</strong></h2><p class=\"ql-align-center\"><span style=\"background-color: transparent;\">Built and supported by one developer. Open source. Flat pricing.</span></p>",
-                            "fullscreen": true,
-                            "min_height": "16rem",
-                            "overlap_nav": false,
-                            "text_position": "center-center",
-                            "nav_link_color": "",
-                            "nav_hover_color": "",
-                            "scroll_indicator": true,
-                            "background_overlay_opacity": 30
+                        "type": "layout",
+                        "label": "Band 1 — Hero",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "3fr 2fr",
+                            "background_full_width": true,
+                            "content_full_width": false
                         },
-                        "query_config": [],
                         "appearance_config": {
-                            "text": {
-                                "color": "#ffffff",
-                                "shadow": true
+                            "layout": {
+                                "padding": {
+                                    "top": 100,
+                                    "right": 0,
+                                    "bottom": 200,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
                             },
                             "background": {
                                 "gradient": {
@@ -69,32 +63,40 @@
                             }
                         },
                         "sort_order": 0,
-                        "is_active": true,
-                        "media": []
-                    },
-                    {
-                        "type": "layout",
-                        "label": "Small Data — 3 Column Layout",
-                        "display": "grid",
-                        "columns": 3,
-                        "layout_config": {
-                            "gap": "1.5rem",
-                            "grid_template_columns": "1fr 1fr 1fr"
-                        },
-                        "sort_order": 1,
                         "slots": [
                             [
                                 {
                                     "type": "widget",
-                                    "handle": "text_block",
-                                    "label": "Spacer Left",
+                                    "handle": "hero",
+                                    "label": "Band 1 — Hero (headline + body + CTAs)",
                                     "config": {
-                                        "content": "<p><br></p>"
+                                        "ctas": [
+                                            {
+                                                "url": "/demo",
+                                                "text": "Try the Demo",
+                                                "style": "primary"
+                                            },
+                                            {
+                                                "url": "https://github.com/abeuscher/npc-beta/",
+                                                "text": "See the Code",
+                                                "style": "secondary-dark"
+                                            }
+                                        ],
+                                        "content": "<h1><strong style=\"background-color: transparent;\">A combination CMS, CRM, and a few other tools to help nonprofits manage their business.</strong></h1><p><span style=\"background-color: transparent;\">Built and supported by one developer. Open source. Flat pricing.</span></p>",
+                                        "fullscreen": false,
+                                        "min_height": "16rem",
+                                        "overlap_nav": false,
+                                        "text_position": "top-left",
+                                        "nav_link_color": "",
+                                        "nav_hover_color": "",
+                                        "scroll_indicator": false,
+                                        "background_overlay_opacity": 0
                                     },
                                     "query_config": [],
                                     "appearance_config": {
                                         "text": {
-                                            "color": "#000000"
+                                            "color": "#ffffff",
+                                            "shadow": false
                                         },
                                         "layout": {
                                             "margin": {
@@ -104,15 +106,12 @@
                                                 "bottom": 0
                                             },
                                             "padding": {
-                                                "top": 150,
+                                                "top": 0,
                                                 "left": 0,
                                                 "right": 0,
-                                                "bottom": 150
+                                                "bottom": 0
                                             },
                                             "full_width": false
-                                        },
-                                        "background": {
-                                            "color": "#ffffff"
                                         }
                                     },
                                     "sort_order": 0,
@@ -124,10 +123,15 @@
                             [
                                 {
                                     "type": "widget",
-                                    "handle": "text_block",
-                                    "label": "Small Data",
+                                    "handle": "image",
+                                    "label": "Band 1 — Image placeholder: hero-founder-portrait (4:3)",
                                     "config": {
-                                        "content": "<h3><strong style=\"background-color: transparent;\">Small Data</strong></h3><p><span style=\"background-color: transparent;\">Three principles:</span></p><ol><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Privacy is important.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">People are important.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">People and privacy are both more important than money.</span></li></ol><p><span style=\"background-color: transparent;\">This product reflects those values. So does the business behind it.</span></p>"
+                                        "image": null,
+                                        "alt_text": "Founder portrait placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "4:3",
+                                        "object_fit": "cover",
+                                        "max_width": ""
                                     },
                                     "query_config": [],
                                     "appearance_config": {
@@ -142,15 +146,139 @@
                                                 "bottom": 0
                                             },
                                             "padding": {
-                                                "top": 150,
+                                                "top": 0,
                                                 "left": 0,
                                                 "right": 0,
-                                                "bottom": 150
+                                                "bottom": 0
                                             },
                                             "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "9/Michael_Brun,_June_22,_2014_(cropped).jpg"
+                                        }
+                                    ],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 2 — Small Data",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "2fr 3fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 1,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 2 — Image placeholder: small-data-supporting-image (1:1)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "Small Data supporting image placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "1:1",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
                                         },
-                                        "background": {
-                                            "color": "#ffffff"
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "14/BACK_TO_THE_ODYSSEY_(Unsplash).jpg"
+                                        }
+                                    ],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 2 — Small Data (text)",
+                                    "config": {
+                                        "content": "<h2><strong style=\"background-color: transparent;\">Small Data</strong></h2><p><span style=\"background-color: transparent;\">Three principles:</span></p><ol><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Privacy is important.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">People are important.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">People and privacy are both more important than money.</span></li></ol><p><span style=\"background-color: transparent;\">This product reflects those values. So does the business behind it.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
                                         }
                                     },
                                     "sort_order": 0,
@@ -158,14 +286,51 @@
                                     "media": [],
                                     "column_index": 1
                                 }
-                            ],
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 3 — What it Does (heading)",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 120,
+                                    "right": 0,
+                                    "bottom": 60,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#d4d4f2"
+                            }
+                        },
+                        "sort_order": 2,
+                        "slots": [
                             [
                                 {
                                     "type": "widget",
                                     "handle": "text_block",
-                                    "label": "Spacer Right",
+                                    "label": "Band 3 — What it Does (heading)",
                                     "config": {
-                                        "content": "<p><br></p>"
+                                        "content": "<h2 class=\"ql-align-center\"><strong style=\"background-color: transparent;\">What it Does</strong></h2>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "middle"
                                     },
                                     "query_config": [],
                                     "appearance_config": {
@@ -180,70 +345,53 @@
                                                 "bottom": 0
                                             },
                                             "padding": {
-                                                "top": 150,
+                                                "top": 0,
                                                 "left": 0,
                                                 "right": 0,
-                                                "bottom": 150
+                                                "bottom": 0
                                             },
                                             "full_width": false
-                                        },
-                                        "background": {
-                                            "color": "#ffffff"
                                         }
                                     },
                                     "sort_order": 0,
                                     "is_active": true,
                                     "media": [],
-                                    "column_index": 2
+                                    "column_index": 0
                                 }
                             ]
                         ]
                     },
                     {
-                        "type": "widget",
-                        "handle": "text_block",
-                        "label": "What it Does — heading",
-                        "config": {
-                            "content": "<h1 class=\"ql-align-center\">What it Does</h1>"
+                        "type": "layout",
+                        "label": "Band 4 — What it Does (4-cell grid)",
+                        "display": "grid",
+                        "columns": 4,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "start",
+                            "grid_auto_rows": "1fr",
+                            "grid_template_columns": "1fr 1fr 1fr 1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
                         },
-                        "query_config": [],
                         "appearance_config": {
-                            "text": {
-                                "color": "#000000"
-                            },
                             "layout": {
+                                "padding": {
+                                    "top": 60,
+                                    "right": 0,
+                                    "bottom": 60,
+                                    "left": 0
+                                },
                                 "margin": {
                                     "top": 0,
-                                    "left": 0,
                                     "right": 0,
-                                    "bottom": 0
-                                },
-                                "padding": {
-                                    "top": 150,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 150
-                                },
-                                "full_width": false
+                                    "bottom": 0,
+                                    "left": 0
+                                }
                             },
                             "background": {
                                 "color": "#d4d4f2"
                             }
-                        },
-                        "sort_order": 2,
-                        "is_active": true,
-                        "media": []
-                    },
-                    {
-                        "type": "layout",
-                        "label": "What it Does — row 1 (Content & Web + Constituents)",
-                        "display": "grid",
-                        "columns": 2,
-                        "layout_config": {
-                            "gap": "1.5rem",
-                            "align_items": "start",
-                            "grid_auto_rows": "1fr",
-                            "grid_template_columns": "1fr 1fr"
                         },
                         "sort_order": 3,
                         "slots": [
@@ -251,9 +399,12 @@
                                 {
                                     "type": "widget",
                                     "handle": "text_block",
-                                    "label": "Content & Web",
+                                    "label": "Band 4 — Content & Web",
                                     "config": {
-                                        "content": "<p><strong style=\"background-color: transparent;\">Content &amp; Web</strong></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">CMS with structured content and a page builder</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Custom widgets, headers, and footers</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Member portal</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Daily backups</span></li></ul>"
+                                        "content": "<h3><strong style=\"background-color: transparent;\">Content &amp; Web</strong></h3><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">CMS with structured content and a page builder</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Custom widgets, headers, and footers</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Member portal</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Daily backups</span></li></ul>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
                                     },
                                     "query_config": [],
                                     "appearance_config": {
@@ -274,9 +425,6 @@
                                                 "bottom": 50
                                             },
                                             "full_width": false
-                                        },
-                                        "background": {
-                                            "color": "#ffffff"
                                         }
                                     },
                                     "sort_order": 0,
@@ -289,9 +437,12 @@
                                 {
                                     "type": "widget",
                                     "handle": "text_block",
-                                    "label": "Constituents",
+                                    "label": "Band 4 — Constituents",
                                     "config": {
-                                        "content": "<p><strong style=\"background-color: transparent;\">Constituents</strong></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">CRM</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">User groups</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Mailing list manager (integrates with Mailchimp)</span></li></ul>"
+                                        "content": "<h3><strong style=\"background-color: transparent;\">Constituents</strong></h3><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">CRM</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">User groups</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Mailing list manager (integrates with Mailchimp)</span></li></ul>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
                                     },
                                     "query_config": [],
                                     "appearance_config": {
@@ -312,9 +463,484 @@
                                                 "bottom": 50
                                             },
                                             "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 1
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 4 — Commerce",
+                                    "config": {
+                                        "content": "<h3><strong style=\"background-color: transparent;\">Commerce</strong></h3><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Online store: products, ticket sales, donations</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Stripe integration for payments</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">QuickBooks integration for bookkeeping</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Event handling</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Donation tracking</span></li></ul>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
                                         },
-                                        "background": {
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 2
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 4 — For developers",
+                                    "config": {
+                                        "content": "<h3><strong style=\"background-color: transparent;\">For developers</strong></h3><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Open source. Public repo. Full docs.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Tailwind native. Blade, JS, and SCSS widget system.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Data sovereignty.</span></li></ul>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 3
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 4 — What it Does (CTA footer)",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 30,
+                                    "right": 0,
+                                    "bottom": 120,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#d4d4f2"
+                            }
+                        },
+                        "sort_order": 4,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 4 — Try the demo CTA",
+                                    "config": {
+                                        "content": "<p class=\"ql-align-center\"><br></p>",
+                                        "ctas": [
+                                            {
+                                                "url": "/demo",
+                                                "text": "Try the demo →",
+                                                "style": "primary"
+                                            }
+                                        ],
+                                        "cta_alignment": "center",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 5 — This is not a SaaS company (dark)",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "3fr 2fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#373c44"
+                            }
+                        },
+                        "sort_order": 5,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 5 — This is not a SaaS company (text + CTA)",
+                                    "config": {
+                                        "content": "<h2><strong style=\"background-color: transparent;\">This is not a SaaS company.</strong></h2><p><span style=\"background-color: transparent;\">My name is Al. I am a developer and I built a piece of software. I have been using CMS's and CRM's for 30 years, and building websites and web applications that whole time.</span></p><p><span style=\"background-color: transparent;\">I tried to do it right. And I tried to do it with every client in mind, not just one.</span></p><p><span style=\"background-color: transparent;\">What I didn't do:</span></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't super-serve a single customer.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't take feature requests from sales and marketing.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't report to a C Suite.</span></li></ul>",
+                                        "ctas": [
+                                            {
+                                                "url": "/about",
+                                                "text": "More about how this works →",
+                                                "style": "secondary-dark"
+                                            }
+                                        ],
+                                        "cta_alignment": "left",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
                                             "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 5 — Image placeholder: about-founder-portrait-dark (4:5)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "About founder portrait placeholder (dark)",
+                                        "link_url": "",
+                                        "aspect_ratio": "4:5",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "11/Tomás_Vodanivic_-_2024.jpg"
+                                        }
+                                    ],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 6 — Pricing",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 6,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 6 — Pricing (centered)",
+                                    "config": {
+                                        "content": "<h2 class=\"ql-align-center\"><strong style=\"background-color: transparent;\">Pricing</strong></h2><h3 class=\"ql-align-center\"><strong style=\"background-color: transparent;\">$150/month, flat.</strong></h3><p class=\"ql-align-center\"><span style=\"background-color: transparent;\">Hosting, daily backups, in-system help, ongoing updates. Data import, design, and custom development available à la carte.</span></p>",
+                                        "ctas": [
+                                            {
+                                                "url": "/pricing",
+                                                "text": "Full pricing →",
+                                                "style": "secondary"
+                                            }
+                                        ],
+                                        "cta_alignment": "center",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 7 — What it doesn't do",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "2fr 3fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 7,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 7 — Image placeholder: what-it-doesnt-do-supporting-image (1:1)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "What it doesn't do supporting image placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "1:1",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "19/Easton_Lodge_Gardens,_Little_Easton,_Essex,_England_outdoor_café_03.jpg"
+                                        }
+                                    ],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 7 — What it doesn't do (text)",
+                                    "config": {
+                                        "content": "<h2><strong style=\"background-color: transparent;\">What it doesn't do</strong></h2><p><span style=\"background-color: transparent;\">In the interest of saving you time:</span></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">The CMS is field-based, not WYSIWYG. It's structured content, not a drag-and-drop editor.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No built-in analytics of any kind. You can install any package you like on your site — analytics just isn't what we do here.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No tracking cookies. This product doesn't use cookies for any non-functional purpose, and neither does this website.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No in-app refunds. Refunds are recorded but issued through Stripe.</span></li></ul>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
                                         }
                                     },
                                     "sort_order": 0,
@@ -327,29 +953,62 @@
                     },
                     {
                         "type": "layout",
-                        "label": "What it Does — row 2 (Commerce + For developers)",
+                        "label": "Band 8 — Try it (final CTA)",
                         "display": "grid",
-                        "columns": 2,
+                        "columns": 1,
                         "layout_config": {
-                            "gap": "1.5rem",
-                            "align_items": "start",
-                            "grid_auto_rows": "1fr",
-                            "grid_template_columns": "1fr 1fr"
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
                         },
-                        "sort_order": 4,
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#000000"
+                            }
+                        },
+                        "sort_order": 8,
                         "slots": [
                             [
                                 {
                                     "type": "widget",
                                     "handle": "text_block",
-                                    "label": "Commerce",
+                                    "label": "Band 8 — Try it (centered CTAs)",
                                     "config": {
-                                        "content": "<p><strong style=\"background-color: transparent;\">Commerce</strong></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Online store: products, ticket sales, donations</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Stripe integration for payments</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">QuickBooks integration for bookkeeping</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Event handling</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Donation tracking</span></li></ul>"
+                                        "content": "<h2 class=\"ql-align-center\"><strong style=\"background-color: transparent;\">Try it.</strong></h2><p class=\"ql-align-center\"><span style=\"background-color: transparent;\">First month is $50 until I get some customers.</span></p>",
+                                        "ctas": [
+                                            {
+                                                "url": "/demo",
+                                                "text": "Start the demo",
+                                                "style": "primary"
+                                            },
+                                            {
+                                                "url": "mailto:al@example.com",
+                                                "text": "Email me",
+                                                "style": "secondary-dark"
+                                            }
+                                        ],
+                                        "cta_alignment": "center",
+                                        "vertical_align": "middle"
                                     },
                                     "query_config": [],
                                     "appearance_config": {
                                         "text": {
-                                            "color": "#000000"
+                                            "color": "#ffffff"
                                         },
                                         "layout": {
                                             "margin": {
@@ -359,15 +1018,12 @@
                                                 "bottom": 0
                                             },
                                             "padding": {
-                                                "top": 25,
+                                                "top": 0,
                                                 "left": 0,
                                                 "right": 0,
-                                                "bottom": 50
+                                                "bottom": 0
                                             },
                                             "full_width": false
-                                        },
-                                        "background": {
-                                            "color": "#ffffff"
                                         }
                                     },
                                     "sort_order": 0,
@@ -375,205 +1031,8 @@
                                     "media": [],
                                     "column_index": 0
                                 }
-                            ],
-                            [
-                                {
-                                    "type": "widget",
-                                    "handle": "text_block",
-                                    "label": "For developers",
-                                    "config": {
-                                        "content": "<p><strong style=\"background-color: transparent;\">For developers</strong></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Open source. Public repo. Full docs.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Tailwind native. Blade, JS, and SCSS widget system.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">Data sovereignty.</span></li></ul>"
-                                    },
-                                    "query_config": [],
-                                    "appearance_config": {
-                                        "text": {
-                                            "color": "#000000"
-                                        },
-                                        "layout": {
-                                            "margin": {
-                                                "top": 0,
-                                                "left": 0,
-                                                "right": 0,
-                                                "bottom": 0
-                                            },
-                                            "padding": {
-                                                "top": 25,
-                                                "left": 0,
-                                                "right": 0,
-                                                "bottom": 50
-                                            },
-                                            "full_width": false
-                                        },
-                                        "background": {
-                                            "color": "#ffffff"
-                                        }
-                                    },
-                                    "sort_order": 0,
-                                    "is_active": true,
-                                    "media": [],
-                                    "column_index": 1
-                                }
                             ]
                         ]
-                    },
-                    {
-                        "type": "widget",
-                        "handle": "text_block",
-                        "label": "This is not a SaaS company",
-                        "config": {
-                            "content": "<h3><strong style=\"background-color: transparent;\">This is not a SaaS company.</strong></h3><p><span style=\"background-color: transparent;\">My name is Al. I am a developer and I built a piece of software. I have been using CMS's and CRM's for 30 years, and building websites and web applications that whole time.</span></p><p>I built this tool to do a good job and not get in your way.</p><p><span style=\"background-color: transparent;\">What I don't do:</span></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't super-serve a single customer.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't take feature requests from sales and marketing.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">I don't report to a C Suite.</span></li></ul>"
-                        },
-                        "query_config": [],
-                        "appearance_config": {
-                            "text": {
-                                "color": "#ffffff"
-                            },
-                            "layout": {
-                                "margin": {
-                                    "top": 0,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 0
-                                },
-                                "padding": {
-                                    "top": 150,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 150
-                                },
-                                "full_width": false
-                            },
-                            "background": {
-                                "color": "#373c44"
-                            }
-                        },
-                        "sort_order": 5,
-                        "is_active": true,
-                        "media": []
-                    },
-                    {
-                        "type": "widget",
-                        "handle": "hero",
-                        "label": "Pricing band",
-                        "config": {
-                            "ctas": [
-                                {
-                                    "url": "/pricing",
-                                    "text": "Full pricing →",
-                                    "style": "secondary"
-                                }
-                            ],
-                            "content": "<h3><strong style=\"background-color: transparent;\">Pricing</strong></h3><p><strong style=\"background-color: transparent;\">$150/month, flat.</strong></p><p><span style=\"background-color: transparent;\">Hosting, daily backups, in-system help, ongoing updates. Data import, design, and custom development available à la carte.</span></p>"
-                        },
-                        "query_config": [],
-                        "appearance_config": {
-                            "text": {
-                                "color": "#000000"
-                            },
-                            "layout": {
-                                "margin": {
-                                    "top": 0,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 0
-                                },
-                                "padding": {
-                                    "top": 150,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 150
-                                },
-                                "full_width": false
-                            },
-                            "background": {
-                                "color": "#ffffff"
-                            }
-                        },
-                        "sort_order": 6,
-                        "is_active": true,
-                        "media": []
-                    },
-                    {
-                        "type": "widget",
-                        "handle": "text_block",
-                        "label": "What it doesn't do",
-                        "config": {
-                            "content": "<h3><strong style=\"background-color: transparent;\">What it doesn't do</strong></h3><p><span style=\"background-color: transparent;\">In the interest of saving you time:</span></p><ul><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">The CMS is field-based, not WYSIWYG. It's structured content, not a drag-and-drop editor.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No built-in analytics of any kind. You can install any package you like on your site — analytics just isn't what we do here.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No tracking cookies. This product doesn't use cookies for any non-functional purpose, and neither does this website.</span></li><li><span class=\"ql-ui\" contenteditable=\"false\"></span><span style=\"background-color: transparent;\">No in-app refunds. Refunds are recorded but issued through Stripe.</span></li></ul>"
-                        },
-                        "query_config": [],
-                        "appearance_config": {
-                            "text": {
-                                "color": "#000000"
-                            },
-                            "layout": {
-                                "margin": {
-                                    "top": 0,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 0
-                                },
-                                "padding": {
-                                    "top": 150,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 150
-                                },
-                                "full_width": false
-                            },
-                            "background": {
-                                "color": "#ffffff"
-                            }
-                        },
-                        "sort_order": 7,
-                        "is_active": true,
-                        "media": []
-                    },
-                    {
-                        "type": "widget",
-                        "handle": "hero",
-                        "label": "Final CTA — Try it",
-                        "config": {
-                            "ctas": [
-                                {
-                                    "url": "/demo",
-                                    "text": "Start the demo",
-                                    "style": "primary"
-                                },
-                                {
-                                    "url": "mailto:al@example.com",
-                                    "text": "Email me",
-                                    "style": "secondary"
-                                }
-                            ],
-                            "content": "<h3><strong style=\"background-color: transparent;\">Try it.</strong></h3><p><span style=\"background-color: transparent;\">First month is $50 until I get some customers.</span></p>"
-                        },
-                        "query_config": [],
-                        "appearance_config": {
-                            "text": {
-                                "color": "#000000"
-                            },
-                            "layout": {
-                                "margin": {
-                                    "top": 0,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 0
-                                },
-                                "padding": {
-                                    "top": 150,
-                                    "left": 0,
-                                    "right": 0,
-                                    "bottom": 150
-                                },
-                                "full_width": false
-                            },
-                            "background": {
-                                "color": "#ffffff"
-                            }
-                        },
-                        "sort_order": 8,
-                        "is_active": true,
-                        "media": []
                     }
                 ]
             }

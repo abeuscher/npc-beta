@@ -110,3 +110,41 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 - **Workaround used:** none this phase. Same surface as G13 — tunes once at the theme level.
 - **Recommended action:** alongside G13's scale tuning, set heading margin-bottom: `h1 1.5rem`, `h2 1.25rem`, `h3 1rem`. Paragraph margin-bottom: `1rem`. Hero widget's `.hero-ctas` margin-top: ~`2rem` (template SCSS, not typography). These are global tuning decisions — discuss before committing.
 - **Resolution (285):** pushed all four margin-bottom values (`h1 1.5rem / h2 1.25rem / h3 1rem / p 1rem`) into the `typography` SiteSetting. Hero `.hero-ctas` margin-top was not touched this session — TextBlock got its own `.widget-text-block__ctas` margin-top of `1.5rem` for its new CTA wrapper, which is the closer analogue.
+
+---
+
+## Session 286 findings
+
+### G15 — Hero widget renders its own `.site-container` inside a layout cell, causing nested containers
+
+- **What was attempted:** placing the Hero widget in the left cell of Band 1's 2-column layout per the homepage-layout-spec's fallback path ("If a single Hero widget instance must be used... put the Hero in the left cell and the Image widget in the right cell"). The Hero carries the headline + body + CTAs; the gradient sits on the parent layout container.
+- **What blocked it:** the Hero blade template wraps its content in `<div class="hero-body"><div class="site-container">...</div></div>`. The parent column layout already wraps its grid in a `.site-container` (when `content_full_width: false`). Two nested `.site-container` elements result — the inner one is effectively a no-op because both cap to the same max-width, but it's architectural noise that lingers. Same issue applies to any future band that places a Hero inside a column-layout cell.
+- **Workaround used:** accepted the nested wrappers — visual rendering looks correct and the hero band reads as intended. No code change required for the home to ship.
+- **Recommended action:** **two options.** (a) Detect at template time whether the Hero is rendered inside a layout slot (the renderer already passes context) and skip the inner `.site-container` wrapper when so. (b) Restructure Band 1 to use a Text widget instead of Hero in the left cell — with G2 resolved, Text + CTAs is now expressible. (b) is a JSON-only change and side-steps the issue. (a) is a one-template-line conditional that helps any future Hero-in-cell pattern across all five marketing pages. Decide as part of the layout-spec-approach validation review.
+
+### G16 — Hero `fullscreen: true` inside a layout cell stretches the cell to 100vh
+
+- **What was attempted:** preserving the existing Hero's `fullscreen: true` behavior when relocating the Hero into Band 1's left layout cell, per the layout spec's "preserve the existing fullscreen: true behavior currently set on the hero widget" directive.
+- **What blocked it:** `fullscreen: true` adds the `hero--fullscreen` CSS class, which sets `min-height: 100vh` on the hero element. Inside a column-layout cell, that propagates: the cell stretches to 100vh, the layout's grid row matches (with `align-items: center`), and the Image cell adjacent stretches to the same height. The layout's explicit `padding: 200/200` is no longer the controlling factor for band height — viewport height is. On a tall desktop viewport this reads fine (taller hero matches reference scale); on a short laptop screen it makes the hero feel oversized.
+- **Workaround used:** kept `fullscreen: true` per the spec's directive. Logged here so the surface is visible.
+- **Recommended action:** **two options, similar to G15.** (a) Move `fullscreen` to a layout-container option (extend `layout_config` with a `fullscreen` boolean that sets `min-height: 100vh` on the `.page-layout` outer rather than on the widget). (b) Drop `fullscreen` from the Band 1 hero and let `padding: 200/200` on the layout control band height — reads more deterministically across viewports. (a) is the cleaner long-term shape (a hero band's fullscreen-ness is really a band property, not a widget property); (b) is the JSON-only escape hatch. The spec already anticipates this as a gap.
+
+### G17 — TextBlock requires non-empty content to render cleanly as a CTA-only band
+
+- **What was attempted:** rendering Band 4's CTA footer (centered "Try the demo →" button below the 4-cell grid) using a Text widget with empty content + `ctas` set, per the spec's "Below the grid — CTA footer" pattern with G2's new CTA capability.
+- **What blocked it:** TextBlock renders content + CTAs as sibling elements. With no content, the `.widget-text-block__content` div is empty but still in the DOM, and the CTAs render below it. A `<p><br></p>` placeholder was used to give the empty paragraph a defined shape so the vertical spacing is predictable across browsers.
+- **Workaround used:** placeholder `<p class="ql-align-center"><br></p>` in the content field. Renders fine; placeholder is invisible.
+- **Recommended action:** **low priority.** Either (a) Text widget's template skips the content wrapper entirely when content is empty (one conditional), or (b) accept the placeholder pattern as the convention for CTA-only Text widget usage. (a) is cleaner if many bands across the five pages end up as CTA-only Text widgets; (b) is fine if the pattern stays rare. Decide as the About / Pricing / Contact / Demo builds surface how common CTA-only bands are.
+
+### G18 — Image widget has no built-in container width / placement controls
+
+- **What was attempted:** placing the Image widget in column cells of bands 1 (4:3), 2 (1:1), 5 (4:5), and 7 (1:1), per the layout spec. Images fill their column cells edge-to-edge.
+- **What blocked it:** the Image widget's `max_width` field (added at 285) controls the image's max horizontal size but doesn't address whether the image sits flush to its column edge, has internal padding, or is centered within a wider cell. The 4:5 portrait in Band 5's dark band stretches to the full column width and reads as dominant. The 1:1 image in Band 7's narrow column reads as smaller (correctly, given 2fr proportions).
+- **Workaround used:** left `max_width` blank (full-cell fill) across all four image placeholders. Reads acceptable; the eventual real photography swap can revisit per-band.
+- **Recommended action:** **defer.** With real photography in place (founder portraits, framed product shots), the right call may be obvious. Until then, full-cell fill is the predictable default. If the real-photo pass surfaces a consistent need for centered-within-cell or padded behavior, lift then.
+
+---
+
+## Session 286 — visible-change validation note
+
+The 286 rebuild **validates the layout-spec approach** the spec was authored to test. The eight bands appeared in spec order on first import (zero importer warnings). The cross-section rhythm (column shape × background tone × visual weight) reads as the spec's table predicts. The change from PMW1's cleaned-but-conservative home is clearly visible — added image placements across four cells, dark/gradient bookend, and the explicit eight-band structure replace the prior "preserve existing structure" outcome. The layout spec proved more directive than the brief-only approach. Equivalent specs for About / Pricing / Contact / Demo should follow the same pattern.

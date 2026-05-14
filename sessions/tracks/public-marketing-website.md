@@ -22,18 +22,19 @@ When a phase closes, its retrospective lands here and its release-plan position 
 
 ## Status snapshot
 
-**Last update:** 2026-05-14 (PMW1 closed at 284; CMS-fixes session 285 closed; home rebuild session 286 queued next).
+**Last update:** 2026-05-14 (PMW1 closed at 284; CMS-fixes session 285 closed; home rebuild session 286 closed; About layout rebuild session 287 queued next).
 
-**State:** PMW1 closed; the five CMS-side blockers PMW1 surfaced are landed in code as of session 285. The audit summary, cleaned home.json, gap report (10 rows — G1 / G2 / G3-interim / G13 / G14 marked ✅ resolved; the remaining rows stay open), and the layout spec (`sessions/public website/homepage-layout-spec.md`) are in the working folder. Session 285 also added an in-scope addition to the Image widget (aspect_ratio + max_width) that the audit surfaced. Session 286 rebuilds the home against the layout spec using the now-available CMS surface. Both 285 and 286 sit between PMW1 and the E-series tuning sessions so their output informs E5 / E6 / E7 / E8 design.
+**State:** PMW1 closed; the five CMS-side blockers PMW1 surfaced are landed in code as of session 285; the home is rebuilt against `sessions/public website/homepage-layout-spec.md` and re-imported cleanly as of session 286. The layout-spec-driven execution pattern validated at 286 — zero importer warnings on first pass, eight bands in spec order, cross-section rhythm matched the spec's prediction. The same shape repeats per page from 287 forward, one page per session. The About spec is authored and reviewed at 286 close (user revisions absorbed); it lives at `sessions/public website/about-layout-spec.md` and drives 287's execution. The gap report now stands at 14 rows — G1 / G2 / G3-interim / G13 / G14 ✅ resolved; G4 / G5 / G6 / G7 / G8 / G9 / G10 / G11 / G12 open from PMW1; G15 / G16 / G17 / G18 open from 286. 285 / 286 sit between PMW1 and the E-series tuning sessions so their output informs E5 / E6 / E7 / E8 design.
 
 **Phase status:**
 
 - **Phase 1 — Audit + Home cleanup.** ✅ Closed at session 284. Audit summary + structurally cleaned home + first 10 gap-report rows landed.
 - **Session 285 — CMS Fixes Before Home Rebuild.** ✅ Closed. Lifted-gap session (outside the track's phase count per gap-resolution discipline). Shipped G1 layout `appearance_config` round-trip + G2 TextBlock CTAs + G3-interim `secondary-dark` button variant + G13/G14 typography defaults + Image widget aspect_ratio + max_width. Fast Pest 2408 / 0 (baseline 2390 + 18 new).
-- **Session 286 — Home Layout Rebuild.** Queued. Rebuilds the home against the layout spec at `sessions/public website/homepage-layout-spec.md` using the CMS surface that lands at 285. The layout spec doubles as the pattern test for the spec-driven approach that will repeat for About / Pricing / Contact / Demo in later phases.
-- **Phase 2 — Pricing build-out + About extend.** Not started.
-- **Phase 3 — Contact + Demo (greenfield).** Not started.
-- **Phase 4 — Page-capture harness + screenshots + build summary.** Not started.
+- **Session 286 — Home Layout Rebuild.** ✅ Closed. Home rebuilt against `sessions/public website/homepage-layout-spec.md` as nine sibling layout blocks delivering the eight spec bands. User-revision pass landed five small visual changes (hero top padding halved, hero CTAs left-aligned, "What it Does" composite extends tinted slab through the grid, final CTA band switched to solid black, footer recolored `#333` with white text). Four new gap rows surfaced (G15 / G16 / G17 / G18). Layout-spec approach validated and adopted as the pattern for the remaining four pages. Fast Pest 2407 / 1 (the 1 failure pre-dates 286, surfaced as drift).
+- **Session 287 — About Layout Rebuild.** Queued. Same shape as 286; drives off `sessions/public website/about-layout-spec.md` (authored at 286 close, user-revised to absorb spec-side feedback). Three bands instead of eight (hero / business case / how-it-built); introduces the spacer-cell pattern for inner-content-width constraint and the multi-widget-per-cell pattern for the pull-quote treatment.
+- **Phase 2 (legacy framing) — Pricing build-out + About extend.** Resolves into per-page sessions: 287 About → 288 Pricing → 289 Contact → 290 Demo → 291 page-capture harness + close-out. The per-page shape lands cleaner than the original two-page-per-session framing now that the layout-spec approach is the unit of work.
+- **Phase 3 (legacy framing) — Contact + Demo (greenfield).** Same — resolves into 289 + 290 per-page.
+- **Phase 4 — Page-capture harness + screenshots + build summary.** Not started. Slated for 291 (the track's final session).
 
 **Track owns:** the five marketing pages' JSON exports (`home`, `about`, `pricing`, `contact`, `demo`), the gap report at `sessions/public website/gap-report.md`, the eventual Playwright page-capture script + its output at `sessions/public website/screenshots/`, and the `build-summary.md` close-out doc.
 
