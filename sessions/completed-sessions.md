@@ -288,6 +288,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 284 | Public Marketing Website — Audit + Home Cleanup |
 | 285 | Public Marketing Website — CMS Fixes Before Home Rebuild |
 | 286 | Public Marketing Website — Home Layout Rebuild |
+| 287 | Public Marketing Website — About Layout Rebuild |
 
 ---
 

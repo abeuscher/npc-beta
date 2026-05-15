@@ -1,0 +1,582 @@
+{
+    "format_version": "1.1.0",
+    "exported_at": "2026-05-14T00:00:00+00:00",
+    "payload": {
+        "templates": [],
+        "pages": [
+            {
+                "id": "a1c073f6-93fb-4ddd-be74-930f9bfeb2d8",
+                "title": "About",
+                "slug": "about",
+                "type": "default",
+                "template_name": null,
+                "status": "published",
+                "meta_title": null,
+                "meta_description": null,
+                "noindex": false,
+                "head_snippet": null,
+                "body_snippet": null,
+                "custom_fields": [],
+                "published_at": "2026-04-28T06:22:45+00:00",
+                "media": [],
+                "widgets": [
+                    {
+                        "type": "layout",
+                        "label": "Band 1 — Hero",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "3fr 2fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 100,
+                                    "right": 0,
+                                    "bottom": 200,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "gradient": {
+                                    "gradients": [
+                                        {
+                                            "to": "#60a5fa",
+                                            "from": "#0a2540",
+                                            "type": "linear",
+                                            "angle": 135,
+                                            "to_alpha": 100,
+                                            "from_alpha": 100
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "sort_order": 0,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 1 — Hero (headline + body)",
+                                    "config": {
+                                        "content": "<h1><strong style=\"background-color: transparent;\">My name is Al.</strong></h1><p><span style=\"background-color: transparent;\">I am a developer. I have been building websites and web applications for 30 years, working with CMS's and CRM's that whole time. I built this product because the tools that exist for nonprofits aren't good enough, and I had a clear idea of what a better one would look like.</span></p><p><span style=\"background-color: transparent;\">I have run large systems, managed teams, and worked at Silicon Valley SaaS companies. I have also done a lot of consulting for nonprofits — migrations, integrations, fixing other people's messes. This product comes out of both sides of that experience.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 1 — Image placeholder: about-hero-portrait (4:3)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "About hero portrait placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "4:3",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "6/FDR_1944_Color_Portrait.jpg"
+                                        }
+                                    ],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 2a — Business case heading + lead",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 1,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 2 — Heading + lead paragraph",
+                                    "config": {
+                                        "content": "<h2><strong style=\"background-color: transparent;\">Small software can do this now.</strong></h2><p><span style=\"background-color: transparent;\">For most of the last decade, building software was expensive enough that small shops couldn't seriously compete with venture-backed SaaS companies on feature scope. That changed in 2025. AI-assisted development crossed the threshold where a single developer with the right tools can build and maintain software at a scope that previously required a team. The implication for niche software markets — including nonprofit tools — is that the cost advantage of large SaaS providers has collapsed. A single developer can now build a focused product, charge a tenth of what the incumbents charge, and still make a living.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 2b — Pull-quote (Boris Cherny placeholder)",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 50,
+                                    "right": 0,
+                                    "bottom": 50,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 2,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 2 — Pull-quote (Boris Cherny, AI Ascent 2026)",
+                                    "config": {
+                                        "content": "<p><em style=\"background-color: transparent;\">\"Right now you can be a tiny startup; you can build a thing that is as valuable as a large company. And you can actually compete head to head. Because a large company has to evolve their business process — they have to evolve the way they work. They have to retrain everyone to use technology and there's a lot of internal resistance to that. But no one here has that problem.\"</em></p><p class=\"ql-align-right\"><em><span style=\"background-color: transparent;\">— Boris Cherny at <a href=\"https://youtu.be/SlGRN8jh2RI?t=747\">AI Ascent 2026</a></span></em></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 128,
+                                                "right": 128,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 2c — Outsourced-providers argument",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 3,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 2 — Outsourced-providers argument",
+                                    "config": {
+                                        "content": "<p><span style=\"background-color: transparent;\">This product is the version of that thesis for nonprofit software. I have outsourced the parts of the stack that should be outsourced — payments go through Stripe, bookkeeping through QuickBooks, email through Mailchimp. The providers nonprofits already trust handle the parts of the system that need institutional weight behind them. What this product does is provide the unified interface to those tools, plus the CMS, CRM, member portal, and event handling that incumbents charge ten times as much to provide a worse version of.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 2d — Closing paragraph",
+                        "display": "grid",
+                        "columns": 1,
+                        "layout_config": {
+                            "gap": "0",
+                            "grid_template_columns": "1fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 25,
+                                    "right": 0,
+                                    "bottom": 100,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#ffffff"
+                            }
+                        },
+                        "sort_order": 4,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 2 — Closing paragraph",
+                                    "config": {
+                                        "content": "<p><span style=\"background-color: transparent;\">That's the business case. One developer, focused product, real integrations with the providers you already use, flat pricing because there's no growth-at-any-cost machine behind the scenes.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "type": "layout",
+                        "label": "Band 3 — How this gets built (dark)",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "center",
+                            "grid_template_columns": "2fr 3fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 150,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "color": "#373c44"
+                            }
+                        },
+                        "sort_order": 5,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 3 — Image placeholder: about-execution-supporting-image (1:1)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "About execution supporting image placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "1:1",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "15/Bishop's_Stortford_Cicket_Club_groundsman,_Hertfordshire_1.jpg"
+                                        }
+                                    ],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 3 — How this gets built (text + CTAs)",
+                                    "config": {
+                                        "content": "<h2><strong style=\"background-color: transparent;\">How this gets built.</strong></h2><p><span style=\"background-color: transparent;\">This product is built with AI tools in the loop. As of late 2025, agentic coding has been adopted by software teams across most industries — the line where AI-assisted development beats hand-written code on speed and consistency has been crossed, and the practice is no longer experimental. What it means in practice for this product is that a single developer can move at the pace of a small team, with tighter discipline around security and process than most codebases enforce.</span></p><p><span style=\"background-color: transparent;\">The whole repo is public. You can read what's there. Nothing about how this product is built is hidden behind a \"trust us\" claim.</span></p><h3><strong style=\"background-color: transparent;\">Security posture</strong></h3><p><span style=\"background-color: transparent;\">The shortest version of good security hygiene is: store as little data as possible, be transparent about what you do store, and put a real wall around it. This product is built on that principle. The system rejects data that pattern-matches sensitive PII (SSNs, routing numbers, card numbers) at the input layer. Refunds are recorded but issued through Stripe — the app cannot move money outward, which is the most common abuse vector for systems like this. Each customer gets a single-server instance that backs up daily. It's a small target with a real wall in front of it.</span></p><p><span style=\"background-color: transparent;\">A full third-party security audit is scheduled before the product's general-availability release on July 1. The audit report will be published on this site once complete.</span></p>",
+                                        "ctas": [
+                                            {
+                                                "url": "https://github.com/abeuscher/npc-beta/",
+                                                "text": "Read the repo",
+                                                "style": "secondary-dark"
+                                            },
+                                            {
+                                                "url": "#",
+                                                "text": "Read the docs",
+                                                "style": "secondary-dark"
+                                            },
+                                            {
+                                                "url": "/demo",
+                                                "text": "Try the demo",
+                                                "style": "primary"
+                                            }
+                                        ],
+                                        "cta_alignment": "left",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 50
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

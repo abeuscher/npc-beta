@@ -145,6 +145,43 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 
 ---
 
+## Session 287 findings
+
+### G19 — `appearance_config` has no border knob for pull-quote treatment
+
+- **What was attempted:** rendering Band 2 widget 2 of the About page as a visually-distinct pull-quote per the about-layout-spec — "left padding to indent the block, a left border (1-4px solid in a neutral accent color), increased font weight or italic via Quill formatting inside the content, slightly larger size if available."
+- **What blocked it:** `appearance_config` carries `layout.padding`, `layout.margin`, `background.color`, `background.gradient`, `text.color`, `text.shadow` — no border-color / border-width / border-style fields on any side. The composer (`AppearanceStyleComposer`) cannot emit a left border from existing schema. The typography system has no pull-quote element row (the nine rows are h1–h6, p, ul_li, ol_li).
+- **Workaround used:** spec's named fallback path — left padding (32px), heavier vertical padding (50/50) to set the block apart from surrounding paragraphs, bold + italic Quill formatting inside the content, right-aligned attribution paragraph below. Renders as visually distinct but lacks the left-border accent the spec's primary path called for.
+- **Recommended action:** two options. **(a)** Extend `appearance_config` with a `border` group (`border.color`, `border.width`, `border.style`, `border.sides` — top/right/bottom/left or shorthand) and wire it through `AppearanceStyleComposer`. Reusable across any future band-side treatment, not just pull-quotes. **(b)** Add a new typography element row `blockquote` with its own size / weight / margin / padding / border defaults, and use Quill's `<blockquote>` block format inside the content. (b) is closer to the typography-as-source-of-truth pattern; (a) is more flexible per-instance. Either keeps the eventual real-pull-quote treatment from depending on inline styles. Low-priority — the workaround reads acceptably and the slot is a placeholder until the user fills the Cherny quote.
+
+### G20 — Global `.widget--text_block { height: 100% }` rule breaks stacked text widgets in a single layout cell
+
+- **What was attempted:** widening About Band 2 from the spec's `1fr 2fr 1fr` spacer-cell pattern to a full-container-width single-column layout (`columns: 1, grid_template_columns: "1fr"`), keeping the four spec'd text widgets stacked inside the single layout cell (heading + lead → pull-quote → outsourced argument → closing).
+- **What blocked it:** the global SCSS rule at `resources/scss/_custom.scss:144` sets `.widget--text_block { height: 100%; }`. In the original 3-column spec'd layout the rule was harmless because the four widgets stacked block-flow inside an auto-height column and the `100%` resolved to natural-content. In the single-column variant the grid track became a definite height (643px — the heading + lead paragraph's natural content height), every text_block then resolved `height: 100%` to that definite 643px, and the four widgets stacked at 4×643=2572px while their parent column reported 643px. Result: the heading filled the visible cell, the next three widgets rendered below the dark Band 3, and the page looked structurally broken.
+- **Workaround used:** split Band 2 into four sibling `page-layout` blocks (`Band 2a / 2b / 2c / 2d`), each `columns: 1` single-column white-background, each holding one text_block. With one widget per grid cell the `height: 100%` rule resolves to the single widget's natural content height and everything renders correctly. Inter-layout padding (150/0 on 2a, 50/50 on 2b, 0/0 on 2c, 25/100 on 2d) preserves the band's vertical rhythm; the shared white background and tight padding make the four layouts read as one composite band, same pattern as home Band 4's grid + CTA-footer composite.
+- **Recommended action:** narrow the `height: 100%` rule's scope so it only applies when a text_block is the **only** widget in its column slot — e.g. `.layout-column > .widget--text_block:only-child { height: 100%; }`, or move the rule onto a class the renderer applies conditionally. The rule's intent (vertical-balance text widgets across multi-column rows) is preserved; the collision with stacked-siblings-in-one-cell goes away. Alternative: drop the rule entirely and rely on per-widget `vertical_align` for cross-cell balancing. Either avoids the trap recurring on Pricing / Contact / Demo when stacked-text bands are likely to be needed.
+
+### G15 / G16 — not exercised on About
+
+- **G15 (Hero widget renders its own `.site-container` inside a layout cell):** not exercised on the About rebuild. Band 1 hero uses Text widget + Image widget per the 286 revision-pass precedent, side-stepping the nested-container surface entirely. Status: open from 286, no new manifestation this session.
+- **G16 (Hero `fullscreen: true` inside a layout cell):** same — not exercised. Band 1 height is controlled by layout padding (100/200) alone, per the spec's explicit directive ("the Hero widget's `fullscreen` attribute is not used on this band"). Status: open from 286, no new manifestation this session.
+
+### G17 — not exercised on About
+
+- The About spec has no CTA-only band. Band 3 carries body content + section heading + body + sub-heading + body + body + three CTAs in a single Text widget. The placeholder-content workaround was not needed. Status: open from 286, no new manifestation this session.
+
+### G18 — continued manifestation on About
+
+- Both image cells (Band 1 `about-hero-portrait` 4:3, Band 3 `about-execution-supporting-image` 1:1) ship with `max_width` blank and no per-cell placement controls. Full-cell-fill default applies, same as the four image cells on the home. Status: open from 286, same workaround acceptable.
+
+---
+
+## Session 287 — Demo-LP slug observation (not a new gap)
+
+The base prompt inherited from the brief noted that About should link to `/my-nonprofit` and `/my-nonprofit-workshop`. Confirmed via DB query that neither slug resolves in the local install. The about-layout-spec — canonical for layout interpretation per its authority section — explicitly cuts the link-row from the current About page and does not call for those links in any of the three new bands. No band-side gap surfaced; the brief-vs-spec divergence is intentional and documented inside the spec. The slugs may still be needed for future sessions (Pricing / Contact / Demo) if those specs call for them.
+
+---
+
 ## Session 286 — visible-change validation note
 
 The 286 rebuild **validates the layout-spec approach** the spec was authored to test. The eight bands appeared in spec order on first import (zero importer warnings). The cross-section rhythm (column shape × background tone × visual weight) reads as the spec's table predicts. The change from PMW1's cleaned-but-conservative home is clearly visible — added image placements across four cells, dark/gradient bookend, and the explicit eight-band structure replace the prior "preserve existing structure" outcome. The layout spec proved more directive than the brief-only approach. Equivalent specs for About / Pricing / Contact / Demo should follow the same pattern.

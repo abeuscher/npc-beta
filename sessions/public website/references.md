@@ -1,6 +1,6 @@
 # Reference Images Index
 
-The four images in `references/` are structural specs, not surface inspiration. They tell the agent what shape a section should take. They do not tell the agent what colors, fonts, or illustrations to use. The voice and visual restraint of NonprofitCRM is the opposite of these reference sites — what is being borrowed is the *page architecture*, not the *vibe*.
+The reference images in this folder (`reference-*.png`) are structural specs, not surface inspiration. They tell the agent what shape a section should take. They do not tell the agent what colors, fonts, or illustrations to use. The voice and visual restraint of NonprofitCRM is the opposite of these reference sites — what is being borrowed is the *page architecture*, not the *vibe*.
 
 ## reference-kitchen-sink-saas-page.png
 
