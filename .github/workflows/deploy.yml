@@ -23,9 +23,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set image tag
+      - name: Resolve and validate build version
         id: tag
-        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: |
+          if [ ! -f VERSION ]; then
+            echo "::error::VERSION file is missing at the repository root."
+            exit 1
+          fi
+          VER="$(tr -d '[:space:]' < VERSION)"
+          if ! printf '%s' "$VER" | grep -Eq '^0\.[0-9]+\.[0-9]+$'; then
+            echo "::error::VERSION must be a pre-1.0 string of the form 0.X.Y (got: '$VER')."
+            exit 1
+          fi
+          echo "IMAGE_TAG=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce immutable version tag
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.IMAGE_TAG }}
+        run: |
+          IMG="ghcr.io/${{ github.repository_owner }}/nonprofitcrm-app:${IMAGE_TAG}"
+          if docker manifest inspect "$IMG" >/dev/null 2>&1; then
+            echo "::error::Version ${IMAGE_TAG} is already published. Version tags are immutable — bump VERSION before merging to main."
+            exit 1
+          fi
+          echo "Version ${IMAGE_TAG} is unpublished; proceeding."
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2

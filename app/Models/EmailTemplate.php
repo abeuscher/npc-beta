@@ -149,9 +149,8 @@ class EmailTemplate extends Model implements HasMedia
                 'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
             ],
             'form_submission' => [
-                'subject'       => 'New submission: {{form_title}}',
-                'body'          => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
-                'footer_reason' => 'You received this email because form notifications are enabled for {{form_title}}.',
+                'subject' => 'New submission: {{form_title}}',
+                'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
             ],
         ];
 

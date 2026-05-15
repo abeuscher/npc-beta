@@ -103,7 +103,7 @@ class FormResource extends Resource
                             Forms\Components\TextInput::make('to')
                                 ->label('Send to')
                                 ->required()
-                                ->helperText('Use {{site_owner_email}} for the Site owner email set under Settings → Mail, or type a specific email address.'),
+                                ->helperText('Use {{contact_email}} for the Contact email set under Settings → CMS, or type a specific email address.'),
 
                             Forms\Components\Toggle::make('include_submission_data')
                                 ->label('Include submitted field values in the email')

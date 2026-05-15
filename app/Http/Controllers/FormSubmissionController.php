@@ -74,12 +74,16 @@ class FormSubmissionController extends Controller
             }
         }
 
-        $submission = FormSubmission::create([
-            'form_id'    => $form->id,
-            'data'       => $data,
-            'ip_address' => $request->ip(),
-            'created_at' => now(),
-        ]);
+        try {
+            $submission = FormSubmission::create([
+                'form_id'    => $form->id,
+                'data'       => $data,
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+            ]);
+        } catch (\App\Exceptions\FormNotificationDeliveryException) {
+            return $this->errorResponse($request, 'Your message could not be sent due to a server error. Please try again later.');
+        }
 
         // ── Contact creation/update (contact-type forms only) ─────────────
         if (($form->settings['form_type'] ?? 'general') === 'contact') {

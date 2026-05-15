@@ -44,7 +44,6 @@ class MailSettingsPage extends Page
             'mail_driver'             => SiteSetting::get('mail_driver', 'log'),
             'mail_from_name'          => SiteSetting::get('mail_from_name', ''),
             'mail_from_address'       => SiteSetting::get('mail_from_address', ''),
-            'site_owner_email'        => SiteSetting::get('site_owner_email', ''),
             'mailchimp_server_prefix' => SiteSetting::get('mailchimp_server_prefix', ''),
             'mailchimp_audience_id'   => SiteSetting::get('mailchimp_audience_id', ''),
             'mailchimp_webhook_path'  => SiteSetting::get('mailchimp_webhook_path', 'mailchimp'),
@@ -75,13 +74,6 @@ class MailSettingsPage extends Page
                             ->label('From address')
                             ->email()
                             ->required(),
-
-                        Forms\Components\TextInput::make('site_owner_email')
-                            ->label('Site owner email')
-                            ->email()
-                            ->rules(['nullable', 'email'])
-                            ->helperText('Where form-submission notifications are sent when a form uses the {{site_owner_email}} recipient token.')
-                            ->columnSpanFull(),
 
                         $this->sectionSaveAction('sending', 'Sending')->columnSpanFull(),
                     ])
@@ -134,7 +126,7 @@ class MailSettingsPage extends Page
     {
         $data = $this->data;
         foreach ([
-            'mail_driver', 'mail_from_name', 'mail_from_address', 'site_owner_email',
+            'mail_driver', 'mail_from_name', 'mail_from_address',
             'mailchimp_server_prefix', 'mailchimp_audience_id', 'mailchimp_webhook_path',
         ] as $key) {
             if (isset($data[$key])) {
@@ -275,7 +267,18 @@ class MailSettingsPage extends Page
                         return;
                     }
 
-                    Mail::to($data['email'])->send(new TestMail());
+                    try {
+                        Mail::to($data['email'])->send(new TestMail());
+                    } catch (\Throwable $e) {
+                        report($e);
+
+                        Notification::make()
+                            ->title('Test email could not be sent')
+                            ->body('The mail service rejected the request. Check the API key and sending configuration, then try again.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
 
                     Notification::make()
                         ->title('Test email sent')
@@ -301,7 +304,6 @@ class MailSettingsPage extends Page
         SiteSetting::set('mail_driver',             $data['mail_driver']);
         SiteSetting::set('mail_from_name',          trim($data['mail_from_name']));
         SiteSetting::set('mail_from_address',       trim($data['mail_from_address']));
-        SiteSetting::set('site_owner_email',        trim($data['site_owner_email'] ?? ''));
         SiteSetting::set('mailchimp_server_prefix', trim($data['mailchimp_server_prefix'] ?? ''));
         SiteSetting::set('mailchimp_audience_id',   trim($data['mailchimp_audience_id'] ?? ''));
         SiteSetting::set('mailchimp_webhook_path',  trim($data['mailchimp_webhook_path'] ?? 'mailchimp'));
@@ -323,7 +325,6 @@ class MailSettingsPage extends Page
                 SiteSetting::set('mail_driver',       $data['mail_driver']);
                 SiteSetting::set('mail_from_name',    trim($data['mail_from_name']));
                 SiteSetting::set('mail_from_address', trim($data['mail_from_address']));
-                SiteSetting::set('site_owner_email',  trim($data['site_owner_email'] ?? ''));
             })(),
             'mailchimp' => (function () use ($data) {
                 SiteSetting::set('mailchimp_server_prefix', trim($data['mailchimp_server_prefix'] ?? ''));

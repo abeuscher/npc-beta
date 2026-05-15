@@ -52,7 +52,7 @@ mTLS — terminated by nginx at the TLS layer.
 ```json
 {
   "status": "green|yellow|red",
-  "version": "abc1234",
+  "version": "0.291.1",
   "timestamp": "2026-04-30T15:42:00+00:00",
   "contract_version": "2.3.0",
   "subchecks": {
@@ -61,7 +61,7 @@ mTLS — terminated by nginx at the TLS layer.
     "redis":          { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
     "disk":           { "status": "green", "value": 42,                          "threshold": [80, 95], "message": null },
     "last_backup_at": { "status": "green", "value": "2026-04-29T01:30:00+00:00", "threshold": [24, 36], "message": null },
-    "version":        { "status": "green", "value": "abc1234",                   "threshold": null,     "message": null }
+    "version":        { "status": "green", "value": "0.291.1",                   "threshold": null,     "message": null }
   }
 }
 ```
@@ -71,7 +71,7 @@ mTLS — terminated by nginx at the TLS layer.
 | Field              | Type   | Description                                                                                                          |
 |--------------------|--------|----------------------------------------------------------------------------------------------------------------------|
 | `status`           | string | Overall — derived from all subcheck statuses (see worst-of rule). Always one of `green`, `yellow`, `red`. **Top-level `status` is never `unknown`** — `unknown` is a subcheck-level value only. |
-| `version`          | string | Application version (e.g., the seven-character git SHA, or `dev` locally).                                           |
+| `version`          | string | Build-stamped application version. Pre-1.0 pseudo-version of the form `0.<session>.<iteration>` (e.g. `0.291.1`), set at image build time and immutable per published image; `dev` for local/unstamped builds. Semver-ordered so FM can compare before→after across upgrades. Not derived at runtime from git. |
 | `timestamp`        | string | ISO 8601 server time at response composition.                                                                        |
 | `contract_version` | string | Semver. Tells Fleet Manager which contract version this response speaks.                                             |
 | `subchecks`        | object | Object keyed by subcheck name. Stable v1 keys listed below.                                                          |
@@ -446,6 +446,10 @@ These describe the v2.1.0 security posture; items carry status as either **shipp
 ---
 
 ## CHANGELOG
+
+### `2.3.0` revision — 2026-05-15 (session 291)
+
+**Documentation revision — no contract surface change, no version bump.** The `/api/health` `version` field's description and example values were corrected: it is a **build-stamped pre-1.0 pseudo-version of the form `0.<session>.<iteration>`** (e.g. `0.291.1`), set at image build time from the repo-root `VERSION` file, immutable per published image, semver-ordered so FM can compare before→after across per-client upgrades and roll back. Prior text wrongly described it as "the seven-character git SHA." Response shape, status enums, subcheck keys, and auth are unchanged; `HealthController::CONTRACT_VERSION` stays `2.3.0`. The CRM build pipeline now reads `VERSION`, bakes it as the `APP_VERSION` build-arg, and tags the published GHCR image with that exact string immutably (`latest` still moves; a re-used version tag fails the build rather than overwriting). FM-side consumers pick up the corrected field description on the next WebFetch refresh; no consumer-code change forced (FM was already reading `version` as an opaque string — it now carries ordered semantics it can act on).
 
 ### `2.3.0` — 2026-05-08 (session 268)
 

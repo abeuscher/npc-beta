@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Exceptions\FormNotificationDeliveryException;
 use App\Mail\FormSubmissionMailable;
 use App\Models\FormSubmission;
 use App\Models\SiteSetting;
@@ -9,7 +10,7 @@ use Illuminate\Support\Facades\Mail;
 
 class FormSubmissionObserver
 {
-    private const ALLOWED_TOKENS = ['site_owner_email'];
+    private const ALLOWED_TOKENS = ['contact_email'];
 
     public function created(FormSubmission $submission): void
     {
@@ -36,7 +37,13 @@ class FormSubmissionObserver
                 continue;
             }
 
-            Mail::to($recipient)->send(new FormSubmissionMailable($form, $submission, $notification));
+            try {
+                Mail::to($recipient)->send(new FormSubmissionMailable($form, $submission, $notification));
+            } catch (\Throwable $e) {
+                report($e);
+
+                throw new FormNotificationDeliveryException('Form notification delivery failed.', previous: $e);
+            }
         }
     }
 

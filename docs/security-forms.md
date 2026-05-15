@@ -67,9 +67,9 @@ The Site Settings page includes a logo upload field backed by Filament's file up
 
 ---
 
-## Notification dispatch surface (planned — session 291)
+## Notification dispatch surface (shipped — session 291)
 
-Session 291 adds operator-configurable email notifications on form submission (`Form.settings.notifications`; see `sessions/scoping-form-notifications.md`). This section pre-registers the threat model **before the feature is built** so the eventual third-party audit (scheduled pre-GA) finds a documented set of known issues with dispositions rather than discovering them cold. Update statuses as 291 lands and as the surface evolves.
+Session 291 shipped operator-configurable email notifications on form submission (`Form.settings.notifications`; see `sessions/scoping-form-notifications.md` and the 291 log). This section was pre-registered **before** the build; the dispositions below are now **as-shipped**. **As-built deltas relevant to the threat model:** the notification body is an operator-editable `form_submission` System Email (not a fixed template) — submission data still enters only through an `e()`-escaped `{{submission}}` block token, and the subject is rendered from a token set that **excludes** submission data, so the trusted-channel-injection and recipient/header invariants hold even with operator-edited templates; the recipient token is the existing `{{contact_email}}` CMS setting (allowlist resolver, single-email validated); a graceful mail-failure path was added (`report()` server-side, generic visitor error, no transport-detail leak). The recipient invariant and the three required security controls are covered by Pest in `tests/Feature/FormSubmissionNotificationTest.php`. Update statuses as the surface evolves.
 
 **Framing for the auditor:** session 291 does not create the public-form exposure — `POST /forms/{handle}` already stores submissions and conditionally emails today. It **converts a mostly-inbound storage surface into an outbound-mail-emitting one**: same endpoint, materially larger blast radius (each accepted submission now dispatches N operator-configured emails, and submission content is rendered into outbound mail).
 
@@ -106,9 +106,9 @@ Any change to the notification surface re-triggers this register — specificall
 | 1 | Regex ReDoS — no save-time validation on custom patterns | High | Fixed (session 048) |
 | 2 | Hidden field value tampering | Medium | Refuted — already prevented by controller logic |
 | 3 | Submission flow test coverage | Gap (not a vulnerability) | Fixed (session 048) |
-| 4 | Notification flood / sending-reputation burn via public endpoint | Medium | Pre-registered — accepted for v1, mitigation path identified (planned session 291) |
-| 5 | Sync-dispatch resource amplification | Low–Medium | Pre-registered — by design for v1 (planned session 291) |
-| 6 | Spam/phishing relay via submitter-addressed mail | High (if introduced) | Pre-registered — closed in v1 by recipient invariant; tripwire for future features |
-| 7 | Trusted-channel content injection in notification body | Low–Medium | Pre-registered — mitigated by Blade escaping; residual accepted (planned session 291) |
-| 8 | PII emailed in cleartext beyond the trust boundary | Medium | Pre-registered — known gap, deferred with rationale (planned session 291) |
-| 9 | Post-compromise mail relay via notifications config | High (post-auth) | Pre-registered — accepted residual, mitigation path identified (planned session 291) |
+| 4 | Notification flood / sending-reputation burn via public endpoint | Medium | Shipped 291 — accepted for v1; existing throttle + honeypot + PII gate; mitigation path identified |
+| 5 | Sync-dispatch resource amplification | Low–Medium | Shipped 291 — by design for v1 (sync dispatch); revisit on forcing function |
+| 6 | Spam/phishing relay via submitter-addressed mail | High (if introduced) | Closed in v1 by the recipient invariant (no submitter-addressed mail); standing tripwire for future features |
+| 7 | Trusted-channel content injection in notification body | Low–Medium | Shipped 291 — `e()`-escaped `{{submission}}` token only, no `{!! !!}` on submission data; subject token-set excludes submission data; residual (operator receives attacker text in a trusted envelope) accepted |
+| 8 | PII emailed in cleartext beyond the trust boundary | Medium | Shipped 291 — known gap, deferred with rationale (contact-page collects no scanner-flagged PII classes; scrub/restrict is the path if higher-sensitivity forms adopt notifications) |
+| 9 | Post-compromise mail relay via notifications config | High (post-auth) | Shipped 291 — accepted residual; mitigation path (config-change audit + outbound-volume alerting) overlaps the FM abuse-alerting arc |

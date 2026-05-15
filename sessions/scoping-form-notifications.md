@@ -1,6 +1,8 @@
 # Scoping — Form Submission Notifications
 
-**Status:** scope only, not a session. Surfaced from session 290 (Contact page rebuild) when the user asked about leveraging the existing form-builder + form-manager + email infrastructure to wire site-owner notifications onto form submissions. Lift to a numbered session when the user is ready.
+**Status:** **lifted and resolved at session 291.** Surfaced from session 290 (Contact page rebuild) when the user asked about leveraging the existing form-builder + form-manager + email infrastructure to wire site-owner notifications onto form submissions.
+
+**As-built delta vs the proposed shape below:** the notification email shipped as an **operator-editable `form_submission` System Email** (rendered via `EmailTemplate::forHandle`, branded wrapper) — *not* the proposed single fixed built-in Blade template; the recipient token is the existing **`{{contact_email}}`** CMS SiteSetting — *not* a new `site_owner_email` key (added then removed for reuse-over-new-surface); per-form config narrowed to routing only (`to` + `include_submission_data`) with subject/body owned by the editable template; graceful mail-failure handling was added (out of original scope, user-directed); and decision 5's "Demo builds on this primitive" was found stale (Demo is form-less per the s289 architecture — it does not consume this surface; the consumer is the Contact page). Everything else (sync dispatch, allowlist resolver, `e()`-escaped `{{submission}}`, security invariants, no extra spam controls) shipped as proposed. See `sessions/291. … — Log.md`.
 
 **Driving question (user, session 290):** *"One can build a form that sends a system email or maybe several? We have a lot of stuff built and I am looking for ways to leverage that through connecting pieces of it."*
 

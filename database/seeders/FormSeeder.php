@@ -164,7 +164,7 @@ class FormSeeder extends Seeder
             ['handle' => 'contact-page'],
             [
                 'title'       => 'Contact Page Form',
-                'description' => 'Form embedded in the public Contact page hero. Captures name, email, phone, message, and a demo-interest checkbox. Submissions store in form_submissions and auto-sync a Contact record (email-keyed). On submit, the site owner is notified by email at the {{site_owner_email}} address set under Settings → Mail.',
+                'description' => 'Form embedded in the public Contact page hero. Captures name, email, phone, message, and a demo-interest checkbox. Submissions store in form_submissions and auto-sync a Contact record (email-keyed). On submit, a notification is emailed to the {{contact_email}} address set under Settings → CMS.',
                 'is_active'   => true,
                 'settings'    => [
                     'submit_label'    => 'Send',
@@ -173,7 +173,7 @@ class FormSeeder extends Seeder
                     'form_type'       => 'contact',
                     'notifications'   => [
                         [
-                            'to'                      => '{{site_owner_email}}',
+                            'to'                      => '{{contact_email}}',
                             'include_submission_data' => true,
                         ],
                     ],

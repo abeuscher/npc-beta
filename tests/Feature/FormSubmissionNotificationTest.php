@@ -7,6 +7,11 @@ use App\Models\FormSubmission;
 use App\Models\SiteSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Symfony\Component\Mailer\Envelope as MailerEnvelope;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\TransportInterface;
+use Symfony\Component\Mime\RawMessage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -56,7 +61,7 @@ function notificationSubject(Form $form, FormSubmission $submission, ?array $not
 // ── Schema round-trip ─────────────────────────────────────────────────────────
 
 it('round-trips the notifications array on Form.settings', function () {
-    $config = [['to' => '{{site_owner_email}}', 'include_submission_data' => true]];
+    $config = [['to' => '{{contact_email}}', 'include_submission_data' => true]];
 
     $form = notifyForm($config);
 
@@ -76,11 +81,11 @@ it('dispatches one notification to a literal recipient on submit', function () {
     Mail::assertSent(FormSubmissionMailable::class, fn ($mail) => $mail->hasTo('owner@site.test'));
 });
 
-it('resolves the {{site_owner_email}} token from SiteSetting', function () {
+it('resolves the {{contact_email}} token from the CMS contact_email SiteSetting', function () {
     Mail::fake();
-    SiteSetting::set('site_owner_email', 'configured-owner@site.test');
+    SiteSetting::set('contact_email', 'configured-owner@site.test');
 
-    $form = notifyForm([['to' => '{{site_owner_email}}']]);
+    $form = notifyForm([['to' => '{{contact_email}}']]);
 
     submit($form);
 
@@ -156,12 +161,12 @@ it('never lets submission data redirect, add, or CRLF-inject a recipient or head
 it('rejects unknown or malformed recipient tokens without sending or leaking SiteSetting values', function () {
     Mail::fake();
     SiteSetting::set('resend_api_key', 'secret-should-never-be-a-recipient@leak.test');
-    SiteSetting::set('site_owner_email', '');
+    SiteSetting::set('contact_email', '');
 
     $form = notifyForm([
         ['to' => '{{resend_api_key}}'],
         ['to' => '{{ }}'],
-        ['to' => '{{site_owner_email}}'],
+        ['to' => '{{contact_email}}'],
         ['to' => '{{nope}}'],
     ]);
 
@@ -289,4 +294,45 @@ it('ignores a legacy per-form subject key now that the subject lives on the syst
     Mail::assertSent(FormSubmissionMailable::class, function ($mail) {
         return $mail->envelope()->subject === 'New submission: Contact';
     });
+});
+
+// ── Graceful handling when the mail transport fails (bad API key etc.) ─────────
+
+it('degrades gracefully and does not leak when the mail transport throws on send', function () {
+    $throwing = new class implements TransportInterface {
+        public function send(RawMessage $message, ?MailerEnvelope $envelope = null): ?SentMessage
+        {
+            throw new TransportException('Simulated transport failure (e.g. bad API key)');
+        }
+
+        public function __toString(): string
+        {
+            return 'throwing';
+        }
+    };
+
+    config([
+        'mail.default'          => 'throwing',
+        'mail.mailers.throwing' => ['transport' => 'throwing'],
+    ]);
+    Mail::extend('throwing', fn () => $throwing);
+
+    SiteSetting::set('contact_email', 'owner@site.test');
+    $form = notifyForm([['to' => '{{contact_email}}']]);
+
+    $response = submit($form);
+
+    // Page is not broken: no 500 / exception page, just the form's normal error path.
+    $response->assertSessionHasErrors('_form');
+    expect($response->getStatusCode())->toBe(302);
+
+    // The visitor sees a generic server-error message — no transport detail leaks.
+    $error = session('errors')->get('_form')[0];
+    expect($error)
+        ->toContain('server error')
+        ->not->toContain('Simulated transport failure')
+        ->not->toContain('API key');
+
+    // The submission itself is still stored (data not lost).
+    expect(FormSubmission::where('form_id', $form->id)->count())->toBe(1);
 });
