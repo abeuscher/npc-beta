@@ -197,6 +197,54 @@ This isn't a gap to fix — the preset rule is correct (presets are designed as 
 
 ---
 
+## Session 289 findings
+
+### G15 / G16 — not exercised on Pricing
+
+- **G15 (Hero widget renders its own `.site-container` inside a layout cell):** not exercised. Band 1 hero is Text widget + Image widget per About Band 1's precedent (286 revision-pass + 287 application), side-stepping the nested-container surface. Status: open from 286, no new manifestation this session.
+- **G16 (Hero `fullscreen: true` inside a layout cell):** not exercised. Band 1 height is controlled by layout padding (100/200) alone — `fullscreen` not used. Status: open from 286, no new manifestation this session.
+
+### G17 — not exercised on Pricing
+
+- No CTA-only Text widget bands on the Pricing page. Band 5 (Final CTA) carries H2 + body + smaller-italic question paragraph + two CTAs in a single Text widget — non-empty content + CTAs, so the placeholder-content workaround was not needed. Status: open from 286, no new manifestation this session.
+
+### G18 — continued manifestation on Pricing
+
+- Both image cells (Band 1 `pricing-hero-portrait` 4:3, Band 4 `pricing-pii-supporting-image` 1:1) ship with `max_width` blank and no per-cell placement controls. Full-cell-fill default applies, same as the home and About image cells. Status: open from 286, same workaround acceptable.
+
+### G19 — not exercised on Pricing
+
+- No pull-quote treatment on the Pricing page. Status: open from 287, no new manifestation this session.
+
+### G20 — not exercised on Pricing (avoided via 4-slot/2-column-CSS layout)
+
+- Band 3 (À la carte) renders four service descriptions as a 2×2 visual grid. The stacked-siblings-in-one-cell trap (the surface G20 describes) was avoided by structuring the inner layout as `columns: 4, grid_template_columns: "1fr 1fr"` — four `.layout-column` slots, one Text widget per slot, CSS auto-wraps into two visual rows of two. Each `.layout-column` has exactly one Text widget, so the global `.widget--text_block { height: 100% }` rule resolves to that single widget's natural content height. The session prompt's "Default: standard `columns: 2, grid_template_columns: '1fr 1fr'` layout container with four Text widgets, one per cell" reads as ambiguous between this shape and the 2-slots-with-2-stacked-widgets shape (the latter is the G20-triggering case); chose the former on G20-avoidance grounds. Status: open from 287, no new manifestation this session.
+
+### G-pricing-1 — continued; v1 emphasis surfaced as visibly subtle
+
+- **What was attempted:** Band 2 (comparison chart) shipped via the new `pricing_chart` widget with v1 background-tint emphasis on the Monthly column (`#f8f9fa` per the spec's accepted path 2 / 288's resolution). The widget itself owns the band — heading, subheading, three columns, and footnote all live in the widget's config; no surrounding composite. The "Recommended" eyebrow appears in caps above the Monthly column title.
+- **What blocked it (unchanged):** `appearance_config` still has no border knob; the widget's built-but-unfilled border slot remains transparent / 0.
+- **Workaround used:** as shipped — emphasis = background tint only.
+- **Observation from the live page:** the `#f8f9fa` tint is **visibly subtle** against the white card backgrounds; the differentiation reads primarily from the "RECOMMENDED" eyebrow and the longer attribute list rather than the background. Whether this is "subtle enough" or "too subtle" is the user-judgment question the spec anticipated. Surfaced for review at session end.
+- **Recommended action:** unchanged from 288 — G19's appearance-config border-group extension would light up the widget's v1.1 border slot; lift to a separate session if the user signals.
+
+### Footnote rendering — continued italic + lighter-weight workaround
+
+- **What was attempted:** Band 2 footnote rendered in smaller body text per the spec ("Smaller body size if available... if the typography system does not have a smaller body-text size, log it as a gap and use italic + lighter weight as the workaround").
+- **What blocked it:** typography system has no caption / small-body element row (the nine rows are h1–h6, p, ul_li, ol_li — confirmed in audit-summary).
+- **Workaround used:** the widget renders the footnote rich text as-is; the footnote content is wrapped in `<em>` inside the Quill payload, matching the `demoConfig()` pattern. Renders as italic body text with the asterisk-joke intact.
+- **Observation from the live page:** italic-body reads as smaller-feeling against the upright body in the cards above, but it is not actually smaller — the joke's "fine print at the bottom of a pricing sheet" visual setup is partially preserved by the italic shift in voice. May read as too subtle.
+- **Recommended action:** typography small-body / caption row addition — same forecast the spec called out as a likely surfaced gap. Lift independently if the user signals; not a blocker for the page.
+
+### Pricing Band 5 secondary text-link rendering — minor compromise vs spec
+
+- **What was attempted:** Band 5 final-CTA per the spec — "Primary CTA `[Try the demo]` (primary, → `/demo`); Secondary line below the CTA, smaller text: 'Want a personal instance loaded with your data?' `[Request a 7-day trial →]` (`secondary-dark` variant ... → `/contact`)."
+- **What blocked it:** the spec's anatomy is *primary CTA → small question text → secondary text-link as a separate visual block*, but Text widget renders its `ctas` array as a single CTA row below the content block. Two CTAs in one widget = two buttons side by side, with the question text above both rather than between them.
+- **Workaround used:** single Text widget with H2 + body + smaller-italic question paragraph in the content, plus two CTAs (`Try the demo` primary, `Request a 7-day trial →` secondary-dark) in `ctas` with `cta_alignment: center`. Reads as "headline + body + question + two CTA row." Different from the spec's stacked anatomy; preserves both routes and the secondary-dark variant for gradient readability.
+- **Recommended action:** **low priority.** Either (a) a Text widget mode that splits CTAs into per-line groupings (rare pattern, probably not worth a system change), or (b) accept the row-layout compromise as the convention for paired primary + secondary CTAs on a band. (b) is fine if the question-as-intro reads as clearly tied to the secondary CTA. Surface for user judgment at review.
+
+---
+
 ## Session 287 — Demo-LP slug observation (not a new gap)
 
 The base prompt inherited from the brief noted that About should link to `/my-nonprofit` and `/my-nonprofit-workshop`. Confirmed via DB query that neither slug resolves in the local install. The about-layout-spec — canonical for layout interpretation per its authority section — explicitly cuts the link-row from the current About page and does not call for those links in any of the three new bands. No band-side gap surfaced; the brief-vs-spec divergence is intentional and documented inside the spec. The slugs may still be needed for future sessions (Pricing / Contact / Demo) if those specs call for them.
