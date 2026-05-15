@@ -176,6 +176,27 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 
 ---
 
+## Session 288 findings
+
+### G-pricing-1 — border styling in `appearance_config` (widget-level partial)
+
+- **What was attempted:** building the new `pricing_chart` widget with the visual emphasis on the recommended column expressed as a border (or bordered card treatment). Per the widget spec's design notes — "v1.1 emphasis = thicker / differently-colored border."
+- **What blocked it:** same root cause as G19 — `appearance_config` has no border knob, and the composer (`AppearanceStyleComposer`) cannot emit border CSS from existing schema.
+- **Workaround used:** the widget ships v1 with the spec's accepted background-tint emphasis (`#f8f9fa` on emphasized columns; pure white on the others). The Blade template carries an empty border slot via CSS custom properties (`--pc-border-color`, `--pc-border-width`, `--pc-border-color-emphasized`), all defaulting to transparent / 0. v1.1 lights up the slot via `appearance_config` extension — config change, not a template rewrite.
+- **Recommended action:** still G19's options — extend `appearance_config` with a border group and wire it through `AppearanceStyleComposer`. The pricing-chart widget is now the second concrete consumer (after the About pull-quote); both light up cleanly when the system extension lands. Low priority — the workaround reads acceptably for v1, the user can lift independently.
+
+### G19 — pull-quote / panel border (continued from 287)
+
+The pricing-chart widget hits the same underlying `appearance_config` border-knob surface as About's pull-quote (G19). Both consumers ship with the same v1 workaround (background tint + padding instead of border accent). When the appearance-config border knob lands, both surfaces upgrade in one extension. No new row needed; logged here so the second consumer is visible.
+
+### `presets()` shape constraint surfaced (not a new gap, design observation)
+
+The release-plan entry for 288 called for a v1 "Marketing site tiers" preset on the new widget. `WidgetManifestTest`'s preset rule forbids content-group keys in `preset.config` — and the widget's `columns` field is content-group. Resolved by exposing the marketing-site tier configuration as a public `marketingSiteTiers()` method on the definition class plus baking it into `demoConfig()`. Session 289 reaches into the helper for its one-click setup; same outcome as a preset, different mechanism.
+
+This isn't a gap to fix — the preset rule is correct (presets are designed as appearance-only "skin swaps" that preserve content). It does suggest a future pattern: structured-content arrays like `columns` may want a separate "starter content" / "template" concept distinct from appearance presets. Not a session 288 fix; logged for awareness.
+
+---
+
 ## Session 287 — Demo-LP slug observation (not a new gap)
 
 The base prompt inherited from the brief noted that About should link to `/my-nonprofit` and `/my-nonprofit-workshop`. Confirmed via DB query that neither slug resolves in the local install. The about-layout-spec — canonical for layout interpretation per its authority section — explicitly cuts the link-row from the current About page and does not call for those links in any of the three new bands. No band-side gap surfaced; the brief-vs-spec divergence is intentional and documented inside the spec. The slugs may still be needed for future sessions (Pricing / Contact / Demo) if those specs call for them.

@@ -30,6 +30,7 @@ A handful of widgets have enough configuration surface to warrant a dedicated he
             { label: 'Donation Form', category: 'Giving and Sales · Forms', description: 'Configurable donation form with preset amounts, monthly, and annual options.', slug: 'widget-donation-form' },
             { label: 'Event Calendar', category: 'Events', description: 'Interactive month/week calendar view of published events.', slug: 'widget-event-calendar' },
             { label: 'Event Registration Form', category: 'Events · Forms', description: 'Sign-up form for a selected event, with payment support for paid events.', slug: 'widget-event-registration' },
+            { label: 'Pricing Chart', category: 'Content', description: 'Side-by-side pricing comparison table with N tier columns and an emphasis treatment for the recommended tier.', slug: 'widget-pricing-chart' },
             { label: 'Web Form', category: 'Forms', description: 'Embeds a contact or general-purpose form built in the Form Manager.', slug: 'widget-web-form' }
         ],
         toggle(col) {
