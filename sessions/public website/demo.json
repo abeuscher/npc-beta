@@ -1,0 +1,144 @@
+{
+    "format_version": "1.1.0",
+    "exported_at": "2026-05-15T00:00:00+00:00",
+    "payload": {
+        "templates": [],
+        "pages": [
+            {
+                "id": "5a483468-8ea5-4dfb-9842-de4f0e1f7fd5",
+                "title": "Demo",
+                "slug": "demo",
+                "type": "default",
+                "template_name": null,
+                "status": "published",
+                "meta_title": null,
+                "meta_description": null,
+                "noindex": false,
+                "head_snippet": null,
+                "body_snippet": null,
+                "custom_fields": [],
+                "published_at": "2026-05-15T00:00:00+00:00",
+                "media": [],
+                "widgets": [
+                    {
+                        "type": "layout",
+                        "label": "Band 1 — The split (full-bleed 50/50; viewport-height via generous cell padding — G-demo viewport/full-bleed workaround)",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "0",
+                            "align_items": "stretch",
+                            "grid_template_columns": "1fr 1fr",
+                            "background_full_width": true,
+                            "content_full_width": true
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            }
+                        },
+                        "sort_order": 0,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 1 — Dark side (H1 + 2 paragraphs — pending-copy: real copy from user replaces the lorem placeholders)",
+                                    "config": {
+                                        "content": "<h1><strong style=\"background-color: transparent;\">Instant Demo.</strong></h1><p><span style=\"background-color: transparent;\">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</span></p><p><span style=\"background-color: transparent;\">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "background": {
+                                            "color": "#0a2540"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 120,
+                                                "left": 80,
+                                                "right": 80,
+                                                "bottom": 220
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 1 — Light side (single primary CTA → /demo/enter; G-demo-1: no large-button size variant — standard primary carried by whitespace)",
+                                    "config": {
+                                        "content": "",
+                                        "ctas": [
+                                            {
+                                                "url": "/demo/enter",
+                                                "text": "Click Me",
+                                                "style": "primary"
+                                            }
+                                        ],
+                                        "cta_alignment": "center",
+                                        "vertical_align": "middle"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "background": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 120,
+                                                "left": 80,
+                                                "right": 80,
+                                                "bottom": 120
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

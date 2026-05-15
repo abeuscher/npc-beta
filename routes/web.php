@@ -5,6 +5,7 @@ use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
+use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
@@ -82,6 +83,13 @@ Route::post('/products/waitlist', [ProductWaitlistController::class, 'store'])
 // Web form submissions
 Route::post('/forms/{handle}', [FormSubmissionController::class, 'store'])
     ->name('forms.submit')
+    ->middleware('throttle:10,1');
+
+// Form-less demo auto-login — demo server only (guarded inside the controller
+// on the same signal isDemoMode() keys on; inert/404 elsewhere). Per-IP
+// throttled; reuses one shared, tightly-scoped "Demo User" account.
+Route::get('/demo/enter', DemoLoginController::class)
+    ->name('demo.enter')
     ->middleware('throttle:10,1');
 
 // ── Portal auth routes ────────────────────────────────────────────────────────

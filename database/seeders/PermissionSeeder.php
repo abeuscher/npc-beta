@@ -307,6 +307,46 @@ class PermissionSeeder extends Seeder
             ],
         ));
 
+        // ── demo ─────────────────────────────────────────────────────────────
+        // Shared public-demo account role, bound by the public /demo/enter
+        // auto-login route. Product-feel CMS + CRM surfaces a prospect needs,
+        // read-only finance/events. Explicitly NEVER granted (binding deny-list,
+        // session 292): user/role management, mail/email-template/financial/
+        // routing/theme/CMS settings, API keys, and any secret, integration,
+        // instance-config, or real-data-exfiltration surface. Never super_admin.
+        $demo = Role::firstOrCreate(
+            ['name' => 'demo', 'guard_name' => 'web'],
+            ['label' => 'Demo'],
+        );
+        $demo->update(['label' => 'Demo']);
+        $demo->syncPermissions(array_merge(
+            $fullPermissions('contact'),
+            $fullPermissions('organization'),
+            $fullPermissions('household'),
+            $fullPermissions('membership'),
+            $fullPermissions('note'),
+            $fullPermissions('tag'),
+            $fullPermissions('mailing_list'),
+            $fullPermissions('page'),
+            $fullPermissions('post'),
+            $fullPermissions('form'),
+            $fullPermissions('collection'),
+            $fullPermissions('collection_item'),
+            $fullPermissions('navigation_menu'),
+            $fullPermissions('product'),
+            $viewPermissions('event'),
+            $viewPermissions('donation'),
+            $viewPermissions('transaction'),
+            $viewPermissions('fund'),
+            $viewPermissions('campaign'),
+            [
+                'view_any_member',
+                'use_advanced_list_filters',
+                'view_any_form_submission',
+                'view_form_submission',
+            ],
+        ));
+
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.
         Role::firstOrCreate(

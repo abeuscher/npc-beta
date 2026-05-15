@@ -646,7 +646,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 37. **E7.** Column-Layout Mobile Collapse *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
 38. **E8.** UI/UX Sprint
 39. **Public Marketing Website — per-page sessions** *(PMW2/PMW3 legacy two-page framing superseded by the layout-spec-driven per-page approach validated at 286): 285 CMS Fixes ✅, 286 Home ✅, 287 About ✅, 288 Pricing Chart Widget ✅, 289 Pricing ✅, 290 Contact ✅, 291 Form Submission Notifications ✅ (lifted gap, before Demo))*
-40. **292.** Public Marketing Website — Demo Page Build *(prereq: 291; form-less single-button auto-login + the split page per `demo-page-spec.md`)*
+40. **292.** Public Marketing Website — Demo Page Build *(✅ closed at session 292; form-less single-button `/demo/enter` auto-login + tightly-scoped `demo` role + per-IP throttle + demo-server guard + the split page per `demo-page-spec.md`; CRM contract stays v2.3.0)*
 41. **293.** Public Marketing Website — Page-capture harness + track close-out *(prereq: all prior PMW sessions)*
 42. **E12.** Housekeeping Batch 2 *(absorbs the public-website-blocking subset of `sessions/housekeeping-inbox.md` items)*
 43. **E15.** Table widget *(promoted from housekeeping inbox at 282 audit)*

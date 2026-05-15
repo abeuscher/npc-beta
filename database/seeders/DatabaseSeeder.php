@@ -65,6 +65,24 @@ class DatabaseSeeder extends Seeder
             );
         }
 
+        // ── Shared public-demo account (demo server only) ────────────────────
+        // The public /demo/enter auto-login reuses this one row. Seeded only
+        // when the install identifies as the demo server, so a production DB
+        // never carries a public auto-login account. Bound to the tightly-
+        // scoped `demo` role (PermissionSeeder ran above).
+        if (isDemoMode()) {
+            $demoUser = User::firstOrCreate(
+                ['email' => 'demo@demo.local'],
+                [
+                    'name'      => 'Demo User',
+                    'password'  => Hash::make(\Illuminate\Support\Str::random(40)),
+                    'is_active' => true,
+                ]
+            );
+
+            $demoUser->syncRoles(['demo']);
+        }
+
         // ── Site settings (installation defaults) ───────────────────────────
         $siteSettingDefaults = [
             ['key' => 'site_name',        'value' => 'My Organization',    'group' => 'general', 'type' => 'string'],

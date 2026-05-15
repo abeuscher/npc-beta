@@ -319,3 +319,35 @@ The base prompt inherited from the brief noted that About should link to `/my-no
 ## Session 286 — visible-change validation note
 
 The 286 rebuild **validates the layout-spec approach** the spec was authored to test. The eight bands appeared in spec order on first import (zero importer warnings). The cross-section rhythm (column shape × background tone × visual weight) reads as the spec's table predicts. The change from PMW1's cleaned-but-conservative home is clearly visible — added image placements across four cells, dark/gradient bookend, and the explicit eight-band structure replace the prior "preserve existing structure" outcome. The layout spec proved more directive than the brief-only approach. Equivalent specs for About / Pricing / Contact / Demo should follow the same pattern.
+
+---
+
+## Session 292 findings
+
+The Demo page deliberately overrides the marketing-page conventions (one band, 50/50 dark/light split, no images, no scrolling chapters) per `demo-page-spec.md`. It exercised three structural gaps the spec anticipated; none blocked the page.
+
+### G-demo-1 — no larger-than-standard `primary` button size variant
+
+- **What was attempted:** rendering the right-cell "Click Me" CTA "larger than the standard primary button used elsewhere — roughly 1.25–1.5×, taller, wider, slightly larger font" per the spec, so the button reads as the unmissable focal point of the conversion gate.
+- **What blocked it:** the `ctas` schema is `{url, text, style}` only — `style` selects a button variant (`primary` / `secondary` / `secondary-dark` / …); there is no size knob, and no large-`primary` variant exists in `button_styles`. Confirmed by inspecting the CTA shape used across `home.json` / `pricing.json` (no size field) and the button-style inventory.
+- **Workaround used:** standard `primary` at standard size, made the focal point by whitespace alone — the button is the only element in its cell, vertically + horizontally centered, in generous cell padding (the spec's explicitly-accepted fallback: "the button doesn't *have* to be physically larger to feel important; it just has to be the only thing on its side of the page").
+- **Recommended action:** if a larger conversion-button is wanted later, add a size dimension to the CTA/button system (a `size` field on `ctas`, or a large-`primary` variant in `button_styles`). Shares the underlying surface as the broader "button system has one size per variant" limitation. User's per-gap call per the gap-resolution discipline; the page works as-is.
+
+### G-demo-2 — no viewport-height-aware layout sizing
+
+- **What was attempted:** sizing the single band to "fill the viewport minus the nav and footer" (`min-height: calc(100vh - nav - footer)` or equivalent) so nothing else is visible on load — the spec's intent that the visitor's entire field of view is the split.
+- **What blocked it:** the layout primitive's `appearance_config.layout` exposes only `padding` / `margin` (no min-height / viewport-height option). A page-level `100vh` min-height applies, but the band itself can't be told to fill it, leaving a white gap between the band and the footer.
+- **Workaround used:** generous symmetric cell padding to make the band tall, then — on the user's visual review — an asymmetric **+100px on the dark cell's bottom padding** (120 → 220) to close the residual white gap under the band. Accepted by the user; synced into the committed `demo.json`.
+- **Recommended action:** a viewport-height-aware sizing option on the layout primitive (e.g. a `min_height: 100vh`-class control in `appearance_config.layout`) would express the spec natively. Padding-as-height is brittle across viewports. User's per-gap call; the page reads correctly at the reviewed viewport.
+
+### G-demo-3 — full-bleed cells in a 2-column layout
+
+- **What was attempted:** the two cells extending edge-to-edge to the viewport (true 50/50, no content container gutter), with content padded inward from those edges — the spec's "full-bleed columns."
+- **What blocked it:** full-bleed is governed by the `background_full_width` / `content_full_width` toggles; the exact "cells to the viewport edge, content padded inward independently" combination is not cleanly separable from those two booleans.
+- **Workaround used:** both `background_full_width` and `content_full_width` set true, `gap: 0`, `align_items: stretch`, per-cell internal padding doing the inward inset. Renders edge-to-edge acceptably; logged as the spec directed rather than chasing an exact separation.
+- **Recommended action:** if precise independent control is wanted, separate "cells reach viewport edge" from "content inset within cell" in the column-layout controls. User's per-gap call; the visual result matches the spec's intent.
+
+### Prior open gaps — status on Demo
+
+Not exercised on the Demo page (no images, no pull-quote/border treatment, no chart, no stacked-text-in-single-cell beyond one widget, no form): **G15 / G16 / G17 / G18 / G19 / G20 / G21 / G-pricing-1**. The split-page shape simply doesn't touch their surfaces. Standing status from prior sessions is unchanged. G22 ✅ (290) / G23 ✅ (291) remain resolved and were not needed here (the Demo page is form-less by construction).
+

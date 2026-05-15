@@ -293,6 +293,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 289 | Public Marketing Website — Pricing Layout Rebuild |
 | 290 | Public Marketing Website — Contact Layout Rebuild |
 | 291 | Public Marketing Website — Form Submission Notifications |
+| 292 | Public Marketing Website — Demo Page Build |
 
 ---
 
