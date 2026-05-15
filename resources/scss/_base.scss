@@ -42,10 +42,23 @@
         color: inherit;
         cursor: pointer;
         padding: 0;
+
+        // Restore .btn rendering on <button> elements. The bare-button reset
+        // above (.np-site button, specificity 0,1,1) otherwise beats the
+        // root-level .btn (0,1,0) and flattens it to text — the same carve-out
+        // a.btn gets below, but more complete because the reset also zeroes
+        // padding/border/background/font.
+        &.btn {
+            padding: 0.625rem 1.5rem;
+            border: var(--btn-border-width, 0) solid var(--btn-border-color, transparent);
+            background: var(--btn-bg, transparent);
+            color: var(--btn-color, inherit);
+            font-weight: var(--btn-font-weight, 600);
+        }
     }
 
     a {
-        color: $color-primary;
+        color: var(--np-link-color, #{$color-primary});
         text-decoration: none;
 
         &:hover { opacity: 0.8; }

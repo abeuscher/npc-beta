@@ -11,6 +11,7 @@ const props = defineProps<{
 const store = useEditorStore()
 
 const textColor = computed(() => props.widget.appearance_config?.text?.color ?? '')
+const linkColor = computed(() => props.widget.appearance_config?.text?.link_color ?? '')
 const textShadow = computed(() => props.widget.appearance_config?.text?.shadow ?? false)
 
 function updateAppearance(path: string, value: any) {
@@ -34,7 +35,22 @@ function updateAppearance(path: string, value: any) {
           </svg>
         </template>
       </ColorPicker>
-      <p class="inspector-hint">Inline color styling inside rich text fields overrides this value.</p>
+    </div>
+
+    <div class="text-panel__section">
+      <ColorPicker
+        :model-value="linkColor"
+        label="Link Color"
+        @update:model-value="updateAppearance('text.link_color', $event)"
+      >
+        <template #icon>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </template>
+      </ColorPicker>
+      <p class="inspector-hint">Applies to every link inside this widget. Leave empty to use the site default.</p>
     </div>
 
     <div class="text-panel__section">

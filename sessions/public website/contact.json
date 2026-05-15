@@ -1,0 +1,228 @@
+{
+    "format_version": "1.1.0",
+    "exported_at": "2026-05-15T00:00:00+00:00",
+    "payload": {
+        "templates": [],
+        "pages": [
+            {
+                "id": "c2a90e7f-4e12-4cba-9a31-2e3d8b9c4c10",
+                "title": "Contact",
+                "slug": "contact",
+                "type": "default",
+                "template_name": null,
+                "status": "published",
+                "meta_title": null,
+                "meta_description": null,
+                "noindex": false,
+                "head_snippet": null,
+                "body_snippet": null,
+                "custom_fields": [],
+                "published_at": "2026-05-15T00:00:00+00:00",
+                "media": [],
+                "widgets": [
+                    {
+                        "type": "layout",
+                        "label": "Band 1 — Hero (form + email + portrait)",
+                        "display": "grid",
+                        "columns": 2,
+                        "layout_config": {
+                            "gap": "2rem",
+                            "align_items": "start",
+                            "grid_template_columns": "3fr 2fr",
+                            "background_full_width": true,
+                            "content_full_width": false
+                        },
+                        "appearance_config": {
+                            "layout": {
+                                "padding": {
+                                    "top": 100,
+                                    "right": 0,
+                                    "bottom": 150,
+                                    "left": 0
+                                },
+                                "margin": {
+                                    "top": 0,
+                                    "right": 0,
+                                    "bottom": 0,
+                                    "left": 0
+                                }
+                            },
+                            "background": {
+                                "gradient": {
+                                    "gradients": [
+                                        {
+                                            "to": "#60a5fa",
+                                            "from": "#0a2540",
+                                            "type": "linear",
+                                            "angle": 135,
+                                            "to_alpha": 100,
+                                            "from_alpha": 100
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "sort_order": 0,
+                        "slots": [
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 1 — Hero header (Contact H1)",
+                                    "config": {
+                                        "content": "<h1><strong style=\"background-color: transparent;\">Contact</strong></h1>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 25,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 25
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                },
+                                {
+                                    "type": "widget",
+                                    "handle": "web_form",
+                                    "label": "Band 1 — Contact form (handle: contact-page)",
+                                    "config": {
+                                        "form_handle": "contact-page"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "background": {
+                                            "color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 25
+                                            },
+                                            "padding": {
+                                                "top": 32,
+                                                "left": 32,
+                                                "right": 32,
+                                                "bottom": 32
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 1,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                },
+                                {
+                                    "type": "widget",
+                                    "handle": "text_block",
+                                    "label": "Band 1 — Email address line (mailto)",
+                                    "config": {
+                                        "content": "<p><span style=\"background-color: transparent;\">Or email me directly: <a href=\"mailto:al@example.com\">al@example.com</a></span></p>",
+                                        "ctas": "",
+                                        "cta_alignment": "inherit",
+                                        "vertical_align": "top"
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#ffffff",
+                                            "link_color": "#ffffff"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 2,
+                                    "is_active": true,
+                                    "media": [],
+                                    "column_index": 0
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "widget",
+                                    "handle": "image",
+                                    "label": "Band 1 — Image placeholder: contact-hero-portrait (3:4)",
+                                    "config": {
+                                        "image": null,
+                                        "alt_text": "Contact hero portrait placeholder",
+                                        "link_url": "",
+                                        "aspect_ratio": "3:4",
+                                        "object_fit": "cover",
+                                        "max_width": ""
+                                    },
+                                    "query_config": [],
+                                    "appearance_config": {
+                                        "text": {
+                                            "color": "#000000"
+                                        },
+                                        "layout": {
+                                            "margin": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "padding": {
+                                                "top": 0,
+                                                "left": 0,
+                                                "right": 0,
+                                                "bottom": 0
+                                            },
+                                            "full_width": false
+                                        }
+                                    },
+                                    "sort_order": 0,
+                                    "is_active": true,
+                                    "media": [
+                                        {
+                                            "key": "image",
+                                            "collection_name": "config_image",
+                                            "disk": "public",
+                                            "path": "3/Burkard_Schliessmann_in_Teldex_Studio,_Berlin.jpg"
+                                        }
+                                    ],
+                                    "column_index": 1
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

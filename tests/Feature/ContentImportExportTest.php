@@ -91,6 +91,30 @@ it('round-trips a page with text widgets only', function () {
     expect($widgets[1]->label)->toBe('Block B');
 });
 
+it('round-trips a widget\'s text.link_color through export/import', function () {
+    $page = Page::factory()->create(['slug' => 'round-trip-link-color', 'status' => 'published']);
+    $textWt = WidgetType::where('handle', 'text_block')->first();
+
+    $appearance = ['text' => ['color' => '#ffffff', 'link_color' => '#ffffff']];
+
+    $page->widgets()->create([
+        'widget_type_id'    => $textWt->id,
+        'label'             => 'Linked',
+        'config'            => ['content' => '<p>See <a href="/demo">the demo</a></p>'],
+        'query_config'      => [],
+        'appearance_config' => $appearance,
+        'sort_order'        => 0,
+        'is_active'         => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+    PageWidget::forOwner($page)->delete();
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = PageWidget::forOwner(Page::where('slug', 'round-trip-link-color')->first())->first();
+    expect($reloaded->appearance_config['text']['link_color'])->toBe('#ffffff');
+});
+
 // ── Round-trip: column layout ───────────────────────────────────────────────
 
 it('round-trips a page with a column layout containing widgets', function () {

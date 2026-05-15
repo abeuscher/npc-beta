@@ -159,5 +159,87 @@ class FormSeeder extends Seeder
                 ],
             ]
         );
+
+        Form::firstOrCreate(
+            ['handle' => 'contact-page'],
+            [
+                'title'       => 'Contact Page Form',
+                'description' => 'Form embedded in the public Contact page hero. Captures name, email, phone, message, and a demo-interest checkbox. Submissions store in form_submissions and auto-sync a Contact record (email-keyed). Site-owner email notification is not yet wired — see sessions/scoping-form-notifications.md.',
+                'is_active'   => true,
+                'settings'    => [
+                    'submit_label'    => 'Send',
+                    'success_message' => "Thanks — I'll get back to you within a day.",
+                    'honeypot'        => true,
+                    'form_type'       => 'contact',
+                ],
+                'fields' => [
+                    [
+                        'handle'             => 'name',
+                        'type'               => 'text',
+                        'label'              => 'Name',
+                        'placeholder'        => '',
+                        'required'           => true,
+                        'width'              => 12,
+                        'validation'         => 'none',
+                        'validation_regex'   => null,
+                        'validation_message' => null,
+                        'options'            => [],
+                        'contact_field'      => 'first_name',
+                    ],
+                    [
+                        'handle'             => 'email',
+                        'type'               => 'email',
+                        'label'              => 'Email',
+                        'placeholder'        => '',
+                        'required'           => true,
+                        'width'              => 12,
+                        'validation'         => 'email',
+                        'validation_regex'   => null,
+                        'validation_message' => null,
+                        'options'            => [],
+                        'contact_field'      => 'email',
+                    ],
+                    [
+                        'handle'             => 'phone',
+                        'type'               => 'tel',
+                        'label'              => 'Phone',
+                        'placeholder'        => '',
+                        'required'           => false,
+                        'width'              => 12,
+                        'validation'         => 'phone',
+                        'validation_regex'   => null,
+                        'validation_message' => null,
+                        'options'            => [],
+                        'contact_field'      => 'phone',
+                    ],
+                    [
+                        'handle'             => 'message',
+                        'type'               => 'textarea',
+                        'label'              => 'Message',
+                        'placeholder'        => '',
+                        'required'           => true,
+                        'width'              => 12,
+                        'validation'         => 'none',
+                        'validation_regex'   => null,
+                        'validation_message' => null,
+                        'options'            => [],
+                        'contact_field'      => '',
+                    ],
+                    [
+                        'handle'             => 'demo_interest',
+                        'type'               => 'checkbox',
+                        'label'              => 'I am interested in setting up a demo',
+                        'placeholder'        => '',
+                        'required'           => false,
+                        'width'              => 12,
+                        'validation'         => 'none',
+                        'validation_regex'   => null,
+                        'validation_message' => null,
+                        'options'            => [],
+                        'contact_field'      => '',
+                    ],
+                ],
+            ]
+        );
     }
 }

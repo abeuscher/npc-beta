@@ -345,7 +345,41 @@
       "Bash(python3 -c \"import json; data = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/home.json'\\)\\); print\\('Pages:', len\\(data['payload']['pages']\\)\\); print\\('Widgets:', len\\(data['payload']['pages'][0]['widgets']\\)\\); print\\('Sort orders:', [w.get\\('sort_order'\\) for w in data['payload']['pages'][0]['widgets']]\\)\")",
       "Bash(curl -s -o /tmp/home-rendered.html -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" http://localhost/)",
       "Bash(grep -oE '<h1[^>]*>[^<]+|<h2[^>]*>.{0,80}|<img [^>]*src=\"[^\"]+\"|class=\"cta cta--[a-z-]+|widget-image--ratio-[0-9-]+' /tmp/home-rendered.html)",
-      "Bash(grep -oE '<h1[^>]*>.{0,120}|<a [^>]*class=\"btn[^\"]+\"[^>]*>[^<]+' /tmp/home-rendered.html)"
+      "Bash(grep -oE '<h1[^>]*>.{0,120}|<a [^>]*class=\"btn[^\"]+\"[^>]*>[^<]+' /tmp/home-rendered.html)",
+      "Bash(ls -la /mnt/e/wsl-transfer/)",
+      "Read(//mnt/e/wsl-transfer/**)",
+      "Bash(cp /mnt/e/wsl-transfer/20260514-204135-page-about.json \"/home/al/nonprofitcrm/sessions/public website/existing-about-page-export.json\" && ls -la \"/home/al/nonprofitcrm/sessions/public website/existing-about-page-export.json\")",
+      "Bash(grep -rn \"function\\\\|CATEGORY_\\\\|protected \\\\$\\\\|public \\\\$\" /home/al/nonprofitcrm/app/Models/SampleImage.php)",
+      "Bash(curl -s -o /tmp/about.html -w \"HTTP %{http_code} \\(%{size_download} bytes\\)\\\\n\" http://localhost/about)",
+      "Bash(node scripts/.capture-about.js)",
+      "Bash(node /home/al/nonprofitcrm/scripts/.capture-about.mjs)",
+      "Bash(curl -s -o /tmp/about.html http://localhost/about)",
+      "Bash(grep -n '$bp-\\\\|$gutter\\\\|$site-container' /home/al/nonprofitcrm/resources/scss/_variables.scss)",
+      "Bash(mkdir -p /home/al/nonprofitcrm/app/Widgets/PricingChart/thumbnails)",
+      "Bash(curl -s -o /tmp/pricing_chart.html -w \"HTTP %{http_code}\\\\nsize=%{size_download}\\\\n\" http://localhost/dev/widgets/pricing_chart)",
+      "Bash(curl -s -o /tmp/pricing_chart_after_build.html -w \"HTTP %{http_code}\\\\nsize=%{size_download}\\\\n\" http://localhost/dev/widgets/pricing_chart)",
+      "Bash(command -v node)",
+      "Bash(node scripts/generate-thumbnails.js --widget=pricing_chart)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/pricing.json'\\)\\)\")",
+      "Bash(curl -s -o /tmp/pricing_curl.html -w 'HTTP %{http_code}  bytes %{size_download}\\\\n' http://localhost/pricing)",
+      "Bash(node --eval \"import\\('playwright'\\).then\\(\\(\\)=>console.log\\('ok'\\)\\).catch\\(e=>console.log\\('fail',e.code\\)\\)\")",
+      "Bash(node /tmp/capture_pricing.mjs)",
+      "Bash(node scripts/_capture_pricing.mjs)",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\('/home/al/nonprofitcrm/sessions/public website/contact.json'\\)\\); print\\('Pages:', len\\(data['payload']['pages']\\)\\); p = data['payload']['pages'][0]; print\\('Slug:', p['slug']\\); print\\('Widgets:', len\\(p['widgets']\\)\\); print\\('Sort orders:', [w['sort_order'] for w in p['widgets']]\\); print\\('Labels:'\\); [print\\(' ', w['label']\\) for w in p['widgets']]\")",
+      "Bash(curl -s -o /tmp/contact.html -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" http://localhost/contact)",
+      "Bash(grep -oE '<a [^>]{0,200}mailto[^>]*>[^<]+|widget-text-block__ctas|Email me' /tmp/contact.html)",
+      "Bash(grep -oE '<a [^>]{0,250}>Email me</a>|widget-text-block__ctas[^\"]*\"[^>]*>.{0,300}Email me' /tmp/contact.html)",
+      "Bash(awk '/widget-text-block__ctas/,/<\\\\/div>/' /tmp/contact.html)",
+      "Bash(node /tmp/capture_contact.mjs)",
+      "Bash(node scripts/_capture_contact.mjs)",
+      "Bash(grep -oE '<h1[^>]*>.{0,80}|<form [^>]+>|name=\"name\"|name=\"email\"|name=\"phone\"|name=\"message\"|name=\"demo_interest\"|type=\"checkbox\"|type=\"textarea\"|<textarea[^>]+>|mailto:al@example|widget--web_form|aspect-ratio: 3 / 4|widget-image--ratio-3-4|Send</button' /tmp/contact.html)",
+      "Bash(node /home/al/nonprofitcrm/scripts/_capture_contact.mjs)",
+      "Bash(awk '/widget--web_form/,/<\\\\/form>/' /tmp/contact.html)",
+      "Bash(grep -oE 'Or email[^<]*[^<]*<a [^>]+mailto[^>]+>[^<]+</a>|Or email me directly.{0,200}' /tmp/contact.html)",
+      "Bash(curl -s http://localhost/contact)",
+      "Bash(grep -oE '\\\\.np-site [^{]*a[^{]*\\\\{[^}]{0,80}' /home/al/nonprofitcrm/public/build/assets/public-DwPcXHuB.css)",
+      "Bash(sed -n '485,520p' /home/al/nonprofitcrm/sessions/release-plan.md)",
+      "Bash(sed -n '630,660p' /home/al/nonprofitcrm/sessions/release-plan.md)"
     ],
     "deny": [],
     "additionalDirectories": [
@@ -364,7 +398,9 @@
       "/home/al/nonprofitcrm/storage/app",
       "/home/al/nonprofitcrm/app/Services/Import/Fixtures",
       "/home/al/nonprofitcrm/database/migrations",
-      "/home/al/nonprofitcrm/.claude"
+      "/home/al/nonprofitcrm/.claude",
+      "/mnt/e/wsl-transfer",
+      "/home/al/nonprofitcrm/app/Widgets/PricingChart"
     ]
   }
 }

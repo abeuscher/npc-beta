@@ -48,6 +48,14 @@ class AppearanceStyleComposer
             $styleProps[] = 'color:' . $textColor;
         }
 
+        // Link color — emitted as a custom property the .np-site a rule consumes
+        // via var() indirection, so it inherits to every link inside the widget
+        // wrapper without a specificity fight.
+        $linkColor = $ac['text']['link_color'] ?? null;
+        if (! empty($linkColor) && preg_match(self::HEX_PATTERN, $linkColor)) {
+            $styleProps[] = '--np-link-color:' . $linkColor;
+        }
+
         // Text drop shadow
         if (! empty($ac['text']['shadow'])) {
             $styleProps[] = 'text-shadow:0 1px 3px rgba(0,0,0,0.6)';

@@ -80,6 +80,40 @@ it('emits text color', function () {
     expect($result['inline_style'])->toContain('color:#333');
 });
 
+it('emits link color as the --np-link-color custom property for valid hex', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'text' => ['link_color' => '#ffffff'],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('--np-link-color:#ffffff');
+});
+
+it('rejects a malformed link color', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'text' => ['link_color' => 'white'],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->not->toContain('--np-link-color');
+});
+
+it('omits the link color custom property when unset', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'text' => ['color' => '#333'],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->not->toContain('--np-link-color');
+});
+
+it('emits both text color and link color together', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'text' => ['color' => '#000000', 'link_color' => '#0a2540'],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->toContain('color:#000000')
+        ->toContain('--np-link-color:#0a2540');
+});
+
 // ── Spacing ─────────────────────────────────────────────────────────────────
 
 it('emits padding and margin', function () {

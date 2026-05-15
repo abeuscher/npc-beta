@@ -65,6 +65,40 @@ The Site Settings page includes a logo upload field backed by Filament's file up
 
 ---
 
+---
+
+## Notification dispatch surface (planned — session 291)
+
+Session 291 adds operator-configurable email notifications on form submission (`Form.settings.notifications`; see `sessions/scoping-form-notifications.md`). This section pre-registers the threat model **before the feature is built** so the eventual third-party audit (scheduled pre-GA) finds a documented set of known issues with dispositions rather than discovering them cold. Update statuses as 291 lands and as the surface evolves.
+
+**Framing for the auditor:** session 291 does not create the public-form exposure — `POST /forms/{handle}` already stores submissions and conditionally emails today. It **converts a mostly-inbound storage surface into an outbound-mail-emitting one**: same endpoint, materially larger blast radius (each accepted submission now dispatches N operator-configured emails, and submission content is rendered into outbound mail).
+
+### Design invariant (load-bearing control)
+
+**Submission-controlled data must never influence the recipient set or any mail header (to / from / reply-to / subject / cc / bcc).**
+
+In v1 this holds: recipients are operator config (a `site_owner_email` SiteSetting token or an operator-typed literal); subject is operator config; only the *body* carries submission data. This invariant — not any single mitigation — is what keeps the instance from being a third-party spam/phishing relay. The audit should (a) verify it holds in v1, and (b) treat it as a **standing invariant every future form/notification change is regression-tested against**. The obvious next feature (a confirmation copy to the submitter) breaks it by definition and must not be added without a dedicated security review (see Finding 6).
+
+### Pre-registered threats and dispositions
+
+**Operator-directed flood / sending-reputation burn (Medium).** `throttle:10,1` keys on IP and is trivially beaten by distributed submission; honeypot is bypassed by any attacker who reads the HTML. Each accepted submission emits N notifications, so a scripted flood DoSes the operator inbox and can get the instance's sending domain rate-limited / blacklisted by its transactional provider, or run up cost. **Disposition:** known; partially mitigated by existing throttle + honeypot + PII gate; residual **accepted for v1**. Mitigation path identified (transport-level send caps, operator warning when enabling notifications on a public form, CAPTCHA/Turnstile already deferred elsewhere in this doc). Not "won't fix" — deferred with a path.
+
+**Sync-dispatch resource amplification (Low–Medium).** v1 dispatches synchronously (no queue runner in deploy), so each submission blocks an FPM worker on mail I/O — a cheap amplification DoS against the web tier, distinct from the inbox flood. **Disposition:** by design for v1 (documented sync-vs-queued tradeoff in the scoping doc); revisit if a forcing function appears. Known / by-design.
+
+**Latent spam-relay via submitter-addressed mail (High — if introduced; closed in v1).** Today a submitter cannot choose the recipient, so they can only spam the operator, not third parties. A future "send a confirmation/copy to the submitter" feature reopens this: attacker submits `victim@example.com` + attacker-authored body, instance emails the victim from a trusted domain. **Disposition:** by design **closed in v1** via the recipient invariant above; **pre-registered as a mandatory security-review trigger** for any future submitter-addressed-mail feature. This is a tripwire, not a current vulnerability — documented now so it is not "discovered" later.
+
+**Trusted-channel content injection (Low–Medium).** Submission body renders into the notification email, which arrives from the instance's trusted sending domain. **Disposition:** mitigated by Blade `{{ }}` auto-escaping — 291 implementation MUST NOT use `{!! !!}` on submission data, and MUST NOT place any submission value in a mail header (covered by the invariant). Residual: the operator still receives attacker-authored text/links in a trusted-looking envelope — a social-engineering vector against the operator, **accepted as inherent** to any submission-notification feature.
+
+**PII leaving the trust boundary in cleartext (Medium).** The `PiiScanner` gates *storage*; it does not gate *what enters the notification email*. Submission data exits as (typically cleartext) mail, possibly via a third-party relay that logs it. **Disposition:** known gap; v1 does not PII-scrub notification bodies; **deferred** with rationale (the contact-page form collects name/email/phone/message — no scanner-flagged PII classes; scrubbing or restricting notifications to non-PII forms is the mitigation path if higher-sensitivity forms adopt notifications). Flagged explicitly for the audit.
+
+**Post-compromise mail relay (High — post-auth).** An admin-level attacker (or careless operator) points the notifications config at arbitrary addresses and drives submissions; the config is effectively a "send mail as the org" capability. **Disposition:** accepted residual of any admin-configurable mail sink; mitigation path = audit-logging of notification-config changes + outbound-volume alerting (**overlaps the Fleet Manager abuse-alerting cross-session arc** — scope together), **deferred** with path identified. Treat the notifications config + mail-from identity as a high-value post-exploitation target in the audit.
+
+### Monitoring discipline
+
+Any change to the notification surface re-triggers this register — specifically: widening recipient resolution beyond SiteSetting-token + operator literal, adding submitter-addressed mail, adding custom templates, or switching to queued dispatch. The session that makes such a change updates this section and the Finding register before close. "Document as we go" is the explicit cost-control strategy: a maintained known-issues set with dispositions shortens the third-party audit and biases it toward a positive outcome.
+
+---
+
 ## Finding register
 
 | # | Title | Severity | Status |
@@ -72,3 +106,9 @@ The Site Settings page includes a logo upload field backed by Filament's file up
 | 1 | Regex ReDoS — no save-time validation on custom patterns | High | Fixed (session 048) |
 | 2 | Hidden field value tampering | Medium | Refuted — already prevented by controller logic |
 | 3 | Submission flow test coverage | Gap (not a vulnerability) | Fixed (session 048) |
+| 4 | Notification flood / sending-reputation burn via public endpoint | Medium | Pre-registered — accepted for v1, mitigation path identified (planned session 291) |
+| 5 | Sync-dispatch resource amplification | Low–Medium | Pre-registered — by design for v1 (planned session 291) |
+| 6 | Spam/phishing relay via submitter-addressed mail | High (if introduced) | Pre-registered — closed in v1 by recipient invariant; tripwire for future features |
+| 7 | Trusted-channel content injection in notification body | Low–Medium | Pre-registered — mitigated by Blade escaping; residual accepted (planned session 291) |
+| 8 | PII emailed in cleartext beyond the trust boundary | Medium | Pre-registered — known gap, deferred with rationale (planned session 291) |
+| 9 | Post-compromise mail relay via notifications config | High (post-auth) | Pre-registered — accepted residual, mitigation path identified (planned session 291) |

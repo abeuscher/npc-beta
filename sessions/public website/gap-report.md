@@ -94,6 +94,7 @@ Surfaced at PMW1 (session 284). Subsequent phases append.
 - **What blocked it:** the Logo widget renders with `color: inherit`, defaulting to the page template's text color (dark). It has no `appearance_config.text.color` configured. The Hero widget exposes `nav_link_color` and `nav_hover_color` knobs to override nav-text color over a dark hero, but no equivalent reaches the Logo widget — they're sibling widgets in the page template's header. The CSS variable `--nav-link-color` set by the Hero only scopes to `.widget-nav` styling. Setting Logo's appearance_config text-color globally would break other pages where the logo sits on a light background.
 - **Workaround used:** **toggled Hero 1's `overlap_nav: true → false`** in the cleaned home. The hero gradient now starts below the page header. Logo sits on the template's (light) header background, regains its native contrast. Cleared `nav_link_color` / `nav_hover_color` on Hero 1 since they're moot when nav doesn't overlap. Side effect: lost the "gradient bleeds behind nav" full-bleed look — none of the four reference pages do this, so the trade-off is reference-aligned.
 - **Recommended action:** **two paths, dependent on G3's resolution.** (a) If G3's per-variant night-mode colorways land, generalize the same pattern to Logo (`appearance_config.text.color_dark`?) — or add a Hero-widget `nav_logo_color` knob that wires through to a `--logo-color` CSS variable the Logo SCSS honors. (b) If overlap-nav is rarely needed, accept the workaround as the convention. The references suggest (b) is the right call.
+- **290 cross-ref — Hero↔Nav coupling scope expanded.** G22's resolution (the generic `text.link_color` → `--np-link-color` widget control) surfaced that the Hero widget owns a *third* link-color path: the `nav_link_color` / `nav_hover_color` reach-over that restyles the site-chrome Nav widget, fired only in `overlap_nav` mode. Since G12 forced `overlap_nav: false` site-wide, that path is effectively dead code on this site. The `--np-link-color` work did **not** make it removable (it targets content links inside a widget; the Hero nav override targets a sibling Nav widget the new mechanism can't reach). When G12 is taken up, the decision should cover not just Logo contrast but whether the Hero should own a cross-widget nav-restyle knob at all, given (i) the Nav widget has its own `--nav-link-color` control and (ii) overlap-nav is disabled site-wide. There is also a Hero-inspector UX-confusion point — "Link Color" (s290 generic) vs "Nav Link Color" (overlap-only chrome) read as near-duplicates. Tracked in `sessions/housekeeping-inbox.md` (link-color mechanism consolidation item).
 
 ### G13 — Hero headline scale undersized vs reference pages ✅ resolved at 285
 
@@ -242,6 +243,69 @@ This isn't a gap to fix — the preset rule is correct (presets are designed as 
 - **What blocked it:** the spec's anatomy is *primary CTA → small question text → secondary text-link as a separate visual block*, but Text widget renders its `ctas` array as a single CTA row below the content block. Two CTAs in one widget = two buttons side by side, with the question text above both rather than between them.
 - **Workaround used:** single Text widget with H2 + body + smaller-italic question paragraph in the content, plus two CTAs (`Try the demo` primary, `Request a 7-day trial →` secondary-dark) in `ctas` with `cta_alignment: center`. Reads as "headline + body + question + two CTA row." Different from the spec's stacked anatomy; preserves both routes and the secondary-dark variant for gradient readability.
 - **Recommended action:** **low priority.** Either (a) a Text widget mode that splits CTAs into per-line groupings (rare pattern, probably not worth a system change), or (b) accept the row-layout compromise as the convention for paired primary + secondary CTAs on a band. (b) is fine if the question-as-intro reads as clearly tied to the secondary CTA. Surface for user judgment at review.
+
+---
+
+## Session 290 findings
+
+### G15 / G16 — not exercised on Contact
+
+- **G15 (Hero widget renders its own `.site-container` inside a layout cell):** not exercised. Band 1 hero uses Text + WebForm + Text + Image (no Hero widget). Status: open from 286, no new manifestation this session.
+- **G16 (Hero `fullscreen: true` inside a layout cell):** not exercised. Band 1 height is controlled by layout padding (100/150) alone. Status: open from 286, no new manifestation this session.
+
+### G17 — not exercised on Contact
+
+- No CTA-only Text widget bands on the Contact page. The form widget owns the conversion surface; the text widgets carry only header content and the email fallback line. Status: open from 286, no new manifestation this session.
+
+### G18 — continued manifestation on Contact
+
+- The single hero image cell (Band 1 `contact-hero-portrait` 3:4 portrait) ships with `max_width` blank and no per-cell placement controls. Full-cell-fill default applies, same as the home / About / Pricing image cells. Status: open from 286, same workaround acceptable.
+
+### G19 / G-pricing-1 — not exercised on Contact
+
+- No pull-quote treatment, no widget-level border emphasis pattern on the Contact page. Both surfaces remain open from 287 / 288, no new manifestation this session.
+
+### G20 — narrowly avoided on Contact (mid-session shape change)
+
+- The mid-session rework stacked three widgets in the hero's left cell: Text (H1 header) → WebForm → Text (email-fallback line). The two text_blocks are bookends around a non-text-block widget. Because the global `.widget--text_block { height: 100% }` rule only applies to text_block widgets, and the WebForm in the middle sizes to natural content, the row track height is set by natural content rather than a definite "tallest sibling" value. The two text_blocks each resolve `height: 100%` to that auto-sized track, which collapses to natural content — no overflow. Visually correct.
+- The avoidance is fragile: swapping the form widget for another text_block (or any widget that also carries `height: 100%`) would re-introduce the G20 collision. Logged so the surface stays visible.
+- Status: open from 287, no new manifestation this session, narrow-escape noted.
+
+### G21 — form labels hardcode light-background color (new)
+
+- **What was attempted:** placing the WebForm widget directly inside the gradient hero band so the form sits visually inside the hero rather than in a separate white band below it. The widget div correctly carries the inherited `appearance_config.text.color` via inline style, so plain inherited text would render white.
+- **What blocked it:** `resources/scss/_forms.scss` lines 86–104 set `.form-label { color: $color-text-label; }` and `.form-check-label { color: $color-text-label; }` — explicit dark color declarations that win via CSS specificity over the inherited white. The labels render dark-on-gradient (invisible). The `.dark &` selector handles dark *mode* (page-wide theme toggle) but not a single dark-band region inside an otherwise light page.
+- **Workaround used:** wrapped the WebForm widget in a white card via `appearance_config.background.color: #ffffff` + 32px internal padding. The form sits inside a white rectangle on the gradient; labels render dark-on-white as designed. The hero header (`Contact` H1) and email-fallback line stay outside the card and render white-on-gradient via the normal inherited text color.
+- **Recommended action:** two paths. **(a)** Add an "on-dark" CSS variant — either a parent class (`.widget--web_form.on-dark .form-label { color: #ffffff }`) that the operator opts into via an `appearance_config.text.color_context` flag, or a CSS-variable-driven model (`.form-label { color: var(--form-label-color, $color-text-label) }`) that the parent widget can override. **(b)** Accept the white-card workaround as the convention for forms-on-dark-backgrounds. (a) generalizes to any form-on-dark-band placement; (b) is fine if forms-on-dark stays rare. Decide as the Demo page (291) surfaces — it currently anticipates a dark band carrying a single button, not a form, so the surface may not re-trigger immediately.
+- **Status (290 update):** still open, but the resolution path is now proven. The G22 fix (below) shipped the exact CSS-variable-indirection pattern path (a) describes — `AppearanceStyleComposer` emits a `--np-*-color` custom property from `appearance_config.text.*`, consumed via `var()` with a fallback so existing pages are unchanged. Generalizing it to `.form-label { color: var(--np-form-label-color, #{$color-text-label}) }` + a `text.form_label_color` appearance field is a ~4-line composer addition + 2 CSS lines, mirroring the link-color work verbatim. Once that lands the white-card workaround can be retired. Left open (not lifted into 290) because Contact's form reads correctly on the white card and the user scoped 290's code expansion to link color specifically; the form-label generalization is a clean follow-on.
+
+### G22 — operator cannot recolor links inside a widget ✅ resolved at 290
+
+**Reframed from "HtmlSanitizer strips `style` on `<a>`/`<span>`" to the underlying need: an operator placing rich-text content on a non-default background must be able to make links readable.** The sanitizer behavior is correct and unchanged; the fix is a widget-level appearance control, not a content-level inline style.
+
+### G22 — HtmlSanitizer strips `style` on `<a>` and `<span>` (new)
+
+- **What was attempted:** rendering the email-fallback line as a mailto link with an inline color override so the link reads white-on-gradient: `<a href="mailto:al@example.com" style="color: #ffffff;">al@example.com</a>`. Same inline-style override technique that would let Quill content express ad-hoc color choices without a CSS extension.
+- **What blocked it:** `app/Support/HtmlSanitizer.php` ATTRS_PER_TAG allowlist at line 32–39 permits only `href / title / class` on `<a>` tags and only `class / data-heroicon / aria-hidden` on `<span>` tags. `style` is stripped silently on `PageWidget::config` mutator + `ContentImporter::importPageWidget`. The stored content drops the inline style; the rendered link uses the default browser-blue color, which is nearly invisible against the blue gradient.
+- **Interim workaround (mid-session):** dropped the `<a>` link entirely, rendered the address as plain text. Superseded by the resolution below.
+- **Resolution (290, user-directed in-scope code expansion):** a new `appearance_config.text.link_color` widget appearance control. `AppearanceStyleComposer::compose()` emits it as a `--np-link-color` CSS custom property on the widget wrapper's server-composed inline style (regex-validated by the same `HEX_PATTERN` as `text.color`, so the security surface is identical to the existing color knobs). `.np-site a` was refactored to `color: var(--np-link-color, #{$color-primary})` — the rule only *consumes* the property, so there is no specificity fight, no `!important`, and pages that don't set it fall back to the prior primary color unchanged (verified: home/about/pricing visually identical). The value never enters Quill content, so the sanitizer is untouched and the XSS posture is fully preserved. The Contact email-fallback line was restored to a real `<a href="mailto:al@example.com">` with `text.link_color: #ffffff` and renders white-on-gradient. Quill's `color` + `background` toolbar buttons were removed in the same change (both `quill-editor.js` and `RichTextField.vue`) — color is now exclusively a widget-appearance decision, eliminating the inline-color chaos surface entirely. The stale "inline color overrides this value" inspector hint was removed. Pest: 4 composer cases + 1 export/import round-trip case added (2416 → 2421 / 0). The same mechanism is the proven path for G21 (form-label-on-dark) — see G21's 290 status update.
+
+### G23 — form submissions don't email the site owner (new)
+
+- **What was attempted:** verifying that "submit the contact form → site owner receives email notification" works out of the box, per the user's session-290 belief that "we have a lot of stuff built and... [it's] mostly just set up to send email to site owner."
+- **What blocked it:** `app/Http/Controllers/FormSubmissionController.php` writes the submission to `form_submissions`, syncs a Contact record if `form_type: contact`, and dispatches a `PortalFormCollision` mail only if the submitted email matches an active portal account. **No site-owner notification is sent.** The Form model carries no `recipient_email` field; the SiteSetting store has no `site_owner_email` key; no FormSubmission observer or event exists. The wiring is genuinely absent, not configured-but-disabled.
+- **Workaround used:** Contact page ships with form-only-storage. Submissions visible in the Filament admin's Form Submissions surface; Contact auto-sync still works (the contact record gets created or updated email-keyed). The site owner has to actively look at the admin to see new submissions.
+- **Recommended action:** **lift as a separate session** per the gap-resolution discipline. Full scoping document at `sessions/scoping-form-notifications.md` — the user explicitly asked for the leverage opportunity to be scoped, not executed in 290. Recommended sequence: before session 291 (Demo page) so the demo's submit flow can use it as a primitive.
+
+---
+
+## Session 290 — shape-change validation note
+
+The 290 rebuild started against a three-band layout-spec sketch (hero gradient + email centered-white-band + tinted "what I respond to fastest" band) authored in-session in lieu of an outside-agent pre-pass. The user reviewed the first screenshot and **directed a shape change mid-session**: drop the bottom two bands, embed the `web_form` widget in the hero alongside the portrait, swap the hero image to portrait orientation, and surface the email-notification leverage opportunity as a scoping document rather than an in-session implementation.
+
+The shape change cascaded further than 286 / 287 / 289's content-only pattern: a mid-session structural pivot (3 bands → 1 band, form embedded in hero) surfaced three new gaps (G21 / G22 / G23), and the user then **scoped one of them — G22 — into the session as a deliberate, approved code expansion** because link recoloring was critical-path for the Contact deliverable and small enough to absorb. So 290 is no longer purely content-only: it ships the `text.link_color` appearance control end-to-end (schema-free `appearance_config` extension + `AppearanceStyleComposer` + `_base.scss` var-indirection + inspector field + Quill toolbar simplification + Pest coverage). G21 left open with a proven path; G23 scoped to `sessions/scoping-form-notifications.md` for a follow-on session. Fast Pest moves from the 289 baseline (2416 / 0) to **2421 / 0** (2416 + 4 composer cases + 1 round-trip case).
+
+The in-session-spec-sketch approach also gets a partial re-validation. The initial sketch was right for the page-as-originally-scoped (three short bands per `copy.md`); when the user redirected, rewriting the spec to match the new shape was cheap because the document is short. Both versions of the spec are useful — the initial covers the if-no-form path, the revised covers what shipped.
 
 ---
 

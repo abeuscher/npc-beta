@@ -201,6 +201,6 @@
             @endforeach
         </div>
 
-        <button type="submit" class="btn btn--primary" style="margin-top: 1rem;">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
+        <button type="submit" class="btn btn--secondary" style="margin-top: 1rem;">{{ $form->settings['submit_label'] ?? 'Submit' }}</button>
     </form>
 @endif

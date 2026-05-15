@@ -15,7 +15,6 @@ export default (state) => ({
                     container: [
                         [{ header: [1, 2, 3, 4, 5, false] }],
                         ['bold', 'italic', 'underline', 'strike'],
-                        [{ color: [] }, { background: [] }],
                         [{ list: 'bullet' }, { list: 'ordered' }],
                         ['blockquote'],
                         [{ align: ['', 'center', 'right', 'justify'] }],
