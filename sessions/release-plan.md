@@ -482,7 +482,7 @@ Four-phase track building the five-page nonprofitcrm.com marketing site inside t
 ##### 289. Public Marketing Website — Pricing Layout Rebuild
 
 - **gate:** release
-- **prerequisites:** 288; `sessions/public website/pricing-page-spec.md`; user-supplied `sessions/public website/existing-pricing-page-export.json` (user exports from admin before session start)
+- **prerequisites:** 288; `sessions/public website/pricing-page-spec.md`. Pricing is effectively greenfield — no prior real page to export.
 - **success criterion:** `sessions/public website/pricing.json` built against the Pricing page layout spec. Five bands: hero gradient / comparison chart white / à la carte tinted / "what I won't build" dark / final CTA gradient. Band 2 configured via the new `pricing_chart` widget (one-click application of the v1 "Marketing site tiers" preset shipped at 288). Re-imported with zero importer warnings; screenshot reviewed by the user. Gap report extended (G19 / G20 noted as continued where applicable; G-pricing-1 status noted).
 - **artifact:** new `pricing.json` + screenshot + extended gap report.
 - **estimated time cost:** 1 session.
