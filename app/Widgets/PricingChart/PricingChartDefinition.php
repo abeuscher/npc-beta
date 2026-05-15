@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Widgets\PricingChart;
+
+use App\Widgets\Contracts\WidgetDefinition;
+
+class PricingChartDefinition extends WidgetDefinition
+{
+    public function handle(): string
+    {
+        return 'pricing_chart';
+    }
+
+    public function label(): string
+    {
+        return 'Pricing Chart';
+    }
+
+    public function description(): string
+    {
+        return 'A comparison-style pricing table with side-by-side columns. Each column carries an eyebrow, title, price, lead content, attribute rows, and CTAs.';
+    }
+
+    public function category(): array
+    {
+        return ['content'];
+    }
+
+    public function assets(): array
+    {
+        return ['scss' => ['app/Widgets/PricingChart/styles.scss']];
+    }
+
+    public function schema(): array
+    {
+        return [
+            ['key' => 'eyebrow_label', 'type' => 'text',     'label' => 'Eyebrow label', 'group' => 'content', 'helper' => 'Small label above the heading (e.g. "Pricing"). Optional.'],
+            ['key' => 'heading',       'type' => 'text',     'label' => 'Heading',       'group' => 'content'],
+            ['key' => 'subheading',    'type' => 'richtext', 'label' => 'Subheading',    'group' => 'content'],
+
+            ['key' => 'columns', 'type' => 'repeater', 'label' => 'Columns', 'group' => 'content', 'item_label' => 'Column', 'fields' => [
+                ['key' => 'emphasize',    'type' => 'toggle',   'label' => 'Emphasize this column', 'default' => false, 'helper' => 'Visually highlight this column as the recommended choice.'],
+                ['key' => 'eyebrow',      'type' => 'text',     'label' => 'Eyebrow',      'default' => '', 'helper' => 'Short label above the title (e.g. "Recommended"). Optional.'],
+                ['key' => 'title',        'type' => 'text',     'label' => 'Title',        'default' => ''],
+                ['key' => 'price',        'type' => 'richtext', 'label' => 'Price',        'default' => ''],
+                ['key' => 'lead_content', 'type' => 'richtext', 'label' => 'Lead content', 'default' => '', 'helper' => 'Optional intro block above the attribute rows.'],
+                ['key' => 'attribute_rows', 'type' => 'repeater', 'label' => 'Attribute rows', 'item_label' => 'Row', 'fields' => [
+                    ['key' => 'label', 'type' => 'text',     'label' => 'Label', 'default' => ''],
+                    ['key' => 'value', 'type' => 'richtext', 'label' => 'Value', 'default' => ''],
+                ]],
+                ['key' => 'ctas', 'type' => 'buttons', 'label' => 'CTAs', 'fields' => [
+                    ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
+                    ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
+                    ['key' => 'style', 'type' => 'select', 'label' => 'Button Style', 'default' => 'primary', 'options' => [
+                        'primary'        => 'Primary',
+                        'secondary'      => 'Secondary',
+                        'secondary-dark' => 'Secondary (Dark)',
+                        'text'           => 'Text Only',
+                    ]],
+                ]],
+            ]],
+
+            ['key' => 'footnote', 'type' => 'richtext', 'label' => 'Footnote', 'group' => 'content', 'helper' => 'Fine-print or asterisk-anchored content rendered below the columns in smaller type.'],
+
+            ['key' => 'heading_alignment', 'type' => 'select', 'label' => 'Heading alignment', 'default' => 'center', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'group' => 'appearance'],
+            ['key' => 'gap',               'type' => 'text',   'label' => 'Custom gap',        'default' => '',       'helper' => 'CSS gap between columns (e.g. 1.5rem). Leave blank for default.', 'group' => 'appearance'],
+        ];
+    }
+
+    public function defaults(): array
+    {
+        return [
+            'eyebrow_label'     => '',
+            'heading'           => '',
+            'subheading'        => '',
+            'columns'           => [],
+            'footnote'          => '',
+            'heading_alignment' => 'center',
+            'gap'               => '',
+        ];
+    }
+
+    public function defaultOpen(): bool
+    {
+        return true;
+    }
+
+    public function defaultAppearanceConfig(): array
+    {
+        return [
+            'background' => [
+                'color' => '#ffffff',
+            ],
+            'text' => [
+                'color' => '#000000',
+            ],
+            'layout' => [
+                'background_full_width' => true,
+                'content_full_width'    => false,
+                'padding' => [
+                    'top'    => 100,
+                    'right'  => 0,
+                    'bottom' => 100,
+                    'left'   => 0,
+                ],
+                'margin' => [
+                    'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0,
+                ],
+            ],
+        ];
+    }
+
+    public function keywords(): array
+    {
+        return ['pricing', 'comparison', 'table', 'tiers', 'plans'];
+    }
+
+    public function demoConfig(): array
+    {
+        return [
+            'eyebrow_label' => 'PRICING',
+            'heading'       => 'Three ways to try this.',
+            'subheading'    => '<p>Pick the one that fits where you are.</p>',
+            'columns'       => $this->marketingSiteTiers(),
+            'footnote'      => '<p><em>* You ever notice how people put really small writing at the bottom of pricing sheets? What\'s that about? Seems sketchy.</em></p>',
+        ];
+    }
+
+    public function presets(): array
+    {
+        return [];
+    }
+
+    /**
+     * Shared "Marketing site tiers" data used by demoConfig() and exported by
+     * the pricing page build (session 289) when configuring Band 2 against
+     * this widget.
+     */
+    public function marketingSiteTiers(): array
+    {
+        return [
+            [
+                'emphasize'    => false,
+                'eyebrow'      => '',
+                'title'        => 'Instant Demo',
+                'price'        => '<p><strong>Free</strong></p>',
+                'lead_content' => '<p>24 hours.</p>',
+                'attribute_rows' => [
+                    ['label' => 'Setup',       'value' => '<p>Self-serve, no email required</p>'],
+                    ['label' => 'Data',        'value' => '<p>Shared sandbox, resets every 24 hours</p>'],
+                    ['label' => 'At the end',  'value' => '<p>Comes back fresh tomorrow with new data</p>'],
+                ],
+                'ctas' => [
+                    ['text' => 'Try the demo', 'url' => '/demo', 'style' => 'primary'],
+                ],
+            ],
+            [
+                'emphasize'    => false,
+                'eyebrow'      => '',
+                'title'        => '7-Day Trial',
+                'price'        => '<p><strong>Free</strong></p>',
+                'lead_content' => '<p>7 days.</p>',
+                'attribute_rows' => [
+                    ['label' => 'Setup',       'value' => '<p>Email me; I set it up for you</p>'],
+                    ['label' => 'Data',        'value' => '<p>Your data, your isolated instance</p>'],
+                    ['label' => 'At the end',  'value' => '<p>We talk about next steps</p>'],
+                ],
+                'ctas' => [
+                    ['text' => 'Request a trial', 'url' => '/contact', 'style' => 'secondary'],
+                ],
+            ],
+            [
+                'emphasize'    => true,
+                'eyebrow'      => 'Recommended',
+                'title'        => 'Monthly',
+                'price'        => '<p><strong>$150</strong> per month</p>',
+                'lead_content' => '<p>Ongoing.</p>',
+                'attribute_rows' => [
+                    ['label' => 'Setup',        'value' => '<p>Email me or use the contact form</p>'],
+                    ['label' => 'Data',         'value' => '<p>Your data, your instance</p>'],
+                    ['label' => 'First month',  'value' => '<p>$50 until I have steady customers*</p>'],
+                    ['label' => 'Annual',       'value' => '<p>$1,500 per year (two months free) if you want to pay up front</p>'],
+                    ['label' => 'At the end',   'value' => '<p>Cancel anytime</p>'],
+                ],
+                'ctas' => [
+                    ['text' => 'Get started', 'url' => '/contact', 'style' => 'primary'],
+                ],
+            ],
+        ];
+    }
+}

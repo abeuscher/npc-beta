@@ -47,6 +47,11 @@ it('every defaults() value has a PHP type matching its schema field type', funct
                         "Widget [{$handle}] defaults[{$key}] must be array|string for buttons field, got " . gettype($value)
                     );
                     break;
+                case 'repeater':
+                    expect(is_array($value))->toBeTrue(
+                        "Widget [{$handle}] defaults[{$key}] must be array for repeater field, got " . gettype($value)
+                    );
+                    break;
                 case 'gradient':
                     expect($value === null || is_array($value))->toBeTrue(
                         "Widget [{$handle}] defaults[{$key}] must be null|array for gradient field, got " . gettype($value)

@@ -39,6 +39,7 @@ use App\Widgets\PortalEventRegistrations\PortalEventRegistrationsDefinition;
 use App\Widgets\PortalForgotPassword\PortalForgotPasswordDefinition;
 use App\Widgets\PortalLogin\PortalLoginDefinition;
 use App\Widgets\PortalSignup\PortalSignupDefinition;
+use App\Widgets\PricingChart\PricingChartDefinition;
 use App\Widgets\ProductCarousel\ProductCarouselDefinition;
 use App\Widgets\QuickActions\QuickActionsDefinition;
 use App\Widgets\RandomDataGenerator\RandomDataGeneratorDefinition;
@@ -107,6 +108,7 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new LogoGardenDefinition());
         $registry->register(new BoardMembersDefinition());
         $registry->register(new ThreeBucketsDefinition());
+        $registry->register(new PricingChartDefinition());
         $registry->register(new HeroDefinition());
         $registry->register(new MapEmbedDefinition());
         $registry->register(new SocialSharingDefinition());

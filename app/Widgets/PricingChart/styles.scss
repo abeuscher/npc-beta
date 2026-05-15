@@ -1,0 +1,189 @@
+// ── Pricing Chart widget ────────────────────────────────────────────────────
+
+.widget-pricing-chart {
+    --pc-gap: 1.5rem;
+    --pc-card-padding: 2rem;
+    --pc-card-radius: 0.5rem;
+    --pc-card-bg: #ffffff;
+    --pc-card-bg-emphasized: #f8f9fa;
+
+    // Border slot — empty in v1; lit up by appearance_config border knob in v1.1.
+    --pc-border-color: transparent;
+    --pc-border-color-emphasized: transparent;
+    --pc-border-width: 0;
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+
+.pricing-chart__header {
+    margin-bottom: 2.5rem;
+}
+
+.pricing-chart__header--left   { text-align: left; }
+.pricing-chart__header--center { text-align: center; }
+.pricing-chart__header--right  { text-align: right; }
+
+.pricing-chart__eyebrow-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 0.5rem;
+    opacity: 0.7;
+}
+
+.pricing-chart__heading {
+    margin: 0 0 0.75rem;
+}
+
+.pricing-chart__subheading {
+    margin: 0;
+    line-height: 1.6;
+
+    > *:last-child { margin-bottom: 0; }
+}
+
+// ── Columns container ──────────────────────────────────────────────────────
+
+.pricing-chart__columns {
+    display: grid;
+    grid-template-columns: repeat(var(--pc-columns, 3), 1fr);
+    gap: var(--pc-gap);
+
+    // Explicit row tracks: eyebrow + title + price + lead + N attribute rows + CTAs.
+    grid-template-rows: auto auto auto auto repeat(var(--pc-attr-rows, 0), auto) auto;
+}
+
+// ── Card (column) ──────────────────────────────────────────────────────────
+
+.pricing-chart__column {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: 1 / -1;
+    background: var(--pc-card-bg);
+    border-radius: var(--pc-card-radius);
+    border: var(--pc-border-width) solid var(--pc-border-color);
+    padding: var(--pc-card-padding);
+    box-sizing: border-box;
+}
+
+.pricing-chart__column--emphasized {
+    background: var(--pc-card-bg-emphasized);
+    border-color: var(--pc-border-color-emphasized);
+}
+
+// Per-row content slots.
+.pricing-chart__column-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: $color-primary;
+    margin-bottom: 0.5rem;
+}
+
+.pricing-chart__column-title {
+    margin-bottom: 0.5rem;
+
+    h3 {
+        margin: 0;
+    }
+}
+
+.pricing-chart__column-price {
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    line-height: 1.3;
+
+    > * { margin: 0; }
+    strong { font-weight: 700; }
+}
+
+.pricing-chart__column-lead {
+    margin-bottom: 1.25rem;
+
+    > *:last-child { margin-bottom: 0; }
+}
+
+.pricing-chart__attribute-row {
+    padding: 0.875rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.pricing-chart__attribute-row--empty {
+    padding: 0;
+    border-top: 0;
+}
+
+.pricing-chart__attribute-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $color-text-muted;
+    margin-bottom: 0.25rem;
+}
+
+.pricing-chart__attribute-value {
+    > * { margin: 0; }
+}
+
+.pricing-chart__column-ctas {
+    align-self: end;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+
+    .btn-group {
+        margin: 0;
+    }
+}
+
+// ── Footnote ───────────────────────────────────────────────────────────────
+
+.pricing-chart__footnote {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.875rem;
+    opacity: 0.75;
+
+    > *:last-child { margin-bottom: 0; }
+}
+
+// ── Subgrid fallback ───────────────────────────────────────────────────────
+// Browsers without subgrid (pre-2026 baseline) drop to flex column.
+// Cards will stack rows in source order; CTAs pin via margin-top: auto.
+
+@supports not (grid-template-rows: subgrid) {
+    .pricing-chart__column {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pricing-chart__column-ctas {
+        margin-top: auto;
+    }
+}
+
+// ── Mobile ─────────────────────────────────────────────────────────────────
+
+@media (max-width: $bp-md) {
+    .pricing-chart__columns {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+    }
+
+    .pricing-chart__column {
+        grid-template-rows: none;
+        grid-row: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pricing-chart__attribute-row--empty {
+        display: none;
+    }
+
+    .pricing-chart__column-ctas {
+        margin-top: 1.5rem;
+    }
+}

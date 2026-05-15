@@ -15,6 +15,7 @@ import GradientPicker from './primitives/GradientPicker.vue'
 import NinePointAlignment from './primitives/NinePointAlignment.vue'
 import ImageUploadField from './fields/ImageUploadField.vue'
 import ButtonListField from './fields/ButtonListField.vue'
+import RepeaterField from './fields/RepeaterField.vue'
 
 const props = defineProps<{
   field: FieldDef
@@ -62,6 +63,7 @@ const componentMap: Record<string, any> = {
   image: ImageUploadField,
   video: ImageUploadField,
   buttons: ButtonListField,
+  repeater: RepeaterField,
 }
 
 const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
