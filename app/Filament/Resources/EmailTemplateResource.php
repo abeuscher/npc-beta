@@ -146,6 +146,10 @@ class EmailTemplateResource extends Resource
 
     private static function tokenHint(?string $handle): string
     {
+        if ($handle === 'form_submission') {
+            return '`{{form_title}}` `{{submission}}` — {{submission}} expands to a table of the submitted field values (body only; not available in the subject line).';
+        }
+
         $all = '`{{first_name}}` `{{last_name}}` `{{event_title}}` `{{site_name}}`';
 
         $extra = match ($handle) {

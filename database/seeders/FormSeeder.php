@@ -160,17 +160,23 @@ class FormSeeder extends Seeder
             ]
         );
 
-        Form::firstOrCreate(
+        Form::updateOrCreate(
             ['handle' => 'contact-page'],
             [
                 'title'       => 'Contact Page Form',
-                'description' => 'Form embedded in the public Contact page hero. Captures name, email, phone, message, and a demo-interest checkbox. Submissions store in form_submissions and auto-sync a Contact record (email-keyed). Site-owner email notification is not yet wired — see sessions/scoping-form-notifications.md.',
+                'description' => 'Form embedded in the public Contact page hero. Captures name, email, phone, message, and a demo-interest checkbox. Submissions store in form_submissions and auto-sync a Contact record (email-keyed). On submit, the site owner is notified by email at the {{site_owner_email}} address set under Settings → Mail.',
                 'is_active'   => true,
                 'settings'    => [
                     'submit_label'    => 'Send',
                     'success_message' => "Thanks — I'll get back to you within a day.",
                     'honeypot'        => true,
                     'form_type'       => 'contact',
+                    'notifications'   => [
+                        [
+                            'to'                      => '{{site_owner_email}}',
+                            'include_submission_data' => true,
+                        ],
+                    ],
                 ],
                 'fields' => [
                     [

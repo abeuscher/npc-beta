@@ -148,6 +148,11 @@ class EmailTemplate extends Model implements HasMedia
                 'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous support of {{org_name}} in {{tax_year}}. This letter serves as your official donation receipt for the {{tax_year}} tax year.</p>{{donations}}<p><strong>Total donations: ${{total}}</strong></p><p>No goods or services were provided in exchange for these contributions. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
                 'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
             ],
+            'form_submission' => [
+                'subject'       => 'New submission: {{form_title}}',
+                'body'          => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',
+                'footer_reason' => 'You received this email because form notifications are enabled for {{form_title}}.',
+            ],
         ];
 
         return $defaults[$handle] ?? ['subject' => '', 'body' => ''];

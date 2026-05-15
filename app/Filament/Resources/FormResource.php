@@ -94,6 +94,28 @@ class FormResource extends Resource
                     ->default(true),
             ])->columns(2),
 
+            Forms\Components\Section::make('Email Notifications')
+                ->description('Email the site owner (or another address) when this form is submitted. Leave empty to store submissions without notifying. The email wording and subject are edited under Settings → System Emails → "Form submission".')
+                ->schema([
+                    Forms\Components\Repeater::make('settings.notifications')
+                        ->label('')
+                        ->schema([
+                            Forms\Components\TextInput::make('to')
+                                ->label('Send to')
+                                ->required()
+                                ->helperText('Use {{site_owner_email}} for the Site owner email set under Settings → Mail, or type a specific email address.'),
+
+                            Forms\Components\Toggle::make('include_submission_data')
+                                ->label('Include submitted field values in the email')
+                                ->default(true),
+                        ])
+                        ->defaultItems(0)
+                        ->addActionLabel('Add notification')
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['to'] ?? null)
+                        ->columnSpanFull(),
+                ]),
+
             Forms\Components\Section::make('Fields')
                 ->description('Define the fields that appear on the public form.')
                 ->schema([
