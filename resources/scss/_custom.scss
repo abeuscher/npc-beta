@@ -4,7 +4,25 @@
 // Custom CSS — widget and component styles
 // ─────────────────────────────────────────────────────────────────────────────
 
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Swiper widgets — blanket mobile overflow guard
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// One uniform pattern across every Swiper widget (Carousel, BlogListing,
+// EventsListing, LogoGarden, ProductCarousel). Vendored swiper.css already
+// sets .swiper{overflow:hidden}; this makes the guarantee *ours* and adds
+// min-width:0 so a carousel sitting in a flex/grid column can never blow out
+// its track on mobile regardless of slide count (the same class of fix as
+// .layout-column{min-width:0}). The per-slide JS configs are already
+// mobile-aware — BlogListing/EventsListing render ~1-up, LogoGarden carries
+// its own mobile breakpoints, Carousel is 1-up. ProductCarousel keeps its
+// bespoke slidesPerView:'auto' + EffectCoverflow peek: it is the surfaced
+// carve-out, deliberately NOT forced to 1-up (forcing it would break the
+// coverflow design). BlogPager is prev/next post nav, not a Swiper carousel.
+.swiper {
+    max-width: 100%;
+    min-width: 0;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hero widget
@@ -63,6 +81,16 @@
 
 .hero-inner {
     max-width: 42rem;
+
+    // Overflow guard. `.hero-body > .site-container` is a column flexbox and
+    // the `hero--pos-*-left/right` modifiers set align-items away from
+    // stretch, so `.hero-inner` sizes to its max-content (the headline) on
+    // the cross axis and can exceed the container at phone widths. Cap it to
+    // the container on mobile; the headline then wraps inside. Audit-driven,
+    // mobile-only — desktop content-width alignment is untouched.
+    @media (max-width: $bp-md) {
+        max-width: 100%;
+    }
 }
 
 

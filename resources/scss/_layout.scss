@@ -36,6 +36,40 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Column-layout mobile collapse
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The renderer emits the column track as the single --layout-cols custom
+// property (PageBlockRenderer::renderLayoutBlock); the stylesheet now *owns*
+// grid-template-columns, so the collapse override below needs no !important.
+//
+// .page-layout establishes a containment context so the collapse fires off the
+// layout's own inline size — not the browser viewport — which is what lets the
+// page-builder preview (a simulated viewport via container-type on
+// .widget-preview-scope) collapse identically to the live site. A media query
+// would only ever see the real viewport and miss the simulated preview.
+//
+// Gated on the per-layout collapse_mobile toggle via the data attribute the
+// renderer + LayoutRegion.vue emit; default-on is resolved server-side as a
+// concrete true, never as "attribute absent". Threshold mirrors the in-codebase
+// .form-grid (_grid.scss) and PricingChart collapse precedents ($bp-md).
+
+.page-layout {
+    container-type: inline-size;
+}
+
+.layout-grid {
+    grid-template-columns: var(--layout-cols, 1fr);
+}
+
+@container (max-width: #{$bp-md}) {
+    .layout-grid[data-collapse-mobile="true"] {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Site nav wrapper — overlay mode for hero full-bleed
 // ─────────────────────────────────────────────────────────────────────────────
 

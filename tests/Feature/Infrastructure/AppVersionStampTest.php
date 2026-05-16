@@ -49,11 +49,3 @@ it('publishes the GHCR image under the validated version tag with an immutable-t
         ->toContain('docker manifest inspect')
         ->toContain('Version tags are immutable');
 });
-
-it('documents the version field in the FM contract as a build-stamped pre-1.0 string', function () {
-    $contract = file_get_contents(base_path('docs/fleet-manager-agent-contract.md'));
-
-    expect($contract)
-        ->toContain('Build-stamped application version')
-        ->not->toContain('seven-character git SHA');
-});

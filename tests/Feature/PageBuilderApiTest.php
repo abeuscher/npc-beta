@@ -501,6 +501,24 @@ it('sanitizes unknown layout_config keys', function () {
     expect($layout->layout_config)->not->toHaveKey('evil_property');
 });
 
+it('persists layout_config.collapse_mobile through the save allow-list (G1/285-shape guard)', function () {
+    // The layout_config save path applies an array_intersect_key allow-list;
+    // a key missing from it is silently dropped on save — the exact shape of
+    // the pre-285 appearance_config data-loss bug. Lock collapse_mobile in.
+    $page = apiPage();
+    $layout = apiLayout($page);
+
+    $this->actingAs(apiUser())
+        ->putJson(apiPrefix() . "/layouts/{$layout->id}", [
+            'layout_config' => ['collapse_mobile' => false],
+        ])
+        ->assertOk()
+        ->assertJsonPath('layout.layout_config.collapse_mobile', false);
+
+    $layout->refresh();
+    expect($layout->layout_config['collapse_mobile'])->toBeFalse();
+});
+
 it('merges partial layout_config updates with existing keys', function () {
     $page = apiPage();
     $layout = apiLayout($page);

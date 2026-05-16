@@ -55,6 +55,18 @@
     // Fallback hover when no data-hover
     &:not([data-hover]):hover { opacity: 0.8; }
 
+    // ── Mobile overflow guard ───────────────────────────────────────────
+    // A nowrap label both clips on narrow viewports (text-overflow:ellipsis
+    // hides copy) and forces its min-content width onto ancestors — e.g. a
+    // hero band — pushing them past the viewport. Let labels wrap on mobile.
+    // The sanctioned aggressive-wrap guard, applied uniformly, not per page.
+    @media (max-width: $bp-md) {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        overflow-wrap: break-word;
+    }
+
     // ── Modifiers (wrap / block-mobile) ─────────────────────────────────
     &--wrap {
         white-space: normal;

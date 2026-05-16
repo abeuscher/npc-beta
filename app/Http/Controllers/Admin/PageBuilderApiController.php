@@ -481,7 +481,7 @@ class PageBuilderApiController extends Controller
             $allowed = [
                 'grid_template_columns', 'gap', 'align_items', 'justify_items',
                 'justify_content', 'grid_auto_rows', 'flex_wrap', 'flex_basis',
-                'background_full_width', 'content_full_width',
+                'background_full_width', 'content_full_width', 'collapse_mobile',
             ];
             $sanitized = array_intersect_key(
                 $validated['layout_config'],

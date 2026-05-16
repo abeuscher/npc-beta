@@ -242,6 +242,51 @@ it('preserves an empty appearance_config on round-trip', function () {
     expect($reloaded->appearance_config)->toBe([]);
 });
 
+// ── Round-trip: layout_config.collapse_mobile (G1/285-shape guard) ──────────
+//
+// A new layout_config key that does not survive export/import is silent data
+// loss — exactly how appearance_config dropped pre-285. collapse_mobile must
+// round-trip, including an explicit false (the only value that opts a layout
+// out of mobile collapse — distinct from absent, which resolves to true).
+
+it('round-trips layout_config.collapse_mobile=false through export/import', function () {
+    $page = Page::factory()->create(['slug' => 'round-trip-collapse-mobile', 'status' => 'published']);
+
+    $layout = $page->layouts()->create([
+        'label'         => 'Logo + Nav Bar',
+        'display'       => 'grid',
+        'columns'       => 2,
+        'layout_config' => [
+            'grid_template_columns' => 'auto 1fr',
+            'collapse_mobile'       => false,
+        ],
+        'sort_order'    => 0,
+    ]);
+
+    $textWt = WidgetType::where('handle', 'text_block')->first();
+    $page->widgets()->create([
+        'layout_id' => $layout->id, 'column_index' => 0,
+        'widget_type_id' => $textWt->id, 'label' => 'Col',
+        'config' => ['content' => '<p>X</p>'],
+        'query_config' => [], 'appearance_config' => [], 'sort_order' => 0, 'is_active' => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    $exportedLayout = $bundle['payload']['pages'][0]['widgets'][0];
+    expect($exportedLayout['type'])->toBe('layout');
+    expect($exportedLayout['layout_config']['collapse_mobile'])->toBeFalse();
+
+    PageWidget::forOwner($page)->delete();
+    PageLayout::forOwner($page)->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = PageLayout::forOwner($page)->first();
+    expect($reloaded)->not->toBeNull();
+    expect($reloaded->layout_config['collapse_mobile'])->toBeFalse();
+});
+
 // ── Round-trip: media reference (Tier 1 rewiring) ───────────────────────────
 
 it('round-trips a page with a logo widget media reference', function () {

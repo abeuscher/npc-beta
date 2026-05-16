@@ -47,7 +47,7 @@ class PageBlockRenderer
         $gridStyle = 'display:' . $display . ';';
 
         if ($display === 'grid') {
-            $gridStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
+            $gridStyle .= '--layout-cols:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
         }
 
         if (! empty($config['gap'])) {
@@ -101,7 +101,8 @@ class PageBlockRenderer
             $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
         }
 
-        $gridHtml = '<div class="layout-grid" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
+        $collapseMobile = ($config['collapse_mobile'] ?? true) !== false;
+        $gridHtml = '<div class="layout-grid" data-collapse-mobile="' . ($collapseMobile ? 'true' : 'false') . '" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
 
         $fw = $this->styleComposer->resolveFullWidthForLayout($layout);
 

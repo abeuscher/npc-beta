@@ -302,6 +302,7 @@ watch(
           transformOrigin: 'top left',
           flexShrink: isNarrowViewport ? 0 : undefined,
           '--np-preview-container-max-width': previewContainerMaxWidth,
+          containerType: 'inline-size',
         }"
         @click="preventNavigation"
         @submit.prevent

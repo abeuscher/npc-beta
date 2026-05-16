@@ -295,6 +295,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 291 | Public Marketing Website — Form Submission Notifications |
 | 292 | Public Marketing Website — Demo Page Build |
 | 293 | Public Marketing Website — Page-Capture Harness & Track Close |
+| 294 | Column-Layout Mobile Collapse + Swiper Blanket — Playwright-Verified |
 
 ---
 

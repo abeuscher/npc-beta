@@ -134,7 +134,9 @@ it('renders a page layout with grid CSS and child widgets', function () {
     $response->assertOk();
     $response->assertSee('page-layout', false);
     $response->assertSee('display:grid', false);
-    $response->assertSee('grid-template-columns:2fr 1fr', false);
+    // Column track is emitted as the --layout-cols custom property (session 294).
+    $response->assertSee('--layout-cols:2fr 1fr', false);
+    $response->assertSee('data-collapse-mobile="true"', false);
     $response->assertSee('Left content', false);
     $response->assertSee('Right content', false);
 });

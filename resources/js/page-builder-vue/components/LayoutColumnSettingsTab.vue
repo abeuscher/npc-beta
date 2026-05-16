@@ -16,6 +16,9 @@ function setLayoutConfigKey(key: string, value: any) {
 
 const contentFullWidth = computed(() => !!props.layout.layout_config?.content_full_width)
 const backgroundFullWidth = computed(() => !!props.layout.layout_config?.background_full_width)
+// Concrete-value default: absent or true → checked; only an explicit false
+// opts out. Matches PageBlockRenderer + LayoutRegion's read path.
+const collapseMobile = computed(() => props.layout.layout_config?.collapse_mobile !== false)
 const backgroundDisabled = computed(() => contentFullWidth.value)
 const backgroundDisabledReason = computed(() =>
   contentFullWidth.value
@@ -132,7 +135,16 @@ function getFlexBasis(slotIdx: number): string {
         >
         <span>Background fills page width</span>
       </label>
-      <p class="layout-inspector__hint">When content is off, column tracks are constrained to the site content container.</p>
+      <label class="layout-inspector__checkbox-row">
+        <input
+          type="checkbox"
+          :checked="collapseMobile"
+          class="layout-inspector__checkbox"
+          @change="setLayoutConfigKey('collapse_mobile', ($event.target as HTMLInputElement).checked)"
+        >
+        <span>Collapse columns on mobile</span>
+      </label>
+      <p class="layout-inspector__hint">When content is off, column tracks are constrained to the site content container. Collapse stacks the columns into one at narrow widths (≤768px); turn it off for layouts meant to stay side-by-side at every width (e.g. small logo + nav bars).</p>
     </div>
 
     <!-- Display toggle -->

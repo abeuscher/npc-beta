@@ -66,6 +66,17 @@
             color: var(--btn-color, inherit);
         }
     }
+
+    // Overflow guard — text must wrap rather than overflow its container,
+    // even when authored widget side-padding crushes the content box at
+    // narrow viewports. Type *sizing* on mobile is E5's deliverable; "no
+    // text overflows / no horizontal scroll" is enforced here via aggressive
+    // wrap, which holds even at desktop type sizes.
+    h1, h2, h3, h4, h5, h6,
+    p, li, blockquote, figcaption, dd, dt,
+    .widget-text-block__content {
+        overflow-wrap: break-word;
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

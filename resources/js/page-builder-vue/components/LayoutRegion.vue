@@ -69,7 +69,7 @@ const gridStyleString = computed(() => {
   if (display === 'grid') {
     const cols = config.grid_template_columns ??
       Array(props.layout.columns).fill('1fr').join(' ')
-    parts.push(`grid-template-columns:${cols}`)
+    parts.push(`--layout-cols:${cols}`)
     if (config.grid_auto_rows) parts.push(`grid-auto-rows:${config.grid_auto_rows}`)
     if (config.justify_items) parts.push(`justify-items:${config.justify_items}`)
   } else {
@@ -88,6 +88,12 @@ const bgFullWidth = computed(
 )
 const contentFullWidth = computed(
   () => !!props.layout.layout_config?.content_full_width
+)
+// Concrete-value default: absent or true → collapse; only an explicit false opts
+// out. Mirrors PageBlockRenderer's server-side resolution so the preview's
+// container-query collapse matches the public render exactly.
+const collapseMobile = computed(
+  () => props.layout.layout_config?.collapse_mobile !== false
 )
 
 function getSlot(slotIdx: number): Widget[] {
@@ -185,6 +191,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
       <div
         class="layout-region__grid"
         :class="{ 'layout-region__grid--contained': !contentFullWidth }"
+        :data-collapse-mobile="collapseMobile ? 'true' : 'false'"
         :style="gridStyleString"
       >
         <div
@@ -338,6 +345,23 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   max-width: var(--np-preview-container-max-width, 100%);
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Stylesheet owns grid-template-columns via the same --layout-cols custom
+   property the public renderer emits, so the collapse override needs no
+   !important and the preview matches the live site exactly. The container
+   query fires off .widget-preview-scope (container-type set in PreviewCanvas),
+   so the simulated mobile preset collapses just like a real phone viewport —
+   a media query would only see the real browser window. 768px == $bp-md. */
+.layout-region__grid {
+  grid-template-columns: var(--layout-cols, 1fr);
+}
+
+@container (max-width: 768px) {
+  .layout-region__grid[data-collapse-mobile="true"] {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
 }
 
 .layout-region__slot {
