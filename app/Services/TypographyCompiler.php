@@ -16,6 +16,13 @@ class TypographyCompiler
         'ol_li' => 'ol:not(nav ol) li',
     ];
 
+    /** Narrower-breakpoint @media max-widths (px), keyed by size-shape key. */
+    private const BREAKPOINT_MAXWIDTH = [
+        'lg' => 992,
+        'md' => 768,
+        'sm' => 576,
+    ];
+
     private const CASE_MAP = [
         'uppercase'  => 'text-transform: uppercase',
         'lowercase'  => 'text-transform: lowercase',
@@ -26,7 +33,7 @@ class TypographyCompiler
 
     public static function compile(?array $typography = null): string
     {
-        $resolved = TypographyResolver::resolve($typography);
+        $resolved = TypographyResolver::migrate(TypographyResolver::resolve($typography));
         $blocks   = [];
 
         foreach (self::ELEMENT_SELECTORS as $key => $selector) {
@@ -38,6 +45,9 @@ class TypographyCompiler
             $decls = self::elementDeclarations($key, $config);
             if ($decls) {
                 $blocks[] = $selector . ' { ' . implode('; ', $decls) . '; }';
+            }
+            foreach (self::mediaSizeBlocks($config, [$selector]) as $mediaBlock) {
+                $blocks[] = $mediaBlock;
             }
         }
 
@@ -58,7 +68,7 @@ class TypographyCompiler
             return '';
         }
 
-        $resolved = TypographyResolver::resolve($typography);
+        $resolved = TypographyResolver::migrate(TypographyResolver::resolve($typography));
         $blocks   = [];
 
         foreach (self::ELEMENT_SELECTORS as $key => $selector) {
@@ -67,13 +77,15 @@ class TypographyCompiler
                 continue;
             }
 
-            $decls = self::elementDeclarations($key, $config);
-            if (! $decls) {
-                continue;
-            }
-
             $prefixed = array_map(fn ($scope) => $scope . ' ' . $selector, $scopes);
-            $blocks[] = implode(', ', $prefixed) . ' { ' . implode('; ', $decls) . '; }';
+
+            $decls = self::elementDeclarations($key, $config);
+            if ($decls) {
+                $blocks[] = implode(', ', $prefixed) . ' { ' . implode('; ', $decls) . '; }';
+            }
+            foreach (self::mediaSizeBlocks($config, $prefixed) as $mediaBlock) {
+                $blocks[] = $mediaBlock;
+            }
         }
 
         return implode("\n", $blocks);
@@ -125,10 +137,9 @@ class TypographyCompiler
             $decls[] = 'font-weight: ' . $font['weight'];
         }
 
-        $sizeVal  = $font['size']['value'] ?? null;
-        $sizeUnit = $font['size']['unit'] ?? 'rem';
-        if ($sizeVal !== null && $sizeVal !== '') {
-            $decls[] = 'font-size: ' . $sizeVal . $sizeUnit;
+        $xl = self::sizeAt($font, 'xl');
+        if ($xl !== null) {
+            $decls[] = 'font-size: ' . $xl['value'] . $xl['unit'];
         }
 
         if (isset($font['line_height']) && $font['line_height'] !== null && $font['line_height'] !== '') {
@@ -146,9 +157,24 @@ class TypographyCompiler
             $decls[] = self::CASE_MAP[$case];
         }
 
+        $isHeading = in_array($key, TypographyResolver::HEADING_ELEMENTS, true);
+        $headingMb = $config['heading_margin_bottom'] ?? null;
+
         foreach (['margin', 'padding'] as $box) {
             foreach (['top', 'right', 'bottom', 'left'] as $side) {
                 $val = $config[$box][$side] ?? null;
+
+                // Heading bottom-margin defaults to an em multiple of the
+                // element's own font-size (auto-scales with the per-breakpoint
+                // ramp — no per-breakpoint margin emission needed). An
+                // explicitly-set px box value still wins (non-destructive).
+                if ($box === 'margin' && $side === 'bottom' && $isHeading
+                    && $headingMb !== null && $headingMb !== ''
+                    && (int) ($val ?? 0) === 0) {
+                    $decls[] = 'margin-bottom: ' . $headingMb . 'em';
+                    continue;
+                }
+
                 if ($val === null || $val === '') {
                     continue;
                 }
@@ -166,5 +192,66 @@ class TypographyCompiler
         }
 
         return $decls;
+    }
+
+    /**
+     * The font-size at a given breakpoint key, or null if absent/blank.
+     * Reads the per-breakpoint shape; falls back to a legacy flat
+     * {value,unit} for xl (defensive — callers migrate() first).
+     *
+     * @return array{value: mixed, unit: string}|null
+     */
+    private static function sizeAt(array $font, string $bp): ?array
+    {
+        $size = $font['size'] ?? null;
+        if (! is_array($size)) {
+            return null;
+        }
+
+        if (isset($size[$bp]) && is_array($size[$bp])) {
+            $v = $size[$bp]['value'] ?? null;
+
+            return ($v === null || $v === '')
+                ? null
+                : ['value' => $v, 'unit' => $size[$bp]['unit'] ?? 'rem'];
+        }
+
+        if ($bp === 'xl' && array_key_exists('value', $size)) {
+            $v = $size['value'];
+
+            return ($v === null || $v === '')
+                ? null
+                : ['value' => $v, 'unit' => $size['unit'] ?? 'rem'];
+        }
+
+        return null;
+    }
+
+    /**
+     * The three narrower-breakpoint @media blocks for one element: each
+     * re-declares only font-size at that breakpoint's ramped value, wrapped
+     * in @media (max-width: Npx). line-height stays the unitless base value
+     * (rides the size) and heading margin-bottom stays em-relative — neither
+     * needs per-breakpoint emission.
+     *
+     * @param  array<int, string>  $selectors
+     * @return array<int, string>
+     */
+    private static function mediaSizeBlocks(array $config, array $selectors): array
+    {
+        $font = $config['font'] ?? [];
+        $out  = [];
+
+        foreach (self::BREAKPOINT_MAXWIDTH as $bp => $maxWidth) {
+            $size = self::sizeAt($font, $bp);
+            if ($size === null) {
+                continue;
+            }
+            $out[] = '@media (max-width: ' . $maxWidth . 'px) { '
+                . implode(', ', $selectors)
+                . ' { font-size: ' . $size['value'] . $size['unit'] . '; } }';
+        }
+
+        return $out;
     }
 }

@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useTypographyStore } from './stores/typography'
 import FontInput, { type FontValue } from '../page-builder-vue/components/primitives/FontInput.vue'
 import SpacingInput, { type SpacingValue } from '../page-builder-vue/components/primitives/SpacingInput.vue'
-import type { ElementKey, TypographyBootstrap } from './types'
+import type { ElementKey, TypographyBootstrap, BreakpointKey } from './types'
 
 const props = defineProps<{ bootstrap: TypographyBootstrap }>()
 
@@ -53,7 +53,7 @@ function previewStyle(el: ElementKey): Record<string, string> {
   const style: Record<string, string> = {}
   style.fontFamily = cfg.font.family
   style.fontWeight = cfg.font.weight
-  style.fontSize = `${cfg.font.size.value}${cfg.font.size.unit}`
+  style.fontSize = `${cfg.font.size.xl.value}${cfg.font.size.xl.unit}`
   style.lineHeight = String(cfg.font.line_height)
   style.letterSpacing = `${cfg.font.letter_spacing.value}${cfg.font.letter_spacing.unit}`
   if (cfg.font.case === 'small-caps') style.fontVariant = 'small-caps'
@@ -106,9 +106,58 @@ function onSampleTextChange(value: string) {
   store.queueSave()
 }
 
+// The shared FontInput primitive works on a flat {value,unit} size. Typography
+// elements carry a per-breakpoint size, so we project xl into/out of FontInput
+// here and leave lg/md/sm (the user's tuning surface) untouched — the
+// page-builder primitive stays unchanged.
+function fontForInput(el: ElementKey): FontValue {
+  const f = state.value!.elements[el].font
+  return { ...f, size: { ...f.size.xl } }
+}
+
 function onFontChange(el: ElementKey, value: FontValue) {
   if (!state.value) return
-  state.value.elements[el].font = value
+  const current = state.value.elements[el].font
+  state.value.elements[el].font = {
+    ...value,
+    size: { ...current.size, xl: { ...value.size } },
+  }
+  store.queueSave()
+}
+
+const breakpointFields: { key: BreakpointKey, label: string }[] = [
+  { key: 'lg', label: 'Large · ≤992px' },
+  { key: 'md', label: 'Medium · ≤768px' },
+  { key: 'sm', label: 'Small · ≤576px' },
+]
+
+const sizeUnits = ['px', 'rem', 'em']
+
+function isHeading(el: ElementKey): boolean {
+  return headingElements.includes(el)
+}
+
+function onBreakpointValue(el: ElementKey, bp: BreakpointKey, raw: string) {
+  if (!state.value || raw === '') return
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return
+  const size = state.value.elements[el].font.size
+  size[bp] = { ...size[bp], value: n }
+  store.queueSave()
+}
+
+function onBreakpointUnit(el: ElementKey, bp: BreakpointKey, unit: string) {
+  if (!state.value) return
+  const size = state.value.elements[el].font.size
+  size[bp] = { ...size[bp], unit }
+  store.queueSave()
+}
+
+function onHeadingMarginChange(el: ElementKey, raw: string) {
+  if (!state.value || raw === '') return
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n < 0) return
+  state.value.elements[el].heading_margin_bottom = n
   store.queueSave()
 }
 
@@ -258,10 +307,50 @@ function downloadScss() {
         <div v-if="expanded[el]" class="theme-typography__element-body">
           <div class="theme-typography__controls">
             <FontInput
-              :model-value="state.elements[el].font"
+              :model-value="fontForInput(el)"
               :families="families"
               @update:model-value="onFontChange(el, $event)"
             />
+
+            <div class="theme-typography__breakpoints">
+              <div class="theme-typography__bp-head">
+                <span class="theme-typography__label">Responsive sizes</span>
+                <span class="theme-typography__bp-hint">The Size above applies at ≥1200px (xl). These scale it down at narrower widths.</span>
+              </div>
+              <div class="theme-typography__bp-grid">
+                <div v-for="bp in breakpointFields" :key="bp.key" class="theme-typography__bp-field">
+                  <label class="theme-typography__label">{{ bp.label }}</label>
+                  <div class="theme-typography__bp-inputs">
+                    <input
+                      type="number"
+                      step="0.01"
+                      class="theme-typography__input"
+                      :value="state.elements[el].font.size[bp.key].value"
+                      @input="onBreakpointValue(el, bp.key, ($event.target as HTMLInputElement).value)"
+                    >
+                    <select
+                      class="theme-typography__input"
+                      :value="state.elements[el].font.size[bp.key].unit"
+                      @change="onBreakpointUnit(el, bp.key, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option v-for="u in sizeUnits" :key="u" :value="u">{{ u }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div v-if="isHeading(el)" class="theme-typography__bp-field">
+                  <label class="theme-typography__label">Space below · em</label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    min="0"
+                    class="theme-typography__input"
+                    :value="state.elements[el].heading_margin_bottom ?? 0"
+                    @input="onHeadingMarginChange(el, ($event.target as HTMLInputElement).value)"
+                  >
+                </div>
+              </div>
+            </div>
+
             <div class="theme-typography__spacing-row">
               <SpacingInput
                 label="Margin"
@@ -448,6 +537,45 @@ function downloadScss() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.theme-typography__breakpoints {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+}
+
+.theme-typography__bp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.theme-typography__bp-hint {
+  font-size: 0.6875rem;
+  color: #9ca3af;
+}
+
+.theme-typography__bp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.theme-typography__bp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.theme-typography__bp-inputs {
+  display: grid;
+  grid-template-columns: 1fr 4.5rem;
+  gap: 0.375rem;
 }
 
 .theme-typography__element-header:hover {

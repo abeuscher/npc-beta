@@ -56,6 +56,10 @@ class ThemeTypographyController extends Controller
     private function normalise(array $typography): array
     {
         $defaults   = TypographyResolver::defaults();
+        // Upgrade any legacy/flat font.size in the payload to the per-breakpoint
+        // shape before the recursive replace, so a stale client can never write
+        // a corrupt {xl,lg,md,sm,value,unit} hybrid back to the SiteSetting row.
+        $typography = TypographyResolver::migrate($typography);
         $merged     = array_replace_recursive($defaults, $typography);
         $merged['elements'] = array_intersect_key(
             $merged['elements'] ?? [],

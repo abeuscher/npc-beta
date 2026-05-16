@@ -12,6 +12,43 @@ class TypographyResolver
 
     public const BODY_ELEMENTS = ['p', 'ul_li', 'ol_li'];
 
+    public const SIZE_BREAKPOINTS = ['xl', 'lg', 'md', 'sm'];
+
+    /**
+     * Per-class scale ramp — the derived font-size at each narrower breakpoint
+     * as a fraction of the xl (stored/desktop) value. Session-294 calibration
+     * (gong/attio/clay); display phone biased to 0.60 (Attio-leaning, the
+     * deliberately-restrained register) over the 0.54 raw 3-site mean. Section
+     * is the midpoint of display and body (the calibration section row was the
+     * noisy 2/3 data point). Body is 1.0 everywhere — no scaling.
+     */
+    private const RAMP = [
+        'display' => ['lg' => 0.85, 'md' => 0.75, 'sm' => 0.60],
+        'section' => ['lg' => 0.93, 'md' => 0.88, 'sm' => 0.80],
+        'body'    => ['lg' => 1.0,  'md' => 1.0,  'sm' => 1.0],
+    ];
+
+    private const ELEMENT_CLASS = [
+        'h1'    => 'display',
+        'h2'    => 'section',
+        'h3'    => 'section',
+        'h4'    => 'body',
+        'h5'    => 'body',
+        'h6'    => 'body',
+        'p'     => 'body',
+        'ul_li' => 'body',
+        'ol_li' => 'body',
+    ];
+
+    private const HEADING_MARGIN_BOTTOM_EM = [
+        'h1' => 0.4,
+        'h2' => 0.5,
+        'h3' => 0.5,
+        'h4' => 0.5,
+        'h5' => 0.5,
+        'h6' => 0.5,
+    ];
+
     public const DEFAULT_SAMPLE_TEXT = 'The quick brown fox jumps over the lazy dog.';
 
     public const DEFAULT_FAMILY = "'Inter', system-ui, sans-serif";
@@ -59,7 +96,7 @@ class TypographyResolver
                 'font' => [
                     'family'         => self::DEFAULT_FAMILY,
                     'weight'         => $d['weight'],
-                    'size'           => ['value' => $d['size'], 'unit' => 'rem'],
+                    'size'           => self::rampSize($el, ['value' => $d['size'], 'unit' => 'rem']),
                     'line_height'    => $d['line_height'],
                     'letter_spacing' => ['value' => 0, 'unit' => 'em'],
                     'case'           => 'none',
@@ -67,6 +104,9 @@ class TypographyResolver
                 'margin'  => $zeroSpacing,
                 'padding' => $zeroSpacing,
             ];
+            if (isset(self::HEADING_MARGIN_BOTTOM_EM[$el])) {
+                $elements[$el]['heading_margin_bottom'] = self::HEADING_MARGIN_BOTTOM_EM[$el];
+            }
         }
         $elements['ul_li']['list_style_type'] = 'disc';
         $elements['ul_li']['marker_color']    = null;
@@ -93,7 +133,70 @@ class TypographyResolver
         $raw = SiteSetting::get('typography');
         $raw = is_array($raw) ? $raw : [];
 
-        return self::mergeDeep(self::defaults(), $raw);
+        // Upgrade any legacy flat font.size ({value,unit}) to the per-breakpoint
+        // {xl,lg,md,sm} shape *before* merging, so a flat stored value never
+        // mergeDeep()s into a corrupt {xl,lg,md,sm,value,unit} hybrid. Operates
+        // on the in-memory copy only — the stored SiteSetting row is never
+        // rewritten on read (the row is rewritten only on an explicit save).
+        return self::mergeDeep(self::defaults(), self::migrate($raw));
+    }
+
+    /**
+     * Idempotent, non-destructive font.size shape upgrade. A flat
+     * {value, unit} becomes { xl:{value,unit}, lg, md, sm } — the stored
+     * value copied byte-exact into xl, lg/md/sm derived from the per-class
+     * ramp. Already-per-breakpoint sizes (xl key present) are left untouched
+     * so user-tuned lg/md/sm survive. Shared by load() (read) and the save
+     * path (ThemeTypographyController::normalise) so both stay on one shape.
+     */
+    public static function migrate(array $typography): array
+    {
+        $elements = $typography['elements'] ?? null;
+        if (! is_array($elements)) {
+            return $typography;
+        }
+
+        foreach ($elements as $el => $config) {
+            if (! is_array($config)) {
+                continue;
+            }
+            $size = $config['font']['size'] ?? null;
+            if (! is_array($size) || array_key_exists('xl', $size)) {
+                continue; // unknown shape, or already per-breakpoint (idempotent)
+            }
+            if (! array_key_exists('value', $size)) {
+                continue; // not the recognised flat shape — leave for the defaults merge
+            }
+            $typography['elements'][$el]['font']['size'] = self::rampSize(
+                (string) $el,
+                ['value' => $size['value'], 'unit' => $size['unit'] ?? 'rem'],
+            );
+        }
+
+        return $typography;
+    }
+
+    /**
+     * Expand an xl {value, unit} into the full { xl, lg, md, sm } set for an
+     * element. xl is the byte-exact stored/desktop value; lg/md/sm are the
+     * per-class ramp fractions of it (rounded to 4dp), same unit throughout.
+     *
+     * @param  array{value: mixed, unit?: string}  $xl
+     */
+    private static function rampSize(string $el, array $xl): array
+    {
+        $unit = $xl['unit'] ?? 'rem';
+        $ramp = self::RAMP[self::ELEMENT_CLASS[$el] ?? 'body'];
+
+        $size = ['xl' => ['value' => $xl['value'], 'unit' => $unit]];
+        foreach (['lg', 'md', 'sm'] as $bp) {
+            $size[$bp] = [
+                'value' => round((float) $xl['value'] * $ramp[$bp], 4),
+                'unit'  => $unit,
+            ];
+        }
+
+        return $size;
     }
 
     /**
