@@ -351,3 +351,13 @@ The Demo page deliberately overrides the marketing-page conventions (one band, 5
 
 Not exercised on the Demo page (no images, no pull-quote/border treatment, no chart, no stacked-text-in-single-cell beyond one widget, no form): **G15 / G16 / G17 / G18 / G19 / G20 / G21 / G-pricing-1**. The split-page shape simply doesn't touch their surfaces. Standing status from prior sessions is unchanged. G22 ✅ (290) / G23 ✅ (291) remain resolved and were not needed here (the Demo page is form-less by construction).
 
+---
+
+## Track closed — final status pass (session 293)
+
+The Public Marketing Website track is **closed** as of session 293. This is the final gap-report pass; no further track-owned gap accounting follows. Every row above carries its last status; the summary:
+
+- **Resolved during the track** (lifted into their own approved sessions, not absorbed into the phase count): **G1 / G2 / G9 / G10 / G13 / G14** at session 285; **G22** at session 290 (in-session, user-approved `text.link_color`); **G23** at session 291. **G3** has an accepted interim path (`secondary-dark`, 285); its long-term per-variant night-mode direction stays open.
+- **Open — now the user's per-gap lift decision, no longer track-owned:** **G3 (long-term) / G4 / G5 / G6 / G7 / G8 / G11 / G12 / G15 / G16 / G17 / G18 / G19 / G20 / G21 / G-pricing-1 / G-demo-1 / G-demo-2 / G-demo-3.** Each is recorded above with its workaround and recommended action. With the track closed, resolution is a per-gap choice the user makes by lifting an independent follow-on session — these are no longer tracked as track phases. The condensed open/resolved view and the milestone-close gates also live in `sessions/public website/build-summary.md` (the durable close-out).
+- **Milestone-close gates** (distinct from gaps; not 293 deliverables): Privacy/Terms pages, real photography across all five pages, the Demo dark-side real copy + hookup, the Fleet-Manager shared-contract arc, the real `mailto:` address (G4). See `build-summary.md`.
+

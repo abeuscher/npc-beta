@@ -1,223 +1,57 @@
-# Track: Public Marketing Website
+# Track: Public Marketing Website — ✅ CLOSED (session 293)
 
-The canonical planning + history doc for the Public Marketing Website track — building the five-page nonprofitcrm.com marketing site inside the product's own page builder, dogfooding the CMS surface that nonprofit customers will use.
-
-## What this is, in plain terms
-
-We are designing a marketing site **for the product**. We are using a small set of well-known B2B SaaS marketing pages as **structural design guides** — lifting their basic layouts and section rhythm, assuming standard asset delivery, using FPO (placeholder) images from the sample-image library, and applying that design pattern to **the supplied copy**.
-
-The brief explicitly limits the borrow to structure, not surface: section-as-slab layouts, alternating background bands, generous whitespace, restrained type scale, no animations. Surface decoration (custom illustration, marketing-bright saturation, abstract metaphor imagery) is the opposite of where this site lands. Reference images in `sessions/public website/references/` are structural specs only. Real photography (staged-stock-photo with the founder as subject) lands post-track.
-
-This is a **content + visual-build track**, not an architectural arc. Distinct in shape from Widget Primitive and Fleet Manager Agent (both code-architecture tracks): the deliverable is page JSON exports, screenshots, and a gap report. Code only changes when the gap report surfaces a forcing function (missing widget, missing button style, missing config option) and the user approves the lift — those become independent follow-on sessions outside this track.
-
-This doc carries three things:
-
-- **Status snapshot** — where the track stands, what's next.
-- **Phase Retrospectives** — compressed history of closed phases (sessions list, outcomes, gap-report deltas).
-- **Forward plan** — the page list, the system conventions inherited from the brief, the phase sequence, and the gap-resolution discipline.
-
-When a phase closes, its retrospective lands here and its release-plan position collapses to a one-liner. Per-session detail stays in the matching `sessions/(archived/)NNN. … — Log.md` files.
+The canonical planning + history doc for the Public Marketing Website track — the five-page nonprofitcrm.com marketing site built inside the product's own page builder, dogfooding the CMS surface that nonprofit customers will use. **The track is closed.** This doc is now history + durable reference; the running narrative has been compressed into Phase Retrospectives. Per-session detail lives in the (archived) `sessions/NNN. … — Log.md` files; the durable close-out is `sessions/public website/build-summary.md`.
 
 ---
 
-## Status snapshot
+## What this was
 
-**Last update:** 2026-05-15 (PMW1 closed at 284; CMS-fixes session 285 closed; home rebuild session 286 closed; About layout rebuild session 287 closed; Pricing chart widget build session 288 closed; Pricing layout rebuild session 289 closed; Contact layout rebuild session 290 closed; form-submission notifications session 291 closed — lifted gap; G23 ✅ resolved as an operator-editable System Email + `{{contact_email}}` reuse + graceful mail-failure handling + FM pre-Beta pseudo-versioning; Demo Page Build session 292 closed — split page + form-less `/demo/enter` auto-login + tightly-scoped `demo` role + per-IP throttle + demo-server guard; **Phase 3 (Contact + Demo) complete**; CRM contract stays v2.3.0; page-capture harness + track close at 293 — track's final session).
+A marketing site built **for the product, inside the product** — lifting a small set of well-known B2B SaaS marketing pages as **structural** design guides (section-as-slab, alternating background bands, generous whitespace, restrained type scale, no animations), applying that to supplied copy with FPO placeholder images. A content + visual-build track, not an architectural arc: the deliverables were page JSON exports, screenshots, and a gap report. Code only changed when the gap report surfaced a forcing function and the user approved a lift — those ran as independent follow-on sessions outside the track's phase count.
 
-**State:** PMW1 closed; the five CMS-side blockers PMW1 surfaced are landed in code as of session 285; the home is rebuilt as of session 286; About is rebuilt as of session 287; the new `pricing_chart` widget is shipped as of session 288; the Pricing page is rebuilt as of session 289 (the widget's first real-page placement — rendered acceptably without revision). The layout-spec-driven execution pattern validated at 286 was re-validated at 287 and again at 289 — zero importer warnings on first pass each time, bands rendering in spec order, cross-section rhythm matching the spec's prediction. Pricing-chart-widget spec lives at `sessions/public website/pricing-chart-widget-spec.md`; the widget at `app/Widgets/PricingChart/` ships v1 with background-tint emphasis on the recommended column (which reads as visibly subtle in the live Pricing page but acceptable for v1), a built-but-unfilled border slot for the v1.1 appearance-config border-knob upgrade, and a public `marketingSiteTiers()` helper that session 289 consumed verbatim. Demo-page spec is in place at `sessions/public website/demo-page-spec.md`; Demo architecture resolved at 289 close (single-button auto-login, no email, per-IP rate-limit, 24h wipe via Fleet Manager, demo page on demo server, Fleet Manager shared-contract updates lifted to a cross-session arc — captured in project memory `project_demo_page_architecture.md`). The gap report stands at 17 rows — G1 / G2 / G3-interim / G13 / G14 ✅ resolved; G4–G12 open from PMW1; G15 / G16 / G17 / G18 open from 286 (G18 continued through About and Pricing as full-cell-fill default; G15 / G16 / G17 not exercised on Pricing); G19 (no `appearance_config` border knob) and G20 (`.widget--text_block { height: 100% }` collides with stacked siblings in single-column layouts) open from 287 (G20 specifically avoided on Pricing Band 3 via a 4-slot/2-column-CSS-wrapped layout shape; G19 not exercised on Pricing); G-pricing-1 (border styling in `appearance_config`) open from 288 with the widget-level workaround applied, sharing the same underlying surface as G19; the typography small-body / caption row absence noted at 289 with the italic-only footnote workaround acceptable; a minor Band 5 secondary-text-link rendering compromise vs spec also noted at 289 (single Text widget renders two CTAs as a row, not as primary above + secondary as text-link below — acceptable for v1). Contact is rebuilt as of session 290 — the layout-spec pattern held for a greenfield page, but the session pivoted mid-stream on user direction to a single hero with an embedded `web_form` contact form (the seeded `contact-page` form) + 3:4 portrait, the 3-band `copy.md` shape dropped. The pivot surfaced G21 / G22 / G23; G22 was resolved in-session as a user-approved code expansion — the `text.link_color` widget appearance feature (`AppearanceStyleComposer` emits `--np-link-color`, `.np-site a` consumes it via var-indirection, inspector field added, Quill `color`/`background` toolbar buttons removed, `button.btn` SCSS carve-out so form submit buttons render). G21 (form-label-on-dark) open with the same var pattern as its proven path; G23 (form-submission notifications) lifted to session 291 and **✅ resolved at 291** (shipped as an operator-editable System Email, not the originally-scoped fixed template). The gap report stands at 20 rows (G21 open; G22 ✅ at 290; G23 ✅ at 291). Form-notification security threat model in `docs/security-forms.md` (Finding register rows 4–9) moved from pre-registered to **as-shipped** at 291's close. Demo is built as of session 292 — the single-band 50/50 split per `demo-page-spec.md`, built into the running CMS (zero importer warnings, published at `/demo`), user-reviewed and approved with one revision (+100px dark-cell bottom padding as the viewport-height-gap workaround, synced into the committed JSON); the form-less `/demo/enter` auto-login shipped (dedicated tightly-scoped `demo` role — never `super_admin`, binding deny-list on settings/secrets/integration/user-management/destructive; shared "Demo User" seeded demo-server-only; per-IP `throttle:10,1`; `abort_unless(isDemoMode())` guard; threat model pre-registered in `docs/security-demo.md`). The gap report stands at 23 rows (G-demo-1 larger-button size variant, G-demo-2 viewport-height-aware sizing, G-demo-3 full-bleed cells — all open with accepted spec workarounds; none blocked the page). **Phase 3 (Contact + Demo) is complete** (Contact 290 + Demo 292). CRM contract stays v2.3.0 (292 not contract-touching; the `sessions/fm-client-upgrade-handoff-answers.md` CRM-side answers to FM's client-upgrade hand-off are a coordination artifact, explicitly not a contract edit). A pre-existing fast-suite red (`AppVersionStampTest` — the 291 contract-doc "seven-character git SHA" self-collision, not a 292 regression) is carried forward to 293 as a user-owned doc-hygiene decision.
-
-**Phase status:**
-
-- **Phase 1 — Audit + Home cleanup.** ✅ Closed at session 284.
-- **Session 285 — CMS Fixes Before Home Rebuild.** ✅ Closed. Lifted-gap session (outside the track's phase count per gap-resolution discipline). Shipped G1 layout `appearance_config` round-trip + G2 TextBlock CTAs + G3-interim `secondary-dark` button variant + G13/G14 typography defaults + Image widget aspect_ratio + max_width. Fast Pest 2408 / 0 (baseline 2390 + 18 new).
-- **Session 286 — Home Layout Rebuild.** ✅ Closed. Home rebuilt against `sessions/public website/homepage-layout-spec.md` as nine sibling layout blocks delivering the eight spec bands. User-revision pass landed five small visual changes. Four new gap rows surfaced (G15 / G16 / G17 / G18). Fast Pest 2407 / 1.
-- **Session 287 — About Layout Rebuild.** ✅ Closed. About rebuilt against `sessions/public website/about-layout-spec.md` as Band 1 (hero, gradient, Text + Image cells) + Band 2 (business case, four sibling 1-col layouts after structural workaround for stacked text widgets) + Band 3 (how this gets built, dark, Image + Text-with-three-CTAs). User-revision pass landed four changes (Band 2 widened to full container width via the four-sibling-layout pattern, pull-quote narrowed to ~80% via symmetric horizontal padding, real Boris Cherny quote dropped in with attribution linked to the source video, bold removed from quote). Two new gap rows surfaced — G19 (no `appearance_config` border knob) and G20 (global `.widget--text_block { height: 100% }` rule collides with stacked-sibling text widgets). Pricing-chart-widget pre-pass during this session: design-agent spec reviewed, four PM-level decisions resolved, 288 prompts drafted. Fast Pest 2407 / 1 (matches 286 baseline; the 1 failure pre-dates the session and reproduces independently).
-- **Session 288 — Pricing Chart Widget Build.** ✅ Closed. Lifted-gap session (outside the track's phase count). Shipped the `pricing_chart` widget end-to-end at `app/Widgets/PricingChart/` (definition + Blade template + SCSS with CSS subgrid for cross-card row alignment + thumbnail). Four planning-time decisions held: in-widget config repeater (not a collection), per-column emphasize toggle, cross-card row alignment via CSS subgrid, marketing-site three-tier configuration as the v1 demo / one-click setup. Two design corrections during the build: the "preset" framing collapsed to a public `marketingSiteTiers()` helper + `demoConfig()` (preset rules forbid content-group keys; columns is content-group); CTA composition reuses the existing `buttons` field type at the column level rather than per-column primitive triplets. System extension: new generic `repeater` field type (Vue `RepeaterField.vue` + `RepeaterRowField.vue`, registered in InspectorField's component map; recurses via `defineAsyncComponent`; nested fields dispatch to existing TextField / RichTextField / ToggleField / ButtonListField; lives entirely in widget `config_schema` JSON, no `widget_types` column changes; lint test extended with a `repeater` case allowing array defaults). Eight new Pest tests (schema shape, defaults round-trip, seeder row, demo config, render, empty-columns guard, subgrid padding for uneven row counts). Widget count assertions bumped 38 → 39 in `WidgetPickerSession119Test` and `ProductCarouselTest`. Fast Pest 2416 / 0 (the pre-existing `DashboardBuilderApiControllerTest` failure that pre-dated 287 / 286 is no longer reproducing).
-- **Session 289 — Pricing Layout Rebuild.** ✅ Closed. Pricing rebuilt against `sessions/public website/pricing-page-spec.md`. Five bands shipped: Band 1 hero (gradient, Text + Image cells per About / Pricing precedent), Band 2 comparison chart (white, single `pricing_chart` widget instance owning heading + columns + footnote — three columns populated verbatim from `marketingSiteTiers()` with Monthly emphasized + "Recommended" eyebrow + asterisk-anchored footnote wrapped in `<em>`), Band 3 à la carte (tinted, 1-col heading + 4-slot inner layout with `grid_template_columns: "1fr 1fr"` for a 2×2 visual grid via 1-widget-per-slot — G20 specifically avoided), Band 4 what-I-won't-build (dark, Image + three-paragraph principles text), Band 5 final CTA (gradient, single Text widget centered with smaller-italic question paragraph + two CTAs). Re-imported with zero importer warnings on first pass; screenshot reviewed and approved without revision. The new `pricing_chart` widget's first real-page placement worked cleanly — subgrid row-alignment, mobile collapse, v1 background-tint emphasis on Monthly all rendered as designed (emphasis reads as visibly subtle but acceptable per the spec's path-2 v1 trade). Demo-page architecture conversation during close locked in the single-button auto-login + 24h wipe model; Fleet Manager shared-contract updates lifted to a cross-session arc. Fast Pest 2416 / 0 (exact match with 288 baseline).
-- **Session 290 — Contact Layout Rebuild.** ✅ Closed. Started as a greenfield 3-band `copy.md` build (in-session layout sketch, no pre-pass); pivoted mid-session on user direction to a single gradient hero with an embedded `web_form` contact form (new seeded `contact-page` form: name/email/phone/message + demo-interest checkbox) + 3:4 portrait, bottom two bands dropped. Surfaced G21 (form-label-on-dark — white-card workaround) / G22 (sanitizer strips inline style — resolved) / G23 (no site-owner notification — lifted to 291). In-scope user-approved code expansion: shipped `appearance_config.text.link_color` (composer `--np-link-color` + `.np-site a` var-indirection + inspector field + Quill `color`/`background` toolbar removal + `button.btn` carve-out), resolving G22. Form-notification security threat-model pre-registered in `docs/security-forms.md`. Fast Pest 2421 / 0 (2416 + 5 new). Demo + harness renumbered (+1) by the 291 lift.
-- **Session 291 — Form Submission Notifications.** ✅ Closed. Lifted-gap session (outside the track's phase count, like 285 / 288) resolving **G23**. Shipped — but expanded twice on user direction beyond the originally-scoped fixed-template shape: form submissions now email via an **operator-editable `form_submission` System Email** (`FormSubmissionMailable` → `EmailTemplate::forHandle`; `e()`-escaped `{{submission}}` token; subject token-set excludes submission data), a `FormSubmissionObserver` (`#[ObservedBy]`) dispatching per `Form.settings.notifications` entry, the recipient token being the **existing `{{contact_email}}`** CMS setting (the proposed new `site_owner_email` key was added then removed for reuse-over-new-surface), a routing-only FormResource section, and the seeded `contact-page` wired via `updateOrCreate`. Graceful mail-failure handling added (`FormNotificationDeliveryException` → form inline error, page intact, server-side `report()`, no leak; admin test-email hardened too). FM **pre-Beta pseudo-versioning** folded in (repo-root `VERSION` `0.291.1`; `deploy.yml` reads/validates/bakes + immutable GHCR tag + never-overwrite guard; FM contract-doc `version`-field description corrected — **no contract bump**, CRM contract stays **v2.3.0**). `form_submission` footer line removed (interim; root-cause `footer_reason` token-interpolation gap → post-Beta roadmap stub). `docs/security-forms.md` rows 4–9 moved to as-shipped. Fast Pest **2441 / 0**. Note: the planning audit while drafting 292 found the "Demo builds on the notification primitive" framing **stale** — Demo is form-less/no-email per the s289 architecture and does not consume this surface; the consumer is the Contact page. See `sessions/291. … — Log.md`.
-- **Session 292 — Demo Page Build.** ✅ Closed. **Terminal session of Phase 3 (Contact + Demo).** Shape change vs the content sessions: the page is short (`sessions/public website/demo.json` — one band, 2-column 50/50 split, dark `#0a2540` left with H1 + two `pending-copy` lorem paragraphs, white right with a single centred `primary` "Click Me" CTA → `/demo/enter`), built into the running CMS with zero importer warnings and user-approved (one revision: +100px dark-cell bottom padding for the viewport-height gap, synced into the JSON). The conversion-action wiring shipped form-less: `DemoLoginController` (`abort_unless(isDemoMode(),404)` → `User::firstOrCreate` shared "demo@demo.local" → `syncRoles(['demo'])` → `Auth::login()` → admin redirect, mirroring `InvitationController`), `GET /demo/enter` named route with `throttle:10,1`, a dedicated `demo` role in `PermissionSeeder` (product-feel CMS+CRM, read-only finance/events; **binding deny-list** on user/role-mgmt + mail/email-template/financial/routing/theme/cms settings; **never `super_admin`**), the shared account seeded **only under `isDemoMode()`** in `DatabaseSeeder`. Threat model pre-registered in `docs/security-demo.md`. `VERSION` bumped `0.291.1 → 0.292.1`. Six new Pest cases (`tests/Feature/DemoLoginTest.php`) — import-clean, auto-login+redirect, single-row reuse, per-IP 429, off-demo inert, role-scope deny-list. Does **not** build on 291's notification surface — the Demo page collects no form/email per `[[demo-page-architecture]]`; the earlier linkage was superseded (reconciled in the 292 log). Out-of-band, on user request: `sessions/fm-client-upgrade-handoff-answers.md` (CRM-side answers to FM's client-upgrade hand-off — a coordination Q&A doc, **not** a contract edit; CRM contract stays v2.3.0). Three gaps surfaced (G-demo-1/2/3 — large-button size variant, viewport-height-aware sizing, full-bleed cells; all open with accepted spec workarounds). Fleet Manager shared-contract updates (demo-server identity, abuse alerting, wipe coordination) remain flagged as a cross-session arc, not absorbed into 292. Fast Pest **2446 / 1** — the 6 new cases all pass; the single red is the pre-existing 291 contract-doc "seven-character git SHA" `AppVersionStampTest` self-collision (not a 292 regression; both files untouched on the branch), surfaced to the user and carried forward to 293. See `sessions/292. … — Log.md`.
-- **Session 293 — Page-capture harness + close-out.** Queued. Track's final session.
-
-**Track owns:** the five marketing pages' JSON exports (`home`, `about`, `pricing`, `contact`, `demo`), the gap report at `sessions/public website/gap-report.md`, the eventual Playwright page-capture script + its output at `sessions/public website/screenshots/`, and the `build-summary.md` close-out doc.
-
-**Track does not own:** the two in-product demo landing pages (`/my-nonprofit`, `/my-nonprofit-workshop`) — those live inside demo nonprofit accounts as functional demonstrations, not marketing pages, and are excluded from the main site nav per the brief. Any gap-resolution session lifted from this track's gap report (new widget, new button style, new config option) runs as its own normal-cadence session, not under this track.
+The brief (`sessions/public website/brief.md`, authored by an outside agent collaborating with the user) was canonical for content; this doc carried planning shape only.
 
 ---
 
-## Premise
+## Status — TRACK CLOSED
 
-The Public Website Complete milestone (`release-plan.md` Rule 12, lifted at session 282) requires a credible-looking public website to anchor the investment-conversation demo. The site is built inside the product's own CMS for two reasons:
+**Closed:** 2026-05-15 (session 293).
 
-1. **Dogfooding.** The marketing site is the most visible demonstration that the CMS can build a real public website. If we use a separate stack (static site generator, third-party CMS) the implicit message is that our product isn't enough.
-2. **Iteration speed.** Marketing copy and structural choices change. Editing a page inside the product is faster than editing a static site, and the editing surface is the same one customers use.
+All five pages (`home` `/`, `about` `/about`, `pricing` `/pricing`, `contact` `/contact`, `demo` `/demo`) shipped as importable format-1.1.0 JSON, built into the running CMS, screenshot-captured, and committed to `sessions/public website/`. The gap report stands at 23 rows (6 resolved during the track via lifted sessions; the rest are now per-gap user lift decisions, no longer track-owned). `build-summary.md` is the durable whole-track close-out and carries the milestone-close-gate list. CRM ↔ Fleet Manager contract stayed **v2.3.0** for the entire track (no track session was contract-touching).
 
-The brief was authored by an outside agent collaborating with the user and lives at `sessions/public website/brief.md`. It establishes the page list, voice, system conventions (section bands, padding, background tones, typography fixed, no animations, no invented widgets), authority hierarchy, and gap-surfacing protocol. **It is canonical for this track** — the track doc carries planning shape only, not content decisions.
-
----
-
-## Scope
-
-**In scope:**
-
-- Five marketing pages produced as importable page JSON exports against format version 1.1.0:
-  1. **Home** — exists; structural cleanup to align with conventions (smallest scope, lowest risk; first deliverable).
-  2. **About** — exists; export, extend, link to in-product demo LPs.
-  3. **Pricing** — partial in system; complete against the structure in `copy.md`.
-  4. **Contact** — new build; deliberately simple.
-  5. **Demo** — new build; conversion point with a Form widget for demo access.
-- A `gap-report.md` accumulating every gap encountered, even when the workaround is satisfactory. Format per brief: *what was attempted / what blocked it / workaround used / recommended action*.
-- A Playwright page-capture script that renders each of the five pages in the dev environment and writes `screenshots/page-{slug}.png`. Brief points at `scripts/generate-thumbnails.js` as the reference for invoking Playwright in this codebase; this is a parallel new script, not an extension (different mount point — full public pages, not single widget previews).
-- A `build-summary.md` close-out doc listing what was completed, what was deferred, and what needs the user's input.
-
-**Out of scope (stays elsewhere or stays deferred):**
-
-- **The in-product demo landing pages.** `/my-nonprofit` (donation campaign LP) and `/my-nonprofit-workshop` (event LP) live inside demo nonprofit accounts and are functional demonstrations of the product, not marketing pages. About links to them; the track does not author them.
-- **Gap-resolution implementation.** Each gap that warrants a code change (new widget, new button style, new config option) gets surfaced by the report and lifted into its own session per the user's approval. Not part of this track's work — the track surfaces, the user approves, separate sessions resolve.
-- **New widget creation.** Per brief: "If a section would benefit from a widget that does not exist, build the section in a degraded form using existing widgets and log a gap with the recommendation."
-- **Extending the typography scale or button styles.** Same rule — flag as a gap.
-- **Real photography.** Sample image library is used as placeholders; real photos (staged-stock-photo with the founder as subject) come post-track.
-- **The mailto address** in copy is a placeholder (`mailto:al@example.com`); track surfaces a single gap asking the user to provide the real address. Not a track-side decision.
+**Milestone-close gates remaining** (not track work — per-item user decisions, tracked in `build-summary.md`): Privacy/Terms pages; real photography across all five pages; Demo dark-side real copy + `/demo/enter` hookup; the Fleet-Manager shared-contract arc; the real `mailto:` address (G4).
 
 ---
 
-## Sequence
+## Phase Retrospectives
 
-### Phase 1 — Audit + Home cleanup *(estimated 1 session)*
+Compressed history. Each entry: sessions, key outcomes, gap deltas. Lifted-gap sessions ran outside the phase count per the gap-resolution discipline.
 
-**Audit deliverable:** a system-understanding summary the brief explicitly asks for before any JSON is written. Scope:
+**Phase 1 — Audit + Home cleanup (session 284).** System-understanding audit (`audit-summary.md`: type scales, button styles, widget inventory, appearance-config schema, sample-image library) + the existing home cleaned to the brief's conventions. 10-row gap report scaffolded; `homepage-layout-spec.md` authored. Mid-session bugs lifted: missing `<header>`/`<footer>` chrome wrapper in `public.blade.php`; Quill bullet-render bug in HtmlSanitizer + public SCSS. Fast Pest 2390/0 preserved.
 
-- Available type scales (locate in `resources/scss/` and `DesignSystemPage` typography state).
-- Available button styles (`button_styles` SiteSetting JSON, primary / secondary / text-only inventory).
-- Available widgets (`WidgetRegistry`, `widget_types` table — handles + cardinality + which can live inside layout slots).
-- Appearance config schema (`appearance_config` shape per `AppearanceStyleComposer`).
-- Sample image library inventory.
+**Lifted-gap sessions (285 / 288 / 291; + the 290 in-session expansion).** 285 — CMS fixes: G1 layout `appearance_config` round-trip, G2 TextBlock CTAs + `cta_alignment`, G3-interim `secondary-dark` button variant, G13/G14 typography defaults, Image `aspect_ratio`/`max_width` (2408/0). 288 — the `pricing_chart` widget end-to-end + a generic `repeater` config field type as the system extension (2416/0). 291 — G23 resolved as an operator-editable `form_submission` System Email + `{{contact_email}}` reuse + graceful mail-failure handling; FM pre-Beta pseudo-versioning (`VERSION` + deploy-pipeline discipline) folded in here — no contract bump (2441/0). 290 in-session, user-approved: the `text.link_color` widget appearance control (CSS-variable indirection), resolving G22.
 
-The audit output is the input to Phase 2 / 3 and to the user's design choices on E5 (Mobile Type Scaling), E6 (Theme Colors Refactor), E7 (Column-Layout Mobile Collapse). Surface as a markdown summary in the working folder; the user reviews before Phase 2 starts.
+**Phase 2 — Home + About + Pricing layout rebuilds (sessions 286 / 287 / 288–289).** The layout-spec-driven execution pattern was introduced at 286 (home: nine sibling layout blocks, eight spec bands; G15–G18 surfaced) and re-validated at 287 (about; G19/G20 surfaced) and 289 (pricing; the `pricing_chart` widget's first real-page placement, rendered acceptably without revision). Each rebuilt page imported with zero importer warnings on first pass, bands in spec order, cross-section rhythm matching the spec's prediction.
 
-**Home cleanup deliverable:** the existing home page export, edited to align with the section-band / padding / appearance-config-as-text-color conventions in the brief. Re-imported into the system, screenshot taken, gap report scaffolded with first findings.
+**Phase 3 — Contact + Demo (sessions 290 / 292).** Contact (290) started greenfield against a 3-band sketch, pivoted mid-session on user direction to a single gradient hero with an embedded `web_form` + 3:4 portrait; surfaced G21/G22/G23 (G22 resolved in-session, G23 lifted to 291). Demo (292) deliberately overrode the marketing conventions per `demo-page-spec.md`: a single-band 50/50 dark/light split + the form-less `/demo/enter` auto-login (tightly-scoped `demo` role, per-IP throttle, demo-server guard, threat model in `docs/security-demo.md`); surfaced G-demo-1/2/3 (accepted spec workarounds). Phase 3 complete at 292.
 
-Why home first: the brief calls out "may need structural cleanup to align with conventions below" for home. It is the smallest scope and the most established pattern (already exists, copy is finalized). It validates the export → edit → import workflow before we apply it to greenfield pages.
-
-### Phase 2 — Pricing build-out + About extend *(estimated 1 session)*
-
-Both are extensions of pages that already exist in the system. Pricing is partial in the system AND copy-incomplete in places — `copy.md` carries the structural spec but as the page is built against the SaaS-pattern references, gaps in copy may surface (band heading mismatches, missing supporting sentences, transitions between bands that don't read as drafted). About expands on the "This is not a SaaS company" theme and links to the two in-product demo LPs (`/my-nonprofit`, `/my-nonprofit-workshop`).
-
-**Copy supplementation discipline.** When the build hits a copy gap, the agent does **not** invent copy. Two paths: (a) flag the gap in the gap report with a recommendation for what kind of copy is needed and let the user supply it before the page closes, or (b) if the gap is small and editorial (a connecting sentence, a heading variant), surface the proposed wording to the user inline and proceed only on approval. Voice protection rule applies: `copy.md` is the canonical voice; any supplementation matches that voice.
-
-Pre-work: export current Pricing and About from the admin into the working folder as `existing-pricing-page-export.json` and `existing-about-page-export.json` (the brief calls these out as required inputs). The user runs the export action; the agent treats those files as ground truth.
-
-Both pages absorb gap report rows as discovered.
-
-### Phase 3 — Contact + Demo *(estimated 1 session)*
-
-Both greenfield — neither page exists in the system yet. Contact is deliberately simple (hero band + email band + optional "what I respond to fastest" band). **Demo is the CTA destination for every marketing CTA across all five pages** — the conversion linchpin — and it does not yet exist as a published page in the CMS. Built fresh from `copy.md` as the starting point.
-
-Demo includes a Form widget configured for demo-access intake (name / email / interest / message — all optional per copy). The form-widget configuration is the most concrete piece of "real product configuration" in the track — it tests whether the existing Form widget can express the all-fields-optional shape with a helper-text underneath the email field, or whether that surfaces a gap.
-
-**Copy supplementation likely.** Demo is greenfield, and `copy.md`'s Demo section may not survive contact with the SaaS-pattern reference layouts intact — the structural shape of a "form + reassurance + privacy" page, when laid out against the references, may want supporting copy that the doc doesn't carry (transition lines between bands, micro-copy near the form fields beyond the email helper, a closing line near the privacy band). Same supplementation discipline as Phase 2: the agent does not invent — flag in the gap report or surface inline for user approval.
-
-### Phase 4 — Page-capture harness + screenshots + close-out *(estimated 1 session)*
-
-Build the Playwright page-capture script — distinct from `scripts/generate-thumbnails.js` (which captures widget previews in dev mode at `/dev/widgets/{handle}`). The new script captures the five public pages at their actual published URLs.
-
-Sketch:
-
-```
-scripts/generate-page-screenshots.js
-  → for each page slug in [home, about, pricing, contact, demo]:
-    → goto http://localhost/{slug}
-    → wait for fonts + bundle to settle (manifest-load idle)
-    → fullPage: true screenshot
-    → write to sessions/public website/screenshots/page-{slug}.png
-```
-
-Run on demand, not in CI. Output committed to the working folder so the user can review without running the script.
-
-Close-out: write `build-summary.md` listing what shipped per phase, what gaps were surfaced, and what needs the user's input. Phase 4's session log doubles as the track-closure entry.
+**Phase 4 — Page-capture harness + track close (session 293).** `scripts/generate-page-screenshots.js` — standalone host-run ESM Playwright script, parallel to `generate-thumbnails.js`, capturing the five published URLs at a 1280-wide viewport `fullPage` with a network-idle + `document.fonts.ready` settle and a DOM-strip of the dev Debugbar so the committed record is clean. Five `screenshots/page-*.png` captured, verified (correct pages, non-trivial, spec-order bands), and user-reviewed. `build-summary.md` written (whole-track close-out + milestone-close-gate list). `VERSION` bumped `0.292.1 → 0.293.1`. Fast Pest 2446/1 — the single red is the pre-existing 291 contract-doc `AppVersionStampTest` "seven-character git SHA" self-collision (not a 292/293 regression), left flagged as a user-owned doc-hygiene carry-forward in `build-summary.md` (not folded into 293). No new Pest (the harness is run-on-demand tooling). Track fully closed at this session.
 
 ---
 
-## System conventions inherited from the brief
+## Durable reference
 
-These are decided. Track does not re-decide them per page.
+Retained because they record *how* the site was built and govern any future lifted gap-resolution session.
 
-**Section bands.** Major content sections are full-bleed background-color slabs. Background lives on the `type: "layout"` block, not on the widgets inside it. Inner-widget backgrounds only when contrast within a row is the intentional effect.
+**System conventions (from the brief, decided once).** Section bands = full-bleed background-color slabs; background on the `type:"layout"` block, not inner widgets (inner-widget backgrounds only for intentional within-row contrast). Padding: 150/150 major bands, 25/50 widgets in column layouts. Background tones: `#ffffff`, `#d4d4f2` (tinted), `#373c44` (dark) — no new tones without a gap flag. Type + buttons fixed (missing variant → gap). Color source of truth: `appearance_config.text.color` (inline Quill color = inline emphasis only). No animations beyond the bar-chart load + carousel autoplay. No invented widgets (degrade + log a gap). Images: sample library as placeholders, marked for the real-photography swap. CTAs route to `/demo` except "See the Code" → GitHub and "Email me" → `mailto:`.
 
-**Section padding.** 150px top + 150px bottom for major bands. 25px top + 50px bottom for widgets inside column layouts.
+**Gap-resolution discipline.** Gaps were surfaced, not unilaterally resolved. Encounter → degrade + add a four-field row to `gap-report.md` → surface at close → **user decides per-gap**: accept-as-degraded or lift an independent follow-on session (sequenced into the milestone, not absorbed into the track's phase count). Now that the track is closed, every open row is a standalone per-gap user lift decision.
 
-**Background tones.** `#ffffff` (default), `#d4d4f2` (tinted band, established by home's "What it does"), `#373c44` (dark band, established by home's "This is not a SaaS company"). No new tones without a gap-report flag.
+**Working folder** — `sessions/public website/` (committed; the artifacts are the deliverable): `brief.md` / `copy.md` / `references.md` + reference PNGs (inputs, do not edit); `existing-*-export.json` (ground-truth inputs); the five `{home,about,pricing,contact,demo}.json`; the per-page layout specs + `pricing-chart-widget-spec.md` + `demo-page-spec.md`; `audit-summary.md`; `gap-report.md`; `screenshots/page-*.png`; `build-summary.md` (the close-out).
 
-**Type and buttons.** Fixed. No extension. Missing variant → gap.
+**Track did not own:** the two in-product demo landing pages (`/my-nonprofit` donation-campaign LP, `/my-nonprofit-workshop` event LP) — functional product demonstrations inside demo accounts, excluded from the main site nav per the brief. They were never track deliverables and have no session; if built, they are post-Beta work the user lifts separately (recorded so the deferral is explicit, not implicit in the brief).
 
-**Color in content.** Standardize on `appearance_config.text.color` as the source of truth. Inline `style="color:rgb(...)"` inside Quill content is for inline emphasis only (single phrase highlight), not for setting a section's text color. The existing home export mixes both models; Phase 1 normalizes.
-
-**No animations.** No parallax. No scroll-triggered reveal animations. Bar chart load animation and existing carousel autoplay are the only motion permitted.
-
-**No invented widgets.** Degrade gracefully + log the gap.
-
-**Images.** Sample image library as placeholders. Mark each placeholder in the page JSON with a note in the widget label or a custom field so a later pass can swap them.
-
-**CTAs.** Every marketing CTA routes to `/demo`. Exceptions: "See the Code" → public GitHub repo; "Email me" → `mailto:` placeholder.
-
-**Authority hierarchy** *(per brief)*. When sources conflict: **(1)** existing exported pages in the system are ground truth for what the system actually produces — preserve their structure when extending; **(2)** written copy in `copy.md` is the words — do not paraphrase; **(3)** reference images are structural specs only — section ordering, column counts, padding rhythm, not color / font / imagery style; **(4)** the agent's own design instinct is the last resort — substantive choices made at this level are flagged as gaps for review.
+**Stance (held throughout):** the deliverable was content, not code (code lands only via a lifted gap); dogfood discipline (CMS friction → a gap); voice protection (a typesetter for the supplied copy, not a copywriter); visual restraint (structural borrow only; reference images were structural specs, never surface inspiration).
 
 ---
 
-## Gap-resolution discipline
-
-The brief is explicit: *"Gaps are surfaced for discussion, not unilaterally resolved. The agent should not extend the widget system, the typography scale, the button styles, or the appearance config schema without an explicit go-ahead."*
-
-How that flows operationally:
-
-1. Track session encounters a missing widget / button style / config option.
-2. Agent uses degraded form, adds row to `gap-report.md` with the four required fields.
-3. At session close, the agent surfaces the new gap-report rows as part of the manual-test handoff.
-4. **User decides per-gap:** accept the degraded form (mark "Won't fix — accepted as degraded" in the report), or lift a follow-on session to resolve.
-5. Lifted gaps become standalone sessions in `release-plan.md`, sequenced into the Public Website Complete milestone alongside the existing E5–E17 entries. They are **not** absorbed into this track's phase count.
-
-This is the same protocol as the housekeeping inbox lifts for batch sessions — surface, discuss, lift to release-plan if approved, run on normal cadence. The track itself does not balloon.
-
-**Forecast:** the brief explicitly anticipates "a tabbed feature explainer is the most likely candidate" for a missing widget. Other plausible gaps (informed estimate, not a commitment): a ghost-on-dark button variant for the dark-band CTAs; a per-page hero variant that doesn't force `overlap_nav: true`; a headline-only widget distinct from the hero. Real gaps land when phases run.
-
----
-
-## Working folder
-
-`sessions/public website/` (folder name with a space, per user direction at lift). Holds:
-
-- `brief.md` — canonical input; do not edit.
-- `copy.md` — page-by-page marketing copy; do not paraphrase.
-- `references.md` + four reference-image PNGs — structural specs only, not surface inspiration.
-- `existing-home-page-export.json` — canonical example of valid format-1.1.0 JSON.
-- `existing-about-page-export.json` + `existing-pricing-page-export.json` — exports the user produces from admin before Phase 2 starts; treated as ground truth.
-- `gap-report.md` — accumulates across phases.
-- `home.json` / `about.json` / `pricing.json` / `contact.json` / `demo.json` — Phase 1–3 deliverables. Filenames TBD; brief doesn't specify.
-- `screenshots/page-{slug}.png` — Phase 4 deliverables.
-- `build-summary.md` — Phase 4 close-out.
-
-Folder is committed (artifacts are the track's deliverable, not transient working files).
-
----
-
-## Sequencing inside Public Website Complete milestone
-
-Lifted at session 283. Inserted into the milestone's execution-order list at position 34 onwards as four phase entries (Phases 1–4). E5 / E6 / E7 / E8 sequence after Phase 1 so the audit output can inform their design choices.
-
-Two reasonable sequencings considered:
-
-- **(a) Track interleaves with E5–E8.** Phase 1 runs first (~position 34), then E5 / E6 / E7 / E8 land informed by its audit output (~positions 35–38), then Phases 2–4 land (~positions 39–41). Cleaner but more interleaving overhead.
-- **(b) Track runs after E8.** Sequential, simpler, may end up redoing some appearance choices once E5 / E6 / E7 ship.
-
-**Chosen: (a).** Phase 1's audit output is exactly the kind of input that informs E5–E8 design. The interleaving cost is small.
-
-Final positions resolve at lift time (next session-outlines + release-plan update).
-
----
-
-## Stance
-
-- **The deliverable is content, not code.** No production code lands from this track. If code lands, it's because a gap got lifted to a follow-on session.
-- **Dogfood discipline.** If the workflow of building these pages inside the CMS surfaces friction, that friction becomes a gap. The marketing site doubles as a UX rehearsal of the CMS itself.
-- **Voice protection.** Plain-spoken, signed-by-a-person, anti-SaaS. The brief is explicit: do not paraphrase or "improve" copy. The agent is a typesetter for this track, not a copywriter.
-- **Visual restraint.** Closer to Attio than to Clay or Gong. When in doubt, less decoration. Reference images are structural specs only.
+*All phases closed. No forward plan. Future work touching the marketing site (gap resolutions, the milestone-close gates, real photography, the demo LPs) runs as independent sessions outside this — now closed — track.*
