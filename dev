@@ -11,8 +11,37 @@
 #   ./dev build              (rebuild the app image)
 #   ./dev logs               (tail all service logs)
 #   ./dev fresh              (wipe and re-migrate the database)
+#   ./dev test [args]        (run the full Pest suite; extra args passed through)
+#   ./dev test:design [args] (run ONLY the typography/color/appearance/asset-build
+#                             design-surface cluster — the scoped inner-loop signal;
+#                             ~30s vs the full suite. Extra args pass through, e.g.
+#                             ./dev test:design --filter=ramp)
 
 CONTAINER="nonprofitcrm_app"
+
+# Curated design-surface test files: typography + color/appearance + the
+# build-pipeline/drift cluster. The drift files (AssetBuild / BuildServer /
+# WidgetJsLibs) are included on purpose so the scoped loop still catches the
+# stale-stylesheet bug class. Keep in sync when design-surface tests are
+# added/renamed (a session owns formalising this; this list is the interim).
+DESIGN_TESTS=(
+    tests/Unit/TypographyCompilerTest.php
+    tests/Unit/TypographyResolverTest.php
+    tests/Unit/AppearanceStyleComposerTest.php
+    tests/Feature/TypographyMigrationTest.php
+    tests/Feature/ThemeTypographyControllerTest.php
+    tests/Feature/AppearanceLayerRegressionTest.php
+    tests/Feature/AppearanceBackgroundRenderTest.php
+    tests/Feature/AppearanceConfigRenameTest.php
+    tests/Feature/AppearanceImageUploadTest.php
+    tests/Feature/DesignSystemButtonsTest.php
+    tests/Feature/GradientComposerTest.php
+    tests/Feature/AssetBuildSession123Test.php
+    tests/Feature/BuildServerSettingsSession125Test.php
+    tests/Feature/WidgetJsLibsSession138Test.php
+    tests/Feature/CustomFormControlsSession124Test.php
+    tests/Feature/PageBlockRendererLayoutTest.php
+)
 
 case "$1" in
     artisan)
@@ -40,6 +69,14 @@ case "$1" in
         ;;
     fresh)
         docker compose exec app php artisan migrate:fresh --seed
+        ;;
+    test)
+        shift
+        docker compose exec app php artisan test "$@"
+        ;;
+    test:design)
+        shift
+        docker compose exec app php artisan test "${DESIGN_TESTS[@]}" "$@"
         ;;
     *)
         docker compose exec app "$@"
