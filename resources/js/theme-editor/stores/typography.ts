@@ -10,6 +10,9 @@ export const useTypographyStore = defineStore('typography', () => {
   const saving = ref(false)
   const saveError = ref<string | null>(null)
   const lastSavedAt = ref<number | null>(null)
+  const rebuilding = ref(false)
+  const rebuildMessage = ref<string | null>(null)
+  const rebuildOk = ref<boolean | null>(null)
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -50,5 +53,32 @@ export const useTypographyStore = defineStore('typography', () => {
     }
   }
 
-  return { state, bootstrap, saving, saveError, lastSavedAt, init, queueSave, flush }
+  async function rebuild() {
+    if (!bootstrap.value || rebuilding.value) return
+    // Persist any pending edit first so the rebuild compiles the latest state.
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+    await flush()
+    rebuilding.value = true
+    rebuildMessage.value = null
+    rebuildOk.value = null
+    try {
+      const res = await fetch(bootstrap.value.rebuildUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': bootstrap.value.csrfToken,
+          'Accept': 'application/json',
+        },
+      })
+      const body = await res.json().catch(() => ({}))
+      rebuildOk.value = res.ok && body.ok === true
+      rebuildMessage.value = body.message ?? (rebuildOk.value ? 'Rebuilt.' : `Rebuild failed (${res.status}).`)
+    } catch (e: any) {
+      rebuildOk.value = false
+      rebuildMessage.value = e?.message ?? 'Rebuild failed'
+    } finally {
+      rebuilding.value = false
+    }
+  }
+
+  return { state, bootstrap, saving, saveError, lastSavedAt, rebuilding, rebuildMessage, rebuildOk, init, queueSave, flush, rebuild }
 })

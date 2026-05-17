@@ -148,14 +148,23 @@ it('derives a full per-breakpoint set for an unconfigured element (concrete-valu
         ->toBe($defaults['elements']['p']['font']['size']['xl']['value']);            // body: no scaling
 });
 
-it('gives every heading a concrete em bottom-margin default and leaves body elements without one', function () {
-    $defaults = TypographyResolver::defaults();
+it('preserves a configured rem margin scheme through load() (no em-rhythm rewrite, no sweep)', function () {
+    // Mirror this install's real shape: a deliberate rem vertical-rhythm
+    // scheme with a per-box `unit`. None of it is "stale" — it must survive.
+    $tuned = TypographyResolver::defaults();
+    $tuned['elements']['h1']['margin'] = ['top' => 0, 'right' => 0, 'bottom' => 1.5, 'left' => 0, 'unit' => 'rem'];
+    $tuned['elements']['p']['margin']  = ['top' => 0, 'right' => 0, 'bottom' => 1,   'left' => 0, 'unit' => 'rem'];
 
-    expect($defaults['elements']['h1']['heading_margin_bottom'])->toBe(0.4);
-    foreach (['h2', 'h3', 'h4', 'h5', 'h6'] as $h) {
-        expect($defaults['elements'][$h]['heading_margin_bottom'])->toBe(0.5);
-    }
-    foreach (TypographyResolver::BODY_ELEMENTS as $b) {
-        expect($defaults['elements'][$b])->not->toHaveKey('heading_margin_bottom');
-    }
+    SiteSetting::create([
+        'key'   => 'typography',
+        'type'  => 'json',
+        'group' => 'design',
+        'value' => json_encode($tuned),
+    ]);
+
+    $loaded = TypographyResolver::load();
+
+    expect($loaded['elements']['h1']['margin'])->toBe(['top' => 0, 'right' => 0, 'bottom' => 1.5, 'left' => 0, 'unit' => 'rem']);
+    expect($loaded['elements']['p']['margin']['bottom'])->toBe(1);
+    expect($loaded['elements']['h1'])->not->toHaveKey('margin_em');
 });

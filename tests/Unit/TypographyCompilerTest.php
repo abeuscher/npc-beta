@@ -85,23 +85,26 @@ it('keeps line-height unitless and only in the base block (it rides the size)', 
     }
 });
 
-it('emits heading bottom-margin as an em multiple by default and lets an explicit px value win', function () {
-    $css = TypographyCompiler::compile(TypographyResolver::defaults());
-    expect($css)->toContain('h1:not(nav h1) { ');
-    expect($css)->toContain('margin-bottom: 0.4em');
-    expect($css)->toContain('margin-bottom: 0.5em'); // h2..h6
-
-    // Body elements get no em heading-margin — the px box still governs them.
-    $pBlock = collect(explode("\n", $css))->first(fn ($l) => str_starts_with($l, 'p:not(nav p) { '));
-    expect($pBlock)->toContain('margin-bottom: 0px');
-
-    // An explicitly-tuned px bottom margin on a heading overrides the em default.
+it('honours the stored margin/padding unit and never int-truncates (the rem→1px bug)', function () {
     $state = TypographyResolver::defaults();
-    $state['elements']['h1']['margin']['bottom'] = 16;
-    $css2  = TypographyCompiler::compile($state);
-    $h1    = collect(explode("\n", $css2))->first(fn ($l) => str_starts_with($l, 'h1:not(nav h1) { '));
-    expect($h1)->toContain('margin-bottom: 16px');
-    expect($h1)->not->toContain('margin-bottom: 0.4em');
+    // This install's real shape: a deliberate rem rhythm with a per-box unit.
+    $state['elements']['h1']['margin'] = ['top' => 0, 'right' => 0, 'bottom' => 1.5,  'left' => 0, 'unit' => 'rem'];
+    $state['elements']['h3']['margin'] = ['top' => 0, 'right' => 0, 'bottom' => 1,    'left' => 0, 'unit' => 'rem'];
+    $state['elements']['p']['margin']  = ['top' => 0, 'right' => 0, 'bottom' => 0.75, 'left' => 0, 'unit' => 'rem'];
+
+    $css   = TypographyCompiler::compile($state);
+    $block = fn ($sel) => collect(explode("\n", $css))->first(fn ($l) => str_starts_with($l, $sel . ' { '));
+
+    // Fractional rem survives verbatim — NOT (int)1.5 . 'px' = "1px".
+    expect($block('h1:not(nav h1)'))->toContain('margin-bottom: 1.5rem');
+    expect($block('h3:not(nav h3)'))->toContain('margin-bottom: 1rem');
+    expect($block('p:not(nav p)'))->toContain('margin-bottom: 0.75rem');
+    expect($css)->not->toContain('margin-bottom: 1px');
+
+    // No unit key → defaults to px (back-compat), still no truncation noise.
+    $pxState = TypographyResolver::defaults();
+    $pxState['elements']['h2']['margin']['bottom'] = 24;
+    expect(TypographyCompiler::compile($pxState))->toContain('margin-bottom: 24px');
 });
 
 it('migrates a legacy flat font.size passed straight to the compiler', function () {

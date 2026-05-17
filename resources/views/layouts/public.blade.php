@@ -97,8 +97,12 @@
             $cssVars[] = "--color-primary: {$primaryColor}";
         }
 
+        // Typography element CSS (per-breakpoint sizes + em rhythm) is compiled
+        // into the public CSS bundle via AssetBuildService (see the build-server
+        // <link> below), the same delivery path as the button overrides — no
+        // runtime inline <style>. Only the font-family :root vars + the Google
+        // Fonts <link> are resolved here at request time.
         $__typography    = \App\Services\TypographyResolver::load();
-        $__typographyCss = \App\Services\TypographyCompiler::compile($__typography);
         $headingFamily   = $__typography['buckets']['heading_family'] ?? null;
         $bodyFamily      = $__typography['buckets']['body_family'] ?? null;
         if ($headingFamily) {
@@ -144,10 +148,6 @@
 
     @if ($cssVars)
         <style>:root { {!! implode('; ', $cssVars) !!}; }</style>
-    @endif
-
-    @if ($__typographyCss)
-        <style>{!! $__typographyCss !!}</style>
     @endif
 
     @if ($scopedRules)

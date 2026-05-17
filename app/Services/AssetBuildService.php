@@ -371,6 +371,14 @@ JS,
             $combined .= "// ── button-overrides (from DB) ──\n" . $buttonOverrides . "\n";
         }
 
+        // Append Design System typography (per-breakpoint sizes), scoped under
+        // .np-site exactly like every other public partial (see _base.scss) so
+        // the bare element selectors cannot leak into the Filament admin.
+        $typographyCss = TypographyCompiler::compileScoped(['.np-site']);
+        if ($typographyCss) {
+            $combined .= "// ── typography (from DB) ──\n" . $typographyCss . "\n";
+        }
+
         if ($combined) {
             $scss[] = [
                 'path' => 'theme/public.scss',
@@ -491,7 +499,10 @@ JS,
         ];
 
         $variantHandles = ['primary', 'secondary', 'secondary-dark', 'text', 'destructive', 'link'];
-        $lines = [":root {\n"];
+        // Scoped to .np-site (not :root) so the button custom properties have no
+        // footprint in the Filament admin. They inherit to all public .btn
+        // descendants; the page-builder preview container also carries .np-site.
+        $lines = [".np-site {\n"];
 
         foreach ($variantHandles as $handle) {
             $v = $styles[$handle] ?? [];

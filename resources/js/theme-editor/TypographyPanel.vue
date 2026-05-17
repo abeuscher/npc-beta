@@ -133,10 +133,6 @@ const breakpointFields: { key: BreakpointKey, label: string }[] = [
 
 const sizeUnits = ['px', 'rem', 'em']
 
-function isHeading(el: ElementKey): boolean {
-  return headingElements.includes(el)
-}
-
 function onBreakpointValue(el: ElementKey, bp: BreakpointKey, raw: string) {
   if (!state.value || raw === '') return
   const n = Number(raw)
@@ -150,14 +146,6 @@ function onBreakpointUnit(el: ElementKey, bp: BreakpointKey, unit: string) {
   if (!state.value) return
   const size = state.value.elements[el].font.size
   size[bp] = { ...size[bp], unit }
-  store.queueSave()
-}
-
-function onHeadingMarginChange(el: ElementKey, raw: string) {
-  if (!state.value || raw === '') return
-  const n = Number(raw)
-  if (!Number.isFinite(n) || n < 0) return
-  state.value.elements[el].heading_margin_bottom = n
   store.queueSave()
 }
 
@@ -205,6 +193,10 @@ function toggle(el: ElementKey) {
 function downloadScss() {
   window.location.href = props.bootstrap.exportUrl
 }
+
+function rebuild() {
+  store.rebuild()
+}
 </script>
 
 <template>
@@ -223,6 +215,17 @@ function downloadScss() {
         <span v-if="store.saving">Saving…</span>
         <span v-else-if="store.saveError" class="theme-typography__error">{{ store.saveError }}</span>
         <span v-else-if="store.lastSavedAt">Saved</span>
+        <span
+          v-if="store.rebuildMessage"
+          :class="store.rebuildOk ? 'theme-typography__rebuilt' : 'theme-typography__error'"
+        >{{ store.rebuildMessage }}</span>
+        <button
+          type="button"
+          class="theme-typography__export"
+          :disabled="store.rebuilding"
+          title="Compile the saved typography into the public CSS bundle (changes are not live on the public site until you rebuild)"
+          @click="rebuild"
+        >{{ store.rebuilding ? 'Rebuilding…' : 'Rebuild CSS' }}</button>
         <button type="button" class="theme-typography__export" @click="downloadScss">Download SCSS</button>
       </div>
     </div>
@@ -337,17 +340,6 @@ function downloadScss() {
                     </select>
                   </div>
                 </div>
-                <div v-if="isHeading(el)" class="theme-typography__bp-field">
-                  <label class="theme-typography__label">Space below · em</label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    min="0"
-                    class="theme-typography__input"
-                    :value="state.elements[el].heading_margin_bottom ?? 0"
-                    @input="onHeadingMarginChange(el, ($event.target as HTMLInputElement).value)"
-                  >
-                </div>
               </div>
             </div>
 
@@ -428,6 +420,15 @@ function downloadScss() {
 
 .theme-typography__error {
   color: #b91c1c;
+}
+
+.theme-typography__rebuilt {
+  color: #15803d;
+}
+
+.theme-typography__export:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .theme-typography__export {

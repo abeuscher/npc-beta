@@ -157,28 +157,18 @@ class TypographyCompiler
             $decls[] = self::CASE_MAP[$case];
         }
 
-        $isHeading = in_array($key, TypographyResolver::HEADING_ELEMENTS, true);
-        $headingMb = $config['heading_margin_bottom'] ?? null;
-
         foreach (['margin', 'padding'] as $box) {
+            // The box carries a single unit for all four sides (px if absent).
+            // Honour it — values may be fractional (e.g. 1.5rem); never
+            // int-truncate to px (the long-standing bug that rendered every
+            // configured rem margin as `1px`).
+            $unit = $config[$box]['unit'] ?? 'px';
             foreach (['top', 'right', 'bottom', 'left'] as $side) {
                 $val = $config[$box][$side] ?? null;
-
-                // Heading bottom-margin defaults to an em multiple of the
-                // element's own font-size (auto-scales with the per-breakpoint
-                // ramp — no per-breakpoint margin emission needed). An
-                // explicitly-set px box value still wins (non-destructive).
-                if ($box === 'margin' && $side === 'bottom' && $isHeading
-                    && $headingMb !== null && $headingMb !== ''
-                    && (int) ($val ?? 0) === 0) {
-                    $decls[] = 'margin-bottom: ' . $headingMb . 'em';
+                if ($val === null || $val === '' || ! is_numeric($val)) {
                     continue;
                 }
-
-                if ($val === null || $val === '') {
-                    continue;
-                }
-                $decls[] = $box . '-' . $side . ': ' . (int) $val . 'px';
+                $decls[] = $box . '-' . $side . ': ' . ($val + 0) . $unit;
             }
         }
 

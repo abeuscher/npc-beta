@@ -95,6 +95,8 @@ class AdminPanelProvider extends PanelProvider
                             ->name('theme.typography.update');
                         \Illuminate\Support\Facades\Route::get('/design-system/typography/export.scss', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'export'])
                             ->name('theme.typography.export');
+                        \Illuminate\Support\Facades\Route::post('/api/theme/typography/rebuild', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'rebuild'])
+                            ->name('theme.typography.rebuild');
                     });
 
                 // Dev tools — Random Data Generator

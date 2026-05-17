@@ -40,15 +40,6 @@ class TypographyResolver
         'ol_li' => 'body',
     ];
 
-    private const HEADING_MARGIN_BOTTOM_EM = [
-        'h1' => 0.4,
-        'h2' => 0.5,
-        'h3' => 0.5,
-        'h4' => 0.5,
-        'h5' => 0.5,
-        'h6' => 0.5,
-    ];
-
     public const DEFAULT_SAMPLE_TEXT = 'The quick brown fox jumps over the lazy dog.';
 
     public const DEFAULT_FAMILY = "'Inter', system-ui, sans-serif";
@@ -104,9 +95,6 @@ class TypographyResolver
                 'margin'  => $zeroSpacing,
                 'padding' => $zeroSpacing,
             ];
-            if (isset(self::HEADING_MARGIN_BOTTOM_EM[$el])) {
-                $elements[$el]['heading_margin_bottom'] = self::HEADING_MARGIN_BOTTOM_EM[$el];
-            }
         }
         $elements['ul_li']['list_style_type'] = 'disc';
         $elements['ul_li']['marker_color']    = null;
@@ -142,12 +130,12 @@ class TypographyResolver
     }
 
     /**
-     * Idempotent, non-destructive font.size shape upgrade. A flat
-     * {value, unit} becomes { xl:{value,unit}, lg, md, sm } — the stored
-     * value copied byte-exact into xl, lg/md/sm derived from the per-class
-     * ramp. Already-per-breakpoint sizes (xl key present) are left untouched
-     * so user-tuned lg/md/sm survive. Shared by load() (read) and the save
-     * path (ThemeTypographyController::normalise) so both stay on one shape.
+     * Idempotent, non-destructive font.size shape upgrade: a flat
+     * {value, unit} becomes { xl:{value,unit}, lg, md, sm } — the stored value
+     * copied byte-exact into xl, lg/md/sm derived from the per-class ramp.
+     * Already-per-breakpoint sizes (xl key present) are left untouched so
+     * user-tuned lg/md/sm survive. Shared by load() (read) and the save path
+     * (ThemeTypographyController::normalise) so both stay on one shape.
      */
     public static function migrate(array $typography): array
     {
@@ -160,17 +148,14 @@ class TypographyResolver
             if (! is_array($config)) {
                 continue;
             }
+
             $size = $config['font']['size'] ?? null;
-            if (! is_array($size) || array_key_exists('xl', $size)) {
-                continue; // unknown shape, or already per-breakpoint (idempotent)
+            if (is_array($size) && ! array_key_exists('xl', $size) && array_key_exists('value', $size)) {
+                $typography['elements'][$el]['font']['size'] = self::rampSize(
+                    (string) $el,
+                    ['value' => $size['value'], 'unit' => $size['unit'] ?? 'rem'],
+                );
             }
-            if (! array_key_exists('value', $size)) {
-                continue; // not the recognised flat shape — leave for the defaults merge
-            }
-            $typography['elements'][$el]['font']['size'] = self::rampSize(
-                (string) $el,
-                ['value' => $size['value'], 'unit' => $size['unit'] ?? 'rem'],
-            );
         }
 
         return $typography;

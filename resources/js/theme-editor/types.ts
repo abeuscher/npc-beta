@@ -23,7 +23,6 @@ export interface ElementConfig {
   font: ElementFont
   margin: SpacingValue
   padding: SpacingValue
-  heading_margin_bottom?: number
   list_style_type?: string
   marker_color?: string | null
 }
@@ -43,5 +42,6 @@ export interface TypographyBootstrap {
   families: FontFamilyOption[]
   saveUrl: string
   exportUrl: string
+  rebuildUrl: string
   csrfToken: string
 }

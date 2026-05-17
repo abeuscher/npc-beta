@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
+use App\Services\AssetBuildService;
 use App\Services\TypographyCompiler;
 use App\Services\TypographyResolver;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,27 @@ class ThemeTypographyController extends Controller
         Cache::forget('site_setting:typography');
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Compile the saved typography into the public CSS bundle via the build
+     * server — the same delivery path button styles use
+     * (DesignSystemPage::save). Kept as an explicit action rather than firing
+     * on every debounced auto-save so the remote build server is not hammered
+     * on each keystroke; mirrors the buttons "Rebuild CSS Bundle" button.
+     */
+    public function rebuild(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('manage_cms_settings'), 403);
+
+        $result = app(AssetBuildService::class)->build();
+
+        return response()->json([
+            'ok'      => $result->success,
+            'message' => $result->success
+                ? 'Typography compiled into the public CSS bundle.'
+                : 'Rebuild failed: ' . $result->message,
+        ], $result->success ? 200 : 502);
     }
 
     public function export(Request $request): Response

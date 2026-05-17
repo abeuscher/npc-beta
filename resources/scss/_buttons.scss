@@ -1,5 +1,12 @@
 @use "variables" as *;
 
+// All public button CSS is wrapped in .np-site — the public style namespace
+// documented in _base.scss ("never add bare element selectors outside
+// .np-site"). Bare .btn selectors otherwise leak into the Filament admin,
+// which is intentionally not white-labelled. The page-builder preview
+// container also carries .np-site, so previews still render.
+.np-site {
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Button group
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,3 +214,5 @@
         flex-shrink: 0;
     }
 }
+
+} // .np-site

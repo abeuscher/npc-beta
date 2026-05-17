@@ -346,8 +346,9 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 
 - **gate:** release
 - **prerequisites:** none; must land before D2 (Rule 8)
-- **success criterion:** Typography stabilizes on narrow viewports without becoming a whack-a-mole exercise. The user-supplied design (per existing stub) — 3 size fields per element at lg/md/sm breakpoints with 25%-per-step default — is the *target* shape, but the session should keep scope tight: either user-supplied per-breakpoint values OR calc functions, not both, not custom breakpoint widths beyond the existing three.
-- **estimated time cost:** 1 session (per the "scoped small" constraint; per Rule 11, may extend if the storage-migration shape forces it).
+- **success criterion:** Typography stabilizes on narrow viewports without becoming a whack-a-mole exercise. The user-supplied design (per existing stub) — 3 size fields per element at lg/md/sm breakpoints, per-class calibration ramp default — is the *target* shape, but the session should keep scope tight: user-supplied per-breakpoint values via media queries, not custom breakpoint widths beyond the existing three.
+- **delivery (corrected mid-s295):** typography CSS compiles into the public bundle via `AssetBuildService` (appended in `collectSources()` next to the button overrides; rebuilt on save like `DesignSystemPage::save()` does for buttons). The pre-s295 runtime inline `<style>` in `public.blade.php` is retired — it was inconsistent with how every other DB-driven design surface delivers CSS. See the corrected "Mobile Type Scaling" stub note in `session-outlines.md`.
+- **estimated time cost:** 1 session (per the "scoped small" constraint; per Rule 11, extended slightly by the delivery-path correction — the original stub premise was wrong, not the ramp/migration work).
 
 #### E6. Theme Colors Refactor
 
