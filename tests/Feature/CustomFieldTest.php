@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\ImportProgressPage;
+use App\Filament\Resources\ContactResource\Pages\ListContacts;
 use App\Filament\Resources\CustomFieldDefResource;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
@@ -10,6 +11,7 @@ use App\Models\Page;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -276,20 +278,24 @@ it('contact export includes custom field columns after standard columns', functi
         'custom_fields' => ['member_number' => 'M-500'],
     ]);
 
-    $user = User::factory()->create();
+    $admin = User::factory()->create();
+    $admin->assignRole('super_admin');
 
-    $response = $this->actingAs($user)
-        ->get(route('filament.admin.resources.contacts.index'));
+    // Exercise the REAL export action (ListContacts → ListExportService),
+    // not the DB layer. The old body asserted CustomFieldDef rows and
+    // conceded "action integration is manual-tested" — the name claimed
+    // column ordering that was never exercised.
+    $test = Livewire::actingAs($admin)
+        ->test(ListContacts::class)
+        ->callAction('exportContacts');
 
-    // Export is triggered as an action — verify def is present by checking
-    // that the column exists in our DB layer (full streaming test is covered
-    // by the model cast test above; action integration is manual-tested).
-    $defs = CustomFieldDef::forModel('contact')->get();
+    $body = base64_decode(data_get($test->effects, 'download.content'));
+    $rows = array_map('str_getcsv', preg_split("/\r\n|\n|\r/", trim($body)));
 
-    expect($defs->pluck('label')->toArray())->toContain('Member Number');
-
-    $contact = Contact::where('email', 'carol@example.com')->first();
-    expect($contact->custom_fields['member_number'])->toBe('M-500');
+    // Standard columns first, the custom-field column appended after them.
+    expect($rows[0][0])->toBe('first_name');
+    expect(end($rows[0]))->toBe('Member Number');
+    expect(end($rows[1]))->toBe('M-500');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

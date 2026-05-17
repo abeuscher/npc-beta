@@ -2,8 +2,10 @@
 
 use App\Filament\Widgets\DashboardSlotGridWidget;
 use App\Models\User;
+use App\Services\WidgetAssetResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -82,13 +84,32 @@ it('dashboard page loads successfully for an authenticated super_admin', functio
 
     $response->assertSuccessful();
     $response->assertSee('dashboard-slot-grid-widget', false);
+});
 
-    $manifestPath = public_path('build/widgets/manifest.json');
-    if (is_readable($manifestPath)) {
-        $manifest = json_decode((string) file_get_contents($manifestPath), true) ?: [];
-        if (! empty($manifest['libs']['swiper']['js'])) {
-            $response->assertSee('data-widget-lib="swiper"', false);
-        }
+it('injects the swiper lib tag when the served manifest declares it', function () {
+    // Deterministic: a stub manifest bound through WidgetAssetResolver, never
+    // the real (untracked, possibly-absent) public/build/widgets/manifest.json.
+    // The original assertion silently no-op'd on a clean checkout — the exact
+    // false-green the stale-stylesheet incident turned on.
+    $tmp = sys_get_temp_dir() . '/np-dash-' . uniqid('', true) . '.json';
+
+    try {
+        File::put($tmp, json_encode([
+            'css'  => 'public-widgets-deadbeef.css',
+            'js'   => 'public-widgets-deadbeef.js',
+            'libs' => ['swiper' => ['js' => '/build/libs/swiper.js']],
+        ]));
+        app()->instance(WidgetAssetResolver::class, new WidgetAssetResolver($tmp));
+
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertSuccessful()
+            ->assertSee('data-widget-lib="swiper"', false);
+    } finally {
+        File::delete($tmp);
     }
 });
 

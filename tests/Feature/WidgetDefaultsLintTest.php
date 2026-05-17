@@ -105,15 +105,19 @@ it('every defaults() key appears in schema() (no orphans)', function () {
     }
 })->group('widget-lint');
 
-it('detects a toggle-with-string-default as a lint failure', function () {
+it('the widget lint rejects a definition whose defaults omit a declared schema key', function () {
     $def = new class extends \App\Widgets\Contracts\WidgetDefinition {
         public function handle(): string { return 'broken'; }
         public function label(): string { return 'Broken'; }
         public function description(): string { return ''; }
         public function schema(): array { return [['key' => 'flag', 'type' => 'toggle']]; }
-        public function defaults(): array { return ['flag' => 'yes']; }
+        public function defaults(): array { return []; }
     };
 
-    $value = $def->defaults()['flag'];
-    expect(is_bool($value))->toBeFalse();
+    // Invoke the REAL lint entrypoint — WidgetDefinition::validate(), the
+    // same call WidgetRegistry::sync() runs — not a re-implemented copy of
+    // the rule. The previous version asserted is_bool('yes') and never
+    // called the linter, so a broken linter would have passed it.
+    expect(fn () => $def->validate())
+        ->toThrow(\RuntimeException::class, 'is missing keys declared in schema(): flag');
 });

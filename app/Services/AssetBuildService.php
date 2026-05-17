@@ -46,11 +46,89 @@ JS,
         ],
     ];
 
-    public function __construct()
+    /**
+     * The SiteSetting `group` every build-relevant design setting is persisted
+     * under (button_styles, typography — see DesignSystemPage::save and
+     * ThemeTypographyController). The incoming theme/template re-taxonomy adds
+     * palette + scheme tokens to this same group; the drift guard resolves the
+     * group by name (never a hardcoded key list) so those new tokens are
+     * covered automatically rather than blind-spotted.
+     */
+    public const DESIGN_SETTINGS_GROUP = 'design';
+
+    public function __construct(?string $outputDir = null, ?string $libsDir = null)
     {
-        $this->outputDir = public_path('build/widgets');
-        $this->libsDir = public_path('build/libs');
+        $this->outputDir = $outputDir ?? public_path('build/widgets');
+        $this->libsDir = $libsDir ?? public_path('build/libs');
         $this->manifestPath = $this->outputDir . '/manifest.json';
+    }
+
+    private function hashSources(array $sources): string
+    {
+        return substr(md5(json_encode($sources)), 0, 8);
+    }
+
+    /**
+     * The cache-busting hash the served bundle filename encodes for the
+     * current source set. Single source of truth shared by build() and the
+     * drift guard so the two can never disagree about how the hash is derived.
+     */
+    public function sourceHash(): string
+    {
+        return $this->hashSources($this->collectSources());
+    }
+
+    /**
+     * Reconcile the served build-server bundle against the current source.
+     *
+     * Scoped, BY INTENT, to the build-server bundle path
+     * (collectSources() → manifest.json). Per-template scheme overrides that
+     * the incoming re-taxonomy delivers request-time inline are composed at
+     * render time and are deliberately drift-proof; they are out of this
+     * guard's scope by design — do not extend the guard to cover them.
+     *
+     * The check is the content hash: the served CSS filename encodes
+     * substr(md5(collectSources()), 8). Because collectSources() folds in the
+     * whole DESIGN_SETTINGS_GROUP (button_styles, typography, and the incoming
+     * palette/scheme tokens) regardless of which keys it contains, the hash is
+     * robust to the re-taxonomy without a hardcoded key list. A manifest
+     * `built_at`-vs-design-group-updated_at heuristic was considered and
+     * deliberately not added: an identical re-save bumps a setting's
+     * updated_at without changing the bundle, which would make it report a
+     * false stale; if it is ever added it must resolve DESIGN_SETTINGS_GROUP
+     * dynamically (never a hardcoded button_styles/typography list).
+     *
+     * @return string|null  null when the served bundle matches current
+     *                       source; a human-readable reason when it is stale.
+     */
+    public function bundleDrift(): ?string
+    {
+        $currentHash = $this->sourceHash();
+
+        if (! is_readable($this->manifestPath)) {
+            return "No served manifest at {$this->manifestPath}; current source hash is {$currentHash} — run `php artisan build:public`.";
+        }
+
+        $manifest = json_decode((string) file_get_contents($this->manifestPath), true);
+        if (! is_array($manifest)) {
+            return "Served manifest is unreadable or corrupt; current source hash is {$currentHash}.";
+        }
+
+        $cssFilename = $manifest['css'] ?? null;
+        if (! is_string($cssFilename) || $cssFilename === '') {
+            return "Served manifest declares no CSS bundle while design/widget sources exist (current source hash {$currentHash}).";
+        }
+
+        if (! preg_match('/^public-widgets-([0-9a-f]{8})\.css$/', $cssFilename, $m)) {
+            return "Served CSS filename '{$cssFilename}' does not carry a recognisable source hash.";
+        }
+
+        $servedHash = $m[1];
+        if ($servedHash !== $currentHash) {
+            return "Served bundle hash {$servedHash} no longer matches current source hash {$currentHash}; saved settings changed since the bundle was built — run `php artisan build:public`.";
+        }
+
+        return null;
     }
 
     public function build(bool $debug = false): BuildResult
@@ -68,7 +146,7 @@ JS,
         $sources = $this->collectSources();
 
         // Generate content hash for cache-busting filenames
-        $hash = substr(md5(json_encode($sources)), 0, 8);
+        $hash = $this->hashSources($sources);
         $cssFilename = "public-widgets-{$hash}.css";
         $jsFilename = "public-widgets-{$hash}.js";
 

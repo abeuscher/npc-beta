@@ -282,8 +282,15 @@ test.describe('Editor — column bg parity with public side', () => {
         await expect(layoutRegion).toBeVisible({ timeout: 15_000 });
 
         const container = layoutRegion.locator('.layout-region__container');
-        const bg = await container.evaluate((el) => getComputedStyle(el).backgroundColor);
-        // Computed bg-color is rgb(255, 136, 0) for #ff8800.
+        // Assert the render-time-composed inline style attribute, NOT
+        // getComputedStyle: the layout background is delivered by the Vue
+        // :style binding (appearance_config / API inline_style) — a
+        // deliberately drift-proof request-time layer the build-server bundle
+        // never touches. Reading el.style.* (inline only, no cascade) makes
+        // this stale-bundle-proof by construction: a stale public/build can no
+        // longer manufacture a false green here (the s296 incident class).
+        const bg = await container.evaluate((el) => (el as HTMLElement).style.backgroundColor);
+        // Inline background-color:#ff8800 serialises to rgb(255, 136, 0).
         expect(bg).toBe('rgb(255, 136, 0)');
     });
 
@@ -309,7 +316,11 @@ test.describe('Editor — column bg parity with public side', () => {
         await expect(layoutRegion).toBeVisible({ timeout: 15_000 });
 
         const container = layoutRegion.locator('.layout-region__container');
-        const bgImage = await container.evaluate((el) => getComputedStyle(el).backgroundImage);
+        // Inline style only (see solid-color test above): the gradient is
+        // composed into the element's style attribute via the API
+        // inline_style / appearance binding, never the build-server bundle —
+        // stale-bundle-proof by construction.
+        const bgImage = await container.evaluate((el) => (el as HTMLElement).style.backgroundImage);
         expect(bgImage).toContain('linear-gradient');
     });
 });

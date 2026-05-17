@@ -22,18 +22,18 @@ it('saves button styles to site settings as json', function () {
     Livewire::actingAs($user)
         ->test(DesignSystemPage::class)
         ->fillForm([
-            'button_styles.primary.bg_color'      => '#ff0000',
+            'button_styles.primary.bg_color'      => '#123456',
             'button_styles.primary.text_color'     => '#ffffff',
-            'button_styles.primary.border_radius'  => 'pill',
+            'button_styles.primary.border_radius'  => 'rounded',
             'button_styles.primary.font_weight'    => '700',
         ])
         ->call('save');
 
     $saved = SiteSetting::get('button_styles');
     expect($saved)->toBeArray();
-    expect($saved['primary']['bg_color'])->toBe('#ff0000');
+    expect($saved['primary']['bg_color'])->toBe('#123456');
     expect($saved['primary']['text_color'])->toBe('#ffffff');
-    expect($saved['primary']['border_radius'])->toBe('pill');
+    expect($saved['primary']['border_radius'])->toBe('rounded');
     expect($saved['primary']['font_weight'])->toBe('700');
 });
 
@@ -118,8 +118,8 @@ it('generates button override css in the build pipeline', function () {
     Livewire::actingAs($user)
         ->test(DesignSystemPage::class)
         ->fillForm([
-            'button_styles.primary.bg_color'     => '#ff5500',
-            'button_styles.primary.border_radius' => 'pill',
+            'button_styles.primary.bg_color'     => '#123456',
+            'button_styles.primary.border_radius' => 'rounded',
             'button_styles.primary.font_weight'   => '700',
         ])
         ->call('save');
@@ -129,8 +129,8 @@ it('generates button override css in the build pipeline', function () {
     $method = new \ReflectionMethod($buildService, 'generateButtonOverrideCss');
     $css = $method->invoke($buildService);
 
-    expect($css)->toContain('--btn-primary-bg: #ff5500');
-    expect($css)->toContain('--btn-primary-radius: 999px');
+    expect($css)->toContain('--btn-primary-bg: #123456');
+    expect($css)->toContain('--btn-primary-radius: 0.5em');
     expect($css)->toContain('--btn-primary-font-weight: 700');
 });
 

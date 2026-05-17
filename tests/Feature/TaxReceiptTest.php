@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\DonorsPage;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\DonationReceipt;
@@ -34,32 +35,14 @@ it('generates receipt with correct total for a contact and tax year', function (
         'started_at' => '2025-09-01',
     ]);
 
-    // Simulate the buildBreakdown logic from DonorsPage
-    $donations = Donation::query()
-        ->where('contact_id', $contact->id)
-        ->where('status', 'active')
-        ->whereYear('started_at', 2025)
-        ->with('fund')
-        ->get();
+    // Exercise the REAL DonorsPage::buildBreakdown() (private — invoked via
+    // reflection, the codebase idiom) instead of re-implementing its grouping
+    // inline; a regression in the production receipt path is now caught.
+    $page   = (new ReflectionClass(DonorsPage::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod($page, 'buildBreakdown');
+    $method->setAccessible(true);
 
-    $groups = [];
-    foreach ($donations as $donation) {
-        $fundLabel       = $donation->fund?->name ?? 'General Fund';
-        $restrictionType = $donation->fund?->restriction_type ?? 'unrestricted';
-        $key             = $fundLabel;
-
-        if (! isset($groups[$key])) {
-            $groups[$key] = [
-                'fund_label'       => $fundLabel,
-                'restriction_type' => $restrictionType,
-                'amount'           => 0,
-            ];
-        }
-        $groups[$key]['amount'] += (float) $donation->amount;
-    }
-
-    $breakdown = array_values($groups);
-    $total     = array_sum(array_column($breakdown, 'amount'));
+    [$breakdown, $total] = $method->invoke($page, $contact->id, 2025);
 
     expect($total)->toBe(350.0)
         ->and($breakdown)->toHaveCount(1)
@@ -89,31 +72,11 @@ it('generates receipt with multi-fund breakdown', function () {
         'started_at' => '2025-07-01',
     ]);
 
-    $donations = Donation::query()
-        ->where('contact_id', $contact->id)
-        ->where('status', 'active')
-        ->whereYear('started_at', 2025)
-        ->with('fund')
-        ->get();
+    $page   = (new ReflectionClass(DonorsPage::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod($page, 'buildBreakdown');
+    $method->setAccessible(true);
 
-    $groups = [];
-    foreach ($donations as $donation) {
-        $fundLabel       = $donation->fund?->name ?? 'General Fund';
-        $restrictionType = $donation->fund?->restriction_type ?? 'unrestricted';
-        $key             = $fundLabel;
-
-        if (! isset($groups[$key])) {
-            $groups[$key] = [
-                'fund_label'       => $fundLabel,
-                'restriction_type' => $restrictionType,
-                'amount'           => 0,
-            ];
-        }
-        $groups[$key]['amount'] += (float) $donation->amount;
-    }
-
-    $breakdown = array_values($groups);
-    $total     = array_sum(array_column($breakdown, 'amount'));
+    [$breakdown, $total] = $method->invoke($page, $contact->id, 2025);
 
     expect($total)->toBe(300.0)
         ->and($breakdown)->toHaveCount(2);

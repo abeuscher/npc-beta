@@ -1,100 +1,67 @@
 <?php
 
+use App\Filament\Resources\ContactResource\Pages\ListContacts;
 use App\Models\Contact;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+// These tests invoke the REAL `exportContacts` Filament action — the
+// production path the UI triggers (ListContacts → ListExportService →
+// ContactResource::exportColumnSpec) — not a re-implemented copy of the CSV.
+// The previous versions rebuilt the CSV inline and never called the exporter
+// (so a broken export still passed, and they even asserted a fictional
+// `notes` column the real spec does not emit); the filename test
+// interpolated the date and asserted the string contained it — a tautology
+// that could not fail.
+
 beforeEach(function () {
-    $this->actingAs(User::factory()->create());
+    $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DatabaseSeeder']);
+
+    $this->admin = User::factory()->create();
+    $this->admin->assignRole('super_admin');
 });
 
-it('export response has content-type text/csv', function () {
+it('export action streams a CSV with the date-stamped filename and text/csv type', function () {
     Contact::factory()->create();
 
-    // Build the CSV directly using the same logic as the action
-    $contacts = Contact::all();
-    $handle   = fopen('php://temp', 'r+');
-
-    fputcsv($handle, [
-        'first_name', 'last_name', 'email', 'phone',
-        'address_line_1', 'address_line_2', 'city', 'state',
-        'postal_code', 'notes', 'created_at',
-    ]);
-
-    $contacts->each(function (Contact $contact) use ($handle) {
-        fputcsv($handle, [
-            $contact->first_name, $contact->last_name, $contact->email, $contact->phone,
-            $contact->address_line_1, $contact->address_line_2, $contact->city, $contact->state,
-            $contact->postal_code, $contact->notes, $contact->created_at?->toDateTimeString(),
-        ]);
-    });
-
-    rewind($handle);
-    $csv = stream_get_contents($handle);
-    fclose($handle);
-
-    // Verify the CSV content format
-    expect($csv)->toBeString()->not->toBeEmpty();
-
-    $lines  = array_filter(explode("\n", trim($csv)));
-    $header = str_getcsv($lines[0]);
-
-    expect($header)->toContain('email');
+    Livewire::actingAs($this->admin)
+        ->test(ListContacts::class)
+        ->callAction('exportContacts')
+        ->assertFileDownloaded('contacts-' . now()->format('Y-m-d') . '.csv', null, 'text/csv');
 });
 
-it('export contains header row with expected column names', function () {
-    $handle = fopen('php://temp', 'r+');
+it('export action emits the real exportColumnSpec header row', function () {
+    Contact::factory()->create();
 
-    fputcsv($handle, [
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListContacts::class)
+        ->callAction('exportContacts');
+
+    $body = base64_decode(data_get($test->effects, 'download.content'));
+    $rows = array_map('str_getcsv', preg_split("/\r\n|\n|\r/", trim($body)));
+
+    // Leading standard columns from ContactResource::exportColumnSpec()
+    // (any user CustomFieldDef columns append after these).
+    expect(array_slice($rows[0], 0, 11))->toBe([
         'first_name', 'last_name', 'email', 'phone',
         'address_line_1', 'address_line_2', 'city', 'state',
-        'postal_code', 'notes', 'created_at',
-    ]);
-
-    rewind($handle);
-    $line   = fgetcsv($handle);
-    fclose($handle);
-
-    expect($line)->toBe([
-        'first_name', 'last_name', 'email', 'phone',
-        'address_line_1', 'address_line_2', 'city', 'state',
-        'postal_code', 'notes', 'created_at',
+        'postal_code', 'date_of_birth', 'created_at',
     ]);
 });
 
-it('export contains one data row per contact in the database', function () {
+it('export action emits one data row per contact in the query', function () {
     Contact::factory()->count(3)->create();
 
-    $contacts = Contact::all();
-    $handle   = fopen('php://temp', 'r+');
+    $test = Livewire::actingAs($this->admin)
+        ->test(ListContacts::class)
+        ->callAction('exportContacts');
 
-    fputcsv($handle, [
-        'first_name', 'last_name', 'email', 'phone',
-        'address_line_1', 'address_line_2', 'city', 'state',
-        'postal_code', 'notes', 'created_at',
-    ]);
+    $body  = base64_decode(data_get($test->effects, 'download.content'));
+    $lines = array_filter(preg_split("/\r\n|\n|\r/", trim($body)));
 
-    $contacts->each(function (Contact $contact) use ($handle) {
-        fputcsv($handle, [
-            $contact->first_name, $contact->last_name, $contact->email, $contact->phone,
-            $contact->address_line_1, $contact->address_line_2, $contact->city, $contact->state,
-            $contact->postal_code, $contact->notes, $contact->created_at?->toDateTimeString(),
-        ]);
-    });
-
-    rewind($handle);
-    $csv   = stream_get_contents($handle);
-    fclose($handle);
-
-    $lines = array_filter(explode("\n", trim($csv)));
     expect(count($lines))->toBe(4); // 1 header + 3 data rows
 });
-
-it('filename contains today\'s date', function () {
-    $filename = 'contacts-' . now()->format('Y-m-d') . '.csv';
-    expect($filename)->toContain(now()->format('Y-m-d'));
-});
-

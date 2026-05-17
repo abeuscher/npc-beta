@@ -62,9 +62,6 @@ it('text_block widget type has no libs', function () {
 // ── Phase 2: library bundle build ───────────────────────────────────
 
 it('buildLibraryBundles produces files and returns paths', function () {
-    $service = app(AssetBuildService::class);
-    $method = new ReflectionMethod($service, 'buildLibraryBundles');
-
     // Fake HTTP — simulate build server returning a JS bundle for each lib
     Http::fake([
         '*/build' => Http::response([
@@ -76,20 +73,27 @@ it('buildLibraryBundles produces files and returns paths', function () {
         ]),
     ]);
 
-    $libs = $method->invoke($service, 'http://fake-build-server:8080', 'test-key', false);
+    // Isolated output dir — no test may write or delete the real public/build.
+    $tmp = sys_get_temp_dir() . '/np-libs-' . uniqid('', true);
 
-    expect($libs)->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
-    expect($libs['swiper']['js'])->toBe('/build/libs/swiper.js');
-    expect($libs['chart.js']['js'])->toBe('/build/libs/chartjs.js');
-    expect($libs['jcalendar']['js'])->toBe('/build/libs/jcalendar.js');
+    try {
+        $service = new AssetBuildService($tmp . '/widgets', $tmp . '/libs');
+        $method  = new ReflectionMethod($service, 'buildLibraryBundles');
 
-    // Files should exist on disk
-    expect(File::exists(public_path('build/libs/swiper.js')))->toBeTrue();
-    expect(File::exists(public_path('build/libs/chartjs.js')))->toBeTrue();
-    expect(File::exists(public_path('build/libs/jcalendar.js')))->toBeTrue();
+        $libs = $method->invoke($service, 'http://fake-build-server:8080', 'test-key', false);
 
-    // Clean up
-    File::deleteDirectory(public_path('build/libs'));
+        expect($libs)->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
+        expect($libs['swiper']['js'])->toBe('/build/libs/swiper.js');
+        expect($libs['chart.js']['js'])->toBe('/build/libs/chartjs.js');
+        expect($libs['jcalendar']['js'])->toBe('/build/libs/jcalendar.js');
+
+        // Files exist in the isolated dir, not the real served tree.
+        expect(File::exists($tmp . '/libs/swiper.js'))->toBeTrue();
+        expect(File::exists($tmp . '/libs/chartjs.js'))->toBeTrue();
+        expect(File::exists($tmp . '/libs/jcalendar.js'))->toBeTrue();
+    } finally {
+        File::deleteDirectory($tmp);
+    }
 });
 
 it('manifest includes libs key after a successful build', function () {
@@ -108,17 +112,19 @@ it('manifest includes libs key after a successful build', function () {
         'services.build_server.api_key' => 'test-key',
     ]);
 
-    $service = app(AssetBuildService::class);
-    $result = $service->build();
+    // Isolated output dir — no test may write or delete the real public/build.
+    $tmp = sys_get_temp_dir() . '/np-libs-' . uniqid('', true);
 
-    expect($result->success)->toBeTrue();
+    try {
+        $result = (new AssetBuildService($tmp . '/widgets', $tmp . '/libs'))->build();
 
-    $manifest = json_decode(File::get(public_path('build/widgets/manifest.json')), true);
-    expect($manifest)->toHaveKey('libs');
-    expect($manifest['libs'])->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
+        expect($result->success)->toBeTrue();
 
-    // Clean up
-    File::deleteDirectory(public_path('build/libs'));
-    File::deleteDirectory(public_path('build/widgets'));
+        $manifest = json_decode(File::get($tmp . '/widgets/manifest.json'), true);
+        expect($manifest)->toHaveKey('libs');
+        expect($manifest['libs'])->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
+    } finally {
+        File::deleteDirectory($tmp);
+    }
 });
 

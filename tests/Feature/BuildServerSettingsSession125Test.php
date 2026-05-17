@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\AssetBuildService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -102,16 +103,22 @@ it('prefers site settings over env config for build server url', function () {
         ]),
     ]);
 
-    $service = app(AssetBuildService::class);
-    $result = $service->build();
+    // Isolated output dir — this test must never write the real public/build.
+    $tmp = sys_get_temp_dir() . '/np-bss-' . uniqid('', true);
 
-    // Should have called the site-settings URL, not the env one
-    Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'site-settings-server:9090');
-    });
-    Http::assertNotSent(function ($request) {
-        return str_contains($request->url(), 'env-server:8080');
-    });
+    try {
+        $result = (new AssetBuildService($tmp . '/widgets', $tmp . '/libs'))->build();
+
+        // The build must actually succeed. The original test never asserted
+        // $result, so a fully-failed build still passed it.
+        expect($result->success)->toBeTrue();
+
+        // Should have called the site-settings URL, not the env one
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'site-settings-server:9090'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'env-server:8080'));
+    } finally {
+        File::deleteDirectory($tmp);
+    }
 });
 
 it('falls back to env config when site settings are empty', function () {
@@ -130,12 +137,18 @@ it('falls back to env config when site settings are empty', function () {
         ]),
     ]);
 
-    $service = app(AssetBuildService::class);
-    $result = $service->build();
+    // Isolated output dir — this test must never write the real public/build.
+    $tmp = sys_get_temp_dir() . '/np-bss-' . uniqid('', true);
 
-    Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'env-server:8080');
-    });
+    try {
+        $result = (new AssetBuildService($tmp . '/widgets', $tmp . '/libs'))->build();
+
+        expect($result->success)->toBeTrue();
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'env-server:8080'));
+    } finally {
+        File::deleteDirectory($tmp);
+    }
 });
 
 // ── Dashboard widget: build server status ──
