@@ -45,6 +45,37 @@ If the structural model satisfies PricingChart, every simpler widget falls out. 
 
 ---
 
+## 40-widget inline-edit safety pass — eligibility rule + canonical exempt set (validated)
+
+A full pass over every widget (`app/Widgets/*`) confirmed the design and produced the rules below. **Canonical — do not re-derive.**
+
+**Eligibility rule (load-bearing):** inline-eligibility is **opt-in via an explicit `data-config-key` / `data-config-type` annotation on a genuine display-prose node in the template** — it is **never** auto-derived from the schema `type`. The pass proved why: many fields are honestly typed `text`/`richtext` yet are semantically CSS values, attribute values, or chart config. A "make all text/richtext fields editable" rule would ship an editable CSS box on the page. The exempt set below is the canonical **negative test set**.
+
+**Tier A — already neutralized (listed for completeness; no action, must stay excluded):** all `subtype=url` / `select` / `textarea` / `number` fields, and the `{{token}}`-bearing card/link *templates* (`BlogListing.content_template`, `BlogPager.prev_template`/`next_template`, `Carousel.caption_template`, `EventsListing.content_template`, `Nav.parent_template`/`child_template`) — covered by the type system + per-instance token-gating + data-driven exclusion. Also slug/URL/embed config: `DonationForm.success_page`/`amounts`, `ProductCarousel.success_page`, `MapEmbed.map_input`, `VideoEmbed.video_url`, `SocialSharing.mastodon_instance`, `Logo.link_url`, `Image.link_url`.
+
+**Tier B — the genuine traps (declared `text`/`richtext`, token-free, rendered, but must NEVER be annotated inline-editable):**
+
+| Widget | Field | Why it would break |
+|---|---|---|
+| PricingChart | `gap` | CSS value → inline `style` |
+| ThreeBuckets | `gap` | CSS value → `--bucket-gap` CSS var |
+| Image | `max_width` | CSS length → inline `style="max-width:…"` |
+| Image | `alt_text` | renders only into `alt=""` |
+| BoardMembers | `image_aspect_ratio` | parsed (`explode('/')`) into `padding-bottom` % |
+| Nav | `branding_text` | renders into logo `alt=""` |
+| BarChart | `x_label` | `json_encode`'d into `<script type="application/json">` for Chart.js |
+| BarChart | `y_label` | same — Chart.js axis config |
+
+**Guard:** add a regression test asserting **no Tier-B field key carries a `data-config-key` annotation** in any widget template — so a future template edit cannot silently reintroduce the trap. This is the audit's durable artifact.
+
+**Two documented couplings (expected behaviour, not bugs — do not "fix", just don't be surprised):**
+- `Logo.text` renders as visible prose *and* into the logo `alt=""`. It is a valid inline target; editing the visible node implicitly updates the alt (consistent — acceptable).
+- `TextBlock.content` is scanned read-only for `ql-align-center`/`-right` to derive CTA alignment. Inline-editing content can shift button alignment on next render. Read-only inference, no write-back corruption — note in the log, no mechanism needed.
+
+The only genuine inline-editable display-prose across the non-content widgets is the `heading` field on a handful (DonationForm, EventCalendar, EventsListing, MapEmbed, ProductCarousel, SocialSharing) — all already covered by the empty-field placeholder accommodation. PricingChart, TextBlock, Hero, ThreeBuckets remain the substantive targets. No NEW accommodation is required beyond those already in this prompt.
+
+---
+
 ## Decided design — rich-text editor & toolbar (settled; do not relitigate in-session)
 
 **Quill is retained. The formatting controls are a fully custom Vue toolbar driven by Quill's public API** (`quill.format()` / `quill.getFormat()` / the `editor-change` event), with Quill's built-in toolbar module disabled. This is a first-class, documented Quill pattern, not a workaround; the engine, the Delta/HTML it emits, and therefore the existing `PageWidget::saving` sanitization boundary are **unchanged** — no migration, no contract change, no storage-format change. A swap to another editor is **off the table** unless an unforeseen blocker surfaces, in which case stop and surface to the user (do not pick an alternative in-session).
@@ -107,7 +138,7 @@ Once Phases 2–3 hold, extend inline eligibility to the remaining safe annotate
 ## Testing
 
 - **Slow groups:** none expected.
-- **New Pest:** capability-gate eligibility logic; token/data-driven exclusion; sanitization + allow-list coverage of every inline key.
+- **New Pest:** capability-gate eligibility logic; token/data-driven exclusion; sanitization + allow-list coverage of every inline key; **the Tier-B exempt-set guard** (no Tier-B field key carries a `data-config-key` annotation in any widget template — the 40-widget-pass durable artifact).
 - **New Playwright:** Phase 1 interaction model (handle reorder, body-click select, Edit-affordance opens Inspector, old whole-panel select gone); Phase 2 inline-edit save round-trip + the two negative gates; Phase 2b column/repeater add-reorder-delete persistence; Phase 3 each format applies with selection surviving the toolbar click; Phase 4 the builder↔public parity harness (standing).
 - **Manual (user judgment):** the Phase 3 toolbar **look and feel only** (the editor choice and engineering are settled per the Decided design section — not a user decision). Paused for at the Phase 3 handoff. Pest and Playwright run sequentially, never in parallel.
 
