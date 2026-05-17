@@ -6,8 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+# Fast suite first (quick signal), then the slow group, then a single
+# aggregate "Tests" gate that branch protection on main can require. This
+# workflow only runs tests — it never builds/publishes images, reads or
+# writes VERSION, or deploys, so it cannot race deploy.yml / deploy-demo.yml.
+
 jobs:
-  test:
+  fast:
+    name: Fast suite
     runs-on: ubuntu-latest
 
     services:
@@ -74,8 +80,8 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
-      - name: Run tests
-        run: php artisan test
+      - name: Run fast suite (first signal)
+        run: php artisan test --exclude-group=slow
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
@@ -84,3 +90,94 @@ jobs:
           DB_PASSWORD: 32feet
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
+
+  slow:
+    name: Slow suite
+    needs: fast
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: nonprofitcrm_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 32feet
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_pgsql, redis
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies and build assets
+        run: npm ci && npm run build
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - name: Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: nonprofitcrm_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: 32feet
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+      - name: Run slow group
+        run: php artisan test --group=slow
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: nonprofitcrm_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: 32feet
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+  # Single stable status check for branch protection on `main`. Require the
+  # job named "Tests" (workflow "Tests") so a branch cannot merge unless both
+  # the fast and slow Pest suites passed. See sessions/298 close handoff.
+  tests:
+    name: Tests
+    needs: [fast, slow]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate result
+        run: echo "Fast and slow Pest suites passed — full Pest coverage green."

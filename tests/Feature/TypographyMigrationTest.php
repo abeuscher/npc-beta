@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 it('dropped heading_font and body_font columns from templates', function () {
     expect(Schema::hasColumn('templates', 'heading_font'))->toBeFalse();

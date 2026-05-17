@@ -25,3 +25,14 @@ Branches use the convention `session-NNN/N` where NNN is the session number and 
 - **Only branch from main.** Never create a branch off another branch.
 
 The forbidden cases above are also enforced mechanically by the pre-push hook at `bin/git-hooks/pre-push`. To activate in a fresh clone: `git config core.hooksPath bin/git-hooks` (one-time, user runs it).
+
+## Testing — scoped inner loop
+
+For scoped design / drift work (typography, colour/appearance, the build-pipeline / stale-bundle cluster), the inner-loop signal is the `design` Pest group, not the full fast suite:
+
+- **`./dev test:design`** → `php artisan test --group=design` — the reviewed typography + colour/appearance + build-pipeline/drift cluster. ~10× faster than the full fast suite; use it as the iterate-and-recheck signal during design work.
+- **`./dev test`** → `php artisan test --exclude-group=slow` — the full fast suite (the close-gate command).
+
+Group membership is pinned to an explicit reviewed list by `tests/Feature/DesignGroupIntegrityTest.php` — it fails if a `->group('design')` tag is added or dropped without updating that list. Editing the cluster means editing the list in the same reviewed pass. The scoped loop is an inner-loop accelerator only — it does not replace the full suite.
+
+CI (`.github/workflows/tests.yml`) runs the full suite on every push as fast → slow jobs; the aggregate **`Tests`** check is green only when both pass. Once `Tests` is green on the pushed branch it is the authoritative full-suite signal — this is **additive**, the local block-and-wait step in `sessions/template-base-prompt.md` remains the documented fallback and is not retired. `main`-green is only guaranteed if a repo admin enables GitHub branch protection on `main` requiring the `Tests` check (a non-committable handoff, surfaced in the session-298 log).

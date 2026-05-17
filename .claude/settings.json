@@ -447,7 +447,10 @@
       "Bash(sed -n '642,644p' sessions/release-plan.md)",
       "Bash(sed -n '373,378p' \"sessions/session-outlines.md\")",
       "Bash(sed -n '353,354p' \"sessions/release-plan.md\")",
-      "Bash(sed -n '673,674p' \"sessions/release-plan.md\")"
+      "Bash(sed -n '673,674p' \"sessions/release-plan.md\")",
+      "Bash(./dev artisan *)",
+      "Bash(grep -nE \"^\\\\s{2,4}[a-z_-]+:|image:|build:|context:|target:|ports:|volumes:|^services:\" docker-compose.yml)",
+      "Bash(python3 -c \"import yaml,sys; d=yaml.safe_load\\(open\\('.github/workflows/tests.yml'\\)\\); print\\('jobs:', list\\(d['jobs'].keys\\(\\)\\)\\); print\\('triggers:', list\\(d['on'].keys\\(\\)\\)\\); print\\('fast suite cmd:', d['jobs']['fast']['steps'][-1]['run']\\); print\\('slow needs:', d['jobs']['slow']['needs']\\); print\\('gate job name:', d['jobs']['tests']['name'], '| needs:', d['jobs']['tests']['needs']\\)\")"
     ],
     "deny": [],
     "additionalDirectories": [

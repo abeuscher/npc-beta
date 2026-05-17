@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 beforeEach(function () {
     $this->tmpOutput = sys_get_temp_dir() . '/np-drift-' . uniqid('', true) . '/widgets';

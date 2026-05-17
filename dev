@@ -11,6 +11,8 @@
 #   ./dev build              (rebuild the app image)
 #   ./dev logs               (tail all service logs)
 #   ./dev fresh              (wipe and re-migrate the database)
+#   ./dev test               (fast suite — php artisan test --exclude-group=slow)
+#   ./dev test:design        (scoped inner loop — php artisan test --group=design)
 
 CONTAINER="nonprofitcrm_app"
 
@@ -40,6 +42,14 @@ case "$1" in
         ;;
     fresh)
         docker compose exec app php artisan migrate:fresh --seed
+        ;;
+    test)
+        shift
+        docker compose exec app php artisan test --exclude-group=slow "$@"
+        ;;
+    test:design)
+        shift
+        docker compose exec app php artisan test --group=design "$@"
         ;;
     *)
         docker compose exec app "$@"

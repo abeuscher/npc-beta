@@ -5,7 +5,7 @@ use App\Services\TypographyResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 it('returns a fully-populated defaults tree with concrete values', function () {
     $defaults = TypographyResolver::defaults();

@@ -5,7 +5,7 @@ use App\Services\AssetBuildService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 it('collects scss sources from partials in correct order', function () {
     $service = app(AssetBuildService::class);

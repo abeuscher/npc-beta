@@ -2,6 +2,8 @@
 
 use App\Services\GradientComposer;
 
+uses()->group('design');
+
 beforeEach(function () {
     $this->composer = new GradientComposer();
 });

@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 // The exact values TemplateSeeder seeded onto the pre-297 Default template.
 const SEEDED_DEFAULT_TEMPLATE_COLORS = [

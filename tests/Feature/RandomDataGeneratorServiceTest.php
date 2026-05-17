@@ -417,7 +417,7 @@ it('seedWidgetCollections — runs each widget definition that declares a demoSe
 
     expect($labels)->not->toBeEmpty()
         ->and(\App\Models\Collection::where('handle', 'logo-garden-demo')->exists())->toBeTrue();
-});
+})->group('slow');
 
 it('seedWidgetCollections — throws AuthorizationException for non-super-admin', function () {
     $user = User::factory()->create();

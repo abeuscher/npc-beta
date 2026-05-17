@@ -3,6 +3,8 @@
 use App\Services\TypographyCompiler;
 use App\Services\TypographyResolver;
 
+uses()->group('design');
+
 it('emits concrete declarations from the defaults tree', function () {
     $css = TypographyCompiler::compile(TypographyResolver::defaults());
 

@@ -6,7 +6,7 @@ use App\Services\PageBlockRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class)->group('design');
 
 beforeEach(function () {
     $this->renderer = app(PageBlockRenderer::class);
