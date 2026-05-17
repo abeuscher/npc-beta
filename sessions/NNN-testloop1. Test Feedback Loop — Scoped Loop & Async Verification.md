@@ -1,8 +1,8 @@
 # NNN. Test Feedback Loop — Scoped Inner Loop & Async Full-Suite Verification · DRAFT FOR REVIEW
 
-> **Session 1 of a two-session test-cost split.** Iteration-cost forcing function: the full suite costs ~20 min, run ~hourly during scoped design work — dead time. **Session 2 (`NNN-testloop2`)** does parallelization + isolation. This session makes the inner loop ~30 s, moves the full run off the human's clock onto CI, and rewrites the close ritual to fix-forward — **no coverage removed**.
+> **Session 1 of a two-session test-cost split.** Iteration-cost forcing function: the fast suite is ≈11 min (≈2,460 tests), run ~hourly during scoped design work — real dead time (the felt "~20 min" is full + repeated + close-gate runs). **Session 2 (`NNN-testloop2`)** does parallelization + isolation. This session makes the inner loop ~30 s, **hardens the already-existing `tests.yml`** (fast-first + add Playwright) so the full suite verifies async, and *additively* shifts the close ritual toward CI-as-source-of-truth (block-and-wait wording retired later, staged) — **no coverage removed**. Recommended slot: immediately before the arc's RISK session **298 (Widget Color-Token Consumption Audit)**, whose ~38-widget SCSS migration hammers exactly the drift cluster the scoped loop targets.
 
-One sentence: turn "run 2,450 tests every hour and wait at session close" into "run a ~30-second scoped signal in the inner loop, push, and let CI verify the full suite asynchronously and report back."
+One sentence: turn "run the whole ≈11-min fast suite (≈2,460 tests) every hour and wait at session close" into "run a ~30-second scoped signal in the inner loop, push, and let the (already-existing, hardened) CI verify the full suite asynchronously and report back."
 
 ---
 
@@ -10,30 +10,27 @@ One sentence: turn "run 2,450 tests every hour and wait at session close" into "
 
 No `release-plan.md` entry. This is the **iteration-speed slice** of the planned § D4 (Test suite review — cost & shape) / the "Test Suite Audit — Cost, Coverage, and Shape" stub, lifted early per Rule 11's sanctioned exception. **Out of scope and left to D4:** mutation-proven dead-test pruning, assertion-density / setup-to-assertion analysis, coverage-shape. **In Session 2, not here:** `--parallel` + test-isolation. This session is purely *when/where/who-waits*, not *what runs*.
 
-The motivating analysis (canonical for scope): the 20 minutes is three problems — (1) inner loop runs ~95% irrelevant tests for scoped design work; (2) the close gate makes the human wait for the full run; (3) the suite may be over its <5-min fast budget. This session fixes (1) and (2) and the cheap part of (3); Session 2 fixes the expensive part of (3).
+The motivating analysis (canonical for scope), with **honest numbers** (corrected from the original "~20 min" — that was the felt cost; measured fast suite ≈11 min / ≈2,460 tests, and CI today runs the *full* `php artisan test` so it is longer still): the cost is three problems — (1) inner loop runs ~95% irrelevant tests for scoped design work; (2) the close gate makes the human wait for the full run; (3) CI runs fast+slow inline with no fast-first signal and **no Playwright at all** (a real current CI coverage gap). This session fixes (1) and (2), hardens the existing CI for (3)'s cheap part (fast-first split + add Playwright), and re-audits slow-group membership; Session 2 fixes the expensive part of (3) (parallelization). Parallelization 3–5× takes the ≈11-min fast suite to ≈3 min — the cost/benefit holds with the corrected numbers.
 
 ---
 
 ## Open questions to resolve at session start
 
-1. **Durable form of scoped selection.** An interim `./dev test:design` (a 16-file `DESIGN_TESTS` path list in `dev`) is already wired and usable. Decide the durable mechanism:
-   - **(a) Keep a maintained path list + an integrity guard test** (a Pest test asserting every file matching the design-surface naming/namespace heuristic is in the list, so the list can't silently rot). Lowest friction, explicit, but heuristic-bound.
-   - **(b) A real Pest `->group('design')` tag** across the cluster. Idiomatic and greppable; invasive (touches ~16 files / many `it()`s) and Pest groups here are per-test, not central.
-   - **(c) Coverage-mapped / `--dirty` selection.** Most "automatic" but least predictable for source-only changes.
-   Recommendation: **(a)** — the guard test removes the only real downside (staleness) at trivial cost, and keeps the mechanism legible. Also generalise the pattern so other hot subsystems (importer, widget-primitive) can get their own scoped target later without rework. Surface the choice; don't silently pick (b)'s churn.
-2. **CI runner shape.** GitHub Actions workflow on push to non-`main` branches running the full fast suite, then slow, then Playwright (sequential — `feedback_test_runs_not_parallel`), reporting status back. Confirm it composes with the remote-execution / Claude-Code-on-web flow the user actually uses (status visible where they work) and does not race `deploy.yml` / the `VERSION` immutable-tag step.
+1. **Durable form of scoped selection — recommendation now (b), a real `->group('design')` tag.** An interim `./dev test:design` (a ~17-file `DESIGN_TESTS` path list in `dev`, incl. the 296 `AssetBundleDriftGuardTest`) is wired and usable. The design cluster has **no uniform naming** (`TypographyCompiler/Resolver`, `AssetBuildSession123`, `BuildServerSettings125`, `WidgetJsLibs138`, `DesignSystemButtons`, `GradientComposer`, `Appearance*`, `PageBlockRendererLayout`, `AssetBundleDriftGuard`), so a "naming/namespace heuristic" integrity guard would over/under-match forever — it is only safe if it keys off an explicit reviewed per-file marker, at which point it *is* (b) with worse ergonomics. Choose **(b)**: a one-time, reviewed `->group('design')` tag across the ~17 files — small, idiomatic, greppable, rot-proof. Keep a trivial guard that the tagged set matches the known list (an explicit list, not a fuzzy heuristic). Migrate `dev test:design` to `php artisan test --group=design` once tagged. Generalising the pattern to other hot subsystems later is fine but out of scope here.
+2. **`tests.yml` hardening shape + status-surfacing (the staging gate).** The workflow **already exists** (`push: ["**"]` + PRs to `main`, full `php artisan test`, no Playwright). Decide the hardening: split into a **fast job (first signal) → slow job → Playwright job** (sequential, never concurrent with Pest), keep triggers, do not race `deploy.yml`/`deploy-demo.yml`/`VERSION`. Resolve **where CI status surfaces for the user** (the Claude-Code-on-web / remote-exec flow they actually work in) — this is the gate that decides when the *later* (not this session) retirement of block-and-wait is safe. Until answered, the close-gate change stays additive (see Phase 2).
+3. **Main-green enforcement (required handoff, not a committable file).** `CLAUDE.md` lets the user merge on their own cadence; with fix-forward + no human wait, nothing guarantees a branch is green before it reaches `main`. The session must **surface to the user a required repo-admin action: enable GitHub branch protection on `main` requiring the `Tests` status check.** This is the highest-stakes item and cannot be self-applied — it is a blocking handoff the close gate must flag explicitly, not bury.
 
 ---
 
 ## Phases
 
-### Phase 1 — Formalise the scoped inner loop
+### Phase 1 — Formalise the scoped inner loop (`->group('design')`)
 
-Per Open Q1: settle the durable mechanism, replace/keep the `dev test:design` interim accordingly, and (recommended) add the integrity guard so the design-surface set cannot silently drift as tests are added/renamed. The drift cluster (`AssetBuild` / `BuildServer` / `WidgetJsLibs` / appearance) **stays in the scoped set** so the inner loop still catches the stale-stylesheet bug class. Document the command in the `dev` usage block and `CLAUDE.md` (the inner-loop command for scoped work). Optionally seed the same pattern for one other hot subsystem as a template, only if cheap.
+Per Open Q1, choice **(b)**: add a `->group('design')` tag across the ~17-file design/drift cluster (one reviewed pass; the cluster is enumerated in the `dev` `DESIGN_TESTS` list, incl. the 296 `AssetBundleDriftGuardTest` and the appearance/build-pipeline drift files — they **stay in the scoped set** so the inner loop still catches the stale-stylesheet bug class). Migrate `dev test:design` to `php artisan test --group=design`; add a trivial guard test that the tagged set equals the known explicit list (not a fuzzy naming heuristic). Document the command in the `dev` usage block and `CLAUDE.md` as the inner-loop command for scoped design work.
 
-### Phase 2 — Async full-suite verification (CI) + close-gate restructure
+### Phase 2 — Harden the existing `tests.yml` + *additive* close-gate shift
 
-Add a deploy-safe GitHub Actions workflow: on push to non-`main` branches, run the full fast suite → slow → Playwright (sequential), report status. It must not publish images, touch `VERSION`, or interfere with `deploy.yml`. Then **rewrite the close-gate discipline** in `CLAUDE.md` and `sessions/template-base-prompt.md` so the convention becomes: implementation complete → push → CI verifies the full suite asynchronously → red is fixed-forward; the human does **not** block-wait on a local full run at close. Keep the *requirement* that the branch is green before merge — only the *who-waits/when* changes. The wording change is the load-bearing artifact; get it precise and consistent across both files.
+**`.github/workflows/tests.yml` already exists and already runs on every push.** Do **not** add a new workflow. Harden the existing one: split into a **fast job (first signal) → slow job → Playwright job** (sequential, never concurrent with Pest), keep its `push: ["**"]` + PR triggers, and ensure it does not publish images, touch `VERSION`, or race `deploy.yml`/`deploy-demo.yml`. Adding the Playwright stage closes a genuine current CI coverage gap (there is none today). Then make the close-gate change **additive, not a replacement**: in `CLAUDE.md` and `sessions/template-base-prompt.md`, add that "CI-green on the pushed branch is the authoritative signal and the human may stop block-waiting once it is observed green," but **leave the existing block-and-wait wording in place** as the documented fallback. Retiring that wording is an explicit *future* step, gated on (a) the hardened CI proving out over a few sessions and (b) Open Q2's status-surfacing answer — not this session. Separately, **surface (do not self-apply) the required repo-admin handoff** from Open Q3: branch protection on `main` requiring the `Tests` check. The additive wording + the surfaced branch-protection requirement are the load-bearing artifacts; get them precise and consistent across both files.
 
 ### Phase 3 — Slow-group hygiene re-audit (mechanical, no coverage change)
 
@@ -48,18 +45,21 @@ Time the suite; any test >5 s not tagged `->group('slow')` is silently inflating
 - Deleting, skipping, or `->markTestSkipped()`-ing any test for speed — explicitly forbidden this session (zero coverage loss).
 - Any Fleet / `/api/health` / schema change. CRM contract stays v2.3.0.
 - Reworking the Pest/PHPUnit bootstrap or introducing a new runner/framework.
+- **Creating a new CI workflow** — `tests.yml` exists; this session hardens it. A duplicate workflow is an explicit anti-goal.
+- **Retiring the block-and-wait close-gate wording** — staged to a later session, gated on CI track record + Open Q2.
+- **Applying branch protection itself** — that is a repo-admin action surfaced to the user, not committed here.
 
 ---
 
 ## Testing
 
 - **Slow groups:** none new (this session *reclassifies* slow membership, Phase 3).
-- **New Pest:** at most the scoped-set **integrity guard** (Open Q1a) — a test that the design-surface list matches the naming/namespace heuristic so it can't rot. No behavioural coverage added or removed.
-- **Verification (self, objective):** `./dev test:design` (or its successor) returns green in seconds over the cluster; the CI workflow runs the full suite green on a pushed non-`main` branch and reports status; `deploy.yml` behaviour is provably unaffected (workflow paths/triggers disjoint). Pest and Playwright run sequentially in CI.
-- **Manual (user judgment):** the rewritten close-gate wording in `CLAUDE.md` + `template-base-prompt.md` — surface verbatim for the user's approval at handoff (this is a discipline change, their call).
+- **New Pest:** the scoped-set **group-integrity guard** (Open Q1, choice b) — a test asserting the `--group=design` set equals the known explicit ~17-file list (not a fuzzy naming heuristic) so it can't silently rot. No behavioural coverage added or removed.
+- **Verification (self, objective):** `php artisan test --group=design` (the migrated `dev test:design`) returns green in seconds over the cluster; the **hardened `tests.yml`** runs fast → slow → Playwright green on a pushed branch and reports status; `deploy.yml`/`deploy-demo.yml`/`VERSION` behaviour provably unaffected. Pest and Playwright run sequentially in CI.
+- **Manual (user judgment):** (a) the **additive** close-gate wording in `CLAUDE.md` + `template-base-prompt.md` — surfaced verbatim for approval (discipline change, their call; the old wording stays as fallback); (b) the **branch-protection handoff** (Open Q3) — surfaced as a required repo-admin action, explicitly flagged not buried.
 
 ---
 
 ## Closing steps
 
-Follow the close gate in the base prompt. Session-specific: log `sessions/NNN. Test Feedback Loop — Scoped Loop & Async Verification — Log.md`; artifact = the durable scoped-selection mechanism (+ integrity guard) + the deploy-safe CI workflow + the verbatim close-gate rewording in both `CLAUDE.md` and `template-base-prompt.md` + the slow-group re-audit before/after + `VERSION` `0.NNN.x`; branch `session-NNN/N`; next session = `NNN-testloop2`, refreshed against the CI this session shipped, drafted-forward only when the user names it.
+Follow the close gate in the base prompt. Session-specific: log `sessions/NNN. Test Feedback Loop — Scoped Loop & Async Verification — Log.md`; artifact = the `->group('design')` tag + migrated `dev test:design --group=design` + the group-integrity guard test + the **hardened** (not new) `tests.yml` (fast→slow→Playwright) + the **additive** close-gate wording in both `CLAUDE.md` and `template-base-prompt.md` (old block-and-wait wording retained as fallback) + the **surfaced branch-protection handoff** (Open Q3, flagged for the user as a required repo-admin action) + the slow-group re-audit before/after + `VERSION` `0.NNN.x`; branch `session-NNN/N`. Recommended scheduling: immediately before session 298 (the color-arc RISK session). Next session = `NNN-testloop2`, refreshed against the hardened CI this session shipped, drafted-forward only when the user names it.

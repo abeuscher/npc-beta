@@ -37,6 +37,7 @@ DESIGN_TESTS=(
     tests/Feature/DesignSystemButtonsTest.php
     tests/Feature/GradientComposerTest.php
     tests/Feature/AssetBuildSession123Test.php
+    tests/Feature/AssetBundleDriftGuardTest.php
     tests/Feature/BuildServerSettingsSession125Test.php
     tests/Feature/WidgetJsLibsSession138Test.php
     tests/Feature/CustomFormControlsSession124Test.php
