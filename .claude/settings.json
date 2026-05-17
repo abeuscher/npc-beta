@@ -444,7 +444,10 @@
       "Bash(grep -n 'seed\\\\|DatabaseSeeder\\\\|RefreshDatabase\\\\|$seed' tests/Feature/DesignSystemButtonsTest.php tests/TestCase.php)",
       "Bash(node __rhythm.mjs)",
       "Bash(sed -n '353,363p' sessions/release-plan.md)",
-      "Bash(sed -n '642,644p' sessions/release-plan.md)"
+      "Bash(sed -n '642,644p' sessions/release-plan.md)",
+      "Bash(sed -n '373,378p' \"sessions/session-outlines.md\")",
+      "Bash(sed -n '353,354p' \"sessions/release-plan.md\")",
+      "Bash(sed -n '673,674p' \"sessions/release-plan.md\")"
     ],
     "deny": [],
     "additionalDirectories": [
