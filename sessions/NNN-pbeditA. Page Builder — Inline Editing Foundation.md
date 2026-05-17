@@ -1,0 +1,128 @@
+# NNN. Page Builder — Inline Editing Foundation (Handles, Selection, In-Page Text & Repeater Control) · DRAFT FOR REVIEW
+
+> **Session A of a two-session split.** Critical-path, Beta-1-blocking. A delivers the interaction model + in-page text editing + the simplified repeater control, and is independently shippable. **Session B** (`sessions/NNN-pbeditB. *`) builds strictly on top of A: the custom Quill formatting toolbar, builder↔public parity tests, and widening the eligibility gate. B cannot run before A.
+
+One sentence: make the page builder selectable and editable *on the page* — drag via a real handle, trigger the Inspector via an explicit Edit affordance, edit text in place behind a code-declared per-node capability gate with a clear discoverability model, and collapse the column/repeater surface to structural add/remove/reorder.
+
+---
+
+## Stub reference (emergent, critical-path forcing function)
+
+No `release-plan.md` entry / `session-outlines.md` stub yet — emergent. Forcing function: beta testers cannot author pages effectively with the present whole-panel-select + Inspector-only model. Grounded in two completed research passes (architecture + feature history) and a 40-widget safety pass, whose load-bearing findings are folded in below — do not re-derive; confirm specifics against live code at start and adapt to drift.
+
+**Load-bearing facts (canonical):**
+
+- Builder preview is **server-rendered HTML via `v-html`** behind a transparent click-to-select overlay (`PreviewRegion.vue`; `.preview-region__html { pointer-events: none }`). **One render path** — `WidgetRenderer::render()` — for public and preview. No client-side text model; text exists only inside an opaque server HTML string.
+- Inline editing existed (137, Livewire), never removed for cause — dropped by attrition in the 147–152 Vue rewrite. Dormant scaffolds survive: `data-config-key`/`data-config-type` on 6 templates; `.inline-editable` CSS at `public/css/admin.css:677–692`. **PricingChart has none** — net-new, nested.
+- Persistence/security seams hold: config-save allow-list includes `content`; `PageWidget::saving` sanitizes richtext. No schema, no new API — inline editing reuses `updateLocalConfig()` → debounced save.
+- Two intrinsic hazards, designed around not discovered: **(a) token substitution** runs before render — writing serialized DOM back to config bakes resolved `{{tokens}}`; **(b) the preview-refresh echo** destroys a live editor mid-keystroke.
+
+---
+
+## Canonical UX requirements (product-owner; shape is fixed, mechanism open)
+
+1. **Drag handle, top-left, hover-in.** A real handle element (not the whole surface), top-left of each widget panel, hidden by default, fading/sliding in on hover, with a clear drag icon. Reorder behaviour/persistence unchanged — only the grab target changes (repoint the existing `vuedraggable` `handle=`).
+2. **Selection model replaced.** Whole-panel selection removed. Selecting a panel = dragging it or clicking its body area. Separately, an explicit top-right hover-in **"Edit" affordance** (label/icon) the user unmistakably associates with **opening the Inspector**.
+3. **Column/repeater management simplified, not removed.** For arbitrary repeated units (canonical: PricingChart columns) the Inspector repeater collapses to **structure only**: stacked selectable rows with order control + delete/trash + a bottom "+" add. Text moved inline; what remains is add/remove/reorder. Structural, stays Inspector-side.
+
+*(The rich-text formatting-toolbar requirement is owned by Session B; in A, formatting uses the existing Inspector `RichTextField` as a documented interim.)*
+
+---
+
+## PricingChart — the canonical stress test (validated; accommodations mandatory)
+
+A read of `PricingChartDefinition.php` + `template.blade.php` + `styles.scss` validated the following — the design must satisfy these, not gate PricingChart out:
+
+- **Layout is *not* the risk.** The columns container is one shared row grid (`grid-template-rows: … repeat(var(--pc-attr-rows),auto) …`; columns are `subgrid; grid-row: 1/-1`). Tracks are `auto`, so editing existing text that changes height **self-heals across columns**. Inline *text* editing is layout-safe by construction.
+- **Binding is path-addressed, multi-node.** Text/richtext at three depths: top-level (`heading`,`subheading`,`footnote`), `columns[i].{eyebrow,title,price,lead_content}`, `columns[i].attribute_rows[j].{label,value}`, plus CTA labels. `data-config-key` carries a **path** (`columns.2.attribute_rows.0.value`); edits write to that path in the raw config tree. Eligibility is per-node, not "a single key".
+- **Text vs structural edits diverge on refresh.** Text-content edit → locally refresh-suppressible. Structural edit (add/remove/reorder a column or attribute row) → changes `$maxAttrRows`/grid track count/placeholder padding → **must** re-render server-side. Refresh-suppression is text-only.
+- **Empty-state bootstrapping.** Templates render a node only `@if (value !== '')`; a blank field has no anchor and a new chart (`columns => []`) renders almost nothing. Inline-eligible fields must render an **empty editable placeholder wrapper** even when blank; structural "add" affordances must be reachable from selection/Inspector independent of rendered content. Cross-widget template-pattern change PricingChart makes unavoidable.
+- **Mixed plain/rich at one level** (`title` plaintext vs `price`/`value` richtext): per-node `data-config-type` drives the mode.
+
+A green PricingChart round-trip (text + nested structure + buttons) is the **A exit criterion**.
+
+---
+
+## 40-widget inline-edit safety pass — eligibility rule + canonical exempt set (validated)
+
+Full pass over `app/Widgets/*`. **Canonical — do not re-derive.**
+
+**Eligibility rule (load-bearing):** inline-eligibility is **opt-in via an explicit `data-config-key`/`data-config-type` annotation on a genuine display-prose node**, **never** auto-derived from schema `type` (many fields are honestly typed `text`/`richtext` yet are CSS/attribute/chart config). The exempt set is the canonical negative test set.
+
+**Tier A — already neutralized (no action; must stay excluded):** all `subtype=url`/`select`/`textarea`/`number` fields, the `{{token}}`-bearing card/link templates (`BlogListing.content_template`, `BlogPager.prev_template`/`next_template`, `Carousel.caption_template`, `EventsListing.content_template`, `Nav.parent_template`/`child_template`), and slug/URL/embed config (`DonationForm.success_page`/`amounts`, `ProductCarousel.success_page`, `MapEmbed.map_input`, `VideoEmbed.video_url`, `SocialSharing.mastodon_instance`, `Logo.link_url`, `Image.link_url`) — covered by the type system + token-gating + data-driven exclusion.
+
+**Tier B — genuine traps (declared `text`/`richtext`, token-free, rendered, must NEVER be annotated):**
+
+| Widget | Field | Why it would break |
+|---|---|---|
+| PricingChart | `gap` | CSS value → inline `style` |
+| ThreeBuckets | `gap` | CSS value → `--bucket-gap` var |
+| Image | `max_width` | CSS length → inline `style` |
+| Image | `alt_text` | renders only into `alt=""` |
+| BoardMembers | `image_aspect_ratio` | parsed into `padding-bottom` % |
+| Nav | `branding_text` | renders into logo `alt=""` |
+| BarChart | `x_label` / `y_label` | `json_encode`'d for Chart.js axis config |
+
+**Guard (durable artifact):** a regression test asserting **no Tier-B field key carries a `data-config-key` annotation** in any widget template.
+
+**Two documented couplings (expected behaviour, not bugs):** `Logo.text` renders as visible prose *and* into the logo `alt=""` (editing the visible node updates alt — consistent, acceptable). `TextBlock.content` is scanned read-only for `ql-align-*` to derive CTA alignment (inline-editing can shift button alignment on next render — read-only inference, no corruption; note in log).
+
+---
+
+## Decided — capability-gate location (settled; do not relitigate)
+
+The inline-eligibility rule lives **in the widget's code (a declaration on the widget definition / PHP class), not the database**. No `widget_types` column, no migration, no `docs/schema/` change — non-boundary and schema-neutral. The eligibility *model* is per-node, path-addressed, opt-in by annotation, with the Tier-B exempt set. If the only clean place appears to require a schema column, **stop and surface** — the decision is no-migration.
+
+---
+
+## Open questions to resolve at session start
+
+1. **Scope split within A (Rule 11).** If A inflates, the natural internal split is **A/1 = Phase 1 (interaction model)** + **A/2 = Phases 2 + 2b (in-place text + repeater control)**. Confirm with the user rather than running an oversized single iteration; Phase 1 is independently shippable.
+
+*(The Quill/editor decision and the capability-gate location are settled above. Builder↔public parity coordination is Session B's, not A's.)*
+
+---
+
+## Phases
+
+### Phase 1 — Interaction-model rework (independently shippable)
+
+Replace whole-panel selection. Add (a) the top-left hover-in **drag handle** + drag icon, repointing the existing `vuedraggable` `handle=` (reorder payload/persistence untouched); (b) body-click/drag selects; (c) the explicit top-right hover-in **"Edit" affordance** opening the Inspector for that widget. No inline text editing yet. Playwright: body-click selects, handle reorders, the Edit affordance opens the Inspector, and the old whole-panel-select behaviour is gone.
+
+### Phase 2 — In-page text editing on safe widgets, behind the code-declared gate
+
+Activate a Vue contenteditable layer in `PreviewRegion.vue` on `[data-config-key]` nodes **of the selected, inline-eligible widget only**, where `data-config-key` is a **config path** (supports nesting). Bind edits to the value at that **raw config path**, route through `updateLocalConfig()` → existing debounced save, on blur + debounce. Implement the **capability gate** (decided: declared in widget code, per-node path-addressed) and the **token/data-driven exclusions**. **Refresh-suppression is text-only**; structural edits (Phase 2b) always re-render. Solve the **Quill instance lifecycle** (mount/dispose on (de)select + on preview re-render) together with refresh-suppression. Inline-eligible fields render an **empty editable placeholder wrapper even when blank**. Confirm sanitization + allow-list cover every inline path. Targets: **TextBlock**, **Hero** (token-free), **ThreeBuckets** bodies; then prove the nested case on **PricingChart**. Playwright: type-in-place → blur → reload → persisted (incl. nested `columns[i].attribute_rows[j].value`); `{{token}}`-bearing node not editable; data-driven widget not editable; the Tier-B guard.
+
+### Phase 2 — discoverability spec (how the user knows a region is editable)
+
+**Progressive disclosure scoped to the selected widget.** Editability is never revealed page-wide; selecting a widget arms its regions; the **unselected preview stays pixel-clean** (preserves WYSIWYG / honest visual review). Empty slots → muted schema-`label` ghost text ("Add {label}…"), styled as the real text, only within the selected widget. Non-empty regions → activate the dormant `.inline-editable` CSS (`public/css/admin.css:677–692`; dashed-on-hover, solid-on-focus) scoped to the selected widget + `cursor: text`. Generous hit target: the whole slot incl. padding/whitespace focuses the editor and drops the caret. Confirmation: focus reveals the editor (in A, the interim formatting still lives in the Inspector — B replaces this with the contextual toolbar). Playwright: unselected preview exposes zero inline affordances; selecting reveals schema-label placeholders on empty slots; hover shows outline + text cursor; clicking empty-slot whitespace focuses + carets.
+
+### Phase 2b — Simplified column / repeater management (structural; Inspector-side)
+
+Collapse `RepeaterField.vue`/`RepeaterRowField.vue` to **structure only**: stacked selectable rows + order control + delete/trash + bottom "+" add (text now inline per Phase 2). PricingChart forces three accommodations: (1) **nested repeaters ≥2 deep** — manage `columns`, drill into a column for its `attribute_rows` (drill-in/breadcrumb, not one flat table); (2) **per-row structural controls** — the per-column `emphasize` toggle rides in the row; (3) **buttons split** — a CTA's label is inline text (Phase 2), `url`/`style` stay structural. Every structural mutation re-renders server-side (subgrid alignment recomputes — never refresh-suppressed). Add-affordances reachable from selection/Inspector even when the widget renders empty. Persistence = existing repeater save path, restructured UI. Playwright: add column → reorder → delete → persists; drill-in add/reorder/delete an attribute row → persists; toggle `emphasize` from the row; a CTA label edits inline while url/style edit structurally; all independent of inline text round-trips.
+
+---
+
+## Out of scope (owned by Session B or excluded)
+
+- The custom Vue formatting toolbar over Quill API — **Session B, Phase 3**. In A, rich-text formatting uses the existing Inspector `RichTextField` (documented interim).
+- Builder↔public appearance lock-step parity tests — **Session B, Phase 4**.
+- Widening eligibility beyond the initial safe set (DonationForm/EventsListing static headings, etc.) — **Session B, Phase 5**.
+- Inline editing of data-driven/templated/token-bearing content — gated off by design, permanently.
+- Any Fleet/`/api/health`/schema change. CRM contract stays v2.3.0. Surface if it appears needed.
+- A page-builder architecture rewrite, new state model, or replacing `v-html`.
+
+---
+
+## Testing
+
+- **Slow groups:** none expected.
+- **New Pest:** capability-gate eligibility logic; token/data-driven exclusion; sanitization + allow-list coverage of every inline path; the **Tier-B exempt-set guard** (no Tier-B key carries `data-config-key`).
+- **New Playwright:** Phase 1 interaction model (handle reorder, body-click select, Edit affordance opens Inspector, old whole-panel select gone); Phase 2 inline-edit round-trip + the two negative gates + discoverability assertions; Phase 2b column/repeater add-reorder-delete + drill-in + buttons split.
+- **Manual (user judgment):** the selection/affordance model + in-place editing feel + the repeater control — paused for at session end. Pest and Playwright run sequentially, never in parallel.
+
+---
+
+## Closing steps
+
+Follow the close gate in the base prompt. Session-specific: log `sessions/NNN. Page Builder — Inline Editing Foundation — Log.md`; artifact = the interaction model + in-place text editing on the safe set behind the code-declared gate + discoverability + the simplified repeater control + the Tier-B guard + the formatting interim explicitly handed to B + new Pest/Playwright + `VERSION` `0.NNN.x`; branch `session-NNN/N`; **next session = B**, its draft refreshed against what A shipped, drafted-forward only when the user names it.
