@@ -316,10 +316,18 @@ class PageBuilder extends Component
 
         $colorSwatches = json_decode(SiteSetting::get('editor_color_swatches', '[]'), true) ?: [];
 
-        // Theme palette: resolved colors from the page's active template (or the default template).
-        // For template-owned stacks we use the default page template's palette.
-        $activeTemplate = $page?->template ?? Template::query()->default()->first();
-        $themePalette = $activeTemplate?->resolvedPalette() ?? [];
+        // Theme palette: the site-wide tier-1 colour tokens (session-297
+        // relocation — colour is no longer per-template). The swatch picker
+        // now reflects the real Theme palette on every surface.
+        $resolvedColors = \App\Services\ColorTokenResolver::load();
+        $themePalette = [];
+        foreach (\App\Services\ColorTokenResolver::TIER1 as $token) {
+            $themePalette[] = [
+                'key'   => $token,
+                'label' => \App\Services\ColorTokenResolver::TIER1_LABELS[$token] ?? $token,
+                'value' => $resolvedColors[$token],
+            ];
+        }
 
         // Page-only metadata; templates fall back to empty strings.
         $pageTitle  = $page?->title ?? ($template?->name ?? '');

@@ -457,6 +457,16 @@ JS,
             $combined .= "// ── typography (from DB) ──\n" . $typographyCss . "\n";
         }
 
+        // Append the Theme colour tokens, scoped under .np-site exactly like
+        // the typography block above (see _base.scss) — the canonical
+        // --np-color-* contract delivered into the public bundle. Folds into
+        // collectSources()/the source hash automatically, so the 296 drift
+        // guard covers the palette with no key-list change.
+        $colorTokensCss = ColorTokenCompiler::compileScoped(['.np-site']);
+        if ($colorTokensCss) {
+            $combined .= "// ── colour tokens (from DB) ──\n" . $colorTokensCss . "\n";
+        }
+
         if ($combined) {
             $scss[] = [
                 'path' => 'theme/public.scss',

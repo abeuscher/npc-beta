@@ -40,6 +40,16 @@
         >
             Buttons
         </button>
+        <button
+            wire:click="switchTab('colors')"
+            @class([
+                'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition',
+                'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400' => $activeTab === 'colors',
+                'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300' => $activeTab !== 'colors',
+            ])
+        >
+            Colors
+        </button>
     </div>
 
     {{-- Buttons tab --}}
@@ -49,6 +59,17 @@
 
             <x-filament-panels::form.actions
                 :actions="$this->getFormActions()"
+            />
+        </x-filament-panels::form>
+    @endif
+
+    {{-- Colors tab --}}
+    @if ($activeTab === 'colors')
+        <x-filament-panels::form wire:submit="saveColors">
+            {{ $this->colorsForm }}
+
+            <x-filament-panels::form.actions
+                :actions="$this->getColorsFormActions()"
             />
         </x-filament-panels::form>
     @endif

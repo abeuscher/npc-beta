@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\SiteSetting;
 use App\Services\AssetBuildService;
+use App\Services\ColorTokenResolver;
 use App\Services\TypographyResolver;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -31,6 +32,8 @@ class DesignSystemPage extends Page
 
     public ?array $data = [];
 
+    public ?array $colorsData = [];
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('manage_cms_settings') ?? false;
@@ -47,6 +50,92 @@ class DesignSystemPage extends Page
     public function mount(): void
     {
         $this->loadButtonSettings();
+        $this->loadColorSettings();
+    }
+
+    protected function getForms(): array
+    {
+        return ['form', 'colorsForm'];
+    }
+
+    protected function loadColorSettings(): void
+    {
+        // Resolver merges saved tier-1 over defaults so every token is a
+        // concrete value (concrete-values rule) and the editor never shows a
+        // blank picker.
+        $this->colorsForm->fill(['theme_colors' => ColorTokenResolver::load()]);
+    }
+
+    public function colorsForm(Form $form): Form
+    {
+        return $form
+            ->schema(self::colorsFormSchema())
+            ->statePath('colorsData');
+    }
+
+    protected static function colorsFormSchema(): array
+    {
+        $fields = [];
+        foreach (ColorTokenResolver::TIER1 as $key) {
+            $fields[] = Forms\Components\ColorPicker::make("theme_colors.{$key}")
+                ->label(ColorTokenResolver::TIER1_LABELS[$key] ?? $key)
+                ->columnSpan(3);
+        }
+
+        return [
+            Forms\Components\Section::make('Colors')
+                ->description('Site-wide colour palette. These tokens (--np-color-*) are the canonical contract every public surface and widget reads. Tier-2 contract colours (success/error/warning, brand-contrast, focus-ring) are published to widget developers and not tuned here.')
+                ->schema($fields)
+                ->columns(12)
+                ->columnSpanFull(),
+        ];
+    }
+
+    public function saveColors(): void
+    {
+        $data = $this->colorsForm->getState();
+        $colors = $data['theme_colors'] ?? [];
+
+        $clean = [];
+        foreach (ColorTokenResolver::TIER1 as $key) {
+            $value = $colors[$key] ?? null;
+            if (is_string($value) && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $value)) {
+                $clean[$key] = $value;
+            } else {
+                $clean[$key] = ColorTokenResolver::defaults()[$key];
+            }
+        }
+
+        SiteSetting::updateOrCreate(
+            ['key' => 'theme_colors'],
+            ['value' => json_encode($clean), 'type' => 'json', 'group' => 'design'],
+        );
+        \Illuminate\Support\Facades\Cache::forget('site_setting:theme_colors');
+
+        $result = app(AssetBuildService::class)->build();
+
+        if ($result->success) {
+            Notification::make()
+                ->title('Theme colours saved & CSS rebuilt')
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Theme colours saved')
+                ->body('CSS rebuild failed: ' . $result->message . '. Run `php artisan build:public` manually.')
+                ->warning()
+                ->send();
+        }
+    }
+
+    protected function getColorsFormActions(): array
+    {
+        return [
+            Action::make('saveColors')
+                ->label('Rebuild CSS Bundle')
+                ->icon('heroicon-o-arrow-path')
+                ->action('saveColors'),
+        ];
     }
 
     public function getTypographyBootstrap(): array

@@ -135,37 +135,22 @@ it('can set a page template as default', function () {
     expect($new->fresh()->is_default)->toBeTrue();
 });
 
-it('saves page template appearance via the entry page (Label and Colors)', function () {
+// Session 297 relocated colour to the site-wide Theme palette: the
+// EditPageTemplate "Label and Colors" Colors form + clearAppearance() are
+// gone. The entry page is now label/description only.
+it('saves page template label via the entry page', function () {
     $pt = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'name'          => 'Default',
-        'primary_color' => '#000000',
+        'type'       => 'page',
+        'is_default' => true,
+        'name'       => 'Default',
     ]);
 
     Livewire::test(EditPageTemplate::class, ['record' => $pt->id])
-        ->fillForm(['primary_color' => '#ff0000'])
+        ->fillForm(['name' => 'Renamed Default'])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect($pt->fresh()->primary_color)->toBe('#ff0000');
-});
-
-it('clears appearance to inherit from default via the entry page', function () {
-    Template::factory()->create(['type' => 'page', 'is_default' => true, 'primary_color' => '#111111']);
-    $child = Template::factory()->create([
-        'type'            => 'page',
-        'is_default'      => false,
-        'primary_color'   => '#222222',
-        'header_bg_color' => '#333333',
-    ]);
-
-    Livewire::test(EditPageTemplate::class, ['record' => $child->id])
-        ->call('clearAppearance');
-
-    $child->refresh();
-    expect($child->primary_color)->toBeNull();
-    expect($child->header_bg_color)->toBeNull();
+    expect($pt->fresh()->name)->toBe('Renamed Default');
 });
 
 // ── Page creation with templates ──────────────────────────────────────────
@@ -277,22 +262,21 @@ it('save as template creates content template from page widget stack', function 
 // ── Non-default page template inheritance ─────────────────────────────────
 
 it('non-default page template inherits values from default when fields are null', function () {
-    $default = Template::factory()->create([
-        'type'            => 'page',
-        'is_default'      => true,
-        'primary_color'   => '#aaaaaa',
-        'header_bg_color' => '#bbbbbb',
+    // Colour relocated to the Theme palette at session 297; inheritance now
+    // covers custom_scss + header_page_id + footer_page_id only.
+    Template::factory()->create([
+        'type'        => 'page',
+        'is_default'  => true,
+        'custom_scss' => '.inherited{}',
     ]);
 
     $child = Template::factory()->create([
-        'type'            => 'page',
-        'is_default'      => false,
-        'primary_color'   => null,
-        'header_bg_color' => null,
+        'type'        => 'page',
+        'is_default'  => false,
+        'custom_scss' => null,
     ]);
 
-    expect($child->resolved('primary_color'))->toBe('#aaaaaa');
-    expect($child->resolved('header_bg_color'))->toBe('#bbbbbb');
+    expect($child->resolved('custom_scss'))->toBe('.inherited{}');
 });
 
 // ── Custom header/footer for non-default templates ────────────────────────

@@ -1,8 +1,15 @@
 <?php
 
+// Session 297 relocated colour off templates to the site-wide Theme palette.
+// PageBuilder's `theme_palette` bootstrap key now sources the tier-1
+// --np-color-* tokens via ColorTokenResolver (not Template::resolvedPalette),
+// so the swatch picker reflects the real Theme palette on every surface and is
+// always populated with concrete values.
+
 use App\Livewire\PageBuilder;
 use App\Models\Page;
-use App\Models\Template;
+use App\Models\SiteSetting;
+use App\Services\ColorTokenResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -13,18 +20,7 @@ beforeEach(function () {
     (new \Database\Seeders\WidgetTypeSeeder())->run();
 });
 
-it('exposes theme_palette in bootstrap data with the expected shape', function () {
-    Template::factory()->create([
-        'type'             => 'page',
-        'is_default'       => true,
-        'primary_color'    => '#aabbcc',
-        'header_bg_color'  => '#ffffff',
-        'footer_bg_color'  => '#000000',
-        'nav_link_color'   => '#111111',
-        'nav_hover_color'  => '#222222',
-        'nav_active_color' => '#333333',
-    ]);
-
+it('exposes theme_palette as the tier-1 token set with concrete values', function () {
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
 
     $bootstrap = Livewire::test(PageBuilder::class, ['pageId' => $page->id])
@@ -34,118 +30,56 @@ it('exposes theme_palette in bootstrap data with the expected shape', function (
     expect($bootstrap)->toHaveKey('theme_palette');
 
     $palette = $bootstrap['theme_palette'];
-    expect($palette)->toBeArray()->toHaveCount(6);
+    expect($palette)->toBeArray()->toHaveCount(count(ColorTokenResolver::TIER1));
 
     foreach ($palette as $entry) {
         expect($entry)->toHaveKeys(['key', 'label', 'value']);
         expect($entry['key'])->toBeString();
         expect($entry['label'])->toBeString();
+        // Concrete-values rule: never null/blank.
+        expect($entry['value'])->toMatch('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/');
     }
 
     $byKey = collect($palette)->keyBy('key');
-    expect($byKey)->toHaveKeys([
-        'primary_color',
-        'header_bg_color',
-        'footer_bg_color',
-        'nav_link_color',
-        'nav_hover_color',
-        'nav_active_color',
-    ]);
-
-    expect($byKey['primary_color']['value'])->toBe('#aabbcc');
-    expect($byKey['header_bg_color']['value'])->toBe('#ffffff');
-    expect($byKey['nav_active_color']['value'])->toBe('#333333');
+    expect($byKey->keys()->all())->toEqualCanonicalizing(ColorTokenResolver::TIER1);
+    expect($byKey['brand']['value'])->toBe('#0172ad');
+    expect($byKey['header-bg']['value'])->toBe('#ffffff');
+    expect($byKey['nav-link']['value'])->toBe('#373c44');
 });
 
-it('sources theme_palette from the page-assigned template when one is set', function () {
-    Template::factory()->create([
-        'type'             => 'page',
-        'is_default'       => true,
-        'primary_color'    => '#000000',
-        'header_bg_color'  => '#000000',
-        'footer_bg_color'  => '#000000',
-        'nav_link_color'   => '#000000',
-        'nav_hover_color'  => '#000000',
-        'nav_active_color' => '#000000',
+it('reflects saved theme_colors overrides', function () {
+    SiteSetting::create([
+        'key'   => 'theme_colors',
+        'value' => json_encode(['brand' => '#ff0000', 'nav-link' => '#00ff00']),
+        'type'  => 'json',
+        'group' => 'design',
     ]);
 
-    $custom = Template::factory()->create([
-        'type'             => 'page',
-        'is_default'       => false,
-        'primary_color'    => '#ff0000',
-        'header_bg_color'  => '#00ff00',
-        'footer_bg_color'  => '#0000ff',
-        'nav_link_color'   => '#ffff00',
-        'nav_hover_color'  => '#ff00ff',
-        'nav_active_color' => '#00ffff',
-    ]);
-
-    $page = Page::factory()->create([
-        'type'        => 'default',
-        'status'      => 'published',
-        'template_id' => $custom->id,
-    ]);
-
-    $bootstrap = Livewire::test(PageBuilder::class, ['pageId' => $page->id])
-        ->instance()
-        ->getBootstrapData();
-
-    $byKey = collect($bootstrap['theme_palette'])->keyBy('key');
-
-    expect($byKey['primary_color']['value'])->toBe('#ff0000');
-    expect($byKey['header_bg_color']['value'])->toBe('#00ff00');
-    expect($byKey['footer_bg_color']['value'])->toBe('#0000ff');
-    expect($byKey['nav_link_color']['value'])->toBe('#ffff00');
-    expect($byKey['nav_hover_color']['value'])->toBe('#ff00ff');
-    expect($byKey['nav_active_color']['value'])->toBe('#00ffff');
-});
-
-it('falls back to default template values for null fields on the assigned template', function () {
-    Template::factory()->create([
-        'type'             => 'page',
-        'is_default'       => true,
-        'primary_color'    => '#aaaaaa',
-        'header_bg_color'  => '#bbbbbb',
-        'footer_bg_color'  => '#cccccc',
-        'nav_link_color'   => '#dddddd',
-        'nav_hover_color'  => '#eeeeee',
-        'nav_active_color' => '#ffffff',
-    ]);
-
-    $custom = Template::factory()->create([
-        'type'             => 'page',
-        'is_default'       => false,
-        'primary_color'    => '#123456',
-        // Other colour fields left null — should inherit from default template.
-    ]);
-
-    $page = Page::factory()->create([
-        'type'        => 'default',
-        'status'      => 'published',
-        'template_id' => $custom->id,
-    ]);
-
-    $bootstrap = Livewire::test(PageBuilder::class, ['pageId' => $page->id])
-        ->instance()
-        ->getBootstrapData();
-
-    $byKey = collect($bootstrap['theme_palette'])->keyBy('key');
-
-    expect($byKey['primary_color']['value'])->toBe('#123456');
-    expect($byKey['header_bg_color']['value'])->toBe('#bbbbbb');
-    expect($byKey['footer_bg_color']['value'])->toBe('#cccccc');
-    expect($byKey['nav_link_color']['value'])->toBe('#dddddd');
-    expect($byKey['nav_hover_color']['value'])->toBe('#eeeeee');
-    expect($byKey['nav_active_color']['value'])->toBe('#ffffff');
-});
-
-it('returns an empty theme_palette when no templates exist at all', function () {
     $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
 
     $bootstrap = Livewire::test(PageBuilder::class, ['pageId' => $page->id])
         ->instance()
         ->getBootstrapData();
 
-    expect($bootstrap)->toHaveKey('theme_palette');
-    expect($bootstrap['theme_palette'])->toBeArray()->toBeEmpty();
+    $byKey = collect($bootstrap['theme_palette'])->keyBy('key');
+
+    expect($byKey['brand']['value'])->toBe('#ff0000');
+    expect($byKey['nav-link']['value'])->toBe('#00ff00');
+    // Untouched tokens stay at their concrete default.
+    expect($byKey['surface']['value'])->toBe(ColorTokenResolver::defaults()['surface']);
+});
+
+it('is populated from defaults even when no template or theme_colors exists', function () {
+    $page = Page::factory()->create(['type' => 'default', 'status' => 'published']);
+
+    $bootstrap = Livewire::test(PageBuilder::class, ['pageId' => $page->id])
+        ->instance()
+        ->getBootstrapData();
+
+    expect($bootstrap['theme_palette'])->toBeArray()->not->toBeEmpty();
+
+    $byKey = collect($bootstrap['theme_palette'])->keyBy('key');
+    foreach (ColorTokenResolver::defaults() as $token => $hex) {
+        expect($byKey[$token]['value'])->toBe($hex);
+    }
 });

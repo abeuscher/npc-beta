@@ -34,7 +34,8 @@ it('renders four sub-nav entries on EditPageTemplate (Label and Colors, Header, 
     expect($items)->toHaveCount(4);
 
     $labels = array_map(fn (NavigationItem $i) => $i->getLabel(), $items);
-    expect($labels)->toBe(['Label and Colors', 'Header', 'Footer', 'SCSS']);
+    // "Label and Colors" → "Label": colour relocated to the Theme palette (s297).
+    expect($labels)->toBe(['Label', 'Header', 'Footer', 'SCSS']);
 });
 
 it('mounts the Chrome sub-page for the Header View', function () {

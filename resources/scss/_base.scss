@@ -58,7 +58,9 @@
     }
 
     a {
-        color: var(--np-link-color, #{$color-primary});
+        // Resolution chain: per-widget link override (AppearanceStyleComposer)
+        // → Theme `link` token → brand fallback.
+        color: var(--np-link-color, var(--np-color-link, #{$color-primary}));
         text-decoration: none;
 
         &:hover { opacity: 0.8; }
@@ -66,6 +68,24 @@
             color: var(--btn-color, inherit);
         }
     }
+
+    // Theme chrome colours. Replaces the pre-297 per-template inline
+    // <style> (header/footer bg + nav link/hover/active) that public.blade
+    // emitted from templates.* columns — now Theme tokens delivered in the
+    // bundle. Scoped under .np-site so they no longer leak into the admin;
+    // byte-faithful on the public site (token defaults == the old default
+    // template values).
+    header { background: var(--np-color-header-bg); }
+    footer { background: var(--np-color-footer-bg); }
+
+    header nav a,
+    footer nav a,
+    footer .theme-toggle { color: var(--np-color-nav-link); }
+
+    header nav a:hover,
+    footer nav a:hover { color: var(--np-color-nav-hover); }
+
+    header nav a[aria-current="page"] { color: var(--np-color-nav-active); }
 
     // Overflow guard — text must wrap rather than overflow its container,
     // even when authored widget side-padding crushes the content box at

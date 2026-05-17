@@ -338,13 +338,9 @@ class ContentExporter
             return $data;
         }
 
-        // Page template — chrome fields and chrome page slug references.
-        $data['primary_color']    = $template->primary_color;
-        $data['header_bg_color']  = $template->header_bg_color;
-        $data['footer_bg_color']  = $template->footer_bg_color;
-        $data['nav_link_color']   = $template->nav_link_color;
-        $data['nav_hover_color']  = $template->nav_hover_color;
-        $data['nav_active_color'] = $template->nav_active_color;
+        // Page template — chrome page slug references + custom SCSS.
+        // Colour is no longer per-template (session-297 relocation to the
+        // site-wide Theme palette); the colour columns were dropped.
         $data['custom_scss']      = $template->custom_scss;
         $data['header_page_slug'] = $template->headerPage?->slug;
         $data['footer_page_slug'] = $template->footerPage?->slug;

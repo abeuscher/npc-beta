@@ -12,49 +12,51 @@ uses(TestCase::class, RefreshDatabase::class);
 
 // ── Template model: resolved() ──────────────────────────────────────────────
 
+// Colour was relocated off the templates table to the site-wide Theme palette
+// at session 297; resolved()/INHERITABLE_FIELDS now covers custom_scss +
+// header_page_id + footer_page_id only. These exercise that surviving
+// inheritance machinery on custom_scss.
+
 it('resolved() returns own value when set on default template', function () {
     $template = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#ff0000',
+        'type'        => 'page',
+        'is_default'  => true,
+        'custom_scss' => '.a{}',
     ]);
 
-    expect($template->resolved('primary_color'))->toBe('#ff0000');
+    expect($template->resolved('custom_scss'))->toBe('.a{}');
 });
 
 it('resolved() returns own value when non-default template has a value', function () {
     Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#ff0000',
+        'type'        => 'page',
+        'is_default'  => true,
+        'custom_scss' => '.a{}',
     ]);
 
     $child = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => false,
-        'primary_color' => '#00ff00',
+        'type'        => 'page',
+        'is_default'  => false,
+        'custom_scss' => '.b{}',
     ]);
 
-    expect($child->resolved('primary_color'))->toBe('#00ff00');
+    expect($child->resolved('custom_scss'))->toBe('.b{}');
 });
 
 it('resolved() falls back to default value when non-default template field is null', function () {
     Template::factory()->create([
-        'type'            => 'page',
-        'is_default'      => true,
-        'primary_color'   => '#ff0000',
-        'header_bg_color' => '#abcdef',
+        'type'        => 'page',
+        'is_default'  => true,
+        'custom_scss' => '.default{}',
     ]);
 
     $child = Template::factory()->create([
-        'type'            => 'page',
-        'is_default'      => false,
-        'primary_color'   => null,
-        'header_bg_color' => null,
+        'type'        => 'page',
+        'is_default'  => false,
+        'custom_scss' => null,
     ]);
 
-    expect($child->resolved('primary_color'))->toBe('#ff0000');
-    expect($child->resolved('header_bg_color'))->toBe('#abcdef');
+    expect($child->resolved('custom_scss'))->toBe('.default{}');
 });
 
 // ── Scopes ──────────────────────────────────────────────────────────────────
@@ -95,8 +97,6 @@ it('TemplateSeeder creates default page template with correct values', function 
 
     expect($default)->not->toBeNull();
     expect($default->name)->toBe('Default');
-    expect($default->primary_color)->toBe('#0172ad');
-    expect($default->header_bg_color)->toBe('#ffffff');
     expect($default->header_page_id)->toBe($header->id);
     expect($default->footer_page_id)->toBe($footer->id);
 });
@@ -169,18 +169,17 @@ it('createLandingPageForEvent falls back to hardcoded widgets when template is m
 
 // ── Page rendering: template resolution ─────────────────────────────────────
 
-it('page with custom template uses that template colors', function () {
-    $default = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#111111',
-    ]);
+// Session 297 relocated colour off templates to the site-wide Theme palette
+// (delivered as .np-site --np-color-* tokens in the public bundle). The
+// per-template inline `:root { --color-primary: … }` <style> the page layout
+// used to emit is gone; per-template colour deliberately does not return until
+// the 299 schemes. (Computed-value verification across the three surfaces is
+// the real-browser Phase-4 step, not asserted from emitted HTML here.)
 
-    $custom = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => false,
-        'primary_color' => '#222222',
-    ]);
+it('page renders without the removed per-template colour inline style', function () {
+    Template::factory()->create(['type' => 'page', 'is_default' => true]);
+
+    $custom = Template::factory()->create(['type' => 'page', 'is_default' => false]);
 
     $page = Page::factory()->create([
         'template_id' => $custom->id,
@@ -190,23 +189,17 @@ it('page with custom template uses that template colors', function () {
 
     $response = $this->get('/custom-tpl-page');
     $response->assertStatus(200);
-    $response->assertSee('#222222');
+    $response->assertDontSee(':root { --color-primary:', false);
 });
 
-it('page with no template uses default template colors', function () {
-    $default = Template::factory()->create([
-        'type'          => 'page',
-        'is_default'    => true,
-        'primary_color' => '#333333',
-    ]);
+it('page with no assigned template still renders', function () {
+    Template::factory()->create(['type' => 'page', 'is_default' => true]);
 
-    $page = Page::factory()->create([
+    Page::factory()->create([
         'template_id' => null,
         'status'      => 'published',
         'slug'        => 'default-tpl-page',
     ]);
 
-    $response = $this->get('/default-tpl-page');
-    $response->assertStatus(200);
-    $response->assertSee('#333333');
+    $this->get('/default-tpl-page')->assertStatus(200);
 });

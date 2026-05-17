@@ -56,6 +56,20 @@ class TypographyResolver
         'ol_li' => ['weight' => '400', 'size' => 1.0,   'line_height' => 1.5],
     ];
 
+    // Sane baseline vertical rhythm (rem, bottom only). The product fix for
+    // the zero-margin defect: a fresh / unconfigured install must ship real
+    // rhythm, not headings glued to body text — zero-as-default was "unset"
+    // masquerading as a concrete value. Defaults-only: load() deep-merges a
+    // stored typography row over this, so a configured install is untouched.
+    // This never sweeps or mutates stored rows (the 295 em-rhythm-revert
+    // lesson — change defaults, never rewrite configuration). li stays a
+    // deliberate 0: list rhythm comes from the surrounding block flow, not
+    // per-item margins.
+    private const ELEMENT_MARGIN_BOTTOM = [
+        'h1' => 1.5, 'h2' => 1.25, 'h3' => 1.0, 'h4' => 0.75,
+        'h5' => 0.5, 'h6' => 0.5, 'p' => 1.0, 'ul_li' => 0, 'ol_li' => 0,
+    ];
+
     public static function fontCatalog(): array
     {
         return [
@@ -92,7 +106,13 @@ class TypographyResolver
                     'letter_spacing' => ['value' => 0, 'unit' => 'em'],
                     'case'           => 'none',
                 ],
-                'margin'  => $zeroSpacing,
+                'margin'  => [
+                    'top'    => 0,
+                    'right'  => 0,
+                    'bottom' => self::ELEMENT_MARGIN_BOTTOM[$el],
+                    'left'   => 0,
+                    'unit'   => 'rem',
+                ],
                 'padding' => $zeroSpacing,
             ];
         }

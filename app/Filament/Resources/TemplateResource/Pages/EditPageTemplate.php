@@ -10,7 +10,6 @@ use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -22,7 +21,7 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
 
     protected static string $view = 'filament.resources.template-resource.pages.edit-page-template';
 
-    protected static ?string $title = 'Label and Colors';
+    protected static ?string $title = 'Label';
 
     public function getTitle(): string
     {
@@ -43,35 +42,6 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
                     ->rows(2)
                     ->maxLength(1000),
             ])->columnSpan(6),
-
-            Forms\Components\Section::make('Colors')
-                ->schema([
-                    Forms\Components\ColorPicker::make('primary_color')
-                        ->label('Brand')
-                        ->columnSpan(2),
-
-                    Forms\Components\ColorPicker::make('header_bg_color')
-                        ->label('Header bg')
-                        ->columnSpan(2),
-
-                    Forms\Components\ColorPicker::make('nav_link_color')
-                        ->label('Nav link')
-                        ->columnSpan(2),
-
-                    Forms\Components\ColorPicker::make('nav_hover_color')
-                        ->label('Nav hover')
-                        ->columnSpan(2),
-
-                    Forms\Components\ColorPicker::make('nav_active_color')
-                        ->label('Nav active')
-                        ->columnSpan(2),
-
-                    Forms\Components\ColorPicker::make('footer_bg_color')
-                        ->label('Footer bg')
-                        ->columnSpan(2),
-                ])
-                ->columns(12)
-                ->columnSpanFull(),
         ])->columns(12);
     }
 
@@ -106,7 +76,7 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
         return [
             TemplateResource::getUrl() => 'Templates',
             'Edit Page Template',
-            'Label and Colors',
+            'Label',
         ];
     }
 
@@ -118,23 +88,6 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
     public function getDefaultTemplateProperty(): ?Template
     {
         return Template::page()->where('is_default', true)->first();
-    }
-
-    public function clearAppearance(): void
-    {
-        abort_unless(auth()->user()?->can('update_page'), 403);
-        $this->record->update([
-            'primary_color'    => null,
-            'header_bg_color'  => null,
-            'nav_link_color'   => null,
-            'nav_hover_color'  => null,
-            'nav_active_color' => null,
-            'footer_bg_color'  => null,
-        ]);
-
-        $this->fillForm();
-
-        Notification::make()->title('Appearance reset to inherit from default')->success()->send();
     }
 
     protected function subNavigationEntryPage(): ?string

@@ -370,12 +370,11 @@ it('round-trips a bulk bundle of multiple pages', function () {
 
 it('round-trips a page template with customised chrome and header/footer pages', function () {
     // Build a customised page template with its own header/footer system pages.
+    // Colour is no longer template-owned (session-297 relocation to the
+    // site-wide Theme palette); only custom_scss + chrome page refs round-trip.
     $template = Template::create([
         'name'             => 'Custom Chrome',
         'type'             => 'page',
-        'primary_color'    => '#bada55',
-        'header_bg_color'  => '#000000',
-        'footer_bg_color'  => '#222222',
         'custom_scss'      => '.custom { color: red; }',
         'is_default'       => false,
         'created_by'       => User::factory()->create()->id,
@@ -425,12 +424,11 @@ it('round-trips a page template with customised chrome and header/footer pages',
     PageWidget::where('owner_type', (new \App\Models\Page())->getMorphClass())
         ->whereIn('owner_id', [$headerPage->id, $footerPage->id])->delete();
     Page::whereIn('id', [$headerPage->id, $footerPage->id])->forceDelete();
-    $template->update(['header_page_id' => null, 'footer_page_id' => null, 'primary_color' => null]);
+    $template->update(['header_page_id' => null, 'footer_page_id' => null]);
 
     app(ContentImporter::class)->import($bundle, new ImportLog());
 
     $reloadedTemplate = Template::where('name', 'Custom Chrome')->first();
-    expect($reloadedTemplate->primary_color)->toBe('#bada55');
     expect($reloadedTemplate->custom_scss)->toBe('.custom { color: red; }');
     expect($reloadedTemplate->header_page_id)->not->toBeNull();
     expect($reloadedTemplate->footer_page_id)->not->toBeNull();

@@ -616,30 +616,26 @@ This section documents what exists today. New primitives land in this section as
 
 ### `theme_palette` bootstrap data
 
-The active page template's resolved color palette is exposed to the Vue editor through the bootstrap payload. It is consumed by the `ColorPicker` primitive (and any future primitive that wants theme colors).
+The site-wide Theme colour palette is exposed to the Vue editor through the bootstrap payload. It is consumed by the `ColorPicker` primitive (and any future primitive that wants theme colors).
 
-**Source.** `App\Livewire\PageBuilder::getBootstrapData()` resolves the active template via `$page?->template ?? Template::query()->default()->first()` and calls `Template::resolvedPalette()` on it. Each entry runs through `Template::resolved()` so unset fields on the page's own template fall back to the default template's value.
+**Source.** `App\Livewire\PageBuilder::getBootstrapData()` reads the tier-1 `--np-color-*` tokens via `App\Services\ColorTokenResolver::load()` (session-297 relocation — colour is no longer per-template; it is the single site-wide Theme palette). The canonical contract lives in `docs/theme-color-tokens.md`.
 
-**Shape.** An array of `{ key, label, value }` objects:
+**Shape.** An array of `{ key, label, value }` objects, one per tier-1 token; every `value` is always a concrete hex (concrete-values rule — never `null`):
 
 ```json
 [
-  { "key": "primary_color",    "label": "Primary",            "value": "#4f46e5" },
-  { "key": "header_bg_color",  "label": "Header Background",  "value": "#ffffff" },
-  { "key": "footer_bg_color",  "label": "Footer Background",  "value": "#111827" },
-  { "key": "nav_link_color",   "label": "Nav Link",           "value": null },
-  { "key": "nav_hover_color",  "label": "Nav Hover",          "value": null },
-  { "key": "nav_active_color", "label": "Nav Active",         "value": null }
+  { "key": "brand",      "label": "Brand",            "value": "#0172ad" },
+  { "key": "bg",         "label": "Page Background",  "value": "#ffffff" },
+  { "key": "header-bg",  "label": "Header Background", "value": "#ffffff" },
+  { "key": "nav-link",   "label": "Nav Link",         "value": "#373c44" }
 ]
 ```
-
-`value` may be `null` if neither the page's template nor the default template defines that field — the picker renders those entries as disabled checkered chips.
 
 **TS interface.** `ThemePaletteEntry` and the `theme_palette: ThemePaletteEntry[]` field on `BootstrapData` in `resources/js/page-builder-vue/types.ts`.
 
 **Pinia store.** Available as `useEditorStore().themePalette` (a `ref<ThemePaletteEntry[]>`). The store populates it from the bootstrap data on `loadTree()`. Consuming primitives should read it from the store directly — they should not require it as a prop.
 
-**Adding a new color to the palette.** Add the field to `Template::PALETTE_FIELDS` in `app/Models/Template.php` (key + display label). The helper iterates the constant, so the new color will appear in the bootstrap data and the picker without further wiring.
+**The token contract.** The tier-1/tier-2 `--np-color-*` set is fixed in `App\Services\ColorTokenResolver` and documented in `docs/theme-color-tokens.md`. Widgets must read colour from `var(--np-color-*)` — never hardcode hex or reference a `$color-*` SCSS variable directly.
 
 ---
 

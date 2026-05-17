@@ -76,7 +76,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Edit Content Template | `TemplateResource/Pages/EditContentTemplate.php` |
 | Edit Page Template | `TemplateResource/Pages/EditPageTemplate.php` |
 | CMS Settings | `Filament/Pages/Settings/CmsSettingsPage.php` |
-| Theme (Design System — buttons + typography) | `Filament/Pages/DesignSystemPage.php` |
+| Theme (Design System — text styles + buttons + colors) | `Filament/Pages/DesignSystemPage.php` (colour token contract: `docs/theme-color-tokens.md`) |
 
 ### Finance group
 

@@ -298,6 +298,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 294 | Column-Layout Mobile Collapse + Swiper Blanket — Playwright-Verified |
 | 295 | Mobile Type Scaling — Per-Breakpoint Type + Build-Pipeline / .np-site Delivery Correction |
 | 296 | Post-Incident Test Integrity — Stale-Stylesheet Drift Guard & Fixture-Test Remediation |
+| 297 | Theme Color System — Palette, Token Contract & Relocation |
 
 ---
 

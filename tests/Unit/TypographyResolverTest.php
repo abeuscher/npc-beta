@@ -19,7 +19,11 @@ it('returns a fully-populated defaults tree with concrete values', function () {
     expect($defaults['elements']['p']['font']['weight'])->toBe('400');
     expect($defaults['elements']['h1']['font']['letter_spacing']['value'])->toBe(0);
     expect($defaults['elements']['h1']['font']['case'])->toBe('none');
-    expect($defaults['elements']['h1']['margin'])->toBe(['top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0]);
+    // Sane baseline vertical rhythm — defaults must NOT be zero-margin
+    // (the product defect: a fresh install rendering headings glued to body).
+    expect($defaults['elements']['h1']['margin'])->toBe(['top' => 0, 'right' => 0, 'bottom' => 1.5, 'left' => 0, 'unit' => 'rem']);
+    expect($defaults['elements']['p']['margin'])->toBe(['top' => 0, 'right' => 0, 'bottom' => 1.0, 'left' => 0, 'unit' => 'rem']);
+    expect($defaults['elements']['ul_li']['margin']['bottom'])->toBe(0); // deliberate: list rhythm is block-flow, not per-item
     expect($defaults['elements']['ul_li']['list_style_type'])->toBe('disc');
     expect($defaults['elements']['ol_li']['list_style_type'])->toBe('decimal');
 });

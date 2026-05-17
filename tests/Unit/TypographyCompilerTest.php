@@ -10,6 +10,11 @@ it('emits concrete declarations from the defaults tree', function () {
     expect($css)->toContain("font-family: 'Inter', system-ui, sans-serif");
     expect($css)->toContain('font-weight: 700');
     expect($css)->toContain('font-size: 2.5rem');
+    // Sane baseline vertical rhythm ships from code defaults (the
+    // zero-margin product-defect guard).
+    expect($css)->toContain('h1:not(nav h1) { ');
+    expect($css)->toMatch('/h1:not\(nav h1\) \{[^}]*margin-bottom: 1\.5rem/');
+    expect($css)->toMatch('/p:not\(nav p\) \{[^}]*margin-bottom: 1rem/');
     expect($css)->toContain('ul:not(nav ul) li {');
     expect($css)->toContain('list-style-type: disc');
     expect($css)->toContain('ol:not(nav ol) li {');
@@ -24,6 +29,9 @@ it('emits declarations from a configured element', function () {
     $state['elements']['h1']['font']['line_height'] = 1.2;
     $state['elements']['h1']['font']['letter_spacing'] = ['value' => -0.02, 'unit' => 'em'];
     $state['elements']['h1']['font']['case'] = 'uppercase';
+    // Pin the box unit to px — this case asserts integer-px margin/padding
+    // emission, independent of the rem default rhythm.
+    $state['elements']['h1']['margin']['unit'] = 'px';
     $state['elements']['h1']['margin']['top'] = 24;
     $state['elements']['h1']['padding']['left'] = 8;
 
@@ -101,9 +109,11 @@ it('honours the stored margin/padding unit and never int-truncates (the rem→1p
     expect($block('p:not(nav p)'))->toContain('margin-bottom: 0.75rem');
     expect($css)->not->toContain('margin-bottom: 1px');
 
-    // No unit key → defaults to px (back-compat), still no truncation noise.
+    // A box with no unit key → defaults to px (back-compat for legacy/no-unit
+    // boxes). Constructed explicitly: code defaults now carry a rem unit, so
+    // the no-unit path must be exercised deliberately, not leeched off them.
     $pxState = TypographyResolver::defaults();
-    $pxState['elements']['h2']['margin']['bottom'] = 24;
+    $pxState['elements']['h2']['margin'] = ['top' => 0, 'right' => 0, 'bottom' => 24, 'left' => 0];
     expect(TypographyCompiler::compile($pxState))->toContain('margin-bottom: 24px');
 });
 

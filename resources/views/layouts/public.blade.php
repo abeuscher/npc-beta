@@ -92,10 +92,10 @@
     @php
         $cssVars = [];
 
-        $primaryColor = $__tpl?->resolved('primary_color');
-        if ($primaryColor) {
-            $cssVars[] = "--color-primary: {$primaryColor}";
-        }
+        // Brand / header / footer / nav colours are no longer per-template.
+        // They are Theme tokens (--np-color-*) compiled into the public bundle
+        // via AssetBuildService, scoped .np-site (see _base.scss) — the
+        // session-297 relocation. No runtime inline colour <style> here.
 
         // Typography element CSS (per-breakpoint sizes + em rhythm) is compiled
         // into the public CSS bundle via AssetBuildService (see the build-server
@@ -120,24 +120,6 @@
                 ->implode('&');
             $googleFontsUrl = 'https://fonts.googleapis.com/css2?' . $families . '&display=swap';
         }
-
-        // Scoped header/nav colour rules — also applied to footer nav/icons for consistency
-        $headerBgColor  = $__tpl?->resolved('header_bg_color');
-        $footerBgColor  = $__tpl?->resolved('footer_bg_color');
-        $navLinkColor   = $__tpl?->resolved('nav_link_color');
-        $navHoverColor  = $__tpl?->resolved('nav_hover_color');
-        $navActiveColor = $__tpl?->resolved('nav_active_color');
-
-        $scopedRules = [];
-        if ($headerBgColor) $scopedRules[] = "header { background: {$headerBgColor}; }";
-        if ($footerBgColor) $scopedRules[] = "footer { background: {$footerBgColor}; }";
-        if ($navLinkColor) {
-            $scopedRules[] = "header nav a, footer nav a, footer .theme-toggle { color: {$navLinkColor}; }";
-        }
-        if ($navHoverColor) {
-            $scopedRules[] = "header nav a:hover, footer nav a:hover { color: {$navHoverColor}; }";
-        }
-        if ($navActiveColor) $scopedRules[] = 'header nav a[aria-current="page"] { color: ' . $navActiveColor . '; }';
     @endphp
 
     @if ($googleFontsUrl)
@@ -148,10 +130,6 @@
 
     @if ($cssVars)
         <style>:root { {!! implode('; ', $cssVars) !!}; }</style>
-    @endif
-
-    @if ($scopedRules)
-        <style>{!! implode(' ', $scopedRules) !!}</style>
     @endif
 
     {{-- Widget CSS/JS bundle from build server manifest --}}

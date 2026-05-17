@@ -78,12 +78,17 @@ it('emits secondary-dark CSS custom properties in the public bundle', function (
 });
 
 it('loads saved settings merged with defaults on mount', function () {
-    SiteSetting::create([
-        'key'   => 'button_styles',
-        'value' => json_encode(['primary' => ['bg_color' => '#333333']]),
-        'type'  => 'json',
-        'group' => 'design',
-    ]);
+    // updateOrCreate, not create: DatabaseSeeder (beforeEach) now seeds a
+    // baseline button_styles row via DesignSettingsSeeder, so a raw insert
+    // would hit the unique key. This owns the value for the test's purpose.
+    SiteSetting::updateOrCreate(
+        ['key' => 'button_styles'],
+        [
+            'value' => json_encode(['primary' => ['bg_color' => '#333333']]),
+            'type'  => 'json',
+            'group' => 'design',
+        ],
+    );
 
     $user = User::factory()->create();
     $user->assignRole('super_admin');

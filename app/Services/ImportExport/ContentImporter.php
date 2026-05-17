@@ -128,14 +128,10 @@ class ContentImporter
             return;
         }
 
+        // Colour keys from pre-297 export bundles are intentionally ignored —
+        // colour is now the site-wide Theme palette, not template-owned.
         $template->update([
-            'primary_color'    => $data['primary_color'] ?? null,
-            'header_bg_color'  => $data['header_bg_color'] ?? null,
-            'footer_bg_color'  => $data['footer_bg_color'] ?? null,
-            'nav_link_color'   => $data['nav_link_color'] ?? null,
-            'nav_hover_color'  => $data['nav_hover_color'] ?? null,
-            'nav_active_color' => $data['nav_active_color'] ?? null,
-            'custom_scss'      => $data['custom_scss'] ?? null,
+            'custom_scss' => $data['custom_scss'] ?? null,
         ]);
     }
 

@@ -42,20 +42,14 @@ class ListTemplates extends ListRecords
                             return;
                         }
 
-                        // Copy all inheritable fields from the default
+                        // Copy inheritable fields from the default. Colour is
+                        // no longer per-template (session-297 relocation) — it
+                        // lives in the site-wide Theme palette now.
                         $template = Template::create([
                             'name'             => $data['name'],
                             'type'             => 'page',
                             'description'      => $data['description'] ?? null,
                             'is_default'       => false,
-                            'primary_color'    => $default->primary_color,
-                            'heading_font'     => $default->heading_font,
-                            'body_font'        => $default->body_font,
-                            'header_bg_color'  => $default->header_bg_color,
-                            'footer_bg_color'  => $default->footer_bg_color,
-                            'nav_link_color'   => $default->nav_link_color,
-                            'nav_hover_color'  => $default->nav_hover_color,
-                            'nav_active_color' => $default->nav_active_color,
                             'custom_scss'      => $default->custom_scss,
                             'created_by'       => auth()->id(),
                         ]);

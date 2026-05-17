@@ -17,13 +17,11 @@ class TemplateSeeder extends Seeder
             ['name' => 'Default', 'type' => 'page'],
             [
                 'is_default'       => true,
-                'description'      => 'Default site template — colors, fonts, header, and footer.',
-                'primary_color'    => '#0172ad',
-                'header_bg_color'  => '#ffffff',
-                'footer_bg_color'  => '#ffffff',
-                'nav_link_color'   => '#373c44',
-                'nav_hover_color'  => '#0172ad',
-                'nav_active_color' => '#0172ad',
+                'description'      => 'Default site template — header and footer.',
+                // Colour is the site-wide Theme palette (session-297
+                // relocation): ColorTokenResolver::defaults() is byte-identical
+                // to the pre-297 seeded colours, so a fresh install needs no
+                // theme_colors row — the resolver defaults cover it.
                 'custom_scss'      => null,
                 'header_page_id'   => Page::where('slug', '_header')->value('id'),
                 'footer_page_id'   => Page::where('slug', '_footer')->value('id'),
