@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { composeExecArgs } from './stack.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,21 +21,21 @@ export const FAKE_SOURCE_LABELS = {
 let generated = false;
 
 export function generateFakeCsvs(seed?: number): string {
-    const args = ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'csv:generate-fake-imports'];
+    const cmd = ['php', 'artisan', 'csv:generate-fake-imports'];
     if (seed !== undefined) {
-        args.push(`--seed=${seed}`);
+        cmd.push(`--seed=${seed}`);
     }
-    execFileSync('docker', args, { cwd: PROJECT_ROOT, stdio: 'inherit' });
+    execFileSync('docker', composeExecArgs(cmd), { cwd: PROJECT_ROOT, stdio: 'inherit' });
     generated = true;
     return HOST_OUT_DIR;
 }
 
 export function seedFakeImportSources(force = true): void {
-    const args = ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'seed:fake-import-sources'];
+    const cmd = ['php', 'artisan', 'seed:fake-import-sources'];
     if (force) {
-        args.push('--force');
+        cmd.push('--force');
     }
-    execFileSync('docker', args, { cwd: PROJECT_ROOT, stdio: 'inherit' });
+    execFileSync('docker', composeExecArgs(cmd), { cwd: PROJECT_ROOT, stdio: 'inherit' });
 }
 
 export function primeFakeFixtures(seed?: number): void {

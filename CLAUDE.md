@@ -30,8 +30,8 @@ The forbidden cases above are also enforced mechanically by the pre-push hook at
 
 For scoped design / drift work (typography, colour/appearance, the build-pipeline / stale-bundle cluster), the inner-loop signal is the `design` Pest group, not the full fast suite:
 
-- **`./dev test:design`** → `php artisan test --group=design` — the reviewed typography + colour/appearance + build-pipeline/drift cluster. ~10× faster than the full fast suite; use it as the iterate-and-recheck signal during design work.
-- **`./dev test`** → `php artisan test --exclude-group=slow` — the full fast suite (the close-gate command).
+- **`./dev test:design`** → `php artisan test --parallel --group=design` — the reviewed typography + colour/appearance + build-pipeline/drift cluster. ~10× faster than the full fast suite; use it as the iterate-and-recheck signal during design work.
+- **`./dev test`** → `php artisan test --parallel --exclude-group=slow` — the full fast suite (the close-gate command). `--parallel` (paratest, session 299) runs the same ~2,460 tests across worker processes — ≈675s serial → ≈105s on an 8-core host, identical pass count. Per-process test databases are framework-managed; tests own their own filesystem/fixtures so order is independent of worker assignment.
 
 Group membership is pinned to an explicit reviewed list by `tests/Feature/DesignGroupIntegrityTest.php` — it fails if a `->group('design')` tag is added or dropped without updating that list. Editing the cluster means editing the list in the same reviewed pass. The scoped loop is an inner-loop accelerator only — it does not replace the full suite.
 

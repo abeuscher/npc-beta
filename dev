@@ -11,8 +11,10 @@
 #   ./dev build              (rebuild the app image)
 #   ./dev logs               (tail all service logs)
 #   ./dev fresh              (wipe and re-migrate the database)
-#   ./dev test               (fast suite — php artisan test --exclude-group=slow)
-#   ./dev test:design        (scoped inner loop — php artisan test --group=design)
+#   ./dev test               (fast suite — php artisan test --parallel --exclude-group=slow)
+#   ./dev test:design        (scoped inner loop — php artisan test --parallel --group=design)
+#   ./dev e2e:up             (start the isolated e2e stack — 8090/5442, throwaway DB)
+#   ./dev e2e:down           (stop + wipe the isolated e2e stack)
 
 CONTAINER="nonprofitcrm_app"
 
@@ -45,11 +47,18 @@ case "$1" in
         ;;
     test)
         shift
-        docker compose exec app php artisan test --exclude-group=slow "$@"
+        docker compose exec app php artisan test --parallel --exclude-group=slow "$@"
         ;;
     test:design)
         shift
-        docker compose exec app php artisan test --group=design "$@"
+        docker compose exec app php artisan test --parallel --group=design "$@"
+        ;;
+    e2e:up)
+        docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml up -d
+        docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan config:clear
+        ;;
+    e2e:down)
+        docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml down -v
         ;;
     *)
         docker compose exec app "$@"

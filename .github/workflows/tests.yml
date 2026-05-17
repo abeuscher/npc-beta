@@ -81,7 +81,7 @@ jobs:
           REDIS_PORT: 6379
 
       - name: Run fast suite (first signal)
-        run: php artisan test --exclude-group=slow
+        run: php artisan test --parallel --exclude-group=slow
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
@@ -171,13 +171,91 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
+  # Playwright e2e against the isolated stack (docker-compose.e2e.yml). Runs
+  # AFTER the Pest jobs (needs: slow) so Pest and Playwright never run
+  # concurrently within a single CI run — the same never-run-them-together
+  # rule that holds locally, honoured here too. This is the same faithful
+  # isolated stack used locally; the harness targets it purely via env, so no
+  # e2e spec or helper changes are CI-specific.
+  #
+  # NOT in the `tests` merge-gate `needs` yet: the e2e suite is observably
+  # flaky / not-green on the isolated stack (session-299 close finding) — a
+  # required check on a flaky suite would block every merge to main. This job
+  # runs and reports on every push (artifacts on failure) so the suite can be
+  # stabilised; promote it into `tests.needs` once it is reliably green.
+  playwright:
+    name: Playwright e2e (isolated stack)
+    needs: slow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Prepare .env for the isolated stack
+        run: |
+          cp .env.example .env
+          {
+            echo "APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            echo "DB_PASSWORD=postgres"
+            echo "ADMIN_EMAIL=admin@example.com"
+            echo "ADMIN_PASSWORD=password"
+            echo "ADMIN_NAME=Admin"
+            echo "UID=$(id -u)"
+            echo "GID=$(id -g)"
+          } >> .env
+
+      - name: Generate local TLS cert for nginx
+        run: bash bin/dev-certs.sh
+
+      - name: Bring up the isolated e2e stack
+        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml up -d --build
+
+      - name: Wait for the e2e site
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/admin/login || true)
+            if [ "$code" = "200" ]; then echo "e2e site ready after $((i*10))s"; exit 0; fi
+            sleep 10
+          done
+          echo "e2e site did not become ready in 600s" >&2
+          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=120
+          exit 1
+
+      - name: Install Node dependencies and Playwright chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright (chromium) against the isolated stack
+        run: npm run test:e2e:isolated -- --project=chromium
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Tear down the isolated stack
+        if: always()
+        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml down -v
+
   # Single stable status check for branch protection on `main`. Require the
-  # job named "Tests" (workflow "Tests") so a branch cannot merge unless both
-  # the fast and slow Pest suites passed. See sessions/298 close handoff.
+  # job named "Tests" (workflow "Tests") so a branch cannot merge unless the
+  # fast + slow Pest suites passed. Keep this job named exactly "Tests" —
+  # branch protection on main requires it. The Playwright e2e job runs on
+  # every push but is intentionally NOT in `needs` until its suite is stable
+  # (see the playwright job comment + sessions/298 + 299 close handoffs).
   tests:
     name: Tests
     needs: [fast, slow]
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate result
-        run: echo "Fast and slow Pest suites passed — full Pest coverage green."
+        run: echo "Fast + slow Pest suites passed — full Pest coverage green."

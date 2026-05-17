@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as dotenv from 'dotenv';
 import { parseCsv } from './fake-csv.js';
+import { composeExecArgs, pgConnectionConfig } from './stack.js';
 
 const { Client } = pg;
 
@@ -26,13 +27,7 @@ export type ContactRow = {
 };
 
 async function withClient<T>(fn: (client: InstanceType<typeof Client>) => Promise<T>): Promise<T> {
-    const client = new Client({
-        host: 'localhost',
-        port: 5432,
-        database: process.env.DB_DATABASE,
-        user: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-    });
+    const client = new Client(pgConnectionConfig());
 
     await client.connect();
     try {
@@ -323,7 +318,7 @@ export async function insertContactsFromCsv(csvPath: string): Promise<void> {
 export function resetDatabase(): void {
     execFileSync(
         'docker',
-        ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'migrate:fresh', '--seed'],
+        composeExecArgs(['php', 'artisan', 'migrate:fresh', '--seed']),
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
 }
@@ -418,7 +413,7 @@ export async function deleteDashboardWidget(widgetId: string): Promise<void> {
 export function cleanupImportSession(sessionId: string): void {
     execFileSync(
         'docker',
-        ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'importer:cleanup-session', sessionId],
+        composeExecArgs(['php', 'artisan', 'importer:cleanup-session', sessionId]),
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
 }
@@ -596,15 +591,7 @@ export async function createUserWithRole(
 ): Promise<string> {
     const hash = execFileSync(
         'docker',
-        [
-            'compose',
-            'exec',
-            '-T',
-            'app',
-            'php',
-            '-r',
-            `echo password_hash('${plainPassword}', PASSWORD_BCRYPT);`,
-        ],
+        composeExecArgs(['php', '-r', `echo password_hash('${plainPassword}', PASSWORD_BCRYPT);`]),
         { cwd: PROJECT_ROOT },
     )
         .toString()
@@ -688,7 +675,7 @@ export async function grantPermissionToUser(userId: string, permissionName: stri
 export function clearSiteSettingCache(): void {
     execFileSync(
         'docker',
-        ['compose', 'exec', '-T', 'app', 'php', 'artisan', 'cache:clear'],
+        composeExecArgs(['php', 'artisan', 'cache:clear']),
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
 }
