@@ -342,20 +342,20 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **artifact:** `StripeCheckoutService` extension + five wired call sites + CmsSettingsPage section + SetupChecklist item + help doc + widget-development.md addition + session-outlines.md forward note + 19 Pest tests. **Closed at session 283.**
 - **estimated time cost:** 1 session.
 
-#### E5. Mobile Type Scaling *(scoped small)*
+#### E5. Mobile Type Scaling ✅ *(closed at session 295)*
 
 - **gate:** release
 - **prerequisites:** none; must land before D2 (Rule 8)
-- **success criterion:** Typography stabilizes on narrow viewports without becoming a whack-a-mole exercise. The user-supplied design (per existing stub) — 3 size fields per element at lg/md/sm breakpoints, per-class calibration ramp default — is the *target* shape, but the session should keep scope tight: user-supplied per-breakpoint values via media queries, not custom breakpoint widths beyond the existing three.
-- **delivery (corrected mid-s295):** typography CSS compiles into the public bundle via `AssetBuildService` (appended in `collectSources()` next to the button overrides; rebuilt on save like `DesignSystemPage::save()` does for buttons). The pre-s295 runtime inline `<style>` in `public.blade.php` is retired — it was inconsistent with how every other DB-driven design surface delivers CSS. See the corrected "Mobile Type Scaling" stub note in `session-outlines.md`.
-- **estimated time cost:** 1 session (per the "scoped small" constraint; per Rule 11, extended slightly by the delivery-path correction — the original stub premise was wrong, not the ramp/migration work).
+- **success criterion** *(closed at session 295)*: Shipped. Per-breakpoint `font.size` `{xl,lg,md,sm}` (non-destructive `SiteSetting`-shape migration, byte-exact at `xl`), calibration-driven per-class ramp (display phone 0.60, Attio-leaning; body 1.0), unitless line-height that rides the size, em heading bottom-margin, `TypographyCompiler` `@media` emission, `DesignSystemPage` per-breakpoint fields, objective oracle (`scripts/type-oracle.js`) at 0 violations across 5 pages × 5 widths. **Mid-session the "scoped small" envelope broke (Rule 11):** the runtime inline-`<style>` delivery premise was found wrong and inconsistent with the app; typography delivery was moved into the build pipeline via `AssetBuildService` and `.np-site`-scoped (typography + buttons) to stop admin leak; the real margin bug (compiler int-truncating stored rem → px) was fixed; a misdiagnosed em-rhythm scheme was reverted; a stale-bundle-vs-config drift was discovered (→ forcing function for session 296). Fast Pest 2460/0. `VERSION` 0.295.1. See `sessions/295. … — Log.md`.
+- **artifact:** the resolver shape migration + ramp + oracle; the `.np-site`-scoped build-pipeline delivery of typography **and** buttons; corrected session canon docs. **Closed at session 295.** The broader theme/typography stabilization continues as the **Theme & Template Re-Taxonomy arc** (§ E6, superseded below).
+- **estimated time cost:** 1 session *(actual: 1 iteration of planned work + a same-session architectural correction that spawned the E6 re-taxonomy arc and the emergent session 296)*.
 
-#### E6. Theme Colors Refactor
+#### E6. Theme Colors Refactor — **superseded & absorbed by the Theme & Template Re-Taxonomy arc (sessions 297–299+, prompts/stub at session-295 close-prep)**
 
 - **gate:** release
-- **prerequisites:** none; should land before D2 (Rule 8)
-- **success criterion:** Per existing stub. Decide per-column placement of `primary_color` / `header_bg_color` / `footer_bg_color` / `nav_*_color` between theme (`SiteSetting`) and template; migrate accordingly.
-- **estimated time cost:** 1 session.
+- **prerequisites:** none; should land before D2 (Rule 8) — the arc inherits this. Arc-internal prerequisite: **session 296** (post-incident drift guard) lands first.
+- **success criterion:** Reframed at session-295 close-prep. The narrow "move the colour columns to `SiteSetting`, 1 session, scoped small" framing was found insufficient by an IA audit — it relocated storage without fixing the conceptual model (there is no colour *system*; brand colour is mis-filed under "Template"; "Theme" can't set colour). E6 is now the **relocation slice of session 297**, the first session of the Theme/Template Re-Taxonomy arc. **Canonical scope/design: the "Theme & Template Re-Taxonomy" stub in `sessions/session-outlines.md`** (full conceptual model + per-session breakdown). Session 297 prompts are written (`sessions/297. *`).
+- **estimated time cost:** **3 sessions, possibly 4** (297 foundation · 298 widget-consumption audit — the risk, may split per Rule 11, needs a widget-hardcoding survey to size · 299 schemes+chrome+shared-resolver · optional naming/IA polish tail). Per Rule 11 the arc may extend if 298's surface is wide.
 
 #### E7. Column-Layout Mobile Collapse ✅
 
@@ -639,8 +639,8 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 
 33. **E4.** Stripe Checkout Branding *(closed at session 283; shared helper already lifted at audit start so the work was extension not lifting; five call sites wired with per-flow `submit_type` + per-record / per-flow images; CmsSettingsPage Branding section + SetupChecklist item + operator help doc + widget-dev-doc integration section; ten new SiteSetting keys; deploy-server tested with live Stripe; fast Pest 2390 / 0 sequential, +19; session also lifted the Public Marketing Website track mid-session per the 4-phase plan in `sessions/tracks/public-marketing-website.md`)* ✅
 34. **Public Marketing Website track** — ✅ **fully closed at session 293.** Five-page CMS-built marketing site (Home / About / Pricing / Contact / Demo) + the page-capture harness + gap report + `build-summary.md`, all dogfooded inside the product's own page builder. Ran PMW1 (284) → 285–293 (CMS fixes, per-page layout rebuilds, the `pricing_chart` widget, form-submission notifications, the Demo page, the screenshot harness + close). CRM contract stayed v2.3.0 throughout. Per-phase detail lives in `sessions/tracks/public-marketing-website.md` Phase Retrospectives + the session logs; the durable close-out is `sessions/public website/build-summary.md`. Open gap rows and milestone-close gates (Privacy/Terms pages, real photography, Demo copy/hookup, FM shared-contract arc, the real mailto) are now per-item user lift decisions, no longer track-owned.
-35. **E5.** Mobile Type Scaling — **session 295** *(split out of E7's 294 pass — typography-schema migration + compiler change, not an autonomous-CSS loop; stub refreshed at 294 scoping with a calibration-derived per-class ramp)*
-36. **E6.** Theme Colors Refactor *(precedes D2 per Rule 8 — slots pre-milestone; informed by PMW1 audit)*
+35. **E5.** Mobile Type Scaling ✅ *(closed at session 295 — per-breakpoint ramp + oracle shipped; the "scoped small" envelope broke per Rule 11 into a build-pipeline/`.np-site` delivery correction that spawned the E6 re-taxonomy arc + emergent session 296)*
+36. **E6.** Theme Colors Refactor → **superseded by the Theme & Template Re-Taxonomy arc, sessions 297–299+** *(precedes D2 per Rule 8; arc runs after the emergent session 296 drift-guard audit; canonical design in the `session-outlines.md` "Theme & Template Re-Taxonomy" stub; 297 prompts written)*
 37. **E7.** Column-Layout Mobile Collapse ✅ *(closed at session 294 — run early, merged with the Swiper mobile blanket + global overflow guards as one Playwright-verified pass; E5 split out to 295)*
 38. **E8.** UI/UX Sprint
 39–41. **Public Marketing Website (per-page sessions 285–291, Demo 292, harness + track close 293)** — ✅ folded into the collapsed track entry at position 34; **track fully closed at session 293**. (Slot numbers retained; positions are execution-order, not session numbers.)
