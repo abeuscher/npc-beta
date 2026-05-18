@@ -396,6 +396,27 @@ it('serves an export artifact only to update_page holders', function () {
     $this->actingAs(s303Author())->get($bad)->assertNotFound();
 });
 
+// ── notifications.data is json (Filament bell Postgres query) ───────────────
+
+it('lets Filament query the notification bell with the Postgres json operator', function () {
+    $user = s303Author();
+
+    \Filament\Notifications\Notification::make()
+        ->title('Bell check')
+        ->success()
+        ->sendToDatabase($user);
+
+    // The exact operator Filament's database-notifications component uses;
+    // throws on a text column, works on json.
+    $row = DB::table('notifications')
+        ->where('notifiable_type', $user->getMorphClass())
+        ->where('notifiable_id', $user->id)
+        ->whereRaw("data->>'format' = ?", ['filament'])
+        ->first();
+
+    expect($row)->not->toBeNull();
+});
+
 // ── Phase 2: ID-preserving media seed ───────────────────────────────────────
 
 /**

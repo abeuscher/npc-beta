@@ -22,7 +22,9 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('type');
             $table->morphs('notifiable');
-            $table->text('data');
+            // json (not the Laravel-stock text) so Filament's notification
+            // bell query — `data->>'format' = 'filament'` — works on Postgres.
+            $table->json('data');
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
