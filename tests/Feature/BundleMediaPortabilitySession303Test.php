@@ -19,6 +19,7 @@ use App\Services\ImportExport\ContentImporter;
 use App\Services\ImportExport\ImportLog;
 use App\Services\ImportExport\InvalidImportBundleException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -394,6 +395,34 @@ it('serves an export artifact only to update_page holders', function () {
 
     $bad = route('filament.admin.exports.bundle.download', ['token' => 'not-a-uuid']);
     $this->actingAs(s303Author())->get($bad)->assertNotFound();
+});
+
+// ── User repro: editor colour round-trip through the real save path ─────────
+
+it('reverts an imported colour through the real editor save path and reload', function () {
+    $admin = User::factory()->create();
+    $admin->givePermissionTo('manage_cms_settings');
+    $this->actingAs($admin);
+
+    Livewire::test(DesignSystemPage::class)
+        ->set('colorsData.theme_colors.brand', '#aaaaaa')
+        ->call('saveColors');
+    expect(ColorTokenResolver::load()['brand'])->toBe('#aaaaaa');
+
+    $bundle = app(ContentExporter::class)->exportDesign();
+    expect($bundle['payload']['design']['theme_colors']['brand'])->toBe('#aaaaaa');
+
+    Livewire::test(DesignSystemPage::class)
+        ->set('colorsData.theme_colors.brand', '#bbbbbb')
+        ->call('saveColors');
+    expect(ColorTokenResolver::load()['brand'])->toBe('#bbbbbb');
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+    expect(ColorTokenResolver::load()['brand'])->toBe('#aaaaaa');
+
+    // Fresh page load must show the reverted colour.
+    Livewire::test(DesignSystemPage::class)
+        ->assertSet('colorsData.theme_colors.brand', '#aaaaaa');
 });
 
 // ── notifications.data is json (Filament bell Postgres query) ───────────────
