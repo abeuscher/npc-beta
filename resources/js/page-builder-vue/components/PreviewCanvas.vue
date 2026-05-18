@@ -313,6 +313,8 @@ watch(
           item-key="id"
           :animation="200"
           :fallback-on-body="true"
+          :force-fallback="true"
+          fallback-class="preview-region--drag-fallback"
           :swap-threshold="0.65"
           ghost-class="preview-region--ghost"
           handle=".preview-region__handle, .layout-region__handle"

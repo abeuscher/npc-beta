@@ -247,7 +247,31 @@ function handleEdit() {
 </style>
 
 <style>
+/* In-list drop placeholder. Clamped to a slim bar so a tall/full-width
+   widget's ghost threads into a narrow column slot instead of ballooning
+   the slot and shoving the layout block ("shuffle"). */
 .preview-region--ghost {
   opacity: 0.4;
+  max-height: 4.5rem;
+  overflow: hidden;
+  outline: 2px dashed var(--c-primary-500, #6366f1);
+  outline-offset: -2px;
+}
+
+/* Compact drag proxy. forceFallback gives SortableJS a DOM clone (appended
+   to <body>) that we can shrink — the browser's native drag snapshot can't
+   be styled. `zoom` is used instead of `transform: scale()` because
+   SortableJS writes an inline `transform` on the clone every pointer move,
+   which would clobber a CSS scale. The max-height cap keeps even a very
+   tall full-width widget down to a wieldable card. */
+.preview-region--drag-fallback {
+  zoom: 0.5;
+  max-height: 22rem;
+  overflow: hidden;
+  opacity: 0.9;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  background: #fff;
 }
 </style>
