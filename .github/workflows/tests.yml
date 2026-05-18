@@ -223,8 +223,11 @@ jobs:
       - name: Generate local TLS cert for nginx
         run: bash bin/dev-certs.sh
 
+      # --wait blocks until the postgres healthcheck (pg_isready) passes, so
+      # the DB-independent /up gate and the migrate:fresh step below can't
+      # race Postgres startup ("Connection refused").
       - name: Bring up the isolated e2e stack
-        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml up -d --build
+        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml up -d --build --wait
 
       - name: Wait for the e2e site
         run: |
