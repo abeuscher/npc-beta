@@ -309,7 +309,13 @@ All three want to land together because they share a shape: the data model gradu
 
 ---
 
-### Theme + Media Portability *(stub — pre-Beta 1; one combined session pairing two drafted slices; post-301; non-boundary v2.3.0; may split per Rule 11)*
+### Theme + Media Portability *(✅ RESOLVED — closed at session 303)*
+
+Shipped at session 303 — **both halves, both phases, one iteration, no Rule-11 split, nothing carried forward.** (A) `ContentExporter::exportDesign()` → `payload.design` + a deep-merge-over-defaults import pass that never sweeps (295 lesson) + `AssetBuildService::build()` trigger + a Theme-page Export/Import pair. (B) Phase 1: `BundleArchive` zip primitive (zip-slip + zip-bomb guards) + `ContentImporter` zip-vs-JSON detection + archive-first media resolution + queued export→stored-artifact→bell→gated-download + queued zip/JSON import (sync fallback removed) + sibling zip actions at the six content call sites; Phase 2: `exportMedia()`/`exportAllMedia()` → `payload.media` + posture-B explicit-id `importMedia()` (file at `{id}/{file_name}`, `media_id_seq` reset, collision skip-identical / warn-and-skip-divergent, orphan-owner parking, queued conversion regen) + Media Library export/import actions. `FORMAT_VERSION` stayed `1.1.0`; non-boundary v2.3.0; the one approved scope addition was the standard Laravel `notifications` table + Filament bell (decision #5's mandated delivery surface). The session-301 `scheme`/`no_header`/`no_footer` carry-through was confirmed intact (not rebuilt). Detail: `sessions/303. … — Log.md`. The (B) design source `sessions/media-portability-prompt-draft.md` is now spent (kept for provenance).
+
+The original stub text — preserved for reference:
+
+---
 
 **Origin.** Surfaced at 300/301 planning when the user asked how hard theme export/import would be. Answer: cheap — "the theme" is already JSON. Two portability slices pair naturally into one session because both make the *working → demo* round-trip whole:
 
@@ -319,6 +325,12 @@ All three want to land together because they share a shape: the data model gradu
 **Not to be confused with two adjacent things:** (1) the arc's optional naming/IA polish tail (point 4 above) — different work; (2) the **mandatory** carry-through of 301's new `templates` scheme/chrome columns through `ContentExporter`/`ContentImporter` — that is a correctness obligation handled *inside 301* (template export/import must not silently drop the new fields), **not** this feature.
 
 **Sizing.** (B) is the larger half (drafted as a 2-phase session of its own); (A) is a few-hours rider that becomes trivial once it can ride (B)'s zip envelope. Combined session may split per Rule 11 along the drafted (B) phase line with (A) folded into whichever phase carries the envelope work. Non-boundary; CRM stays v2.3.0.
+
+---
+
+### Media Path Generator — UUID Shape *(stub — post-Beta 1; out-of-scope offshoot of session 303)*
+
+The eventual robust posture-B shape: switch Spatie's `DefaultPathGenerator` from `{media.id}/{file_name}` to a UUID path generator (`{media.uuid}/{file_name}`), so portable media no longer depends on preserving the bigint `media.id` across installs. Session 303 deliberately delivered posture B via explicit-id preservation only — the UUID-path switch is a global change touching every existing media file on disk + a one-time relocation migration, explicitly out of 303's scope. Flagged here as the cleaner long-term form; not scheduled.
 
 ---
 

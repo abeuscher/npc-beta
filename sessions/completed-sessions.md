@@ -304,6 +304,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 300 | Widget Color-Token Consumption Audit & Migration — 39 widget-SCSS hex/$color-* lines → var(--np-color-*) + no-hardcoded-colour Pest guard |
 | 301 | Schemes, Template Page-Shell & Chrome, Shared Resolver — Default/Inverse content scheme + per-template selector + header/footer suppression + single shared public↔preview resolver + content-region bg/text gap closed |
 | 302 | Naming & IA Polish — Re-Taxonomy Tail (arc-closing) — CMS-Settings → "Site Settings"; snippets section split into "Site Icon & Social Image" + "Custom Code Snippets"; Stripe-checkout branding relocated to FinanceSettingsPage; page-vs-content template IA clarity; theme-color-tokens doc consolidated; § E6 fully retired / Theme & Template Re-Taxonomy arc complete |
+| 303 | Theme + Media Portability — self-contained content+media zip bundle (BundleArchive + archive-first import, zip-slip/bomb guards); queued export→stored-artifact→bell→gated-download + queued zip/JSON import (sync fallback removed); theme/design export-import (payload.design, deep-merge-not-sweep, build trigger, Theme-page pair); ID-preserving media seed (payload.media, explicit-id insert, media_id_seq reset, collision/orphan policy, queued conversion regen) + Media Library export/import; standard `notifications` table + Filament bell (user-approved infra); FORMAT_VERSION unchanged at 1.1.0, v2.3.0, both halves/phases in one iteration |
 
 ---
 
