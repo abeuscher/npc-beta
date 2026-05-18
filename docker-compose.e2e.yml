@@ -36,6 +36,7 @@ services:
       - .:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
       - app_node_modules_e2e:/var/www/html/node_modules
+      - app_vendor_e2e:/var/www/html/vendor
     depends_on:
       - postgres
       - redis
@@ -84,6 +85,7 @@ services:
     volumes:
       - .:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - app_vendor_e2e:/var/www/html/vendor
     depends_on:
       - postgres
       - redis
@@ -99,3 +101,4 @@ volumes:
   postgres_data_e2e:
   redis_data_e2e:
   app_node_modules_e2e:
+  app_vendor_e2e:
