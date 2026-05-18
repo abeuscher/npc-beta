@@ -376,9 +376,20 @@ Items that didn't make Batch 1's working set — either scope-flagged (might exc
 
 ---
 
-### UI / UX Sprint *(stub — pre-Beta 1)*
+### Page Builder Inline Editing *(arc — pre-Beta 1; critical-path, Beta-1-blocking; supersedes the retired "UI / UX Sprint" stub; A=304 / B=305; non-boundary v2.3.0; no schema; may split per Rule 11)*
 
-Batched UI/UX improvements that don't justify a dedicated session each but together earn one. Distinct from Housekeeping in that the items are explicitly authoring-ergonomics rather than visual polish or audits — they shape how it feels to use the admin tools, not how the surface looks.
+Lifted ahead of the rest of the execution order at session-303 close (occupies the retired § E8 slot, position 38). Emergent forcing function: beta testers cannot author pages effectively with the current select-the-whole-panel + Inspector-only model. Grounded in two research passes (architecture + feature history) + a validated 40-widget safety pass — all folded into the session prompts as canonical (do not re-derive). Inline editing existed at session 137 (Livewire) and was lost by attrition in the 147–152 Vue rewrite; this is the fresh, stronger redo on the single `WidgetRenderer` render path — **not** the old 135–140 builder-vision (a non-starter). Drafted by external planning agents (2026-05-17), rescued from `claude/investigate-stale-stylesheet-ANZJt` and scheduled at session-303 close. Deliberate two-session split:
+
+- **Session A — 304: Inline Editing Foundation.** Interaction-model rework (real top-left hover-in drag handle; explicit top-right "Edit" affordance opening the Inspector; whole-panel selection removed); in-page contenteditable text editing on a safe widget set behind a **code-declared, per-node, opt-in capability gate** (`data-config-key`/`data-config-type` path annotations; never schema-derived; validated Tier-B exempt set + regression guard); a selection-scoped progressive-disclosure discoverability spec; and collapse of the column/repeater Inspector control to structure-only (PricingChart the canonical nested stress test). Independently shippable; hard prerequisite for B. Settled decisions (do not relitigate): capability-gate location = widget code, no migration; formatting stays in the Inspector as a documented interim for B.
+- **Session B — 305: Inline Formatting Toolbar & Builder↔Public Parity.** Replace A's interim with a **single shared custom Vue formatting toolbar driven by the Quill public API** (Quill retained, built-in toolbar disabled; three named constraints — C1 selection preservation, C2 one app-level toolbar bound to the active editor, C3 font registration); remove rich-text formatting from the Inspector; add standing builder-preview ↔ public-render appearance-parity tests (coordinate with the session-296 stale-stylesheet drift guard, complementary); widen the eligibility gate to the remaining safe widgets. Hard-depends on A; terminal for the split.
+
+Canonical: `sessions/304. *` / `sessions/305. *` (base + session prompts) and `release-plan.md`'s retired-§ E8 entry. Non-boundary; CRM stays v2.3.0; no DB schema (the gate is declared in widget code).
+
+---
+
+### UI / UX Sprint *(stub — RETIRED at session-303 close; superseded by the Page Builder Inline Editing arc above)*
+
+**Retired.** The two batched items were band-aids on the form-based / fixed-editor authoring model the inline-editing arc replaces: the Quill height handle solved "the fixed side editor is too small" (moot once you edit text at rendered height in place), and the page-builder full-screen toggle's premise is undercut by the inline/iframe model and was already substantially covered by session 156's admin-wide topbar fullscreen toggle. Not run as § E8; the slot is now the inline-editing arc (A=304 / B=305). Original stub text — preserved for reference:
 
 - **Page builder full-screen toggle.** Add a toggle that maximizes the page-builder canvas + inspector to the full viewport, hiding the Filament admin chrome (sidebar, top bar, breadcrumbs) for the duration. Persists per-user via localStorage. Exit returns to the previous chrome state.
 - **Adjustable height handle on the Quill editor.** The rich-text editor renders at a fixed height today; long content forces the wrapping page to scroll while the editor's internal area stays small. Add a drag-resize handle on the bottom edge so admins can grow the editor to whatever height fits the content they're authoring. Persisted height per-user via localStorage is fine — no schema change.
