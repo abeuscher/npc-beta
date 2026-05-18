@@ -253,6 +253,23 @@ jobs:
       - name: Migrate + seed the e2e database
         run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan migrate:fresh --seed --force
 
+      # TEMPORARY diagnostic (session 304): the e2e suite aborts in
+      # Playwright globalSetup because /admin/login serves no email field.
+      # Capture ground truth — HTTP status, body, Laravel error — since
+      # there is no faithful local repro (dev + e2e share the bind-mounted
+      # .env). Remove once the root cause is fixed.
+      - name: Diagnose /admin/login (temporary)
+        run: |
+          echo "--- GET /admin/login ---"
+          curl -sS -o /tmp/login.html -D /tmp/login.hdr -w 'http_code=%{http_code}\n' http://localhost:8090/admin/login || true
+          echo "--- response headers ---"; cat /tmp/login.hdr || true
+          echo "--- has email input? ---"; grep -Eo 'type="?email"?' /tmp/login.html | head -1 || echo "NONE"
+          echo "--- body (first 3000 bytes) ---"; head -c 3000 /tmp/login.html || true; echo
+          echo "--- app container logs (tail) ---"
+          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs app --tail=150 || true
+          echo "--- laravel.log (tail) ---"
+          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app sh -c 'tail -c 6000 storage/logs/laravel.log 2>/dev/null' || true
+
       - name: Run Playwright (chromium) against the isolated stack
         run: npm run test:e2e:isolated -- --project=chromium
 
