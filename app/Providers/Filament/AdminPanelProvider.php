@@ -173,6 +173,26 @@ class AdminPanelProvider extends PanelProvider
                 ($hasLogo ? '<img src="' . e($logoSrc) . '">' : '') .
                 '<h1>' . e($brandName) . '</h1>'
             ))
+            // Make the notification-bell unread count unmissable: solid red
+            // pill, white text, no ring (session 303 — operators were missing
+            // queued export/import completion alerts).
+            ->renderHook(
+                'panels::head.end',
+                fn (): HtmlString => new HtmlString(
+                    '<style>.fi-topbar-database-notifications-btn .fi-badge{' .
+                    'background-color:#dc2626!important;color:#fff!important;' .
+                    '--tw-ring-color:transparent!important;box-shadow:none!important;' .
+                    'font-weight:700!important;transform-origin:center;' .
+                    'animation:np-bell-pulse 10s ease-in-out infinite;}' .
+                    '@keyframes np-bell-pulse{' .
+                    '0%,8%,100%{transform:scale(1)}' .
+                    '2%{transform:scale(1.1)}4%{transform:scale(1)}' .
+                    '6%{transform:scale(1.1)}}' .
+                    '@media (prefers-reduced-motion:reduce){' .
+                    '.fi-topbar-database-notifications-btn .fi-badge{animation:none!important}}' .
+                    '</style>'
+                )
+            )
             // Admin Alpine components — helpSearch, buttonPreview, fullscreenToggle,
             // widgetPickerModal, permissionTable, quillEditor, customSelect.
             ->renderHook(

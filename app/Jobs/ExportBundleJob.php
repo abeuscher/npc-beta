@@ -64,8 +64,8 @@ class ExportBundleJob implements ShouldQueue
             );
 
             Notification::make()
-                ->title('Export ready')
-                ->body("Your bundle “{$friendly}” is ready to download.")
+                ->title("{$friendly} — Export ready")
+                ->body('Ready to download.')
                 ->success()
                 ->actions([
                     Action::make('download')
