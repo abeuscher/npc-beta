@@ -1,7 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { resetAndLogin } from '../helpers/auth.js';
 import {
     cleanCsvPath,
@@ -11,12 +8,11 @@ import {
     tempCsvPath,
     writeCsv,
 } from '../helpers/fake-csv.js';
-import { driveDonationsHappyPath } from '../helpers/wizard.js';
-import { cleanupAllImportSessionsOfType, deleteContactsByEmails } from '../helpers/db.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../../..');
+import {
+    cleanupAllImportSessionsOfType,
+    deleteContactsByEmails,
+    insertDuplicateContactsByEmail,
+} from '../helpers/db.js';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -24,7 +20,13 @@ test.describe('Donations importer — error report edge case', () => {
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
         primeFakeFixtures(4203);
-        insertAmbiguousContacts();
+        await insertDuplicateContactsByEmail([
+            'ambig1@example.com',
+            'ambig2@example.com',
+            'ambig3@example.com',
+            'ambig4@example.com',
+            'ambig5@example.com',
+        ]);
     });
 
     test.afterAll(async () => {
@@ -113,28 +115,4 @@ async function driveDonationsHappyPathUntilAwaiting(
     await expect(page.getByTestId('import-commit-button')).toBeVisible();
 
     await page.getByTestId('import-commit-button').click();
-}
-
-function insertAmbiguousContacts(): void {
-    const sql = `
-        INSERT INTO contacts (id, email, source, country, household_id, created_at, updated_at)
-        SELECT gen_random_uuid(), email, 'manual', 'US', NULL, NOW(), NOW()
-        FROM (VALUES
-            ('ambig1@example.com'),
-            ('ambig1@example.com'),
-            ('ambig2@example.com'),
-            ('ambig2@example.com'),
-            ('ambig3@example.com'),
-            ('ambig3@example.com'),
-            ('ambig4@example.com'),
-            ('ambig4@example.com'),
-            ('ambig5@example.com'),
-            ('ambig5@example.com')
-        ) AS t(email);
-    `;
-    execFileSync(
-        'docker',
-        ['compose', 'exec', '-T', 'postgres', 'psql', '-U', process.env.DB_USERNAME ?? 'nonprofitcrm', '-d', process.env.DB_DATABASE ?? 'nonprofitcrm', '-c', sql],
-        { cwd: PROJECT_ROOT, stdio: 'inherit' },
-    );
 }

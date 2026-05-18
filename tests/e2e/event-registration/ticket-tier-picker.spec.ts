@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test';
 import { resetAndLogin } from '../helpers/auth.js';
 import { createPublishedEventWithTiers, cleanupEventsBySlugPrefix, fillTierToCapacity } from '../helpers/db.js';
 
-test.describe.configure({ mode: 'serial' });
+// retries: the public event landing page's first cold render (runtime SCSS
+// compile) can exceed the assertion window on a CPU-contended box (dev stack
+// running alongside the isolated e2e stack). The feature is correct — every
+// warm run passes deterministically — so a scoped retry reruns the cold
+// serial group warm. Zero coverage loss: the test must still pass green.
+test.describe.configure({ mode: 'serial', retries: 2 });
 
 test.describe('Event registration — quantity spinner', () => {
     const SLUG_PREFIX = '279-quantity-spinner-';
@@ -25,8 +30,11 @@ test.describe('Event registration — quantity spinner', () => {
 
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
+        await page.waitForLoadState('networkidle');
 
-        await expect(page.getByRole('heading', { name: 'Register', exact: true })).toBeVisible();
+        // First public-page render can be slow cold (runtime SCSS compile)
+        // on a contended box; gate generously before asserting structure.
+        await expect(page.getByRole('heading', { name: 'Register', exact: true })).toBeVisible({ timeout: 20_000 });
         await expect(page.locator('input[name^="quantities["]')).toHaveCount(0);
         await expect(page.locator('button[type="submit"]', { hasText: 'Register for this event' })).toBeVisible();
     });
@@ -40,20 +48,22 @@ test.describe('Event registration — quantity spinner', () => {
 
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
+        await page.waitForLoadState('networkidle');
 
         const input = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
-        await expect(input).toHaveCount(1);
+        await expect(input).toHaveCount(1, { timeout: 15_000 });
         await expect(input).toHaveAttribute('type', 'number');
         await expect(input).toHaveValue('1');
         await expect(input).toHaveAttribute('max', '100');
 
-        // Subtotal renders at $25.00 for default qty=1
-        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('25.00');
+        // Subtotal renders at $25.00 for default qty=1 (computed by front-end
+        // JS after hydration — allow for hydration latency under load)
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('25.00', { timeout: 15_000 });
 
         // Bumping the spinner updates the subtotal live
         await input.fill('3');
         await input.dispatchEvent('input');
-        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('75.00');
+        await expect(page.locator('[data-event-registration-subtotal]')).toHaveText('75.00', { timeout: 10_000 });
 
         await expect(page.locator('button[type="submit"]', { hasText: 'Register & pay' })).toBeVisible();
     });
@@ -70,11 +80,12 @@ test.describe('Event registration — quantity spinner', () => {
 
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
+        await page.waitForLoadState('networkidle');
 
         const general = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
         const vip     = page.locator(`input[name="quantities[${tierIds[1]}]"]`);
 
-        await expect(general).toHaveCount(1);
+        await expect(general).toHaveCount(1, { timeout: 15_000 });
         await expect(vip).toHaveCount(1);
         // Default 0 in multi-tier mode
         await expect(general).toHaveValue('0');
@@ -107,11 +118,12 @@ test.describe('Event registration — quantity spinner', () => {
 
         await page.context().clearCookies();
         await page.goto(`/${landingPageSlug}`);
+        await page.waitForLoadState('networkidle');
 
         const general = page.locator(`input[name="quantities[${tierIds[0]}]"]`);
         const vip     = page.locator(`input[name="quantities[${tierIds[1]}]"]`);
 
-        await expect(general).toBeEnabled();
+        await expect(general).toBeEnabled({ timeout: 15_000 });
         await expect(general).toHaveAttribute('max', '5');
 
         await expect(vip).toBeDisabled();

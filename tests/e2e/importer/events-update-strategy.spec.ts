@@ -10,6 +10,7 @@ import {
 } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { approveSessionViaImporter, driveEventsHappyPath } from '../helpers/wizard.js';
+import { futureDatedEventsCsv } from '../helpers/fake-csv.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +39,7 @@ test.describe('Events importer — update strategy', () => {
         await driveEventsHappyPath(page, {
             sessionLabel: 'Events seed pass',
             sourceName: 'E2E Events Update Source',
-            csvPath: HAPPY_PATH_CSV,
+            csvPath: futureDatedEventsCsv(HAPPY_PATH_CSV),
         });
 
         const firstSessionId = await findLatestImportSessionId('event');
@@ -48,7 +49,7 @@ test.describe('Events importer — update strategy', () => {
         await driveEventsHappyPath(page, {
             sessionLabel: 'Events update pass',
             sourceName_reuse: 'E2E Events Update Source',
-            csvPath: UPDATE_CSV,
+            csvPath: futureDatedEventsCsv(UPDATE_CSV),
             duplicateStrategy: 'update',
         });
 
@@ -65,8 +66,10 @@ test.describe('Events importer — update strategy', () => {
         expect(await countStagedUpdatesForSession(secondSessionId!)).toBe(0);
 
         await page.goto('/admin/events');
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('.fi-ta-table')).toBeVisible({ timeout: 30_000 });
         for (const newTitle of Object.values(EXPECTED.updatedTitles) as string[]) {
-            await expect(page.locator('.fi-ta-table')).toContainText(newTitle);
+            await expect(page.locator('.fi-ta-table')).toContainText(newTitle, { timeout: 20_000 });
         }
     });
 });

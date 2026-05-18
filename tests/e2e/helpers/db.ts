@@ -432,6 +432,23 @@ export async function cleanupAllImportSessionsOfType(modelType: string): Promise
     }
 }
 
+export async function insertDuplicateContactsByEmail(emails: string[], copies = 2): Promise<void> {
+    if (emails.length === 0) return;
+    const expanded: string[] = [];
+    for (const email of emails) {
+        for (let i = 0; i < copies; i++) expanded.push(email);
+    }
+    await withClient(async (client) => {
+        const placeholders = expanded.map((_, i) => `($${i + 1})`).join(', ');
+        await client.query(
+            `INSERT INTO contacts (id, email, source, country, household_id, created_at, updated_at)
+             SELECT gen_random_uuid(), email, 'manual', 'US', NULL, NOW(), NOW()
+             FROM (VALUES ${placeholders}) AS t(email)`,
+            expanded,
+        );
+    });
+}
+
 export async function deleteContactsByEmails(emails: string[]): Promise<void> {
     if (emails.length === 0) return;
     await withClient(async (client) => {

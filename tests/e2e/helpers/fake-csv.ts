@@ -84,6 +84,48 @@ export function tempCsvPath(name: string): string {
     return path.join(dir, `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.csv`);
 }
 
+// Rewrites the Start/End Date columns of an events fixture CSV to dates
+// relative to *now* (row N → now + 30*(N+1) days), preserving each row's
+// original clock time and start→end duration. The admin events list only
+// shows upcoming events (Event::scopeUpcoming → starts_at >= now()), so
+// hard-coded fixture dates silently rot into the past and vanish from the
+// list. Offsets are deterministic by row order, so the same Event ID gets
+// the same dates across happy-path and update-second-pass — the update
+// re-import then differs only by title, as the spec intends.
+export function futureDatedEventsCsv(srcPath: string): string {
+    const { headers, rows } = parseCsv(srcPath);
+    const sIdx = headers.indexOf('Start Date');
+    const eIdx = headers.indexOf('End Date');
+    if (sIdx < 0 || eIdx < 0) {
+        throw new Error(`futureDatedEventsCsv: "Start Date"/"End Date" columns not found in ${srcPath}`);
+    }
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const fmt = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+        `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+    const out = rows.map((row, i) => {
+        const copy = [...row];
+        const start = new Date(row[sIdx].replace(' ', 'T'));
+        const end = new Date(row[eIdx].replace(' ', 'T'));
+        const durationMs = Math.max(0, end.getTime() - start.getTime());
+
+        const newStart = new Date();
+        newStart.setDate(newStart.getDate() + (i + 1) * 30);
+        newStart.setHours(start.getHours(), start.getMinutes(), start.getSeconds(), 0);
+        const newEnd = new Date(newStart.getTime() + durationMs);
+
+        copy[sIdx] = fmt(newStart);
+        copy[eIdx] = fmt(newEnd);
+        return copy;
+    });
+
+    const dest = tempCsvPath(`${path.basename(srcPath, '.csv')}-future`);
+    writeCsv(dest, headers, out);
+    return dest;
+}
+
 function csvEscape(value: string | null | undefined): string {
     if (value === null || value === undefined) return '';
     const s = String(value);

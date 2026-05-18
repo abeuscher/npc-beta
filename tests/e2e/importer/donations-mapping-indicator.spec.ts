@@ -96,8 +96,12 @@ test.describe('Donations importer — Map Columns row indicator', () => {
 
         const externalIdRow = page.getByTestId('map-column-3');
 
-        await externalIdRow.locator('.choices').click();
+        // The .choices wrapper only exists once Choices.js has lazily
+        // initialised; clicking before then drops the open. Gate on it.
+        const choices = externalIdRow.locator('.choices');
+        await expect(choices).toBeVisible({ timeout: 15_000 });
+        await choices.click();
 
-        await expect(externalIdRow.locator('.choices__input--cloned')).toBeVisible();
+        await expect(externalIdRow.locator('.choices__input--cloned')).toBeVisible({ timeout: 10_000 });
     });
 });

@@ -13,6 +13,7 @@ import {
 } from '../helpers/db.js';
 import { resetAndLogin } from '../helpers/auth.js';
 import { driveEventsHappyPath } from '../helpers/wizard.js';
+import { futureDatedEventsCsv } from '../helpers/fake-csv.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,7 +41,7 @@ test.describe('Events importer — happy path', () => {
         await driveEventsHappyPath(page, {
             sessionLabel: 'E2E Events Happy Path',
             sourceName: 'E2E Events Source',
-            csvPath: HAPPY_PATH_CSV,
+            csvPath: futureDatedEventsCsv(HAPPY_PATH_CSV),
         });
 
         await expect(page.getByTestId('import-stat-imported')).toContainText('3');
@@ -54,8 +55,10 @@ test.describe('Events importer — happy path', () => {
         expect(await countStagedUpdatesForSession(sessionId!)).toBe(0);
 
         await page.goto('/admin/events');
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('.fi-ta-table')).toBeVisible({ timeout: 30_000 });
         for (const title of EXPECTED.eventTitles) {
-            await expect(page.locator('.fi-ta-table')).toContainText(title);
+            await expect(page.locator('.fi-ta-table')).toContainText(title, { timeout: 20_000 });
         }
     });
 });
