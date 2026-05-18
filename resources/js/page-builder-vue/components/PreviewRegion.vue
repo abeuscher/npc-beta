@@ -54,6 +54,7 @@ function handleEdit() {
     }"
     :aria-busy="indicatorStage >= 1 ? 'true' : undefined"
     :data-widget-id="widget.id"
+    :data-widget-label="widget.label || widget.widget_type_label"
   >
     <template v-if="needsConfig">
       <div class="widget-preview-notice">
@@ -258,20 +259,37 @@ function handleEdit() {
   outline-offset: -2px;
 }
 
-/* Compact drag proxy. forceFallback gives SortableJS a DOM clone (appended
-   to <body>) that we can shrink — the browser's native drag snapshot can't
-   be styled. `zoom` is used instead of `transform: scale()` because
-   SortableJS writes an inline `transform` on the clone every pointer move,
-   which would clobber a CSS scale. The max-height cap keeps even a very
-   tall full-width widget down to a wieldable card. */
+/* Drag proxy. forceFallback gives SortableJS a DOM clone appended to
+   <body>; detached from its grid/flex/container context, a faithfully
+   shrunk render is unreliable per widget type (images collapse, charts
+   reflow). Instead the clone is collapsed to a fixed labelled chip that
+   follows the cursor — consistent regardless of widget size/type and easy
+   to thread into a narrow slot. SortableJS sets inline width/height on the
+   clone, so the size override is `!important`; its inline transform
+   (per-move translate) is left untouched so it still tracks the pointer. */
 .preview-region--drag-fallback {
-  zoom: 0.5;
-  max-height: 22rem;
-  overflow: hidden;
-  opacity: 0.9;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: transparent !important;
+  pointer-events: none;
+}
+.preview-region--drag-fallback > * {
+  display: none !important;
+}
+.preview-region--drag-fallback::after {
+  content: '⠿  ' attr(data-widget-label);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.875rem;
+  font: 600 0.8125rem/1.2 system-ui, -apple-system, sans-serif;
+  color: #fff;
+  background: var(--c-primary-600, #4f46e5);
   border-radius: 0.5rem;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-  pointer-events: none;
-  background: #fff;
+  white-space: nowrap;
 }
 </style>
