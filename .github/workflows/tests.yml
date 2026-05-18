@@ -237,6 +237,17 @@ jobs:
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=120
           exit 1
 
+      # The readiness probe above hits /admin/login, which is intentionally
+      # DB-independent, so it green-lights while the e2e DB is still empty.
+      # Nothing else migrates it before the run (the entrypoint does not, and
+      # Playwright's globalSetup migrates only inside the test process), so a
+      # fresh CI runner serves `relation "site_settings" does not exist` 500s.
+      # Migrate+seed here so the schema exists the moment any DB route is hit;
+      # globalSetup's own migrate:fresh stays (idempotent; keeps local runs
+      # self-contained).
+      - name: Migrate + seed the e2e database
+        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan migrate:fresh --seed --force
+
       - name: Run Playwright (chromium) against the isolated stack
         run: npm run test:e2e:isolated -- --project=chromium
 
