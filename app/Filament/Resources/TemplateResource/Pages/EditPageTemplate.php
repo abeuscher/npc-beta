@@ -5,11 +5,13 @@ namespace App\Filament\Resources\TemplateResource\Pages;
 use App\Filament\Concerns\HasRecordDetailSubNavigation;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use App\Filament\Resources\TemplateResource;
+use App\Jobs\ExportBundleJob;
 use App\Models\Template;
 use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -82,6 +84,27 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
                         $filename,
                         ['Content-Type' => 'application/json'],
                     );
+                }),
+
+            Actions\Action::make('exportTemplateWithMedia')
+                ->label('Export Template with media (zip)')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    ExportBundleJob::dispatch(
+                        'templates',
+                        [$this->record->id],
+                        (int) auth()->id(),
+                        'template-' . Str::slug($this->record->name),
+                    );
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
                 }),
 
             Actions\DeleteAction::make()

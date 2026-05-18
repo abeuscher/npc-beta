@@ -2,9 +2,7 @@
 
 namespace App\Filament\Actions;
 
-use App\Services\ImportExport\ContentImporter;
-use App\Services\ImportExport\ImportLog;
-use App\Services\ImportExport\InvalidImportBundleException;
+use App\Jobs\ImportBundleJob;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -13,9 +11,11 @@ use Illuminate\Support\Facades\Storage;
 class ImportBundleAction
 {
     /**
-     * Build the "Import bundle" header action used on ListPages, ListPosts, and ListTemplates.
-     * Accepts a single-record bundle or a multi-record bundle — both go through the same
-     * ContentImporter::import() path.
+     * Build the "Import bundle" header action used on ListPages, ListPosts, and
+     * ListTemplates. Accepts a JSON bundle or a self-contained zip (with media
+     * bytes); both are detected by file type and run through the queued
+     * ImportBundleJob (media-portability draft decisions #1/#2/#8 — no
+     * synchronous fallback). Pages with matching slugs overwrite in place.
      */
     public static function make(): Action
     {
@@ -24,14 +24,21 @@ class ImportBundleAction
             ->icon('heroicon-o-arrow-up-tray')
             ->visible(fn () => auth()->user()?->can('update_page') ?? false)
             ->modalHeading('Import Content Bundle')
-            ->modalDescription('Upload a JSON bundle exported from this admin. Pages with matching slugs will be overwritten in place.')
+            ->modalDescription('Upload a JSON bundle or a self-contained .zip (with media) exported from this admin. Pages with matching slugs will be overwritten in place. Large bundles are imported in the background — you will be notified when it completes.')
             ->modalSubmitActionLabel('Import')
             ->form([
                 Forms\Components\FileUpload::make('bundle_file')
-                    ->label('Bundle file (JSON)')
+                    ->label('Bundle file (JSON or .zip, up to 512 MB)')
                     ->required()
-                    ->acceptedFileTypes(['application/json', 'text/plain', 'text/json'])
-                    ->maxSize(51200) // 50 MB
+                    ->acceptedFileTypes([
+                        'application/json',
+                        'text/plain',
+                        'text/json',
+                        'application/zip',
+                        'application/x-zip-compressed',
+                        'multipart/x-zip',
+                    ])
+                    ->maxSize(524288) // 512 MB
                     ->disk('local')
                     ->directory('imports/bundles')
                     ->visibility('private'),
@@ -46,54 +53,13 @@ class ImportBundleAction
                     return;
                 }
 
-                try {
-                    $contents = Storage::disk('local')->get($relativePath);
-                    $bundle   = json_decode($contents, true);
+                ImportBundleJob::dispatch($relativePath, (int) auth()->id());
 
-                    if (! is_array($bundle)) {
-                        Notification::make()
-                            ->title('Invalid bundle')
-                            ->body('File is not valid JSON.')
-                            ->danger()
-                            ->send();
-
-                        return;
-                    }
-
-                    $log = new ImportLog();
-                    app(ContentImporter::class)->import($bundle, $log);
-
-                    $payload   = $bundle['payload'] ?? [];
-                    $pageCount = count($payload['pages'] ?? []);
-                    $tplCount  = count($payload['templates'] ?? []);
-
-                    $body = "Imported {$pageCount} page(s), {$tplCount} template(s).";
-                    if ($log->hasWarnings()) {
-                        $body .= ' ' . count($log->warnings()) . ' warning(s):';
-                        foreach (array_slice($log->warnings(), 0, 5) as $w) {
-                            $body .= "\n• " . $w['message'];
-                        }
-                        if (count($log->warnings()) > 5) {
-                            $body .= "\n• … and " . (count($log->warnings()) - 5) . ' more.';
-                        }
-                    }
-
-                    Notification::make()
-                        ->title('Import complete')
-                        ->body($body)
-                        ->{$log->hasWarnings() ? 'warning' : 'success'}()
-                        ->persistent()
-                        ->send();
-                } catch (InvalidImportBundleException $e) {
-                    Notification::make()
-                        ->title('Import rejected')
-                        ->body($e->getMessage())
-                        ->danger()
-                        ->persistent()
-                        ->send();
-                } finally {
-                    Storage::disk('local')->delete($relativePath);
-                }
+                Notification::make()
+                    ->title('Import queued')
+                    ->body('Your bundle is being imported in the background. You will be notified when it completes.')
+                    ->success()
+                    ->send();
             });
     }
 }

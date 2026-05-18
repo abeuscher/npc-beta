@@ -122,6 +122,11 @@ class AdminPanelProvider extends PanelProvider
                         \Illuminate\Support\Facades\Route::post('/reset', [\App\Http\Controllers\Admin\SetupChecklistController::class, 'reset'])
                             ->name('reset');
                     });
+
+                // Gated download of a queued export artifact (session 303).
+                \Illuminate\Support\Facades\Route::get('/exports/bundles/{token}', \App\Http\Controllers\Admin\BundleExportDownloadController::class)
+                    ->name('exports.bundle.download')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
             })
             ->colors([
                 'primary'   => Color::hex($primaryColor),
@@ -135,6 +140,11 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Settings')->collapsed(),
             ])
             ->sidebarCollapsibleOnDesktop()
+            // Persistent notification bell — the delivery surface for queued
+            // export/import results (session 303, media-portability draft
+            // decision #5). Backed by the standard Laravel notifications table.
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([

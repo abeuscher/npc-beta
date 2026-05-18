@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\PostResource\Pages;
 
 use App\Filament\Resources\PostResource;
+use App\Jobs\ExportBundleJob;
 use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -91,6 +93,27 @@ class EditPostDetails extends ReadOnlyAwareEditRecord
                             $filename,
                             ['Content-Type' => 'application/json'],
                         );
+                    }),
+
+                Actions\Action::make('exportPostWithMedia')
+                    ->label('Export Post with media (zip)')
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->action(function (): void {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        ExportBundleJob::dispatch(
+                            'pages',
+                            [$this->record->id],
+                            (int) auth()->id(),
+                            'post-' . $this->record->slug,
+                        );
+
+                        Notification::make()
+                            ->title('Export queued')
+                            ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                            ->success()
+                            ->send();
                     }),
 
                 Actions\DeleteAction::make()

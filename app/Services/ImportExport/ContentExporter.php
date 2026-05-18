@@ -5,8 +5,10 @@ namespace App\Services\ImportExport;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
+use App\Models\SiteSetting;
 use App\Models\Template;
 use Illuminate\Support\Collection;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class ContentExporter
 {
@@ -72,7 +74,94 @@ class ContentExporter
         return [
             'format_version' => self::FORMAT_VERSION,
             'exported_at'    => now()->toIso8601String(),
+            // Additive, ignorable hint only (media-portability draft decision
+            // #1) — never load-bearing for validateEnvelope(). BundleArchive
+            // rewrites this to "embedded" when it wraps the envelope in a zip.
+            'media_transport' => 'reference',
             'payload'        => $payload,
+        ];
+    }
+
+    /**
+     * Export the site-wide theme/design as an additive payload.design — the
+     * three design-group SiteSetting rows captured exactly as stored. Import
+     * deep-merges these over resolver defaults and never sweeps (session 303,
+     * the 295 em-rhythm-revert lesson / concrete-values rule). A theme bundle
+     * carries no media, so it flows through the same envelope as a tiny JSON.
+     *
+     * @return array<string, mixed>
+     */
+    public function exportDesign(): array
+    {
+        $design = [];
+        foreach (['theme_colors', 'typography', 'button_styles'] as $key) {
+            $value = SiteSetting::get($key);
+            if (is_array($value)) {
+                $design[$key] = $value;
+            }
+        }
+
+        return $this->envelope(['design' => $design]);
+    }
+
+    /**
+     * Standalone ID-preserving media seed (media-portability draft decision
+     * #6/#3). payload.media is a flat list of full posture-B descriptors;
+     * pages/templates stay empty so a combined bundle seeds media first.
+     *
+     * @param  array<int, int|string>  $mediaIds
+     * @return array<string, mixed>
+     */
+    public function exportMedia(array $mediaIds): array
+    {
+        return $this->envelope([
+            'media' => Media::whereIn('id', $mediaIds)
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Media $m) => $this->serializeMediaRow($m))
+                ->all(),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function exportAllMedia(): array
+    {
+        return $this->envelope([
+            'media' => Media::orderBy('id')
+                ->get()
+                ->map(fn (Media $m) => $this->serializeMediaRow($m))
+                ->all(),
+        ]);
+    }
+
+    /**
+     * Posture-B descriptor: every column needed to recreate the row by raw
+     * explicit-id insert on the target, plus the on-disk path so the bytes
+     * land at {id}/{file_name} (media-portability draft decision #3).
+     *
+     * @return array<string, mixed>
+     */
+    protected function serializeMediaRow(Media $m): array
+    {
+        return [
+            'id'                => $m->id,
+            'uuid'              => $m->uuid,
+            'model_type'        => $m->model_type,
+            'model_id'          => $m->model_id,
+            'collection_name'   => $m->collection_name,
+            'name'              => $m->name,
+            'file_name'         => $m->file_name,
+            'mime_type'         => $m->mime_type,
+            'disk'              => $m->disk,
+            'conversions_disk'  => $m->conversions_disk,
+            'size'              => $m->size,
+            'manipulations'     => $m->manipulations ?? [],
+            'custom_properties' => $m->custom_properties ?? [],
+            'responsive_images' => $m->responsive_images ?? [],
+            'order_column'      => $m->order_column,
+            'path'              => $m->id . '/' . $m->file_name,
         ];
     }
 

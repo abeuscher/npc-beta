@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\ExportBundleJob;
+use App\Jobs\ImportBundleJob;
 use App\Models\SiteSetting;
 use App\Services\AssetBuildService;
 use App\Services\ColorTokenResolver;
@@ -11,6 +13,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 
 class DesignSystemPage extends Page
@@ -44,6 +47,78 @@ class DesignSystemPage extends Page
         return [
             'CMS',
             'Theme',
+        ];
+    }
+
+    /**
+     * Theme/design export-import pair (session 303, the (A) rider). Rides the
+     * same queued envelope/zip primitive as the content bundle: export emits
+     * payload.design (the three design-group rows as stored); import deep-merges
+     * over resolver defaults and never sweeps, then triggers the same
+     * AssetBuildService::build() rebuild. Gated by this page's
+     * manage_cms_settings access.
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportTheme')
+                ->label('Export Theme')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->visible(fn () => auth()->user()?->can('manage_cms_settings') ?? false)
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('manage_cms_settings'), 403);
+
+                    ExportBundleJob::dispatch('design', [], (int) auth()->id(), 'theme');
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your theme bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('importTheme')
+                ->label('Import Theme')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->visible(fn () => auth()->user()?->can('manage_cms_settings') ?? false)
+                ->modalHeading('Import Theme')
+                ->modalDescription('Upload a theme bundle (JSON or .zip) exported from a Theme page. Colours, typography, and button styles are deep-merged over the defaults — keys absent from the bundle keep their current value. The public CSS is rebuilt automatically.')
+                ->modalSubmitActionLabel('Import')
+                ->form([
+                    Forms\Components\FileUpload::make('bundle_file')
+                        ->label('Theme bundle (JSON or .zip, up to 512 MB)')
+                        ->required()
+                        ->acceptedFileTypes([
+                            'application/json',
+                            'text/plain',
+                            'text/json',
+                            'application/zip',
+                            'application/x-zip-compressed',
+                            'multipart/x-zip',
+                        ])
+                        ->maxSize(524288) // 512 MB
+                        ->disk('local')
+                        ->directory('imports/bundles')
+                        ->visibility('private'),
+                ])
+                ->action(function (array $data): void {
+                    abort_unless(auth()->user()?->can('manage_cms_settings'), 403);
+
+                    $relativePath = $data['bundle_file'] ?? null;
+                    if (! $relativePath || ! Storage::disk('local')->exists($relativePath)) {
+                        Notification::make()->title('Upload failed')->danger()->send();
+
+                        return;
+                    }
+
+                    ImportBundleJob::dispatch($relativePath, (int) auth()->id());
+
+                    Notification::make()
+                        ->title('Import queued')
+                        ->body('Your theme bundle is being imported in the background. You will be notified when it completes.')
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 

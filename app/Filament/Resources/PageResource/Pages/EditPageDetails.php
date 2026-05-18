@@ -6,6 +6,7 @@ use App\Filament\Resources\PageResource;
 use App\Filament\Pages\Settings\CmsSettingsPage;
 use App\Models\PageWidget;
 use App\Models\Template;
+use App\Jobs\ExportBundleJob;
 use App\Rules\ValidHtmlSnippet;
 use App\Services\ImportExport\ContentExporter;
 use Filament\Actions;
@@ -113,6 +114,27 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                             $filename,
                             ['Content-Type' => 'application/json'],
                         );
+                    }),
+
+                Actions\Action::make('exportPageWithMedia')
+                    ->label('Export Page with media (zip)')
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->action(function (): void {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        ExportBundleJob::dispatch(
+                            'pages',
+                            [$this->record->id],
+                            (int) auth()->id(),
+                            'page-' . $this->record->slug,
+                        );
+
+                        Notification::make()
+                            ->title('Export queued')
+                            ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                            ->success()
+                            ->send();
                     }),
 
                 Actions\Action::make('saveAsContentTemplate')

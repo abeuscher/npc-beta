@@ -2,19 +2,34 @@
 
 namespace App\Services\ImportExport;
 
+use App\Filament\Pages\DesignSystemPage;
 use App\Models\Collection;
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\AssetBuildService;
+use App\Services\ColorTokenResolver;
 use App\Services\TemplateAppearanceResolver;
+use App\Services\TypographyResolver;
 use App\Models\WidgetType;
 use App\Support\HtmlSanitizer;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ContentImporter
 {
+    /**
+     * Absolute path of an extracted bundle's media/ root, set for the duration
+     * of a single import() call when the source was a zip. When non-null, media
+     * descriptors resolve from the archive first; when null the importer is on
+     * the unchanged JSON/local-disk path (media-portability draft decision #2).
+     */
+    private ?string $mediaRoot = null;
+
     /**
      * Import a parsed bundle envelope. Validates format_version, then walks
      * templates first and pages second so pages can resolve their template_id.
@@ -23,28 +38,245 @@ class ContentImporter
      *
      * @param  array<string, mixed>  $bundle
      */
-    public function import(array $bundle, ImportLog $log): void
+    public function import(array $bundle, ImportLog $log, ?string $mediaRoot = null): void
     {
         $this->validateEnvelope($bundle);
 
-        DB::transaction(function () use ($bundle, $log) {
-            $payload = $bundle['payload'] ?? [];
+        $this->mediaRoot = $mediaRoot;
+        $designImported  = false;
+        $seededMediaIds  = [];
 
-            foreach ($payload['templates'] ?? [] as $templateData) {
-                $this->importTemplate($templateData, $log);
+        try {
+            DB::transaction(function () use ($bundle, $log, &$designImported, &$seededMediaIds) {
+                $payload = $bundle['payload'] ?? [];
+
+                // Theme/design runs first so a combined bundle establishes the
+                // theme before templates/pages resolve against it.
+                if (! empty($payload['design']) && is_array($payload['design'])) {
+                    $this->importDesign($payload['design'], $log);
+                    $designImported = true;
+                }
+
+                // ID-preserving media seed runs before templates/pages so
+                // by-reference content resolves against the seeded rows.
+                if (! empty($payload['media']) && is_array($payload['media'])) {
+                    $seededMediaIds = $this->importMedia($payload['media'], $log);
+                }
+
+                foreach ($payload['templates'] ?? [] as $templateData) {
+                    $this->importTemplate($templateData, $log);
+                }
+
+                foreach ($payload['pages'] ?? [] as $pageData) {
+                    $this->importPage($pageData, $log);
+                }
+
+                // Re-link page templates to their chrome pages now that the pages exist.
+                foreach ($payload['templates'] ?? [] as $templateData) {
+                    if (($templateData['type'] ?? null) === 'page') {
+                        $this->relinkTemplateChrome($templateData, $log);
+                    }
+                }
+            });
+        } finally {
+            $this->mediaRoot = null;
+        }
+
+        // Rebuild the public CSS bundle outside the transaction (the build
+        // server is a 30s HTTP call — never hold a DB transaction across it).
+        // Mirrors DesignSystemPage::saveColors()/::save() exactly, incl. the
+        // "run php artisan build:public" persistent-notification fallback.
+        if ($designImported) {
+            $result = app(AssetBuildService::class)->build();
+            if (! $result->success) {
+                Notification::make()
+                    ->title('Theme imported — CSS rebuild failed')
+                    ->body('CSS rebuild failed: ' . $result->message . '. Run `php artisan build:public` manually.')
+                    ->warning()
+                    ->persistent()
+                    ->send();
+            }
+        }
+
+        // Conversions are regenerated on the queue, never shipped (decision
+        // #4). Dispatched after commit so a rolled-back seed never enqueues.
+        foreach ($seededMediaIds as $mediaId) {
+            \App\Jobs\RegenerateMediaConversionsJob::dispatch((int) $mediaId);
+        }
+    }
+
+    /**
+     * payload.design pass — deep-merge each imported design row over its
+     * resolver default shape and persist. Never sweeps, replaces wholesale, or
+     * zeroes unknown keys: a key absent from the bundle keeps the default
+     * concrete value (session 303; the 295 em-rhythm-revert lesson /
+     * concrete-values rule). Runs inside the import transaction.
+     *
+     * @param  array<string, mixed>  $design
+     */
+    protected function importDesign(array $design, ImportLog $log): void
+    {
+        $buttonDefaults = DesignSystemPage::defaultButtonStyles();
+        $buttonDefaults['icon']        = DesignSystemPage::defaultIconSettings();
+        $buttonDefaults['form_append'] = DesignSystemPage::defaultFormAppendSettings();
+
+        $rows = [
+            'theme_colors'  => ColorTokenResolver::defaults(),
+            'typography'    => TypographyResolver::defaults(),
+            'button_styles' => $buttonDefaults,
+        ];
+
+        foreach ($rows as $key => $defaults) {
+            if (! array_key_exists($key, $design) || ! is_array($design[$key])) {
+                continue;
             }
 
-            foreach ($payload['pages'] ?? [] as $pageData) {
-                $this->importPage($pageData, $log);
+            $incoming = $design[$key];
+            if ($key === 'typography') {
+                // Same flat→per-breakpoint normaliser the read path applies.
+                $incoming = TypographyResolver::migrate($incoming);
             }
 
-            // Re-link page templates to their chrome pages now that the pages exist.
-            foreach ($payload['templates'] ?? [] as $templateData) {
-                if (($templateData['type'] ?? null) === 'page') {
-                    $this->relinkTemplateChrome($templateData, $log);
+            $merged = $this->deepMergeOverDefaults($defaults, $incoming);
+
+            SiteSetting::updateOrCreate(
+                ['key' => $key],
+                ['value' => json_encode($merged), 'type' => 'json', 'group' => 'design'],
+            );
+            Cache::forget("site_setting:{$key}");
+            $log->info("Theme: imported '{$key}'.");
+        }
+    }
+
+    /**
+     * Recursive merge of imported values over a concrete default base. Never
+     * removes a default key; a null override keeps the default (the 295
+     * lesson — change values, never null configuration). List arrays are
+     * replaced wholesale, associative arrays recursed.
+     *
+     * @param  array<mixed>  $defaults
+     * @param  array<mixed>  $imported
+     * @return array<mixed>
+     */
+    protected function deepMergeOverDefaults(array $defaults, array $imported): array
+    {
+        foreach ($imported as $key => $value) {
+            if (is_array($value)
+                && isset($defaults[$key]) && is_array($defaults[$key])
+                && ! array_is_list($defaults[$key]) && ! array_is_list($value)) {
+                $defaults[$key] = $this->deepMergeOverDefaults($defaults[$key], $value);
+            } elseif ($value !== null) {
+                $defaults[$key] = $value;
+            }
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * payload.media pass — posture-B ID-preserving standalone media seed
+     * (media-portability draft decisions #3/#4/#6). Raw explicit-id insert so
+     * the on-disk path stays {id}/{file_name} and cheap by-reference page
+     * bundles resolve after a one-time push. Collision + orphan-owner policies
+     * are canonical; the Postgres sequence is reset to MAX(id)+1. Runs inside
+     * the import transaction; returns the ids it actually seeded.
+     *
+     * @param  array<int, array<string, mixed>>  $descriptors
+     * @return array<int, int>
+     */
+    protected function importMedia(array $descriptors, ImportLog $log): array
+    {
+        $targetDisk = config('media-library.disk_name', 'public');
+        $seeded     = [];
+
+        foreach ($descriptors as $desc) {
+            $id       = $desc['id'] ?? null;
+            $fileName = $desc['file_name'] ?? null;
+            $srcPath  = $desc['path'] ?? null;
+
+            if (! $id || ! $fileName || ! $srcPath) {
+                $log->warning('Media descriptor missing id/file_name/path, skipped.');
+
+                continue;
+            }
+
+            // Collision policy: identical → idempotent skip; divergent → warn
+            // and skip (operator re-exports from a clean source). No clobber.
+            $existing = DB::table('media')->where('id', $id)->first();
+            if ($existing) {
+                if (($existing->uuid ?? null) === ($desc['uuid'] ?? null)
+                    && $existing->file_name === $fileName) {
+                    $log->info("Media #{$id}: already seeded, skipped.");
+                } else {
+                    $log->warning("Media #{$id}: id exists with a different uuid/file_name on this install — skipped (export from a clean source to resolve).");
+                }
+
+                continue;
+            }
+
+            // Resolve bytes archive-first, then the source disk.
+            $bytes = null;
+            $archiveAbs = $this->archiveFile($srcPath);
+            if ($archiveAbs !== null) {
+                $bytes = file_get_contents($archiveAbs);
+            } elseif (! str_contains($srcPath, '..') && ! str_starts_with($srcPath, '/')
+                && Storage::disk($desc['disk'] ?? 'public')->exists($srcPath)) {
+                $bytes = Storage::disk($desc['disk'] ?? 'public')->get($srcPath);
+            }
+
+            if ($bytes === null || $bytes === false) {
+                $log->warning("Media #{$id}: file bytes not found in the bundle or on disk, skipped.");
+
+                continue;
+            }
+
+            // Orphan-owner policy: park the media even if its original owner
+            // row is absent on this install (resolution is path-based).
+            $modelType = $desc['model_type'] ?? null;
+            $modelId   = $desc['model_id'] ?? null;
+            if (is_string($modelType) && class_exists($modelType) && $modelId !== null) {
+                try {
+                    if (! $modelType::query()->whereKey($modelId)->exists()) {
+                        $log->info("Media #{$id}: owner {$modelType}#{$modelId} absent — parked.");
+                    }
+                } catch (\Throwable) {
+                    // Owner check is best-effort/informational only.
                 }
             }
-        });
+
+            DB::table('media')->insert([
+                'id'                    => $id,
+                'uuid'                  => $desc['uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
+                'model_type'            => $modelType ?? '',
+                'model_id'              => $modelId ?? 0,
+                'collection_name'       => $desc['collection_name'] ?? 'default',
+                'name'                  => $desc['name'] ?? pathinfo($fileName, PATHINFO_FILENAME),
+                'file_name'             => $fileName,
+                'mime_type'             => $desc['mime_type'] ?? null,
+                'disk'                  => $targetDisk,
+                'conversions_disk'      => $desc['conversions_disk'] ?? $targetDisk,
+                'size'                  => $desc['size'] ?? strlen($bytes),
+                'manipulations'         => json_encode($desc['manipulations'] ?? []),
+                'custom_properties'     => json_encode($desc['custom_properties'] ?? []),
+                'generated_conversions' => json_encode([]),
+                'responsive_images'     => json_encode($desc['responsive_images'] ?? []),
+                'order_column'          => $desc['order_column'] ?? null,
+                'created_at'            => now(),
+                'updated_at'            => now(),
+            ]);
+
+            Storage::disk($targetDisk)->put("{$id}/{$fileName}", $bytes);
+            $seeded[] = (int) $id;
+        }
+
+        if (! empty($seeded)) {
+            // Keep autoincrement ahead of the explicit ids we just inserted.
+            DB::statement(
+                "SELECT setval(pg_get_serial_sequence('media', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM media), 1))"
+            );
+        }
+
+        return $seeded;
     }
 
     /**
@@ -291,16 +523,23 @@ class ContentImporter
                 continue;
             }
 
-            if (! Storage::disk($disk)->exists($path)) {
+            $archiveAbs = $this->archiveFile($path);
+            if ($archiveAbs !== null) {
+                $page
+                    ->addMedia($archiveAbs)
+                    ->preservingOriginal()
+                    ->usingFileName(basename($path))
+                    ->toMediaCollection($collectionName, $disk);
+            } elseif (Storage::disk($disk)->exists($path)) {
+                $page
+                    ->addMediaFromDisk($path, $disk)
+                    ->preservingOriginal()
+                    ->toMediaCollection($collectionName, $disk);
+            } else {
                 $log->warning("Page \"{$page->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
 
                 continue;
             }
-
-            $page
-                ->addMediaFromDisk($path, $disk)
-                ->preservingOriginal()
-                ->toMediaCollection($collectionName, $disk);
         }
     }
 
@@ -502,16 +741,23 @@ class ContentImporter
                 continue;
             }
 
-            if (! Storage::disk($disk)->exists($path)) {
+            $archiveAbs = $this->archiveFile($path);
+            if ($archiveAbs !== null) {
+                $media = $widget
+                    ->addMedia($archiveAbs)
+                    ->preservingOriginal()
+                    ->usingFileName(basename($path))
+                    ->toMediaCollection($collectionName, $disk);
+            } elseif (Storage::disk($disk)->exists($path)) {
+                $media = $widget
+                    ->addMediaFromDisk($path, $disk)
+                    ->preservingOriginal()
+                    ->toMediaCollection($collectionName, $disk);
+            } else {
                 $log->warning("Media file for key '{$key}' not found at '{$path}' on disk '{$disk}', widget left unset.");
 
                 continue;
             }
-
-            $media = $widget
-                ->addMediaFromDisk($path, $disk)
-                ->preservingOriginal()
-                ->toMediaCollection($collectionName, $disk);
 
             $config[$key] = $media->id;
         }
@@ -520,6 +766,36 @@ class ContentImporter
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
+
+    /**
+     * Archive-first resolution (media-portability draft decision #2): the
+     * absolute path of a descriptor's file inside the extracted bundle media
+     * tree, or null when there is no archive or the file is absent — in which
+     * case callers fall back to the unchanged local-disk behaviour. Re-guards
+     * traversal and confirms the resolved path stays within the media root.
+     */
+    private function archiveFile(string $path): ?string
+    {
+        if ($this->mediaRoot === null || $path === '') {
+            return null;
+        }
+        if (str_contains($path, '..') || str_starts_with($path, '/')) {
+            return null;
+        }
+
+        $abs = $this->mediaRoot . '/' . $path;
+        if (! is_file($abs)) {
+            return null;
+        }
+
+        $real     = realpath($abs);
+        $rootReal = realpath($this->mediaRoot);
+        if ($real === false || $rootReal === false || ! str_starts_with($real, $rootReal . '/')) {
+            return null;
+        }
+
+        return $real;
+    }
 
     protected function resolveAuthorId(): int
     {

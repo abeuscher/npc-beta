@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PostResource\Pages;
 use App\Models\Page;
 use App\Models\Template;
+use App\Jobs\ExportBundleJob;
 use App\Services\ImportExport\ContentExporter;
 use App\Traits\HasPageBuilderForm;
 use Filament\Forms;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -162,6 +164,28 @@ class PostResource extends Resource
                                 $filename,
                                 ['Content-Type' => 'application/json'],
                             );
+                        }),
+
+                    Tables\Actions\BulkAction::make('exportSelectedWithMedia')
+                        ->label('Export with media (zip)')
+                        ->icon('heroicon-o-archive-box-arrow-down')
+                        ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            abort_unless(auth()->user()?->can('update_page'), 403);
+
+                            ExportBundleJob::dispatch(
+                                'pages',
+                                $records->pluck('id')->all(),
+                                (int) auth()->id(),
+                                'posts-' . $records->count(),
+                            );
+
+                            Notification::make()
+                                ->title('Export queued')
+                                ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                                ->success()
+                                ->send();
                         }),
 
                     Tables\Actions\DeleteBulkAction::make(),

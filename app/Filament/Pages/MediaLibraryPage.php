@@ -2,12 +2,18 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\ExportBundleJob;
+use App\Jobs\ImportBundleJob;
+use Filament\Actions\Action;
+use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class MediaLibraryPage extends Page implements HasTable
@@ -35,6 +41,79 @@ class MediaLibraryPage extends Page implements HasTable
     {
         return [
             self::getUrl() => 'Media Library',
+        ];
+    }
+
+    /**
+     * Standalone ID-preserving media export/import (session 303, Phase 2). The
+     * page itself stays gated view_any_page; these mutating actions require
+     * update_page (media-portability draft decision #7). All three ride the
+     * same queued envelope/zip + notification primitive as the content bundle.
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('exportAllMedia')
+                ->label('Export all media')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Export all media')
+                ->modalDescription('Builds an ID-preserving media bundle (originals only — conversions regenerate on import) in the background.')
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    ExportBundleJob::dispatch('all_media', [], (int) auth()->id(), 'all-media');
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your media bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
+                }),
+
+            Action::make('importMediaBundle')
+                ->label('Import media bundle')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->modalHeading('Import media bundle')
+                ->modalDescription('Upload an ID-preserving media bundle (.zip or JSON) exported from this admin. Existing ids are left untouched; new ids are seeded so by-reference page bundles resolve.')
+                ->modalSubmitActionLabel('Import')
+                ->form([
+                    Forms\Components\FileUpload::make('bundle_file')
+                        ->label('Media bundle (JSON or .zip, up to 512 MB)')
+                        ->required()
+                        ->acceptedFileTypes([
+                            'application/json',
+                            'text/plain',
+                            'text/json',
+                            'application/zip',
+                            'application/x-zip-compressed',
+                            'multipart/x-zip',
+                        ])
+                        ->maxSize(524288) // 512 MB
+                        ->disk('local')
+                        ->directory('imports/bundles')
+                        ->visibility('private'),
+                ])
+                ->action(function (array $data): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    $relativePath = $data['bundle_file'] ?? null;
+                    if (! $relativePath || ! Storage::disk('local')->exists($relativePath)) {
+                        Notification::make()->title('Upload failed')->danger()->send();
+
+                        return;
+                    }
+
+                    ImportBundleJob::dispatch($relativePath, (int) auth()->id());
+
+                    Notification::make()
+                        ->title('Import queued')
+                        ->body('Your media bundle is being imported in the background. You will be notified when it completes.')
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 
@@ -187,6 +266,29 @@ class MediaLibraryPage extends Page implements HasTable
                         $record->delete();
                     })
                     ->visible(fn (): bool => auth()->user()?->can('update_page') ?? false),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('exportSelectedMedia')
+                    ->label('Export selected media')
+                    ->icon('heroicon-o-archive-box-arrow-down')
+                    ->visible(fn (): bool => auth()->user()?->can('update_page') ?? false)
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        ExportBundleJob::dispatch(
+                            'media',
+                            $records->pluck('id')->all(),
+                            (int) auth()->id(),
+                            'media-' . $records->count(),
+                        );
+
+                        Notification::make()
+                            ->title('Export queued')
+                            ->body('Your media bundle is being built in the background. You will be notified when it is ready to download.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->defaultSort('created_at', 'desc');
     }
