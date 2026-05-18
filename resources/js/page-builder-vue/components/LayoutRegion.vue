@@ -208,6 +208,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
             :fallback-on-body="true"
             :swap-threshold="0.65"
             ghost-class="preview-region--ghost"
+            handle=".preview-region__handle"
             class="layout-region__slot-list"
             @start="onSlotDragStart"
             @end="onSlotDragEnd"

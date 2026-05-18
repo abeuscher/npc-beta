@@ -528,6 +528,18 @@ export async function deleteWidget(widgetId: string): Promise<void> {
     });
 }
 
+export async function setWidgetConfig(
+    widgetId: string,
+    config: Record<string, unknown>,
+): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            'UPDATE page_widgets SET config = $1, updated_at = NOW() WHERE id = $2',
+            [JSON.stringify(config), widgetId],
+        );
+    });
+}
+
 export async function updateLayoutConfig(
     layoutId: string,
     layoutConfig: Record<string, unknown>,

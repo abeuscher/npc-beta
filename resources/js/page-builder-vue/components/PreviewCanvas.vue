@@ -315,7 +315,7 @@ watch(
           :fallback-on-body="true"
           :swap-threshold="0.65"
           ghost-class="preview-region--ghost"
-          handle=".preview-region__overlay, .layout-region__handle"
+          handle=".preview-region__handle, .layout-region__handle"
           @start="onDragStart"
           @end="onDragEnd"
         >

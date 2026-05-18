@@ -37,6 +37,11 @@ watch(needsConfig, (now, was) => {
 function handleClick() {
   store.selectBlock(props.widget.id)
 }
+
+function handleEdit() {
+  store.selectBlock(props.widget.id)
+  store.inspectorTopTab = 'content'
+}
 </script>
 
 <template>
@@ -71,6 +76,36 @@ function handleClick() {
         :title="previewError"
       >{{ truncatedError }}</div>
     </div>
+
+    <div
+      class="preview-region__handle"
+      role="button"
+      tabindex="-1"
+      title="Drag to reorder"
+      aria-label="Drag to reorder"
+    >
+      <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true">
+        <circle cx="7" cy="5" r="1.5" />
+        <circle cx="13" cy="5" r="1.5" />
+        <circle cx="7" cy="10" r="1.5" />
+        <circle cx="13" cy="10" r="1.5" />
+        <circle cx="7" cy="15" r="1.5" />
+        <circle cx="13" cy="15" r="1.5" />
+      </svg>
+    </div>
+
+    <button
+      type="button"
+      class="preview-region__edit"
+      title="Edit in the Inspector"
+      aria-label="Edit in the Inspector"
+      @click.stop="handleEdit"
+    >
+      <svg viewBox="0 0 20 20" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 3.5 16.5 6.5 7 16 4 16 4 13 13.5 3.5Z" />
+      </svg>
+      <span>Edit</span>
+    </button>
   </div>
 </template>
 
@@ -91,11 +126,6 @@ function handleClick() {
   transition: box-shadow 0.15s, backdrop-filter 0.1s;
 }
 
-.preview-region__overlay:hover {
-  outline: 2px solid #282cfc;
-  outline-offset: -1px;
-}
-
 .preview-region--selected > .preview-region__overlay {
   outline: 2px solid #6366f1;
   outline-offset: -1px;
@@ -104,6 +134,68 @@ function handleClick() {
 .preview-region--refreshing-blur > .preview-region__overlay {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
+}
+
+/* ── Hover-in affordances: drag grip (top-left) + Edit (top-right) ─────────── */
+
+.preview-region__handle,
+.preview-region__edit {
+  position: absolute;
+  top: 0.375rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.preview-region__handle {
+  left: 0.375rem;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  color: #fff;
+  background: #4f46e5;
+  border-radius: 0.3125rem;
+  cursor: grab;
+  transform: translateX(-4px);
+}
+
+.preview-region__handle:active {
+  cursor: grabbing;
+}
+
+.preview-region__handle svg {
+  fill: currentColor;
+}
+
+.preview-region__edit {
+  right: 0.375rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.3125rem;
+  cursor: pointer;
+  transform: translateX(4px);
+}
+
+.preview-region__edit:hover {
+  color: var(--c-primary-700, #4338ca);
+  border-color: var(--c-primary-300, #a5b4fc);
+}
+
+.preview-region:hover > .preview-region__handle,
+.preview-region:hover > .preview-region__edit,
+.preview-region--selected > .preview-region__handle,
+.preview-region--selected > .preview-region__edit {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .preview-region__spinner {
