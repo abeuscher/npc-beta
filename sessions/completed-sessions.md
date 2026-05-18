@@ -300,6 +300,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 296 | Post-Incident Test Integrity — Stale-Stylesheet Drift Guard & Fixture-Test Remediation |
 | 297 | Theme Color System — Palette, Token Contract & Relocation |
 | 298 | Test Feedback Loop — Scoped Inner Loop & Async Full-Suite Verification |
+| 299 | Test Suite Parallelization & Isolation — Pest --parallel default + Isolated e2e Stack + Playwright in CI (non-gating) |
 
 ---
 
