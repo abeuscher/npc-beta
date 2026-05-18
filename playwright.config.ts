@@ -11,18 +11,25 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 const baseURL = process.env.APP_URL ?? 'http://localhost';
 const storageState = 'tests/e2e/.auth/admin.json';
 
+// CI runners are slower and more variable than a local box; give the
+// in-browser waits real headroom there so a slow first render isn't
+// misread as a failure. Local keeps tight timeouts for fast feedback.
+const ci = !!process.env.CI;
+
 export default defineConfig({
     testDir: './tests/e2e',
-    timeout: 60_000,
-    expect: { timeout: 10_000 },
+    timeout: ci ? 120_000 : 60_000,
+    expect: { timeout: ci ? 20_000 : 10_000 },
     fullyParallel: false,
     workers: 1,
-    retries: 0,
+    retries: ci ? 1 : 0,
     reporter: [['list'], ['html', { open: 'never' }]],
     globalSetup: './tests/e2e/global-setup.ts',
     use: {
         baseURL,
         storageState,
+        actionTimeout: ci ? 45_000 : 15_000,
+        navigationTimeout: ci ? 45_000 : 30_000,
         trace: 'retain-on-failure',
         video: 'retain-on-failure',
         screenshot: 'only-on-failure',

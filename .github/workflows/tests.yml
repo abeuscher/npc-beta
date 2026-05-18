@@ -251,24 +251,49 @@ jobs:
       # → Playwright. globalSetup's own migrate:fresh stays (idempotent;
       # keeps local runs self-contained).
       - name: Migrate + seed the e2e database
-        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan migrate:fresh --seed --force
-
-      # TEMPORARY diagnostic (session 304): the e2e suite aborts in
-      # Playwright globalSetup because /admin/login serves no email field.
-      # Capture ground truth — HTTP status, body, Laravel error — since
-      # there is no faithful local repro (dev + e2e share the bind-mounted
-      # .env). Remove once the root cause is fixed.
-      - name: Diagnose /admin/login (temporary)
         run: |
-          echo "--- GET /admin/login ---"
-          curl -sS -o /tmp/login.html -D /tmp/login.hdr -w 'http_code=%{http_code}\n' http://localhost:8090/admin/login || true
-          echo "--- response headers ---"; cat /tmp/login.hdr || true
-          echo "--- has email input? ---"; grep -Eo 'type="?email"?' /tmp/login.html | head -1 || echo "NONE"
+          for i in 1 2 3; do
+            if docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan migrate:fresh --seed --force; then
+              echo "migrate:fresh --seed ok (attempt $i)"; exit 0
+            fi
+            echo "migrate attempt $i failed; retrying in 10s" >&2
+            sleep 10
+          done
+          echo "migrate:fresh --seed failed after 3 attempts" >&2
+          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=100
+          exit 1
+
+      # Readiness gate: Playwright globalSetup must be able to log in, so
+      # the admin login page has to actually serve its form first. Poll the
+      # REAL precondition (HTTP 200 AND an email field present) — not a
+      # proxy like /up. Transient/warming codes (000/502/503) keep waiting;
+      # a persistent 500 means the app booted but errors (not a warmup
+      # issue) so bail early. Either failure path dumps full diagnostics so
+      # a genuine bug is distinguishable from slow warmup in one run.
+      - name: Wait for the admin login page
+        run: |
+          fail500=0
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /tmp/login.html -w '%{http_code}' http://localhost:8090/admin/login || echo 000)
+            if [ "$code" = "200" ] && grep -Eq 'type="?email"?' /tmp/login.html; then
+              echo "admin login ready after $((i*10))s"; exit 0
+            fi
+            if [ "$code" = "500" ]; then fail500=$((fail500+1)); else fail500=0; fi
+            if [ "$fail500" -ge 3 ]; then
+              echo "persistent HTTP 500 — app boots but errors (not a warmup issue)" >&2
+              break
+            fi
+            echo "admin login not ready (HTTP $code), attempt $i/24"
+            sleep 10
+          done
+          echo "::error::/admin/login never served its form — diagnostics follow" >&2
+          echo "--- last status / headers ---"; curl -sS -o /dev/null -D - -w 'http_code=%{http_code}\n' http://localhost:8090/admin/login || true
           echo "--- body (first 3000 bytes) ---"; head -c 3000 /tmp/login.html || true; echo
           echo "--- app container logs (tail) ---"
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs app --tail=150 || true
           echo "--- laravel.log (tail) ---"
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app sh -c 'tail -c 6000 storage/logs/laravel.log 2>/dev/null' || true
+          exit 1
 
       - name: Run Playwright (chromium) against the isolated stack
         run: npm run test:e2e:isolated -- --project=chromium
