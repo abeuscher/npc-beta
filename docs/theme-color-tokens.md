@@ -7,9 +7,10 @@ bundle by `App\Services\ColorTokenCompiler` (via `AssetBuildService`).
 **Widget rule:** read colour from these tokens — never hardcode a hex literal
 and never reference a `$color-*` SCSS variable directly. A widget that
 hardcodes hex receives neither the Theme default nor any future override; that
-is the silent-failure class the Re-Taxonomy arc exists to close. (Auditing and
-migrating the existing widgets to consume these tokens is session 298 — this
-doc is the contract they migrate *to*.)
+is the silent-failure class the Re-Taxonomy arc exists to close. (The existing
+widgets were audited and migrated to consume these tokens at session 300;
+`tests/Feature/WidgetColorTokenConsumptionTest.php` is the permanent regression
+guard. This doc is the single published contract they consume.)
 
 Defined on `.np-site` (the public namespace; primary purpose is page-builder
 preview fidelity, the admin-leak guard is the by-product). They do **not**
@@ -63,8 +64,15 @@ only — e.g. `$color-text: var(--np-color-text, #1f2937)`. They are no longer
 the contract; the token is. The fallback hex equals the Tier-1/Tier-2 default,
 so rendering is byte-identical when no override is set.
 
-## Out of scope here
+## Per-template deviation (schemes)
 
-Per-template colour schemes (Default/Inverse) and the chrome page-shell model
-are session 299. There is intentionally no per-template colour between
-sessions 297 and 299; the Theme palette is the single site-wide source.
+The palette above is the single site-wide source for *homogeneous* appearance.
+Deliberate per-page deviation is expressed through **schemes** (Default /
+Inverse), shipped at session 301: a template *selects* a scheme; it never
+edits individual tokens. A scheme overrides only the content-region tokens
+(never `brand`, never the chrome tokens — schemes compose with chrome, they do
+not bleed into it). Scheme overrides are resolved at request time by
+`App\Services\TemplateAppearanceResolver` and applied as inline custom
+properties on the page content wrapper — they are never compiled into the
+public bundle. Widgets need no change to participate: reading
+`var(--np-color-*)` is automatically scheme-aware.

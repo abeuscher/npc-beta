@@ -76,22 +76,32 @@ class TemplateResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('type')
+                    ->label('Type')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'page'    => 'Page',
-                        'content' => 'Content',
+                        'page'    => 'Page template',
+                        'content' => 'Content template',
                         default   => $state,
                     })
                     ->colors([
                         'primary' => 'page',
                         'info'    => 'content',
                     ])
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Type')
+                    ->options([
+                        'page'    => 'Page templates',
+                        'content' => 'Content templates',
+                    ]),
             ])
             ->defaultSort('name')
             ->actions([
