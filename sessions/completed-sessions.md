@@ -303,6 +303,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 299 | Test Suite Parallelization & Isolation — Pest --parallel default + Isolated e2e Stack + Playwright in CI (non-gating) |
 | 300 | Widget Color-Token Consumption Audit & Migration — 39 widget-SCSS hex/$color-* lines → var(--np-color-*) + no-hardcoded-colour Pest guard |
 | 301 | Schemes, Template Page-Shell & Chrome, Shared Resolver — Default/Inverse content scheme + per-template selector + header/footer suppression + single shared public↔preview resolver + content-region bg/text gap closed |
+| 302 | Naming & IA Polish — Re-Taxonomy Tail (arc-closing) — CMS-Settings → "Site Settings"; snippets section split into "Site Icon & Social Image" + "Custom Code Snippets"; Stripe-checkout branding relocated to FinanceSettingsPage; page-vs-content template IA clarity; theme-color-tokens doc consolidated; § E6 fully retired / Theme & Template Re-Taxonomy arc complete |
 
 ---
 
