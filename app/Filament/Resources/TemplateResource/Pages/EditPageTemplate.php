@@ -42,6 +42,24 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
                     ->rows(2)
                     ->maxLength(1000),
             ])->columnSpan(6),
+
+            Forms\Components\Group::make([
+                Forms\Components\Select::make('scheme')
+                    ->label('Colour scheme')
+                    ->options(\App\Services\TemplateAppearanceResolver::SCHEME_LABELS)
+                    ->default(\App\Services\TemplateAppearanceResolver::DEFAULT_SCHEME)
+                    ->selectablePlaceholder(false)
+                    ->required()
+                    ->helperText('Recolours this template\'s content region only — it selects a vetted Theme scheme, it never edits individual colours. The standard header and footer keep their Theme colours; a dark scheme does not restyle them.'),
+
+                Forms\Components\Checkbox::make('no_header')
+                    ->label('No header')
+                    ->helperText('Suppress the header entirely for pages using this template. Wins even if a custom header page is set. Off = inherit the Theme header.'),
+
+                Forms\Components\Checkbox::make('no_footer')
+                    ->label('No footer')
+                    ->helperText('Suppress the footer entirely. Wins even if a custom footer page is set. Off = inherit the Theme footer.'),
+            ])->columnSpan(6),
         ])->columns(12);
     }
 

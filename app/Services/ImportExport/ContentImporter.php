@@ -7,6 +7,7 @@ use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\TemplateAppearanceResolver;
 use App\Models\WidgetType;
 use App\Support\HtmlSanitizer;
 use Illuminate\Support\Facades\DB;
@@ -130,8 +131,21 @@ class ContentImporter
 
         // Colour keys from pre-297 export bundles are intentionally ignored —
         // colour is now the site-wide Theme palette, not template-owned.
+        //
+        // Session-301 columns carried additively + concretely: an older
+        // bundle without these keys keeps the template's concrete current
+        // value (never null); an unknown scheme string falls back to Default
+        // (concrete-values rule — the render-time resolver guards too).
+        $incomingScheme = $data['scheme'] ?? null;
+        $scheme = is_string($incomingScheme) && in_array($incomingScheme, TemplateAppearanceResolver::schemes(), true)
+            ? $incomingScheme
+            : ($template->scheme ?: TemplateAppearanceResolver::DEFAULT_SCHEME);
+
         $template->update([
             'custom_scss' => $data['custom_scss'] ?? null,
+            'scheme'      => $scheme,
+            'no_header'   => (bool) ($data['no_header'] ?? $template->no_header),
+            'no_footer'   => (bool) ($data['no_footer'] ?? $template->no_footer),
         ]);
     }
 

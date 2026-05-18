@@ -345,6 +345,15 @@ class ContentExporter
         $data['header_page_slug'] = $template->headerPage?->slug;
         $data['footer_page_slug'] = $template->footerPage?->slug;
 
+        // Session-301 per-template structural deviation. Additive — carried
+        // so a template's selected scheme + chrome suppression round-trips
+        // (dropping them would silently lose a page's deviation config). The
+        // standalone portable-theme feature is a separate post-301 session;
+        // this is only the correctness carry-through of the new columns.
+        $data['scheme']    = $template->scheme;
+        $data['no_header'] = (bool) $template->no_header;
+        $data['no_footer'] = (bool) $template->no_footer;
+
         return $data;
     }
 }

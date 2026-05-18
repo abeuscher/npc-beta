@@ -144,7 +144,7 @@ class EditPageTemplateChrome extends Page
             $this->footerPageId = $default?->footer_page_id;
         }
 
-        Notification::make()->title(ucfirst($position) . ' reset to inherit from default')->success()->send();
+        Notification::make()->title(ucfirst($position) . ' reset to inherit the Theme ' . $position)->success()->send();
     }
 
     private function createChromePageFor(string $position): PageModel

@@ -9,10 +9,10 @@
                     <button
                         type="button"
                         wire:click="inheritChrome"
-                        wire:confirm="Reset to the default {{ $this->chromePosition }}? Your custom {{ $this->chromePosition }} widgets will be orphaned."
+                        wire:confirm="Reset to the Theme {{ $this->chromePosition }}? Your custom {{ $this->chromePosition }} widgets will be orphaned."
                         class="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
-                        Inherit from Default
+                        Use the Theme {{ $this->chromePosition }}
                     </button>
                     <button
                         type="button"
@@ -28,7 +28,7 @@
         @else
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ ucfirst($this->chromePosition) }} is inherited from the Default template.
+                    {{ ucfirst($this->chromePosition) }} is inherited from the Theme (the default template's {{ $this->chromePosition }}).
                 </p>
                 <button
                     type="button"

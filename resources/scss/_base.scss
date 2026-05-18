@@ -32,7 +32,20 @@
         background-color: $color-bg-dark;
     }
 
-    main { flex: 1; }
+    // The content region consumes the bg/text tokens so a per-template
+    // scheme is actually visible. The standard chrome (header/footer) paints
+    // its OWN tokens (below) and sits outside this wrapper, so a content
+    // scheme recolours content only and never bleeds into chrome. On the
+    // public site the wrapper is <main>; in the page-builder preview the
+    // .np-site element IS the content region (.widget-preview-scope). Default
+    // scheme is the empty delta, so these resolve to the 297 token defaults
+    // (page already effectively #ffffff / $color-text) — byte-identical.
+    main,
+    &.widget-preview-scope {
+        flex: 1;
+        background-color: var(--np-color-bg);
+        color: var(--np-color-text);
+    }
 
     button {
         appearance: none;

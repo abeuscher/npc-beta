@@ -22,7 +22,7 @@ jobs:
         env:
           POSTGRES_DB: nonprofitcrm_test
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: 32feet
+          POSTGRES_PASSWORD: Password123
         ports:
           - 5432:5432
         options: >-
@@ -79,7 +79,7 @@ jobs:
           DB_PORT: 5432
           DB_DATABASE: nonprofitcrm_test
           DB_USERNAME: postgres
-          DB_PASSWORD: 32feet
+          DB_PASSWORD: Password123
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
@@ -90,7 +90,7 @@ jobs:
           DB_PORT: 5432
           DB_DATABASE: nonprofitcrm_test
           DB_USERNAME: postgres
-          DB_PASSWORD: 32feet
+          DB_PASSWORD: Password123
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
@@ -105,7 +105,7 @@ jobs:
         env:
           POSTGRES_DB: nonprofitcrm_test
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: 32feet
+          POSTGRES_PASSWORD: Password123
         ports:
           - 5432:5432
         options: >-
@@ -162,7 +162,7 @@ jobs:
           DB_PORT: 5432
           DB_DATABASE: nonprofitcrm_test
           DB_USERNAME: postgres
-          DB_PASSWORD: 32feet
+          DB_PASSWORD: Password123
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
@@ -173,7 +173,7 @@ jobs:
           DB_PORT: 5432
           DB_DATABASE: nonprofitcrm_test
           DB_USERNAME: postgres
-          DB_PASSWORD: 32feet
+          DB_PASSWORD: Password123
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
 
@@ -201,6 +201,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Install Node dependencies and Playwright chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Prepare .env for the isolated stack
         run: |
@@ -231,11 +236,6 @@ jobs:
           echo "e2e site did not become ready in 600s" >&2
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=120
           exit 1
-
-      - name: Install Node dependencies and Playwright chromium
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
 
       - name: Run Playwright (chromium) against the isolated stack
         run: npm run test:e2e:isolated -- --project=chromium

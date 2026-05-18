@@ -302,6 +302,7 @@ A flat index of every completed session by number and title. Per-session detail 
 | 298 | Test Feedback Loop — Scoped Inner Loop & Async Full-Suite Verification |
 | 299 | Test Suite Parallelization & Isolation — Pest --parallel default + Isolated e2e Stack + Playwright in CI (non-gating) |
 | 300 | Widget Color-Token Consumption Audit & Migration — 39 widget-SCSS hex/$color-* lines → var(--np-color-*) + no-hardcoded-colour Pest guard |
+| 301 | Schemes, Template Page-Shell & Chrome, Shared Resolver — Default/Inverse content scheme + per-template selector + header/footer suppression + single shared public↔preview resolver + content-region bg/text gap closed |
 
 ---
 

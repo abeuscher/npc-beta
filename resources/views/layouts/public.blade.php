@@ -13,16 +13,35 @@
         // Resolve template (shared by PageController, or fall back to default)
         $__tpl = $__template ?? Template::query()->default()->first();
 
-        // Pre-compute chrome (header/footer) from template-resolved page IDs
-        $__headerPageId = $__tpl?->resolved('header_page_id');
-        $__footerPageId = $__tpl?->resolved('footer_page_id');
+        // Chrome slot resolution (session-301): per slot, independently —
+        //   suppressed (no_header/no_footer) → none, WINS even if a page is set
+        //   page_id set                      → the template's own chrome page
+        //   page_id null                     → the theme header/footer
+        // The page-id null=inherit semantic is unchanged; suppression is the
+        // new, distinct "none" state. Mostly formalising existing inheritance.
+        $__headerSlot = $__tpl?->chromeSlot('header') ?? ['suppressed' => false, 'page_id' => null];
+        $__footerSlot = $__tpl?->chromeSlot('footer') ?? ['suppressed' => false, 'page_id' => null];
 
-        $__chromeHeader = ! view()->exists('custom.header') && $__headerPageId
+        $__suppressHeader = $__headerSlot['suppressed'];
+        $__suppressFooter = $__footerSlot['suppressed'];
+        $__headerPageId   = $__headerSlot['page_id'];
+        $__footerPageId   = $__footerSlot['page_id'];
+
+        $__chromeHeader = (! $__suppressHeader && ! view()->exists('custom.header')) && $__headerPageId
             ? ChromeRenderer::renderById($__headerPageId)
-            : (! view()->exists('custom.header') ? ChromeRenderer::render('_header') : null);
-        $__chromeFooter = ! view()->exists('custom.footer') && $__footerPageId
+            : ((! $__suppressHeader && ! view()->exists('custom.header')) ? ChromeRenderer::render('_header') : null);
+        $__chromeFooter = (! $__suppressFooter && ! view()->exists('custom.footer')) && $__footerPageId
             ? ChromeRenderer::renderById($__footerPageId)
-            : (! view()->exists('custom.footer') ? ChromeRenderer::render('_footer') : null);
+            : ((! $__suppressFooter && ! view()->exists('custom.footer')) ? ChromeRenderer::render('_footer') : null);
+
+        // Per-template scheme: request-time inline --np-color-* override for
+        // the content region only, resolved from the Template via the single
+        // shared resolver (the same call the page-builder preview makes — the
+        // .np-site fidelity guarantee). Never bundled (session-295 lesson);
+        // Default scheme = '' = the bundle's .np-site 297 defaults unchanged.
+        // Applied to <main> only so the standard chrome keeps its vetted
+        // colours (compose-not-bleed).
+        $__contentSchemeVars = \App\Services\TemplateAppearanceResolver::inlineVars($__tpl);
 
         $siteName = SiteSetting::get('site_name', config('site.name', config('app.name')));
         $baseUrl  = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
@@ -190,6 +209,7 @@
         if (!empty($__navOverlayLinkColor ?? '')) $__navStyle .= '--overlay-nav-link-color:' . $__navOverlayLinkColor . ';';
         if (!empty($__navOverlayHoverColor ?? '')) $__navStyle .= '--overlay-nav-hover-color:' . $__navOverlayHoverColor . ';';
     @endphp
+    @unless ($__suppressHeader ?? false)
     <div class="site-nav-wrapper {{ ($__navOverlap ?? false) ? 'site-nav-wrapper--overlay' : '' }}" @if ($__navStyle) style="{{ $__navStyle }}" @endif>
         @if (view()->exists('custom.header'))
             @include('custom.header')
@@ -199,18 +219,21 @@
             @include('components.site-header')
         @endif
     </div>
+    @endunless
 
-    <main>
+    <main @if ($__contentSchemeVars) style="{{ $__contentSchemeVars }}" @endif>
         @yield('content')
     </main>
 
-    @if (view()->exists('custom.footer'))
-        @include('custom.footer')
-    @elseif ($__chromeFooter)
-        <footer class="site-footer">{!! $__chromeFooter['html'] !!}</footer>
-    @else
-        @include('components.site-footer')
-    @endif
+    @unless ($__suppressFooter ?? false)
+        @if (view()->exists('custom.footer'))
+            @include('custom.footer')
+        @elseif ($__chromeFooter)
+            <footer class="site-footer">{!! $__chromeFooter['html'] !!}</footer>
+        @else
+            @include('components.site-footer')
+        @endif
+    @endunless
 
     <script>
     window.__site = {

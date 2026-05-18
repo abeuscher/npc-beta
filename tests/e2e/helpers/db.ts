@@ -689,6 +689,25 @@ export async function grantPermissionToUser(userId: string, permissionName: stri
     });
 }
 
+export async function setDefaultPageTemplateScheme(scheme: string): Promise<void> {
+    await withClient(async (client) => {
+        await client.query(
+            `UPDATE templates SET scheme = $1, updated_at = NOW()
+             WHERE type = 'page' AND is_default = true`,
+            [scheme],
+        );
+    });
+}
+
+export async function getDefaultPageTemplateScheme(): Promise<string> {
+    return withClient(async (client) => {
+        const res = await client.query<{ scheme: string }>(
+            `SELECT scheme FROM templates WHERE type = 'page' AND is_default = true LIMIT 1`,
+        );
+        return res.rows[0]?.scheme ?? 'default';
+    });
+}
+
 export function clearSiteSettingCache(): void {
     execFileSync(
         'docker',

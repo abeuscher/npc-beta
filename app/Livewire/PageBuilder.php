@@ -11,6 +11,7 @@ use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\AppearanceStyleComposer;
+use App\Services\TemplateAppearanceResolver;
 use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
 use App\Models\Collection;
@@ -390,10 +391,35 @@ class PageBuilder extends Component
         ];
     }
 
+    /**
+     * The content-region scheme override string for the preview canvas,
+     * resolved from the previewed page's page-shell template via the SAME
+     * shared resolver the public layout calls — byte-identical by
+     * construction (the .np-site fidelity guarantee). Resolves the page-shell
+     * template exactly as PageController does (explicit template_id, else the
+     * default page template). Content-template stacks have no page shell, so
+     * they resolve to the Default scheme (empty override).
+     */
+    public function previewContentSchemeVars(): string
+    {
+        $owner = $this->resolveOwner();
+
+        $template = $owner instanceof Page
+            ? ($owner->template_id ? Template::find($owner->template_id) : null)
+            : null;
+
+        if (! $template) {
+            $template = Template::query()->default()->first();
+        }
+
+        return TemplateAppearanceResolver::inlineVars($template);
+    }
+
     public function render(): \Illuminate\View\View
     {
         return view('livewire.page-builder', [
-            'bootstrapData' => $this->getBootstrapData(),
+            'bootstrapData'           => $this->getBootstrapData(),
+            'previewContentSchemeVars' => $this->previewContentSchemeVars(),
         ]);
     }
 }

@@ -50,6 +50,17 @@
     @endif
 
     {{-- ------------------------------------------------------------------ --}}
+    {{-- Per-template content scheme — the SAME shared-resolver string the    --}}
+    {{-- public layout applies to <main>, scoped here to the preview content  --}}
+    {{-- region so the preview is scheme-faithful by construction. Default    --}}
+    {{-- scheme = empty = the bundle's .np-site 297 defaults (identity).      --}}
+    {{-- Request-time inline, never bundled (session-295 lesson).             --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @if ($previewContentSchemeVars)
+        <style>.page-builder .widget-preview-scope { {!! $previewContentSchemeVars !!}; }</style>
+    @endif
+
+    {{-- ------------------------------------------------------------------ --}}
     {{-- Vue editor app                                                       --}}
     {{-- ------------------------------------------------------------------ --}}
     <div data-page-builder-app data-bootstrap='@json($bootstrapData)' wire:ignore></div>

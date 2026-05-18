@@ -443,6 +443,73 @@ it('round-trips a page template with customised chrome and header/footer pages',
     expect($footerWidget->config['content'])->toBe('<p>© 2026 Acme</p>');
 });
 
+it('round-trips a page template\'s session-301 scheme + chrome suppression (carry-through regression)', function () {
+    $template = Template::create([
+        'name'        => 'Dark Landing',
+        'type'        => 'page',
+        'is_default'  => false,
+        'scheme'      => 'inverse',
+        'no_header'   => true,
+        'no_footer'   => true,
+        'created_by'  => User::factory()->create()->id,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportTemplates([$template->id]);
+
+    $exported = $bundle['payload']['templates'][0];
+    expect($exported['scheme'])->toBe('inverse');
+    expect($exported['no_header'])->toBeTrue();
+    expect($exported['no_footer'])->toBeTrue();
+
+    // Mutate away from the exported state, then re-import — the deviation
+    // config must come back, not be silently dropped.
+    $template->update(['scheme' => 'default', 'no_header' => false, 'no_footer' => false]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Template::where('name', 'Dark Landing')->first();
+    expect($reloaded->scheme)->toBe('inverse');
+    expect($reloaded->no_header)->toBeTrue();
+    expect($reloaded->no_footer)->toBeTrue();
+});
+
+it('keeps concrete scheme/suppression when an older bundle omits the session-301 keys', function () {
+    $template = Template::create([
+        'name'       => 'Legacy Import Target',
+        'type'       => 'page',
+        'is_default' => false,
+        'scheme'     => 'inverse',
+        'no_header'  => true,
+        'created_by' => User::factory()->create()->id,
+    ]);
+
+    // A pre-301 bundle: page template entry with no scheme/no_header/no_footer.
+    $legacyBundle = [
+        'format_version' => app(ContentExporter::class)::FORMAT_VERSION,
+        'exported_at'    => now()->toIso8601String(),
+        'payload'        => [
+            'templates' => [[
+                'name'        => 'Legacy Import Target',
+                'type'        => 'page',
+                'description' => null,
+                'is_default'  => false,
+                'custom_scss' => '.x{}',
+            ]],
+            'pages' => [],
+        ],
+    ];
+
+    app(ContentImporter::class)->import($legacyBundle, new ImportLog());
+
+    // Concrete-values rule: absent keys never null the columns — the
+    // template's current concrete values stand.
+    $reloaded = Template::where('name', 'Legacy Import Target')->first();
+    expect($reloaded->scheme)->toBe('inverse');
+    expect($reloaded->no_header)->toBeTrue();
+    expect($reloaded->no_footer)->toBeFalse();
+    expect($reloaded->custom_scss)->toBe('.x{}');
+});
+
 // ── Slug collision: re-import overwrites in place ───────────────────────────
 
 it('overwrites a page with a colliding slug while preserving its id', function () {

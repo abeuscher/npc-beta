@@ -30,16 +30,24 @@ class Template extends Model
         'custom_scss',
         'header_page_id',
         'footer_page_id',
+        'scheme',
+        'no_header',
+        'no_footer',
         'created_by',
     ];
 
     protected $attributes = [
         'type'       => 'page',
         'is_default' => false,
+        'scheme'     => 'default',
+        'no_header'  => false,
+        'no_footer'  => false,
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
+        'no_header'  => 'boolean',
+        'no_footer'  => 'boolean',
     ];
 
     // ── Inheritable fields ──────────────────────────────────────────────────
@@ -67,6 +75,32 @@ class Template extends Model
         }
 
         return static::query()->default()->value($field);
+    }
+
+    /**
+     * Resolve a chrome slot ('header' | 'footer') to its rendered state.
+     * Three states, independently per slot:
+     *   - suppressed → none (the no_header/no_footer checkbox; WINS even if a
+     *     page is set — distinct from "inherit")
+     *   - page_id set → the template's own chrome page
+     *   - page_id null → the theme header/footer (the default template's
+     *     chrome via the existing resolved() inheritance, else the system
+     *     view) — "inherit the theme chrome", NOT "no chrome"
+     *
+     * Suppression is a concrete per-template structural choice (concrete-
+     * values rule): it is not inherited from the default template, unlike the
+     * page-id, whose null=inherit semantic is preserved unchanged.
+     *
+     * @return array{suppressed: bool, page_id: ?string}
+     */
+    public function chromeSlot(string $position): array
+    {
+        $suppressed = (bool) $this->getAttribute('no_' . $position);
+
+        return [
+            'suppressed' => $suppressed,
+            'page_id'    => $suppressed ? null : $this->resolved($position . '_page_id'),
+        ];
     }
 
     /**
