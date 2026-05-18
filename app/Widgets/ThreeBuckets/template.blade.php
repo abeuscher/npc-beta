@@ -20,13 +20,9 @@
         @endphp
 
         <div class="three-buckets__bucket">
-            @if ($heading)
-                <h3 class="three-buckets__heading" data-config-key="heading_{{ $i }}" data-config-type="text">{{ $heading }}</h3>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'h3', 'class' => 'three-buckets__heading', 'key' => "heading_{$i}", 'type' => 'text', 'value' => $heading, 'label' => "Heading {$i}"])
 
-            @if ($body)
-                <div class="three-buckets__body" data-config-key="body_{{ $i }}" data-config-type="richtext">{!! $body !!}</div>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'three-buckets__body', 'key' => "body_{$i}", 'type' => 'richtext', 'value' => $body, 'label' => "Body {$i}"])
 
             @if (!empty($ctas))
                 @include('widget-shared.buttons', [

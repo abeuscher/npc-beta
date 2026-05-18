@@ -32,6 +32,11 @@ class TextBlockDefinition extends WidgetDefinition
         return true;
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function schema(): array
     {
         return [

@@ -36,11 +36,7 @@
     <div class="hero-body">
         <div class="site-container">
             <div class="hero-inner">
-            @if ($content)
-                <div class="hero-content" data-config-key="content" data-config-type="richtext">
-                    {!! $content !!}
-                </div>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'hero-content', 'key' => 'content', 'type' => 'richtext', 'value' => $content, 'label' => 'Content'])
 
             @if (!empty($ctas))
                 <div class="hero-ctas">

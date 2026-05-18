@@ -54,14 +54,44 @@ class PageWidget extends Model implements HasMedia
             return $config;
         }
 
-        foreach ($type->config_schema ?? [] as $field) {
-            if (($field['type'] ?? '') !== 'richtext') {
+        return self::sanitizeAgainstSchema($config, $type->config_schema ?? []);
+    }
+
+    /**
+     * Recurse the schema in lock-step with the config subtree, sanitizing
+     * every richtext leaf — including richtext nested inside repeater rows
+     * (e.g. PricingChart columns[].price, columns[].attribute_rows[].value),
+     * which inline editing now writes to directly. A repeater's config value
+     * is a list of row arrays; each row is sanitized against the repeater's
+     * own `fields`.
+     *
+     * @param  array<int|string, mixed>  $config
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int|string, mixed>
+     */
+    private static function sanitizeAgainstSchema(array $config, array $fields): array
+    {
+        foreach ($fields as $field) {
+            $key  = $field['key'] ?? null;
+            $type = $field['type'] ?? '';
+            if ($key === null || ! array_key_exists($key, $config)) {
                 continue;
             }
 
-            $key = $field['key'] ?? null;
-            if ($key !== null && isset($config[$key]) && is_string($config[$key])) {
-                $config[$key] = HtmlSanitizer::sanitize($config[$key]);
+            if ($type === 'richtext') {
+                if (is_string($config[$key])) {
+                    $config[$key] = HtmlSanitizer::sanitize($config[$key]);
+                }
+                continue;
+            }
+
+            $nestedFields = $field['fields'] ?? null;
+            if (is_array($nestedFields) && is_array($config[$key])) {
+                foreach ($config[$key] as $i => $row) {
+                    if (is_array($row)) {
+                        $config[$key][$i] = self::sanitizeAgainstSchema($row, $nestedFields);
+                    }
+                }
             }
         }
 

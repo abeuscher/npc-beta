@@ -12,6 +12,11 @@ class HeroDefinition extends WidgetDefinition
         return 'hero';
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function label(): string
     {
         return 'Hero';

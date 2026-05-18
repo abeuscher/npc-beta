@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Widget } from '../types'
 import { useEditorStore } from '../stores/editor'
-import { computed, watch } from 'vue'
+import { computed, watch, ref, toRef } from 'vue'
+import { useInlineEdit } from '../composables/useInlineEdit'
 
 const props = defineProps<{
   widget: Widget
@@ -10,6 +11,17 @@ const props = defineProps<{
 const store = useEditorStore()
 
 const isSelected = computed(() => store.selectedBlockId === props.widget.id)
+
+const htmlEl = ref<HTMLElement | null>(null)
+
+// Armed = this widget is selected AND code-declared inline-eligible. Only
+// then do the annotated prose nodes become interactive (overlay yields
+// pointer events); the unselected preview stays pixel-clean.
+const inlineArmed = computed(
+  () => isSelected.value && !!props.widget.widget_type_inline_editable,
+)
+
+useInlineEdit(htmlEl, toRef(props, 'widget'), isSelected)
 
 const indicatorStage = computed(() => store.widgetIndicatorStage(props.widget.id))
 const previewError = computed(() => store.widgetPreviewError(props.widget.id))
@@ -51,6 +63,7 @@ function handleEdit() {
       'preview-region--selected': isSelected,
       'preview-region--refreshing-blur': indicatorStage >= 1,
       'preview-region--refreshing-spinner': indicatorStage >= 2,
+      'preview-region--inline-armed': inlineArmed,
     }"
     :aria-busy="indicatorStage >= 1 ? 'true' : undefined"
     :data-widget-id="widget.id"
@@ -63,7 +76,7 @@ function handleEdit() {
       </div>
     </template>
     <template v-else>
-      <div class="preview-region__html" v-html="widget.preview_html"></div>
+      <div ref="htmlEl" class="preview-region__html" v-html="widget.preview_html"></div>
     </template>
     <div class="preview-region__overlay" @click.stop="handleClick">
       <div
@@ -130,6 +143,17 @@ function handleEdit() {
 .preview-region--selected > .preview-region__overlay {
   outline: 2px solid #6366f1;
   outline-offset: -1px;
+}
+
+/* When the selected widget is inline-eligible, the overlay yields pointer
+   events so the armed prose nodes inside the (otherwise inert) preview
+   HTML are directly clickable. The selected outline still paints. */
+.preview-region--inline-armed > .preview-region__overlay {
+  pointer-events: none;
+}
+
+.preview-region--inline-armed .preview-region__html :deep(.inline-editable) {
+  pointer-events: auto;
 }
 
 .preview-region--refreshing-blur > .preview-region__overlay {

@@ -29,23 +29,19 @@
 @endphp
 
 <div class="widget-pricing-chart" style="{{ $rootStyle }}">
-    @if ($hasHeader)
+    @if ($hasHeader || ($inlineEditing ?? false))
         <div class="pricing-chart__header pricing-chart__header--{{ $headingAlignment }}">
             @if ($eyebrowLabel !== '')
                 <p class="pricing-chart__eyebrow-label">{{ $eyebrowLabel }}</p>
             @endif
-            @if ($heading !== '')
-                <h2 class="pricing-chart__heading">{{ $heading }}</h2>
-            @endif
-            @if (trim(strip_tags((string) $subheading)) !== '')
-                <div class="pricing-chart__subheading">{!! $subheading !!}</div>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'pricing-chart__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
+            @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__subheading', 'key' => 'subheading', 'type' => 'richtext', 'value' => $subheading, 'label' => 'Subheading'])
         </div>
     @endif
 
     @if ($columnCount > 0)
         <div class="pricing-chart__columns" role="list">
-            @foreach ($columns as $col)
+            @foreach ($columns as $ci => $col)
                 @php
                     $emphasize  = ! empty($col['emphasize']);
                     $colEyebrow = $col['eyebrow'] ?? '';
@@ -63,40 +59,22 @@
                     }
                 @endphp
                 <div class="{{ implode(' ', $cardClasses) }}" role="listitem">
-                    <div class="pricing-chart__column-eyebrow">
-                        @if ($colEyebrow !== '')
-                            <span>{{ $colEyebrow }}</span>
-                        @endif
-                    </div>
+                    @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__column-eyebrow', 'key' => "columns.{$ci}.eyebrow", 'type' => 'text', 'value' => $colEyebrow, 'label' => 'Eyebrow', 'always' => true])
 
                     <div class="pricing-chart__column-title">
-                        @if ($colTitle !== '')
-                            <h3>{{ $colTitle }}</h3>
-                        @endif
+                        @include('widget-shared.inline-prose', ['tag' => 'h3', 'class' => '', 'key' => "columns.{$ci}.title", 'type' => 'text', 'value' => $colTitle, 'label' => 'Title'])
                     </div>
 
-                    <div class="pricing-chart__column-price">
-                        @if (trim(strip_tags((string) $colPrice)) !== '')
-                            {!! $colPrice !!}
-                        @endif
-                    </div>
+                    @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__column-price', 'key' => "columns.{$ci}.price", 'type' => 'richtext', 'value' => $colPrice, 'label' => 'Price', 'always' => true])
 
-                    <div class="pricing-chart__column-lead">
-                        @if (trim(strip_tags((string) $colLead)) !== '')
-                            {!! $colLead !!}
-                        @endif
-                    </div>
+                    @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__column-lead', 'key' => "columns.{$ci}.lead_content", 'type' => 'richtext', 'value' => $colLead, 'label' => 'Lead content', 'always' => true])
 
                     @for ($r = 0; $r < $maxAttrRows; $r++)
                         @php $row = $attrRows[$r] ?? null; @endphp
-                        @if (is_array($row) && (($row['label'] ?? '') !== '' || trim(strip_tags((string) ($row['value'] ?? ''))) !== ''))
+                        @if (is_array($row) && (($inlineEditing ?? false) || ($row['label'] ?? '') !== '' || trim(strip_tags((string) ($row['value'] ?? ''))) !== ''))
                             <div class="pricing-chart__attribute-row">
-                                @if (($row['label'] ?? '') !== '')
-                                    <div class="pricing-chart__attribute-label">{{ $row['label'] }}</div>
-                                @endif
-                                @if (trim(strip_tags((string) ($row['value'] ?? ''))) !== '')
-                                    <div class="pricing-chart__attribute-value">{!! $row['value'] !!}</div>
-                                @endif
+                                @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__attribute-label', 'key' => "columns.{$ci}.attribute_rows.{$r}.label", 'type' => 'text', 'value' => $row['label'] ?? '', 'label' => 'Label'])
+                                @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__attribute-value', 'key' => "columns.{$ci}.attribute_rows.{$r}.value", 'type' => 'richtext', 'value' => $row['value'] ?? '', 'label' => 'Value'])
                             </div>
                         @else
                             <div class="pricing-chart__attribute-row pricing-chart__attribute-row--empty" aria-hidden="true"></div>
@@ -116,7 +94,5 @@
         </div>
     @endif
 
-    @if (trim(strip_tags((string) $footnote)) !== '')
-        <div class="pricing-chart__footnote">{!! $footnote !!}</div>
-    @endif
+    @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__footnote', 'key' => 'footnote', 'type' => 'richtext', 'value' => $footnote, 'label' => 'Footnote'])
 </div>

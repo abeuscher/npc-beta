@@ -92,6 +92,19 @@ abstract class WidgetDefinition
         return 'server';
     }
 
+    /**
+     * Whether this widget participates in in-page (contenteditable) text
+     * editing. Fail-closed: default false. A widget opts in only when its
+     * template carries `data-config-key`/`data-config-type` annotations on
+     * genuine display-prose nodes AND its content is not data-driven. The
+     * per-node {{token}} check is a further runtime gate on top of this.
+     * Declared in widget code, never the database (no schema, no migration).
+     */
+    public function inlineEditable(): bool
+    {
+        return false;
+    }
+
     public function requiredConfig(): ?array
     {
         return null;

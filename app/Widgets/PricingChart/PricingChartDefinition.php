@@ -11,6 +11,11 @@ class PricingChartDefinition extends WidgetDefinition
         return 'pricing_chart';
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function label(): string
     {
         return 'Pricing Chart';

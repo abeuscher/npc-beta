@@ -74,6 +74,13 @@ export const useEditorStore = defineStore('editor', () => {
   const dirtyWidgets = ref<Set<string>>(new Set())
   const requiredLibs = ref<string[]>([])
 
+  // The widget whose in-place text editor is currently active. While set,
+  // the post-save preview-refresh echo is suppressed for that widget so the
+  // live editor isn't wiped mid-keystroke (text edits only — structural
+  // edits never set this and always re-render). Mirrors the RichTextField
+  // dirty-guard, applied to the v-html refresh instead of a modelValue watch.
+  const inlineActiveWidgetId = ref<string | null>(null)
+
   // Widget type registry
   const widgetTypes = ref<WidgetType[]>([])
   const requiredHandles = ref<string[]>([])
@@ -417,6 +424,10 @@ export const useEditorStore = defineStore('editor', () => {
   const debounced = useDebouncedSave({
     updateWidget: (id, payload) => updateWidget(id, payload),
     afterSave: (id, payload) => {
+      // Suppress the refresh echo for the actively inline-edited widget —
+      // the v-html re-render would destroy the live editor. endInlineEdit()
+      // does one reconciling refresh on blur/teardown instead.
+      if (id === inlineActiveWidgetId.value) return
       if (payloadAffectsPreview(payload)) {
         refreshPreviewRef?.(id)
       }
@@ -477,6 +488,57 @@ export const useEditorStore = defineStore('editor', () => {
       dirtyWidgets.value.add(widgetId)
       debounced.flushDebouncedSave(widgetId, { config: { ...w.config } })
     }
+  }
+
+  /**
+   * Set a value at a dot-addressed config path (supports nesting through
+   * repeater arrays, e.g. 'columns.2.attribute_rows.0.value') and queue a
+   * debounced save. Arrays stay arrays — numeric path segments index a
+   * list, non-numeric segments key an object. Flat keys ('content') are
+   * just single-segment paths. This is the raw-config write inline editing
+   * routes through; the rendered DOM is never serialized back.
+   */
+  function updateLocalConfigPath(widgetId: string, path: string, value: any): void {
+    const w = widgets.value[widgetId]
+    if (!w) return
+
+    const segments = path.split('.')
+    // Proxy-safe deep clone: w.config is a Vue reactive Proxy, which
+    // structuredClone rejects (DataCloneError). Config is pure JSON data,
+    // so a JSON round-trip clones it and preserves arrays as arrays.
+    const next: Record<string, any> = JSON.parse(JSON.stringify(w.config ?? {}))
+
+    let cursor: any = next
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i]
+      if (cursor[seg] === undefined || cursor[seg] === null) {
+        cursor[seg] = /^\d+$/.test(segments[i + 1]) ? [] : {}
+      }
+      cursor = cursor[seg]
+    }
+    cursor[segments[segments.length - 1]] = value
+
+    w.config = next
+    dirtyWidgets.value.add(widgetId)
+    debounced.flushDebouncedSave(widgetId, { config: { ...next } })
+  }
+
+  function beginInlineEdit(widgetId: string): void {
+    inlineActiveWidgetId.value = widgetId
+  }
+
+  /**
+   * Tear down an in-place edit session: clear the suppression flag, flush
+   * any pending debounced save, then do exactly one reconciling preview
+   * refresh so the rendered HTML re-derives from the saved raw config
+   * (token substitution / inline-image rendering re-applied).
+   */
+  async function endInlineEdit(widgetId: string): Promise<void> {
+    if (inlineActiveWidgetId.value === widgetId) {
+      inlineActiveWidgetId.value = null
+    }
+    await debounced.flushPendingSaves()
+    await refresh.refreshPreview(widgetId)
   }
 
   function clearAllOverrides(widgetId: string): void {
@@ -674,6 +736,10 @@ export const useEditorStore = defineStore('editor', () => {
     createWidget,
     updateWidget,
     updateLocalConfig,
+    updateLocalConfigPath,
+    beginInlineEdit,
+    endInlineEdit,
+    inlineActiveWidgetId,
     clearAllOverrides,
     deleteWidget,
     copyWidget,

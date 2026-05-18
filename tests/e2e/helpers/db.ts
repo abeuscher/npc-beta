@@ -540,6 +540,18 @@ export async function setWidgetConfig(
     });
 }
 
+export async function getWidgetConfig(
+    widgetId: string,
+): Promise<Record<string, any>> {
+    return withClient(async (client) => {
+        const res = await client.query<{ config: Record<string, any> }>(
+            'SELECT config FROM page_widgets WHERE id = $1',
+            [widgetId],
+        );
+        return res.rows[0]?.config ?? {};
+    });
+}
+
 export async function updateLayoutConfig(
     layoutId: string,
     layoutConfig: Record<string, unknown>,

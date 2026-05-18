@@ -39,6 +39,7 @@ class WidgetResource extends JsonResource
             'widget_type_assets'          => $pw->widgetType?->assets ?? [],
             'widget_type_default_open'    => $pw->widgetType?->default_open ?? false,
             'widget_type_required_config' => $pw->widgetType?->required_config,
+            'widget_type_inline_editable' => (bool) ($definition?->inlineEditable() ?? false),
             'layout_id'                   => $pw->layout_id,
             'column_index'                => $pw->column_index,
             'label'                       => $pw->label ?? '',

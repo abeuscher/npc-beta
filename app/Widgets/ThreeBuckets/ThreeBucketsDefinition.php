@@ -11,6 +11,11 @@ class ThreeBucketsDefinition extends WidgetDefinition
         return 'three_buckets';
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function label(): string
     {
         return 'Three Buckets';

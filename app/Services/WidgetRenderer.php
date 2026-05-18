@@ -136,6 +136,7 @@ class WidgetRenderer
                 'pageContext'        => $pageContext,
                 'pageContextTokens'  => $tokens,
                 'widgetData'         => $widgetData,
+                'inlineEditing'      => $isCanvas,
             ];
 
             if (! empty($columnChildren)) {

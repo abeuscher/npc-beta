@@ -37,6 +37,7 @@ export interface Widget {
   widget_type_assets: Record<string, any>
   widget_type_default_open: boolean
   widget_type_required_config: { keys: string[]; message: string } | null
+  widget_type_inline_editable: boolean
   layout_id: string | null
   column_index: number | null
   label: string

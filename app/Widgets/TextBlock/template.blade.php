@@ -21,7 +21,7 @@
     }
 @endphp
 <div class="widget-text-block widget-text-block--vertical-{{ $verticalAlign }}">
-    <div class="widget-text-block__content" data-config-key="content" data-config-type="richtext">{!! $content !!}</div>
+    @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'widget-text-block__content', 'key' => 'content', 'type' => 'richtext', 'value' => $content, 'label' => 'Content', 'always' => true])
 
     @if (!empty($ctas))
         <div class="widget-text-block__ctas">

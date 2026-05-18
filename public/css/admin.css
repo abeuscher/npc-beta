@@ -691,6 +691,29 @@ html.dark .help-related-article-title { color: #f3f4f6; }
 }
 .inline-editable--text { min-width: 2rem; }
 
+/* Empty inline-editable slots: a clickable target + muted schema-label
+   ghost so an unfilled region is discoverable. Only present while the
+   widget is selected (the composable adds .inline-editable then), so the
+   unselected preview stays pixel-clean. */
+.inline-editable:empty {
+    display: block;
+    min-height: 1.5em;
+}
+.inline-editable:empty::before {
+    content: attr(data-config-placeholder);
+    opacity: 0.45;
+    font-style: italic;
+    pointer-events: none;
+}
+.inline-editable .ql-editor {
+    padding: 0;
+}
+.inline-editable .ql-editor.ql-blank::before {
+    font-style: italic;
+    opacity: 0.45;
+    left: 0;
+}
+
 /* ── Control-bar visual tokens (session 197) ──────────────────────────────*/
 /* Shared vocabulary for compact admin control surfaces: the Quill toolbar,
  * the ColorPicker primitive, and any future toolbars/chip groups. Consume
