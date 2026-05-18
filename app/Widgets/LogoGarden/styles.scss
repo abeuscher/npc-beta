@@ -1,6 +1,6 @@
 .widget-logo-garden {
     --logo-columns: 5;
-    --logo-container-bg: #ffffff;
+    --logo-container-bg: var(--np-color-bg);
     --logo-max-height: 150px;
 
     // Static + flipper: flexbox with centered last row
@@ -71,7 +71,7 @@
     margin-top: 0.5rem;
     font-size: 0.75rem;
     text-align: center;
-    color: var(--color-text, #333);
+    color: var(--np-color-text);
 }
 
 // Flipper 3D styles

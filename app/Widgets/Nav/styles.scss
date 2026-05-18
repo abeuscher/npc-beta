@@ -27,12 +27,12 @@
 }
 
 .widget-nav__drop-link {
-    color: var(--nav-drop-link-color, #1f2937);
+    color: var(--nav-drop-link-color, var(--np-color-text));
     text-decoration: none;
 }
 
 .widget-nav__drop-link:hover {
-    color: var(--nav-drop-hover-color, var(--nav-drop-link-color, #1f2937));
+    color: var(--nav-drop-hover-color, var(--nav-drop-link-color, var(--np-color-text)));
 }
 
 // ── Branding ─────────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@
     list-style: none;
     margin: 0;
     padding: 0.5rem 0;
-    background-color: #ffffff;
+    background-color: var(--np-color-bg);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     border-radius: 4px;
 }

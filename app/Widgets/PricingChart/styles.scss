@@ -4,8 +4,8 @@
     --pc-gap: 1.5rem;
     --pc-card-padding: 2rem;
     --pc-card-radius: 0.5rem;
-    --pc-card-bg: #ffffff;
-    --pc-card-bg-emphasized: #f8f9fa;
+    --pc-card-bg: var(--np-color-bg);
+    --pc-card-bg-emphasized: var(--np-color-surface);
 
     // Border slot — empty in v1; lit up by appearance_config border knob in v1.1.
     --pc-border-color: transparent;
@@ -78,7 +78,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: $color-primary;
+    color: var(--np-color-brand);
     margin-bottom: 0.5rem;
 }
 
@@ -120,7 +120,7 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: $color-text-muted;
+    color: var(--np-color-text-muted);
     margin-bottom: 0.25rem;
 }
 
