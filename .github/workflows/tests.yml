@@ -69,6 +69,9 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
+      - name: Alias the postgres service hostname for the forced phpunit env
+        run: echo "127.0.0.1 postgres" | sudo tee -a /etc/hosts
+
       - name: Run migrations
         run: php artisan migrate --force
         env:
@@ -148,6 +151,9 @@ jobs:
 
       - name: Generate application key
         run: php artisan key:generate
+
+      - name: Alias the postgres service hostname for the forced phpunit env
+        run: echo "127.0.0.1 postgres" | sudo tee -a /etc/hosts
 
       - name: Run migrations
         run: php artisan migrate --force
