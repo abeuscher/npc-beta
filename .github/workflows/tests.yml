@@ -229,7 +229,7 @@ jobs:
       - name: Wait for the e2e site
         run: |
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/admin/login || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8090/up || true)
             if [ "$code" = "200" ]; then echo "e2e site ready after $((i*10))s"; exit 0; fi
             sleep 10
           done
@@ -237,14 +237,16 @@ jobs:
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=120
           exit 1
 
-      # The readiness probe above hits /admin/login, which is intentionally
-      # DB-independent, so it green-lights while the e2e DB is still empty.
-      # Nothing else migrates it before the run (the entrypoint does not, and
-      # Playwright's globalSetup migrates only inside the test process), so a
-      # fresh CI runner serves `relation "site_settings" does not exist` 500s.
-      # Migrate+seed here so the schema exists the moment any DB route is hit;
-      # globalSetup's own migrate:fresh stays (idempotent; keeps local runs
-      # self-contained).
+      # The readiness probe hits /up — Laravel's framework health route
+      # (bootstrap/app.php `withRouting(health: '/up')`). It returns 200 as
+      # soon as PHP-FPM/nginx can serve, without booting the Filament panel
+      # or touching the DB. (NOT /admin/login: the panel provider reads
+      # SiteSetting on boot, so /admin/* 500s with `relation "site_settings"
+      # does not exist` until the schema exists — which would hang this gate
+      # the full 600s and the migrate step below would never run.)
+      # With a DB-independent gate the order is correct: wait → migrate+seed
+      # → Playwright. globalSetup's own migrate:fresh stays (idempotent;
+      # keeps local runs self-contained).
       - name: Migrate + seed the e2e database
         run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan migrate:fresh --seed --force
 
