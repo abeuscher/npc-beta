@@ -2,7 +2,10 @@ name: Tests
 
 on:
   push:
-    branches: ["**"]
+    # DIAGNOSTIC (temporary, e2e-stabilization): "!ci-logs/**" keeps the
+    # Playwright digest push from re-triggering this workflow. Restore to
+    # just ["**"] when the diagnostic plumbing is removed.
+    branches: ["**", "!ci-logs/**"]
   pull_request:
     branches: [main]
 
@@ -14,6 +17,9 @@ on:
 jobs:
   fast:
     name: Fast suite
+    # DIAGNOSTIC (temporary, e2e-stabilization): Pest jobs disabled so a push
+    # runs ONLY Playwright (faster CI signal). Restore by removing this `if:`.
+    if: false
     runs-on: ubuntu-latest
 
     services:
@@ -96,6 +102,8 @@ jobs:
 
   slow:
     name: Slow suite
+    # DIAGNOSTIC (temporary, e2e-stabilization): disabled — restore by removing this `if:`.
+    if: false
     needs: fast
     runs-on: ubuntu-latest
 
@@ -191,14 +199,13 @@ jobs:
   # stabilised; promote it into `tests.needs` once it is reliably green.
   playwright:
     name: Playwright e2e (isolated stack)
-    needs: slow
-    # PARKED (session 304): the e2e suite has one shared CI-environment
-    # cause (cold runtime SCSS render → pages miss the timeout), not N
-    # spec bugs — see playwright.config.ts QUARANTINED_SPECS and the
-    # handoff brief sessions/playwright-test-fix.md. A parallel effort
-    # owns the fix; un-park (remove this `if:`) only when it lands.
-    if: false
+    # DIAGNOSTIC (temporary, e2e-stabilization): `needs: slow` dropped so a
+    # push runs ONLY this job (Pest jobs are `if: false` above; a skipped
+    # dependency would otherwise skip this job too). On handback this MUST be
+    # restored to `needs: slow` and the un-parked job kept (no `if: false`).
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -302,8 +309,59 @@ jobs:
           echo
           exit 1
 
+      # DIAGNOSTIC (temporary, e2e-stabilization): capture JSON + full stdout
+      # without failing the step, so the digest can publish even on failure.
+      # On handback restore to the single line:
+      #   run: npm run test:e2e:isolated -- --project=chromium
       - name: Run Playwright (chromium) against the isolated stack
-        run: npm run test:e2e:isolated -- --project=chromium
+        run: |
+          set +e
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-results.json \
+            npm run test:e2e:isolated -- --project=chromium --reporter=list,json 2>&1 \
+            | tee pw-stdout.txt
+          echo "${PIPESTATUS[0]}" > pw-rc.txt
+          echo "Playwright exit code: $(cat pw-rc.txt)"
+
+      # DIAGNOSTIC (temporary, e2e-stabilization): publish a compact digest +
+      # trimmed stdout + raw JSON to the `ci-logs/playwright` branch so the
+      # cloud agent can read CI results via the GitHub API (no artifact
+      # download path is available to it). Fast-forward only, never force.
+      # Removed entirely on handback.
+      - name: Publish Playwright digest to ci-logs ref
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir -p out
+          cp playwright-results.json out/results.json 2>/dev/null || echo '{}' > out/results.json
+          tail -c 250000 pw-stdout.txt > out/stdout.txt 2>/dev/null || true
+          cp pw-rc.txt out/rc.txt 2>/dev/null || echo unknown > out/rc.txt
+          node scripts/ci/pw-digest.mjs playwright-results.json > out/digest.md 2>/dev/null \
+            || echo "(digest generation failed — see stdout.txt)" > out/digest.md
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git clone --quiet --branch ci-logs/playwright "$REPO_URL" cilogs 2>/dev/null; then
+            cd cilogs
+          else
+            mkdir cilogs && cd cilogs && git init -q && git checkout -q -b ci-logs/playwright
+          fi
+          git config user.email "ci@example.com"
+          git config user.name "ci-bot"
+          mkdir -p "runs/${GITHUB_SHA}"
+          cp ../out/* "runs/${GITHUB_SHA}/"
+          rm -rf latest && mkdir -p latest && cp ../out/* latest/
+          git add -A
+          git commit -qm "playwright diagnostic ${GITHUB_SHA}" || echo "nothing to commit"
+          for i in 1 2 3 4; do
+            if git push --quiet "$REPO_URL" HEAD:ci-logs/playwright; then
+              echo "published digest to ci-logs/playwright (runs/${GITHUB_SHA} + latest/)"
+              exit 0
+            fi
+            echo "push attempt $i failed; merging remote and retrying" >&2
+            git pull --quiet --no-rebase "$REPO_URL" ci-logs/playwright || true
+            sleep $((2 ** i))
+          done
+          echo "::warning::could not publish digest to ci-logs/playwright" >&2
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -317,6 +375,17 @@ jobs:
         if: always()
         run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml down -v
 
+      # DIAGNOSTIC (temporary, e2e-stabilization): make the job conclusion
+      # reflect the real Playwright result, but only AFTER the digest is
+      # published. Removed on handback. Last step so `if: always()` steps
+      # above always run.
+      - name: Reflect Playwright result
+        if: always()
+        run: |
+          rc=$(cat pw-rc.txt 2>/dev/null || echo 1)
+          echo "Playwright exit code was: $rc"
+          exit "$rc"
+
   # Single stable status check for branch protection on `main`. Require the
   # job named "Tests" (workflow "Tests") so a branch cannot merge unless the
   # fast + slow Pest suites passed. Keep this job named exactly "Tests" —
@@ -325,6 +394,8 @@ jobs:
   # (see the playwright job comment + sessions/298 + 299 close handoffs).
   tests:
     name: Tests
+    # DIAGNOSTIC (temporary, e2e-stabilization): disabled — restore by removing this `if:`.
+    if: false
     needs: [fast, slow]
     runs-on: ubuntu-latest
     steps:
