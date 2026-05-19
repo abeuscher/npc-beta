@@ -34,3 +34,6 @@ yarn-error.log
 /.infection.cache/
 /nginx-certs/*.key
 /nginx-certs/localhost.crt
+
+# Claude Code scheduler runtime lock (ephemeral: sessionId/pid) — never commit
+.claude/scheduled_tasks.lock
