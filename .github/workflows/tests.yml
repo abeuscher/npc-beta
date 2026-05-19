@@ -211,9 +211,15 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install Node dependencies and Playwright chromium
+      - name: Install Node dependencies, build assets, Playwright chromium
         run: |
           npm ci
+          # The e2e compose bind-mounts the repo over /var/www/html, which
+          # shadows the image's baked public/build/. Without building here
+          # the runner has no public/build/manifest.json, so Filament's
+          # @vite() layout throws "Vite manifest not found" → /admin/login
+          # 500s. Fast/Slow jobs already build for the same reason.
+          npm run build
           npx playwright install --with-deps chromium
 
       - name: Prepare .env for the isolated stack
