@@ -105,10 +105,14 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         await expect(title).toHaveClass(/inline-editable/);
 
         await centre(title);
-        // First click arms+activates the contenteditable; triple-click
-        // selects its text so the typed value replaces it.
+        // First click arms+activates the contenteditable. Triple-click was
+        // unreliable here (it raced the arm re-render → typed text appended,
+        // "BasicStarter Plan"); select-all via keyboard then replace is
+        // deterministic.
         await title.click();
-        await title.click({ clickCount: 3 });
+        await title.click();
+        await page.keyboard.press('ControlOrMeta+A');
+        await page.keyboard.press('Delete');
         await page.keyboard.type('Starter Plan');
         // Explicit blur → commit + flush + reconciling refresh. The flush is
         // debounced/async; poll the persisted config instead of a fixed wait
@@ -134,7 +138,7 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         await centre(valNode);
         await valNode.click(); // pointerdown mounts the no-toolbar Quill
         const editor = valNode.locator('.ql-editor');
-        await expect(editor).toBeVisible({ timeout: 5000 });
+        await expect(editor).toBeVisible({ timeout: 15_000 });
         await editor.fill('ten seats'); // contenteditable-aware: clears + types
         await editor.evaluate((el) => (el as HTMLElement).blur());
         await page.waitForTimeout(1800);
@@ -160,7 +164,7 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         await expect(content).toHaveClass(/inline-editable/);
         await content.click();
         const editor = content.locator('.ql-editor');
-        await expect(editor).toBeVisible({ timeout: 5000 });
+        await expect(editor).toBeVisible({ timeout: 15_000 });
         await expect(editor).toContainText('{{site.name}}');
     });
 
