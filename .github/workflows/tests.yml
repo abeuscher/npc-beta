@@ -316,8 +316,14 @@ jobs:
       - name: Run Playwright (chromium) against the isolated stack
         run: |
           set +e
+          # DIAGNOSTIC push #3 (temporary): `--grep` matches no test, so
+          # globalSetup still runs (migrate:fresh --seed + admin login,
+          # which the build-state/head captures need) but the ~20-min suite
+          # is skipped — this loop only gathers Class-A asset evidence.
+          # Remove `--grep ...` to run the full suite again.
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-results.json \
-            npm run test:e2e:isolated -- --project=chromium --reporter=list,json 2>&1 \
+            npm run test:e2e:isolated -- --project=chromium --reporter=list,json \
+            --grep "@__diagnostic_nomatch__" 2>&1 \
             | tee pw-stdout.txt
           echo "${PIPESTATUS[0]}" > pw-rc.txt
           echo "Playwright exit code: $(cat pw-rc.txt)"
@@ -345,9 +351,25 @@ jobs:
           # the build manifest listing shows whether Vite/admin assets are
           # present; the sanity probe confirms the Faker fix (Class B).
           DC="docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app"
-          $DC sh -c 'tail -c 120000 storage/logs/laravel.log 2>/dev/null' > out/laravel-log.txt 2>&1 || echo "(no laravel.log)" > out/laravel-log.txt
-          $DC sh -c 'echo "== public/build =="; ls -la public/build 2>&1; echo; echo "== public/build/assets (head) =="; ls -la public/build/assets 2>&1 | head -30; echo; echo "== manifest.json (head) =="; head -c 2500 public/build/manifest.json 2>&1; echo; echo "== public/build/widgets =="; ls -la public/build/widgets 2>&1; echo "== widgets/manifest.json =="; head -c 1500 public/build/widgets/manifest.json 2>&1' > out/build-state.txt 2>&1 || echo "(build-state capture failed)" > out/build-state.txt
-          $DC sh -c 'php artisan --version 2>&1; echo "--- composer faker ---"; composer show fakerphp/faker 2>&1 | head -3; echo "--- csv:generate-fake-imports --seed=1 ---"; php artisan csv:generate-fake-imports --seed=1 2>&1 | tail -10' > out/faker-sanity.txt 2>&1 || echo "(faker sanity failed)" > out/faker-sanity.txt
+          # Non-destructive: redirect captures the output; `|| true` must NOT
+          # overwrite the file (the push-#2 bug). Each probe is independent.
+          $DC sh -c 'tail -c 120000 storage/logs/laravel.log' > out/laravel-log.txt 2>&1 || true
+          $DC sh -c '
+            echo "== public/build (ls) =="; ls -la public/build 2>&1;
+            echo; echo "== public/build/manifest.json (Vite, head) =="; head -c 3000 public/build/manifest.json 2>&1;
+            echo; echo "== public/build/assets (count + head) =="; ls public/build/assets 2>&1 | wc -l; ls -la public/build/assets 2>&1 | head -20;
+            echo; echo "== public/build/widgets (ls) =="; ls -la public/build/widgets 2>&1;
+            echo; echo "== public/build/widgets/manifest.json (head) =="; head -c 2000 public/build/widgets/manifest.json 2>&1;
+            echo; echo "== is public/build a mount? =="; mount 2>/dev/null | grep public/build || echo "(mount unavailable)";
+          ' > out/build-state.txt 2>&1 || true
+          $DC sh -c 'php artisan --version; echo "--- faker ---"; composer show fakerphp/faker 2>&1 | head -2; echo "--- csv:generate-fake-imports --seed=1 ---"; php artisan csv:generate-fake-imports --seed=1 2>&1 | tail -8' > out/faker-sanity.txt 2>&1 || true
+          # What the public layout actually delivers server-side: the <head>
+          # of the seeded home page (SystemPageSeeder) + /admin/login. Reveals
+          # whether Vite/widget asset tags, the scheme <style>, and CSS vars
+          # are present — the Class-A "element never appears" mechanism.
+          curl -s http://localhost:8090/ 2>&1 | sed -n '1,140p' > out/public-home-head.txt 2>&1 || true
+          curl -s -o /dev/null -w 'home_http=%{http_code}\n' http://localhost:8090/ >> out/public-home-head.txt 2>&1 || true
+          curl -s http://localhost:8090/admin/login 2>&1 | sed -n '1,90p' > out/admin-login-head.txt 2>&1 || true
           REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           if git clone --quiet --branch ci-logs/playwright "$REPO_URL" cilogs 2>/dev/null; then
             cd cilogs
