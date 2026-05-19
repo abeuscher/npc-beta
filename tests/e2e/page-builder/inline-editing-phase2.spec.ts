@@ -110,12 +110,16 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         await title.click();
         await title.click({ clickCount: 3 });
         await page.keyboard.type('Starter Plan');
-        // Explicit blur → commit + flush + reconciling refresh.
+        // Explicit blur → commit + flush + reconciling refresh. The flush is
+        // debounced/async; poll the persisted config instead of a fixed wait
+        // (the fixed 1.5s was too short on a slow CI box → stale read).
         await title.evaluate((el) => (el as HTMLElement).blur());
-        await page.waitForTimeout(1500);
 
-        const cfg = await getWidgetConfig(pricing);
-        expect(cfg.columns?.[0]?.title).toBe('Starter Plan');
+        await expect
+            .poll(async () => (await getWidgetConfig(pricing)).columns?.[0]?.title, {
+                timeout: 15_000,
+            })
+            .toBe('Starter Plan');
     });
 
     test('round-trips a nested richtext path (columns.0.attribute_rows.0.value)', async ({ page }) => {

@@ -309,6 +309,24 @@ jobs:
           echo
           exit 1
 
+      # PERMANENT (stays after handback): warm the runtime-SCSS cache. The
+      # public layout compiles template custom_scss via ScssPhp at request
+      # time and caches it in Redis; the first cold public render in the
+      # fresh e2e container is slow enough to blow tight in-browser timeouts
+      # (the original session-304 lead, real for the first public hit). Hit
+      # the seeded public pages a few times so the compile is paid and
+      # cached before the timed suite, making cold-sensitive specs (e.g.
+      # event-registration) reliable. Best-effort: never fails the job.
+      - name: Warm the runtime-SCSS cache (seeded public pages)
+        run: |
+          for path in / /news; do
+            for n in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8090${path}" || echo 000)
+              echo "warm ${path} attempt ${n}: HTTP ${code}"
+            done
+          done
+          true
+
       # DIAGNOSTIC (temporary, e2e-stabilization): capture JSON + full stdout
       # without failing the step, so the digest can publish even on failure.
       # On handback restore to the single line:
