@@ -316,14 +316,8 @@ jobs:
       - name: Run Playwright (chromium) against the isolated stack
         run: |
           set +e
-          # DIAGNOSTIC push #3 (temporary): `--grep` matches no test, so
-          # globalSetup still runs (migrate:fresh --seed + admin login,
-          # which the build-state/head captures need) but the ~20-min suite
-          # is skipped — this loop only gathers Class-A asset evidence.
-          # Remove `--grep ...` to run the full suite again.
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-results.json \
-            npm run test:e2e:isolated -- --project=chromium --reporter=list,json \
-            --grep "@__diagnostic_nomatch__" 2>&1 \
+            npm run test:e2e:isolated -- --project=chromium --reporter=list,json 2>&1 \
             | tee pw-stdout.txt
           echo "${PIPESTATUS[0]}" > pw-rc.txt
           echo "Playwright exit code: $(cat pw-rc.txt)"

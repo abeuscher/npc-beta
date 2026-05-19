@@ -62,6 +62,17 @@ services:
       - "8443:443"
     volumes:
       - .:/var/www/html
+      # nginx is the static-file server (root /var/www/html/public). The
+      # repo's public/build is gitignored, so on a fresh CI checkout the
+      # bind-mount above leaves public/build empty and every /build/assets
+      # request falls through to index.php (HTML, not the asset) — no CSS
+      # or JS loads anywhere. The app service un-shadows public/build with
+      # the image-baked Vite build via this same named volume; nginx must
+      # mount it too (read-only — it only serves the files) or it can't
+      # serve what PHP's @vite() references. `depends_on: app` keeps app
+      # the sole volume populator (nginx:alpine has no content at this
+      # path, and :ro can't populate anyway).
+      - app_public_build_e2e:/var/www/html/public/build:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./nginx-certs:/etc/nginx/certs:ro
     depends_on:
