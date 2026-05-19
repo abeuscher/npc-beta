@@ -147,12 +147,14 @@ export function useInlineEdit(
       const path = node.dataset.configKey
       if (!path) return
       const type = node.dataset.configType === 'richtext' ? 'richtext' : 'text'
-      const raw = getByPath(widget.value.config, path)
 
-      // Mandatory safety gate: never edit a node whose raw stored value
-      // carries a {{token}} — substitution runs before render, so an edit
-      // would bake the resolved value and destroy the template.
-      if (typeof raw === 'string' && raw.includes('{{')) return
+      // Token-bearing prose is editable: the editor seeds from and writes
+      // the RAW config value, so a {{token}} shows literally and round-
+      // trips literally — substitution still happens at render. (Owner
+      // decision, session 304: show the token in-place rather than push
+      // the user to the Inspector.) The genuinely-unsafe data-driven
+      // {{item.*}} templates are excluded at the WIDGET level via
+      // inlineEditable()=false, not here.
 
       node.classList.add('inline-editable')
       if (type === 'text') node.classList.add('inline-editable--text')

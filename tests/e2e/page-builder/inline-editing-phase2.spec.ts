@@ -139,7 +139,7 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         expect(JSON.stringify(cfg.columns?.[0]?.attribute_rows?.[0]?.value ?? '')).toContain('ten seats');
     });
 
-    test('token-bearing node is gated off (not editable)', async ({ page }) => {
+    test('token-bearing node is editable and seeds the raw token', async ({ page }) => {
         await page.goto(`/admin/pages/${pageId}/edit`);
         const region = page.locator(`.preview-region[data-widget-id="${tokenTb}"]`);
         await expect(region).toBeVisible({ timeout: 15_000 });
@@ -147,11 +147,17 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         await selectWidget(region);
         await expect(region).toHaveClass(/preview-region--inline-armed/);
 
-        // The widget is eligible, but content carries {{site.name}} → the
-        // per-node runtime gate must leave it inert.
+        // Owner decision (session 304): token-bearing prose is editable.
+        // The editor seeds from / writes the RAW config, so the literal
+        // {{site.name}} is shown and round-trips literally — substitution
+        // still happens at render. (Data-driven {{item.*}} templates stay
+        // excluded at the widget level — see the next test.)
         const content = region.locator('[data-config-key="content"]');
-        await expect(content).toHaveCount(1);
-        await expect(content).not.toHaveClass(/inline-editable/);
+        await expect(content).toHaveClass(/inline-editable/);
+        await content.click();
+        const editor = content.locator('.ql-editor');
+        await expect(editor).toBeVisible({ timeout: 5000 });
+        await expect(editor).toContainText('{{site.name}}');
     });
 
     test('data-driven widget is gated off at the widget level', async ({ page }) => {
