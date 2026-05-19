@@ -300,8 +300,9 @@ jobs:
           echo "--- body (first 3000 bytes) ---"; head -c 3000 /tmp/login.html || true; echo
           echo "--- app container logs (tail) ---"
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs app --tail=150 || true
-          echo "--- laravel.log (tail) ---"
-          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app sh -c 'tail -c 6000 storage/logs/laravel.log 2>/dev/null' || true
+          echo "--- laravel.log: last error (class + message + top frames) ---"
+          docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app sh -c 'grep -aE "local\.(ERROR|CRITICAL)" storage/logs/laravel.log 2>/dev/null | tail -n1 | head -c 2500' || true
+          echo
           exit 1
 
       - name: Run Playwright (chromium) against the isolated stack
