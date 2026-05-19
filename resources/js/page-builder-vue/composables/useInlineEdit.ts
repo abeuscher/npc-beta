@@ -67,6 +67,16 @@ export function useInlineEdit(
     activePath = path
     store.beginInlineEdit(widget.value.id)
     node.focus()
+    // Explicit caret at end — focus() alone on a contenteditable doesn't
+    // reliably show a usable cursor.
+    const sel = window.getSelection()
+    if (sel) {
+      const r = document.createRange()
+      r.selectNodeContents(node)
+      r.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(r)
+    }
 
     const onInput = useDebounceFn(
       () => commit(path, node.innerText),
@@ -96,7 +106,10 @@ export function useInlineEdit(
     const host = document.createElement('div')
     node.appendChild(host)
 
-    const quill = new Quill(host, { modules: { toolbar: false } })
+    // theme:'snow' matches the (working) Inspector RichTextField — its
+    // CSS is already loaded globally, so the editor box is actually
+    // usable. toolbar:false keeps formatting in the Inspector (A interim).
+    const quill = new Quill(host, { theme: 'snow', modules: { toolbar: false } })
     if (typeof raw === 'string' && raw !== '') {
       // Seed from the raw stored value the same way RichTextField does.
       quill.root.innerHTML = raw
@@ -106,6 +119,7 @@ export function useInlineEdit(
     activePath = path
     store.beginInlineEdit(widget.value.id)
     quill.focus()
+    quill.setSelection(quill.getLength(), 0) // visible caret at end
 
     const onChange = useDebounceFn(() => {
       commit(path, quill.root.innerHTML)
@@ -161,10 +175,16 @@ export function useInlineEdit(
 
       const activate = (e: Event) => {
         if (activeNode === node) return
-        teardownActive()
         e.stopPropagation()
-        if (type === 'richtext') activateRich(node, path)
-        else activatePlain(node, path)
+        teardownActive()
+        // Mount AFTER the triggering gesture finishes. Rebuilding the
+        // node's DOM and focusing synchronously inside the pointerdown the
+        // user is mid-click on makes the caret fail to land (press/up
+        // resolve against swapped-out DOM). This was the bug.
+        requestAnimationFrame(() => {
+          if (type === 'richtext') activateRich(node, path)
+          else activatePlain(node, path)
+        })
       }
       handlers.set(node, activate)
       node.addEventListener('pointerdown', activate)

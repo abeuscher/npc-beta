@@ -705,13 +705,39 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     font-style: italic;
     pointer-events: none;
 }
+/* Strip Quill's "snow" chrome so the in-place editor is visually
+   transparent and inherits the widget's own typography/colour/alignment
+   (true WYSIWYG). Quill (snow) is used because its CSS is already loaded
+   globally and makes the editor usable; we only suppress its box. */
+.inline-editable .ql-container,
+.inline-editable .ql-container.ql-snow {
+    border: 0;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    /* Quill snow forces height:100% on container+editor, so the editor
+       fills the widget's full box instead of shrink-wrapping like the
+       original element — that is the "hop" (a flex-centred compact box
+       becomes a full-height top-left block). Let it shrink-wrap so the
+       widget's own centring/layout positions it identically. */
+    height: auto;
+}
 .inline-editable .ql-editor {
     padding: 0;
+    color: inherit;
+    line-height: inherit;
+    text-align: inherit;
+    background: transparent;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
 }
 .inline-editable .ql-editor.ql-blank::before {
     font-style: italic;
     opacity: 0.45;
     left: 0;
+    right: 0;
+    color: inherit;
 }
 
 /* ── Control-bar visual tokens (session 197) ──────────────────────────────*/
