@@ -37,6 +37,12 @@ services:
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
       - app_node_modules_e2e:/var/www/html/node_modules
       - app_vendor_e2e:/var/www/html/vendor
+      # Un-shadow the image-baked Vite build (Dockerfile COPYs
+      # public/build/manifest.json + assets from the node-builder stage).
+      # Without this the .:/var/www/html bind-mount hides it with the
+      # runner's empty public/build → Filament @vite() 500s /admin/login.
+      # app-only (worker renders no views) → single populator, no race.
+      - app_public_build_e2e:/var/www/html/public/build
     depends_on:
       - postgres
       - redis
@@ -114,3 +120,4 @@ volumes:
   app_node_modules_e2e:
   app_vendor_e2e:
   worker_vendor_e2e:
+  app_public_build_e2e:
