@@ -108,7 +108,7 @@ These apply to every applicable control. Not every state applies to every contro
 | Active ("on") | Background `#4f46e5`, icon `#ffffff`. The button reads as the format being on for the current selection. |
 | Mixed | Background `#4f46e5` at 35% opacity, icon `#c7d2fe`. The button reads as "the selection contains both formatted and unformatted text for this format." |
 | Disabled | Icon at 40% opacity, no hover response, `aria-disabled="true"`, click events ignored. |
-| Pressed (active mousedown) | Background slightly darker than active/hover; no transform. Released on mouseup. |
+| Pressed (active mousedown) | On a default/hover control: background `#111827` (gray-900, one step darker than hover). On an active control: background `#4338ca` (`--c-primary-700`, one step darker than active). No transform or icon shift. Released on mouseup. |
 
 ### 4.6 Groups, left to right (by popularity)
 
@@ -177,6 +177,7 @@ Overflow trigger (only visible when collapsed):
 - Popover background, border, shadow per §4.3.
 - Seven rows, top to bottom: Paragraph, Heading 1, Heading 2, Heading 3, Heading 4, Heading 5, Heading 6.
 - Each row renders its label in the **theme's actual font family and weight** for that level. Size is **proportional to the theme's ramp but capped at 22px**. Paragraph renders at body size (~13–14px). Headings scale up to 22px max; visual hierarchy is preserved without making H1 dominate the menu.
+- Rows do **not** apply the theme's `text-transform` (e.g., uppercase) or `letter-spacing` values, even when the theme defines them. Both can compromise scannability at menu sizes; family + weight + clamped size capture each level's visual character without sacrificing readability.
 - Row height: max(28px, label-intrinsic-height + 8px vertical padding). Horizontal padding: 12px.
 - Row hover: background `#374151`.
 - Currently-selected row: a 14px Lucide `check` glyph in `#818cf8` at the row's right edge, vertically centered.
@@ -191,7 +192,7 @@ Overflow trigger (only visible when collapsed):
 - Selecting a swatch applies the corresponding format (`color` for text-color button, `background` for highlight button) to the current selection and closes the popover.
 - Clicking the "No color" swatch removes the corresponding format from the selection.
 - Selection is preserved across opening, applying, and closing (the popover does not take focus from the editor).
-- Keyboard: Arrow keys navigate swatches in a grid (left/right/up/down); Enter/Space applies; Escape closes; Tab cycles through groups (Theme → Swatches → Custom hex). This is a small enhancement to the existing `ColorPicker.vue`; see §13.
+- Keyboard: Arrow keys navigate swatches in a grid (left/right/up/down); Enter/Space applies; Escape closes; Tab cycles through groups (Theme → Swatches → Custom hex). This is a small enhancement to the existing `ColorPicker.vue`; see §6 (Companion changes).
 - Closes on: swatch click, Escape, click outside the popover and outside the editor.
 
 ### 4.10 Link popover
@@ -313,6 +314,10 @@ A11. When the handle transitions from one non-null value to another (re-target),
 
 A12. The inline-editing layer is the sole publisher of the handle. The toolbar is the sole consumer.
 
+A13. **Primary defense against wholesale HTML replacement:** while the handle is non-null, preview-HTML replacement for the widget containing the active field is suppressed via the existing `store.inlineActiveWidgetId` mechanism. No save echo, post-save reconcile, or unrelated refresh may swap that widget's preview HTML while editing is in progress. The reconciling refresh that resolves tokens and re-renders the block fires only after the editor has been intentionally torn down (blur, re-target, deselection).
+
+A14. **Defense-in-depth fallback for wholesale HTML replacement:** the inline-editing layer observes the active field's host element for removal from the document — via a `MutationObserver` on the host's parent subtree (or equivalent removal-detection). If the host element is removed from the document by any code path that bypasses A13, the handle is cleared synchronously within the same microtask. Combined with A6, this guarantees the toolbar can never be left bound to a torn-down editor; the corner-ghost bug is structurally impossible. A13 is the primary defense; A14 closes the gap A13 cannot guarantee unilaterally.
+
 ### B. Appear, disappear, re-target
 
 B1. The toolbar appears when the user clicks a `[data-config-key]` field of `data-config-type="richtext"` inside a selected, inline-eligible widget and the inline-editing layer mounts a Quill instance there.
@@ -321,7 +326,7 @@ B2. The toolbar does not appear on widget selection alone. There must be a live 
 
 B3. On appear, the toolbar fades in over 80ms (ease-out). When `prefers-reduced-motion: reduce` matches, the bar appears instantly.
 
-B4. The toolbar disappears when the active editor blurs and the next interaction is neither inside the toolbar nor inside any toolbar-owned popover.
+B4. The active editor tears down — clearing the handle and hiding the toolbar — on a `pointerdown` event whose target is outside the editor's host element, outside the toolbar, and outside any toolbar-owned popover. This is the single trigger; "blur followed by next interaction outside" is not the rule.
 
 B5. The toolbar disappears when the active editor is destroyed by a widget re-render that swaps the preview HTML wholesale, via the handle being cleared.
 
@@ -331,9 +336,9 @@ B7. The toolbar disappears when the widget being edited is deleted from the page
 
 B8. On disappear, the toolbar fades out over 80ms (ease-in). Under `prefers-reduced-motion: reduce`, the bar disappears instantly.
 
-B9. On re-target (handle changes from one non-null value to another), the toolbar fades out (80ms), repositions to the new field, then fades in (80ms). No sliding/translation animation between positions.
+B9. On **cross-widget re-target** (handle moves between editors in different widgets), the toolbar fades out (80ms), repositions to the new field, then fades in (80ms). No sliding/translation animation between positions. The duration accounts for the widget-level preview re-render that occurs between the two editors and would otherwise be visible under a faster transition.
 
-B10. Same-widget re-target uses the same fade-out / reposition / fade-in pattern as cross-widget re-target. There is one consistent transition.
+B10. On **same-widget re-target** (handle moves between fields in the same widget), the toolbar snaps to the new field's position instantly with no fade. The previous editor's teardown is followed immediately by the new editor's mount with no intervening preview re-render to bridge; a fade pair would feel sluggish at this rate of switching.
 
 B11. On re-target, the previous editor's debounced raw-config save (if any) is flushed before the new editor's handle is bound to the toolbar.
 
@@ -381,7 +386,11 @@ D2. Toolbar buttons do not call `.focus()` on themselves on click.
 
 D3. Activating any toolbar control via click or via the toolbar's own keyboard shortcut (Alt+F10 + Enter; §K) does not collapse, shift, or otherwise alter the Quill selection.
 
-D4. The link popover's URL field is the only element in the entire toolbar UI that takes focus. Opening the link popover captures the current Quill range into a saved variable; closing the popover (Confirm, Cancel, Escape, or click-outside) restores the saved range as the current Quill selection before returning focus to the editor.
+D4. **Pointer interactions** (mouse, touch) on toolbar controls never transfer focus away from the editor; the controls use `mousedown.preventDefault()` to enforce this (D1).
+
+D4a. The one exception under D4 is the link popover's URL field: when the link popover opens via a pointer-driven action, focus moves into the URL field and the current Quill range is captured into a saved variable. Closing the popover (Confirm, Cancel, Escape, or click-outside) restores the saved range as the current Quill selection and returns focus to the editor.
+
+D4b. **Keyboard-driven** focus transfers — Alt+F10 entry to the toolbar (K9), and Tab / arrow navigation within the toolbar (K5–K7) — are explicit, intentional, and not governed by D4. They are specified in §K; D4 governs only pointer interactions.
 
 D5. The color popover, highlight popover, text-style menu, heroicon picker, and overflow menu do not take focus from the editor. The editor's selection remains the active selection while they are open.
 
@@ -663,7 +672,7 @@ K16. The active-pill background `#4f46e5` meets ≥ 3:1 contrast against the bar
 
 K17. `prefers-reduced-motion: reduce` disables: the appear/disappear/re-target fades (§B3, B8, B9), any popover open/close transitions, and any pointer/hover micro-animations. State changes happen instantly.
 
-K18. The color popover's keyboard support is: arrow keys navigate swatches in a 2-D grid (within Theme colors, within My swatches), Enter/Space applies the focused swatch, Tab moves between groups (Theme colors → My swatches → Custom hex), Escape closes. This is a small enhancement to the existing `ColorPicker.vue` (§13.3).
+K18. The color popover's keyboard support is: arrow keys navigate swatches in a 2-D grid (within Theme colors, within My swatches), Enter/Space applies the focused swatch, Tab moves between groups (Theme colors → My swatches → Custom hex), Escape closes. This is a small enhancement to the existing `ColorPicker.vue` (§6.1).
 
 K19. The toolbar does not implement touch-specific affordances. Mouse + keyboard are the supported input modes.
 
@@ -723,7 +732,44 @@ M16. The toolbar MUST NOT introduce a "view HTML source" mode, a word-count disp
 
 ---
 
-## 6. Reconciliation with visual references
+## 6. Companion changes (engineering scope outside the toolbar itself)
+
+The toolbar relies on the following changes elsewhere in the codebase. Each is small in isolation, but together they represent the engineering scope around the toolbar — enumerated concretely here so they are not surprises mid-build.
+
+### 6.1 `ColorPicker.vue`
+
+- **Existing, used unchanged:** the component already exposes a `panelOnly` prop (defaults to `false`). The toolbar's color and highlight popovers use this mode as-is; no new mode is introduced.
+- **New: arrow-key grid navigation.** Within each swatch group (Theme colors, My swatches), Left/Right/Up/Down arrows move keyboard focus across the swatches as a 2-D grid; Enter or Space applies the focused swatch; Tab moves between groups (Theme colors → My swatches → Custom hex). Escape close is already implemented and is unchanged.
+
+### 6.2 HTML sanitizer
+
+- The sanitizer applied in `PageWidget::saving` (and the recursive repeater-row pass added in session 304) must permit `target` and `rel` attributes on `<a>` tags. Without this, the link popover's "Open in new tab" checkbox cannot persist — the attributes are silently stripped on save and the link loses its target on the next render.
+- Permitted values on `<a>`: `target="_blank"` and `rel="noopener noreferrer"`. The toolbar emits these literally via Quill's link format; the sanitizer must keep them.
+- This is a one-time sanitizer-rule addition, not a per-link decision.
+
+### 6.3 Page-builder bootstrap data
+
+Two additions to the data the Vue layer receives via `WidgetResource` / the page-builder mount payload:
+
+- **Resolved theme font stacks.** The heading-bucket and body-bucket font-family CSS strings, resolved by `TypographyResolver`, exposed as `theme_heading_family` and `theme_body_family` on the bootstrap payload. The text-style menu (§4.8) renders each row in the theme's actual family using these values. Without them, the menu falls back to the bar's UI font and the WYSIWYG-preview promise of the spec is not met.
+- **Resolved page URL per entry in `pages`.** Each `PageRef` in the bootstrap data must include the page's currently-resolved URL alongside its existing fields (title, id, etc.). The link popover's page picker (§4.10) populates the URL field from this value when a page is selected. Verify whether `PageRef` already carries this; surface as a real addition if not.
+
+### 6.4 Lucide icon delivery
+
+Lucide is a new dependency. **Decision: install `lucide-vue-next` as an npm dependency** and import each icon via tree-shakeable named imports.
+
+Rationale:
+- The page-builder Vue app builds through Vite; tree-shakeable per-icon imports keep bundle size minimal (only the ~18 toolbar icons are bundled).
+- Avoids vendored-SVGs-drift-from-upstream maintenance.
+- `lucide-vue-next` is the official Vue 3 package, semver-stable, widely used.
+
+Alternative considered and rejected: vendor the ~18 SVGs into the repo (similar to how Heroicons is delivered via `blade-ui-kit/blade-heroicons`). Rejected because (a) the vendored set drifts from upstream over time, (b) tree-shaking already gives the same bundle-size benefit without manual sync, (c) it forks the icon-set update path for no win.
+
+Heroicons remains the icon set for the Blade/admin chrome and any content-level uses elsewhere; Lucide is scoped to the inline formatting toolbar's button glyphs.
+
+---
+
+## 7. Reconciliation with visual references
 
 The visual references shared during design conflicted with the hard constraints in a few places. The constraint wins; this section records the conflict and the resolution.
 
@@ -737,13 +783,13 @@ The visual references shared during design conflicted with the hard constraints 
 
 ---
 
-## 7. Visual rendering checklist
+## 8. Visual rendering checklist
 
 When the mockup images are produced (in a design tool, downstream of this spec), they must match every value in §4. The mockups must include all 10 states listed in §4.15. Any deviation from this spec discovered during mockup production is a spec issue, not a mockup issue, and must be resolved by amending this document first.
 
 ---
 
-## 8. Known follow-ups (out of scope for this work)
+## 9. Known follow-ups (out of scope for this work)
 
 These are intentionally not built. Each is a real, named decision deferred to a future session.
 
@@ -754,6 +800,6 @@ These are intentionally not built. Each is a real, named decision deferred to a 
 
 ---
 
-## 9. Acceptance
+## 10. Acceptance
 
-This spec is the implementation contract. A build is conformant when every rule in §5 passes its testable form, every visual in §4 matches the mockup output, and every "MUST NOT" rule in §M holds. The non-goals in §8 are not requirements to satisfy — they are explicit deferrals.
+This spec is the implementation contract. A build is conformant when every rule in §5 passes its testable form, every visual in §4 matches the mockup output, every "MUST NOT" rule in §5.M holds, and the companion changes in §6 are made. The deferred follow-ups in §9 are not requirements to satisfy — they are explicit deferrals.
