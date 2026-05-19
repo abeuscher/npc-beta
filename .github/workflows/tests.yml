@@ -14,6 +14,11 @@ on:
 jobs:
   fast:
     name: Fast suite
+    # TEMP(session-304 e2e debug) — REVERT before merge: skipped so pushes
+    # run ONLY the Playwright job for a fast iteration loop. Restore by
+    # deleting this `if:` (and the matching ones on slow/tests) and putting
+    # `needs: slow` back on the playwright job.
+    if: false
     runs-on: ubuntu-latest
 
     services:
@@ -97,6 +102,8 @@ jobs:
   slow:
     name: Slow suite
     needs: fast
+    # TEMP(session-304 e2e debug) — REVERT before merge (see `fast` note).
+    if: false
     runs-on: ubuntu-latest
 
     services:
@@ -191,7 +198,9 @@ jobs:
   # stabilised; promote it into `tests.needs` once it is reliably green.
   playwright:
     name: Playwright e2e (isolated stack)
-    needs: slow
+    # TEMP(session-304 e2e debug) — REVERT before merge: `needs: slow` was
+    # removed so this runs immediately/standalone on push (no ~8min wait on
+    # the Pest jobs). Restore `needs: slow` when done.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -319,6 +328,8 @@ jobs:
   tests:
     name: Tests
     needs: [fast, slow]
+    # TEMP(session-304 e2e debug) — REVERT before merge (see `fast` note).
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate result

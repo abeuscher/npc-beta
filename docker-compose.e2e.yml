@@ -91,7 +91,12 @@ services:
     volumes:
       - .:/var/www/html
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
-      - app_vendor_e2e:/var/www/html/vendor
+      # Own vendor volume — must NOT share app_vendor_e2e with the app
+      # service: on a fresh runner Docker populates an empty named volume
+      # from the image, and two services mounting the same fresh volume
+      # race that copy ("mkdir vendor/openspout/openspout: file exists"),
+      # failing `compose up`. One populator per volume = deterministic.
+      - worker_vendor_e2e:/var/www/html/vendor
     depends_on:
       - postgres
       - redis
@@ -108,3 +113,4 @@ volumes:
   redis_data_e2e:
   app_node_modules_e2e:
   app_vendor_e2e:
+  worker_vendor_e2e:
