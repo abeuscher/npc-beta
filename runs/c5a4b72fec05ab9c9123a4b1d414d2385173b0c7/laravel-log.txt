@@ -1,0 +1,720 @@
+[2026-05-19 08:44:19] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev1@example.com
+Subject: You're registered: Spring Gala
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:19 +0000
+Message-ID: <cc616adeaadfa04c921efc10f31b9343@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Alex,</p><p>You are registered for <strong>Spring Gala</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:19] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev2@example.com
+Subject: You're registered: Summer Workshop
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:19 +0000
+Message-ID: <1aff0256999cc9d1636d5662db6390e9@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Jordan,</p><p>You are registered for <strong>Summer Workshop</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:19] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev3@example.com
+Subject: You're registered: Fall Benefit Dinner
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:19 +0000
+Message-ID: <3e53752365f82f70d27ae4a80ac09d31@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Morgan,</p><p>You are registered for <strong>Fall Benefit Dinner</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:22] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev1@example.com
+Subject: You're registered: Spring Gala
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:22 +0000
+Message-ID: <ae03dcd279fad8ecb3112206bcef0f27@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Alex,</p><p>You are registered for <strong>Spring Gala</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:22] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev2@example.com
+Subject: You're registered: Summer Workshop
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:22 +0000
+Message-ID: <06d2ee305ee61246765fbfb9c2bbaa0f@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Jordan,</p><p>You are registered for <strong>Summer Workshop</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:22] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev3@example.com
+Subject: You're registered: Fall Benefit Dinner
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:22 +0000
+Message-ID: <8c7f000eb39e5b75ebc4fa9c505532a4@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Morgan,</p><p>You are registered for <strong>Fall Benefit Dinner</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:44] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev1@example.com
+Subject: You're registered: Spring Gala
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:44 +0000
+Message-ID: <6a3048aba5f6d38848faee3fc2d032c7@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Alex,</p><p>You are registered for <strong>Spring Gala</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:44] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev2@example.com
+Subject: You're registered: Summer Workshop
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:44 +0000
+Message-ID: <48177bd9af0c0f210aebce4cc1a0ba7a@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Jordan,</p><p>You are registered for <strong>Summer Workshop</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:44] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev3@example.com
+Subject: You're registered: Fall Benefit Dinner
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:44 +0000
+Message-ID: <b5407cdc429783d353100c9f5975f677@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Morgan,</p><p>You are registered for <strong>Fall Benefit Dinner</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:47] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev1@example.com
+Subject: You're registered: Spring Gala
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:47 +0000
+Message-ID: <e632b40ee2183ad332259c9a0902e6c4@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Alex,</p><p>You are registered for <strong>Spring Gala</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:47] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev2@example.com
+Subject: You're registered: Summer Workshop
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:47 +0000
+Message-ID: <da501a57d9bc1061803e85148c3de1ec@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Jordan,</p><p>You are registered for <strong>Summer Workshop</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
+[2026-05-19 08:44:47] local.DEBUG: From: NonProfitCRM <hello@example.com>
+To: ev3@example.com
+Subject: You're registered: Fall Benefit Dinner
+MIME-Version: 1.0
+Date: Tue, 19 May 2026 08:44:47 +0000
+Message-ID: <207e6c148ee760c642e12dbb58ff727f@example.com>
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+  .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; }
+  .header { background: #1a56db; padding: 24px 32px; text-align: center; }
+  .header img { max-height: 60px; display: block; margin: 0 auto 12px; }
+  .header h1 { color: #ffffff; font-size: 20px; margin: 0; }
+  .body { padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; }
+  .footer { background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0; }
+  .footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+  <tr>
+    <td align="center" style="padding: 24px 0;">
+      <table class="wrapper" width="600" cellpadding="0" cellspacing="0" role="presentation">
+
+        
+        <tr>
+          <td class="header" style="background: #1a56db; padding: 24px 32px; text-align: center;">
+                                  </td>
+        </tr>
+
+        
+        <tr>
+          <td class="body" style="padding: 32px; color: #333333; font-size: 15px; line-height: 1.6; background: #ffffff;">
+            <p>Hi Morgan,</p><p>You are registered for <strong>Fall Benefit Dinner</strong>.</p>
+          </td>
+        </tr>
+
+        
+        <tr>
+          <td class="footer" style="background: #f4f4f4; padding: 20px 32px; font-size: 12px; color: #888888; border-top: 1px solid #e0e0e0;">
+                                                              <p style="margin: 12px 0 4px;">You received this email because you registered for {{event_title}}.</p>
+                      </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
+
+  
