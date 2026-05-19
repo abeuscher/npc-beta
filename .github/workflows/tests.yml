@@ -339,6 +339,15 @@ jobs:
           cp pw-rc.txt out/rc.txt 2>/dev/null || echo unknown > out/rc.txt
           node scripts/ci/pw-digest.mjs playwright-results.json > out/digest.md 2>/dev/null \
             || echo "(digest generation failed — see stdout.txt)" > out/digest.md
+          # Class-A evidence: capture server-side state from the still-running
+          # e2e app container BEFORE teardown. laravel.log holds every
+          # exception thrown during the Playwright run (why pages 500/blank);
+          # the build manifest listing shows whether Vite/admin assets are
+          # present; the sanity probe confirms the Faker fix (Class B).
+          DC="docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app"
+          $DC sh -c 'tail -c 120000 storage/logs/laravel.log 2>/dev/null' > out/laravel-log.txt 2>&1 || echo "(no laravel.log)" > out/laravel-log.txt
+          $DC sh -c 'echo "== public/build =="; ls -la public/build 2>&1; echo; echo "== public/build/assets (head) =="; ls -la public/build/assets 2>&1 | head -30; echo; echo "== manifest.json (head) =="; head -c 2500 public/build/manifest.json 2>&1; echo; echo "== public/build/widgets =="; ls -la public/build/widgets 2>&1; echo "== widgets/manifest.json =="; head -c 1500 public/build/widgets/manifest.json 2>&1' > out/build-state.txt 2>&1 || echo "(build-state capture failed)" > out/build-state.txt
+          $DC sh -c 'php artisan --version 2>&1; echo "--- composer faker ---"; composer show fakerphp/faker 2>&1 | head -3; echo "--- csv:generate-fake-imports --seed=1 ---"; php artisan csv:generate-fake-imports --seed=1 2>&1 | tail -10' > out/faker-sanity.txt 2>&1 || echo "(faker sanity failed)" > out/faker-sanity.txt
           REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           if git clone --quiet --branch ci-logs/playwright "$REPO_URL" cilogs 2>/dev/null; then
             cd cilogs

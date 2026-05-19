@@ -26,6 +26,12 @@ services:
       target: app
       args:
         APP_VERSION: ${APP_VERSION:-dev}
+        # The e2e stack is a test environment: it needs Composer dev
+        # dependencies (e.g. fakerphp/faker) so test-support artisan
+        # commands like `csv:generate-fake-imports` and
+        # `seed:fake-import-sources` work. The default image build is
+        # `--no-dev` (production); `public-dev` keeps dev deps.
+        BUILD_ENV: public-dev
     image: nonprofitcrm-app:latest
     container_name: nonprofitcrm_e2e_app
     restart: unless-stopped
@@ -87,6 +93,10 @@ services:
       target: app
       args:
         APP_VERSION: ${APP_VERSION:-dev}
+        # Same image as `app` — keep the dev-deps build arg consistent so
+        # whichever service builds the shared tag first produces an image
+        # that includes Composer dev dependencies.
+        BUILD_ENV: public-dev
     image: nonprofitcrm-app:latest
     container_name: nonprofitcrm_e2e_worker
     restart: unless-stopped
