@@ -94,6 +94,12 @@ RUN pecl install redis \
 # -d pcov.enabled=1`. Default Pest runs are unaffected.
 RUN pecl install pcov
 
+# Large-upload PHP limits. Baked here (not bind-mounted) so prod + worker
+# — which mount no php ini — get 768M instead of stock 2M/8M, which is
+# why off-local zip/theme/media imports were failing. `zz-` sorts last in
+# conf.d so it wins even where local.ini is mounted (dev/e2e).
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/zz-uploads.ini
+
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
