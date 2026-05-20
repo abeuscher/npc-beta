@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, markRaw } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import type {
   Widget,
@@ -103,13 +103,19 @@ export const useEditorStore = defineStore('editor', () => {
     configPath: string
     getRect: () => DOMRect
   }): void {
-    activeInlineEditor.value = payload
+    // markRaw prevents Vue from wrapping the payload (and especially the
+    // Quill instance) in a reactive Proxy. Without this, `cur.quill ===
+    // quill` in clearActiveInlineEditor compares a Proxy to the raw
+    // instance and always returns false — so the handle was never cleared
+    // on teardown and the toolbar stayed visible forever.
+    activeInlineEditor.value = markRaw(payload)
   }
 
   // Clear only if the caller's instance is still the published one — a late
   // teardown from a superseded editor must not wipe a newer active editor.
   function clearActiveInlineEditor(quill: any): void {
-    if (activeInlineEditor.value && activeInlineEditor.value.quill === quill) {
+    const cur = activeInlineEditor.value
+    if (cur && cur.quill === quill) {
       activeInlineEditor.value = null
     }
   }
