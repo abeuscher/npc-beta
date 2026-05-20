@@ -119,8 +119,21 @@ function recomputeFormatState(): void {
   const h = handle.value
   if (!h) return
   const quill = h.quill
-  const range = quill.getSelection() // may be null if editor doesn't have focus
-  const fmt = range ? quill.getFormat(range.index, range.length) : quill.getFormat()
+  // Quill v2's getSelection() can throw on a freshly mounted editor whose
+  // native selection hasn't normalised yet (anchorNode null → offset read
+  // on null). Treat any failure as "no selection / no format" and let the
+  // first editor-change event repaint the live state. Without this guard
+  // the watcher aborts and the bar never fades in (305 ghosting was a
+  // surface symptom; this is the same underlying class of race).
+  let range: { index: number; length: number } | null = null
+  let fmt: Record<string, any> = {}
+  try {
+    range = quill.getSelection()
+    fmt = range ? quill.getFormat(range.index, range.length) : quill.getFormat()
+  } catch {
+    range = null
+    fmt = {}
+  }
   const next: FormatState = {
     bold: triFor(fmt.bold),
     italic: triFor(fmt.italic),

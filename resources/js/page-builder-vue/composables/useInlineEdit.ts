@@ -193,8 +193,13 @@ export function useInlineEdit(
     activeNode = node
     activeQuill = quill
     activePath = path
-    // Publish to the shared-toolbar rendezvous BEFORE focusing so the one
-    // app-level toolbar binds to this instance (spec §A4 handle shape).
+    // Focus + caret BEFORE publishing the handle so the toolbar's first
+    // synchronous read of getSelection()/getFormat() has a settled
+    // selection (Quill v2 throws on a freshly mounted editor whose native
+    // anchorNode is still null).
+    quill.focus()
+    quill.setSelection(quill.getLength(), 0) // visible caret at end
+    // Publish to the shared-toolbar rendezvous (spec §A4 handle shape).
     // hostEl is the [data-config-key] field wrapper — the anchor the
     // toolbar measures for positioning (§C1).
     store.setActiveInlineEditor({
@@ -205,8 +210,6 @@ export function useInlineEdit(
       getRect: () => node.getBoundingClientRect(),
     })
     store.beginInlineEdit(widget.value.id)
-    quill.focus()
-    quill.setSelection(quill.getLength(), 0) // visible caret at end
 
     // §A14: observe the preview-html container's direct children for
     // wholesale replacement. `v-html` updates set innerHTML on the
