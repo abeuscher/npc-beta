@@ -191,8 +191,28 @@ export function useInlineEdit(
     // usable. toolbar:false keeps formatting in the Inspector (A interim).
     const quill = new Quill(host, { theme: 'snow', modules: { toolbar: false } })
     if (typeof raw === 'string' && raw !== '') {
-      // Seed from the raw stored value the same way RichTextField does.
-      quill.root.innerHTML = raw
+      // Seed via Quill's clipboard parser, NOT by assigning to
+      // root.innerHTML. Two reasons:
+      //  (a) `quill.root.innerHTML = raw` bypasses Quill's blot parser, so
+      //     legacy markup like <ul><li> (which Quill v2 represents as
+      //     <ol><li data-list="bullet">) gets visually rendered but
+      //     stripped on the next normalization pass — the list disappears
+      //     the moment the editor takes focus.
+      //  (b) Direct-innerHTML seeding leaves Quill's internal Delta
+      //     EMPTY. The seeded content is on screen but Quill doesn't know
+      //     about it. Ctrl+Z then "undoes" through the user's edits and
+      //     finally to Quill's empty initial state — wiping all visible
+      //     content. clipboard.convert produces a real Delta;
+      //     setContents (silent) establishes the editor's initial state
+      //     without putting it in the history; history.clear ensures the
+      //     user can't undo below that initial state.
+      try {
+        const delta = quill.clipboard.convert({ html: raw })
+        quill.setContents(delta, 'silent')
+        quill.history?.clear?.()
+      } catch {
+        quill.root.innerHTML = raw
+      }
     }
     activeNode = node
     activeQuill = quill
