@@ -12,6 +12,13 @@ const store = useEditorStore()
 
 const isSelected = computed(() => store.selectedBlockId === props.widget.id)
 
+// Spec §C14: while a field inside this widget is being inline-edited,
+// hide the widget's drag-grip + Edit affordance so they don't compete
+// with the floating toolbar.
+const hasActiveInlineEditor = computed(
+  () => store.activeInlineEditor?.widgetId === props.widget.id,
+)
+
 const htmlEl = ref<HTMLElement | null>(null)
 
 // Armed = this widget is selected AND code-declared inline-eligible. Only
@@ -64,6 +71,7 @@ function handleEdit() {
       'preview-region--refreshing-blur': indicatorStage >= 1,
       'preview-region--refreshing-spinner': indicatorStage >= 2,
       'preview-region--inline-armed': inlineArmed,
+      'preview-region--inline-active': hasActiveInlineEditor,
     }"
     :aria-busy="indicatorStage >= 1 ? 'true' : undefined"
     :data-widget-id="widget.id"
@@ -221,6 +229,15 @@ function handleEdit() {
 .preview-region--selected > .preview-region__edit {
   opacity: 1;
   transform: translateX(0);
+}
+
+/* Spec §C14: suppress the drag-grip + Edit corner affordances while a
+   field inside this widget is being inline-edited; the floating toolbar
+   owns the chrome at that moment. */
+.preview-region--inline-active > .preview-region__handle,
+.preview-region--inline-active > .preview-region__edit {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .preview-region__spinner {

@@ -81,19 +81,28 @@ export const useEditorStore = defineStore('editor', () => {
   // dirty-guard, applied to the v-html refresh instead of a modelValue watch.
   const inlineActiveWidgetId = ref<string | null>(null)
 
-  // ── Active-editor handle (session 305 §A / docs/inline-formatting-toolbar-spec.md)
-  // The single shared reactive value the inline formatting toolbar will
-  // read to drive whichever rich-text Quill instance is currently active.
+  // ── Active-editor handle (docs/inline-formatting-toolbar-spec.md §A4)
+  // The single shared reactive value the inline formatting toolbar reads
+  // to drive whichever rich-text Quill instance is currently active.
   // useInlineEdit publishes here on richtext activation and clears on
-  // teardown. Exactly one editor active at a time — what makes the 137
-  // multi-region floating-toolbar conflict structurally impossible.
-  // Plaintext (contenteditable) nodes never publish — nothing to format.
-  // NOTE: the next session extends this record to the full §A4 shape
-  // ({ quill, hostEl, widgetId, configPath, getRect }); the current stub
-  // is the minimal foundation.
-  const activeInlineEditor = ref<{ quill: any; widgetId: string; path: string } | null>(null)
+  // teardown. Plaintext (contenteditable) nodes never publish — nothing
+  // to format. The toolbar holds no direct Quill reference; every
+  // operation reads `activeInlineEditor.value.quill` at call time (§A7).
+  const activeInlineEditor = ref<{
+    quill: any
+    hostEl: HTMLElement
+    widgetId: string
+    configPath: string
+    getRect: () => DOMRect
+  } | null>(null)
 
-  function setActiveInlineEditor(payload: { quill: any; widgetId: string; path: string }): void {
+  function setActiveInlineEditor(payload: {
+    quill: any
+    hostEl: HTMLElement
+    widgetId: string
+    configPath: string
+    getRect: () => DOMRect
+  }): void {
     activeInlineEditor.value = payload
   }
 

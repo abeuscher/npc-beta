@@ -5,6 +5,7 @@ import { useEditorStore } from './stores/editor'
 import EditorToolbar from './components/EditorToolbar.vue'
 import PreviewCanvas from './components/PreviewCanvas.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
+import InlineFormatToolbar from './components/InlineFormatToolbar.vue'
 
 const props = defineProps<{
   bootstrap: BootstrapData
@@ -74,6 +75,11 @@ onUnmounted(() => {
         Save as Template
       </button>
     </div>
+
+    <!-- Spec §A1/§A2/§C15: exactly one toolbar, created with the
+         page-builder, never destroyed at runtime, mounted into a fixed
+         layer at app root via <Teleport>; never inside any v-html. -->
+    <InlineFormatToolbar />
   </div>
 </template>
 

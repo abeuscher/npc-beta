@@ -35,6 +35,13 @@ export function useInlineEdit(
   let activePath: string | null = null
   let activeCommit: (() => void) | null = null
   let outsideBound = false
+  // Spec §A14: defence-in-depth fallback against wholesale HTML replacement.
+  // §A13 (centralised refreshPreview suppression) is the primary defence;
+  // this observer catches any path that bypasses A13 — if the active host
+  // element is removed from the document, clear the handle synchronously
+  // within the same microtask so the toolbar can never bind to a torn-down
+  // editor.
+  let activeRemovalObserver: MutationObserver | null = null
 
   const armed: HTMLElement[] = []
   const handlers = new WeakMap<HTMLElement, (e: Event) => void>()
@@ -58,8 +65,13 @@ export function useInlineEdit(
     // Inside this widget's preview → field switching is handled by the
     // per-node activate handlers; clicking inert parts keeps the session.
     if (htmlEl.value && htmlEl.value.contains(t)) return
-    // The one shared toolbar (and its link popover) — never an exit.
+    // The one shared toolbar — never an exit (spec §B12).
     if (t.closest && t.closest('[data-inline-toolbar]')) return
+    // Toolbar-owned popovers teleport to <body> at app root, so they sit
+    // outside both the preview HTML and the bar's own DOM subtree. Clicks
+    // inside them (link URL field, color swatches, page picker rows) must
+    // not collapse the edit session.
+    if (t.closest && t.closest('[data-inline-toolbar-popover]')) return
     teardownActive()
   }
 
@@ -108,6 +120,10 @@ export function useInlineEdit(
     activePath = null
     activeCommit = null
     unbindOutsideClose()
+    if (activeRemovalObserver) {
+      activeRemovalObserver.disconnect()
+      activeRemovalObserver = null
+    }
     if (quill) {
       // Replace the Quill chrome with the edited HTML so the field reads
       // correctly even when we deliberately skip the reconciling refresh.
@@ -178,11 +194,39 @@ export function useInlineEdit(
     activeQuill = quill
     activePath = path
     // Publish to the shared-toolbar rendezvous BEFORE focusing so the one
-    // app-level toolbar binds to this instance (constraint C2).
-    store.setActiveInlineEditor({ quill, widgetId: widget.value.id, path })
+    // app-level toolbar binds to this instance (spec §A4 handle shape).
+    // hostEl is the [data-config-key] field wrapper — the anchor the
+    // toolbar measures for positioning (§C1).
+    store.setActiveInlineEditor({
+      quill,
+      hostEl: node,
+      widgetId: widget.value.id,
+      configPath: path,
+      getRect: () => node.getBoundingClientRect(),
+    })
     store.beginInlineEdit(widget.value.id)
     quill.focus()
     quill.setSelection(quill.getLength(), 0) // visible caret at end
+
+    // §A14: observe the preview-html container's direct children for
+    // wholesale replacement. `v-html` updates set innerHTML on the
+    // container which removes the field-bearing subtree all at once;
+    // subtree:false keeps us out of Quill's own per-keystroke mutations.
+    // If the active host element is no longer in the document, clear the
+    // handle synchronously so the toolbar can never be left bound to a
+    // torn-down editor. Belt-and-braces with §A13 (centralised
+    // refreshPreview suppression).
+    const observeTarget = htmlEl.value
+    if (observeTarget && typeof MutationObserver !== 'undefined') {
+      const observer = new MutationObserver(() => {
+        if (activeQuill !== quill) return
+        if (!document.contains(node)) {
+          teardownActive(false)
+        }
+      })
+      observer.observe(observeTarget, { childList: true, subtree: false })
+      activeRemovalObserver = observer
+    }
 
     activeCommit = () => commit(path, quill.root.innerHTML)
     const onChange = useDebounceFn(() => {

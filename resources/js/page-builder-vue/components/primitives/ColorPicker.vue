@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../stores/editor'
 
 const props = withDefaults(
@@ -28,7 +28,15 @@ const store = useEditorStore()
 const isOpen = ref(false)
 const rootEl = ref<HTMLElement | null>(null)
 
-defineExpose({ isOpen })
+// Spec §6.1 / §K18: arrow-key grid navigation across the swatch groups.
+// Roving tabindex within each group so Tab moves between groups (theme →
+// my swatches → custom hex) and arrow keys move 2-D within a group. The
+// arrow-key dispatch uses bounding rects (not column counts) so the
+// behaviour is correct regardless of how the flex-wrap row breaks.
+const themeGroupEl = ref<HTMLElement | null>(null)
+const myGroupEl = ref<HTMLElement | null>(null)
+const focusedThemeIdx = ref(0)
+const focusedMyIdx = ref(0)
 
 const hasValue = computed(() => !!props.modelValue)
 
@@ -91,6 +99,93 @@ function onKeydown(e: KeyboardEvent): void {
   }
 }
 
+// Move keyboard focus to the next/previous swatch within a group.
+// direction: 'left'|'right' → linear; 'up'|'down' → closest by rect centre
+// X on the row above/below. Returns true if focus was moved.
+function moveSwatchFocus(
+  groupEl: HTMLElement | null,
+  currentIdx: number,
+  direction: 'left' | 'right' | 'up' | 'down',
+): number {
+  if (!groupEl) return currentIdx
+  const items = Array.from(
+    groupEl.querySelectorAll<HTMLElement>('[data-cp-swatch="1"]'),
+  )
+  if (items.length === 0) return currentIdx
+  const current = items[currentIdx] ?? items[0]
+  if (direction === 'left') {
+    const next = Math.max(0, currentIdx - 1)
+    items[next]?.focus()
+    return next
+  }
+  if (direction === 'right') {
+    const next = Math.min(items.length - 1, currentIdx + 1)
+    items[next]?.focus()
+    return next
+  }
+  const curRect = current.getBoundingClientRect()
+  const curX = curRect.left + curRect.width / 2
+  const above = direction === 'up'
+  const candidates = items
+    .map((el, i) => ({ el, i, rect: el.getBoundingClientRect() }))
+    .filter(({ rect }) =>
+      above ? rect.bottom <= curRect.top + 2 : rect.top >= curRect.bottom - 2,
+    )
+  if (candidates.length === 0) return currentIdx
+  const targetEdge = above
+    ? Math.max(...candidates.map((c) => c.rect.bottom))
+    : Math.min(...candidates.map((c) => c.rect.top))
+  const sameRow = candidates.filter((c) =>
+    above
+      ? Math.abs(c.rect.bottom - targetEdge) < 4
+      : Math.abs(c.rect.top - targetEdge) < 4,
+  )
+  let best = sameRow[0]
+  let bestDist = Math.abs(best.rect.left + best.rect.width / 2 - curX)
+  for (const c of sameRow.slice(1)) {
+    const d = Math.abs(c.rect.left + c.rect.width / 2 - curX)
+    if (d < bestDist) {
+      best = c
+      bestDist = d
+    }
+  }
+  best.el.focus()
+  return best.i
+}
+
+function onThemeSwatchKey(e: KeyboardEvent, idx: number): void {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    const dir = e.key.replace('Arrow', '').toLowerCase() as 'left'|'right'|'up'|'down'
+    focusedThemeIdx.value = moveSwatchFocus(themeGroupEl.value, idx, dir)
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).click()
+  }
+}
+
+function onMySwatchKey(e: KeyboardEvent, idx: number): void {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    const dir = e.key.replace('Arrow', '').toLowerCase() as 'left'|'right'|'up'|'down'
+    focusedMyIdx.value = moveSwatchFocus(myGroupEl.value, idx, dir)
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).click()
+  }
+}
+
+function focusFirstSwatch(): void {
+  nextTick(() => {
+    const target =
+      themeGroupEl.value?.querySelector<HTMLElement>('[data-cp-swatch="1"]') ??
+      myGroupEl.value?.querySelector<HTMLElement>('[data-cp-swatch="1"]')
+    target?.focus()
+  })
+}
+
+defineExpose({ isOpen, focusFirstSwatch })
+
 onMounted(() => {
   if (!props.panelOnly) {
     document.addEventListener('click', onDocumentClick)
@@ -136,24 +231,32 @@ onBeforeUnmount(() => {
     <div v-if="panelOnly || isOpen" class="color-picker__popover" role="dialog" aria-label="Color picker">
       <div v-if="store.themePalette.length > 0" class="color-picker__group">
         <p class="inspector-section-title">Theme colors</p>
-        <div class="color-picker__swatches">
+        <div ref="themeGroupEl" class="color-picker__swatches">
           <button
-            v-for="entry in store.themePalette"
+            v-for="(entry, idx) in store.themePalette"
             :key="entry.key"
             type="button"
+            data-cp-swatch="1"
             class="color-picker__swatch color-picker__swatch--theme"
             :class="{ 'color-picker__swatch--unset': !entry.value }"
             :style="entry.value ? { backgroundColor: entry.value } : undefined"
             :title="entry.value ? `${entry.label}: ${entry.value}` : `${entry.label}: (unset)`"
             :disabled="!entry.value"
+            :tabindex="idx === focusedThemeIdx ? 0 : -1"
+            @focus="focusedThemeIdx = idx"
+            @keydown="onThemeSwatchKey($event, idx)"
             @click="entry.value && selectColor(entry.value)"
           >
             <span class="color-picker__swatch-sr">{{ entry.label }}</span>
           </button>
           <button
             type="button"
+            data-cp-swatch="1"
             class="color-picker__swatch color-picker__swatch--no-color"
             title="No color"
+            :tabindex="store.themePalette.length === focusedThemeIdx ? 0 : -1"
+            @focus="focusedThemeIdx = store.themePalette.length"
+            @keydown="onThemeSwatchKey($event, store.themePalette.length)"
             @click="clearColor"
           >
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -168,14 +271,18 @@ onBeforeUnmount(() => {
 
       <div class="color-picker__group">
         <p class="inspector-section-title">My swatches</p>
-        <div class="color-picker__swatches">
+        <div ref="myGroupEl" class="color-picker__swatches">
           <button
             v-for="(swatch, index) in store.colorSwatches"
             :key="index"
             type="button"
+            data-cp-swatch="1"
             class="color-picker__swatch"
             :style="{ backgroundColor: swatch }"
             :title="swatch"
+            :tabindex="index === focusedMyIdx ? 0 : -1"
+            @focus="focusedMyIdx = index"
+            @keydown="onMySwatchKey($event, index)"
             @click="selectColor(swatch)"
           >
             <span
@@ -186,9 +293,13 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
+            data-cp-swatch="1"
             class="color-picker__swatch color-picker__swatch--add"
             title="Save current color as swatch"
             :disabled="!hasValue"
+            :tabindex="store.colorSwatches.length === focusedMyIdx ? 0 : -1"
+            @focus="focusedMyIdx = store.colorSwatches.length"
+            @keydown="onMySwatchKey($event, store.colorSwatches.length)"
             @click="addCurrentSwatch"
           >+</button>
         </div>
