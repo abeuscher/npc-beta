@@ -94,7 +94,11 @@ it('renders path-addressed annotations + empty wrappers on canvas only', functio
         'sort_order' => 0, 'is_active' => true,
     ]);
 
-    $canvas = WidgetRenderer::render($pw, slotHandle: 'page_builder_canvas')['html'];
+    // Session 305: inline-editing is its own opt-in flag — only the
+    // builder preview renderer passes true. The canvas slot alone no
+    // longer implies editing scaffolding (which was leaking onto the
+    // public site when PageBlockRenderer hit the default slot).
+    $canvas = WidgetRenderer::render($pw, slotHandle: 'page_builder_canvas', inlineEditing: true)['html'];
     $public = WidgetRenderer::render($pw, slotHandle: 'page_main')['html'];
 
     // Path addressing reaches nested repeater leaves.

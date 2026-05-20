@@ -145,6 +145,11 @@ export interface Tag {
 export interface PageRef {
   slug: string
   title: string
+  // Session 305 §6.3: resolved URL for this page, populated by the
+  // page-builder bootstrap so the inline toolbar's link popover can
+  // populate the URL field on selection. Optional because other mount
+  // points (dashboard, record-detail) may not provide it.
+  url?: string
 }
 
 export interface EventRef {
@@ -187,6 +192,12 @@ export interface BootstrapData {
   heroicons_url?: string
   color_swatches: string[]
   theme_palette: ThemePaletteEntry[]
+  // Session 305 §6.3: resolved theme font-family stacks. The inline
+  // toolbar's text-style menu renders Paragraph + H1–H6 rows in these
+  // families so the dropdown is a true WYSIWYG preview. Optional because
+  // only the page-builder bootstrap currently provides them.
+  theme_heading_family?: string
+  theme_body_family?: string
   theme_editor_url: string
   allowed_appearance_fields?: string[]
   allowed_widget_handles?: string[]

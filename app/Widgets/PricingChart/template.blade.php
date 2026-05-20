@@ -11,14 +11,35 @@
         $columns = [];
     }
 
-    $columnCount = count($columns);
-    $maxAttrRows = 0;
-    foreach ($columns as $col) {
-        $rows = $col['attribute_rows'] ?? [];
+    // Structure is driven by the count settings. 'auto' (or any non-numeric)
+    // fits the number of stored columns/rows — the exact pre-setting
+    // behaviour, so existing and unconfigured charts render byte-identically
+    // with no migration. An explicit number renders exactly that many slots;
+    // lowering it hides the extras while their data stays untouched in
+    // config (kept, not pruned) — raising it back brings the content right
+    // back. The columns grid still only renders when there is at least one
+    // column (>0), so an unconfigured/empty chart renders nothing publicly,
+    // exactly as before.
+    $cc            = $config['column_count'] ?? 'auto';
+    $rc            = $config['attribute_row_count'] ?? 'auto';
+    $storedColumns = is_array($columns) ? count($columns) : 0;
+
+    $columnCount = (is_numeric($cc) && (int) $cc >= 1)
+        ? min(10, (int) $cc)
+        : $storedColumns;
+
+    $derivedMaxRows = 0;
+    for ($i = 0; $i < $columnCount; $i++) {
+        $rows = $columns[$i]['attribute_rows'] ?? [];
         if (is_array($rows)) {
-            $maxAttrRows = max($maxAttrRows, count($rows));
+            $derivedMaxRows = max($derivedMaxRows, count($rows));
         }
     }
+    $maxAttrRows = (is_numeric($rc) && (int) $rc >= 0)
+        ? min(12, (int) $rc)
+        : $derivedMaxRows;
+
+    $emphasizedColumn = (int) ($config['emphasized_column'] ?? 0);
 
     $hasHeader = $eyebrowLabel !== '' || $heading !== '' || trim(strip_tags((string) $subheading)) !== '';
 
@@ -31,9 +52,7 @@
 <div class="widget-pricing-chart" style="{{ $rootStyle }}">
     @if ($hasHeader || ($inlineEditing ?? false))
         <div class="pricing-chart__header pricing-chart__header--{{ $headingAlignment }}">
-            @if ($eyebrowLabel !== '')
-                <p class="pricing-chart__eyebrow-label">{{ $eyebrowLabel }}</p>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'p', 'class' => 'pricing-chart__eyebrow-label', 'key' => 'eyebrow_label', 'type' => 'text', 'value' => $eyebrowLabel, 'label' => 'Eyebrow label'])
             @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'pricing-chart__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
             @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'pricing-chart__subheading', 'key' => 'subheading', 'type' => 'richtext', 'value' => $subheading, 'label' => 'Subheading'])
         </div>
@@ -41,9 +60,11 @@
 
     @if ($columnCount > 0)
         <div class="pricing-chart__columns" role="list">
-            @foreach ($columns as $ci => $col)
+            @for ($ci = 0; $ci < $columnCount; $ci++)
                 @php
-                    $emphasize  = ! empty($col['emphasize']);
+                    $col = is_array($columns[$ci] ?? null) ? $columns[$ci] : [];
+
+                    $emphasize  = ! empty($col['emphasize']) || ($emphasizedColumn === $ci + 1);
                     $colEyebrow = $col['eyebrow'] ?? '';
                     $colTitle   = $col['title'] ?? '';
                     $colPrice   = $col['price'] ?? '';
@@ -90,7 +111,7 @@
                         @endif
                     </div>
                 </div>
-            @endforeach
+            @endfor
         </div>
     @endif
 

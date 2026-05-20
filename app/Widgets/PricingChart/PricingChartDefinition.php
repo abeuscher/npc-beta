@@ -38,12 +38,29 @@ class PricingChartDefinition extends WidgetDefinition
 
     public function schema(): array
     {
+        // 'auto' = fit the number of columns/rows that already have content
+        // (the pre-count-setting behaviour). An explicit number renders
+        // exactly that many; lowering it hides the extras without deleting
+        // their data. 'auto' is a concrete value — an unconfigured or
+        // pre-existing chart keeps rendering exactly as it did, with no
+        // migration and no public regression.
+        $countOptions = fn (int $min, int $max): array => ['auto' => 'Auto (fit existing)']
+            + collect(range($min, $max))->mapWithKeys(fn ($n) => [(string) $n => (string) $n])->all();
+
+        $emphasizeOptions = ['0' => 'None'] + collect(range(1, 10))
+            ->mapWithKeys(fn ($n) => [(string) $n => "Column {$n}"])
+            ->all();
+
         return [
             ['key' => 'eyebrow_label', 'type' => 'text',     'label' => 'Eyebrow label', 'group' => 'content', 'helper' => 'Small label above the heading (e.g. "Pricing"). Optional.'],
             ['key' => 'heading',       'type' => 'text',     'label' => 'Heading',       'group' => 'content'],
             ['key' => 'subheading',    'type' => 'richtext', 'label' => 'Subheading',    'group' => 'content'],
 
-            ['key' => 'columns', 'type' => 'repeater', 'label' => 'Columns', 'group' => 'content', 'item_label' => 'Column', 'fields' => [
+            ['key' => 'column_count',        'type' => 'select', 'label' => 'Number of columns',    'group' => 'content', 'default' => 'auto', 'options' => $countOptions(1, 10), 'helper' => 'How many pricing columns to show. Fill each column by editing it directly on the page. Lowering this hides the extra columns — their content is kept, not deleted.'],
+            ['key' => 'attribute_row_count', 'type' => 'select', 'label' => 'Feature rows per column', 'group' => 'content', 'default' => 'auto', 'options' => $countOptions(0, 12), 'helper' => 'How many comparison rows each column shows. Lowering this hides the extra rows — their content is kept, not deleted.'],
+            ['key' => 'emphasized_column',   'type' => 'select', 'label' => 'Emphasized column',    'group' => 'content', 'default' => '0', 'options' => $emphasizeOptions, 'helper' => 'Visually highlight one column as the recommended choice.'],
+
+            ['key' => 'columns', 'type' => 'repeater', 'label' => 'Columns', 'group' => 'content', 'item_label' => 'Column', 'inspector' => false, 'fields' => [
                 ['key' => 'emphasize',    'type' => 'toggle',   'label' => 'Emphasize this column', 'default' => false, 'helper' => 'Visually highlight this column as the recommended choice.'],
                 ['key' => 'eyebrow',      'type' => 'text',     'label' => 'Eyebrow',      'default' => '', 'helper' => 'Short label above the title (e.g. "Recommended"). Optional.'],
                 ['key' => 'title',        'type' => 'text',     'label' => 'Title',        'default' => ''],
@@ -75,13 +92,16 @@ class PricingChartDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [
-            'eyebrow_label'     => '',
-            'heading'           => '',
-            'subheading'        => '',
-            'columns'           => [],
-            'footnote'          => '',
-            'heading_alignment' => 'center',
-            'gap'               => '',
+            'eyebrow_label'       => '',
+            'heading'             => '',
+            'subheading'          => '',
+            'column_count'        => 'auto',
+            'attribute_row_count' => 'auto',
+            'emphasized_column'   => '0',
+            'columns'             => [],
+            'footnote'            => '',
+            'heading_alignment'   => 'center',
+            'gap'                 => '',
         ];
     }
 
@@ -123,10 +143,12 @@ class PricingChartDefinition extends WidgetDefinition
     public function demoConfig(): array
     {
         return [
-            'eyebrow_label' => 'PRICING',
-            'heading'       => 'Three ways to try this.',
-            'subheading'    => '<p>Pick the one that fits where you are.</p>',
-            'columns'       => $this->marketingSiteTiers(),
+            'eyebrow_label'       => 'PRICING',
+            'heading'             => 'Three ways to try this.',
+            'subheading'          => '<p>Pick the one that fits where you are.</p>',
+            'column_count'        => 'auto',
+            'attribute_row_count' => 'auto',
+            'columns'             => $this->marketingSiteTiers(),
             'footnote'      => '<p><em>* You ever notice how people put really small writing at the bottom of pricing sheets? What\'s that about? Seems sketchy.</em></p>',
         ];
     }

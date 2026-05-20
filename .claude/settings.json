@@ -557,7 +557,20 @@
       "Bash(python3 -c \"import json;m=json.load\\(open\\('public/build/.vite/manifest.json'\\)\\);print\\(m['resources/js/page-builder-vue/main.ts']['file']\\)\")",
       "Bash(python3 -c \"import json;print\\(json.load\\(open\\('package.json'\\)\\)['scripts']['build']\\)\")",
       "Bash(python3 -c \"import json;print\\('page-builder ->',json.load\\(open\\('public/build/manifest.json'\\)\\)['resources/js/page-builder-vue/main.ts']['file']\\)\")",
-      "Bash(grep -E \"\\\\.ql-\\(container|editor|clipboard|tooltip\\)[ ,{]\")"
+      "Bash(grep -E \"\\\\.ql-\\(container|editor|clipboard|tooltip\\)[ ,{]\")",
+      "Bash(sed -n '120,160p' app/Services/TypographyResolver.php)",
+      "Bash(sed -n '93,128p' app/Services/TypographyCompiler.php)",
+      "Bash(grep -n 'function getTemplateAttribute\\\\|function template\\\\|config_schema\\\\|getConfigSchemaAttribute\\\\|registry\\\\|Definition\\\\|->template\\\\|appends\\\\|protected \\\\$' app/Models/WidgetType.php)",
+      "Bash(sed -n '24,34p' app/Widgets/TextBlock/template.blade.php)",
+      "Bash(sed -n '39,49p' app/Widgets/Hero/template.blade.php)",
+      "Bash(sed -n '12,34p' app/Widgets/ThreeBuckets/template.blade.php)",
+      "Bash(sed -n '103,112p' app/Widgets/PricingChart/template.blade.php)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/abeuscher/npc-beta/claude/design-formatting-toolbar-zwpdW/docs/inline-formatting-toolbar-spec.md -o /tmp/toolbar-spec.md)",
+      "Bash(curl -fsSL \"https://raw.githubusercontent.com/abeuscher/npc-beta/claude/design-formatting-toolbar-zwpdW/docs/inline-formatting-toolbar-spec.md?$\\(date +%s\\)\" -o /tmp/toolbar-spec-v2.md)",
+      "Bash(grep -n '\\\\$pages\\\\s*=' app/Livewire/PageBuilder.php)",
+      "Bash(sed -n '301,316p' app/Livewire/PageBuilder.php)",
+      "Bash(sed -n '143,153p' resources/js/page-builder-vue/types.ts)",
+      "Bash(node -e \"const m = require\\('lucide-vue-next'\\); console.log\\('icons available:', ['Bold','Italic','Underline','Strikethrough','List','ListOrdered','Quote','Link','AlignLeft','AlignCenter','AlignRight','AlignJustify','Palette','Highlighter','Image','RemoveFormatting','ChevronDown','MoreHorizontal','Check'].every\\(n => typeof m[n] !== 'undefined'\\)\\)\")"
     ],
     "deny": [],
     "additionalDirectories": [

@@ -81,6 +81,30 @@ export const useEditorStore = defineStore('editor', () => {
   // dirty-guard, applied to the v-html refresh instead of a modelValue watch.
   const inlineActiveWidgetId = ref<string | null>(null)
 
+  // ── Active-editor handle (session 305 §A / docs/inline-formatting-toolbar-spec.md)
+  // The single shared reactive value the inline formatting toolbar will
+  // read to drive whichever rich-text Quill instance is currently active.
+  // useInlineEdit publishes here on richtext activation and clears on
+  // teardown. Exactly one editor active at a time — what makes the 137
+  // multi-region floating-toolbar conflict structurally impossible.
+  // Plaintext (contenteditable) nodes never publish — nothing to format.
+  // NOTE: the next session extends this record to the full §A4 shape
+  // ({ quill, hostEl, widgetId, configPath, getRect }); the current stub
+  // is the minimal foundation.
+  const activeInlineEditor = ref<{ quill: any; widgetId: string; path: string } | null>(null)
+
+  function setActiveInlineEditor(payload: { quill: any; widgetId: string; path: string }): void {
+    activeInlineEditor.value = payload
+  }
+
+  // Clear only if the caller's instance is still the published one — a late
+  // teardown from a superseded editor must not wipe a newer active editor.
+  function clearActiveInlineEditor(quill: any): void {
+    if (activeInlineEditor.value && activeInlineEditor.value.quill === quill) {
+      activeInlineEditor.value = null
+    }
+  }
+
   // Widget type registry
   const widgetTypes = ref<WidgetType[]>([])
   const requiredHandles = ref<string[]>([])
@@ -106,6 +130,13 @@ export const useEditorStore = defineStore('editor', () => {
 
   // Theme palette (resolved colors from the active template, sourced from bootstrap data)
   const themePalette = ref<ThemePaletteEntry[]>([])
+
+  // Resolved theme typography families (session 305 §6.3): the inline
+  // formatting toolbar's text-style menu renders Paragraph + H1–H6 rows
+  // in the theme's actual fonts. Both are CSS font-family stacks, set
+  // from bootstrap data and fall back to a safe system stack if absent.
+  const themeHeadingFamily = ref<string>("'Inter', system-ui, sans-serif")
+  const themeBodyFamily = ref<string>("'Inter', system-ui, sans-serif")
 
   // UI state
   const saving = ref(false)
@@ -206,6 +237,8 @@ export const useEditorStore = defineStore('editor', () => {
     themeEditorUrl.value = data.theme_editor_url ?? ''
     colorSwatches.value = data.color_swatches ?? []
     themePalette.value = data.theme_palette ?? []
+    if (data.theme_heading_family) themeHeadingFamily.value = data.theme_heading_family
+    if (data.theme_body_family)    themeBodyFamily.value    = data.theme_body_family
 
     populateFromItems(data.items ?? [])
     requiredLibs.value = data.required_libs
@@ -440,6 +473,7 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyWidgets,
     requireApi,
     flushPendingSaves: () => flushPendingSavesRef!(),
+    inlineActiveWidgetId,
   })
   refreshPreviewRef = refresh.refreshPreview
 
@@ -711,6 +745,8 @@ export const useEditorStore = defineStore('editor', () => {
     themeEditorUrl,
     colorSwatches,
     themePalette,
+    themeHeadingFamily,
+    themeBodyFamily,
 
     // Getters
     rootWidgets,
@@ -740,6 +776,9 @@ export const useEditorStore = defineStore('editor', () => {
     beginInlineEdit,
     endInlineEdit,
     inlineActiveWidgetId,
+    activeInlineEditor,
+    setActiveInlineEditor,
+    clearActiveInlineEditor,
     clearAllOverrides,
     deleteWidget,
     copyWidget,

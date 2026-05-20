@@ -30,13 +30,22 @@ final class HtmlSanitizer
     ];
 
     private const ATTRS_PER_TAG = [
-        'a'    => ['href', 'title', 'class'],
+        'a'    => ['href', 'title', 'class', 'target', 'rel'],
         'span' => ['class', 'data-heroicon', 'aria-hidden'],
         'img'  => ['src', 'alt', 'width', 'height', 'style', 'class'],
         'svg'  => ['xmlns', 'viewbox', 'fill', 'stroke', 'stroke-width', 'aria-hidden'],
         'path' => ['d', 'stroke-linecap', 'stroke-linejoin', 'fill', 'stroke', 'stroke-width'],
         'li'   => ['class', 'data-list'],
     ];
+
+    // Session 305 (companion change §6.2 of inline-formatting-toolbar-spec):
+    // the inline toolbar's link popover saves "Open in new tab" as
+    // target="_blank" rel="noopener noreferrer". Allow exactly that here —
+    // strict allow-lists for both, not just permit-anything — so an
+    // attacker can't smuggle e.g. rel="nofollow noopener" or
+    // target="javascript". Anything outside these sets is stripped on save.
+    private const ALLOWED_TARGET_VALUES = ['_blank', '_self'];
+    private const ALLOWED_REL_TOKENS    = ['noopener', 'noreferrer'];
 
     public static function sanitize(string $html): string
     {
@@ -159,6 +168,22 @@ final class HtmlSanitizer
 
             if ($name === 'src' && ! self::isAllowedSrcUri($value)) {
                 $element->removeAttribute('src');
+                continue;
+            }
+
+            if ($name === 'target' && ! in_array(strtolower($value), self::ALLOWED_TARGET_VALUES, true)) {
+                $element->removeAttribute('target');
+                continue;
+            }
+
+            if ($name === 'rel') {
+                $tokens   = preg_split('/\s+/', strtolower(trim($value)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $filtered = array_values(array_filter($tokens, fn ($t) => in_array($t, self::ALLOWED_REL_TOKENS, true)));
+                if ($filtered === []) {
+                    $element->removeAttribute('rel');
+                } else {
+                    $element->setAttribute('rel', implode(' ', array_unique($filtered)));
+                }
                 continue;
             }
         }
