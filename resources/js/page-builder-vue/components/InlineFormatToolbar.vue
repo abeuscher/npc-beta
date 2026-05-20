@@ -105,6 +105,14 @@ const pageHighlight = ref(0)
 let cleanupForHandle: (() => void) | null = null
 let positionFrame = 0
 
+// Last known Quill range, captured from selection-change. Used by toolbar
+// actions to restore the editor's working range before applying format —
+// avoids the "format silently no-ops because native selection drifted"
+// class of bug, and avoids re-entering Quill's getSelection() during
+// editor-change handling (Quill internally calls focus() → setRange() →
+// addRange() which warns when its cached lastRange is stale post-insertEmbed).
+let savedRange: { index: number; length: number } | null = null
+
 function isMixed(v: any): boolean {
   return Array.isArray(v)
 }
@@ -115,23 +123,24 @@ function triFor(v: any): Tri {
   return 'inactive'
 }
 
-function recomputeFormatState(): void {
+function recomputeFormatState(rangeArg?: { index: number; length: number } | null): void {
   const h = handle.value
   if (!h) return
   const quill = h.quill
-  // Quill v2's getSelection() can throw on a freshly mounted editor whose
-  // native selection hasn't normalised yet (anchorNode null → offset read
-  // on null). Treat any failure as "no selection / no format" and let the
-  // first editor-change event repaint the live state. Without this guard
-  // the watcher aborts and the bar never fades in (305 ghosting was a
-  // surface symptom; this is the same underlying class of race).
-  let range: { index: number; length: number } | null = null
+  // Prefer the range delivered by selection-change (savedRange) over a
+  // live getSelection() — pulling the range during editor-change handling
+  // re-enters Quill's focus()/setRange()/addRange() path which warns on a
+  // stale cached lastRange (typical right after insertEmbed). getFormat
+  // with explicit (index, length) args does NOT call getSelection.
+  const range = rangeArg !== undefined ? rangeArg : savedRange
   let fmt: Record<string, any> = {}
   try {
-    range = quill.getSelection()
-    fmt = range ? quill.getFormat(range.index, range.length) : quill.getFormat()
+    if (range) {
+      fmt = quill.getFormat(range.index, range.length)
+    } else {
+      fmt = quill.getFormat()
+    }
   } catch {
-    range = null
     fmt = {}
   }
   const next: FormatState = {
@@ -242,9 +251,28 @@ function setupForHandle(): void {
   const h = handle.value
   if (!h) return
   const quill = h.quill
-  const onEditorChange = () => recomputeFormatState()
-  quill.on('editor-change', onEditorChange)
-  recomputeFormatState()
+  // Reset saved range; selection-change will populate it as soon as the
+  // user interacts (or it's already populated from setSelection in
+  // activateRich).
+  savedRange = null
+  // Snapshot the initial selection that useInlineEdit set just before
+  // publishing the handle. Wrapped because Quill's getSelection can throw
+  // on edge-case states; recomputeFormatState handles range=null fine.
+  try { savedRange = quill.getSelection() } catch { savedRange = null }
+
+  // Subscribe to the two granular events instead of the editor-change
+  // aggregate so the range comes to us as an argument (no getSelection
+  // re-entry → no addRange warning chain).
+  const onSelectionChange = (range: any) => {
+    if (range) savedRange = range
+    recomputeFormatState(range ?? savedRange)
+  }
+  const onTextChange = () => {
+    recomputeFormatState(savedRange)
+  }
+  quill.on('selection-change', onSelectionChange)
+  quill.on('text-change', onTextChange)
+  recomputeFormatState(savedRange)
 
   const ro = new ResizeObserver(() => requestPositionUpdate())
   ro.observe(h.hostEl)
@@ -255,10 +283,12 @@ function setupForHandle(): void {
   window.addEventListener('resize', onWinResize)
 
   cleanupForHandle = () => {
-    try { quill.off('editor-change', onEditorChange) } catch { /* torn down */ }
+    try { quill.off('selection-change', onSelectionChange) } catch { /* torn down */ }
+    try { quill.off('text-change', onTextChange) } catch { /* torn down */ }
     ro.disconnect()
     document.removeEventListener('scroll', onScroll, true)
     window.removeEventListener('resize', onWinResize)
+    savedRange = null
   }
 
   nextTick(() => {
@@ -322,7 +352,7 @@ watch(handle, async (next, prev) => {
 // selection drifts off the editor (focus moved, native range went stale,
 // or the DOM under it changed). Every call site is wrapped so a transient
 // failure logs and degrades gracefully instead of freezing the UI on an
-// unhandled rejection. The next editor-change repaints the live state.
+// unhandled rejection. The next selection-change repaints the live state.
 function withQuill<T>(fn: (q: any) => T): T | undefined {
   const h = handle.value
   if (!h) return undefined
@@ -334,8 +364,28 @@ function withQuill<T>(fn: (q: any) => T): T | undefined {
   }
 }
 
+// Restore the last known good range on the editor before applying a
+// format. Without this, the native browser selection may have drifted
+// (popover opened, button focused) and q.format()/formatText would
+// silently no-op. We use Quill's SILENT source so this doesn't fire
+// editor-change re-entry.
+function restoreRange(q: any): { index: number; length: number } | null {
+  if (!savedRange) return null
+  try {
+    const len = q.getLength()
+    const idx = Math.max(0, Math.min(savedRange.index, len - 1))
+    const lenClamped = Math.max(0, Math.min(savedRange.length, len - 1 - idx))
+    const Quill = (window as any).Quill
+    q.setSelection(idx, lenClamped, Quill?.sources?.SILENT ?? 'silent')
+    return { index: idx, length: lenClamped }
+  } catch {
+    return null
+  }
+}
+
 function applyHeader(level: number | false): void {
   withQuill((q) => {
+    restoreRange(q)
     q.format('header', level === false ? false : level, 'user')
   })
   recomputeFormatState()
@@ -343,35 +393,43 @@ function applyHeader(level: number | false): void {
 }
 
 function toggleInline(key: 'bold' | 'italic' | 'underline' | 'strike'): void {
-  // Use cached formatState so we don't re-enter getFormat() (which calls
-  // getSelection() internally and can throw). Apply the toggle blind to
-  // the cached value; editor-change repaints reality.
   const wasActive = formatState.value[key] === 'active'
-  withQuill((q) => q.format(key, !wasActive, 'user'))
+  withQuill((q) => {
+    restoreRange(q)
+    q.format(key, !wasActive, 'user')
+  })
   recomputeFormatState()
 }
 
 function toggleList(type: 'bullet' | 'ordered'): void {
   const active = formatState.value.list === type
-  withQuill((q) => q.format('list', active ? false : type, 'user'))
+  withQuill((q) => {
+    restoreRange(q)
+    q.format('list', active ? false : type, 'user')
+  })
   recomputeFormatState()
 }
 
 function toggleBlockquote(): void {
   const active = formatState.value.blockquote === 'active'
-  withQuill((q) => q.format('blockquote', !active, 'user'))
+  withQuill((q) => {
+    restoreRange(q)
+    q.format('blockquote', !active, 'user')
+  })
   recomputeFormatState()
 }
 
 function setAlign(value: '' | 'center' | 'right' | 'justify'): void {
-  withQuill((q) => q.format('align', value === '' ? false : value, 'user'))
+  withQuill((q) => {
+    restoreRange(q)
+    q.format('align', value === '' ? false : value, 'user')
+  })
   recomputeFormatState()
 }
 
 function clearFormatting(): void {
   withQuill((q) => {
-    let r: any = null
-    try { r = q.getSelection() } catch { /* selection lost */ }
+    const r = restoreRange(q)
     if (!r || r.length === 0) return
     q.removeFormat(r.index, r.length, 'user')
   })
@@ -593,8 +651,7 @@ function openHighlight(anchor: HTMLElement): void {
 function onColorPicked(hex: string): void {
   const key = activeColorTarget.value
   withQuill((q) => {
-    let r: any = null
-    try { r = q.getSelection() } catch { /* selection lost */ }
+    const r = restoreRange(q)
     if (!r) return
     q.format(key, hex === '' ? false : hex, 'user')
   })
