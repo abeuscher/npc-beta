@@ -383,57 +383,91 @@ function restoreRange(q: any): { index: number; length: number } | null {
   }
 }
 
+// All format handlers below operate on savedRange via formatText/formatLine
+// rather than q.format(). q.format() internally calls getSelection(true)
+// which calls focus() → setRange() → addRange(); if native selection has
+// drifted off the editor (button click can do this even with
+// mousedown.preventDefault on some browsers), getRange returns null and
+// format() silently no-ops. formatText/formatLine take an explicit range
+// so they apply regardless of where the native cursor is.
+
+function clampRange(q: any, r: { index: number; length: number }): { index: number; length: number } {
+  const total = q.getLength()
+  const idx = Math.max(0, Math.min(r.index, total - 1))
+  const lenClamped = Math.max(0, Math.min(r.length, total - 1 - idx))
+  return { index: idx, length: lenClamped }
+}
+
 function applyHeader(level: number | false): void {
+  const r = savedRange ?? { index: 0, length: 0 }
   withQuill((q) => {
-    restoreRange(q)
-    q.format('header', level === false ? false : level, 'user')
+    const c = clampRange(q, r)
+    q.formatLine(c.index, c.length, 'header', level === false ? false : level, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
   openPopover.value = null
 }
 
 function toggleInline(key: 'bold' | 'italic' | 'underline' | 'strike'): void {
+  const r = savedRange
+  if (!r) return
   const wasActive = formatState.value[key] === 'active'
   withQuill((q) => {
-    restoreRange(q)
-    q.format(key, !wasActive, 'user')
+    const c = clampRange(q, r)
+    if (c.length > 0) {
+      q.formatText(c.index, c.length, key, !wasActive, 'user')
+    } else {
+      // Collapsed selection: set native selection then use format() so the
+      // pending format applies to the next typed character. This is the
+      // one path where we need format() — there's no formatText analogue
+      // for "remember the format for next insertion".
+      try {
+        const Quill = (window as any).Quill
+        q.setSelection(c.index, 0, Quill?.sources?.USER ?? 'user')
+        q.format(key, !wasActive, 'user')
+      } catch { /* selection race; degrade silently */ }
+    }
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
 }
 
 function toggleList(type: 'bullet' | 'ordered'): void {
+  const r = savedRange ?? { index: 0, length: 0 }
   const active = formatState.value.list === type
   withQuill((q) => {
-    restoreRange(q)
-    q.format('list', active ? false : type, 'user')
+    const c = clampRange(q, r)
+    q.formatLine(c.index, c.length, 'list', active ? false : type, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
 }
 
 function toggleBlockquote(): void {
+  const r = savedRange ?? { index: 0, length: 0 }
   const active = formatState.value.blockquote === 'active'
   withQuill((q) => {
-    restoreRange(q)
-    q.format('blockquote', !active, 'user')
+    const c = clampRange(q, r)
+    q.formatLine(c.index, c.length, 'blockquote', !active, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
 }
 
 function setAlign(value: '' | 'center' | 'right' | 'justify'): void {
+  const r = savedRange ?? { index: 0, length: 0 }
   withQuill((q) => {
-    restoreRange(q)
-    q.format('align', value === '' ? false : value, 'user')
+    const c = clampRange(q, r)
+    q.formatLine(c.index, c.length, 'align', value === '' ? false : value, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
 }
 
 function clearFormatting(): void {
+  const r = savedRange
+  if (!r || r.length === 0) return
   withQuill((q) => {
-    const r = restoreRange(q)
-    if (!r || r.length === 0) return
-    q.removeFormat(r.index, r.length, 'user')
+    const c = clampRange(q, r)
+    q.removeFormat(c.index, c.length, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
 }
 
 // ── §G link popover ─────────────────────────────────────────────────────
@@ -650,12 +684,16 @@ function openHighlight(anchor: HTMLElement): void {
 
 function onColorPicked(hex: string): void {
   const key = activeColorTarget.value
+  const r = savedRange
+  if (!r || r.length === 0) {
+    openPopover.value = null
+    return
+  }
   withQuill((q) => {
-    const r = restoreRange(q)
-    if (!r) return
-    q.format(key, hex === '' ? false : hex, 'user')
+    const c = clampRange(q, r)
+    q.formatText(c.index, c.length, key, hex === '' ? false : hex, 'user')
   })
-  recomputeFormatState()
+  recomputeFormatState(r)
   openPopover.value = null
 }
 
