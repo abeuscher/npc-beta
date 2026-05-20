@@ -60,6 +60,10 @@ export function useInlineEdit(
   // node, or unmount. Refresh-suppression while active is unchanged.
   function onDocPointerDown(e: Event): void {
     if (!activeNode) return
+    // Left-button only — right/middle-click pointerdown opens browser
+    // context menu or native scroll; not a deliberate exit gesture.
+    const pe = e as PointerEvent
+    if (typeof pe.button === 'number' && pe.button !== 0) return
     const t = e.target as HTMLElement | null
     if (!t) return
     // Inside this widget's preview → field switching is handled by the
@@ -278,6 +282,11 @@ export function useInlineEdit(
       if (type === 'text') node.classList.add('inline-editable--text')
 
       const activate = (e: Event) => {
+        // Left mouse button only — right/middle-click should fall through
+        // to the browser's context menu / native behaviour, not enter
+        // inline edit mode. PointerEvent.button: 0=left, 1=middle, 2=right.
+        const pe = e as PointerEvent
+        if (typeof pe.button === 'number' && pe.button !== 0) return
         if (activeNode === node) return
         e.stopPropagation()
         // Switching nodes within this widget — no reconciling refresh, so
