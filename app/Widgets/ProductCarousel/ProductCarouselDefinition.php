@@ -28,6 +28,11 @@ class ProductCarouselDefinition extends WidgetDefinition
         return ['giving_and_sales'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function assets(): array
     {
         return ['scss' => ['app/Widgets/ProductCarousel/styles.scss'], 'libs' => ['swiper']];

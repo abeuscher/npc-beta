@@ -48,9 +48,7 @@
         <div class="widget-product-carousel__fade-left" aria-hidden="true"></div>
         <div class="widget-product-carousel__fade-right" aria-hidden="true"></div>
 
-        @if ($heading)
-            <h2 class="widget-product-carousel__heading">{{ $heading }}</h2>
-        @endif
+        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'widget-product-carousel__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
         <div x-ref="container" class="swiper">
             <div class="swiper-wrapper">

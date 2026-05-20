@@ -29,6 +29,11 @@ class BarChartDefinition extends WidgetDefinition
         return ['content'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function assets(): array
     {
         return [

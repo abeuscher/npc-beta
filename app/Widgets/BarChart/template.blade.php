@@ -30,9 +30,7 @@
 <div class="widget-bar-chart" x-data="NPWidgets.barChart()">
     <script x-ref="chartCfg" type="application/json">{!! $chartConfig !!}</script>
 
-    @if ($heading)
-        <h2>{{ $heading }}</h2>
-    @endif
+    @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => '', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Chart title'])
 
     <div style="position: relative; width: 100%;">
         <canvas x-ref="canvas"></canvas>

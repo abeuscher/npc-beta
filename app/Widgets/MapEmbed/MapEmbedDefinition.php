@@ -26,6 +26,11 @@ class MapEmbedDefinition extends WidgetDefinition
         return ['content'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function assets(): array
     {
         return ['scss' => ['app/Widgets/MapEmbed/styles.scss']];

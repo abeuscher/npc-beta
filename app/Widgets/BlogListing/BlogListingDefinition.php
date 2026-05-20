@@ -29,6 +29,11 @@ class BlogListingDefinition extends WidgetDefinition
         return ['blog'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function assets(): array
     {
         return [

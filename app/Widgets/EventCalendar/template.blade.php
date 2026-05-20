@@ -4,9 +4,7 @@
     $calendarId = 'cal-' . \Illuminate\Support\Str::random(8);
 @endphp
 
-@if ($heading)
-    <h2>{{ $heading }}</h2>
-@endif
+@include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => '', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
 <div
     id="{{ $calendarId }}"

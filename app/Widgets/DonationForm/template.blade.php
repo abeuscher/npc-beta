@@ -82,9 +82,7 @@
     }
 }">
 
-    @if ($heading)
-        <h2 data-config-key="heading" data-config-type="text">{{ $heading }}</h2>
-    @endif
+    @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => '', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
     @if ($donationStatus === 'success')
         <div role="status" class="alert alert--success">

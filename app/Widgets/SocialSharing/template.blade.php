@@ -37,9 +37,7 @@
 @if (count($enabledPlatforms) > 0)
     <div class="widget-social-sharing">
         <div>
-            @if ($heading)
-                <h2 class="social-sharing__heading">{{ $heading }}</h2>
-            @endif
+            @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'social-sharing__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
             <div class="social-sharing__row social-sharing__row--{{ $alignment }}" style="--icon-size: {{ $iconPx }}">
                 @foreach ($enabledPlatforms as $platform)

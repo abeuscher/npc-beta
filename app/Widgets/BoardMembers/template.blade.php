@@ -41,9 +41,7 @@
         class="{{ implode(' ', $classes) }}"
         style="--bm-grid-bg: {{ e($bgColor) }}; --bm-pane: {{ e($paneColor) }}; --bm-border: {{ e($borderColor) }}; --bm-radius: {{ $borderRadius }}px; --bm-padding: {{ $paddingBottom }};"
     >
-        @if ($heading)
-            <h2 class="board-members__heading">{{ $heading }}</h2>
-        @endif
+        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'board-members__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
         <div class="board-members__grid">
             @foreach ($members as $member)

@@ -10,9 +10,7 @@
 
 @if ($embedUrl)
     <div class="widget-map-embed">
-        @if ($heading)
-            <h2 class="map-embed__heading">{{ $heading }}</h2>
-        @endif
+        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'map-embed__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
         <div
             class="map-embed__container"

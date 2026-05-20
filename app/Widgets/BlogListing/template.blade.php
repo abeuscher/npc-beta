@@ -50,9 +50,7 @@
     <script x-ref="listingData" type="application/json">{!! $listingData !!}</script>
 
     <div class="site-container">
-        @if ($heading)
-            <h2 class="widget-blog-listing__heading">{{ $heading }}</h2>
-        @endif
+        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'widget-blog-listing__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
         @if ($showSearch)
             <div class="widget-blog-listing__controls">

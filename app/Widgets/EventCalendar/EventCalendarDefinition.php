@@ -26,6 +26,11 @@ class EventCalendarDefinition extends WidgetDefinition
         return ['events'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function assets(): array
     {
         return [

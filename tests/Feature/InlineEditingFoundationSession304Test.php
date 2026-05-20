@@ -28,22 +28,32 @@ function s304Registry(): WidgetRegistry
 it('fails closed: inlineEditable() defaults to false on the base definition', function () {
     $reg = s304Registry();
 
-    // Exactly the four safe-set widgets opt in for session A.
-    foreach (['text_block', 'hero', 'three_buckets', 'pricing_chart'] as $h) {
+    // Session 304 safe-set + the session 307 widening pass: every widget
+    // whose template has at least one Tier-A-clear display-prose node
+    // (heading + the existing TextBlock/Hero/ThreeBuckets/PricingChart
+    // bodies + nested PricingChart prose). The widget-level gate is opt-in
+    // by code declaration; widening only adds widgets that have a Tier-A
+    // annotation and never breaches the Tier-B exempt set.
+    foreach ([
+        'text_block', 'hero', 'three_buckets', 'pricing_chart',
+        'bar_chart', 'blog_listing', 'board_members', 'donation_form',
+        'event_calendar', 'events_listing', 'map_embed', 'product_carousel',
+        'social_sharing',
+    ] as $h) {
         expect($reg->find($h)->inlineEditable())->toBeTrue("$h should be inline-editable");
     }
 
-    // Everything else stays false — including widgets that carry dormant
-    // data-config-* annotations from 137 (EventsListing/DonationForm) and
-    // genuinely data-driven widgets. The widget-level gate keeps them inert
-    // regardless of any template annotation (per-node {{token}} exclusion is
-    // a further JS-side runtime gate, exercised by Playwright).
-    foreach (['events_listing', 'donation_form', 'bar_chart', 'image', 'board_members', 'nav', 'blog_listing'] as $h) {
+    // Excluded by design — Image (only text fields are alt_text/max_width,
+    // both Tier-B) and Nav (branding_text is Tier-B; parent/child_template
+    // are data-driven {{item.*}}). The widget-level gate keeps the inline
+    // editor from attaching to anything in these widgets regardless of any
+    // template annotation that might be added.
+    foreach (['image', 'nav'] as $h) {
         $def = $reg->find($h);
         if ($def === null) {
             continue;
         }
-        expect($def->inlineEditable())->toBeFalse("$h must not be inline-editable in session A");
+        expect($def->inlineEditable())->toBeFalse("$h must remain non-inline-editable");
     }
 });
 

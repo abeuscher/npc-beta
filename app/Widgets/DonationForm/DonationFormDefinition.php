@@ -26,6 +26,11 @@ class DonationFormDefinition extends WidgetDefinition
         return ['giving_and_sales', 'forms'];
     }
 
+    public function inlineEditable(): bool
+    {
+        return true;
+    }
+
     public function schema(): array
     {
         return [
