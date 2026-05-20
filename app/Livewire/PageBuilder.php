@@ -300,11 +300,21 @@ class PageBuilder extends Component
             ->get(['id', 'name', 'slug'])
             ->toArray();
 
+        // Session 305 §6.3: each PageRef carries the resolved URL so the
+        // inline toolbar's link popover page picker can populate the URL
+        // field directly. 'home' resolves to the site root; everything
+        // else is `${base}/${slug}`. Computed once here, not on the
+        // client, so a future slug change is reflected on the next load.
+        $linkBase = rtrim(SiteSetting::get('base_url', config('app.url')), '/');
         $pages = Page::published()
             ->where('type', 'default')
             ->orderBy('title')
             ->get(['slug', 'title'])
-            ->map(fn ($p) => ['slug' => $p->slug, 'title' => $p->title])
+            ->map(fn ($p) => [
+                'slug'  => $p->slug,
+                'title' => $p->title,
+                'url'   => $p->slug === 'home' ? ($linkBase . '/') : ($linkBase . '/' . $p->slug),
+            ])
             ->toArray();
 
         $events = \App\Models\Event::published()
@@ -387,6 +397,24 @@ class PageBuilder extends Component
             'heroicons_url'           => '/' . $adminPath . '/heroicons',
             'color_swatches'          => $colorSwatches,
             'theme_palette'           => $themePalette,
+            // Session 305 §6.3: the inline toolbar's text-style menu
+            // renders Paragraph + H1–H6 rows in the theme's actual
+            // typography. The TypographyResolver buckets are the
+            // authoritative source; fall back to the resolved per-element
+            // family, then to the resolver's DEFAULT_FAMILY so the field
+            // is always concretely populated.
+            'theme_heading_family'    => (function () {
+                $t = \App\Services\TypographyResolver::resolve();
+                return $t['buckets']['heading_family']
+                    ?? ($t['elements']['h2']['font']['family'] ?? null)
+                    ?? \App\Services\TypographyResolver::DEFAULT_FAMILY;
+            })(),
+            'theme_body_family'       => (function () {
+                $t = \App\Services\TypographyResolver::resolve();
+                return $t['buckets']['body_family']
+                    ?? ($t['elements']['p']['font']['family'] ?? null)
+                    ?? \App\Services\TypographyResolver::DEFAULT_FAMILY;
+            })(),
             'theme_editor_url'        => \App\Filament\Pages\DesignSystemPage::getUrl(['activeTab' => 'text-styles']),
         ];
     }

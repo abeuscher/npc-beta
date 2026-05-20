@@ -322,7 +322,10 @@ it('marquee drops keeping inner text', function () {
 });
 
 it('unknown attribute on allowed tag is stripped', function () {
-    expect(HtmlSanitizer::sanitize('<a href="/x" target="_blank">x</a>'))
+    // Session 305 §6.2 promoted `target` to a known attribute on <a>;
+    // pick a genuinely-not-allowed attribute to preserve the test's intent
+    // (unknown attrs get stripped) under the new allow-list.
+    expect(HtmlSanitizer::sanitize('<a href="/x" data-spy="track">x</a>'))
         ->toBe('<a href="/x">x</a>');
 });
 
@@ -409,4 +412,52 @@ it('multiple xss vectors in one document are all neutralised', function () {
         ->and($out)->not->toContain('onerror')
         ->and($out)->not->toContain('javascript')
         ->and($out)->not->toContain('script');
+});
+
+// ── Link target/rel allow-list (session 305 §6.2: companion change for the
+// inline toolbar's "Open in new tab" checkbox — must round-trip safely) ────
+
+it('a target="_blank" round-trips', function () {
+    $in  = '<p><a href="https://example.com" target="_blank">x</a></p>';
+    expect(HtmlSanitizer::sanitize($in))->toContain('target="_blank"');
+});
+
+it('a rel="noopener noreferrer" round-trips', function () {
+    $in = '<p><a href="https://example.com" target="_blank" rel="noopener noreferrer">x</a></p>';
+    $out = HtmlSanitizer::sanitize($in);
+    expect($out)->toContain('target="_blank"')->toContain('rel="noopener noreferrer"');
+});
+
+it('a target="_self" round-trips (sensible default value is allowed)', function () {
+    $in = '<p><a href="/x" target="_self">x</a></p>';
+    expect(HtmlSanitizer::sanitize($in))->toContain('target="_self"');
+});
+
+it('a target="_top" is stripped (not in the allow-list)', function () {
+    $in = '<p><a href="https://example.com" target="_top">x</a></p>';
+    expect(HtmlSanitizer::sanitize($in))->not->toContain('target=');
+});
+
+it('a target="javascript:alert(1)" is stripped', function () {
+    $in = '<p><a href="https://example.com" target="javascript:alert(1)">x</a></p>';
+    expect(HtmlSanitizer::sanitize($in))->not->toContain('target=');
+});
+
+it('a rel non-allowed tokens (nofollow) are dropped while allowed tokens survive', function () {
+    $in = '<p><a href="https://example.com" rel="nofollow noopener">x</a></p>';
+    $out = HtmlSanitizer::sanitize($in);
+    expect($out)->toContain('rel="noopener"')->not->toContain('nofollow');
+});
+
+it('a rel with only disallowed tokens is removed entirely', function () {
+    $in = '<p><a href="https://example.com" rel="external sponsored">x</a></p>';
+    expect(HtmlSanitizer::sanitize($in))->not->toContain('rel=');
+});
+
+it('a rel duplicate tokens are collapsed to one each', function () {
+    $in = '<p><a href="https://example.com" rel="noopener noopener noreferrer">x</a></p>';
+    $out = HtmlSanitizer::sanitize($in);
+    // Order is allow-list order via array_unique; both tokens present once.
+    expect($out)->toMatch('/rel="(noopener noreferrer|noreferrer noopener)"/')
+        ->and(substr_count($out, 'noopener'))->toBe(1);
 });

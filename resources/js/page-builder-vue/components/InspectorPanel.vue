@@ -56,19 +56,35 @@ const bottomTabs = computed(() => {
 const widget = computed(() => store.selectedWidget)
 const layout = computed(() => store.selectedLayout)
 
+// `inspector: false` marks a schema field that is data-only — kept in the
+// schema so the save allow-list and the recursive richtext sanitizer still
+// see it (e.g. PricingChart `columns`, now edited in place + via the
+// column-count setting), but not rendered as an Inspector form control.
+const formFields = computed(() =>
+  (widget.value?.widget_type_config_schema ?? []).filter(
+    (f: FieldDef) => f.inspector !== false
+  )
+)
+
+// Session 305: on an inline-editable widget, prose is now edited in place
+// with the shared formatting toolbar, so the Inspector no longer shows a
+// text/richtext editor for content prose (ending session 304's interim
+// where rich-text formatting lived in the Inspector RichTextField). The
+// Inspector keeps the non-prose content config (selects, counts, buttons,
+// urls). Non-inline-editable widgets are unchanged — their richtext still
+// edits in the Inspector, so the RichTextField path is not removed.
+const PROSE_TYPES = new Set(['text', 'richtext'])
 const contentFields = computed(() => {
-  if (!widget.value) return [] as FieldDef[]
-  return widget.value.widget_type_config_schema.filter(
+  const fields = formFields.value.filter(
     (f: FieldDef) => (f.group ?? 'content') === 'content'
   )
+  if (!widget.value?.widget_type_inline_editable) return fields
+  return fields.filter((f: FieldDef) => !PROSE_TYPES.has(f.type))
 })
 
-const appearanceFields = computed(() => {
-  if (!widget.value) return [] as FieldDef[]
-  return widget.value.widget_type_config_schema.filter(
-    (f: FieldDef) => (f.group ?? 'content') !== 'content'
-  )
-})
+const appearanceFields = computed(() =>
+  formFields.value.filter((f: FieldDef) => (f.group ?? 'content') !== 'content')
+)
 
 function toggleTopCollapse() {
   topCollapsed.value = !topCollapsed.value

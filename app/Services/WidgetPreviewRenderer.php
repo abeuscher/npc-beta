@@ -18,7 +18,11 @@ class WidgetPreviewRenderer
 
         try {
             $fallbackData = $this->demoCollectionData($pw);
-            $result = WidgetRenderer::render($pw, [], $fallbackData, $slotHandle);
+            // The builder preview is the ONE caller that opts into inline
+            // editing — every other render path (public site, chrome, demo
+            // tool) leaves the default false so editing scaffolding stays
+            // out of public output (session 305).
+            $result = WidgetRenderer::render($pw, [], $fallbackData, $slotHandle, null, true);
 
             if ($result['html'] === null) {
                 return '<div class="widget-preview-notice">No preview available</div>';

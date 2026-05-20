@@ -26,6 +26,7 @@ class WidgetRenderer
         array $fallbackCollectionData = [],
         string $slotHandle = 'page_builder_canvas',
         ?Model $record = null,
+        bool $inlineEditing = false,
     ): array
     {
         $widgetType = $pw->widgetType;
@@ -136,7 +137,17 @@ class WidgetRenderer
                 'pageContext'        => $pageContext,
                 'pageContextTokens'  => $tokens,
                 'widgetData'         => $widgetData,
-                'inlineEditing'      => $isCanvas,
+                // Session 305: $inlineEditing is its own opt-in flag — only
+                // the page-builder preview renderer passes true. Previously
+                // this was tied to $isCanvas, which is also true on the
+                // public render path (PageBlockRenderer calls render() with
+                // no slot, defaulting to 'page_builder_canvas'), so the
+                // inline-edit annotations + empty editable placeholders
+                // were leaking onto the public site. The $isCanvas branches
+                // above (page-context + token resolution) genuinely need to
+                // run for both public and builder, so they stay slot-keyed;
+                // editing-only behaviour is now this distinct flag.
+                'inlineEditing'      => $inlineEditing,
             ];
 
             if (! empty($columnChildren)) {

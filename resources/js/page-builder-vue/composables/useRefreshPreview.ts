@@ -10,6 +10,14 @@ export interface UseRefreshPreviewDeps {
   dirtyWidgets: Ref<Set<string>>
   requireApi: () => ApiClient
   flushPendingSaves: () => Promise<void>
+  // Session 305 §6.5: centralised inline-edit refresh suppression. While
+  // this is set to a widget id, refreshPreview() short-circuits for that
+  // widget — every refresh path (save echo, per-region needsConfig
+  // watcher, future programmatic calls) automatically honours the
+  // suppression. The legitimate reconciling refresh after teardown is
+  // unaffected because endInlineEdit() clears this ref before calling
+  // refreshPreview().
+  inlineActiveWidgetId: Ref<string | null>
 }
 
 export function useRefreshPreview(deps: UseRefreshPreviewDeps) {
@@ -70,6 +78,11 @@ export function useRefreshPreview(deps: UseRefreshPreviewDeps) {
   }
 
   async function refreshPreview(id: string): Promise<void> {
+    // Session 305 §6.5 — A13 enforcement: never swap the preview HTML of
+    // the widget whose editor is currently mounted. Centralised here so
+    // every refresh path (echo, watchers, future callers) honours it.
+    if (id === deps.inlineActiveWidgetId.value) return
+
     await deps.flushPendingSaves()
 
     // Abort any in-flight refresh for the same widget so a stale render
