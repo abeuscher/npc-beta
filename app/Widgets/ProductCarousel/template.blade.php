@@ -1,6 +1,5 @@
 @php
     $products = $widgetData['items'] ?? [];
-    $heading = $config['heading'] ?? '';
     $showNavigation = $config['navigation'] ?? false;
     $showPagination = $config['pagination'] ?? false;
     $autoplay = $config['autoplay'] ?? false;
@@ -47,8 +46,6 @@
     >
         <div class="widget-product-carousel__fade-left" aria-hidden="true"></div>
         <div class="widget-product-carousel__fade-right" aria-hidden="true"></div>
-
-        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'widget-product-carousel__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
         <div x-ref="container" class="swiper">
             <div class="swiper-wrapper">

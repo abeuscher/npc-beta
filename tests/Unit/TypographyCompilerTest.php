@@ -17,9 +17,9 @@ it('emits concrete declarations from the defaults tree', function () {
     expect($css)->toContain('h1:not(nav h1) { ');
     expect($css)->toMatch('/h1:not\(nav h1\) \{[^}]*margin-bottom: 1\.5rem/');
     expect($css)->toMatch('/p:not\(nav p\) \{[^}]*margin-bottom: 1rem/');
-    expect($css)->toContain('ul:not(nav ul) li {');
+    expect($css)->toContain('ul:not(nav ul) li:not([data-list]) {');
     expect($css)->toContain('list-style-type: disc');
-    expect($css)->toContain('ol:not(nav ol) li {');
+    expect($css)->toContain('ol:not(nav ol) li:not([data-list]) {');
     expect($css)->toContain('list-style-type: decimal');
 });
 
@@ -58,10 +58,10 @@ it('emits list-style-type for ul_li and ol_li', function () {
 
     $css = TypographyCompiler::compile($state);
 
-    expect($css)->toContain('ul:not(nav ul) li {');
+    expect($css)->toContain('ul:not(nav ul) li:not([data-list]) {');
     expect($css)->toContain('list-style-type: square');
     expect($css)->toContain('--np-list-marker-color: #ff0000');
-    expect($css)->toContain('ol:not(nav ol) li {');
+    expect($css)->toContain('ol:not(nav ol) li:not([data-list]) {');
     expect($css)->toContain('list-style-type: lower-roman');
 });
 

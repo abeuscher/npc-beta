@@ -31,7 +31,13 @@ class BarChartDefinition extends WidgetDefinition
 
     public function inlineEditable(): bool
     {
-        return true;
+        // Session 308: heading removed in favour of an authored TextBlock
+        // sibling. BarChart has no other inline-editable surfaces — the
+        // X/Y axis labels stay Inspector-only (Tier-B couplings), and the
+        // chart canvas itself is data-driven. So the widget is no longer
+        // inline-eligible; the 304 / 307 eligibility roster drops from
+        // 13 → 11.
+        return false;
     }
 
     public function assets(): array
@@ -45,7 +51,6 @@ class BarChartDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'heading',           'type' => 'text',   'label' => 'Chart title', 'helper' => 'Chart title', 'group' => 'content', 'subtype' => 'title'],
             ['key' => 'collection_handle', 'type' => 'select', 'label' => 'Collection',  'options_from' => 'collections', 'helper' => 'Data source collection', 'group' => 'content'],
             ['key' => 'x_field',           'type' => 'select', 'label' => 'X axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for X axis labels', 'group' => 'content'],
             ['key' => 'y_field',           'type' => 'select', 'label' => 'Y axis field', 'options_from' => 'collection_fields:text', 'depends_on' => 'collection_handle', 'helper' => 'Field for Y axis values (numeric)', 'group' => 'content'],
@@ -58,7 +63,6 @@ class BarChartDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [
-            'heading'           => '',
             'collection_handle' => '',
             'x_field'           => '',
             'y_field'           => '',
@@ -146,7 +150,6 @@ class BarChartDefinition extends WidgetDefinition
     public function demoConfig(): array
     {
         return [
-            'heading'        => 'Monthly Signups',
             'x_field'        => 'label',
             'y_field'        => 'value',
             'x_label'        => 'Month',

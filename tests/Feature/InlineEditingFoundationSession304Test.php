@@ -28,27 +28,30 @@ function s304Registry(): WidgetRegistry
 it('fails closed: inlineEditable() defaults to false on the base definition', function () {
     $reg = s304Registry();
 
-    // Session 304 safe-set + the session 307 widening pass: every widget
-    // whose template has at least one Tier-A-clear display-prose node
-    // (heading + the existing TextBlock/Hero/ThreeBuckets/PricingChart
-    // bodies + nested PricingChart prose). The widget-level gate is opt-in
-    // by code declaration; widening only adds widgets that have a Tier-A
-    // annotation and never breaches the Tier-B exempt set.
+    // Session 304 safe-set + the session 307 widening pass, MINUS the
+    // session 308 heading removal on BarChart + ProductCarousel: those
+    // widgets lost their `heading` field (problematic in the inline-edit
+    // surface because the data-driven body — chart canvas, Swiper slides —
+    // initialises asynchronously and the heading was the only inline-
+    // editable node on each, so dropping it dropped them from the gate
+    // too). Authors use a sibling TextBlock for titles. Roster: 11.
     foreach ([
         'text_block', 'hero', 'three_buckets', 'pricing_chart',
-        'bar_chart', 'blog_listing', 'board_members', 'donation_form',
-        'event_calendar', 'events_listing', 'map_embed', 'product_carousel',
+        'blog_listing', 'board_members', 'donation_form',
+        'event_calendar', 'events_listing', 'map_embed',
         'social_sharing',
     ] as $h) {
         expect($reg->find($h)->inlineEditable())->toBeTrue("$h should be inline-editable");
     }
 
     // Excluded by design — Image (only text fields are alt_text/max_width,
-    // both Tier-B) and Nav (branding_text is Tier-B; parent/child_template
-    // are data-driven {{item.*}}). The widget-level gate keeps the inline
-    // editor from attaching to anything in these widgets regardless of any
-    // template annotation that might be added.
-    foreach (['image', 'nav'] as $h) {
+    // both Tier-B), Nav (branding_text is Tier-B; parent/child_template are
+    // data-driven {{item.*}}), and the session-308 demotions BarChart /
+    // ProductCarousel (heading removed; no other Tier-A surfaces). The
+    // widget-level gate keeps the inline editor from attaching to anything
+    // in these widgets regardless of any template annotation that might be
+    // added.
+    foreach (['image', 'nav', 'bar_chart', 'product_carousel'] as $h) {
         $def = $reg->find($h);
         if ($def === null) {
             continue;

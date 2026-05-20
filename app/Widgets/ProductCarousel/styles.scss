@@ -30,11 +30,6 @@
     background: linear-gradient(to left, var(--carousel-bg, #000000), transparent);
 }
 
-.widget-product-carousel__heading {
-    margin-bottom: 2rem;
-    font-size: 2rem;
-}
-
 .product-slide {
     width: 320px;
     max-width: 80vw;
@@ -140,9 +135,5 @@
 @media (max-width: $bp-sm) {
     .product-slide {
         width: 260px;
-    }
-
-    .widget-product-carousel__heading {
-        font-size: 1.5rem;
     }
 }

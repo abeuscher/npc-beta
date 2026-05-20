@@ -194,10 +194,12 @@ it('bar chart widget renders a canvas element with collection data', function ()
 
     $widgetType = WidgetType::where('handle', 'bar_chart')->first();
 
+    // Session 308: BarChart's `heading` field was removed (authors use a
+    // sibling TextBlock for titles). The chart renders the canvas + the
+    // collection data; the title is no longer in scope for this widget.
     $page->widgets()->create([
         'widget_type_id' => $widgetType->id,
         'config'         => [
-            'heading'           => 'Monthly Data',
             'collection_handle' => 'test-data',
             'x_field'           => 'label',
             'y_field'           => 'value',
@@ -210,7 +212,6 @@ it('bar chart widget renders a canvas element with collection data', function ()
 
     $response->assertOk();
     $response->assertSee('<canvas', false);
-    $response->assertSee('Monthly Data');
     $response->assertSee('January');
     $response->assertSee('February');
 });

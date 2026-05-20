@@ -1,5 +1,4 @@
 @php
-    $heading  = $config['heading'] ?? '';
     $xField   = $config['x_field'] ?? '';
     $yField   = $config['y_field'] ?? '';
     $xLabel   = $config['x_label'] ?? '';
@@ -29,8 +28,6 @@
 
 <div class="widget-bar-chart" x-data="NPWidgets.barChart()">
     <script x-ref="chartCfg" type="application/json">{!! $chartConfig !!}</script>
-
-    @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => '', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Chart title'])
 
     <div style="position: relative; width: 100%;">
         <canvas x-ref="canvas"></canvas>

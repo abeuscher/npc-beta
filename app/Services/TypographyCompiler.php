@@ -12,8 +12,17 @@ class TypographyCompiler
         'h5'    => 'h5:not(nav h5)',
         'h6'    => 'h6:not(nav h6)',
         'p'     => 'p:not(nav p)',
-        'ul_li' => 'ul:not(nav ul) li',
-        'ol_li' => 'ol:not(nav ol) li',
+        // Quill v2 emits every list as <ol> with `data-list="bullet|ordered"`
+        // per <li>; the marker is drawn by the .np-site rules in _base.scss
+        // (::marker suppressed + ::before content). The compiler's typography
+        // defaults — `list-style-type: decimal|disc`, margin, padding — must
+        // not touch those items, or the native marker stacks on top of the
+        // Quill-drawn one (double-bullet, session 308). The page-builder
+        // canvas's typography scoping was also equalised to one class
+        // (.widget-preview-scope / .ql-editor) at session 308 so this
+        // carve-out applies symmetrically across surfaces.
+        'ul_li' => 'ul:not(nav ul) li:not([data-list])',
+        'ol_li' => 'ol:not(nav ol) li:not([data-list])',
     ];
 
     /** Narrower-breakpoint @media max-widths (px), keyed by size-shape key. */

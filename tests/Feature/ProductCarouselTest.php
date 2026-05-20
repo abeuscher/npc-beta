@@ -77,13 +77,16 @@ it('seeder creates product_carousel with correct config schema', function () {
 
     $keys = collect($wt->config_schema)->pluck('key')->all();
 
-    expect($keys)->toContain('heading')
-        ->toContain('limit')
+    // Session 308: `heading` removed from ProductCarousel (authors use a
+    // sibling TextBlock for titles); the widget is also no longer inline-
+    // editable. The remaining schema is Inspector-only.
+    expect($keys)->toContain('limit')
         ->toContain('navigation')
         ->toContain('pagination')
         ->toContain('autoplay')
         ->toContain('interval')
         ->toContain('success_page')
+        ->not->toContain('heading')
         ->not->toContain('background_color')
         ->not->toContain('text_color')
         ->not->toContain('background_full_width')
@@ -116,15 +119,17 @@ it('product carousel renders slides with product data and buy forms', function (
 
     $pw = $host->widgets()->create([
         'widget_type_id' => $wt->id,
-        'config'         => array_merge($wt->getDefaultConfig(), ['heading' => 'Our Products']),
+        // Session 308: heading removed from ProductCarousel; the slide
+        // content (product name / description / pricing / buy form) is
+        // what the render assertion covers now.
+        'config'         => $wt->getDefaultConfig(),
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
 
     $html = WidgetRenderer::render($pw)['html'];
 
-    expect($html)->toContain('Our Products')
-        ->toContain('Test Widget Product')
+    expect($html)->toContain('Test Widget Product')
         ->toContain('A test description for the carousel.')
         ->toContain('Basic')
         ->toContain('19.99')

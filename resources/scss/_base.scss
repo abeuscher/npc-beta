@@ -243,6 +243,24 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// List outer margin normalisation
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The Filament admin's Tailwind preflight strips <ol>/<ul> outer margin to 0;
+// modern-normalize (loaded into the public bundle) leaves the browser default
+// (1em). Without this rule the page-builder canvas renders lists tight against
+// surrounding prose while the public render shows the customary block gap —
+// a real visual divergence between builder and public for the same widget.
+// Restore the browser default explicitly so both surfaces match. Nav lists
+// are carved out to mirror TypographyCompiler's selector convention.
+.np-site {
+    ol:not(nav ol),
+    ul:not(nav ul) {
+        margin: 1em 0;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Quill rich-text list rendering
 // ─────────────────────────────────────────────────────────────────────────────
 //
@@ -259,19 +277,47 @@
         padding-left: 1.5rem;
     }
 
+    // Filament admin's Tailwind preflight leaves `list-style-position`
+    // unspecified on bare <li>, but the admin theme appears to assert it
+    // explicitly as `outside` for some li selector chain; on public it
+    // stays at the unstyled default. The two surfaces resolve differently
+    // in practice (user-observed in DevTools — invisible to a
+    // computed-style walk because both report "outside"). Declaring
+    // `list-style-position: inside` on our Quill list items pins the
+    // value across both surfaces so the bullet/number lands where the
+    // designer expects rather than hanging into the OL's left padding.
+    // — Session 308 iteration 2
     li[data-list] {
         list-style: none;
+        list-style-position: inside;
     }
 
     li[data-list]::marker {
         content: "";
     }
 
+    // CSS-drawn disc. The U+2022 "•" glyph the rule originally used
+    // rendered ~40% smaller than the browser-native `disc` marker
+    // (and the size lists rendered at before the canonical-content
+    // migration). Drawing the disc in CSS keeps it consistent across
+    // font choices and font-feature settings, and matches the
+    // designer's expectation of "looks like a regular bulleted list".
+    // — Session 308 iteration 3.
+    //
+    // Geometry: the box still occupies the OL's 1.5rem left padding
+    // (via -1.5rem margin-left + matching margin-right) so the indent
+    // and following-text position are unchanged from the glyph-based
+    // version. Only the visible marker size changes.
     li[data-list="bullet"]::before {
-        content: "•";
+        content: "";
         display: inline-block;
-        width: 1.5rem;
+        width: 0.5em;
+        height: 0.5em;
+        border-radius: 50%;
+        background: currentColor;
+        vertical-align: 0.05em;
         margin-left: -1.5rem;
+        margin-right: calc(1.5rem - 0.5em);
     }
 
     li[data-list="ordered"] {
@@ -283,5 +329,47 @@
         display: inline-block;
         width: 1.5rem;
         margin-left: -1.5rem;
+    }
+
+    // ─── Quill snow theme overrides ──────────────────────────────────
+    //
+    // When Quill mounts on an inline-edit field, .ql-snow / .ql-editor
+    // enter the DOM and the CDN-loaded quill.snow.css asserts a small
+    // set of theme rules whose selectors (`.ql-snow .ql-editor h1`,
+    // `.ql-editor li`, `.ql-container { font-size: 13px }`) win on
+    // specificity over our `.np-site h1:not(nav h1)` typography. The
+    // visible result on entering edit state: headings shrink, list
+    // indent doubles, bullets shift. Neutralise the snow theme inside
+    // `.np-site` so the active editor matches the inactive preview.
+    // — Session 308 iteration 3.
+
+    // (1) `.ql-container { font-size: 13px }` from Quill snow cascades
+    // into every descendant. Inherit from the surrounding page so the
+    // typography compiler controls sizing.
+    .ql-container,
+    .ql-editor {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+    }
+
+    // (2) `.ql-editor li { padding-left: 1.5em }` from Quill snow
+    // stacks on top of our OL's `padding-left: 1.5rem`, doubling the
+    // text indent the moment a field enters edit mode. Zero it — our
+    // OL padding owns the indent.
+    .ql-editor li {
+        padding-left: 0;
+    }
+
+    // (3) Quill v2 draws its own bullet/number via
+    // `<span class="ql-ui">::before` (snow theme). The rules above
+    // also draw a marker on `<li>::before`; with the editor mounted,
+    // BOTH fire and a second marker appears next to Quill's. Suppress
+    // our ::before content while Quill is active; once the editor
+    // exits and v-html re-renders, .ql-editor disappears and our
+    // ::before takes over again. Public render is unaffected (no
+    // .ql-editor ever in the tree).
+    .ql-editor li[data-list]::before {
+        content: none;
     }
 }

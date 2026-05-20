@@ -30,7 +30,12 @@ class ProductCarouselDefinition extends WidgetDefinition
 
     public function inlineEditable(): bool
     {
-        return true;
+        // Session 308: heading removed in favour of an authored TextBlock
+        // sibling. ProductCarousel has no other inline-editable surfaces
+        // — slides are product-driven and Swiper-managed. So the widget
+        // is no longer inline-eligible; the 304 / 307 eligibility roster
+        // drops from 13 → 11.
+        return false;
     }
 
     public function assets(): array
@@ -41,7 +46,6 @@ class ProductCarouselDefinition extends WidgetDefinition
     public function schema(): array
     {
         return [
-            ['key' => 'heading',          'type' => 'text',   'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
             ['key' => 'limit',            'type' => 'number', 'label' => 'Max products',              'advanced' => true, 'group' => 'content'],
             ['key' => 'navigation',       'type' => 'toggle', 'label' => 'Navigation arrows',        'default' => false, 'group' => 'appearance'],
             ['key' => 'pagination',       'type' => 'toggle', 'label' => 'Pagination dots',          'default' => false, 'group' => 'appearance'],
@@ -54,7 +58,6 @@ class ProductCarouselDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [
-            'heading'      => '',
             'limit'        => null,
             'navigation'   => false,
             'pagination'   => false,

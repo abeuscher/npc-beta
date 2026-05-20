@@ -12,8 +12,20 @@
     {{-- ------------------------------------------------------------------ --}}
     @php
         $__pbTypography    = \App\Services\TypographyResolver::load();
+        // Scope the canvas typography to `.widget-preview-scope` and
+        // `.ql-snow .ql-editor`:
+        //   - `.widget-preview-scope` (one class) keeps the inactive
+        //     canvas at the same specificity as the public-side
+        //     `.np-site …` rules (0,1,3) — so widget-specific rules
+        //     (e.g. `.pricing-chart__subheading > :last-child { … }` at
+        //     0,2,0) win on both surfaces.
+        //   - `.ql-snow .ql-editor` (two classes) outranks Quill snow's
+        //     own `.ql-snow .ql-editor h1` etc. (0,2,1) so the active
+        //     editor's H1–H6 sizing matches the inactive preview
+        //     instead of dropping to Quill's defaults. — Session 308
+        //     iteration 3.
         $__pbTypographyCss = \App\Services\TypographyCompiler::compileScoped(
-            ['.page-builder .widget-preview-scope', '.page-builder .ql-editor'],
+            ['.widget-preview-scope', '.ql-snow .ql-editor'],
             $__pbTypography,
         );
         $__pbBucketVars = [];

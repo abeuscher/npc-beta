@@ -295,21 +295,14 @@ it('SocialSharing — heading parity (heading also seeds share-link text; docume
     expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
 });
 
-it('BarChart — heading parity (data-gated: both branches early-return without items)', function () {
-    $page = Page::factory()->create(['slug' => 's307-bc', 'status' => 'published']);
-    $pw = s307MakeWidget($page, 'bar_chart', ['heading' => 'Monthly Signups']);
-
-    ['builder' => $builder, 'public' => $public] = s307RenderPair($pw);
-    expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
-});
-
-it('ProductCarousel — heading parity (data-gated: both branches return empty without products)', function () {
-    $page = Page::factory()->create(['slug' => 's307-pc-prod', 'status' => 'published']);
-    $pw = s307MakeWidget($page, 'product_carousel', ['heading' => 'Featured Products']);
-
-    ['builder' => $builder, 'public' => $public] = s307RenderPair($pw);
-    expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
-});
+// Session 308: BarChart + ProductCarousel had their `heading` field
+// removed (no other inline-editable surface, so they also dropped out of
+// the inline-eligible set). Their parity at the HTML layer remains
+// trivially covered by the shared WidgetRenderer::render path — both
+// branches early-return when their data set is empty, producing
+// byte-identical empty HTML; the prior "heading parity" cases here
+// asserted exactly that emptiness, so retiring them is a no-op in test
+// coverage terms.
 
 it('builder render emits data-config-placeholder; public render does not', function () {
     // Sanity assertion that the documented expected-diff actually exists —
