@@ -25,9 +25,13 @@ class ImportBundleJob implements ShouldQueue
 {
     use Queueable, InteractsWithQueue, SerializesModels;
 
+    /**
+     * @param  array{merge_design?: bool, import_media?: bool, replace_duplicate_pages?: bool}  $opts
+     */
     public function __construct(
         public string $relativePath,
         public int $userId,
+        public array $opts = [],
     ) {}
 
     public function handle(): void
@@ -65,6 +69,7 @@ class ImportBundleJob implements ShouldQueue
                 app(ContentImporter::class)->import(
                     $extracted['envelope'],
                     $log,
+                    $this->opts,
                     $extracted['mediaRoot'],
                 );
                 $payload = $extracted['envelope']['payload'] ?? [];
@@ -73,7 +78,7 @@ class ImportBundleJob implements ShouldQueue
                 if (! is_array($bundle)) {
                     throw new InvalidImportBundleException('File is not a valid JSON bundle or zip.');
                 }
-                app(ContentImporter::class)->import($bundle, $log);
+                app(ContentImporter::class)->import($bundle, $log, $this->opts);
                 $payload = $bundle['payload'] ?? [];
             }
 

@@ -179,6 +179,57 @@ class PostResource extends Resource
                                 $records->pluck('id')->all(),
                                 (int) auth()->id(),
                                 'posts-' . $records->count(),
+                                ['with_media' => true],
+                            );
+
+                            Notification::make()
+                                ->title('Export queued')
+                                ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\BulkAction::make('exportSelectedWithTheme')
+                        ->label('Export with theme (JSON)')
+                        ->icon('heroicon-o-paint-brush')
+                        ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                        ->deselectRecordsAfterCompletion()
+                        ->requiresConfirmation()
+                        ->modalHeading('Export selected posts with theme')
+                        ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles alongside the posts. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                        ->modalSubmitActionLabel('Export with theme')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): StreamedResponse {
+                            abort_unless(auth()->user()?->can('update_page'), 403);
+
+                            $ids      = $records->pluck('id')->all();
+                            $bundle   = app(ContentExporter::class)->exportPages($ids, ['with_design' => true]);
+                            $filename = now()->format('Ymd-His') . '-posts-' . count($ids) . '-with-theme.json';
+
+                            return response()->streamDownload(
+                                fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                                $filename,
+                                ['Content-Type' => 'application/json'],
+                            );
+                        }),
+
+                    Tables\Actions\BulkAction::make('exportSelectedWithThemeAndMedia')
+                        ->label('Export with theme & media (zip)')
+                        ->icon('heroicon-o-rectangle-stack')
+                        ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                        ->deselectRecordsAfterCompletion()
+                        ->requiresConfirmation()
+                        ->modalHeading('Export selected posts with theme & media')
+                        ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles plus all referenced media files alongside the posts. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                        ->modalSubmitActionLabel('Export with theme & media')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                            abort_unless(auth()->user()?->can('update_page'), 403);
+
+                            ExportBundleJob::dispatch(
+                                'pages',
+                                $records->pluck('id')->all(),
+                                (int) auth()->id(),
+                                'posts-' . $records->count() . '-full',
+                                ['with_design' => true, 'with_media' => true],
                             );
 
                             Notification::make()

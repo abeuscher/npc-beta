@@ -170,7 +170,7 @@ it('resolves widget media from the archive after the source disk is wiped', func
 
     $out = app(BundleArchive::class)->extract($zipPath);
     $log = new ImportLog();
-    app(ContentImporter::class)->import($out['envelope'], $log, $out['mediaRoot']);
+    app(ContentImporter::class)->import($out['envelope'], $log, mediaRoot: $out['mediaRoot']);
 
     $reimported = PageWidget::forOwner(Page::where('slug', 'cross-system')->first())->first();
     $reMedia    = $reimported->getFirstMedia('config_logo');
@@ -231,7 +231,7 @@ it('round-trips theme/design rows through export and import', function () {
         ['value' => json_encode(['brand' => '#000000']), 'type' => 'json', 'group' => 'design']);
     \Illuminate\Support\Facades\Cache::forget('site_setting:theme_colors');
 
-    app(ContentImporter::class)->import($envelope, new ImportLog());
+    app(ContentImporter::class)->import($envelope, new ImportLog(), ['merge_design' => true]);
 
     $loaded = ColorTokenResolver::load();
     expect($loaded['brand'])->toBe('#abcdef');
@@ -247,7 +247,7 @@ it('deep-merges over defaults and never sweeps a key the bundle omits (295 lesso
         'payload'        => ['design' => ['theme_colors' => ['bg' => '#000000']]],
     ];
 
-    app(ContentImporter::class)->import($bundle, new ImportLog());
+    app(ContentImporter::class)->import($bundle, new ImportLog(), ['merge_design' => true]);
 
     $stored = SiteSetting::get('theme_colors');
 
@@ -273,7 +273,7 @@ it('leaves design rows the bundle does not mention untouched', function () {
         'payload'        => ['design' => ['theme_colors' => ['brand' => '#ff0000']]],
     ];
 
-    app(ContentImporter::class)->import($bundle, new ImportLog());
+    app(ContentImporter::class)->import($bundle, new ImportLog(), ['merge_design' => true]);
 
     expect(SiteSetting::get('typography')['sample_text'])->toBe('KEEP ME');
 });
@@ -417,7 +417,7 @@ it('reverts an imported colour through the real editor save path and reload', fu
         ->call('saveColors');
     expect(ColorTokenResolver::load()['brand'])->toBe('#bbbbbb');
 
-    app(ContentImporter::class)->import($bundle, new ImportLog());
+    app(ContentImporter::class)->import($bundle, new ImportLog(), ['merge_design' => true]);
     expect(ColorTokenResolver::load()['brand'])->toBe('#aaaaaa');
 
     // Fresh page load must show the reverted colour.
@@ -464,7 +464,7 @@ function s303PackageZip(array $envelope): array
 function s303SeedMediaFromZip(array $out): ImportLog
 {
     $log = new ImportLog();
-    app(ContentImporter::class)->import($out['envelope'], $log, $out['mediaRoot']);
+    app(ContentImporter::class)->import($out['envelope'], $log, mediaRoot: $out['mediaRoot']);
 
     return $log;
 }
@@ -559,7 +559,7 @@ it('queues conversion regeneration for each seeded media', function () {
     Storage::fake('public');
 
     Queue::fake();
-    app(ContentImporter::class)->import($out['envelope'], new ImportLog(), $out['mediaRoot']);
+    app(ContentImporter::class)->import($out['envelope'], new ImportLog(), mediaRoot: $out['mediaRoot']);
 
     Queue::assertPushed(RegenerateMediaConversionsJob::class, fn ($job) => $job->mediaId === $id);
 });

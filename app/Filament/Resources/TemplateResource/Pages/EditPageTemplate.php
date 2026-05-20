@@ -98,6 +98,55 @@ class EditPageTemplate extends ReadOnlyAwareEditRecord
                         [$this->record->id],
                         (int) auth()->id(),
                         'template-' . Str::slug($this->record->name),
+                        ['with_media' => true],
+                    );
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('exportTemplateWithTheme')
+                ->label('Export Template with theme (JSON)')
+                ->icon('heroicon-o-paint-brush')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Export Template with theme')
+                ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles alongside the template. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                ->modalSubmitActionLabel('Export with theme')
+                ->action(function (): StreamedResponse {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    $bundle   = app(ContentExporter::class)->exportTemplates([$this->record->id], ['with_design' => true]);
+                    $nameSlug = Str::slug($this->record->name);
+                    $filename = now()->format('Ymd-His') . '-template-' . $nameSlug . '-with-theme.json';
+
+                    return response()->streamDownload(
+                        fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                        $filename,
+                        ['Content-Type' => 'application/json'],
+                    );
+                }),
+
+            Actions\Action::make('exportTemplateWithThemeAndMedia')
+                ->label('Export Template with theme & media (zip)')
+                ->icon('heroicon-o-rectangle-stack')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Export Template with theme & media')
+                ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles plus all referenced media files alongside the template. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                ->modalSubmitActionLabel('Export with theme & media')
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    ExportBundleJob::dispatch(
+                        'templates',
+                        [$this->record->id],
+                        (int) auth()->id(),
+                        'template-' . Str::slug($this->record->name) . '-full',
+                        ['with_design' => true, 'with_media' => true],
                     );
 
                     Notification::make()

@@ -27,12 +27,14 @@ class ExportBundleJob implements ShouldQueue
     /**
      * @param  'pages'|'templates'|'design'|'media'|'all_media'  $kind
      * @param  array<int, int|string>  $ids
+     * @param  array{with_design?: bool, with_media?: bool}  $opts  Session-309 exporter opt-ins (only honored by the 'pages' and 'templates' kinds).
      */
     public function __construct(
         public string $kind,
         public array $ids,
         public int $userId,
         public string $label,
+        public array $opts = [],
     ) {}
 
     public function handle(): void
@@ -46,8 +48,8 @@ class ExportBundleJob implements ShouldQueue
 
         try {
             $envelope = match ($this->kind) {
-                'pages'     => $exporter->exportPages($this->ids),
-                'templates' => $exporter->exportTemplates($this->ids),
+                'pages'     => $exporter->exportPages($this->ids, $this->opts),
+                'templates' => $exporter->exportTemplates($this->ids, $this->opts),
                 'design'    => $exporter->exportDesign(),
                 'media'     => $exporter->exportMedia($this->ids),
                 'all_media' => $exporter->exportAllMedia(),

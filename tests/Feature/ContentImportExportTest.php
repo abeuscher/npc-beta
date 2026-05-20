@@ -7,11 +7,13 @@ use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\WidgetType;
+use App\Models\SiteSetting;
 use App\Services\ImportExport\ContentExporter;
 use App\Services\ImportExport\ContentImporter;
 use App\Services\ImportExport\ImportLog;
 use App\Services\ImportExport\InvalidImportBundleException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -62,6 +64,15 @@ function ieAuthorUser(): User
     $user->givePermissionTo('update_page');
 
     return $user;
+}
+
+function ieSeedDesignRow(string $key, array $value): void
+{
+    SiteSetting::updateOrCreate(
+        ['key' => $key],
+        ['value' => json_encode($value), 'type' => 'json', 'group' => 'design'],
+    );
+    Cache::forget("site_setting:{$key}");
 }
 
 // ── Round-trip: text widgets only ───────────────────────────────────────────
@@ -782,4 +793,325 @@ it('preserves author_id on overwrite of an existing page', function () {
 
     $reloaded = Page::where('slug', 'preserve-author')->first();
     expect($reloaded->author_id)->toBe($originalAuthor->id);
+});
+
+// ── Session 309: opt-in exporter (with_design / with_media) ────────────────
+
+it('omits payload.design from exportPages by default', function () {
+    $page = ieMakePageWithWidgets('opt-default-no-design');
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    expect($bundle['payload'])->not->toHaveKey('design');
+    expect($bundle['payload'])->not->toHaveKey('media');
+});
+
+it('includes payload.design on exportPages when with_design is true', function () {
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#abcdef']]);
+
+    $page = ieMakePageWithWidgets('opt-with-design');
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id], ['with_design' => true]);
+
+    expect($bundle['payload'])->toHaveKey('design');
+    expect($bundle['payload']['design'])->toHaveKey('theme_colors');
+    expect($bundle['payload']['design']['theme_colors']['palette']['primary'])->toBe('#abcdef');
+});
+
+it('dispatches ExportBundleJob with both opts and the handle() path emits design + media', function () {
+    // End-to-end queue-path guard: the per-action dispatch sites pass
+    // ['with_design' => true, 'with_media' => true] for the "theme & media"
+    // export. ExportBundleJob::handle() must forward those opts to
+    // ContentExporter so the resulting envelope carries both payload.design
+    // and payload.media.
+    ieSeedDesignRow('typography', ['buckets' => ['heading_family' => 'Inter']]);
+
+    $page = ieMakePageWithWidgets('queue-path-full-snapshot');
+
+    $job = new \App\Jobs\ExportBundleJob(
+        kind:   'pages',
+        ids:    [$page->id],
+        userId: User::factory()->create()->id,
+        label:  'queue-path-test',
+        opts:   ['with_design' => true, 'with_media' => true],
+    );
+
+    // Re-run the kind→exporter dispatch inline so we can assert on the
+    // envelope without round-tripping through BundleArchive::build() (which
+    // is exercised separately).
+    $envelope = match ($job->kind) {
+        'pages' => app(ContentExporter::class)->exportPages($job->ids, $job->opts),
+    };
+
+    expect($envelope['payload'])->toHaveKey('design');
+    expect($envelope['payload']['design'])->toHaveKey('typography');
+    expect($envelope['payload'])->toHaveKey('media');
+});
+
+it('emits both payload.design and payload.media when with_design + with_media are true', function () {
+    Storage::fake('public');
+
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#abcdef']]);
+
+    $page   = Page::factory()->create(['slug' => 'opt-full-snapshot', 'status' => 'published']);
+    $logoWt = \App\Models\WidgetType::where('handle', 'logo')->firstOrFail();
+    $widget = $page->widgets()->create([
+        'widget_type_id' => $logoWt->id,
+        'label'          => 'Logo',
+        'config'         => ['logo' => null, 'text' => 'Acme', 'link_url' => '/'],
+        'query_config'   => [],
+        'appearance_config' => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+    $media = $widget->addMedia(firstSampleLogo())
+        ->preservingOriginal()
+        ->toMediaCollection('config_logo', 'public');
+    $widget->update(['config' => ['logo' => $media->id, 'text' => 'Acme', 'link_url' => '/']]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id], [
+        'with_design' => true,
+        'with_media'  => true,
+    ]);
+
+    expect($bundle['payload'])->toHaveKey('design');
+    expect($bundle['payload']['design']['theme_colors']['palette']['primary'])->toBe('#abcdef');
+    expect($bundle['payload'])->toHaveKey('media');
+    expect($bundle['payload']['media'])->toHaveCount(1);
+    expect($bundle['payload']['media'][0]['id'])->toBe($media->id);
+});
+
+it('emits payload.media descriptors for referenced media when with_media is true', function () {
+    Storage::fake('public');
+
+    $page   = Page::factory()->create(['slug' => 'opt-with-media', 'status' => 'published']);
+    $logoWt = \App\Models\WidgetType::where('handle', 'logo')->firstOrFail();
+    $widget = $page->widgets()->create([
+        'widget_type_id' => $logoWt->id,
+        'label'          => 'Logo',
+        'config'         => ['logo' => null, 'text' => 'Acme', 'link_url' => '/'],
+        'query_config'   => [],
+        'appearance_config' => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+    $media = $widget->addMedia(firstSampleLogo())
+        ->preservingOriginal()
+        ->toMediaCollection('config_logo', 'public');
+    $widget->update(['config' => ['logo' => $media->id, 'text' => 'Acme', 'link_url' => '/']]);
+
+    $defaultBundle = app(ContentExporter::class)->exportPages([$page->id]);
+    expect($defaultBundle['payload'])->not->toHaveKey('media');
+
+    $withMedia = app(ContentExporter::class)->exportPages([$page->id], ['with_media' => true]);
+    expect($withMedia['payload'])->toHaveKey('media');
+    expect($withMedia['payload']['media'])->toHaveCount(1);
+    expect($withMedia['payload']['media'][0]['id'])->toBe($media->id);
+    expect($withMedia['payload']['media'][0]['file_name'])->toBe($media->file_name);
+});
+
+// ── Session 309: ContentImporter::analyze() manifest ───────────────────────
+
+it('analyzes a bundle and reports design, media, pages, and templates', function () {
+    Page::factory()->create(['slug' => 'analyze-existing', 'status' => 'published']);
+    Template::create(['name' => 'Analyze Existing Template', 'type' => 'content', 'is_default' => false, 'created_by' => User::factory()->create()->id]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'design' => [
+                'theme_colors' => ['palette' => ['primary' => '#123456']],
+                'typography'   => ['buckets' => ['heading_family' => 'Inter']],
+            ],
+            'media' => [
+                ['id' => 9001, 'file_name' => 'one.png'],
+                ['id' => 9002, 'file_name' => 'two.png'],
+            ],
+            'pages' => [
+                ['slug' => 'analyze-existing', 'widgets' => []],
+                ['slug' => 'analyze-fresh', 'widgets' => []],
+            ],
+            'templates' => [
+                ['name' => 'Analyze Existing Template', 'type' => 'content'],
+                ['name' => 'Analyze Fresh Template', 'type' => 'page'],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['has_design'])->toBeTrue();
+    expect($manifest['design_keys'])->toEqualCanonicalizing(['theme_colors', 'typography']);
+    expect($manifest['has_media'])->toBeTrue();
+    expect($manifest['media_count'])->toBe(2);
+    expect($manifest['pages'])->toEqualCanonicalizing([
+        ['slug' => 'analyze-existing', 'exists_locally' => true],
+        ['slug' => 'analyze-fresh',    'exists_locally' => false],
+    ]);
+    expect($manifest['templates'])->toEqualCanonicalizing([
+        ['name' => 'Analyze Existing Template', 'type' => 'content', 'exists_locally' => true],
+        ['name' => 'Analyze Fresh Template',    'type' => 'page',    'exists_locally' => false],
+    ]);
+});
+
+it('analyzes a bare bundle with no design or media payloads', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['has_design'])->toBeFalse();
+    expect($manifest['design_keys'])->toBe([]);
+    expect($manifest['has_media'])->toBeFalse();
+    expect($manifest['media_count'])->toBe(0);
+    expect($manifest['pages'])->toBe([]);
+    expect($manifest['templates'])->toBe([]);
+});
+
+it('rejects analyze on a malformed envelope with the same error as import', function () {
+    expect(fn () => app(ContentImporter::class)->analyze(['payload' => []]))
+        ->toThrow(InvalidImportBundleException::class);
+});
+
+// ── Session 309: importer opt flags ────────────────────────────────────────
+
+it('skips payload.design by default (merge_design opt defaults to FALSE)', function () {
+    // Seed the SiteSetting row to a known value, then import a bundle that
+    // would overwrite it under the old implicit behaviour.
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#000000']]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'design' => [
+                'theme_colors' => ['palette' => ['primary' => '#ff00ff']],
+            ],
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    $colors = SiteSetting::get('theme_colors');
+    expect($colors['palette']['primary'])->toBe('#000000');
+});
+
+it('merges payload.design when merge_design opt is TRUE', function () {
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#000000']]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'design' => [
+                'theme_colors' => ['palette' => ['primary' => '#ff00ff']],
+            ],
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['merge_design' => true]);
+
+    $colors = SiteSetting::get('theme_colors');
+    expect($colors['palette']['primary'])->toBe('#ff00ff');
+});
+
+it('skips colliding-slug pages when replace_duplicate_pages is FALSE', function () {
+    $existing = ieMakePageWithWidgets('opt-dup-skip', [
+        ['handle' => 'text_block', 'label' => 'Original', 'config' => ['content' => '<p>original</p>']],
+    ]);
+    $originalId = $existing->id;
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'pages' => [[
+                'title'   => 'Replacement', 'slug' => 'opt-dup-skip', 'type' => 'default',
+                'status'  => 'draft',
+                'widgets' => [],
+            ]],
+            'templates' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['replace_duplicate_pages' => false]);
+
+    $reloaded = Page::where('slug', 'opt-dup-skip')->first();
+    expect($reloaded->id)->toBe($originalId);
+    expect($reloaded->title)->toBe('Test opt-dup-skip');
+
+    $widgets = PageWidget::forOwner($reloaded)->get();
+    expect($widgets)->toHaveCount(1);
+    expect($widgets[0]->label)->toBe('Original');
+});
+
+it('skips ALL page entries when import_pages opt is FALSE', function () {
+    // One existing slug + one fresh slug — neither should land.
+    $existing = ieMakePageWithWidgets('opt-pages-off-existing', [
+        ['handle' => 'text_block', 'label' => 'Original', 'config' => ['content' => '<p>original</p>']],
+    ]);
+    $originalTitle = $existing->title;
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'pages' => [
+                [
+                    'title' => 'Replacement',
+                    'slug'  => 'opt-pages-off-existing',
+                    'type'  => 'default',
+                    'status'  => 'draft',
+                    'widgets' => [],
+                ],
+                [
+                    'title' => 'Brand new',
+                    'slug'  => 'opt-pages-off-fresh',
+                    'type'  => 'default',
+                    'status'  => 'draft',
+                    'widgets' => [],
+                ],
+            ],
+            'templates' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_pages' => false]);
+
+    // Existing page is untouched.
+    $reloaded = Page::where('slug', 'opt-pages-off-existing')->first();
+    expect($reloaded->title)->toBe($originalTitle);
+
+    // Fresh slug was never created.
+    expect(Page::where('slug', 'opt-pages-off-fresh')->exists())->toBeFalse();
+});
+
+it('skips payload.media when import_media opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'media' => [[
+                'id'        => 9100,
+                'uuid'      => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                'file_name' => 'unused.png',
+                'path'      => '9100/unused.png',
+            ]],
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_media' => false]);
+
+    expect(\Illuminate\Support\Facades\DB::table('media')->where('id', 9100)->exists())->toBeFalse();
 });

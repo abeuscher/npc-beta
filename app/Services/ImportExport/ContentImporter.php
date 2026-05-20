@@ -31,55 +31,201 @@ class ContentImporter
     private ?string $mediaRoot = null;
 
     /**
+     * Per-import flag (session 309). When false, pages whose slug already
+     * exists on this install are skipped with a warning instead of being
+     * overwritten in place. Defaults to true so direct service callers keep
+     * the existing overwrite semantics; the import UI passes false when the
+     * operator declines the "Replace duplicate pages" checkbox.
+     */
+    private bool $replaceDuplicatePages = true;
+
+    /**
+     * Canonical default opts for import(). Kept in one place so analyze()/UI
+     * and the service share the same baseline.
+     *
+     * @return array{merge_design: bool, import_media: bool, replace_duplicate_pages: bool}
+     */
+    public static function defaultImportOpts(): array
+    {
+        return [
+            'merge_design'            => false,
+            'import_media'            => true,
+            'import_pages'            => true,
+            'replace_duplicate_pages' => true,
+        ];
+    }
+
+    /**
+     * Pre-flight inspection (session 309). Validates the envelope and reports
+     * what the bundle carries so the import UI can decide which questions to
+     * ask. Pure inspection — never writes to the DB, never touches storage,
+     * never runs the import. Throws InvalidImportBundleException on a malformed
+     * envelope so the caller can render the same error the import path would.
+     *
+     * @param  array<string, mixed>  $bundle
+     * @return array{
+     *     has_design: bool,
+     *     design_keys: array<int, string>,
+     *     has_media: bool,
+     *     media_count: int,
+     *     pages: array<int, array{slug: string, exists_locally: bool}>,
+     *     templates: array<int, array{name: string, type: string, exists_locally: bool}>
+     * }
+     */
+    public function analyze(array $bundle): array
+    {
+        $this->validateEnvelope($bundle);
+
+        $payload = $bundle['payload'] ?? [];
+
+        $designKeys = [];
+        if (! empty($payload['design']) && is_array($payload['design'])) {
+            foreach (['theme_colors', 'typography', 'button_styles'] as $key) {
+                if (array_key_exists($key, $payload['design']) && is_array($payload['design'][$key])) {
+                    $designKeys[] = $key;
+                }
+            }
+        }
+
+        $pages = [];
+        $slugs = [];
+        foreach ($payload['pages'] ?? [] as $entry) {
+            $slug = $entry['slug'] ?? null;
+            if (! is_string($slug) || $slug === '') {
+                continue;
+            }
+            $pages[] = ['slug' => $slug, 'exists_locally' => false];
+            $slugs[] = $slug;
+        }
+        if (! empty($slugs)) {
+            $existingSlugs = Page::withTrashed()
+                ->whereIn('slug', $slugs)
+                ->pluck('slug')
+                ->all();
+            $existingSet = array_flip($existingSlugs);
+            foreach ($pages as &$row) {
+                $row['exists_locally'] = isset($existingSet[$row['slug']]);
+            }
+            unset($row);
+        }
+
+        $templates    = [];
+        $tplLookups   = [];
+        foreach ($payload['templates'] ?? [] as $entry) {
+            $name = $entry['name'] ?? null;
+            $type = $entry['type'] ?? null;
+            if (! is_string($name) || $name === '' || ! is_string($type)) {
+                continue;
+            }
+            $templates[]  = ['name' => $name, 'type' => $type, 'exists_locally' => false];
+            $tplLookups[] = ['name' => $name, 'type' => $type];
+        }
+        if (! empty($tplLookups)) {
+            $existingTemplates = Template::query()
+                ->where(function ($q) use ($tplLookups) {
+                    foreach ($tplLookups as $row) {
+                        $q->orWhere(function ($qq) use ($row) {
+                            $qq->where('name', $row['name'])->where('type', $row['type']);
+                        });
+                    }
+                })
+                ->get(['name', 'type'])
+                ->map(fn ($t) => $t->name . '|' . $t->type)
+                ->flip();
+            foreach ($templates as &$row) {
+                $row['exists_locally'] = isset($existingTemplates[$row['name'] . '|' . $row['type']]);
+            }
+            unset($row);
+        }
+
+        $hasMedia   = ! empty($payload['media']) && is_array($payload['media']);
+        $mediaCount = $hasMedia ? count($payload['media']) : 0;
+
+        return [
+            'has_design'  => $designKeys !== [],
+            'design_keys' => $designKeys,
+            'has_media'   => $hasMedia,
+            'media_count' => $mediaCount,
+            'pages'       => $pages,
+            'templates'   => $templates,
+        ];
+    }
+
+    /**
      * Import a parsed bundle envelope. Validates format_version, then walks
      * templates first and pages second so pages can resolve their template_id.
      * Page templates are re-linked to their chrome pages in a final pass after
      * pages are imported.
      *
+     * Session 309 added the $opts gate. Each opt-in branch (design merge, media
+     * seed, duplicate-page overwrite) is now controlled by an explicit flag so
+     * the import UI can surface the choice. merge_design defaults to FALSE — a
+     * behaviour flip so old callers that import a bundle containing
+     * payload.design no longer silently overwrite the Theme editor's settings.
+     *
      * @param  array<string, mixed>  $bundle
+     * @param  array{merge_design?: bool, import_media?: bool, replace_duplicate_pages?: bool}  $opts
      */
-    public function import(array $bundle, ImportLog $log, ?string $mediaRoot = null): void
+    public function import(array $bundle, ImportLog $log, array $opts = [], ?string $mediaRoot = null): void
     {
         $this->validateEnvelope($bundle);
 
-        $this->mediaRoot = $mediaRoot;
-        $designImported  = false;
-        $seededMediaIds  = [];
+        $opts = array_replace(self::defaultImportOpts(), $opts);
+
+        $this->mediaRoot                = $mediaRoot;
+        $this->replaceDuplicatePages    = (bool) $opts['replace_duplicate_pages'];
+        $designImported                 = false;
+        $seededMediaIds                 = [];
 
         try {
-            DB::transaction(function () use ($bundle, $log, &$designImported, &$seededMediaIds) {
+            DB::transaction(function () use ($bundle, $log, $opts, &$designImported, &$seededMediaIds) {
                 $payload = $bundle['payload'] ?? [];
 
                 // Theme/design runs first so a combined bundle establishes the
-                // theme before templates/pages resolve against it.
+                // theme before templates/pages resolve against it. Gated on
+                // merge_design (session 309 — default off).
                 if (! empty($payload['design']) && is_array($payload['design'])) {
-                    $this->importDesign($payload['design'], $log);
-                    $designImported = true;
+                    if ($opts['merge_design']) {
+                        $this->importDesign($payload['design'], $log);
+                        $designImported = true;
+                    } else {
+                        $log->info('Theme: bundle includes a design payload, skipped (merge_design opt is off).');
+                    }
                 }
 
                 // ID-preserving media seed runs before templates/pages so
-                // by-reference content resolves against the seeded rows.
+                // by-reference content resolves against the seeded rows. Gated
+                // on import_media (session 309 — default on).
                 if (! empty($payload['media']) && is_array($payload['media'])) {
-                    $seededMediaIds = $this->importMedia($payload['media'], $log);
+                    if ($opts['import_media']) {
+                        $seededMediaIds = $this->importMedia($payload['media'], $log);
+                    } else {
+                        $log->info('Media: bundle includes a media seed list, skipped (import_media opt is off).');
+                    }
                 }
 
                 foreach ($payload['templates'] ?? [] as $templateData) {
                     $this->importTemplate($templateData, $log);
                 }
 
-                foreach ($payload['pages'] ?? [] as $pageData) {
-                    $this->importPage($pageData, $log);
-                }
-
-                // Re-link page templates to their chrome pages now that the pages exist.
-                foreach ($payload['templates'] ?? [] as $templateData) {
-                    if (($templateData['type'] ?? null) === 'page') {
-                        $this->relinkTemplateChrome($templateData, $log);
+                if ($opts['import_pages']) {
+                    foreach ($payload['pages'] ?? [] as $pageData) {
+                        $this->importPage($pageData, $log);
                     }
+
+                    // Re-link page templates to their chrome pages now that the pages exist.
+                    foreach ($payload['templates'] ?? [] as $templateData) {
+                        if (($templateData['type'] ?? null) === 'page') {
+                            $this->relinkTemplateChrome($templateData, $log);
+                        }
+                    }
+                } elseif (! empty($payload['pages'])) {
+                    $log->info('Pages: bundle includes ' . count($payload['pages']) . ' page entries, skipped (import_pages opt is off).');
                 }
             });
         } finally {
-            $this->mediaRoot = null;
+            $this->mediaRoot             = null;
+            $this->replaceDuplicatePages = true;
         }
 
         // Rebuild the public CSS bundle outside the transaction (the build
@@ -436,6 +582,12 @@ class ContentImporter
         }
 
         $existing = Page::withTrashed()->where('slug', $slug)->first();
+
+        if ($existing && ! $this->replaceDuplicatePages) {
+            $log->info("Page \"{$slug}\": slug already exists on this install, skipped (replace_duplicate_pages opt is off).");
+
+            return;
+        }
 
         $templateId = null;
         if (! empty($data['template_name'])) {

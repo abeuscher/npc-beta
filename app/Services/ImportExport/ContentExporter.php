@@ -18,14 +18,17 @@ class ContentExporter
      * Export one or more pages (by id) into a bundle envelope.
      *
      * @param  array<int, string>  $pageIds
+     * @param  array{with_design?: bool, with_media?: bool}  $opts  Opt-in inclusions (session 309). Defaults: no design, no media.
      * @return array<string, mixed>
      */
-    public function exportPages(array $pageIds): array
+    public function exportPages(array $pageIds, array $opts = []): array
     {
-        return $this->envelope([
-            'templates' => [],
-            'pages'     => $this->serializePages($pageIds),
-        ]);
+        $pages   = $this->serializePages($pageIds);
+        $payload = ['templates' => [], 'pages' => $pages];
+
+        $this->attachOptIns($payload, $pages, [], $opts);
+
+        return $this->envelope($payload);
     }
 
     /**
@@ -33,17 +36,21 @@ class ContentExporter
      * Page templates pull in their associated header/footer system pages.
      *
      * @param  array<int, string>  $templateIds
+     * @param  array{with_design?: bool, with_media?: bool}  $opts
      * @return array<string, mixed>
      */
-    public function exportTemplates(array $templateIds): array
+    public function exportTemplates(array $templateIds, array $opts = []): array
     {
         $templates     = Template::whereIn('id', $templateIds)->get();
         $nestedPageIds = $this->collectChromePageIds($templates);
 
-        return $this->envelope([
-            'templates' => $this->serializeTemplates($templates),
-            'pages'     => $this->serializePages($nestedPageIds),
-        ]);
+        $serializedTemplates = $this->serializeTemplates($templates);
+        $pages               = $this->serializePages($nestedPageIds);
+        $payload             = ['templates' => $serializedTemplates, 'pages' => $pages];
+
+        $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
+
+        return $this->envelope($payload);
     }
 
     /**
@@ -51,18 +58,108 @@ class ContentExporter
      *
      * @param  array<int, string>  $pageIds
      * @param  array<int, string>  $templateIds
+     * @param  array{with_design?: bool, with_media?: bool}  $opts
      * @return array<string, mixed>
      */
-    public function exportBundle(array $pageIds, array $templateIds): array
+    public function exportBundle(array $pageIds, array $templateIds, array $opts = []): array
     {
         $templates     = Template::whereIn('id', $templateIds)->get();
         $nestedPageIds = $this->collectChromePageIds($templates);
         $allPageIds    = array_values(array_unique(array_merge($pageIds, $nestedPageIds)));
 
-        return $this->envelope([
-            'templates' => $this->serializeTemplates($templates),
-            'pages'     => $this->serializePages($allPageIds),
-        ]);
+        $serializedTemplates = $this->serializeTemplates($templates);
+        $pages               = $this->serializePages($allPageIds);
+        $payload             = ['templates' => $serializedTemplates, 'pages' => $pages];
+
+        $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
+
+        return $this->envelope($payload);
+    }
+
+    /**
+     * Session 309 opt-ins. Mutates the payload to attach payload.design and/or
+     * payload.media when explicitly requested. Both default off so a page-or-
+     * template bundle no longer silently carries theme or a media seed list.
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array<string, mixed>>  $serializedPages
+     * @param  array<int, array<string, mixed>>  $serializedTemplates
+     * @param  array{with_design?: bool, with_media?: bool}  $opts
+     */
+    protected function attachOptIns(array &$payload, array $serializedPages, array $serializedTemplates, array $opts): void
+    {
+        if (! empty($opts['with_design'])) {
+            $design = [];
+            foreach (['theme_colors', 'typography', 'button_styles'] as $key) {
+                $value = SiteSetting::get($key);
+                if (is_array($value)) {
+                    $design[$key] = $value;
+                }
+            }
+            $payload['design'] = $design;
+        }
+
+        if (! empty($opts['with_media'])) {
+            $payload['media'] = $this->collectReferencedMedia($serializedPages, $serializedTemplates);
+        }
+    }
+
+    /**
+     * Walk the per-page / per-widget media descriptors already produced by the
+     * page serializer and collect every media id they reference, then emit a
+     * posture-B descriptor list (same shape exportMedia() emits) so the bundle
+     * carries a self-contained media seed that the importer can replay before
+     * pages re-attach their by-reference references.
+     *
+     * @param  array<int, array<string, mixed>>  $serializedPages
+     * @param  array<int, array<string, mixed>>  $serializedTemplates
+     * @return array<int, array<string, mixed>>
+     */
+    protected function collectReferencedMedia(array $serializedPages, array $serializedTemplates): array
+    {
+        $ids = [];
+
+        $walk = function (array $widgets) use (&$ids, &$walk): void {
+            foreach ($widgets as $item) {
+                if (($item['type'] ?? 'widget') === 'layout') {
+                    foreach ($item['slots'] ?? [] as $slotWidgets) {
+                        $walk($slotWidgets);
+                    }
+                    continue;
+                }
+                foreach ($item['media'] ?? [] as $desc) {
+                    $path = $desc['path'] ?? null;
+                    if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
+                        $ids[] = (int) $m[1];
+                    }
+                }
+            }
+        };
+
+        foreach ($serializedPages as $page) {
+            foreach ($page['media'] ?? [] as $desc) {
+                $path = $desc['path'] ?? null;
+                if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
+                    $ids[] = (int) $m[1];
+                }
+            }
+            $walk($page['widgets'] ?? []);
+        }
+
+        foreach ($serializedTemplates as $tpl) {
+            $walk($tpl['widgets'] ?? []);
+        }
+
+        $ids = array_values(array_unique($ids));
+        if (empty($ids)) {
+            return [];
+        }
+
+        return Media::whereIn('id', $ids)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Media $m) => $this->serializeMediaRow($m))
+            ->all();
     }
 
     /**
