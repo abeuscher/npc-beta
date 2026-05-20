@@ -398,10 +398,26 @@ function clampRange(q: any, r: { index: number; length: number }): { index: numb
   return { index: idx, length: lenClamped }
 }
 
+// Quill v2's format APIs (formatText/formatLine/format/removeFormat) all
+// flow through modify() → selection.update() → selection.getRange() →
+// normalizedToRange(), which maps the NATIVE browser range's anchor nodes
+// back into Quill blots. If the native selection's anchor node is no
+// longer inside Quill's scroll tree (button click moved focus, Ctrl+A
+// selected the whole document, etc.), scroll.find returns null and the
+// chain throws "Cannot read properties of null (reading 'offset')". The
+// fix is to clear the native selection BEFORE the Quill call so update()
+// sees a null range and proceeds with lastRange=null — no normalization,
+// no throw, formatText/formatLine apply at the explicit index/length we
+// passed and that's all we need.
+function clearNativeSelection(): void {
+  try { window.getSelection()?.removeAllRanges() } catch { /* SecurityError on cross-origin */ }
+}
+
 function applyHeader(level: number | false): void {
   const r = savedRange ?? { index: 0, length: 0 }
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.formatLine(c.index, c.length, 'header', level === false ? false : level, 'user')
   })
   recomputeFormatState(r)
@@ -414,16 +430,15 @@ function toggleInline(key: 'bold' | 'italic' | 'underline' | 'strike'): void {
   const wasActive = formatState.value[key] === 'active'
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     if (c.length > 0) {
       q.formatText(c.index, c.length, key, !wasActive, 'user')
     } else {
-      // Collapsed selection: set native selection then use format() so the
-      // pending format applies to the next typed character. This is the
-      // one path where we need format() — there's no formatText analogue
-      // for "remember the format for next insertion".
+      // Collapsed selection: set internal range then use format() so the
+      // pending format applies to the next typed character.
       try {
         const Quill = (window as any).Quill
-        q.setSelection(c.index, 0, Quill?.sources?.USER ?? 'user')
+        q.setSelection(c.index, 0, Quill?.sources?.SILENT ?? 'silent')
         q.format(key, !wasActive, 'user')
       } catch { /* selection race; degrade silently */ }
     }
@@ -436,6 +451,7 @@ function toggleList(type: 'bullet' | 'ordered'): void {
   const active = formatState.value.list === type
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.formatLine(c.index, c.length, 'list', active ? false : type, 'user')
   })
   recomputeFormatState(r)
@@ -446,6 +462,7 @@ function toggleBlockquote(): void {
   const active = formatState.value.blockquote === 'active'
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.formatLine(c.index, c.length, 'blockquote', !active, 'user')
   })
   recomputeFormatState(r)
@@ -455,6 +472,7 @@ function setAlign(value: '' | 'center' | 'right' | 'justify'): void {
   const r = savedRange ?? { index: 0, length: 0 }
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.formatLine(c.index, c.length, 'align', value === '' ? false : value, 'user')
   })
   recomputeFormatState(r)
@@ -465,6 +483,7 @@ function clearFormatting(): void {
   if (!r || r.length === 0) return
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.removeFormat(c.index, c.length, 'user')
   })
   recomputeFormatState(r)
@@ -691,6 +710,7 @@ function onColorPicked(hex: string): void {
   }
   withQuill((q) => {
     const c = clampRange(q, r)
+    clearNativeSelection()
     q.formatText(c.index, c.length, key, hex === '' ? false : hex, 'user')
   })
   recomputeFormatState(r)
