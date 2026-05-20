@@ -2,14 +2,22 @@ import { test, expect } from '@playwright/test';
 import { resetAndLogin } from '../helpers/auth.js';
 import { createPublishedEventWithTiers, cleanupEventsBySlugPrefix, fillTierToCapacity } from '../helpers/db.js';
 
-// retries: the public event landing page's first cold render (runtime SCSS
-// compile) can exceed the assertion window on a CPU-contended box (dev stack
-// running alongside the isolated e2e stack). The feature is correct — every
-// warm run passes deterministically — so a scoped retry reruns the cold
-// serial group warm. Zero coverage loss: the test must still pass green.
+// SKIPPED (e2e-stabilization handback). This suite is the only one that
+// remained intermittently unstable in CI after the two shared infra causes
+// were fixed: it creates a brand-new published event + page +
+// event_registration widget per test via raw SQL and immediately navigates
+// to that *freshly-created* public page. It is uniquely exposed to (a) the
+// cold first render of a not-pre-warmed page and (b) a likely
+// event_registration widget dependency on the public widget bundle, which
+// the isolated e2e stack deliberately does not build (no build server in
+// CI). Across runs it flipped pass / flaky / hard-fail. Owner decision:
+// skip it for now rather than block the suite; flagged in
+// sessions/housekeeping-inbox.md ([test-integrity]) to be revisited — and
+// most likely deleted — in the next housekeeping session unless we decide
+// to give the e2e stack the widget bundle / harden the per-test setup.
 test.describe.configure({ mode: 'serial', retries: 2 });
 
-test.describe('Event registration — quantity spinner', () => {
+test.describe.skip('Event registration — quantity spinner', () => {
     const SLUG_PREFIX = '279-quantity-spinner-';
 
     test.beforeAll(async ({ browser }) => {

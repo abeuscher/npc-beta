@@ -184,20 +184,17 @@ jobs:
   # isolated stack used locally; the harness targets it purely via env, so no
   # e2e spec or helper changes are CI-specific.
   #
-  # NOT in the `tests` merge-gate `needs` yet: the e2e suite is observably
-  # flaky / not-green on the isolated stack (session-299 close finding) — a
-  # required check on a flaky suite would block every merge to main. This job
-  # runs and reports on every push (artifacts on failure) so the suite can be
-  # stabilised; promote it into `tests.needs` once it is reliably green.
+  # Un-parked (e2e-stabilization): the suite is green on the isolated stack —
+  # the QUARANTINED_SPECS quarantine has been deleted and the shared CI-only
+  # causes fixed (Composer dev-deps in the e2e image; the Vite build volume
+  # mounted into nginx; runtime-SCSS warm-up before the suite). It runs and
+  # reports on every push but is intentionally NOT in the `tests` merge-gate
+  # `needs` — kept non-gating by design (Playwright variance should not block
+  # every merge to main); promote into `tests.needs` only as a separate,
+  # deliberate decision.
   playwright:
     name: Playwright e2e (isolated stack)
     needs: slow
-    # PARKED (session 304): the e2e suite has one shared CI-environment
-    # cause (cold runtime SCSS render → pages miss the timeout), not N
-    # spec bugs — see playwright.config.ts QUARANTINED_SPECS and the
-    # handoff brief sessions/playwright-test-fix.md. A parallel effort
-    # owns the fix; un-park (remove this `if:`) only when it lands.
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -302,6 +299,23 @@ jobs:
           echo
           exit 1
 
+      # Warm the runtime-SCSS cache. The public layout compiles template
+      # custom_scss via ScssPhp at request time and caches it in Redis; the
+      # first cold public render in the fresh e2e container is slow enough to
+      # blow tight in-browser timeouts. Hit the seeded public pages a few
+      # times so the compile is paid and cached before the timed suite,
+      # making cold-sensitive specs (e.g. event-registration) reliable.
+      # Best-effort: never fails the job.
+      - name: Warm the runtime-SCSS cache (seeded public pages)
+        run: |
+          for path in / /news; do
+            for n in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8090${path}" || echo 000)
+              echo "warm ${path} attempt ${n}: HTTP ${code}"
+            done
+          done
+          true
+
       - name: Run Playwright (chromium) against the isolated stack
         run: npm run test:e2e:isolated -- --project=chromium
 
@@ -321,8 +335,9 @@ jobs:
   # job named "Tests" (workflow "Tests") so a branch cannot merge unless the
   # fast + slow Pest suites passed. Keep this job named exactly "Tests" —
   # branch protection on main requires it. The Playwright e2e job runs on
-  # every push but is intentionally NOT in `needs` until its suite is stable
-  # (see the playwright job comment + sessions/298 + 299 close handoffs).
+  # every push but is intentionally NOT in `needs` — kept non-gating by
+  # design (see the playwright job comment + sessions/298 + 299 close
+  # handoffs + the e2e-stabilization handback).
   tests:
     name: Tests
     needs: [fast, slow]
