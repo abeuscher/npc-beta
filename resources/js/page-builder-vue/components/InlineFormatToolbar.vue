@@ -318,79 +318,87 @@ watch(handle, async (next, prev) => {
 
 // ── §F per-control handlers ─────────────────────────────────────────────
 
+// Quill v2's getSelection() can throw mid-operation when the native browser
+// selection drifts off the editor (focus moved, native range went stale,
+// or the DOM under it changed). Every call site is wrapped so a transient
+// failure logs and degrades gracefully instead of freezing the UI on an
+// unhandled rejection. The next editor-change repaints the live state.
 function withQuill<T>(fn: (q: any) => T): T | undefined {
   const h = handle.value
   if (!h) return undefined
-  return fn(h.quill)
+  try {
+    return fn(h.quill)
+  } catch (e) {
+    console.debug('[inline-toolbar] Quill API call failed:', e)
+    return undefined
+  }
 }
 
 function applyHeader(level: number | false): void {
   withQuill((q) => {
     q.format('header', level === false ? false : level, 'user')
-    recomputeFormatState()
   })
+  recomputeFormatState()
   openPopover.value = null
 }
 
 function toggleInline(key: 'bold' | 'italic' | 'underline' | 'strike'): void {
-  withQuill((q) => {
-    const cur = q.getFormat()
-    const v = cur[key]
-    q.format(key, !(v === true), 'user')
-    recomputeFormatState()
-  })
+  // Use cached formatState so we don't re-enter getFormat() (which calls
+  // getSelection() internally and can throw). Apply the toggle blind to
+  // the cached value; editor-change repaints reality.
+  const wasActive = formatState.value[key] === 'active'
+  withQuill((q) => q.format(key, !wasActive, 'user'))
+  recomputeFormatState()
 }
 
 function toggleList(type: 'bullet' | 'ordered'): void {
-  withQuill((q) => {
-    const cur = q.getFormat()
-    const active = cur.list === type
-    q.format('list', active ? false : type, 'user')
-    recomputeFormatState()
-  })
+  const active = formatState.value.list === type
+  withQuill((q) => q.format('list', active ? false : type, 'user'))
+  recomputeFormatState()
 }
 
 function toggleBlockquote(): void {
-  withQuill((q) => {
-    const cur = q.getFormat()
-    q.format('blockquote', !(cur.blockquote === true), 'user')
-    recomputeFormatState()
-  })
+  const active = formatState.value.blockquote === 'active'
+  withQuill((q) => q.format('blockquote', !active, 'user'))
+  recomputeFormatState()
 }
 
 function setAlign(value: '' | 'center' | 'right' | 'justify'): void {
-  withQuill((q) => {
-    q.format('align', value === '' ? false : value, 'user')
-    recomputeFormatState()
-  })
+  withQuill((q) => q.format('align', value === '' ? false : value, 'user'))
+  recomputeFormatState()
 }
 
 function clearFormatting(): void {
   withQuill((q) => {
-    const r = q.getSelection()
+    let r: any = null
+    try { r = q.getSelection() } catch { /* selection lost */ }
     if (!r || r.length === 0) return
     q.removeFormat(r.index, r.length, 'user')
-    recomputeFormatState()
   })
+  recomputeFormatState()
 }
 
 // ── §G link popover ─────────────────────────────────────────────────────
 
 function findLinkBounds(q: any, index: number, url: string): { index: number; length: number } {
-  let start = index
-  while (start > 0) {
-    const f = q.getFormat(start - 1, 1)
-    if (f.link !== url) break
-    start--
+  try {
+    let start = index
+    while (start > 0) {
+      const f = q.getFormat(start - 1, 1)
+      if (f.link !== url) break
+      start--
+    }
+    let end = index
+    const total = q.getLength()
+    while (end < total) {
+      const f = q.getFormat(end, 1)
+      if (f.link !== url) break
+      end++
+    }
+    return { index: start, length: end - start }
+  } catch {
+    return { index, length: 0 }
   }
-  let end = index
-  const total = q.getLength()
-  while (end < total) {
-    const f = q.getFormat(end, 1)
-    if (f.link !== url) break
-    end++
-  }
-  return { index: start, length: end - start }
 }
 
 function findAnchorAt(q: any, index: number): HTMLAnchorElement | null {
@@ -409,28 +417,44 @@ function openLinkPopover(anchor: HTMLElement): void {
   const h = handle.value
   if (!h) return
   const q = h.quill
-  const range = q.getSelection() ?? { index: q.getLength(), length: 0 }
-  const fmt = q.getFormat(range.index, range.length)
+  let range: { index: number; length: number } | null = null
+  let fmt: Record<string, any> = {}
+  let text = ''
+  try {
+    range = q.getSelection() ?? { index: q.getLength(), length: 0 }
+    fmt = q.getFormat(range.index, range.length)
+    text = range.length > 0 ? q.getText(range.index, range.length) : ''
+  } catch {
+    range = { index: 0, length: 0 }
+    fmt = {}
+    text = ''
+  }
   const existing = typeof fmt.link === 'string' ? fmt.link : ''
-  const text = range.length > 0 ? q.getText(range.index, range.length) : ''
 
   // If the caret sits inside an existing link, walk the document to find
   // the link's bounds so Save/Remove acts on the whole link.
-  let saved = { index: range.index, length: range.length }
-  if (existing && range.length === 0) {
-    saved = findLinkBounds(q, range.index, existing)
+  let saved = { index: range!.index, length: range!.length }
+  if (existing && range!.length === 0) {
+    saved = findLinkBounds(q, range!.index, existing)
   }
   const anchorEl = existing ? findAnchorAt(q, saved.index) : null
   const blank = anchorEl?.getAttribute('target') === '_blank'
+
+  let savedText = ''
+  if (existing) {
+    try { savedText = q.getText(saved.index, saved.length) } catch { savedText = text }
+  } else {
+    savedText = text
+  }
 
   linkState.value = {
     mode: existing ? 'edit' : 'insert',
     url: existing,
     pageSlug: '',
-    linkText: existing ? q.getText(saved.index, saved.length) : (text || ''),
+    linkText: savedText,
     openInNewTab: !!blank,
     savedRange: saved,
-    originalText: existing ? q.getText(saved.index, saved.length) : text,
+    originalText: savedText,
   }
   pageQuery.value = ''
   pagePickerOpen.value = false
@@ -443,37 +467,36 @@ function openLinkPopover(anchor: HTMLElement): void {
 }
 
 function saveLink(): void {
-  const h = handle.value
-  if (!h) return
-  const q = h.quill
   const ls = linkState.value
   if (!ls.savedRange) return
   const url = ls.url.trim()
   if (!url) return
-  const Quill = (window as any).Quill
-  const SOURCE = Quill?.sources?.USER ?? 'user'
+  withQuill((q) => {
+    const Quill = (window as any).Quill
+    const SOURCE = Quill?.sources?.USER ?? 'user'
 
-  const target = ls.openInNewTab ? '_blank' : null
-  const rel = ls.openInNewTab ? 'noopener noreferrer' : null
+    const target = ls.openInNewTab ? '_blank' : null
+    const rel = ls.openInNewTab ? 'noopener noreferrer' : null
 
-  if (ls.linkText && ls.linkText !== ls.originalText && ls.savedRange.length > 0) {
-    q.deleteText(ls.savedRange.index, ls.savedRange.length, SOURCE)
-    q.insertText(ls.savedRange.index, ls.linkText, { link: url }, SOURCE)
-    if (target) {
-      q.formatText(ls.savedRange.index, ls.linkText.length, 'link', url, SOURCE)
+    if (ls.linkText && ls.linkText !== ls.originalText && ls.savedRange!.length > 0) {
+      q.deleteText(ls.savedRange!.index, ls.savedRange!.length, SOURCE)
+      q.insertText(ls.savedRange!.index, ls.linkText, { link: url }, SOURCE)
+      if (target) {
+        q.formatText(ls.savedRange!.index, ls.linkText.length, 'link', url, SOURCE)
+      }
+      applyLinkAttrs(ls.savedRange!.index, ls.linkText.length, target, rel)
+      q.setSelection(ls.savedRange!.index + ls.linkText.length, 0, SOURCE)
+    } else if (ls.savedRange!.length === 0) {
+      q.insertText(ls.savedRange!.index, ls.linkText || url, { link: url }, SOURCE)
+      const insertedLen = (ls.linkText || url).length
+      applyLinkAttrs(ls.savedRange!.index, insertedLen, target, rel)
+      q.setSelection(ls.savedRange!.index + insertedLen, 0, SOURCE)
+    } else {
+      q.formatText(ls.savedRange!.index, ls.savedRange!.length, 'link', url, SOURCE)
+      applyLinkAttrs(ls.savedRange!.index, ls.savedRange!.length, target, rel)
+      q.setSelection(ls.savedRange!.index + ls.savedRange!.length, 0, SOURCE)
     }
-    applyLinkAttrs(ls.savedRange.index, ls.linkText.length, target, rel)
-    q.setSelection(ls.savedRange.index + ls.linkText.length, 0, SOURCE)
-  } else if (ls.savedRange.length === 0) {
-    q.insertText(ls.savedRange.index, ls.linkText || url, { link: url }, SOURCE)
-    const insertedLen = (ls.linkText || url).length
-    applyLinkAttrs(ls.savedRange.index, insertedLen, target, rel)
-    q.setSelection(ls.savedRange.index + insertedLen, 0, SOURCE)
-  } else {
-    q.formatText(ls.savedRange.index, ls.savedRange.length, 'link', url, SOURCE)
-    applyLinkAttrs(ls.savedRange.index, ls.savedRange.length, target, rel)
-    q.setSelection(ls.savedRange.index + ls.savedRange.length, 0, SOURCE)
-  }
+  })
   closeLinkPopover()
   recomputeFormatState()
 }
@@ -484,35 +507,31 @@ function applyLinkAttrs(index: number, length: number, target: string | null, re
   // set the attributes directly — the inline-edit raw-write contract
   // serialises root.innerHTML, so the resulting DOM (and these attrs) is
   // what we save. Sanitizer (305 §6.2) keeps target/rel on persistence.
-  const h = handle.value
-  if (!h) return
-  const q = h.quill
-  // Scan from index to index+length and collect any anchors covering the
-  // formatted text. For a freshly applied link this is one anchor; for a
-  // range spanning multiple links it covers all of them.
-  const seen = new Set<HTMLAnchorElement>()
-  const probeAt = Math.max(0, Math.min(index, q.getLength() - 1))
-  const a1 = findAnchorAt(q, probeAt)
-  if (a1) seen.add(a1)
-  if (length > 0) {
-    const a2 = findAnchorAt(q, Math.max(0, Math.min(index + length - 1, q.getLength() - 1)))
-    if (a2) seen.add(a2)
-  }
-  seen.forEach((a) => {
-    if (target) a.setAttribute('target', target); else a.removeAttribute('target')
-    if (rel) a.setAttribute('rel', rel); else a.removeAttribute('rel')
+  withQuill((q) => {
+    const seen = new Set<HTMLAnchorElement>()
+    const total = q.getLength()
+    const probeAt = Math.max(0, Math.min(index, total - 1))
+    const a1 = findAnchorAt(q, probeAt)
+    if (a1) seen.add(a1)
+    if (length > 0) {
+      const a2 = findAnchorAt(q, Math.max(0, Math.min(index + length - 1, total - 1)))
+      if (a2) seen.add(a2)
+    }
+    seen.forEach((a) => {
+      if (target) a.setAttribute('target', target); else a.removeAttribute('target')
+      if (rel) a.setAttribute('rel', rel); else a.removeAttribute('rel')
+    })
   })
 }
 
 function removeLink(): void {
-  const h = handle.value
-  if (!h) return
-  const q = h.quill
   const ls = linkState.value
   if (!ls.savedRange) return
-  const Quill = (window as any).Quill
-  const SOURCE = Quill?.sources?.USER ?? 'user'
-  q.formatText(ls.savedRange.index, ls.savedRange.length, 'link', false, SOURCE)
+  withQuill((q) => {
+    const Quill = (window as any).Quill
+    const SOURCE = Quill?.sources?.USER ?? 'user'
+    q.formatText(ls.savedRange!.index, ls.savedRange!.length, 'link', false, SOURCE)
+  })
   applyLinkAttrs(ls.savedRange.index, ls.savedRange.length, null, null)
   closeLinkPopover()
   recomputeFormatState()
@@ -524,14 +543,15 @@ function cancelLinkPopover(): void {
 
 function closeLinkPopover(): void {
   const ls = linkState.value
-  const h = handle.value
   openPopover.value = null
   pagePickerOpen.value = false
-  if (h && ls.savedRange) {
-    const Quill = (window as any).Quill
-    const SOURCE = Quill?.sources?.SILENT ?? 'silent'
-    h.quill.setSelection(ls.savedRange.index, ls.savedRange.length, SOURCE)
-    h.quill.focus()
+  if (ls.savedRange) {
+    withQuill((q) => {
+      const Quill = (window as any).Quill
+      const SOURCE = Quill?.sources?.SILENT ?? 'silent'
+      q.setSelection(ls.savedRange!.index, ls.savedRange!.length, SOURCE)
+      q.focus()
+    })
   }
 }
 
@@ -573,15 +593,12 @@ function openHighlight(anchor: HTMLElement): void {
 function onColorPicked(hex: string): void {
   const key = activeColorTarget.value
   withQuill((q) => {
-    const r = q.getSelection()
+    let r: any = null
+    try { r = q.getSelection() } catch { /* selection lost */ }
     if (!r) return
-    if (hex === '') {
-      q.format(key, false, 'user')
-    } else {
-      q.format(key, hex, 'user')
-    }
-    recomputeFormatState()
+    q.format(key, hex === '' ? false : hex, 'user')
   })
+  recomputeFormatState()
   openPopover.value = null
 }
 
@@ -610,7 +627,11 @@ async function onImageChosen(): Promise<void> {
   const h = handle.value
   if (!h) return
   const q = h.quill
-  const range = q.getSelection() ?? { index: q.getLength() - 1, length: 0 }
+  let range: any = null
+  try { range = q.getSelection() } catch { /* selection lost */ }
+  if (!range) {
+    try { range = { index: q.getLength() - 1, length: 0 } } catch { range = { index: 0, length: 0 } }
+  }
   const uploadUrl = store.inlineImageUploadUrl
   if (!uploadUrl) return
   imageUploading.value = true
@@ -645,11 +666,17 @@ function openHeroicon(anchor: HTMLElement): void {
   if (!h) return
   if (store.heroiconsUrl) setHeroiconsUrl(store.heroiconsUrl)
   const q = h.quill
-  const range = q.getSelection() ?? { index: q.getLength() - 1, length: 0 }
+  let range: any = null
+  try { range = q.getSelection() } catch { /* selection lost */ }
+  if (!range) {
+    try { range = { index: q.getLength() - 1, length: 0 } } catch { range = { index: 0, length: 0 } }
+  }
   openHeroiconPicker(anchor, (icon: { name: string; svg: string }) => {
-    const Quill = (window as any).Quill
-    q.insertEmbed(range.index, 'heroicon', icon, Quill?.sources?.USER ?? 'user')
-    q.setSelection(range.index + 1, 0, Quill?.sources?.SILENT ?? 'silent')
+    withQuill((qq) => {
+      const Quill = (window as any).Quill
+      qq.insertEmbed(range.index, 'heroicon', icon, Quill?.sources?.USER ?? 'user')
+      qq.setSelection(range.index + 1, 0, Quill?.sources?.SILENT ?? 'silent')
+    })
   })
 }
 
@@ -668,44 +695,14 @@ function showError(msg: string): void {
 // from spec §J3.
 
 function measureBar(): void {
-  const bar = barEl.value
-  if (!bar) return
-  const canvas = getCanvasRect()
-  const available = Math.max(0, canvas.right - canvas.left - 16) // 8px clamp each side
-  // Approximate group widths (px) including 12px gap around each separator.
-  const SEP = 13
-  const W_TEXT = 120
-  const W_MARKS = 4 * 32
-  const W_BLOCK = 3 * 32
-  const W_LINK = 32
-  const W_ALIGN = 4 * 32
-  const W_COLOR = 2 * 32
-  const W_INSERT = 2 * 32
-  const W_CLEAR = 32
-  const W_OVERFLOW = 32
-  const PAD = 8
-
-  function widthFor(step: 0 | 1 | 2 | 3 | 4): number {
-    // Floor group (always visible): text style, marks, block structure, link
-    let w = PAD + W_TEXT + SEP + W_MARKS + SEP + W_BLOCK + SEP + W_LINK
-    if (step === 0) {
-      w += SEP + W_ALIGN + SEP + W_COLOR + SEP + W_INSERT + SEP + W_CLEAR
-    } else {
-      // overflow button is visible whenever any group is collapsed
-      w += SEP + W_OVERFLOW
-      if (step <= 3) w += SEP + W_ALIGN
-      if (step <= 2) w += SEP + W_COLOR
-      if (step <= 1) w += SEP + W_INSERT
-    }
-    return w
-  }
-
-  let step: 0 | 1 | 2 | 3 | 4 = 0
-  while (step < 4 && widthFor(step) > available) {
-    step = (step + 1) as any
-  }
-  collapseStep.value = step
-  wrapped.value = step === 4 && widthFor(4) > available
+  // Two-row default layout: keep all 18 controls visible and let the bar
+  // wrap to multiple rows via CSS flex-wrap + max-width. The responsive
+  // collapse ladder from spec §J is intentionally not engaged here — the
+  // user prefers a compact two-row bar over hiding groups behind
+  // overflow. The collapse-ladder math is retained in version control
+  // for a future amend if the wrap form proves too tall.
+  collapseStep.value = 0
+  wrapped.value = false
 }
 
 // ── §K keyboard / accessibility ─────────────────────────────────────────
@@ -772,6 +769,18 @@ function onWindowKeydown(e: KeyboardEvent): void {
 }
 
 // ── popover anchoring ───────────────────────────────────────────────────
+
+function togglePopover(kind: Exclude<typeof openPopover.value, null>, anchor: HTMLElement, width = 240): void {
+  if (openPopover.value === kind) {
+    if (kind === 'link') {
+      cancelLinkPopover()
+    } else {
+      openPopover.value = null
+    }
+    return
+  }
+  showPopoverAnchored(kind, anchor, width)
+}
 
 function showPopoverAnchored(kind: typeof openPopover.value, anchor: HTMLElement, width = 240): void {
   popoverAnchor.value = anchor
@@ -925,7 +934,7 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
         aria-haspopup="menu"
         aria-label="Text style"
         @mousedown.prevent
-        @click="(e) => showPopoverAnchored('text-style', (e.currentTarget as HTMLElement), 200)"
+        @click="(e) => togglePopover('text-style', (e.currentTarget as HTMLElement), 200)"
       >
         <span class="ift-textstyle__label">{{ textStyleLabel }}</span>
         <ChevronDown :size="16" />
@@ -1028,7 +1037,7 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
         :aria-label="linkIsActive ? 'Edit link' : 'Insert link'"
         data-tb-control="link"
         @mousedown.prevent
-        @click="(e) => openLinkPopover(e.currentTarget as HTMLElement)"
+        @click="(e) => (openPopover === 'link' ? cancelLinkPopover() : openLinkPopover(e.currentTarget as HTMLElement))"
       ><LinkIcon :size="18" /></button>
 
       <!-- Group 5: Alignment -->
@@ -1090,7 +1099,7 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
           aria-label="Text color"
           :disabled="inertBtns"
           @mousedown.prevent
-          @click="(e) => openColor(e.currentTarget as HTMLElement)"
+          @click="(e) => (openPopover === 'color' ? (openPopover = null) : openColor(e.currentTarget as HTMLElement))"
         >
           <Palette :size="18" />
           <span class="ift-underbar" :class="{ 'ift-underbar--checker': colorUnderbar === 'checker' }" :style="colorUnderbar && colorUnderbar !== 'checker' ? { backgroundColor: colorUnderbar } : undefined" />
@@ -1102,7 +1111,7 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
           aria-label="Highlight"
           :disabled="inertBtns"
           @mousedown.prevent
-          @click="(e) => openHighlight(e.currentTarget as HTMLElement)"
+          @click="(e) => (openPopover === 'highlight' ? (openPopover = null) : openHighlight(e.currentTarget as HTMLElement))"
         >
           <Highlighter :size="18" />
           <span class="ift-underbar" :class="{ 'ift-underbar--checker': highlightUnderbar === 'checker' }" :style="highlightUnderbar && highlightUnderbar !== 'checker' ? { backgroundColor: highlightUnderbar } : undefined" />
@@ -1161,7 +1170,7 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
           :aria-expanded="openPopover === 'overflow'"
           :disabled="inertBtns"
           @mousedown.prevent
-          @click="(e) => showPopoverAnchored('overflow', (e.currentTarget as HTMLElement), 240)"
+          @click="(e) => togglePopover('overflow', (e.currentTarget as HTMLElement), 240)"
         ><MoreHorizontal :size="18" /></button>
       </template>
 
@@ -1348,9 +1357,10 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
   position: fixed;
   z-index: 60;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0;
-  height: 38px;
+  max-width: 480px;
   padding: 4px;
   background: #1f2937;
   border: 1px solid #374151;
@@ -1359,11 +1369,11 @@ const heroiconTriggerSvg = HEROICON_TOOLBAR_BUTTON_SVG
   font: 13px/1 'Inter', system-ui, sans-serif;
   color: #d1d5db;
   transition: opacity 0.08s ease-out;
+  row-gap: 2px;
 }
 
 .ift--wrapped {
-  flex-wrap: wrap;
-  height: auto;
+  /* legacy modifier kept as no-op; default layout now wraps */
 }
 
 .ift--rm,
