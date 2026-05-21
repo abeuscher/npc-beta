@@ -12,7 +12,7 @@ class ChromeRenderer
      * Render a system page's widgets to HTML + inline styles + inline scripts.
      * Returns null if the page has no active widgets.
      *
-     * @return array{html: string, styles: string, scripts: string, assets: array{css: string[], js: string[], scss: string[]}}|null
+     * @return array{html: string, styles: string, scripts: string}|null
      */
     public static function render(string $slug): ?array
     {
@@ -27,7 +27,7 @@ class ChromeRenderer
     /**
      * Render a system page by its ID.
      *
-     * @return array{html: string, styles: string, scripts: string, assets: array{css: string[], js: string[], scss: string[]}}|null
+     * @return array{html: string, styles: string, scripts: string}|null
      */
     public static function renderById(string $pageId): ?array
     {
@@ -77,7 +77,6 @@ class ChromeRenderer
         $html    = '';
         $styles  = '';
         $scripts = '';
-        $assets  = ['css' => [], 'js' => [], 'scss' => []];
 
         foreach ($pageItems as $item) {
             if ($item['type'] === 'widget') {
@@ -108,10 +107,9 @@ class ChromeRenderer
                 }
                 $styles  .= $result['styles'];
                 $scripts .= $result['scripts'];
-                WidgetRenderer::collectAssets($pw->widgetType, $assets);
             } else {
                 $layout = $item['data'];
-                $layoutHtml = static::renderLayoutBlock($layout, $styles, $scripts, $assets);
+                $layoutHtml = static::renderLayoutBlock($layout, $styles, $scripts);
                 $bgFw = (bool) ($layout->layout_config['background_full_width'] ?? false);
                 $contentFw = (bool) ($layout->layout_config['content_full_width'] ?? false);
                 if (! $bgFw && $contentFw) {
@@ -121,10 +119,10 @@ class ChromeRenderer
             }
         }
 
-        return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts, 'assets' => $assets];
+        return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts];
     }
 
-    private static function renderLayoutBlock(PageLayout $layout, string &$inlineStyles, string &$inlineScripts, array &$widgetAssets): string
+    private static function renderLayoutBlock(PageLayout $layout, string &$inlineStyles, string &$inlineScripts): string
     {
         $config  = $layout->layout_config ?? [];
         $display = $layout->display ?? 'grid';
@@ -198,7 +196,6 @@ class ChromeRenderer
 
                 $inlineStyles  .= $result['styles'];
                 $inlineScripts .= $result['scripts'];
-                WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
             }
 
             $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
