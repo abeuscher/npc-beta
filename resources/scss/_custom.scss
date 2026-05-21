@@ -80,7 +80,7 @@
 }
 
 .hero-inner {
-    max-width: 42rem;
+    max-width: var(--hero-text-max-width, 42rem);
 
     // Overflow guard. `.hero-body > .site-container` is a column flexbox and
     // the `hero--pos-*-left/right` modifiers set align-items away from
