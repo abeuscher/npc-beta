@@ -1866,3 +1866,273 @@ it('skips payload.media when import_media opt is FALSE', function () {
 
     expect(\Illuminate\Support\Facades\DB::table('media')->where('id', 9100)->exists())->toBeFalse();
 });
+
+// ── Session A001/3: manifest layer ────────────────────────────────────────
+
+it('every exporter stamps a manifest with sections + source action', function () {
+    $page = ieMakePageWithWidgets('manifest-stamp-test');
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    expect($bundle)->toHaveKey('manifest');
+    expect($bundle['manifest']['exported_with'])->toBe('exportPages');
+    expect($bundle['manifest']['exporter_version'])->toBe(ContentExporter::FORMAT_VERSION);
+    $sectionKeys = collect($bundle['manifest']['sections'])->pluck('key')->all();
+    expect($sectionKeys)->toContain('pages');
+    $pagesSection = collect($bundle['manifest']['sections'])->firstWhere('key', 'pages');
+    expect($pagesSection['count'])->toBe(1);
+});
+
+it('exportSite stamps exportSite (not exportBundle) as the source action', function () {
+    ieMakePageWithWidgets('exportsite-source-action');
+    $bundle = app(ContentExporter::class)->exportSite();
+    expect($bundle['manifest']['exported_with'])->toBe('exportSite');
+});
+
+it('analyze() surfaces the bundle manifest and any count mismatches', function () {
+    $page    = ieMakePageWithWidgets('analyze-manifest-ok');
+    $bundle  = app(ContentExporter::class)->exportPages([$page->id]);
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['manifest'])->not->toBeNull();
+    expect($manifest['manifest_warnings'])->toBe([]);
+
+    // Tamper: claim 99 pages while payload still has 1.
+    $tampered = $bundle;
+    foreach ($tampered['manifest']['sections'] as $i => $s) {
+        if ($s['key'] === 'pages') {
+            $tampered['manifest']['sections'][$i]['count'] = 99;
+        }
+    }
+
+    $manifest2 = app(ContentImporter::class)->analyze($tampered);
+    expect($manifest2['manifest_warnings'])->toHaveCount(1);
+    expect($manifest2['manifest_warnings'][0])->toContain("'pages'")->toContain('99')->toContain('1');
+});
+
+it('logs manifest mismatch warnings into ImportLog at import time', function () {
+    $this->actingAs(ieAuthorUser());
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'manifest' => [
+            'sections' => [['key' => 'pages', 'count' => 99]],
+            'policy_hints' => (object) [],
+            'exported_with' => 'tampered',
+            'exporter_version' => '1.1.0',
+        ],
+        'payload' => [
+            'templates' => [],
+            'pages' => [['slug' => 'manifest-warn-import', 'title' => 'OK', 'type' => 'default', 'status' => 'draft', 'widgets' => []]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    expect($log->hasWarnings())->toBeTrue();
+    expect(collect($log->warnings())->pluck('message')->first())->toContain("'pages'");
+    // Import still landed despite warning — manifest is documentation, not gate.
+    expect(Page::where('slug', 'manifest-warn-import')->exists())->toBeTrue();
+});
+
+it('imports bundles with no manifest (backwards-compat)', function () {
+    $this->actingAs(ieAuthorUser());
+
+    $bundle = [
+        'format_version' => '1.0.0',
+        'payload' => [
+            'templates' => [],
+            'pages' => [['slug' => 'no-manifest-pre-a001', 'title' => 'Pre', 'type' => 'default', 'status' => 'draft', 'widgets' => []]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    expect(Page::where('slug', 'no-manifest-pre-a001')->exists())->toBeTrue();
+    expect($log->hasWarnings())->toBeFalse();
+});
+
+// ── Session A001/3: SiteSettings round-trip ───────────────────────────────
+
+it('round-trips the curated SiteSettings slice', function () {
+    // Seed a representative sample across the allow-list categories.
+    SiteSetting::updateOrCreate(['key' => 'site_name'],         ['value' => 'Acme Foundation',        'type' => 'string', 'group' => 'general']);
+    SiteSetting::updateOrCreate(['key' => 'site_description'],  ['value' => 'A great nonprofit.',     'type' => 'string', 'group' => 'general']);
+    SiteSetting::updateOrCreate(['key' => 'blog_prefix'],       ['value' => 'news',                   'type' => 'string', 'group' => 'routing']);
+    SiteSetting::updateOrCreate(['key' => 'noindex_global'],    ['value' => '1',                      'type' => 'boolean', 'group' => 'seo']);
+    SiteSetting::updateOrCreate(['key' => 'timezone'],          ['value' => 'America/Chicago',        'type' => 'string', 'group' => 'general']);
+    SiteSetting::updateOrCreate(['key' => 'dashboard_welcome'], ['value' => '<p>Welcome back!</p>',   'type' => 'string', 'group' => 'admin']);
+    foreach (['site_name', 'site_description', 'blog_prefix', 'noindex_global', 'timezone', 'dashboard_welcome'] as $k) {
+        Cache::forget("site_setting:{$k}");
+    }
+
+    $bundle = app(ContentExporter::class)->exportSiteSettings();
+
+    expect($bundle['payload'])->toHaveKey('site_settings');
+    expect($bundle['payload']['site_settings'])->toHaveKey('site_name');
+    expect($bundle['payload']['site_settings']['site_name']['value'])->toBe('Acme Foundation');
+    expect($bundle['payload']['site_settings']['blog_prefix']['value'])->toBe('news');
+    expect($bundle['payload']['site_settings']['dashboard_welcome']['value'])->toBe('<p>Welcome back!</p>');
+
+    // Mutate on the target install.
+    SiteSetting::updateOrCreate(['key' => 'site_name'],        ['value' => 'WIPED',         'type' => 'string', 'group' => 'general']);
+    SiteSetting::updateOrCreate(['key' => 'blog_prefix'],      ['value' => 'wiped-prefix',  'type' => 'string', 'group' => 'routing']);
+    Cache::forget('site_setting:site_name');
+    Cache::forget('site_setting:blog_prefix');
+
+    app(ContentImporter::class)->import($bundle, new ImportLog(), ['import_site_settings' => true]);
+
+    expect(SiteSetting::get('site_name'))->toBe('Acme Foundation');
+    expect(SiteSetting::get('blog_prefix'))->toBe('news');
+    expect(SiteSetting::get('dashboard_welcome'))->toBe('<p>Welcome back!</p>');
+});
+
+it('NEVER exports secret-shaped SiteSettings (allow-list + deny-list belt and suspenders)', function () {
+    // Seed a wide range of secret-shaped keys. None of these are in the
+    // allow-list; even if they were, the deny-list catches them.
+    $secrets = [
+        'stripe_secret_key'    => ['value' => 'sk_test_DEADBEEF',         'type' => 'string',     'group' => 'finance'],
+        'stripe_webhook_secret'=> ['value' => 'whsec_NEVER_LEAK',         'type' => 'string',     'group' => 'finance'],
+        'qb_refresh_token'     => ['value' => 'rt_NEVER_LEAK',            'type' => 'encrypted',  'group' => 'finance'],
+        'mailchimp_api_key'    => ['value' => 'mc_NEVER_LEAK-us12',       'type' => 'string',     'group' => 'mail'],
+        'mail_password'        => ['value' => 'NEVER_LEAK',               'type' => 'string',     'group' => 'mail'],
+        'build_server_api_key' => ['value' => 'bsak_NEVER_LEAK',          'type' => 'encrypted',  'group' => 'cms'],
+        'resend_api_key'       => ['value' => 're_NEVER_LEAK',            'type' => 'string',     'group' => 'mail'],
+        'horizon_enabled'      => ['value' => '1',                        'type' => 'boolean',    'group' => 'admin'],
+        // Even a custom encrypted-type row not on any list never travels.
+        'custom_secret_blob'   => ['value' => 'opaque',                   'type' => 'encrypted',  'group' => 'custom'],
+    ];
+    foreach ($secrets as $k => $v) {
+        SiteSetting::updateOrCreate(['key' => $k], $v);
+        Cache::forget("site_setting:{$k}");
+    }
+
+    // Also seed one legit allow-list key so the export isn't empty.
+    SiteSetting::updateOrCreate(['key' => 'site_name'], ['value' => 'Acme', 'type' => 'string', 'group' => 'general']);
+
+    $bundle = app(ContentExporter::class)->exportSiteSettings();
+    $exported = $bundle['payload']['site_settings'];
+
+    // Positive: allow-listed key landed.
+    expect($exported)->toHaveKey('site_name');
+
+    // Negative: every seeded secret is absent from the bundle.
+    foreach (array_keys($secrets) as $secretKey) {
+        expect($exported)->not->toHaveKey($secretKey, "Secret key '{$secretKey}' leaked into bundle");
+    }
+
+    // Also: no bundle value anywhere contains a sentinel string.
+    $serialized = json_encode($bundle);
+    expect($serialized)->not->toContain('NEVER_LEAK');
+    expect($serialized)->not->toContain('DEADBEEF');
+});
+
+it('importer re-blocks secret-shaped keys even if a tampered bundle smuggles them', function () {
+    $this->actingAs(ieAuthorUser());
+
+    // Hand-craft a bundle that pretends `stripe_secret_key` is in site_settings.
+    $tampered = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'site_settings' => [
+                'stripe_secret_key'   => ['value' => 'sk_DEFINITELY_NOT', 'type' => 'string', 'group' => 'finance'],
+                'mailchimp_api_key'   => ['value' => 'mc_DEFINITELY_NOT', 'type' => 'string', 'group' => 'mail'],
+                'horizon_enabled'     => ['value' => '1',                 'type' => 'boolean', 'group' => 'admin'],
+                'custom_pwd_password' => ['value' => 'leak',              'type' => 'string', 'group' => 'misc'],
+                'random_token'        => ['value' => 'leak',              'type' => 'string', 'group' => 'misc'],
+                // One legit allow-list key, to verify the rest of the pass works.
+                'site_name'           => ['value' => 'Acme via tamper',   'type' => 'string', 'group' => 'general'],
+            ],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($tampered, $log, ['import_site_settings' => true]);
+
+    // None of the tampered secret-shaped keys landed.
+    foreach (['stripe_secret_key', 'mailchimp_api_key', 'horizon_enabled', 'custom_pwd_password', 'random_token'] as $denied) {
+        expect(SiteSetting::where('key', $denied)->exists())->toBeFalse("Tampered key '{$denied}' was not blocked");
+    }
+    // The legit key did land.
+    expect(SiteSetting::get('site_name'))->toBe('Acme via tamper');
+
+    // Warnings for each block.
+    expect($log->hasWarnings())->toBeTrue();
+    $warnings = collect($log->warnings())->pluck('message')->implode("\n");
+    expect($warnings)->toContain('stripe_secret_key');
+    expect($warnings)->toContain('deny-list');
+});
+
+it('importer skips encrypted-type rows in site_settings even if not deny-listed', function () {
+    $this->actingAs(ieAuthorUser());
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'site_settings' => [
+                'site_name' => ['value' => 'NeverEncrypted',     'type' => 'encrypted', 'group' => 'general'],
+            ],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_site_settings' => true]);
+
+    expect(SiteSetting::where('key', 'site_name')->exists())->toBeFalse();
+    $warnings = collect($log->warnings())->pluck('message')->implode("\n");
+    expect($warnings)->toContain('encrypted type');
+});
+
+it('default import_site_settings opt is FALSE — bundle is skipped without opt-in', function () {
+    SiteSetting::updateOrCreate(['key' => 'site_name'], ['value' => 'PRE-IMPORT', 'type' => 'string', 'group' => 'general']);
+    Cache::forget('site_setting:site_name');
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'site_settings' => [
+                'site_name' => ['value' => 'POST-IMPORT', 'type' => 'string', 'group' => 'general'],
+            ],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);  // no import_site_settings => default false
+
+    expect(SiteSetting::get('site_name'))->toBe('PRE-IMPORT');
+});
+
+it('analyze() reports site_settings keys and surfaces deny-list blocks', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'site_settings' => [
+                'site_name'         => ['value' => 'A', 'type' => 'string', 'group' => 'general'],
+                'blog_prefix'       => ['value' => 'b', 'type' => 'string', 'group' => 'routing'],
+                'stripe_secret_key' => ['value' => '?', 'type' => 'string', 'group' => 'finance'],
+                'mail_password'     => ['value' => '?', 'type' => 'string', 'group' => 'mail'],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['site_settings']['count'])->toBe(2);
+    expect($manifest['site_settings']['keys'])->toEqualCanonicalizing(['site_name', 'blog_prefix']);
+    expect($manifest['site_settings']['blocked_keys'])->toEqualCanonicalizing(['stripe_secret_key', 'mail_password']);
+});
+
+it('exporter stamps the allow-list snapshot into the manifest policy_hints', function () {
+    SiteSetting::updateOrCreate(['key' => 'site_name'], ['value' => 'Acme', 'type' => 'string', 'group' => 'general']);
+
+    $bundle = app(ContentExporter::class)->exportSiteSettings();
+
+    expect($bundle['manifest']['exported_with'])->toBe('exportSiteSettings');
+    // policy_hints is cast to object on the way out — re-decode to assert keys.
+    $hints = json_decode(json_encode($bundle['manifest']['policy_hints']), true);
+    expect($hints)->toHaveKey('allow_list');
+    expect($hints['allow_list'])->toContain('site_name');
+    expect($hints['allow_list'])->toContain('blog_prefix');
+});

@@ -281,6 +281,54 @@ class ContentExporter
     }
 
     /**
+     * Export the curated visual/SEO/routing slice of SiteSettings as
+     * `payload.site_settings`. Source of truth for what travels is
+     * `ContentImporter::SITE_SETTINGS_ALLOW_LIST`; the importer's deny-list
+     * is applied here defensively so secrets can never enter the bundle even
+     * if a key accidentally appears on both lists. Encrypted-type rows are
+     * hard-skipped. Session A001/3.
+     *
+     * The bundle's per-key envelope captures `value` + `type` + `group`
+     * exactly as stored, so a round-trip re-creates the row faithfully
+     * regardless of cast semantics. Mail / finance / build-server clusters
+     * are excluded per the operator's standing scope decision (see the
+     * deny-list constants on `ContentImporter`).
+     *
+     * @return array<string, mixed>
+     */
+    public function exportSiteSettings(): array
+    {
+        $settings = [];
+        $rows = SiteSetting::whereIn('key', ContentImporter::SITE_SETTINGS_ALLOW_LIST)
+            ->get();
+
+        foreach ($rows as $row) {
+            // Defence-in-depth: even allow-listed keys are dropped if they
+            // match the deny-list (e.g. accidental future overlap) or carry
+            // the `encrypted` type. The importer re-checks on the inbound
+            // side so neither half trusts the other.
+            if (ContentImporter::isSiteSettingKeyDenied($row->key)) {
+                continue;
+            }
+            if ($row->type === 'encrypted') {
+                continue;
+            }
+
+            $settings[$row->key] = [
+                'value' => $row->value,
+                'type'  => $row->type,
+                'group' => $row->group,
+            ];
+        }
+
+        return $this->envelope(
+            ['site_settings' => $settings],
+            'exportSiteSettings',
+            ['allow_list' => ContentImporter::SITE_SETTINGS_ALLOW_LIST],
+        );
+    }
+
+    /**
      * Standalone ID-preserving media seed (media-portability draft decision
      * #6/#3). payload.media is a flat list of full posture-B descriptors;
      * pages/templates stay empty so a combined bundle seeds media first.
