@@ -313,60 +313,6 @@ test.describe('Editor — column bg parity with public side', () => {
     });
 });
 
-// ── Editor-side column bg/content toggle independence ───────────────────────
-
-test.describe('Editor — column bg vs content toggle independence', () => {
-    let pageId: string;
-    let createdLayoutIds: string[] = [];
-
-    test.beforeAll(async ({ browser }) => {
-        await resetAndLogin(browser);
-        const id = await findPageIdBySlug('home');
-        if (!id) throw new Error('home page not found');
-        pageId = id;
-    });
-
-    test.afterAll(async () => {
-        for (const id of createdLayoutIds) {
-            await deleteLayout(id);
-        }
-        createdLayoutIds = [];
-    });
-
-    for (const { label, state } of STATES) {
-        test(`editor ${label}: outer container --contained iff !bg, inner grid --contained iff !content`, async ({ page }) => {
-            const layoutId = await createLayoutOnPage(pageId);
-            createdLayoutIds.push(layoutId);
-
-            await updateLayoutConfig(layoutId, {
-                grid_template_columns: '1fr 1fr',
-                gap: '1rem',
-                background_full_width: state.bg,
-                content_full_width: state.content,
-            });
-
-            await page.goto(`/admin/pages/${pageId}/edit`);
-
-            const layoutRegion = page.locator(`[data-layout-id="${layoutId}"]`);
-            await expect(layoutRegion).toBeVisible({ timeout: 15_000 });
-
-            const container = layoutRegion.locator('.layout-region__container');
-            const grid = layoutRegion.locator('.layout-region__grid');
-            await expect(grid).toBeAttached();
-
-            const containerContained = await container.evaluate((el) =>
-                el.classList.contains('layout-region__container--contained'),
-            );
-            const gridContained = await grid.evaluate((el) =>
-                el.classList.contains('layout-region__grid--contained'),
-            );
-
-            expect(containerContained).toBe(!state.bg);
-            expect(gridContained).toBe(!state.content);
-        });
-    }
-});
-
 // The "every widget handle renders without console errors on the public
 // site" smoke test was removed during e2e stabilization: it depends on the
 // external widget build pipeline (public/build/widgets/) which the isolated

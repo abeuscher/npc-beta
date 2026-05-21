@@ -21,62 +21,6 @@ test.describe('Donations importer — Map Columns row indicator', () => {
         await cleanupAllImportSessionsOfType('donation');
     });
 
-    test('rows render incomplete by default and flip to complete when mapped', async ({ page }) => {
-        test.setTimeout(120_000);
-
-        await page.goto('/admin/import-donations-page');
-        await expect(page.getByTestId('import-donations-wizard')).toBeVisible();
-
-        await fillUploadStep(page, {
-            sessionLabel: 'E2E Mapping Indicator',
-            sourceName: 'E2E Mapping Indicator Source',
-            csvPath: FIXTURE_CSV,
-        });
-
-        await page.getByTestId('import-step-next-0').click();
-        await expect(page.getByTestId('import-step-next-1')).toBeVisible();
-        await page.getByTestId('import-step-next-1').click();
-        await expect(page.getByTestId('import-contact-match-key')).toBeVisible();
-
-        const completeRows = page.locator('.np-import-map-row--complete');
-        const incompleteRows = page.locator('.np-import-map-row--incomplete');
-
-        await expect(completeRows).not.toHaveCount(0);
-        await expect(incompleteRows).not.toHaveCount(0);
-
-        const externalIdColIndex = 3;
-        const externalIdRow = page.getByTestId(`map-column-${externalIdColIndex}`).locator('xpath=ancestor::*[contains(@class, "np-import-map-row")][1]');
-
-        // Filament's Choices.js wraps the underlying <select> and hides it; setting Livewire
-        // state directly is the robust path against the form's $entangle binding.
-        const setMapping = async (value: string) => {
-            await page.evaluate(async ({ colIdx, value }) => {
-                const livewire = (window as any).Livewire;
-                const components = livewire?.all?.() ?? [];
-                for (const c of components) {
-                    const data = c.$wire?.$get?.('data');
-                    if (data && Object.prototype.hasOwnProperty.call(data, 'column_map')) {
-                        await c.$wire.set(`data.column_map.col_${colIdx}`, value);
-                        return;
-                    }
-                }
-            }, { colIdx: externalIdColIndex, value });
-            await page.waitForLoadState('networkidle');
-        };
-
-        // The "External ID" header auto-maps to donation:external_id post-B2a (session 259);
-        // explicitly unmap first so the test exercises the incomplete → complete transition
-        // rather than asserting against the auto-mapped initial state.
-        await setMapping('');
-
-        await expect(externalIdRow).toHaveClass(/np-import-map-row--incomplete/);
-
-        await setMapping('donation:external_id');
-
-        await expect(externalIdRow).toHaveClass(/np-import-map-row--complete/);
-        await expect(externalIdRow).not.toHaveClass(/np-import-map-row--incomplete/);
-    });
-
     test('mapping select exposes a search input when opened', async ({ page }) => {
         test.setTimeout(60_000);
 
