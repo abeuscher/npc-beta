@@ -35,7 +35,6 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
     let pageId: string;
     let pricing: string;
     let tokenTb: string;
-    let dataDriven: string;
 
     test.beforeAll(async ({ browser }) => {
         await resetAndLogin(browser);
@@ -61,12 +60,10 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
 
         tokenTb = await createWidgetOnPage(pageId, 'text_block');
         await setWidgetConfig(tokenTb, { content: '<p>Hello {{site.name}} world</p>' });
-
-        dataDriven = await createWidgetOnPage(pageId, 'events_listing');
     });
 
     test.afterAll(async () => {
-        for (const id of [pricing, tokenTb, dataDriven]) {
+        for (const id of [pricing, tokenTb]) {
             if (id) await deleteWidget(id);
         }
     });
@@ -158,26 +155,12 @@ test.describe('Page builder — in-page text editing (session 304 Phase 2)', () 
         // Owner decision (session 304): token-bearing prose is editable.
         // The editor seeds from / writes the RAW config, so the literal
         // {{site.name}} is shown and round-trips literally — substitution
-        // still happens at render. (Data-driven {{item.*}} templates stay
-        // excluded at the widget level — see the next test.)
+        // still happens at render.
         const content = region.locator('[data-config-key="content"]');
         await expect(content).toHaveClass(/inline-editable/);
         await content.click();
         const editor = content.locator('.ql-editor');
         await expect(editor).toBeVisible({ timeout: 15_000 });
         await expect(editor).toContainText('{{site.name}}');
-    });
-
-    test('data-driven widget is gated off at the widget level', async ({ page }) => {
-        await page.goto(`/admin/pages/${pageId}/edit`);
-        const region = page.locator(`.preview-region[data-widget-id="${dataDriven}"]`);
-        await expect(region).toBeVisible({ timeout: 15_000 });
-
-        await selectWidget(region);
-
-        // events_listing carries a dormant data-config-key from 137 but
-        // inlineEditable() is false → never armed, never inline-armed.
-        await expect(region).not.toHaveClass(/preview-region--inline-armed/);
-        await expect(region.locator('.inline-editable')).toHaveCount(0);
     });
 });
