@@ -73,8 +73,8 @@ class PageBuilder extends Component
         }
 
         $this->widgetTypes = $owner instanceof Template
-            ? WidgetType::forPicker(null)
-            : WidgetType::forPicker($this->pageType);
+            ? WidgetType::forPicker(null, 'page_builder_canvas')
+            : WidgetType::forPicker($this->pageType, 'page_builder_canvas');
     }
 
     private function resolveOwner(): ?Model

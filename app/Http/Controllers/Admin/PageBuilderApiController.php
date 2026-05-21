@@ -261,7 +261,7 @@ class PageBuilderApiController extends Controller
 
         $pageType = $request->query('page_type', 'default');
 
-        return response()->json(['widget_types' => WidgetType::forPicker($pageType)]);
+        return response()->json(['widget_types' => WidgetType::forPicker($pageType, 'page_builder_canvas')]);
     }
 
     public function collections(): JsonResponse
