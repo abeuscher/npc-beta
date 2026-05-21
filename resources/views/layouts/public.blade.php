@@ -190,16 +190,6 @@
         <style>{!! $__compiledCss !!}</style>
     @endif
 
-    {{-- Inline CSS collected from active page widgets + chrome widgets --}}
-    @php
-        $__allInlineStyles = ($inlineStyles ?? '');
-        if ($__chromeHeader) $__allInlineStyles .= $__chromeHeader['styles'];
-        if ($__chromeFooter) $__allInlineStyles .= $__chromeFooter['styles'];
-    @endphp
-    @if ($__allInlineStyles)
-        <style>{!! $__allInlineStyles !!}</style>
-    @endif
-
     @stack('styles')
 
     {{-- Site-wide head snippet --}}
@@ -257,16 +247,6 @@
     {{-- Widget JS bundle from build server manifest --}}
     @if ($__widgetManifest && ! empty($__widgetManifest['js']))
         <script src="/build/widgets/{{ $__widgetManifest['js'] }}"></script>
-    @endif
-
-    {{-- Inline JS collected from active page widgets + chrome widgets --}}
-    @php
-        $__allInlineScripts = ($inlineScripts ?? '');
-        if ($__chromeHeader) $__allInlineScripts .= $__chromeHeader['scripts'];
-        if ($__chromeFooter) $__allInlineScripts .= $__chromeFooter['scripts'];
-    @endphp
-    @if ($__allInlineScripts)
-        <script>{!! $__allInlineScripts !!}</script>
     @endif
 
     @stack('scripts')

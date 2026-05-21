@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\PageWidget;
-use App\Models\WidgetType;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetRegistry;
 use App\WidgetPrimitive\ContractResolver;
@@ -157,21 +156,10 @@ class WidgetRenderer
             $html = $widgetType->template
                 ? Blade::render($widgetType->template, $templateVars)
                 : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-            if ($widgetType->js) {
-                $scripts .= "\n" . $widgetType->js;
-            }
         } else {
             $html = $widgetType->code
                 ? '<script>' . $widgetType->code . '</script>'
                 : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
         }
 
         return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts];
@@ -215,25 +203,5 @@ class WidgetRenderer
             querySettings: $contract->querySettings,
             formatHints: $contract->formatHints,
         );
-    }
-
-    /**
-     * Collect CSS/JS/SCSS asset paths from a widget type into an accumulator.
-     */
-    public static function collectAssets(?WidgetType $widgetType, array &$assets): void
-    {
-        if (! $widgetType) {
-            return;
-        }
-
-        $widgetAssets = $widgetType->assets ?? [];
-
-        foreach (['css', 'js', 'scss'] as $type) {
-            foreach ($widgetAssets[$type] ?? [] as $path) {
-                if (! in_array($path, $assets[$type], true)) {
-                    $assets[$type][] = $path;
-                }
-            }
-        }
     }
 }

@@ -6,7 +6,6 @@ use App\Models\Page;
 use App\Models\Template;
 use App\Services\PageBlockRenderer;
 use App\Services\PageContext;
-use App\Services\WidgetRenderer;
 use Illuminate\Support\Facades\View;
 
 class PageController extends Controller
@@ -88,7 +87,6 @@ class PageController extends Controller
         $blocks         = [];
         $inlineStyles   = '';
         $inlineScripts  = '';
-        $widgetAssets    = ['css' => [], 'js' => [], 'scss' => []];
 
         $blockRenderer = app(PageBlockRenderer::class);
 
@@ -101,10 +99,9 @@ class PageController extends Controller
                     $inlineStyles  .= $blockData['styles'];
                     $inlineScripts .= $blockData['scripts'];
                 }
-                WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
             } else {
                 $layout = $item['data'];
-                $layoutBlock = $blockRenderer->renderLayoutBlock($layout, $inlineStyles, $inlineScripts, $widgetAssets);
+                $layoutBlock = $blockRenderer->renderLayoutBlock($layout, $inlineStyles, $inlineScripts);
                 if ($layoutBlock) {
                     $blocks[] = $layoutBlock;
                 }
@@ -121,7 +118,7 @@ class PageController extends Controller
         View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
         View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
 
-        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
+        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
     }
 
 }

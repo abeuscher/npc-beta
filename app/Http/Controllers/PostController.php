@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Services\PageBlockRenderer;
 use App\Services\PageContext;
-use App\Services\WidgetRenderer;
 use Illuminate\Support\Facades\View;
 
 class PostController extends Controller
@@ -47,7 +46,6 @@ class PostController extends Controller
         $blocks         = [];
         $inlineStyles   = '';
         $inlineScripts  = '';
-        $widgetAssets   = ['css' => [], 'js' => [], 'scss' => []];
 
         $blockRenderer = app(PageBlockRenderer::class);
 
@@ -58,7 +56,6 @@ class PostController extends Controller
                 $inlineStyles  .= $blockData['styles'];
                 $inlineScripts .= $blockData['scripts'];
             }
-            WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
         }
 
         $firstPw = $pageWidgets->first();
@@ -69,6 +66,6 @@ class PostController extends Controller
         View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
         View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
 
-        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts', 'widgetAssets'));
+        return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
     }
 }

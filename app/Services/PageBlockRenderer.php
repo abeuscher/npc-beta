@@ -39,7 +39,7 @@ class PageBlockRenderer
         return ['block' => $block, 'styles' => $result['styles'], 'scripts' => $result['scripts']];
     }
 
-    public function renderLayoutBlock(PageLayout $layout, string &$inlineStyles, string &$inlineScripts, array &$widgetAssets): ?array
+    public function renderLayoutBlock(PageLayout $layout, string &$inlineStyles, string &$inlineScripts): ?array
     {
         $config = $layout->layout_config ?? [];
         $display = $layout->display ?? 'grid';
@@ -94,7 +94,6 @@ class PageBlockRenderer
 
                     $inlineStyles  .= $blockData['styles'];
                     $inlineScripts .= $blockData['scripts'];
-                    WidgetRenderer::collectAssets($pw->widgetType, $widgetAssets);
                 }
             }
 
