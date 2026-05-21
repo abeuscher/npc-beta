@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Collection;
+use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -11,6 +12,7 @@ use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\Product;
 use App\Models\ProductPrice;
+use App\Models\Tag;
 use App\Models\Template;
 use App\Models\TicketTier;
 use App\Models\User;
@@ -1683,6 +1685,131 @@ it('analyze() reports events with tier and registration counts', function () {
         ['slug' => 'existing-gala', 'title' => 'Existing Gala', 'tiers_count' => 2, 'registrations_count' => 1, 'exists_locally' => true],
         ['slug' => 'new-event',     'title' => 'New Event',     'tiers_count' => 0, 'registrations_count' => 0, 'exists_locally' => false],
     ]);
+});
+
+// ── Session A001: collections round-trip ───────────────────────────────────
+
+it('round-trips a collection with three items, one tagged', function () {
+    $collection = Collection::create([
+        'name'        => 'Board Members',
+        'handle'      => 'board_members_a001',
+        'description' => 'Current board.',
+        'fields'      => [
+            ['key' => 'role',   'label' => 'Role',   'type' => 'text'],
+            ['key' => 'bio',    'label' => 'Bio',    'type' => 'textarea'],
+            ['key' => 'photo',  'label' => 'Photo',  'type' => 'image'],
+        ],
+        'source_type' => 'custom',
+        'is_public'   => true,
+        'is_active'   => true,
+    ]);
+
+    $taggedItem = CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'President', 'bio' => 'Long-time advocate.'],
+        'sort_order'    => 0,
+        'is_published'  => true,
+    ]);
+    CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'Treasurer', 'bio' => 'CPA, two terms.'],
+        'sort_order'    => 1,
+        'is_published'  => true,
+    ]);
+    CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'Secretary', 'bio' => 'Joining this year.'],
+        'sort_order'    => 2,
+        'is_published'  => false,
+    ]);
+
+    $tag = Tag::firstOrCreate(['name' => 'Featured', 'type' => 'collection_item']);
+    $taggedItem->tags()->sync([$tag->id]);
+
+    $bundle = app(ContentExporter::class)->exportCollections([$collection->id]);
+
+    expect($bundle['payload'])->toHaveKey('collections');
+    expect($bundle['payload']['collections'])->toHaveCount(1);
+    $exported = $bundle['payload']['collections'][0];
+    expect($exported['collection']['handle'])->toBe('board_members_a001');
+    expect($exported['items'])->toHaveCount(3);
+    expect($exported['items'][0]['tags'])->toHaveCount(1);
+    expect($exported['items'][0]['tags'][0]['name'])->toBe('Featured');
+    expect($exported['items'][1]['tags'])->toBe([]);
+
+    // Wipe everything related and re-import.
+    CollectionItem::where('collection_id', $collection->id)->delete();
+    $collection->update(['name' => 'Wiped', 'is_active' => false]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Collection::where('handle', 'board_members_a001')->first();
+    expect($reloaded->id)->toBe($collection->id);
+    expect($reloaded->name)->toBe('Board Members');
+    expect($reloaded->is_active)->toBeTrue();
+    expect($reloaded->fields)->toHaveCount(3);
+
+    $items = CollectionItem::where('collection_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($items)->toHaveCount(3);
+    expect($items[0]->data['role'])->toBe('President');
+    expect($items[0]->data['bio'])->toBe('Long-time advocate.');
+    expect($items[0]->is_published)->toBeTrue();
+    expect($items[2]->data['role'])->toBe('Secretary');
+    expect($items[2]->is_published)->toBeFalse();
+
+    $reloadedTags = $items[0]->tags;
+    expect($reloadedTags)->toHaveCount(1);
+    expect($reloadedTags[0]->name)->toBe('Featured');
+    expect($reloadedTags[0]->type)->toBe('collection_item');
+    expect($items[1]->tags)->toHaveCount(0);
+});
+
+it('analyze() reports collections with items_count and exists_locally', function () {
+    Collection::create([
+        'name'        => 'Existing Coll',
+        'handle'      => 'existing_coll',
+        'source_type' => 'custom',
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'collections' => [
+                [
+                    'collection' => ['name' => 'Existing Coll', 'handle' => 'existing_coll'],
+                    'items'      => [['data' => []], ['data' => []]],
+                ],
+                [
+                    'collection' => ['name' => 'New Coll', 'handle' => 'new_coll'],
+                    'items'      => [['data' => []]],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['collections'])->toEqualCanonicalizing([
+        ['handle' => 'existing_coll', 'name' => 'Existing Coll', 'items_count' => 2, 'exists_locally' => true],
+        ['handle' => 'new_coll',      'name' => 'New Coll',      'items_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+it('skips collections when import_collections opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'collections' => [[
+                'collection' => ['name' => 'Skip Me', 'handle' => 'skip_coll'],
+                'items'      => [['data' => []]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_collections' => false]);
+
+    expect(Collection::where('handle', 'skip_coll')->exists())->toBeFalse();
 });
 
 it('skips events when import_events opt is FALSE', function () {

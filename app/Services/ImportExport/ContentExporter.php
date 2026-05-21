@@ -2,6 +2,8 @@
 
 namespace App\Services\ImportExport;
 
+use App\Models\Collection as CollectionModel;
+use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -13,6 +15,7 @@ use App\Models\PageLayout;
 use App\Models\PageWidget;
 use App\Models\Product;
 use App\Models\SiteSetting;
+use App\Models\Tag;
 use App\Models\Template;
 use App\Models\TicketTier;
 use Illuminate\Support\Collection;
@@ -250,6 +253,69 @@ class ContentExporter
                 ->map(fn (Media $m) => $this->serializeMediaRow($m))
                 ->all(),
         ]);
+    }
+
+    /**
+     * Export one or more collections (by id) into a bundle envelope. Each
+     * entry carries the collection shell + its full item list. Each item's
+     * custom `data` JSON travels verbatim (no shape policing — the
+     * collection's `fields` config is the source of truth) and each item's
+     * tags travel by (name, type). Item-level media is out of scope for the
+     * first pass. Session A001.
+     *
+     * @param  array<int, string>  $collectionIds
+     * @return array<string, mixed>
+     */
+    public function exportCollections(array $collectionIds): array
+    {
+        return $this->envelope([
+            'collections' => $this->serializeCollections($collectionIds),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $collectionIds
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeCollections(array $collectionIds): array
+    {
+        if (empty($collectionIds)) {
+            return [];
+        }
+
+        return CollectionModel::whereIn('id', $collectionIds)
+            ->with(['collectionItems' => fn ($q) => $q->orderBy('sort_order'), 'collectionItems.tags'])
+            ->get()
+            ->map(fn (CollectionModel $c) => $this->serializeCollection($c))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function serializeCollection(CollectionModel $collection): array
+    {
+        return [
+            'collection' => [
+                'name'             => $collection->name,
+                'handle'           => $collection->handle,
+                'description'      => $collection->description,
+                'fields'           => $collection->fields ?? [],
+                'accepted_sources' => $collection->accepted_sources ?? ['human'],
+                'source_type'      => $collection->source_type,
+                'is_public'        => (bool) $collection->is_public,
+                'is_active'        => (bool) $collection->is_active,
+            ],
+            'items' => $collection->collectionItems->map(fn (CollectionItem $item) => [
+                'sort_order'   => (int) $item->sort_order,
+                'is_published' => (bool) $item->is_published,
+                'data'         => $item->data ?? [],
+                'tags'         => $item->tags->map(fn (Tag $t) => [
+                    'name' => $t->name,
+                    'type' => $t->type,
+                ])->all(),
+            ])->all(),
+        ];
     }
 
     /**

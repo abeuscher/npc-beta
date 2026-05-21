@@ -4,6 +4,7 @@ namespace App\Services\ImportExport;
 
 use App\Filament\Pages\DesignSystemPage;
 use App\Models\Collection;
+use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -15,6 +16,7 @@ use App\Models\PageWidget;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\SiteSetting;
+use App\Models\Tag;
 use App\Models\Template;
 use App\Models\TicketTier;
 use App\Models\User;
@@ -64,6 +66,7 @@ class ContentImporter
             'import_navigation'       => true,
             'import_products'         => true,
             'import_events'           => true,
+            'import_collections'      => true,
         ];
     }
 
@@ -84,7 +87,8 @@ class ContentImporter
      *     templates: array<int, array{name: string, type: string, exists_locally: bool}>,
      *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>,
      *     products: array<int, array{slug: string, name: string, prices_count: int, exists_locally: bool}>,
-     *     events: array<int, array{slug: string, title: string, tiers_count: int, registrations_count: int, exists_locally: bool}>
+     *     events: array<int, array{slug: string, title: string, tiers_count: int, registrations_count: int, exists_locally: bool}>,
+     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>
      * }
      */
     public function analyze(array $bundle): array
@@ -245,6 +249,34 @@ class ContentImporter
             unset($row);
         }
 
+        $collections        = [];
+        $collectionHandles  = [];
+        foreach ($payload['collections'] ?? [] as $entry) {
+            $handle = $entry['collection']['handle'] ?? null;
+            $name   = $entry['collection']['name'] ?? null;
+            if (! is_string($handle) || $handle === '' || ! is_string($name)) {
+                continue;
+            }
+            $itemsCount = is_array($entry['items'] ?? null) ? count($entry['items']) : 0;
+            $collections[] = [
+                'handle'         => $handle,
+                'name'           => $name,
+                'items_count'    => $itemsCount,
+                'exists_locally' => false,
+            ];
+            $collectionHandles[] = $handle;
+        }
+        if (! empty($collectionHandles)) {
+            $existingCollHandles = Collection::whereIn('handle', $collectionHandles)
+                ->pluck('handle')
+                ->all();
+            $existingCollSet = array_flip($existingCollHandles);
+            foreach ($collections as &$row) {
+                $row['exists_locally'] = isset($existingCollSet[$row['handle']]);
+            }
+            unset($row);
+        }
+
         return [
             'has_design'       => $designKeys !== [],
             'design_keys'      => $designKeys,
@@ -255,6 +287,7 @@ class ContentImporter
             'navigation_menus' => $navigationMenus,
             'products'         => $products,
             'events'           => $events,
+            'collections'      => $collections,
         ];
     }
 
@@ -361,6 +394,16 @@ class ContentImporter
                         }
                     } else {
                         $log->info('Events: bundle includes ' . count($payload['events']) . ' event entries, skipped (import_events opt is off).');
+                    }
+                }
+
+                if (! empty($payload['collections']) && is_array($payload['collections'])) {
+                    if ($opts['import_collections']) {
+                        foreach ($payload['collections'] as $collectionData) {
+                            $this->importCollection($collectionData, $log);
+                        }
+                    } else {
+                        $log->info('Collections: bundle includes ' . count($payload['collections']) . ' collection entries, skipped (import_collections opt is off).');
                     }
                 }
             });
@@ -1435,6 +1478,79 @@ class ContentImporter
                 $log->warning("Event \"{$event->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
 
                 continue;
+            }
+        }
+    }
+
+    // ── Collections (session A001) ─────────────────────────────────────────
+
+    /**
+     * Upsert a collection by handle, replace its items wholesale, and re-tag
+     * each item via firstOrCreate(name,type). Item `data` JSON travels
+     * verbatim — the collection's `fields` config is the shape's source of
+     * truth, not the importer. Item-level media is out of scope for the
+     * first pass. Session A001.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importCollection(array $data, ImportLog $log): void
+    {
+        $collectionData = $data['collection'] ?? null;
+        $handle         = $collectionData['handle'] ?? null;
+
+        if (! is_array($collectionData) || ! is_string($handle) || $handle === '') {
+            $log->warning('Collection entry missing collection.handle, skipped.');
+
+            return;
+        }
+
+        $attributes = [
+            'name'             => $collectionData['name'] ?? $handle,
+            'handle'           => $handle,
+            'description'      => $collectionData['description'] ?? null,
+            'fields'           => $collectionData['fields'] ?? [],
+            'accepted_sources' => $collectionData['accepted_sources'] ?? ['human'],
+            'source_type'      => $collectionData['source_type'] ?? 'custom',
+            'is_public'        => (bool) ($collectionData['is_public'] ?? false),
+            'is_active'        => (bool) ($collectionData['is_active'] ?? true),
+        ];
+
+        $collection = Collection::where('handle', $handle)->first();
+        if ($collection) {
+            $collection->update($attributes);
+        } else {
+            $collection = Collection::create($attributes);
+        }
+
+        CollectionItem::where('collection_id', $collection->id)->delete();
+
+        foreach ($data['items'] ?? [] as $sortIndex => $itemRow) {
+            if (! is_array($itemRow)) {
+                continue;
+            }
+
+            $item = CollectionItem::create([
+                'collection_id' => $collection->id,
+                'data'          => $itemRow['data'] ?? [],
+                'sort_order'    => (int) ($itemRow['sort_order'] ?? $sortIndex),
+                'is_published'  => (bool) ($itemRow['is_published'] ?? false),
+            ]);
+
+            $tagIds = [];
+            foreach ($itemRow['tags'] ?? [] as $tagRow) {
+                $tagName = $tagRow['name'] ?? null;
+                $tagType = $tagRow['type'] ?? 'collection_item';
+                if (! is_string($tagName) || $tagName === '') {
+                    continue;
+                }
+                $tag = Tag::firstOrCreate(
+                    ['name' => $tagName, 'type' => $tagType],
+                );
+                $tagIds[] = $tag->id;
+            }
+
+            if (! empty($tagIds)) {
+                $item->tags()->sync($tagIds);
             }
         }
     }
