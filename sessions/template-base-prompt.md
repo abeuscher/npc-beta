@@ -11,7 +11,7 @@ These two sections are project canon — every session from 001 forward has carr
 
 ---
 
-**Start now.** Execute the reading list below, open the session prompt at `sessions/NNN. Session Title.md`, then begin the work. No confirmation needed.
+**Start now.** Execute the reading list below, open the session prompt at `sessions/NNN. Session Title.md`, then stop at the Open Gate before beginning task work.
 
 ---
 
@@ -25,7 +25,7 @@ This session is **{NOT / IS} boundary-touching** — {if NOT: no Fleet Manager s
 
 Before doing anything else:
 
-1. Re-read the session templates (`sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, `sessions/template-session-log.md`) only if the format has changed since your last session or you're uncertain about a structural detail. They remain the **canonical format reference** — do not infer format from previous session logs — but the templates are stable as of session 276 and don't need a re-read every session.
+1. Re-read the session templates (`sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, `sessions/template-session-log.md`). They are the **canonical format reference** — do not infer format from previous session logs.
 2. Read `sessions/session-outlines.md` (the roadmap) for the active-tracks block and the Beta 1 stub for this session.
 3. If this session executes a `sessions/release-plan.md` entry, read that entry. It is canonical for scope, success criterion, prerequisites, and artifact. The session prompt is a delta against the plan entry, not a replacement for it.
 4. If this session belongs to an active track, read that track's planning doc at `sessions/tracks/{track-name}.md` — status snapshot, phase retrospectives (closed-phase history), and the forward plan all live there.
@@ -75,6 +75,12 @@ Before doing anything else:
 - **Cross-repo coordination — Fleet Manager agent contract.** If your work modifies any file or surface that participates in the Fleet Manager agent contract — the `/api/health` endpoint, its auth middleware, its response schema, the VERSION file at deploy time, anything in `app/Http/Controllers/Api/Fleet/*` — pause, update `docs/fleet-manager-agent-contract.md` (body + CHANGELOG + bump the `Contract Version` field), and update the "Cross-Repo: Fleet Manager / CRM" block in `sessions/session-outlines.md` before continuing. The rule is dormant until the agent surface exists; it self-activates the moment it does. See `sessions/fleet-manager-planning-spec.md` ("Two-Repo Coordination Protocol") for the discipline.
 - **Verify objective outcomes yourself; pull the user in for judgment.** When you can observe the result directly, do — don't ask the user to run it and report back. Close the loop yourself for CLI output, file contents, exit codes, logs, and anything Playwright can verify. The importer is the model: success is "the right rows exist," and Playwright sees that better than the user does. Console errors, network responses, data round-trips — same idea. **Playwright is a verification mechanism, not just an existing test suite** — when an objective outcome lives in the browser (form submissions, list rendering, data round-trips), a quick spec written for the moment is faster than a user round-trip and stays in the suite afterward; reach for it without being told. If the success criterion is objective, the user doesn't need to be in the loop. Pull them in for things only a human can judge: visual design, UX, whether an interaction feels right. Heuristic: *"does this work?"* you can usually answer; *"is this right?"* usually needs the user.
 - **Pause for manual testing only when human judgment is required.** If a session's success criterion is objective and self-verifiable, run the verification yourself and report results — don't punt to the user. If a visual or UX surface is part of the change, announce that testing is ready, then stop and wait. Either way, do not suggest closing the session or take any further action until the user initiates close.
+
+---
+
+## ── SESSION OPEN GATE ───────────────────────────────────────────────────────
+
+**One deliberate pause after the reading is complete, before any task work begins.** After the reading list, the Starting state, and the process rules are all read, surface a one-paragraph orientation (what shape the session is, what the work plan is, what if anything needs clarification) and **wait for the user to confirm before starting**. Do not pipeline straight from reading into implementation.
 
 ---
 
