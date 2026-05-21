@@ -4,6 +4,10 @@ Small items noticed between sessions. One bullet per item, free-form text. When 
 
 This file is the only home for items that are *small enough to bundle but large enough to break scope when absorbed mid-session by a feature*.
 
+**How items get here:** capture them mid-session with `npm run logbug -- "what you noticed"` — it stamps the item with the current VERSION marker + date and parks it in `sessions/housekeeping-incoming.md`. The next session close digests that buffer (validity-checks each item with the user, then folds the survivors here with their capture stamp intact). Items added by hand at a session close should carry the same `[VERSION · date]` stamp so their age stays legible.
+
+**Verify the premise before scheduling (the staleness guard).** A captured item is a snapshot of the app at capture time; the app moves underneath it. When walking this inbox at a session start to pick a batch, **re-verify each candidate against current code before committing it to an iteration** — the older the capture stamp, the more important the check. Items frequently turn out already-fixed, already-addressed by an intervening feature, or redundant with a system that landed since capture. Catch that at the walk, not mid-implementation. Drop or re-scope dead items as you find them.
+
 ---
 
 ## Inbox
