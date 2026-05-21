@@ -11,7 +11,7 @@ These two sections are project canon — every session from 001 forward has carr
 
 ---
 
-**Start now.** Execute the reading list below, open the session prompt at `sessions/NNN. Session Title.md`, then begin the work. No confirmation needed.
+**Start now.** Execute the reading list below, open the session prompt at `sessions/NNN. Session Title.md`, then stop at the Open Gate before beginning task work.
 
 ---
 
@@ -25,7 +25,7 @@ This session is **{NOT / IS} boundary-touching** — {if NOT: no Fleet Manager s
 
 Before doing anything else:
 
-1. Re-read the session templates (`sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, `sessions/template-session-log.md`) only if the format has changed since your last session or you're uncertain about a structural detail. They remain the **canonical format reference** — do not infer format from previous session logs — but the templates are stable as of session 276 and don't need a re-read every session.
+1. Re-read the session templates (`sessions/template-base-prompt.md`, `sessions/template-session-prompt.md`, `sessions/template-session-log.md`). They are the **canonical format reference** — do not infer format from previous session logs.
 2. Read `sessions/session-outlines.md` (the roadmap) for the active-tracks block and the Beta 1 stub for this session.
 3. If this session executes a `sessions/release-plan.md` entry, read that entry. It is canonical for scope, success criterion, prerequisites, and artifact. The session prompt is a delta against the plan entry, not a replacement for it.
 4. If this session belongs to an active track, read that track's planning doc at `sessions/tracks/{track-name}.md` — status snapshot, phase retrospectives (closed-phase history), and the forward plan all live there.
@@ -78,6 +78,12 @@ Before doing anything else:
 
 ---
 
+## ── SESSION OPEN GATE ───────────────────────────────────────────────────────
+
+**One deliberate pause after the reading is complete, before any task work begins.** After the reading list, the Starting state, and the process rules are all read, surface a one-paragraph orientation (what shape the session is, what the work plan is, what if anything needs clarification) and **wait for the user to confirm before starting**. Do not pipeline straight from reading into implementation.
+
+---
+
 ## ── SESSION CLOSE GATE ──────────────────────────────────────────────────────
 
 **Everything below this line happens only when the user explicitly says to close the session.**
@@ -98,6 +104,7 @@ Then stop. The user reviews the work and the next session's drafts, and initiate
 When the user says to close (after the next session's prompt is agreed):
 
 - **Session log**: write a log file at `sessions/NNN. Session Title — Log.md`. Use `sessions/template-session-log.md` as the format reference — copy its structure exactly, do not base it on previous logs.
+- **Bump the `VERSION` file** at the project root. Format is `0.<session>.<iteration>` (e.g. `0.313.02` for session 313's second iteration). The iteration suffix is the highest iteration number landed on the close branch. Bump VERSION even on sessions that made no application-code changes — VERSION marks the close, not the surface touched, and downstream consumers (the Fleet Manager agent `/api/health` payload, the build-pipeline GHCR tag) read it as an opaque close marker.
 - **Update `sessions/completed-sessions.md`**: append this session's row to the index table (number + title).
 - **Update `sessions/session-outlines.md`** (the roadmap): if this session resolved any forward stubs, edit or remove them. The Completed Sessions table is **not** here — it lives in `sessions/completed-sessions.md`.
 - **If this session belongs to a track:** update the track's `sessions/tracks/{name}.md` — bump the status snapshot (last update date, what's complete, what's active). If this session is the **terminal session of a phase** within the track, also do the **phase-expiry compression** below.

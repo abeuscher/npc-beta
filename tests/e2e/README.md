@@ -1,24 +1,29 @@
 # End-to-End (Playwright) Specs
 
-Dev-only browser-driven regression tests. **Never runs in CI or on the deploy server.** Run from the WSL2 host against the local Docker stack.
+Browser-driven regression tests. Runs in CI on every push (non-gating by design) against an isolated Docker stack, and locally via the same isolated stack so the developer's working app instance is never blown away by test runs.
 
 ## Prerequisites
 
-- Docker stack up (`docker compose up -d`).
-- `.env` contains `APP_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and the `DB_*` credentials.
+- Isolated e2e stack up: `npm run e2e:up` (project name `nonprofitcrm_e2e`, separate DB on port 5442, app on `http://localhost:8090`). Tear down with `npm run e2e:down`.
+- `.env` contains `ADMIN_EMAIL` and `ADMIN_PASSWORD` (the isolated stack's seeded admin).
 - `npm install` has been run.
 - Chromium installed: `npx playwright install chromium` (one-time).
 
+The main `docker compose up -d` development stack does **not** need to be running for the e2e suite. The two stacks coexist (different project name, different ports, different DB) on the same host.
+
 ## Running
+
+All commands below run against the isolated stack (`localhost:8090`, separate DB). The `test:e2e:local` form is the explicit escape hatch — it runs against whatever the unprefixed `APP_URL` points at (typically the main development stack) and will reset that DB on global setup. Avoid it unless you specifically want that.
 
 | Command | When |
 |---|---|
-| `npm run test:e2e` | Default run. Headless. Excludes `@stress`- and `@on-demand`-tagged specs. |
-| `npm run test:e2e:ui` | Interactive Playwright UI — best for authoring and debugging. |
-| `npm run test:e2e:headed` | Watch the browser drive. |
-| `npm run test:e2e:stress` | Run only `@stress`-tagged specs (long-running, e.g. 10k-row imports). |
-| `npm run test:e2e:on-demand` | Run only `@on-demand`-tagged specs (deeper coverage authored alongside a release-plan stub; not part of the regular regression cycle). |
+| `npm run test:e2e` | Default run. Headless. Isolated stack. Excludes `@stress`- and `@on-demand`-tagged specs. |
+| `npm run test:e2e:ui` | Interactive Playwright UI — best for authoring and debugging. Isolated stack. |
+| `npm run test:e2e:headed` | Watch the browser drive. Isolated stack. |
+| `npm run test:e2e:stress` | Run only `@stress`-tagged specs (long-running, e.g. 10k-row imports). Isolated stack. |
+| `npm run test:e2e:on-demand` | Run only `@on-demand`-tagged specs (deeper coverage authored alongside a release-plan stub; not part of the regular regression cycle). Isolated stack. |
 | `npm run test:e2e:show-report` | Open the last HTML report. |
+| `npm run test:e2e:local` | **Explicit escape hatch.** Runs against the main development stack — resets the dev DB on global setup. Only use if you specifically want to test against the dev stack's data. |
 
 ## Database state
 

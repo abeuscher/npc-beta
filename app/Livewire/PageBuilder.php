@@ -371,6 +371,8 @@ class PageBuilder extends Component
 
         $apiBaseUrl = '/' . $adminPath . '/api/page-builder/' . ($this->ownerType === 'template' ? 'templates' : 'pages') . '/' . $this->ownerId;
 
+        $typography = \App\Services\TypographyResolver::resolve();
+
         return [
             'owner_id'                => $this->ownerId,
             'owner_type'              => $this->ownerType,
@@ -403,18 +405,12 @@ class PageBuilder extends Component
             // authoritative source; fall back to the resolved per-element
             // family, then to the resolver's DEFAULT_FAMILY so the field
             // is always concretely populated.
-            'theme_heading_family'    => (function () {
-                $t = \App\Services\TypographyResolver::resolve();
-                return $t['buckets']['heading_family']
-                    ?? ($t['elements']['h2']['font']['family'] ?? null)
-                    ?? \App\Services\TypographyResolver::DEFAULT_FAMILY;
-            })(),
-            'theme_body_family'       => (function () {
-                $t = \App\Services\TypographyResolver::resolve();
-                return $t['buckets']['body_family']
-                    ?? ($t['elements']['p']['font']['family'] ?? null)
-                    ?? \App\Services\TypographyResolver::DEFAULT_FAMILY;
-            })(),
+            'theme_heading_family'    => $typography['buckets']['heading_family']
+                ?? ($typography['elements']['h2']['font']['family'] ?? null)
+                ?? \App\Services\TypographyResolver::DEFAULT_FAMILY,
+            'theme_body_family'       => $typography['buckets']['body_family']
+                ?? ($typography['elements']['p']['font']['family'] ?? null)
+                ?? \App\Services\TypographyResolver::DEFAULT_FAMILY,
             'theme_editor_url'        => \App\Filament\Pages\DesignSystemPage::getUrl(['activeTab' => 'text-styles']),
         ];
     }

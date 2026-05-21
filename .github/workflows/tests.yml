@@ -332,12 +332,12 @@ jobs:
       # DIAGNOSTIC (temporary, A003): capture JSON + full stdout without
       # failing the step, so the digest can publish even on failure. On
       # handback restore to the single line:
-      #   run: npm run test:e2e:isolated -- --project=chromium
+      #   run: npm run test:e2e -- --project=chromium
       - name: Run Playwright (chromium) against the isolated stack
         run: |
           set +e
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-results.json \
-            npm run test:e2e:isolated -- --project=chromium --reporter=list,json 2>&1 \
+            npm run test:e2e -- --project=chromium --reporter=list,json 2>&1 \
             | tee pw-stdout.txt
           echo "${PIPESTATUS[0]}" > pw-rc.txt
           echo "Playwright exit code: $(cat pw-rc.txt)"
