@@ -67,23 +67,59 @@ class ContentExporter
      * Template on the install and emits a single combined envelope. Defaults
      * `with_design` + `with_media` to true so the rollup carries the theme
      * and a referenced-media seed list out of the box; callers can override
-     * either flag explicitly. The wrapper delegates assembly to exportBundle();
-     * it adds no new payload shape.
+     * either flag explicitly.
      *
-     * @param  array{with_design?: bool, with_media?: bool}  $opts
+     * Session A001/4 extension: the rollup now also enumerates every
+     * navigation menu, product, event, and collection on the install so a
+     * full-site bundle is actually full-site. Events are exported without
+     * registrations by default (`with_registrations` opt, default false —
+     * registrations are operator data, not template content; the per-entity
+     * `exportEvents()` flag carries the same semantics).
+     *
+     * @param  array{with_design?: bool, with_media?: bool, with_registrations?: bool}  $opts
      * @return array<string, mixed>
      */
     public function exportSite(array $opts = []): array
     {
         $opts = array_replace(
-            ['with_design' => true, 'with_media' => true],
+            ['with_design' => true, 'with_media' => true, 'with_registrations' => false],
             $opts,
         );
 
-        $pageIds     = Page::pluck('id')->all();
-        $templateIds = Template::pluck('id')->all();
+        $pageIds       = Page::pluck('id')->all();
+        $templateIds   = Template::pluck('id')->all();
+        $navMenuIds    = NavigationMenu::pluck('id')->all();
+        $productIds    = Product::pluck('id')->all();
+        $eventIds      = Event::pluck('id')->all();
+        $collectionIds = CollectionModel::pluck('id')->all();
 
-        return $this->exportBundle($pageIds, $templateIds, $opts, sourceActionOverride: 'exportSite');
+        $templates     = Template::whereIn('id', $templateIds)->get();
+        $nestedPageIds = $this->collectChromePageIds($templates);
+        $allPageIds    = array_values(array_unique(array_merge($pageIds, $nestedPageIds)));
+
+        $serializedTemplates = $this->serializeTemplates($templates);
+        $pages               = $this->serializePages($allPageIds);
+
+        $payload = [
+            'templates'        => $serializedTemplates,
+            'pages'            => $pages,
+            'navigation_menus' => $this->serializeNavigationMenus($navMenuIds),
+            'products'         => $this->serializeProducts($productIds),
+            'collections'      => $this->serializeCollections($collectionIds),
+        ];
+
+        if (! empty($eventIds)) {
+            $events = $this->collectEventsForExport($eventIds);
+            $payload['events'] = $events
+                ->map(fn (Event $e) => $this->serializeEvent($e, (bool) $opts['with_registrations']))
+                ->all();
+        } else {
+            $payload['events'] = [];
+        }
+
+        $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
+
+        return $this->envelope($payload, 'exportSite');
     }
 
     /**
@@ -945,7 +981,7 @@ class ContentExporter
             'type'              => 'widget',
             'handle'            => $pw->widgetType?->handle,
             'label'             => $pw->label,
-            'config'            => $pw->config ?? [],
+            'config'            => $this->serializeWidgetConfigReferences($pw),
             'query_config'      => $pw->query_config ?? [],
             'appearance_config' => $pw->appearance_config ?? [],
             'sort_order'        => $pw->sort_order,
@@ -981,6 +1017,35 @@ class ContentExporter
             'sort_order'        => $layout->sort_order,
             'slots'             => $slots,
         ];
+    }
+
+    /**
+     * Resolve UUID-typed cross-entity references in a widget's config to
+     * their human-readable identifiers, alongside the original UUID. Mirror
+     * of the page `template_name` / nav `page_slug` patterns: the bundle
+     * carries both the original FK and a portable identifier, and the
+     * importer prefers the portable one. Session A001/4.
+     *
+     * Currently scoped to the single known UUID-shaped widget reference:
+     * the Nav widget's `navigation_menu_id`. Other entity-reference widgets
+     * (BoardMembers, EventDescription, ProductDisplay, WebForm) already
+     * use slug/handle in config and round-trip cleanly without rewiring.
+     *
+     * @return array<string, mixed>
+     */
+    protected function serializeWidgetConfigReferences(PageWidget $pw): array
+    {
+        $config = $pw->config ?? [];
+        $handle = $pw->widgetType?->handle;
+
+        if ($handle === 'nav' && ! empty($config['navigation_menu_id'])) {
+            $menu = NavigationMenu::find($config['navigation_menu_id']);
+            if ($menu) {
+                $config['navigation_menu_handle'] = $menu->handle;
+            }
+        }
+
+        return $config;
     }
 
     /**
