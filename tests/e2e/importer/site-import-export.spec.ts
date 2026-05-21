@@ -18,7 +18,7 @@ test.describe('Site import / export rollup UI (session 310)', () => {
     test('renders both sections and surfaces snapshot counts on Export Site', async ({ page }) => {
         test.setTimeout(60_000);
 
-        await page.goto('/admin/site-import-export');
+        await page.goto('/admin/site-import-export-page');
 
         // Both narrative sections render at page load.
         await expect(page.locator('[data-testid="site-export-section"]')).toBeVisible();
@@ -61,7 +61,7 @@ test.describe('Site import / export rollup UI (session 310)', () => {
         fs.writeFileSync(tmpFile, JSON.stringify(bundle));
 
         try {
-            await page.goto('/admin/site-import-export');
+            await page.goto('/admin/site-import-export-page');
 
             await page.getByRole('button', { name: 'Import Site', exact: true }).click();
 
