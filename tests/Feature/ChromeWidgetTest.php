@@ -423,6 +423,49 @@ it('logo widget renders text and link', function () {
     expect($result['html'])->toContain('<a href="https://example.test/home"');
     expect($result['html'])->toContain('widget-logo__text');
     expect($result['html'])->toContain('Acme Org');
+    expect($result['html'])->not->toContain('default-logo.svg');
+});
+
+it('logo widget renders the placeholder image when no logo and no text are configured', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create(['status' => 'published']);
+    $logoType = WidgetType::where('handle', 'logo')->firstOrFail();
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $logoType->id,
+        'label'          => 'Logo',
+        'config'         => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw->fresh('widgetType'));
+
+    expect($result['html'])
+        ->toContain('default-logo.svg')
+        ->toContain('widget-logo__img--placeholder');
+});
+
+it('logo widget suppresses the placeholder when only text is configured', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create(['status' => 'published']);
+    $logoType = WidgetType::where('handle', 'logo')->firstOrFail();
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $logoType->id,
+        'label'          => 'Logo',
+        'config'         => ['text' => 'Wordmark Only'],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw->fresh('widgetType'));
+
+    expect($result['html'])
+        ->toContain('Wordmark Only')
+        ->not->toContain('default-logo.svg');
 });
 
 // ── Nav widget ──────────────────────────────────────────────────────────────
