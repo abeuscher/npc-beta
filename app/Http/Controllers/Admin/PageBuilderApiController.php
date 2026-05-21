@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReorderWidgetsRequest;
-use App\Http\Resources\WidgetPreviewResource;
 use App\Http\Resources\WidgetResource;
 use App\Models\Collection;
 use App\Models\Event;
@@ -14,8 +13,8 @@ use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\Tag;
 use App\Models\WidgetType;
-use App\Services\AppearanceStyleComposer;
 use App\Services\PageBuilderDataSources;
+use App\Services\PageTreeBuilder;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +29,13 @@ class PageBuilderApiController extends Controller
     {
         abort_unless(auth()->user()?->can('view_page'), 403);
 
-        return response()->json($this->buildTree($owner));
+        $builder = new PageTreeBuilder($owner);
+
+        return response()->json([
+            'widgets'       => $builder->tree(),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
+        ]);
     }
 
     public function store(Request $request, $owner): JsonResponse
@@ -92,13 +97,13 @@ class PageBuilderApiController extends Controller
             'is_active'         => true,
         ]);
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
             'widget'        => $this->formatWidget($newWidget->fresh(['widgetType']), $owner),
-            'tree'          => $tree['widgets'],
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'tree'          => $builder->tree(),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ], 201);
     }
 
@@ -161,13 +166,13 @@ class PageBuilderApiController extends Controller
 
         $widget->delete();
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
             'deleted'       => true,
-            'tree'          => $tree['widgets'],
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'tree'          => $builder->tree(),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ]);
     }
 
@@ -197,13 +202,13 @@ class PageBuilderApiController extends Controller
             'is_active'         => $widget->is_active,
         ]);
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
             'widget'        => $this->formatWidget($copy->fresh(['widgetType']), $owner),
-            'tree'          => $tree['widgets'],
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'tree'          => $builder->tree(),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ], 201);
     }
 
@@ -229,12 +234,12 @@ class PageBuilderApiController extends Controller
             }
         }
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
-            'tree'          => $tree['widgets'],
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'tree'          => $builder->tree(),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ]);
     }
 
@@ -446,12 +451,12 @@ class PageBuilderApiController extends Controller
             'sort_order'    => $maxSort + 1,
         ]);
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
-            'layout'        => $this->formatLayout($layout),
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'layout'        => PageTreeBuilder::formatLayout($layout),
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ], 201);
     }
 
@@ -498,7 +503,7 @@ class PageBuilderApiController extends Controller
         }
 
         return response()->json([
-            'layout' => $this->formatLayout($layout->fresh()),
+            'layout' => PageTreeBuilder::formatLayout($layout->fresh()),
         ]);
     }
 
@@ -510,94 +515,16 @@ class PageBuilderApiController extends Controller
 
         $layout->delete();
 
-        $tree = $this->buildTree($owner);
+        $builder = new PageTreeBuilder($owner);
 
         return response()->json([
             'deleted'       => true,
-            'items'         => $tree['items'],
-            'required_libs' => $tree['required_libs'],
+            'items'         => $builder->items(),
+            'required_libs' => $builder->requiredLibs(),
         ]);
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
-
-    private function buildTree(Model $owner): array
-    {
-        $requiredHandles = $owner instanceof Page
-            ? WidgetType::requiredForPage($owner->bareSlug())
-            : [];
-
-        $rootWidgets = PageWidget::forOwner($owner)
-            ->whereNull('layout_id')
-            ->where('is_active', true)
-            ->with(['widgetType', 'owner'])
-            ->orderBy('sort_order')
-            ->get();
-
-        $layouts = PageLayout::forOwner($owner)
-            ->with(['widgets' => fn ($q) => $q->where('is_active', true)->with(['widgetType', 'owner'])->orderBy('sort_order')])
-            ->orderBy('sort_order')
-            ->get();
-
-        $allLibs = [];
-        $items = [];
-
-        foreach ($rootWidgets as $pw) {
-            if (! $pw->widgetType) {
-                continue;
-            }
-
-            $item = $this->formatWidgetWithPreview($pw, $requiredHandles);
-            $item['type'] = 'widget';
-            $items[] = $item;
-            app(WidgetPreviewRenderer::class)->collectLibs($pw, $allLibs);
-        }
-
-        foreach ($layouts as $layout) {
-            $item = $this->formatLayout($layout);
-            $slots = [];
-            foreach ($layout->widgets as $child) {
-                if (! $child->widgetType) {
-                    continue;
-                }
-                $idx = $child->column_index ?? 0;
-                $childData = $this->formatWidgetWithPreview($child, $requiredHandles);
-                $childData['type'] = 'widget';
-                $slots[$idx][] = $childData;
-                app(WidgetPreviewRenderer::class)->collectLibs($child, $allLibs);
-            }
-            $item['slots'] = (object) $slots;
-            $items[] = $item;
-        }
-
-        usort($items, fn ($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
-
-        $legacyWidgets = array_values(array_filter($items, fn ($i) => ($i['type'] ?? '') === 'widget'));
-
-        return [
-            'widgets'       => $legacyWidgets,
-            'items'         => $items,
-            'required_libs' => array_values(array_unique($allLibs)),
-        ];
-    }
-
-    private function formatLayout(PageLayout $layout): array
-    {
-        return [
-            'type'              => 'layout',
-            'id'                => $layout->id,
-            'owner_type'        => $layout->owner_type,
-            'owner_id'          => $layout->owner_id,
-            'label'             => $layout->label ?? '',
-            'display'           => $layout->display,
-            'columns'           => $layout->columns,
-            'layout_config'     => $layout->layout_config ?? [],
-            'appearance_config' => (object) ($layout->appearance_config ?? []),
-            'inline_style'      => app(AppearanceStyleComposer::class)->composeForLayout($layout),
-            'sort_order'        => $layout->sort_order ?? 0,
-            'slots'             => (object) [],
-        ];
-    }
 
     private function formatWidget(PageWidget $pw, Model $owner): array
     {
@@ -606,13 +533,6 @@ class PageBuilderApiController extends Controller
             : [];
 
         return (new WidgetResource($pw))
-            ->withRequiredHandles($requiredHandles)
-            ->resolve();
-    }
-
-    private function formatWidgetWithPreview(PageWidget $pw, array $requiredHandles): array
-    {
-        return (new WidgetPreviewResource($pw))
             ->withRequiredHandles($requiredHandles)
             ->resolve();
     }
