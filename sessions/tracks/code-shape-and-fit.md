@@ -14,19 +14,67 @@ When a cycle closes, its retrospective lands here and the cluster's release-plan
 
 ## Status snapshot
 
-**Last update:** [date of first commit of this doc].
+**Last update:** 2026-05-21 (session 313 close).
 
-**Complete:** none. Track is new as of session 276.
+**Complete:** Cycle 1 (sessions 312 audit + 313 apply).
 
-**Active:** drafting. First cycle not yet scheduled.
+**Active:** between cycles.
 
-**Next trigger:** **Trailing pair after cleanup Cycle 3.** First refactor cycle runs immediately after cleanup Cycle 3 closes (≈ session 327+), consuming Cycle 3's W11 outlier list as a primary input. The cleanup cycle's W11 + W12 quantitative output is the natural feeder for refactor-track audit inputs, and running the refactor cycle while those outputs are fresh reduces re-derivation cost.
+**Next trigger:** ≈ session 379 (≈ +50 sessions from this close per the cadence rule), or sooner if a forcing function emerges (a feature track blocked behind a deferred refactor pick, or a refactor-shaped finding from a cleanup cycle that exceeds cleanup's apply scope). The track's first review session A004 is queued out-of-band to evaluate Cycle 1 against stated goals before Cycle 2 plans.
 
 ---
 
 ## Cycle Retrospectives
 
-*(Empty — no cycles closed yet. Format will mirror the cleanup track's retrospective shape: window covered, sessions list, quantitative outcomes table, load-bearing decisions, blind spots, process incidents, won't-fixes reaffirmed.)*
+### Cycle 1 — sessions 312 + 313 (closed 2026-05-21)
+
+**Window covered:** sessions 274 → 311 (~37 sessions of growth since cleanup Cycle 2 closed). Pulled forward at user direction from the originally scheduled trailing-pair-after-cleanup-Cycle-3 slot (≈ session 327+); calibration delta documented in 312's audit log.
+
+**Sessions:** 312 (audit, no code), 313 (apply, two iterations + close).
+
+**Quantitative outcomes:**
+
+| Workstream | Inline findings | Open flags | Intent-unrecoverable | Landed at apply |
+|------------|-----------------|------------|----------------------|-----------------|
+| W-R1 Cardinality | 1 | 1 | 2 | 1 inline + 1 flag (pattern fix) |
+| W-R2 Locality | 0 | 1 | 0 | 0 (flag promoted to register) |
+| W-R3 Directness | 0 | 0 | 0 | 0 |
+| W-R4 Necessary vs accidental | 1 | 1 | 0 | 1 inline (instance fix; pattern fix deferred) |
+| W-R5 Seam quality | 0 | 0 | 0 | 0 |
+
+Code changes at apply: 2 iterations on `session-313/1`. Net effect: `-112 / +32` controller LOC, +127 LOC new service, byte-equivalent JSON response shapes. Fast Pest baseline carried at 2586 passed across both iterations; Playwright page-builder set 28 passed / 4 skipped at the seam-move iteration's gate.
+
+**Load-bearing decisions:**
+
+1. **Pattern fix elected over instance fix on Flag W-R1/A** (the controller-returns-triple-key-superset finding). Default leaning at 312 was instance-fix; user opted into the pattern lift at 313 walkthrough. Result: `PageTreeBuilder` service exposing `tree()` / `items()` / `requiredLibs()` as separately memoized computed methods. Each of the seven callers asks for what it needs; the two layout endpoints now skip the legacy widgets array entirely.
+2. **Standing won't-fix on `ImportContactsPage` LOC promoted** from the floating "Flag B" status to a Deliberately Kept register entry. Originally cleanup Cycle 1 (session 206), re-affirmed at cleanup Cycle 2 (273), re-affirmed under the Locality lens at 312, ratified for register at 313. Retires the rolling won't-fix; future audits skip it.
+3. **Per-action endpoint shape on `PageBuilderApiController` landed as a register entry** (the 22-endpoint REST surface). Walked as a W-R5 candidate at 312; rejected as a finding because the per-action shape supports optimistic UI / retry / revert and aligns with the rest of the admin surface. The register entry pre-empts future audits relitigating.
+4. **Pattern-fix on Flag W-R4/A deferred.** The duplicated context-gathering in three description-generator methods on `ImportSessionActions` was identified at 312 as the same shape as the W-R4-1 instance. User accepted the default — ship the instance fix, leave the description-method consolidation for a future cycle.
+5. **Both intent-unrecoverable findings carried forward.** User did not recall original intent for either the `WidgetType::requiredForPage()` re-derivation across `destroy()` + `buildTree()` or the dual-loop `collectLibs()` accumulator. Both stay structurally preserved inside the new `PageTreeBuilder` service; both carry into the next cycle's documentation-gap walk.
+
+**Blind spots:**
+
+- **Citation-discipline failure mode is real.** Multiple W-R1 / W-R4 walking agents at 312 produced findings with docstring "citations" that didn't match file content. Spot-checks caught the inventions and either dropped findings or salvaged them with corrected citations; one reclassified to intent-unrecoverable on closer inspection. Cycle 2 audit-agent prompt scaffolding should require quoting citations verbatim with line numbers of the quoted text.
+- **No cleanup Cycle 3 outputs to draw from.** The pulled-forward decision meant the W-R2 Locality walk consumed stale cleanup Cycle 2 outputs instead of fresh Cycle 3 ones. Cycle 1's ratio of stale-touched findings was below the 30% calibration threshold (1 of 2 inline findings touched importer code that may move in cleanup Cycle 3), so the pull-forward was defensible — but the default ordering is still trailing-pair-after-cleanup.
+
+**Process incidents:**
+
+- **Path mismatch in the 313 prompt.** The session prompt referenced a placeholder path `sessions/tracks/code-shape-and-fit-deliberately-kept.md`; the actual file is at `sessions/refactor-track-deliberately-kept.md`. Noted in the 312 log's drift section; not chased.
+- **Mid-session re-coaching on PM-level tone.** User flagged audit-track bookkeeping codes ("W-R2/A promotion", "FieldMapper carve-out") as impenetrable in user-facing prose during the close walkthrough. Memory entry `feedback_pm_level_tone` updated to call out project-internal jargon explicitly. Status reports from this session forward should keep the codes in the log and the commit messages, not in user-facing summaries.
+- **Session-end handoff steps missed initially.** Agent jumped from final-iteration commit straight into close-out artifact writing, skipping both the smoke-test handoff and the next-session prompt draft. User flagged it; agent reverted the premature edits and resumed correctly. Memory entry `feedback_session_end_steps` written. Template-base-prompt edits (Open Gate naming, removal of the "templates stable as of 276" carveout) landed in the same session to structurally prevent recurrence.
+
+**Won't-fixes reaffirmed (and now promoted to register):**
+
+- `ImportContactsPage` long file → register entry.
+- `PageBuilderApiController` per-action endpoint shape → register entry.
+- Per-namespace mapper helpers (the pre-seeded entry) — citation accuracy fix landed; the missing Organizations helper filed in `sessions/housekeeping-inbox.md` for a future low-risk batch.
+
+**Carry-forwards:**
+
+- Both intent-unrecoverable findings (the two `PageBuilderApiController` cardinality patterns) carry into the next cycle's documentation-gap walk.
+- Flag W-R4/A pattern fix (the three description-generator methods on `ImportSessionActions`) deferred to the next cycle's pre-loaded findings.
+- Citation-discipline calibration (quote-verbatim-with-line-numbers rule) folds into the Cycle 2 audit-agent scaffolding.
+- **A004 review session** queued out-of-band to evaluate Cycle 1 against stated goals before Cycle 2 plans land.
 
 ---
 
@@ -146,7 +194,8 @@ This track is unusually exposed to performative diff-making. An agent told to "i
 
 ### Standing improvements (Cycle 2+ carries)
 
-*(Empty until Cycle 1 closes and surfaces lessons. Mirrors the cleanup track's standing-improvements list shape; populates as cycles accumulate blind spots and process incidents.)*
+- **Audit-agent citation discipline rule (Cycle 1 → 2).** Every finding's *Intent* citation must be quoted verbatim with line numbers of the quoted text. Surfaced after the W-R1 / W-R4 audit walkers at 312 produced plausible-sounding docstring quotes that did not match the actual file content; spot-checks caught the inventions but the discipline should be enforced at the prompt scaffolding level, not at review time. Fold into the Cycle 2 audit-agent prompt.
+- **Sequence-after-cleanup-cycle preference (Cycle 1 → 2).** The pulled-forward decision at Cycle 1 meant the W-R2 Locality walk consumed stale cleanup Cycle 2 outputs instead of fresh Cycle 3 ones. If the next cleanup cycle has not run by the time refactor Cycle 2's trigger fires, weigh the value of waiting against the value of running with stale inputs. Cycle 1's ratio of stale-touched findings was below the 30% calibration threshold, so the pulled-forward call was defensible — but the default ordering is still trailing-pair-after-cleanup.
 
 ### Permanent inter-cycle artifacts
 

@@ -15,7 +15,7 @@
 // artifact (unlike the bundle-compiled theme_colors override of session 300).
 //
 // Runs on the seeded data via the isolated e2e stack
-// (npm run test:e2e:isolated): the `news` page uses the default page
+// (npm run test:e2e): the `news` page uses the default page
 // template; flipping that template's scheme drives the public content region
 // and the page-builder preview together.
 

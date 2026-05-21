@@ -317,7 +317,7 @@ jobs:
           true
 
       - name: Run Playwright (chromium) against the isolated stack
-        run: npm run test:e2e:isolated -- --project=chromium
+        run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report on failure
         if: failure()
