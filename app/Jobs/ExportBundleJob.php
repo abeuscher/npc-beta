@@ -25,9 +25,9 @@ class ExportBundleJob implements ShouldQueue
     use Queueable, InteractsWithQueue, SerializesModels;
 
     /**
-     * @param  'pages'|'templates'|'design'|'media'|'all_media'  $kind
+     * @param  'pages'|'templates'|'design'|'media'|'all_media'|'site'  $kind
      * @param  array<int, int|string>  $ids
-     * @param  array{with_design?: bool, with_media?: bool}  $opts  Session-309 exporter opt-ins (only honored by the 'pages' and 'templates' kinds).
+     * @param  array{with_design?: bool, with_media?: bool}  $opts  Session-309 exporter opt-ins (honored by 'pages' / 'templates' / 'site' kinds).
      */
     public function __construct(
         public string $kind,
@@ -53,6 +53,7 @@ class ExportBundleJob implements ShouldQueue
                 'design'    => $exporter->exportDesign(),
                 'media'     => $exporter->exportMedia($this->ids),
                 'all_media' => $exporter->exportAllMedia(),
+                'site'      => $exporter->exportSite($this->opts),
                 default     => throw new \InvalidArgumentException("Unknown export kind {$this->kind}."),
             };
 

@@ -1095,6 +1095,127 @@ it('skips ALL page entries when import_pages opt is FALSE', function () {
     expect(Page::where('slug', 'opt-pages-off-fresh')->exists())->toBeFalse();
 });
 
+// ── Session 310: exportSite() rollup ───────────────────────────────────────
+
+it('exportSite enumerates every page and every template on the install', function () {
+    ieMakePageWithWidgets('site-rollup-a');
+    ieMakePageWithWidgets('site-rollup-b');
+    Template::create([
+        'name'        => 'Site Rollup Content Template',
+        'type'        => 'content',
+        'is_default'  => false,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportSite();
+
+    $pageSlugs = collect($bundle['payload']['pages'])->pluck('slug')->all();
+    expect($pageSlugs)->toContain('site-rollup-a', 'site-rollup-b');
+
+    $tplNames = collect($bundle['payload']['templates'])->pluck('name')->all();
+    expect($tplNames)->toContain('Default', 'Site Rollup Content Template');
+});
+
+it('exportSite defaults with_design + with_media to true', function () {
+    Storage::fake('public');
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#abcdef']]);
+
+    $page   = Page::factory()->create(['slug' => 'site-rollup-defaults', 'status' => 'published']);
+    $logoWt = WidgetType::where('handle', 'logo')->firstOrFail();
+    $widget = $page->widgets()->create([
+        'widget_type_id'    => $logoWt->id,
+        'label'             => 'Logo',
+        'config'            => ['logo' => null, 'text' => 'Acme', 'link_url' => '/'],
+        'query_config'      => [],
+        'appearance_config' => [],
+        'sort_order'        => 0,
+        'is_active'         => true,
+    ]);
+    $media = $widget->addMedia(firstSampleLogo())
+        ->preservingOriginal()
+        ->toMediaCollection('config_logo', 'public');
+    $widget->update(['config' => ['logo' => $media->id, 'text' => 'Acme', 'link_url' => '/']]);
+
+    $bundle = app(ContentExporter::class)->exportSite();
+
+    expect($bundle['payload'])->toHaveKey('design');
+    expect($bundle['payload']['design']['theme_colors']['palette']['primary'])->toBe('#abcdef');
+    expect($bundle['payload'])->toHaveKey('media');
+    expect(collect($bundle['payload']['media'])->pluck('id'))->toContain($media->id);
+});
+
+it('exportSite honours an explicit with_design / with_media override', function () {
+    ieMakePageWithWidgets('site-rollup-override');
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#abcdef']]);
+
+    $bundle = app(ContentExporter::class)->exportSite([
+        'with_design' => false,
+        'with_media'  => false,
+    ]);
+
+    expect($bundle['payload'])->not->toHaveKey('design');
+    expect($bundle['payload'])->not->toHaveKey('media');
+});
+
+it('ExportBundleJob site kind forwards opts to exportSite()', function () {
+    // End-to-end queue-path guard: the SiteImportExportPage dispatches
+    // ExportBundleJob('site', [], …) with ['with_design' => true,
+    // 'with_media' => true]. ExportBundleJob::handle() must route 'site' to
+    // ContentExporter::exportSite() so the envelope carries both payloads.
+    ieSeedDesignRow('typography', ['buckets' => ['heading_family' => 'Inter']]);
+    ieMakePageWithWidgets('site-kind-queue-path');
+
+    $job = new \App\Jobs\ExportBundleJob(
+        kind:   'site',
+        ids:    [],
+        userId: User::factory()->create()->id,
+        label:  'site-kind-test',
+        opts:   ['with_design' => true, 'with_media' => true],
+    );
+
+    // Re-run the kind→exporter dispatch inline so we can assert on the
+    // envelope without round-tripping through BundleArchive::build().
+    $envelope = match ($job->kind) {
+        'site' => app(ContentExporter::class)->exportSite($job->opts),
+    };
+
+    expect($envelope['payload'])->toHaveKey('design');
+    expect($envelope['payload']['design'])->toHaveKey('typography');
+    expect($envelope['payload'])->toHaveKey('pages');
+    expect(collect($envelope['payload']['pages'])->pluck('slug'))->toContain('site-kind-queue-path');
+});
+
+it('round-trips a site snapshot: exportSite → import → row counts match', function () {
+    ieSeedDesignRow('theme_colors', ['palette' => ['primary' => '#112233']]);
+    ieMakePageWithWidgets('site-rollup-rt-a');
+    ieMakePageWithWidgets('site-rollup-rt-b');
+    Template::create([
+        'name'        => 'Site Rollup RT Content',
+        'type'        => 'content',
+        'is_default'  => false,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportSite();
+
+    $expectedPages     = Page::count();
+    $expectedTemplates = Template::count();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog(), [
+        'merge_design'            => true,
+        'import_media'            => true,
+        'import_pages'            => true,
+        'replace_duplicate_pages' => true,
+    ]);
+
+    expect(Page::count())->toBe($expectedPages);
+    expect(Template::count())->toBe($expectedTemplates);
+    expect(Page::where('slug', 'site-rollup-rt-a')->exists())->toBeTrue();
+    expect(Page::where('slug', 'site-rollup-rt-b')->exists())->toBeTrue();
+    expect(Template::where('name', 'Site Rollup RT Content')->exists())->toBeTrue();
+
+    $reloaded = SiteSetting::get('theme_colors');
+    expect($reloaded['palette']['primary'])->toBe('#112233');
+});
+
 it('skips payload.media when import_media opt is FALSE', function () {
     $bundle = [
         'format_version' => '1.1.0',

@@ -54,6 +54,30 @@ class ContentExporter
     }
 
     /**
+     * Session 310: full-snapshot wrapper. Enumerates every Page + every
+     * Template on the install and emits a single combined envelope. Defaults
+     * `with_design` + `with_media` to true so the rollup carries the theme
+     * and a referenced-media seed list out of the box; callers can override
+     * either flag explicitly. The wrapper delegates assembly to exportBundle();
+     * it adds no new payload shape.
+     *
+     * @param  array{with_design?: bool, with_media?: bool}  $opts
+     * @return array<string, mixed>
+     */
+    public function exportSite(array $opts = []): array
+    {
+        $opts = array_replace(
+            ['with_design' => true, 'with_media' => true],
+            $opts,
+        );
+
+        $pageIds     = Page::pluck('id')->all();
+        $templateIds = Template::pluck('id')->all();
+
+        return $this->exportBundle($pageIds, $templateIds, $opts);
+    }
+
+    /**
      * Export a combined bundle of pages and templates.
      *
      * @param  array<int, string>  $pageIds

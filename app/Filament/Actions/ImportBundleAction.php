@@ -29,13 +29,17 @@ class ImportBundleAction
      *   - Replace duplicate pages     (default OFF, gated on slug collisions)
      *   - Replace site theme          (default OFF, gated on design payload)
      *   - Include N media files       (default ON, gated on media present)
+     *
+     * Session 310: the `$ability` parameter lets surfaces with a heavier
+     * blast radius (the unified Site Import/Export page) swap the gate from
+     * `update_page` to `manage_cms_settings` without forking the action.
      */
-    public static function make(): Action
+    public static function make(string $ability = 'update_page', ?string $name = null, ?string $label = null): Action
     {
-        return Action::make('importBundle')
-            ->label('Import Bundle')
+        return Action::make($name ?? 'importBundle')
+            ->label($label ?? 'Import Bundle')
             ->icon('heroicon-o-arrow-up-tray')
-            ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+            ->visible(fn () => auth()->user()?->can($ability) ?? false)
             ->modalHeading('Import Content Bundle')
             ->modalDescription('Upload a JSON bundle or a self-contained .zip (with media) exported from this admin. The bundle is analysed on upload — you can review and adjust which parts to apply before clicking Import. Large bundles are imported in the background.')
             ->modalSubmitActionLabel('Import')
@@ -125,8 +129,8 @@ class ImportBundleAction
 
                 Forms\Components\Hidden::make('manifest'),
             ])
-            ->action(function (array $data): void {
-                abort_unless(auth()->user()?->can('update_page'), 403);
+            ->action(function (array $data) use ($ability): void {
+                abort_unless(auth()->user()?->can($ability), 403);
 
                 $relativePath = $data['bundle_file'] ?? null;
                 if (is_array($relativePath)) {
