@@ -88,7 +88,9 @@ class ContentImporter
      *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>,
      *     products: array<int, array{slug: string, name: string, prices_count: int, exists_locally: bool}>,
      *     events: array<int, array{slug: string, title: string, tiers_count: int, registrations_count: int, exists_locally: bool}>,
-     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>
+     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>,
+     *     manifest: array<string, mixed>|null,
+     *     manifest_warnings: array<int, string>
      * }
      */
     public function analyze(array $bundle): array
@@ -277,18 +279,57 @@ class ContentImporter
             unset($row);
         }
 
+        $manifest         = is_array($bundle['manifest'] ?? null) ? $bundle['manifest'] : null;
+        $manifestWarnings = $manifest === null ? [] : $this->verifyManifest($manifest, $payload);
+
         return [
-            'has_design'       => $designKeys !== [],
-            'design_keys'      => $designKeys,
-            'has_media'        => $hasMedia,
-            'media_count'      => $mediaCount,
-            'pages'            => $pages,
-            'templates'        => $templates,
-            'navigation_menus' => $navigationMenus,
-            'products'         => $products,
-            'events'           => $events,
-            'collections'      => $collections,
+            'has_design'        => $designKeys !== [],
+            'design_keys'       => $designKeys,
+            'has_media'         => $hasMedia,
+            'media_count'       => $mediaCount,
+            'pages'             => $pages,
+            'templates'         => $templates,
+            'navigation_menus'  => $navigationMenus,
+            'products'          => $products,
+            'events'            => $events,
+            'collections'       => $collections,
+            'manifest'          => $manifest,
+            'manifest_warnings' => $manifestWarnings,
         ];
+    }
+
+    /**
+     * Cross-check a bundle's manifest sections against payload reality. Returns
+     * a list of human-readable warnings; an empty list means everything lines
+     * up. Manifest is documentation + integrity, never a security gate, so
+     * mismatches are warnings (not exceptions). Session A001/3.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @param  array<string, mixed>  $payload
+     * @return array<int, string>
+     */
+    protected function verifyManifest(array $manifest, array $payload): array
+    {
+        $warnings = [];
+
+        $sections = is_array($manifest['sections'] ?? null) ? $manifest['sections'] : [];
+        foreach ($sections as $section) {
+            $key           = $section['key']   ?? null;
+            $declaredCount = $section['count'] ?? null;
+            if (! is_string($key) || ! is_int($declaredCount)) {
+                continue;
+            }
+            $actual = is_array($payload[$key] ?? null) ? count($payload[$key]) : 0;
+            if ($actual !== $declaredCount) {
+                $warnings[] = "Manifest section '{$key}' declared {$declaredCount} items, payload has {$actual}.";
+            }
+        }
+
+        // Stray sections in payload that manifest doesn't declare are
+        // tolerated (a downstream importer might add new section types the
+        // manifest spec doesn't yet name). Only count mismatch is flagged.
+
+        return $warnings;
     }
 
     /**
@@ -316,6 +357,16 @@ class ContentImporter
         $this->replaceDuplicatePages    = (bool) $opts['replace_duplicate_pages'];
         $designImported                 = false;
         $seededMediaIds                 = [];
+
+        // Manifest cross-check (session A001/3). If the bundle carries a
+        // manifest, log any declared-vs-actual count mismatches before the
+        // transaction opens. Mismatches are warnings, not errors — manifest is
+        // documentation, not a security gate.
+        if (is_array($bundle['manifest'] ?? null)) {
+            foreach ($this->verifyManifest($bundle['manifest'], $bundle['payload'] ?? []) as $msg) {
+                $log->warning($msg);
+            }
+        }
 
         try {
             DB::transaction(function () use ($bundle, $log, $opts, &$designImported, &$seededMediaIds) {

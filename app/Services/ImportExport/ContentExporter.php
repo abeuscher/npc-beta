@@ -37,7 +37,7 @@ class ContentExporter
 
         $this->attachOptIns($payload, $pages, [], $opts);
 
-        return $this->envelope($payload);
+        return $this->envelope($payload, 'exportPages');
     }
 
     /**
@@ -59,7 +59,7 @@ class ContentExporter
 
         $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
 
-        return $this->envelope($payload);
+        return $this->envelope($payload, 'exportTemplates');
     }
 
     /**
@@ -83,7 +83,7 @@ class ContentExporter
         $pageIds     = Page::pluck('id')->all();
         $templateIds = Template::pluck('id')->all();
 
-        return $this->exportBundle($pageIds, $templateIds, $opts);
+        return $this->exportBundle($pageIds, $templateIds, $opts, sourceActionOverride: 'exportSite');
     }
 
     /**
@@ -92,9 +92,13 @@ class ContentExporter
      * @param  array<int, string>  $pageIds
      * @param  array<int, string>  $templateIds
      * @param  array{with_design?: bool, with_media?: bool}  $opts
+     * @param  string|null  $sourceActionOverride  Wrappers like exportSite()
+     *                                              delegate here but want
+     *                                              their own source-action
+     *                                              stamped in the manifest.
      * @return array<string, mixed>
      */
-    public function exportBundle(array $pageIds, array $templateIds, array $opts = []): array
+    public function exportBundle(array $pageIds, array $templateIds, array $opts = [], ?string $sourceActionOverride = null): array
     {
         $templates     = Template::whereIn('id', $templateIds)->get();
         $nestedPageIds = $this->collectChromePageIds($templates);
@@ -106,7 +110,7 @@ class ContentExporter
 
         $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
 
-        return $this->envelope($payload);
+        return $this->envelope($payload, $sourceActionOverride ?? 'exportBundle');
     }
 
     /**
@@ -197,9 +201,18 @@ class ContentExporter
 
     /**
      * @param  array<string, mixed>  $payload
+     * @param  string|null  $sourceAction  Name of the exporter method emitting
+     *                                     this envelope (e.g. 'exportPages').
+     *                                     Stamped into the manifest for
+     *                                     provenance + debugging. Session A001/3.
+     * @param  array<string, mixed>  $policyHints  Optional per-section import
+     *                                              defaults the exporter wants
+     *                                              to suggest. Treated by the
+     *                                              importer as UX hint only,
+     *                                              never as a security gate.
      * @return array<string, mixed>
      */
-    protected function envelope(array $payload): array
+    protected function envelope(array $payload, ?string $sourceAction = null, array $policyHints = []): array
     {
         return [
             'format_version' => self::FORMAT_VERSION,
@@ -208,7 +221,40 @@ class ContentExporter
             // #1) — never load-bearing for validateEnvelope(). BundleArchive
             // rewrites this to "embedded" when it wraps the envelope in a zip.
             'media_transport' => 'reference',
+            // Session A001/3 manifest layer. Declarative top-level block that
+            // names each payload section and its count for UI/integrity. Old
+            // bundles without this block remain importable (the importer falls
+            // back to payload-key sniffing). The manifest is documentation +
+            // integrity, never the security boundary — opt-flags + deny-lists
+            // stay on the importer side.
+            'manifest'       => $this->buildManifest($payload, $sourceAction, $policyHints),
             'payload'        => $payload,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $policyHints
+     * @return array<string, mixed>
+     */
+    protected function buildManifest(array $payload, ?string $sourceAction, array $policyHints): array
+    {
+        $sections = [];
+        foreach ($payload as $key => $value) {
+            if (! is_array($value)) {
+                continue;
+            }
+            $sections[] = [
+                'key'   => $key,
+                'count' => count($value),
+            ];
+        }
+
+        return [
+            'sections'         => $sections,
+            'policy_hints'     => (object) $policyHints,
+            'exported_with'    => $sourceAction,
+            'exporter_version' => self::FORMAT_VERSION,
         ];
     }
 
@@ -231,7 +277,7 @@ class ContentExporter
             }
         }
 
-        return $this->envelope(['design' => $design]);
+        return $this->envelope(['design' => $design], 'exportDesign');
     }
 
     /**
@@ -250,7 +296,7 @@ class ContentExporter
                 ->get()
                 ->map(fn (Media $m) => $this->serializeMediaRow($m))
                 ->all(),
-        ]);
+        ], 'exportMedia');
     }
 
     /**
@@ -268,7 +314,7 @@ class ContentExporter
     {
         return $this->envelope([
             'collections' => $this->serializeCollections($collectionIds),
-        ]);
+        ], 'exportCollections');
     }
 
     /**
@@ -343,7 +389,7 @@ class ContentExporter
         return $this->envelope([
             'pages'  => $this->serializePages($landingPageIds),
             'events' => $events->map(fn (Event $e) => $this->serializeEvent($e, $withRegistrations))->all(),
-        ]);
+        ], 'exportEvents');
     }
 
     /**
@@ -495,7 +541,7 @@ class ContentExporter
     {
         return $this->envelope([
             'products' => $this->serializeProducts($productIds),
-        ]);
+        ], 'exportProducts');
     }
 
     /**
@@ -578,7 +624,7 @@ class ContentExporter
     {
         return $this->envelope([
             'navigation_menus' => $this->serializeNavigationMenus($menuIds),
-        ]);
+        ], 'exportNavigation');
     }
 
     /**
@@ -669,7 +715,7 @@ class ContentExporter
                 ->get()
                 ->map(fn (Media $m) => $this->serializeMediaRow($m))
                 ->all(),
-        ]);
+        ], 'exportAllMedia');
     }
 
     /**
