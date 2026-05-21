@@ -574,6 +574,19 @@ class ContentImporter
                     }
                 }
 
+                // Nav-widget config rewiring post-pass (session A001/4).
+                // Runs unconditionally if pages were imported: any nav widget
+                // on a freshly-imported page whose config carries
+                // `navigation_menu_handle` needs final reconciliation against
+                // the menus that actually exist on the target install (the
+                // bundle may have menus we just imported, or the target may
+                // already have them, or neither — the post-pass handles all
+                // three cases including the warn-and-null path for stale
+                // references with no matching menu anywhere).
+                if ($opts['import_pages']) {
+                    $this->relinkNavWidgetMenus($log);
+                }
+
                 if (! empty($payload['products']) && is_array($payload['products'])) {
                     if ($opts['import_products']) {
                         foreach ($payload['products'] as $productData) {
@@ -1269,6 +1282,40 @@ class ContentImporter
             }
         }
 
+        // Nav widget cross-install reference rewiring (session A001/4). The
+        // Nav widget's config carries `navigation_menu_id` as a UUID — when
+        // the menu is recreated on import with a fresh UUID, the stored id
+        // becomes a dangling reference. The exporter emits
+        // `navigation_menu_handle` alongside the UUID for portability.
+        //
+        // We attempt resolution here (best-effort: menu may already exist on
+        // the target if the target had it pre-import), but the authoritative
+        // pass is `relinkNavWidgetMenus()` after both pages AND nav menus
+        // have landed. That post-pass owns the final menu_id + the warning
+        // for unresolvable handles, so this stage stays quiet to avoid
+        // false-positive warnings on the common case of "menu lands later
+        // in the same bundle."
+        if ($widgetType->handle === 'nav') {
+            $menuHandle = $config['navigation_menu_handle'] ?? null;
+            if (is_string($menuHandle) && $menuHandle !== '') {
+                $menuId = NavigationMenu::where('handle', $menuHandle)->value('id');
+                if ($menuId) {
+                    $config['navigation_menu_id'] = $menuId;
+                }
+                // Unresolved → don't warn here; relinkNavWidgetMenus() runs
+                // after the navigation_menus pass and will either resolve
+                // or warn-then-null then.
+            } elseif (! empty($config['navigation_menu_id'])) {
+                // Legacy bundle (pre-A001/4) without the handle — verify the
+                // UUID still resolves; if not, null + warn so it renders
+                // empty rather than appearing to reference something.
+                if (! NavigationMenu::whereKey($config['navigation_menu_id'])->exists()) {
+                    $log->warning("Page \"{$pageSlug}\": nav widget's navigation_menu_id '{$config['navigation_menu_id']}' no longer exists on this install, left unassigned.");
+                    $config['navigation_menu_id'] = null;
+                }
+            }
+        }
+
         // Image/video config keys hold media ids that are about to be replaced
         // by the rewiring step. Clear them now so we never serve a stale id.
         // Richtext config keys are sanitised via the same allow-list the model
@@ -1429,6 +1476,51 @@ class ContentImporter
             'is_visible'         => (bool) ($item['is_visible'] ?? true),
             'sort_order'         => $sortOrder,
         ];
+    }
+
+    /**
+     * Walk every nav widget on the install and reconcile its config
+     * `navigation_menu_id` against `navigation_menu_handle`. The bundle's
+     * widget config carries both for portability; the authoritative
+     * resolution happens here, after both the pages pass and the
+     * navigation_menus pass have completed inside the same transaction.
+     * Mirrors the `relinkTemplateChrome` pattern. Session A001/4.
+     */
+    protected function relinkNavWidgetMenus(ImportLog $log): void
+    {
+        $navType = WidgetType::where('handle', 'nav')->first();
+        if (! $navType) {
+            return;
+        }
+
+        // Only widgets whose config carries the portable handle are touched.
+        // A nav widget created through the admin UI (no handle in config)
+        // has an authoritative `navigation_menu_id` set by the UI and is
+        // not a candidate for rewiring.
+        $widgets = PageWidget::where('widget_type_id', $navType->id)->get();
+        foreach ($widgets as $widget) {
+            $config     = $widget->config ?? [];
+            $menuHandle = $config['navigation_menu_handle'] ?? null;
+            if (! is_string($menuHandle) || $menuHandle === '') {
+                continue;
+            }
+
+            $menuId = NavigationMenu::where('handle', $menuHandle)->value('id');
+            if ($menuId && ($config['navigation_menu_id'] ?? null) === $menuId) {
+                continue; // already correct
+            }
+
+            if ($menuId) {
+                $config['navigation_menu_id'] = $menuId;
+                $widget->update(['config' => $config]);
+            } else {
+                $log->warning("Nav widget '{$widget->id}': navigation menu '{$menuHandle}' not found, left unassigned.");
+                if (($config['navigation_menu_id'] ?? null) !== null) {
+                    $config['navigation_menu_id'] = null;
+                    $widget->update(['config' => $config]);
+                }
+            }
+        }
     }
 
     // ── Products (session A001) ────────────────────────────────────────────

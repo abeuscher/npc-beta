@@ -2136,3 +2136,272 @@ it('exporter stamps the allow-list snapshot into the manifest policy_hints', fun
     expect($hints['allow_list'])->toContain('site_name');
     expect($hints['allow_list'])->toContain('blog_prefix');
 });
+
+// ── Session A001/4: exportSite() includes all A001 entity types ──────────
+
+it('exportSite includes navigation_menus, products, events, and collections', function () {
+    $menu = NavigationMenu::create(['label' => 'A001/4 Menu', 'handle' => 'a001_4_menu']);
+    NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'label'              => 'Home',
+        'url'                => '/',
+        'target'             => '_self',
+        'is_visible'         => true,
+        'sort_order'         => 0,
+    ]);
+
+    $product = Product::create([
+        'name'       => 'A001/4 Product',
+        'slug'       => 'a001-4-product',
+        'capacity'   => 10,
+        'status'    => 'published',
+        'sort_order' => 0,
+    ]);
+    ProductPrice::create(['product_id' => $product->id, 'label' => 'Std', 'amount' => 25.00, 'sort_order' => 0]);
+
+    $author = User::factory()->create();
+    $this->actingAs($author);
+    $event = Event::create([
+        'title'     => 'A001/4 Event',
+        'slug'      => 'a001-4-event',
+        'status'    => 'published',
+        'starts_at' => '2027-12-01 18:00:00',
+        'author_id' => $author->id,
+    ]);
+    TicketTier::create(['event_id' => $event->id, 'name' => 'GA', 'price' => 0, 'sort_order' => 0]);
+
+    $collection = Collection::create([
+        'name'        => 'A001/4 Collection',
+        'handle'      => 'a001_4_collection',
+        'fields'      => [['key' => 'note', 'label' => 'Note', 'type' => 'text']],
+        'source_type' => 'custom',
+        'is_public'   => true,
+        'is_active'   => true,
+    ]);
+    CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['note' => 'first'],
+        'sort_order'    => 0,
+        'is_published'  => true,
+    ]);
+
+    ieMakePageWithWidgets('a001-4-site-page');
+
+    $bundle = app(ContentExporter::class)->exportSite();
+
+    expect($bundle['manifest']['exported_with'])->toBe('exportSite');
+
+    $sectionKeys = collect($bundle['manifest']['sections'])->pluck('key')->all();
+    expect($sectionKeys)->toContain('navigation_menus', 'products', 'events', 'collections');
+
+    expect(collect($bundle['payload']['navigation_menus'])->pluck('menu.handle'))->toContain('a001_4_menu');
+    expect(collect($bundle['payload']['products'])->pluck('product.slug'))->toContain('a001-4-product');
+    expect(collect($bundle['payload']['events'])->pluck('event.slug'))->toContain('a001-4-event');
+    expect(collect($bundle['payload']['collections'])->pluck('collection.handle'))->toContain('a001_4_collection');
+
+    // Events default to without_registrations on the rollup.
+    $eventEntry = collect($bundle['payload']['events'])->firstWhere('event.slug', 'a001-4-event');
+    expect($eventEntry)->not->toHaveKey('registrations');
+});
+
+it('exportSite with_registrations=true includes event registrations', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+    $event = Event::create([
+        'title'     => 'Reg Event',
+        'slug'      => 'reg-event',
+        'status'    => 'published',
+        'starts_at' => '2027-12-01 18:00:00',
+        'author_id' => $author->id,
+    ]);
+    EventRegistration::create([
+        'event_id'      => $event->id,
+        'name'          => 'A Person',
+        'email'         => 'p@example.com',
+        'status'        => 'registered',
+        'registered_at' => now(),
+        'quantity'      => 1,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportSite(['with_registrations' => true]);
+    $eventEntry = collect($bundle['payload']['events'])->firstWhere('event.slug', 'reg-event');
+    expect($eventEntry)->toHaveKey('registrations');
+    expect($eventEntry['registrations'])->toHaveCount(1);
+});
+
+// ── Session A001/4: Nav widget round-trip rewiring ───────────────────────
+
+it('exporter emits navigation_menu_handle alongside navigation_menu_id on nav widgets', function () {
+    $menu = NavigationMenu::create(['label' => 'Main', 'handle' => 'main_a001_4']);
+
+    $navWt = WidgetType::firstOrCreate(['handle' => 'nav'], [
+        'label'         => 'Nav',
+        'config_schema' => [
+            ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus'],
+        ],
+    ]);
+
+    $page = Page::factory()->create(['slug' => 'nav-export-handle', 'status' => 'published']);
+    $page->widgets()->create([
+        'widget_type_id'    => $navWt->id,
+        'label'             => 'Top Nav',
+        'config'            => ['navigation_menu_id' => $menu->id],
+        'query_config'      => [],
+        'appearance_config' => [],
+        'sort_order'        => 0,
+        'is_active'         => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportPages([$page->id]);
+
+    $widget = $bundle['payload']['pages'][0]['widgets'][0];
+    expect($widget['config'])->toHaveKey('navigation_menu_id');
+    expect($widget['config'])->toHaveKey('navigation_menu_handle');
+    expect($widget['config']['navigation_menu_handle'])->toBe('main_a001_4');
+});
+
+it('round-trips a nav widget through exportSite when the menu is recreated with a fresh UUID', function () {
+    $menu = NavigationMenu::create(['label' => 'Main Nav', 'handle' => 'rt_main_nav']);
+    $originalMenuId = $menu->id;
+
+    $navWt = WidgetType::firstOrCreate(['handle' => 'nav'], [
+        'label'         => 'Nav',
+        'config_schema' => [
+            ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus'],
+        ],
+    ]);
+
+    $page = Page::factory()->create(['slug' => 'rt-nav-widget-page', 'status' => 'published']);
+    $page->widgets()->create([
+        'widget_type_id'    => $navWt->id,
+        'label'             => 'Header Nav',
+        'config'            => ['navigation_menu_id' => $menu->id],
+        'query_config'      => [],
+        'appearance_config' => [],
+        'sort_order'        => 0,
+        'is_active'         => true,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportSite();
+
+    // Simulate the wipe + restore: delete the widget AND the menu, then
+    // re-import. importNavigationMenu recreates the menu with a fresh
+    // UUID (handle preserved); without the rewiring, the widget's stored
+    // navigation_menu_id would dangle.
+    NavigationItem::where('navigation_menu_id', $menu->id)->delete();
+    NavigationMenu::where('handle', 'rt_main_nav')->delete();
+    PageWidget::forOwner($page)->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog(), [
+        'merge_design'      => true,
+        'import_navigation' => true,
+    ]);
+
+    $reloadedMenu = NavigationMenu::where('handle', 'rt_main_nav')->first();
+    expect($reloadedMenu)->not->toBeNull();
+    expect($reloadedMenu->id)->not->toBe($originalMenuId, 'test premise: menu was wiped + recreated with fresh UUID');
+
+    $reloadedWidget = PageWidget::forOwner(Page::where('slug', 'rt-nav-widget-page')->first())->first();
+    expect($reloadedWidget)->not->toBeNull();
+    expect($reloadedWidget->config['navigation_menu_id'])->toBe($reloadedMenu->id);
+    expect($reloadedWidget->config['navigation_menu_handle'])->toBe('rt_main_nav');
+});
+
+it('warns and nulls navigation_menu_id when the referenced menu is absent from bundle and target', function () {
+    $this->actingAs(ieAuthorUser());
+
+    WidgetType::firstOrCreate(['handle' => 'nav'], [
+        'label'         => 'Nav',
+        'config_schema' => [
+            ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus'],
+        ],
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'templates' => [],
+            'pages' => [[
+                'title'   => 'P', 'slug' => 'nav-missing-menu', 'type' => 'default',
+                'status'  => 'draft',
+                'widgets' => [[
+                    'type'              => 'widget',
+                    'handle'            => 'nav',
+                    'label'             => 'Nav',
+                    'config'            => [
+                        'navigation_menu_id'     => '00000000-0000-0000-0000-000000000000',
+                        'navigation_menu_handle' => 'ghost_menu',
+                    ],
+                    'query_config'      => [],
+                    'appearance_config' => [],
+                    'sort_order'        => 0,
+                    'is_active'         => true,
+                    'media'             => [],
+                ]],
+            ]],
+            'navigation_menus' => [],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    expect($log->hasWarnings())->toBeTrue();
+    $warnings = collect($log->warnings())->pluck('message')->implode("\n");
+    expect($warnings)->toContain("'ghost_menu'");
+
+    $widget = PageWidget::forOwner(Page::where('slug', 'nav-missing-menu')->first())->first();
+    expect($widget->config['navigation_menu_id'])->toBeNull();
+});
+
+it('handles legacy bundles without navigation_menu_handle by verifying UUID still resolves', function () {
+    $this->actingAs(ieAuthorUser());
+
+    $existingMenu = NavigationMenu::create(['label' => 'Existing', 'handle' => 'legacy_existing']);
+
+    WidgetType::firstOrCreate(['handle' => 'nav'], [
+        'label'         => 'Nav',
+        'config_schema' => [
+            ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus'],
+        ],
+    ]);
+
+    $bundle = [
+        'format_version' => '1.0.0',
+        'payload' => [
+            'templates' => [],
+            'pages' => [
+                [
+                    'title'   => 'Resolves', 'slug' => 'legacy-nav-ok', 'type' => 'default', 'status' => 'draft',
+                    'widgets' => [[
+                        'type' => 'widget', 'handle' => 'nav', 'label' => 'Nav',
+                        'config' => ['navigation_menu_id' => $existingMenu->id],
+                        'query_config' => [], 'appearance_config' => [],
+                        'sort_order' => 0, 'is_active' => true, 'media' => [],
+                    ]],
+                ],
+                [
+                    'title'   => 'Dangles', 'slug' => 'legacy-nav-dangle', 'type' => 'default', 'status' => 'draft',
+                    'widgets' => [[
+                        'type' => 'widget', 'handle' => 'nav', 'label' => 'Nav',
+                        'config' => ['navigation_menu_id' => '00000000-0000-0000-0000-000000000000'],
+                        'query_config' => [], 'appearance_config' => [],
+                        'sort_order' => 0, 'is_active' => true, 'media' => [],
+                    ]],
+                ],
+            ],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    $okWidget     = PageWidget::forOwner(Page::where('slug', 'legacy-nav-ok')->first())->first();
+    $dangleWidget = PageWidget::forOwner(Page::where('slug', 'legacy-nav-dangle')->first())->first();
+
+    expect($okWidget->config['navigation_menu_id'])->toBe($existingMenu->id);
+    expect($dangleWidget->config['navigation_menu_id'])->toBeNull();
+
+    $warnings = collect($log->warnings())->pluck('message')->implode("\n");
+    expect($warnings)->toContain('no longer exists');
+});
