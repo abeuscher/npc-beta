@@ -6,6 +6,8 @@ use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
+use App\Models\Product;
+use App\Models\ProductPrice;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\WidgetType;
@@ -1377,6 +1379,153 @@ it('skips navigation when import_navigation opt is FALSE', function () {
     app(ContentImporter::class)->import($bundle, $log, ['import_navigation' => false]);
 
     expect(NavigationMenu::where('handle', 'unused_menu')->exists())->toBeFalse();
+});
+
+// ── Session A001: products round-trip ──────────────────────────────────────
+
+it('round-trips a product with two prices and a product_image media reference', function () {
+    Storage::fake('public');
+
+    $product = Product::create([
+        'name'        => 'Conference Pass',
+        'slug'        => 'conference-pass',
+        'description' => 'Two-day access.',
+        'capacity'    => 100,
+        'status'      => 'published',
+        'sort_order'  => 5,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Early Bird',
+        'amount'     => 150.00,
+        'sort_order' => 0,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Standard',
+        'amount'     => 200.00,
+        'sort_order' => 1,
+    ]);
+
+    $logoPath = firstSampleLogo();
+    $logoName = basename($logoPath);
+    $media    = $product->addMedia($logoPath)
+        ->preservingOriginal()
+        ->toMediaCollection('product_image', 'public');
+
+    $bundle = app(ContentExporter::class)->exportProducts([$product->id]);
+
+    expect($bundle['payload'])->toHaveKey('products');
+    expect($bundle['payload']['products'])->toHaveCount(1);
+    $exported = $bundle['payload']['products'][0];
+    expect($exported['product']['slug'])->toBe('conference-pass');
+    expect($exported['prices'])->toHaveCount(2);
+    expect($exported['media'])->toHaveCount(1);
+    expect($exported['media'][0]['file_name'])->toBe($logoName);
+
+    // Mutate to verify import overwrites. DB-level deletes bypass Spatie's
+    // observer so the file stays on the fake disk for the importer to find.
+    ProductPrice::where('product_id', $product->id)->delete();
+    \Illuminate\Support\Facades\DB::table('media')
+        ->where('model_type', $product->getMorphClass())
+        ->where('model_id', $product->id)
+        ->delete();
+    $product->update(['name' => 'Wiped', 'capacity' => 1]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Product::where('slug', 'conference-pass')->first();
+    expect($reloaded->id)->toBe($product->id);
+    expect($reloaded->name)->toBe('Conference Pass');
+    expect($reloaded->capacity)->toBe(100);
+    expect($reloaded->sort_order)->toBe(5);
+
+    $prices = ProductPrice::where('product_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($prices)->toHaveCount(2);
+    expect($prices[0]->label)->toBe('Early Bird');
+    expect((float) $prices[0]->amount)->toBe(150.00);
+    expect($prices[1]->label)->toBe('Standard');
+
+    $reloadedMedia = $reloaded->getFirstMedia('product_image');
+    expect($reloadedMedia)->not->toBeNull();
+    expect($reloadedMedia->file_name)->toBe($logoName);
+});
+
+it('round-trips a product with no media and a single price', function () {
+    $product = Product::create([
+        'name'       => 'Lapel Pin',
+        'slug'       => 'lapel-pin',
+        'capacity'   => 999,
+        'status'     => 'published',
+        'sort_order' => 0,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Member',
+        'amount'     => 5.00,
+        'sort_order' => 0,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportProducts([$product->id]);
+    expect($bundle['payload']['products'][0]['media'])->toBe([]);
+
+    Product::where('slug', 'lapel-pin')->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Product::where('slug', 'lapel-pin')->first();
+    expect($reloaded)->not->toBeNull();
+    expect($reloaded->name)->toBe('Lapel Pin');
+    expect(ProductPrice::where('product_id', $reloaded->id)->count())->toBe(1);
+});
+
+it('analyze() reports products with prices_count and exists_locally', function () {
+    Product::create([
+        'name'     => 'Existing Product',
+        'slug'     => 'existing-prod',
+        'capacity' => 10,
+        'status'   => 'draft',
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'products' => [
+                [
+                    'product' => ['name' => 'Existing Product', 'slug' => 'existing-prod'],
+                    'prices'  => [['label' => 'A'], ['label' => 'B']],
+                ],
+                [
+                    'product' => ['name' => 'New Product', 'slug' => 'new-prod'],
+                    'prices'  => [['label' => 'Solo']],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['products'])->toEqualCanonicalizing([
+        ['slug' => 'existing-prod', 'name' => 'Existing Product', 'prices_count' => 2, 'exists_locally' => true],
+        ['slug' => 'new-prod',      'name' => 'New Product',      'prices_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+it('skips products when import_products opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'products' => [[
+                'product' => ['name' => 'Skip Me', 'slug' => 'skip-me', 'capacity' => 1, 'status' => 'draft'],
+                'prices'  => [['label' => 'X', 'amount' => 1.00]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_products' => false]);
+
+    expect(Product::where('slug', 'skip-me')->exists())->toBeFalse();
 });
 
 it('skips payload.media when import_media opt is FALSE', function () {

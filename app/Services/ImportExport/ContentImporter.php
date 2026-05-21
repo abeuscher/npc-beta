@@ -8,6 +8,8 @@ use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\Product;
+use App\Models\ProductPrice;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\User;
@@ -55,6 +57,7 @@ class ContentImporter
             'import_pages'            => true,
             'replace_duplicate_pages' => true,
             'import_navigation'       => true,
+            'import_products'         => true,
         ];
     }
 
@@ -73,7 +76,8 @@ class ContentImporter
      *     media_count: int,
      *     pages: array<int, array{slug: string, exists_locally: bool}>,
      *     templates: array<int, array{name: string, type: string, exists_locally: bool}>,
-     *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>
+     *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>,
+     *     products: array<int, array{slug: string, name: string, prices_count: int, exists_locally: bool}>
      * }
      */
     public function analyze(array $bundle): array
@@ -180,6 +184,32 @@ class ContentImporter
             unset($row);
         }
 
+        $products     = [];
+        $productSlugs = [];
+        foreach ($payload['products'] ?? [] as $entry) {
+            $slug = $entry['product']['slug'] ?? null;
+            $name = $entry['product']['name'] ?? null;
+            if (! is_string($slug) || $slug === '' || ! is_string($name)) {
+                continue;
+            }
+            $pricesCount = is_array($entry['prices'] ?? null) ? count($entry['prices']) : 0;
+            $products[] = [
+                'slug'           => $slug,
+                'name'           => $name,
+                'prices_count'   => $pricesCount,
+                'exists_locally' => false,
+            ];
+            $productSlugs[] = $slug;
+        }
+        if (! empty($productSlugs)) {
+            $existingProductSlugs = Product::whereIn('slug', $productSlugs)->pluck('slug')->all();
+            $existingProductSet   = array_flip($existingProductSlugs);
+            foreach ($products as &$row) {
+                $row['exists_locally'] = isset($existingProductSet[$row['slug']]);
+            }
+            unset($row);
+        }
+
         return [
             'has_design'       => $designKeys !== [],
             'design_keys'      => $designKeys,
@@ -188,6 +218,7 @@ class ContentImporter
             'pages'            => $pages,
             'templates'        => $templates,
             'navigation_menus' => $navigationMenus,
+            'products'         => $products,
         ];
     }
 
@@ -272,6 +303,16 @@ class ContentImporter
                         }
                     } else {
                         $log->info('Navigation: bundle includes ' . count($payload['navigation_menus']) . ' menu entries, skipped (import_navigation opt is off).');
+                    }
+                }
+
+                if (! empty($payload['products']) && is_array($payload['products'])) {
+                    if ($opts['import_products']) {
+                        foreach ($payload['products'] as $productData) {
+                            $this->importProduct($productData, $log);
+                        }
+                    } else {
+                        $log->info('Products: bundle includes ' . count($payload['products']) . ' product entries, skipped (import_products opt is off).');
                     }
                 }
             });
@@ -1047,6 +1088,111 @@ class ContentImporter
             'is_visible'         => (bool) ($item['is_visible'] ?? true),
             'sort_order'         => $sortOrder,
         ];
+    }
+
+    // ── Products (session A001) ────────────────────────────────────────────
+
+    /**
+     * Upsert a product by slug, replace its price list wholesale, and rewire
+     * its single product_image media collection from the bundle's descriptor.
+     * Mirrors the page pattern: identity = slug, related rows are canonical
+     * from the bundle. Session A001.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importProduct(array $data, ImportLog $log): void
+    {
+        $productData = $data['product'] ?? null;
+        $slug        = $productData['slug'] ?? null;
+
+        if (! is_array($productData) || ! is_string($slug) || $slug === '') {
+            $log->warning('Product entry missing product.slug, skipped.');
+
+            return;
+        }
+
+        $attributes = [
+            'name'         => $productData['name'] ?? 'Untitled',
+            'slug'         => $slug,
+            'description'  => $productData['description'] ?? null,
+            'capacity'     => $productData['capacity'] ?? 0,
+            'status'       => $productData['status'] ?? 'draft',
+            'sort_order'   => $productData['sort_order'] ?? 0,
+            'is_archived'  => (bool) ($productData['is_archived'] ?? false),
+            'published_at' => ! empty($productData['published_at'])
+                ? \Carbon\Carbon::parse($productData['published_at'])
+                : null,
+        ];
+
+        $product = Product::updateOrCreate(['slug' => $slug], $attributes);
+
+        // Prices are canonical from the bundle. Wipe and re-create so a
+        // dropped tier in the source doesn't leave a stale tier on the target.
+        ProductPrice::where('product_id', $product->id)->delete();
+        foreach ($data['prices'] ?? [] as $sortIndex => $priceRow) {
+            if (! is_array($priceRow)) {
+                continue;
+            }
+            ProductPrice::create([
+                'product_id'      => $product->id,
+                'label'           => $priceRow['label'] ?? 'Price',
+                'amount'          => $priceRow['amount'] ?? 0,
+                'stripe_price_id' => $priceRow['stripe_price_id'] ?? null,
+                'sort_order'      => (int) ($priceRow['sort_order'] ?? $sortIndex),
+            ]);
+        }
+
+        $this->rewireProductMedia($product, $data['media'] ?? [], $log);
+    }
+
+    /**
+     * Mirrors rewirePageMedia() for the product_image single-file collection.
+     *
+     * @param  array<int, array<string, mixed>>  $descriptors
+     */
+    protected function rewireProductMedia(Product $product, array $descriptors, ImportLog $log): void
+    {
+        if (empty($descriptors)) {
+            return;
+        }
+
+        $product->clearMediaCollection('product_image');
+
+        foreach ($descriptors as $desc) {
+            $collectionName = $desc['collection_name'] ?? null;
+            $disk           = $desc['disk'] ?? 'public';
+            $path           = $desc['path'] ?? null;
+
+            if (! $collectionName || ! $path) {
+                $log->warning("Product \"{$product->slug}\": media descriptor missing collection/path, skipped.");
+
+                continue;
+            }
+
+            if (str_contains($path, '..') || str_starts_with($path, '/')) {
+                $log->warning("Product \"{$product->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
+
+                continue;
+            }
+
+            $archiveAbs = $this->archiveFile($path);
+            if ($archiveAbs !== null) {
+                $product
+                    ->addMedia($archiveAbs)
+                    ->preservingOriginal()
+                    ->usingFileName(basename($path))
+                    ->toMediaCollection($collectionName, $disk);
+            } elseif (Storage::disk($disk)->exists($path)) {
+                $product
+                    ->addMediaFromDisk($path, $disk)
+                    ->preservingOriginal()
+                    ->toMediaCollection($collectionName, $disk);
+            } else {
+                $log->warning("Product \"{$product->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
+
+                continue;
+            }
+        }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

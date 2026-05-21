@@ -7,6 +7,7 @@ use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
+use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Models\Template;
 use Illuminate\Support\Collection;
@@ -244,6 +245,88 @@ class ContentExporter
                 ->map(fn (Media $m) => $this->serializeMediaRow($m))
                 ->all(),
         ]);
+    }
+
+    /**
+     * Export one or more products (by id) into a bundle envelope. Each entry
+     * carries the product row, its full price list, and the single
+     * `product_image` media descriptor when present. Session A001.
+     *
+     * @param  array<int, string>  $productIds
+     * @return array<string, mixed>
+     */
+    public function exportProducts(array $productIds): array
+    {
+        return $this->envelope([
+            'products' => $this->serializeProducts($productIds),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $productIds
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeProducts(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        return Product::whereIn('id', $productIds)
+            ->with(['prices' => fn ($q) => $q->orderBy('sort_order'), 'media'])
+            ->get()
+            ->map(fn (Product $p) => $this->serializeProduct($p))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function serializeProduct(Product $product): array
+    {
+        return [
+            'product' => [
+                'name'         => $product->name,
+                'slug'         => $product->slug,
+                'description'  => $product->description,
+                'capacity'     => $product->capacity,
+                'status'       => $product->status,
+                'sort_order'   => $product->sort_order,
+                'is_archived'  => (bool) $product->is_archived,
+                'published_at' => $product->published_at?->toIso8601String(),
+            ],
+            'prices' => $product->prices->map(fn ($price) => [
+                'label'           => $price->label,
+                'amount'          => $price->amount,
+                'stripe_price_id' => $price->stripe_price_id,
+                'sort_order'      => (int) $price->sort_order,
+            ])->all(),
+            'media' => $this->serializeProductMedia($product),
+        ];
+    }
+
+    /**
+     * Mirrors serializePageMedia() for the product_image single-file collection.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeProductMedia(Product $product): array
+    {
+        $descriptors = [];
+
+        $media = $product->getFirstMedia('product_image');
+        if ($media) {
+            $descriptors[] = [
+                'collection_name' => 'product_image',
+                'file_name'       => $media->file_name,
+                'disk'            => $media->disk,
+                'path'            => $media->id . '/' . $media->file_name,
+                'mime_type'       => $media->mime_type,
+                'size'            => $media->size,
+            ];
+        }
+
+        return $descriptors;
     }
 
     /**
