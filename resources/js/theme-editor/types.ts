@@ -40,6 +40,7 @@ export interface TypographyState {
 export interface TypographyBootstrap {
   typography: TypographyState
   families: FontFamilyOption[]
+  defaultFamily: string
   saveUrl: string
   exportUrl: string
   rebuildUrl: string

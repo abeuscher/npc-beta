@@ -216,12 +216,13 @@ class DesignSystemPage extends Page
     public function getTypographyBootstrap(): array
     {
         return [
-            'typography' => TypographyResolver::load(),
-            'families'   => TypographyResolver::fontCatalog(),
-            'saveUrl'    => route('filament.admin.theme.typography.update'),
-            'exportUrl'  => route('filament.admin.theme.typography.export'),
-            'rebuildUrl' => route('filament.admin.theme.typography.rebuild'),
-            'csrfToken'  => csrf_token(),
+            'typography'    => TypographyResolver::load(),
+            'families'      => TypographyResolver::fontCatalog(),
+            'defaultFamily' => TypographyResolver::DEFAULT_FAMILY,
+            'saveUrl'       => route('filament.admin.theme.typography.update'),
+            'exportUrl'     => route('filament.admin.theme.typography.export'),
+            'rebuildUrl'    => route('filament.admin.theme.typography.rebuild'),
+            'csrfToken'     => csrf_token(),
         ];
     }
 

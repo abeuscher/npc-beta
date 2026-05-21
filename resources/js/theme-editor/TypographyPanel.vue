@@ -82,16 +82,21 @@ function onBucketChange(bucket: 'heading_family' | 'body_family' | 'nav_family',
   const next = value || null
   state.value.buckets[bucket] = next
 
-  // Cascade: any element whose family currently matches the previous bucket value
-  // follows the bucket to its new value. Elements overridden to something else
-  // are left alone. Only runs when both previous and next are concrete strings.
-  if (previous && next) {
+  // Cascade: when the bucket gets a concrete value, any element whose family is
+  // currently following the bucket (either matching the previous bucket value
+  // OR still on the shipped default — the null-previous case on a fresh
+  // install) follows the bucket to its new value. Elements overridden to a
+  // different concrete value are left alone.
+  if (next) {
     const targets: ElementKey[] =
       bucket === 'heading_family' ? headingElements :
       bucket === 'body_family'    ? bodyElements :
       []
+    const followers = new Set<string>()
+    if (previous) followers.add(previous)
+    followers.add(props.bootstrap.defaultFamily)
     for (const el of targets) {
-      if (state.value.elements[el].font.family === previous) {
+      if (followers.has(state.value.elements[el].font.family)) {
         state.value.elements[el].font.family = next
       }
     }

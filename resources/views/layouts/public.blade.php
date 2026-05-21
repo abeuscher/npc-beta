@@ -124,11 +124,15 @@
         $__typography    = \App\Services\TypographyResolver::load();
         $headingFamily   = $__typography['buckets']['heading_family'] ?? null;
         $bodyFamily      = $__typography['buckets']['body_family'] ?? null;
+        $navFamily       = $__typography['buckets']['nav_family'] ?? null;
         if ($headingFamily) {
             $cssVars[] = "--font-family-heading: {$headingFamily}";
         }
         if ($bodyFamily) {
             $cssVars[] = "--font-family-body: {$bodyFamily}";
+        }
+        if ($navFamily) {
+            $cssVars[] = "--font-family-nav: {$navFamily}";
         }
 
         $fontsToLoad   = \App\Services\TypographyCompiler::googleFontsUsed($__typography);
@@ -149,6 +153,13 @@
 
     @if ($cssVars)
         <style>:root { {!! implode('; ', $cssVars) !!}; }</style>
+    @endif
+
+    @if ($navFamily)
+        {{-- nav_family bucket has no per-element compiler path; emit a direct
+             rule so the bucket actually affects rendered nav widgets without
+             requiring an SCSS rebuild. --}}
+        <style>.np-site nav, .np-site nav a { font-family: {!! $navFamily !!}; }</style>
     @endif
 
     {{-- Widget CSS/JS bundle from build server manifest --}}
