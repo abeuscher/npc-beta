@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Collection;
+use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
@@ -1214,6 +1216,167 @@ it('round-trips a site snapshot: exportSite → import → row counts match', fu
 
     $reloaded = SiteSetting::get('theme_colors');
     expect($reloaded['palette']['primary'])->toBe('#112233');
+});
+
+// ── Session A001: navigation round-trip ────────────────────────────────────
+
+it('round-trips a navigation menu with a 2-deep tree and page references', function () {
+    $page = Page::factory()->create(['slug' => 'nav-target-page', 'status' => 'published']);
+
+    $menu = NavigationMenu::create(['label' => 'Main Menu', 'handle' => 'main_menu']);
+
+    $home = NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'label'              => 'Home',
+        'url'                => '/',
+        'target'             => '_self',
+        'is_visible'         => true,
+        'sort_order'         => 0,
+    ]);
+    $about = NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'label'              => 'About',
+        'page_id'            => $page->id,
+        'target'             => '_self',
+        'is_visible'         => true,
+        'sort_order'         => 1,
+    ]);
+    NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'parent_id'          => $about->id,
+        'label'              => 'Our Team',
+        'url'                => '/team',
+        'target'             => '_blank',
+        'is_visible'         => true,
+        'sort_order'         => 0,
+    ]);
+    NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'parent_id'          => $about->id,
+        'label'              => 'Contact',
+        'url'                => '/contact',
+        'target'             => '_self',
+        'is_visible'         => false,
+        'sort_order'         => 1,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportNavigation([$menu->id]);
+
+    expect($bundle['payload'])->toHaveKey('navigation_menus');
+    expect($bundle['payload']['navigation_menus'])->toHaveCount(1);
+    expect($bundle['payload']['navigation_menus'][0]['menu']['handle'])->toBe('main_menu');
+    expect($bundle['payload']['navigation_menus'][0]['items'])->toHaveCount(2);
+
+    // Mutate the menu so import has to re-establish the canonical state.
+    NavigationItem::where('navigation_menu_id', $menu->id)->delete();
+    $menu->update(['label' => 'Wiped']);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = NavigationMenu::where('handle', 'main_menu')->first();
+    expect($reloaded->id)->toBe($menu->id);
+    expect($reloaded->label)->toBe('Main Menu');
+
+    $items = NavigationItem::where('navigation_menu_id', $reloaded->id)
+        ->orderBy('parent_id', 'asc')
+        ->orderBy('sort_order')
+        ->get();
+    expect($items)->toHaveCount(4);
+
+    $roots = $items->whereNull('parent_id')->sortBy('sort_order')->values();
+    expect($roots)->toHaveCount(2);
+    expect($roots[0]->label)->toBe('Home');
+    expect($roots[0]->url)->toBe('/');
+    expect($roots[0]->page_id)->toBeNull();
+    expect($roots[1]->label)->toBe('About');
+    expect($roots[1]->page_id)->toBe($page->id);
+    expect($roots[1]->url)->toBeNull();
+
+    $children = $items->whereNotNull('parent_id')->sortBy('sort_order')->values();
+    expect($children)->toHaveCount(2);
+    expect($children[0]->parent_id)->toBe($roots[1]->id);
+    expect($children[0]->label)->toBe('Our Team');
+    expect($children[0]->target)->toBe('_blank');
+    expect($children[1]->label)->toBe('Contact');
+    expect($children[1]->is_visible)->toBeFalse();
+});
+
+it('warns and leaves page_id null when a navigation page_slug is missing on import', function () {
+    $menu = NavigationMenu::create(['label' => 'Footer', 'handle' => 'footer_menu']);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [[
+                'menu'  => ['handle' => 'footer_menu', 'label' => 'Footer'],
+                'items' => [[
+                    'label'      => 'Ghost',
+                    'url'        => null,
+                    'page_slug'  => 'does-not-exist',
+                    'target'     => '_self',
+                    'is_visible' => true,
+                    'sort_order' => 0,
+                ]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    expect($log->hasWarnings())->toBeTrue();
+
+    $item = NavigationItem::where('navigation_menu_id', $menu->id)->first();
+    expect($item)->not->toBeNull();
+    expect($item->page_id)->toBeNull();
+});
+
+it('analyze() reports navigation menus and exists_locally', function () {
+    NavigationMenu::create(['label' => 'Existing', 'handle' => 'existing_menu']);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [
+                [
+                    'menu'  => ['handle' => 'existing_menu', 'label' => 'Existing'],
+                    'items' => [
+                        ['label' => 'A', 'children' => [['label' => 'A1'], ['label' => 'A2']]],
+                    ],
+                ],
+                [
+                    'menu'  => ['handle' => 'fresh_menu', 'label' => 'Fresh'],
+                    'items' => [['label' => 'Solo']],
+                ],
+            ],
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['navigation_menus'])->toEqualCanonicalizing([
+        ['handle' => 'existing_menu', 'label' => 'Existing', 'items_count' => 3, 'exists_locally' => true],
+        ['handle' => 'fresh_menu',    'label' => 'Fresh',    'items_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+it('skips navigation when import_navigation opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [[
+                'menu'  => ['handle' => 'unused_menu', 'label' => 'Unused'],
+                'items' => [['label' => 'Nothing', 'url' => '/x']],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_navigation' => false]);
+
+    expect(NavigationMenu::where('handle', 'unused_menu')->exists())->toBeFalse();
 });
 
 it('skips payload.media when import_media opt is FALSE', function () {

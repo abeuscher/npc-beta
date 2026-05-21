@@ -4,6 +4,8 @@ namespace App\Services\ImportExport;
 
 use App\Filament\Pages\DesignSystemPage;
 use App\Models\Collection;
+use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
@@ -52,6 +54,7 @@ class ContentImporter
             'import_media'            => true,
             'import_pages'            => true,
             'replace_duplicate_pages' => true,
+            'import_navigation'       => true,
         ];
     }
 
@@ -69,7 +72,8 @@ class ContentImporter
      *     has_media: bool,
      *     media_count: int,
      *     pages: array<int, array{slug: string, exists_locally: bool}>,
-     *     templates: array<int, array{name: string, type: string, exists_locally: bool}>
+     *     templates: array<int, array{name: string, type: string, exists_locally: bool}>,
+     *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>
      * }
      */
     public function analyze(array $bundle): array
@@ -141,13 +145,49 @@ class ContentImporter
         $hasMedia   = ! empty($payload['media']) && is_array($payload['media']);
         $mediaCount = $hasMedia ? count($payload['media']) : 0;
 
+        $navigationMenus = [];
+        $navHandles      = [];
+        foreach ($payload['navigation_menus'] ?? [] as $entry) {
+            $handle = $entry['menu']['handle'] ?? null;
+            $label  = $entry['menu']['label'] ?? null;
+            if (! is_string($handle) || $handle === '' || ! is_string($label)) {
+                continue;
+            }
+            $items = is_array($entry['items'] ?? null) ? $entry['items'] : [];
+            $itemsCount = 0;
+            foreach ($items as $root) {
+                $itemsCount++;
+                if (! empty($root['children']) && is_array($root['children'])) {
+                    $itemsCount += count($root['children']);
+                }
+            }
+            $navigationMenus[] = [
+                'handle'         => $handle,
+                'label'          => $label,
+                'items_count'    => $itemsCount,
+                'exists_locally' => false,
+            ];
+            $navHandles[] = $handle;
+        }
+        if (! empty($navHandles)) {
+            $existingHandles = NavigationMenu::whereIn('handle', $navHandles)
+                ->pluck('handle')
+                ->all();
+            $existingSet = array_flip($existingHandles);
+            foreach ($navigationMenus as &$row) {
+                $row['exists_locally'] = isset($existingSet[$row['handle']]);
+            }
+            unset($row);
+        }
+
         return [
-            'has_design'  => $designKeys !== [],
-            'design_keys' => $designKeys,
-            'has_media'   => $hasMedia,
-            'media_count' => $mediaCount,
-            'pages'       => $pages,
-            'templates'   => $templates,
+            'has_design'       => $designKeys !== [],
+            'design_keys'      => $designKeys,
+            'has_media'        => $hasMedia,
+            'media_count'      => $mediaCount,
+            'pages'            => $pages,
+            'templates'        => $templates,
+            'navigation_menus' => $navigationMenus,
         ];
     }
 
@@ -221,6 +261,18 @@ class ContentImporter
                     }
                 } elseif (! empty($payload['pages'])) {
                     $log->info('Pages: bundle includes ' . count($payload['pages']) . ' page entries, skipped (import_pages opt is off).');
+                }
+
+                // Navigation runs after pages so item.page_slug references
+                // resolve against rows the import just landed. Session A001.
+                if (! empty($payload['navigation_menus']) && is_array($payload['navigation_menus'])) {
+                    if ($opts['import_navigation']) {
+                        foreach ($payload['navigation_menus'] as $menuData) {
+                            $this->importNavigationMenu($menuData, $log);
+                        }
+                    } else {
+                        $log->info('Navigation: bundle includes ' . count($payload['navigation_menus']) . ' menu entries, skipped (import_navigation opt is off).');
+                    }
                 }
             });
         } finally {
@@ -915,6 +967,86 @@ class ContentImporter
         }
 
         $widget->update(['config' => $config]);
+    }
+
+    // ── Navigation (session A001) ──────────────────────────────────────────
+
+    /**
+     * Mirrors NavigationMenuResource::saveItems() — the menu is upserted by
+     * handle, its items are deleted wholesale, then re-inserted in two passes
+     * (roots first to get parent ids, then children). page_slug references
+     * resolve against existing Page rows; absent slugs warn and leave page_id
+     * null so the link degrades to inert rather than dangling.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importNavigationMenu(array $data, ImportLog $log): void
+    {
+        $handle = $data['menu']['handle'] ?? null;
+        $label  = $data['menu']['label'] ?? null;
+
+        if (! is_string($handle) || $handle === '' || ! is_string($label)) {
+            $log->warning('Navigation menu entry missing handle or label, skipped.');
+
+            return;
+        }
+
+        $menu = NavigationMenu::updateOrCreate(
+            ['handle' => $handle],
+            ['label' => $label],
+        );
+
+        NavigationItem::where('navigation_menu_id', $menu->id)->delete();
+
+        $roots = is_array($data['items'] ?? null) ? $data['items'] : [];
+        foreach ($roots as $sortOrder => $rootData) {
+            $parent = NavigationItem::create($this->navigationItemAttributes(
+                $rootData,
+                $menu->id,
+                parentId:  null,
+                sortOrder: (int) ($rootData['sort_order'] ?? $sortOrder),
+                log:       $log,
+                menuLabel: $label,
+            ));
+
+            $children = is_array($rootData['children'] ?? null) ? $rootData['children'] : [];
+            foreach ($children as $childSort => $childData) {
+                NavigationItem::create($this->navigationItemAttributes(
+                    $childData,
+                    $menu->id,
+                    parentId:  $parent->id,
+                    sortOrder: (int) ($childData['sort_order'] ?? $childSort),
+                    log:       $log,
+                    menuLabel: $label,
+                ));
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    protected function navigationItemAttributes(array $item, string $menuId, ?string $parentId, int $sortOrder, ImportLog $log, string $menuLabel): array
+    {
+        $pageId = null;
+        if (! empty($item['page_slug'])) {
+            $pageId = Page::where('slug', $item['page_slug'])->value('id');
+            if (! $pageId) {
+                $log->warning("Navigation menu \"{$menuLabel}\": page slug '{$item['page_slug']}' not found, link left without a page reference.");
+            }
+        }
+
+        return [
+            'navigation_menu_id' => $menuId,
+            'parent_id'          => $parentId,
+            'label'              => $item['label'] ?? '',
+            'url'                => $pageId ? null : ($item['url'] ?? null),
+            'page_id'            => $pageId,
+            'target'             => in_array($item['target'] ?? '_self', ['_self', '_blank'], true) ? $item['target'] : '_self',
+            'is_visible'         => (bool) ($item['is_visible'] ?? true),
+            'sort_order'         => $sortOrder,
+        ];
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
