@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\Collection;
+use App\Models\Contact;
+use App\Models\Event;
+use App\Models\EventRegistration;
 use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
 use App\Models\Page;
@@ -9,6 +12,7 @@ use App\Models\PageWidget;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\Template;
+use App\Models\TicketTier;
 use App\Models\User;
 use App\Models\WidgetType;
 use App\Models\SiteSetting;
@@ -1509,6 +1513,193 @@ it('analyze() reports products with prices_count and exists_locally', function (
         ['slug' => 'existing-prod', 'name' => 'Existing Product', 'prices_count' => 2, 'exists_locally' => true],
         ['slug' => 'new-prod',      'name' => 'New Product',      'prices_count' => 1, 'exists_locally' => false],
     ]);
+});
+
+// ── Session A001: events round-trip ────────────────────────────────────────
+
+it('round-trips an event with two tiers and three registrations', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+
+    $landingPage = Page::factory()->create(['slug' => 'event-landing', 'status' => 'published']);
+
+    $event = Event::create([
+        'title'             => 'Summer Gala',
+        'slug'              => 'summer-gala',
+        'description'       => 'An evening of music.',
+        'status'            => 'published',
+        'starts_at'         => '2027-06-15 18:00:00',
+        'ends_at'           => '2027-06-15 22:00:00',
+        'registration_mode' => 'open',
+        'author_id'         => $author->id,
+        'landing_page_id'   => $landingPage->id,
+    ]);
+
+    $vipTier = TicketTier::create([
+        'event_id'   => $event->id,
+        'name'       => 'VIP',
+        'price'      => 200.00,
+        'capacity'   => 20,
+        'sort_order' => 0,
+    ]);
+    $genTier = TicketTier::create([
+        'event_id'   => $event->id,
+        'name'       => 'General',
+        'price'      => 50.00,
+        'capacity'   => 200,
+        'sort_order' => 1,
+    ]);
+
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $vipTier->id,
+        'quantity'       => 1,
+        'name'           => 'Alice Donor',
+        'email'          => 'alice@example.com',
+        'status'         => 'registered',
+        'registered_at'  => now(),
+    ]);
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $genTier->id,
+        'quantity'       => 2,
+        'name'           => 'Bob Volunteer',
+        'email'          => 'bob@example.com',
+        'status'         => 'registered',
+        'registered_at'  => now(),
+    ]);
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => null,
+        'quantity'       => 1,
+        'name'           => 'Comp Ticket',
+        'email'          => 'comp@example.com',
+        'status'         => 'attended',
+        'registered_at'  => now(),
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportEvents(
+        [$event->id],
+        ['with_registrations' => true],
+    );
+
+    expect($bundle['payload']['events'])->toHaveCount(1);
+    expect($bundle['payload']['events'][0]['tiers'])->toHaveCount(2);
+    expect($bundle['payload']['events'][0]['registrations'])->toHaveCount(3);
+    expect($bundle['payload']['pages'])->toHaveCount(1);
+    expect($bundle['payload']['pages'][0]['slug'])->toBe('event-landing');
+
+    // Wipe related rows; keep the event row to verify in-place overwrite.
+    EventRegistration::where('event_id', $event->id)->delete();
+    TicketTier::where('event_id', $event->id)->delete();
+    $event->update(['title' => 'Wiped', 'landing_page_id' => null]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Event::where('slug', 'summer-gala')->first();
+    expect($reloaded->id)->toBe($event->id);
+    expect($reloaded->title)->toBe('Summer Gala');
+    expect($reloaded->landing_page_id)->toBe($landingPage->id);
+
+    $tiers = TicketTier::where('event_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($tiers)->toHaveCount(2);
+    expect($tiers[0]->name)->toBe('VIP');
+    expect((float) $tiers[0]->price)->toBe(200.00);
+    expect($tiers[1]->name)->toBe('General');
+
+    $registrations = EventRegistration::where('event_id', $reloaded->id)->orderBy('name')->get();
+    expect($registrations)->toHaveCount(3);
+    expect($registrations[0]->name)->toBe('Alice Donor');
+    expect($registrations[0]->ticket_tier_id)->toBe($tiers->firstWhere('name', 'VIP')->id);
+    expect($registrations[1]->name)->toBe('Bob Volunteer');
+    expect($registrations[1]->quantity)->toBe(2);
+    expect($registrations[2]->name)->toBe('Comp Ticket');
+    expect($registrations[2]->ticket_tier_id)->toBeNull();
+    expect($registrations[2]->status)->toBe('attended');
+});
+
+it('exports events without registrations by default and leaves existing registrations untouched on import', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+
+    $event = Event::create([
+        'title'     => 'Quiet Event',
+        'slug'      => 'quiet-event',
+        'status'    => 'draft',
+        'starts_at' => '2027-07-01 09:00:00',
+        'author_id' => $author->id,
+    ]);
+
+    EventRegistration::create([
+        'event_id'      => $event->id,
+        'name'          => 'Existing reg',
+        'email'         => 'keep@example.com',
+        'status'        => 'registered',
+        'registered_at' => now(),
+        'quantity'      => 1,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportEvents([$event->id]);
+
+    expect($bundle['payload']['events'][0])->not->toHaveKey('registrations');
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    expect(EventRegistration::where('event_id', $event->id)->count())->toBe(1);
+    expect(EventRegistration::where('email', 'keep@example.com')->exists())->toBeTrue();
+});
+
+it('analyze() reports events with tier and registration counts', function () {
+    $author = User::factory()->create();
+    Event::create([
+        'title'     => 'Existing Gala',
+        'slug'      => 'existing-gala',
+        'status'    => 'draft',
+        'starts_at' => '2027-06-15 18:00:00',
+        'author_id' => $author->id,
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'events' => [
+                [
+                    'event'         => ['title' => 'Existing Gala', 'slug' => 'existing-gala'],
+                    'tiers'         => [['name' => 'A'], ['name' => 'B']],
+                    'registrations' => [['email' => 'x@example.com']],
+                ],
+                [
+                    'event'         => ['title' => 'New Event', 'slug' => 'new-event'],
+                    'tiers'         => [],
+                    'registrations' => [],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['events'])->toEqualCanonicalizing([
+        ['slug' => 'existing-gala', 'title' => 'Existing Gala', 'tiers_count' => 2, 'registrations_count' => 1, 'exists_locally' => true],
+        ['slug' => 'new-event',     'title' => 'New Event',     'tiers_count' => 0, 'registrations_count' => 0, 'exists_locally' => false],
+    ]);
+});
+
+it('skips events when import_events opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'events' => [[
+                'event' => ['title' => 'Skip Me', 'slug' => 'skip-event', 'starts_at' => '2027-06-15 18:00:00'],
+                'tiers' => [],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_events' => false]);
+
+    expect(Event::where('slug', 'skip-event')->exists())->toBeFalse();
 });
 
 it('skips products when import_products opt is FALSE', function () {
