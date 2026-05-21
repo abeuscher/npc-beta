@@ -4,10 +4,21 @@ namespace App\Services\ImportExport;
 
 use App\Filament\Pages\DesignSystemPage;
 use App\Models\Collection;
+use App\Models\CollectionItem;
+use App\Models\Contact;
+use App\Models\Event;
+use App\Models\EventRegistration;
+use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
+use App\Models\Organization;
 use App\Models\Page;
 use App\Models\PageWidget;
+use App\Models\Product;
+use App\Models\ProductPrice;
 use App\Models\SiteSetting;
+use App\Models\Tag;
 use App\Models\Template;
+use App\Models\TicketTier;
 use App\Models\User;
 use App\Services\AssetBuildService;
 use App\Services\ColorTokenResolver;
@@ -52,6 +63,10 @@ class ContentImporter
             'import_media'            => true,
             'import_pages'            => true,
             'replace_duplicate_pages' => true,
+            'import_navigation'       => true,
+            'import_products'         => true,
+            'import_events'           => true,
+            'import_collections'      => true,
         ];
     }
 
@@ -69,7 +84,11 @@ class ContentImporter
      *     has_media: bool,
      *     media_count: int,
      *     pages: array<int, array{slug: string, exists_locally: bool}>,
-     *     templates: array<int, array{name: string, type: string, exists_locally: bool}>
+     *     templates: array<int, array{name: string, type: string, exists_locally: bool}>,
+     *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>,
+     *     products: array<int, array{slug: string, name: string, prices_count: int, exists_locally: bool}>,
+     *     events: array<int, array{slug: string, title: string, tiers_count: int, registrations_count: int, exists_locally: bool}>,
+     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>
      * }
      */
     public function analyze(array $bundle): array
@@ -141,13 +160,134 @@ class ContentImporter
         $hasMedia   = ! empty($payload['media']) && is_array($payload['media']);
         $mediaCount = $hasMedia ? count($payload['media']) : 0;
 
+        $navigationMenus = [];
+        $navHandles      = [];
+        foreach ($payload['navigation_menus'] ?? [] as $entry) {
+            $handle = $entry['menu']['handle'] ?? null;
+            $label  = $entry['menu']['label'] ?? null;
+            if (! is_string($handle) || $handle === '' || ! is_string($label)) {
+                continue;
+            }
+            $items = is_array($entry['items'] ?? null) ? $entry['items'] : [];
+            $itemsCount = 0;
+            foreach ($items as $root) {
+                $itemsCount++;
+                if (! empty($root['children']) && is_array($root['children'])) {
+                    $itemsCount += count($root['children']);
+                }
+            }
+            $navigationMenus[] = [
+                'handle'         => $handle,
+                'label'          => $label,
+                'items_count'    => $itemsCount,
+                'exists_locally' => false,
+            ];
+            $navHandles[] = $handle;
+        }
+        if (! empty($navHandles)) {
+            $existingHandles = NavigationMenu::whereIn('handle', $navHandles)
+                ->pluck('handle')
+                ->all();
+            $existingSet = array_flip($existingHandles);
+            foreach ($navigationMenus as &$row) {
+                $row['exists_locally'] = isset($existingSet[$row['handle']]);
+            }
+            unset($row);
+        }
+
+        $products     = [];
+        $productSlugs = [];
+        foreach ($payload['products'] ?? [] as $entry) {
+            $slug = $entry['product']['slug'] ?? null;
+            $name = $entry['product']['name'] ?? null;
+            if (! is_string($slug) || $slug === '' || ! is_string($name)) {
+                continue;
+            }
+            $pricesCount = is_array($entry['prices'] ?? null) ? count($entry['prices']) : 0;
+            $products[] = [
+                'slug'           => $slug,
+                'name'           => $name,
+                'prices_count'   => $pricesCount,
+                'exists_locally' => false,
+            ];
+            $productSlugs[] = $slug;
+        }
+        if (! empty($productSlugs)) {
+            $existingProductSlugs = Product::whereIn('slug', $productSlugs)->pluck('slug')->all();
+            $existingProductSet   = array_flip($existingProductSlugs);
+            foreach ($products as &$row) {
+                $row['exists_locally'] = isset($existingProductSet[$row['slug']]);
+            }
+            unset($row);
+        }
+
+        $events     = [];
+        $eventSlugs = [];
+        foreach ($payload['events'] ?? [] as $entry) {
+            $slug  = $entry['event']['slug'] ?? null;
+            $title = $entry['event']['title'] ?? null;
+            if (! is_string($slug) || $slug === '' || ! is_string($title)) {
+                continue;
+            }
+            $tiersCount         = is_array($entry['tiers'] ?? null) ? count($entry['tiers']) : 0;
+            $registrationsCount = is_array($entry['registrations'] ?? null) ? count($entry['registrations']) : 0;
+            $events[] = [
+                'slug'                => $slug,
+                'title'               => $title,
+                'tiers_count'         => $tiersCount,
+                'registrations_count' => $registrationsCount,
+                'exists_locally'      => false,
+            ];
+            $eventSlugs[] = $slug;
+        }
+        if (! empty($eventSlugs)) {
+            $existingEventSlugs = Event::whereIn('slug', $eventSlugs)->pluck('slug')->all();
+            $existingEventSet   = array_flip($existingEventSlugs);
+            foreach ($events as &$row) {
+                $row['exists_locally'] = isset($existingEventSet[$row['slug']]);
+            }
+            unset($row);
+        }
+
+        $collections        = [];
+        $collectionHandles  = [];
+        foreach ($payload['collections'] ?? [] as $entry) {
+            $handle = $entry['collection']['handle'] ?? null;
+            $name   = $entry['collection']['name'] ?? null;
+            if (! is_string($handle) || $handle === '' || ! is_string($name)) {
+                continue;
+            }
+            $itemsCount = is_array($entry['items'] ?? null) ? count($entry['items']) : 0;
+            $collections[] = [
+                'handle'         => $handle,
+                'name'           => $name,
+                'items_count'    => $itemsCount,
+                'exists_locally' => false,
+            ];
+            $collectionHandles[] = $handle;
+        }
+        if (! empty($collectionHandles)) {
+            $existingCollHandles = Collection::whereIn('handle', $collectionHandles)
+                ->pluck('handle')
+                ->all();
+            $existingCollSet = array_flip($existingCollHandles);
+            foreach ($collections as &$row) {
+                $row['exists_locally'] = isset($existingCollSet[$row['handle']]);
+            }
+            unset($row);
+        }
+
         return [
-            'has_design'  => $designKeys !== [],
-            'design_keys' => $designKeys,
-            'has_media'   => $hasMedia,
-            'media_count' => $mediaCount,
-            'pages'       => $pages,
-            'templates'   => $templates,
+            'has_design'       => $designKeys !== [],
+            'design_keys'      => $designKeys,
+            'has_media'        => $hasMedia,
+            'media_count'      => $mediaCount,
+            'pages'            => $pages,
+            'templates'        => $templates,
+            'navigation_menus' => $navigationMenus,
+            'products'         => $products,
+            'events'           => $events,
+            'collections'      => $collections,
         ];
     }
 
@@ -221,6 +361,50 @@ class ContentImporter
                     }
                 } elseif (! empty($payload['pages'])) {
                     $log->info('Pages: bundle includes ' . count($payload['pages']) . ' page entries, skipped (import_pages opt is off).');
+                }
+
+                // Navigation runs after pages so item.page_slug references
+                // resolve against rows the import just landed. Session A001.
+                if (! empty($payload['navigation_menus']) && is_array($payload['navigation_menus'])) {
+                    if ($opts['import_navigation']) {
+                        foreach ($payload['navigation_menus'] as $menuData) {
+                            $this->importNavigationMenu($menuData, $log);
+                        }
+                    } else {
+                        $log->info('Navigation: bundle includes ' . count($payload['navigation_menus']) . ' menu entries, skipped (import_navigation opt is off).');
+                    }
+                }
+
+                if (! empty($payload['products']) && is_array($payload['products'])) {
+                    if ($opts['import_products']) {
+                        foreach ($payload['products'] as $productData) {
+                            $this->importProduct($productData, $log);
+                        }
+                    } else {
+                        $log->info('Products: bundle includes ' . count($payload['products']) . ' product entries, skipped (import_products opt is off).');
+                    }
+                }
+
+                // Events run after pages so landing_page_slug resolves
+                // against the pages we just imported. Session A001.
+                if (! empty($payload['events']) && is_array($payload['events'])) {
+                    if ($opts['import_events']) {
+                        foreach ($payload['events'] as $eventData) {
+                            $this->importEvent($eventData, $log);
+                        }
+                    } else {
+                        $log->info('Events: bundle includes ' . count($payload['events']) . ' event entries, skipped (import_events opt is off).');
+                    }
+                }
+
+                if (! empty($payload['collections']) && is_array($payload['collections'])) {
+                    if ($opts['import_collections']) {
+                        foreach ($payload['collections'] as $collectionData) {
+                            $this->importCollection($collectionData, $log);
+                        }
+                    } else {
+                        $log->info('Collections: bundle includes ' . count($payload['collections']) . ' collection entries, skipped (import_collections opt is off).');
+                    }
                 }
             });
         } finally {
@@ -915,6 +1099,460 @@ class ContentImporter
         }
 
         $widget->update(['config' => $config]);
+    }
+
+    // ── Navigation (session A001) ──────────────────────────────────────────
+
+    /**
+     * Mirrors NavigationMenuResource::saveItems() — the menu is upserted by
+     * handle, its items are deleted wholesale, then re-inserted in two passes
+     * (roots first to get parent ids, then children). page_slug references
+     * resolve against existing Page rows; absent slugs warn and leave page_id
+     * null so the link degrades to inert rather than dangling.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importNavigationMenu(array $data, ImportLog $log): void
+    {
+        $handle = $data['menu']['handle'] ?? null;
+        $label  = $data['menu']['label'] ?? null;
+
+        if (! is_string($handle) || $handle === '' || ! is_string($label)) {
+            $log->warning('Navigation menu entry missing handle or label, skipped.');
+
+            return;
+        }
+
+        $menu = NavigationMenu::updateOrCreate(
+            ['handle' => $handle],
+            ['label' => $label],
+        );
+
+        NavigationItem::where('navigation_menu_id', $menu->id)->delete();
+
+        $roots = is_array($data['items'] ?? null) ? $data['items'] : [];
+        foreach ($roots as $sortOrder => $rootData) {
+            $parent = NavigationItem::create($this->navigationItemAttributes(
+                $rootData,
+                $menu->id,
+                parentId:  null,
+                sortOrder: (int) ($rootData['sort_order'] ?? $sortOrder),
+                log:       $log,
+                menuLabel: $label,
+            ));
+
+            $children = is_array($rootData['children'] ?? null) ? $rootData['children'] : [];
+            foreach ($children as $childSort => $childData) {
+                NavigationItem::create($this->navigationItemAttributes(
+                    $childData,
+                    $menu->id,
+                    parentId:  $parent->id,
+                    sortOrder: (int) ($childData['sort_order'] ?? $childSort),
+                    log:       $log,
+                    menuLabel: $label,
+                ));
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    protected function navigationItemAttributes(array $item, string $menuId, ?string $parentId, int $sortOrder, ImportLog $log, string $menuLabel): array
+    {
+        $pageId = null;
+        if (! empty($item['page_slug'])) {
+            $pageId = Page::where('slug', $item['page_slug'])->value('id');
+            if (! $pageId) {
+                $log->warning("Navigation menu \"{$menuLabel}\": page slug '{$item['page_slug']}' not found, link left without a page reference.");
+            }
+        }
+
+        return [
+            'navigation_menu_id' => $menuId,
+            'parent_id'          => $parentId,
+            'label'              => $item['label'] ?? '',
+            'url'                => $pageId ? null : ($item['url'] ?? null),
+            'page_id'            => $pageId,
+            'target'             => in_array($item['target'] ?? '_self', ['_self', '_blank'], true) ? $item['target'] : '_self',
+            'is_visible'         => (bool) ($item['is_visible'] ?? true),
+            'sort_order'         => $sortOrder,
+        ];
+    }
+
+    // ── Products (session A001) ────────────────────────────────────────────
+
+    /**
+     * Upsert a product by slug, replace its price list wholesale, and rewire
+     * its single product_image media collection from the bundle's descriptor.
+     * Mirrors the page pattern: identity = slug, related rows are canonical
+     * from the bundle. Session A001.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importProduct(array $data, ImportLog $log): void
+    {
+        $productData = $data['product'] ?? null;
+        $slug        = $productData['slug'] ?? null;
+
+        if (! is_array($productData) || ! is_string($slug) || $slug === '') {
+            $log->warning('Product entry missing product.slug, skipped.');
+
+            return;
+        }
+
+        $attributes = [
+            'name'         => $productData['name'] ?? 'Untitled',
+            'slug'         => $slug,
+            'description'  => $productData['description'] ?? null,
+            'capacity'     => $productData['capacity'] ?? 0,
+            'status'       => $productData['status'] ?? 'draft',
+            'sort_order'   => $productData['sort_order'] ?? 0,
+            'is_archived'  => (bool) ($productData['is_archived'] ?? false),
+            'published_at' => ! empty($productData['published_at'])
+                ? \Carbon\Carbon::parse($productData['published_at'])
+                : null,
+        ];
+
+        $product = Product::updateOrCreate(['slug' => $slug], $attributes);
+
+        // Prices are canonical from the bundle. Wipe and re-create so a
+        // dropped tier in the source doesn't leave a stale tier on the target.
+        ProductPrice::where('product_id', $product->id)->delete();
+        foreach ($data['prices'] ?? [] as $sortIndex => $priceRow) {
+            if (! is_array($priceRow)) {
+                continue;
+            }
+            ProductPrice::create([
+                'product_id'      => $product->id,
+                'label'           => $priceRow['label'] ?? 'Price',
+                'amount'          => $priceRow['amount'] ?? 0,
+                'stripe_price_id' => $priceRow['stripe_price_id'] ?? null,
+                'sort_order'      => (int) ($priceRow['sort_order'] ?? $sortIndex),
+            ]);
+        }
+
+        $this->rewireProductMedia($product, $data['media'] ?? [], $log);
+    }
+
+    /**
+     * Mirrors rewirePageMedia() for the product_image single-file collection.
+     *
+     * @param  array<int, array<string, mixed>>  $descriptors
+     */
+    protected function rewireProductMedia(Product $product, array $descriptors, ImportLog $log): void
+    {
+        if (empty($descriptors)) {
+            return;
+        }
+
+        $product->clearMediaCollection('product_image');
+
+        foreach ($descriptors as $desc) {
+            $collectionName = $desc['collection_name'] ?? null;
+            $disk           = $desc['disk'] ?? 'public';
+            $path           = $desc['path'] ?? null;
+
+            if (! $collectionName || ! $path) {
+                $log->warning("Product \"{$product->slug}\": media descriptor missing collection/path, skipped.");
+
+                continue;
+            }
+
+            if (str_contains($path, '..') || str_starts_with($path, '/')) {
+                $log->warning("Product \"{$product->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
+
+                continue;
+            }
+
+            $archiveAbs = $this->archiveFile($path);
+            if ($archiveAbs !== null) {
+                $product
+                    ->addMedia($archiveAbs)
+                    ->preservingOriginal()
+                    ->usingFileName(basename($path))
+                    ->toMediaCollection($collectionName, $disk);
+            } elseif (Storage::disk($disk)->exists($path)) {
+                $product
+                    ->addMediaFromDisk($path, $disk)
+                    ->preservingOriginal()
+                    ->toMediaCollection($collectionName, $disk);
+            } else {
+                $log->warning("Product \"{$product->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
+
+                continue;
+            }
+        }
+    }
+
+    // ── Events (session A001) ──────────────────────────────────────────────
+
+    /**
+     * Upsert an event by slug, replace its tiers wholesale, and replace its
+     * registrations when present. Registrations resolve contact/organization
+     * by email/name when those rows exist on the target; absent matches leave
+     * the FK null and rely on the registration's denormalised fields. Tier
+     * back-references on registrations use ticket_tier_name within the event.
+     * Session A001.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importEvent(array $data, ImportLog $log): void
+    {
+        $eventData = $data['event'] ?? null;
+        $slug      = $eventData['slug'] ?? null;
+
+        if (! is_array($eventData) || ! is_string($slug) || $slug === '') {
+            $log->warning('Event entry missing event.slug, skipped.');
+
+            return;
+        }
+
+        $landingPageId = null;
+        if (! empty($eventData['landing_page_slug'])) {
+            $landingPageId = Page::where('slug', $eventData['landing_page_slug'])->value('id');
+            if (! $landingPageId) {
+                $log->warning("Event \"{$slug}\": landing page slug '{$eventData['landing_page_slug']}' not found on this install.");
+            }
+        }
+
+        $sponsorOrgId = null;
+        if (! empty($eventData['sponsor_organization_name'])) {
+            $sponsorOrgId = Organization::where('name', $eventData['sponsor_organization_name'])->value('id');
+        }
+
+        $attributes = [
+            'title'                       => $eventData['title'] ?? 'Untitled',
+            'slug'                        => $slug,
+            'description'                 => $eventData['description'] ?? null,
+            'status'                      => $eventData['status'] ?? 'draft',
+            'address_line_1'              => $eventData['address_line_1'] ?? null,
+            'address_line_2'              => $eventData['address_line_2'] ?? null,
+            'city'                        => $eventData['city'] ?? null,
+            'state'                       => $eventData['state'] ?? null,
+            'zip'                         => $eventData['zip'] ?? null,
+            'map_url'                     => $eventData['map_url'] ?? null,
+            'map_label'                   => $eventData['map_label'] ?? null,
+            'meeting_url'                 => $eventData['meeting_url'] ?? null,
+            'meeting_label'               => $eventData['meeting_label'] ?? null,
+            'meeting_details'             => $eventData['meeting_details'] ?? null,
+            'registration_mode'           => $eventData['registration_mode'] ?? 'open',
+            'external_registration_url'   => $eventData['external_registration_url'] ?? null,
+            'auto_create_contacts'        => (bool) ($eventData['auto_create_contacts'] ?? true),
+            'mailing_list_opt_in_enabled' => (bool) ($eventData['mailing_list_opt_in_enabled'] ?? false),
+            'custom_fields'               => $eventData['custom_fields'] ?? [],
+            'starts_at'                   => ! empty($eventData['starts_at']) ? \Carbon\Carbon::parse($eventData['starts_at']) : null,
+            'ends_at'                     => ! empty($eventData['ends_at']) ? \Carbon\Carbon::parse($eventData['ends_at']) : null,
+            'published_at'                => ! empty($eventData['published_at']) ? \Carbon\Carbon::parse($eventData['published_at']) : null,
+            'landing_page_id'             => $landingPageId,
+            'sponsor_organization_id'     => $sponsorOrgId,
+        ];
+
+        $existing = Event::where('slug', $slug)->first();
+        if ($existing) {
+            $existing->update($attributes);
+            $event = $existing;
+        } else {
+            $attributes['author_id'] = $this->resolveAuthorId();
+            $event = Event::create($attributes);
+        }
+
+        // Tiers are canonical from the bundle. Wipe + re-insert. The cascade
+        // would null registration.ticket_tier_id, so registrations re-resolve
+        // by name after both passes land.
+        TicketTier::where('event_id', $event->id)->delete();
+        $tierIdsByName = [];
+        foreach ($data['tiers'] ?? [] as $sortIndex => $tierRow) {
+            if (! is_array($tierRow)) {
+                continue;
+            }
+            $tier = TicketTier::create([
+                'event_id'   => $event->id,
+                'name'       => $tierRow['name'] ?? 'General',
+                'price'      => $tierRow['price'] ?? 0,
+                'capacity'   => $tierRow['capacity'] ?? null,
+                'sort_order' => (int) ($tierRow['sort_order'] ?? $sortIndex),
+            ]);
+            $tierIdsByName[$tier->name] = $tier->id;
+        }
+
+        // Registrations wipe + re-insert when the bundle carries them.
+        // Absence (with_registrations=false at export time) leaves any
+        // existing registrations untouched.
+        if (array_key_exists('registrations', $data) && is_array($data['registrations'])) {
+            EventRegistration::where('event_id', $event->id)->delete();
+            foreach ($data['registrations'] as $regRow) {
+                if (! is_array($regRow)) {
+                    continue;
+                }
+
+                $contactId = null;
+                if (! empty($regRow['contact_email'])) {
+                    $contactId = Contact::where('email', $regRow['contact_email'])->value('id');
+                }
+
+                $orgId = null;
+                if (! empty($regRow['organization_name'])) {
+                    $orgId = Organization::where('name', $regRow['organization_name'])->value('id');
+                }
+
+                $tierId = null;
+                if (! empty($regRow['ticket_tier_name'])) {
+                    $tierId = $tierIdsByName[$regRow['ticket_tier_name']] ?? null;
+                }
+
+                EventRegistration::create([
+                    'event_id'            => $event->id,
+                    'ticket_tier_id'      => $tierId,
+                    'quantity'            => (int) ($regRow['quantity'] ?? 1),
+                    'contact_id'          => $contactId,
+                    'organization_id'     => $orgId,
+                    'name'                => $regRow['name'] ?? '',
+                    'email'               => $regRow['email'] ?? '',
+                    'phone'               => $regRow['phone'] ?? null,
+                    'company'             => $regRow['company'] ?? null,
+                    'address_line_1'      => $regRow['address_line_1'] ?? null,
+                    'address_line_2'      => $regRow['address_line_2'] ?? null,
+                    'city'                => $regRow['city'] ?? null,
+                    'state'               => $regRow['state'] ?? null,
+                    'zip'                 => $regRow['zip'] ?? null,
+                    'status'              => $regRow['status'] ?? 'registered',
+                    'registered_at'       => ! empty($regRow['registered_at']) ? \Carbon\Carbon::parse($regRow['registered_at']) : now(),
+                    'notes'               => $regRow['notes'] ?? null,
+                    'mailing_list_opt_in' => (bool) ($regRow['mailing_list_opt_in'] ?? false),
+                    'ticket_type'         => $regRow['ticket_type'] ?? null,
+                    'ticket_fee'          => $regRow['ticket_fee'] ?? null,
+                    'payment_state'       => $regRow['payment_state'] ?? null,
+                    'custom_fields'       => $regRow['custom_fields'] ?? [],
+                ]);
+            }
+        }
+
+        $this->rewireEventMedia($event, $data['media'] ?? [], $log);
+    }
+
+    /**
+     * Mirrors rewirePageMedia() for event-level media collections.
+     *
+     * @param  array<int, array<string, mixed>>  $descriptors
+     */
+    protected function rewireEventMedia(Event $event, array $descriptors, ImportLog $log): void
+    {
+        if (empty($descriptors)) {
+            return;
+        }
+
+        foreach ($descriptors as $desc) {
+            $collectionName = $desc['collection_name'] ?? null;
+            $disk           = $desc['disk'] ?? 'public';
+            $path           = $desc['path'] ?? null;
+
+            if (! $collectionName || ! $path) {
+                $log->warning("Event \"{$event->slug}\": media descriptor missing collection/path, skipped.");
+
+                continue;
+            }
+
+            if (str_contains($path, '..') || str_starts_with($path, '/')) {
+                $log->warning("Event \"{$event->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
+
+                continue;
+            }
+
+            $event->clearMediaCollection($collectionName);
+
+            $archiveAbs = $this->archiveFile($path);
+            if ($archiveAbs !== null) {
+                $event
+                    ->addMedia($archiveAbs)
+                    ->preservingOriginal()
+                    ->usingFileName(basename($path))
+                    ->toMediaCollection($collectionName, $disk);
+            } elseif (Storage::disk($disk)->exists($path)) {
+                $event
+                    ->addMediaFromDisk($path, $disk)
+                    ->preservingOriginal()
+                    ->toMediaCollection($collectionName, $disk);
+            } else {
+                $log->warning("Event \"{$event->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
+
+                continue;
+            }
+        }
+    }
+
+    // ── Collections (session A001) ─────────────────────────────────────────
+
+    /**
+     * Upsert a collection by handle, replace its items wholesale, and re-tag
+     * each item via firstOrCreate(name,type). Item `data` JSON travels
+     * verbatim — the collection's `fields` config is the shape's source of
+     * truth, not the importer. Item-level media is out of scope for the
+     * first pass. Session A001.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function importCollection(array $data, ImportLog $log): void
+    {
+        $collectionData = $data['collection'] ?? null;
+        $handle         = $collectionData['handle'] ?? null;
+
+        if (! is_array($collectionData) || ! is_string($handle) || $handle === '') {
+            $log->warning('Collection entry missing collection.handle, skipped.');
+
+            return;
+        }
+
+        $attributes = [
+            'name'             => $collectionData['name'] ?? $handle,
+            'handle'           => $handle,
+            'description'      => $collectionData['description'] ?? null,
+            'fields'           => $collectionData['fields'] ?? [],
+            'accepted_sources' => $collectionData['accepted_sources'] ?? ['human'],
+            'source_type'      => $collectionData['source_type'] ?? 'custom',
+            'is_public'        => (bool) ($collectionData['is_public'] ?? false),
+            'is_active'        => (bool) ($collectionData['is_active'] ?? true),
+        ];
+
+        $collection = Collection::where('handle', $handle)->first();
+        if ($collection) {
+            $collection->update($attributes);
+        } else {
+            $collection = Collection::create($attributes);
+        }
+
+        CollectionItem::where('collection_id', $collection->id)->delete();
+
+        foreach ($data['items'] ?? [] as $sortIndex => $itemRow) {
+            if (! is_array($itemRow)) {
+                continue;
+            }
+
+            $item = CollectionItem::create([
+                'collection_id' => $collection->id,
+                'data'          => $itemRow['data'] ?? [],
+                'sort_order'    => (int) ($itemRow['sort_order'] ?? $sortIndex),
+                'is_published'  => (bool) ($itemRow['is_published'] ?? false),
+            ]);
+
+            $tagIds = [];
+            foreach ($itemRow['tags'] ?? [] as $tagRow) {
+                $tagName = $tagRow['name'] ?? null;
+                $tagType = $tagRow['type'] ?? 'collection_item';
+                if (! is_string($tagName) || $tagName === '') {
+                    continue;
+                }
+                $tag = Tag::firstOrCreate(
+                    ['name' => $tagName, 'type' => $tagType],
+                );
+                $tagIds[] = $tag->id;
+            }
+
+            if (! empty($tagIds)) {
+                $item->tags()->sync($tagIds);
+            }
+        }
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

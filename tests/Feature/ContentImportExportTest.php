@@ -1,10 +1,20 @@
 <?php
 
 use App\Models\Collection;
+use App\Models\CollectionItem;
+use App\Models\Contact;
+use App\Models\Event;
+use App\Models\EventRegistration;
+use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageLayout;
 use App\Models\PageWidget;
+use App\Models\Product;
+use App\Models\ProductPrice;
+use App\Models\Tag;
 use App\Models\Template;
+use App\Models\TicketTier;
 use App\Models\User;
 use App\Models\WidgetType;
 use App\Models\SiteSetting;
@@ -1214,6 +1224,626 @@ it('round-trips a site snapshot: exportSite → import → row counts match', fu
 
     $reloaded = SiteSetting::get('theme_colors');
     expect($reloaded['palette']['primary'])->toBe('#112233');
+});
+
+// ── Session A001: navigation round-trip ────────────────────────────────────
+
+it('round-trips a navigation menu with a 2-deep tree and page references', function () {
+    $page = Page::factory()->create(['slug' => 'nav-target-page', 'status' => 'published']);
+
+    $menu = NavigationMenu::create(['label' => 'Main Menu', 'handle' => 'main_menu']);
+
+    $home = NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'label'              => 'Home',
+        'url'                => '/',
+        'target'             => '_self',
+        'is_visible'         => true,
+        'sort_order'         => 0,
+    ]);
+    $about = NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'label'              => 'About',
+        'page_id'            => $page->id,
+        'target'             => '_self',
+        'is_visible'         => true,
+        'sort_order'         => 1,
+    ]);
+    NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'parent_id'          => $about->id,
+        'label'              => 'Our Team',
+        'url'                => '/team',
+        'target'             => '_blank',
+        'is_visible'         => true,
+        'sort_order'         => 0,
+    ]);
+    NavigationItem::create([
+        'navigation_menu_id' => $menu->id,
+        'parent_id'          => $about->id,
+        'label'              => 'Contact',
+        'url'                => '/contact',
+        'target'             => '_self',
+        'is_visible'         => false,
+        'sort_order'         => 1,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportNavigation([$menu->id]);
+
+    expect($bundle['payload'])->toHaveKey('navigation_menus');
+    expect($bundle['payload']['navigation_menus'])->toHaveCount(1);
+    expect($bundle['payload']['navigation_menus'][0]['menu']['handle'])->toBe('main_menu');
+    expect($bundle['payload']['navigation_menus'][0]['items'])->toHaveCount(2);
+
+    // Mutate the menu so import has to re-establish the canonical state.
+    NavigationItem::where('navigation_menu_id', $menu->id)->delete();
+    $menu->update(['label' => 'Wiped']);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = NavigationMenu::where('handle', 'main_menu')->first();
+    expect($reloaded->id)->toBe($menu->id);
+    expect($reloaded->label)->toBe('Main Menu');
+
+    $items = NavigationItem::where('navigation_menu_id', $reloaded->id)
+        ->orderBy('parent_id', 'asc')
+        ->orderBy('sort_order')
+        ->get();
+    expect($items)->toHaveCount(4);
+
+    $roots = $items->whereNull('parent_id')->sortBy('sort_order')->values();
+    expect($roots)->toHaveCount(2);
+    expect($roots[0]->label)->toBe('Home');
+    expect($roots[0]->url)->toBe('/');
+    expect($roots[0]->page_id)->toBeNull();
+    expect($roots[1]->label)->toBe('About');
+    expect($roots[1]->page_id)->toBe($page->id);
+    expect($roots[1]->url)->toBeNull();
+
+    $children = $items->whereNotNull('parent_id')->sortBy('sort_order')->values();
+    expect($children)->toHaveCount(2);
+    expect($children[0]->parent_id)->toBe($roots[1]->id);
+    expect($children[0]->label)->toBe('Our Team');
+    expect($children[0]->target)->toBe('_blank');
+    expect($children[1]->label)->toBe('Contact');
+    expect($children[1]->is_visible)->toBeFalse();
+});
+
+it('warns and leaves page_id null when a navigation page_slug is missing on import', function () {
+    $menu = NavigationMenu::create(['label' => 'Footer', 'handle' => 'footer_menu']);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [[
+                'menu'  => ['handle' => 'footer_menu', 'label' => 'Footer'],
+                'items' => [[
+                    'label'      => 'Ghost',
+                    'url'        => null,
+                    'page_slug'  => 'does-not-exist',
+                    'target'     => '_self',
+                    'is_visible' => true,
+                    'sort_order' => 0,
+                ]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log);
+
+    expect($log->hasWarnings())->toBeTrue();
+
+    $item = NavigationItem::where('navigation_menu_id', $menu->id)->first();
+    expect($item)->not->toBeNull();
+    expect($item->page_id)->toBeNull();
+});
+
+it('analyze() reports navigation menus and exists_locally', function () {
+    NavigationMenu::create(['label' => 'Existing', 'handle' => 'existing_menu']);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [
+                [
+                    'menu'  => ['handle' => 'existing_menu', 'label' => 'Existing'],
+                    'items' => [
+                        ['label' => 'A', 'children' => [['label' => 'A1'], ['label' => 'A2']]],
+                    ],
+                ],
+                [
+                    'menu'  => ['handle' => 'fresh_menu', 'label' => 'Fresh'],
+                    'items' => [['label' => 'Solo']],
+                ],
+            ],
+            'pages'     => [],
+            'templates' => [],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['navigation_menus'])->toEqualCanonicalizing([
+        ['handle' => 'existing_menu', 'label' => 'Existing', 'items_count' => 3, 'exists_locally' => true],
+        ['handle' => 'fresh_menu',    'label' => 'Fresh',    'items_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+it('skips navigation when import_navigation opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'navigation_menus' => [[
+                'menu'  => ['handle' => 'unused_menu', 'label' => 'Unused'],
+                'items' => [['label' => 'Nothing', 'url' => '/x']],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_navigation' => false]);
+
+    expect(NavigationMenu::where('handle', 'unused_menu')->exists())->toBeFalse();
+});
+
+// ── Session A001: products round-trip ──────────────────────────────────────
+
+it('round-trips a product with two prices and a product_image media reference', function () {
+    Storage::fake('public');
+
+    $product = Product::create([
+        'name'        => 'Conference Pass',
+        'slug'        => 'conference-pass',
+        'description' => 'Two-day access.',
+        'capacity'    => 100,
+        'status'      => 'published',
+        'sort_order'  => 5,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Early Bird',
+        'amount'     => 150.00,
+        'sort_order' => 0,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Standard',
+        'amount'     => 200.00,
+        'sort_order' => 1,
+    ]);
+
+    $logoPath = firstSampleLogo();
+    $logoName = basename($logoPath);
+    $media    = $product->addMedia($logoPath)
+        ->preservingOriginal()
+        ->toMediaCollection('product_image', 'public');
+
+    $bundle = app(ContentExporter::class)->exportProducts([$product->id]);
+
+    expect($bundle['payload'])->toHaveKey('products');
+    expect($bundle['payload']['products'])->toHaveCount(1);
+    $exported = $bundle['payload']['products'][0];
+    expect($exported['product']['slug'])->toBe('conference-pass');
+    expect($exported['prices'])->toHaveCount(2);
+    expect($exported['media'])->toHaveCount(1);
+    expect($exported['media'][0]['file_name'])->toBe($logoName);
+
+    // Mutate to verify import overwrites. DB-level deletes bypass Spatie's
+    // observer so the file stays on the fake disk for the importer to find.
+    ProductPrice::where('product_id', $product->id)->delete();
+    \Illuminate\Support\Facades\DB::table('media')
+        ->where('model_type', $product->getMorphClass())
+        ->where('model_id', $product->id)
+        ->delete();
+    $product->update(['name' => 'Wiped', 'capacity' => 1]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Product::where('slug', 'conference-pass')->first();
+    expect($reloaded->id)->toBe($product->id);
+    expect($reloaded->name)->toBe('Conference Pass');
+    expect($reloaded->capacity)->toBe(100);
+    expect($reloaded->sort_order)->toBe(5);
+
+    $prices = ProductPrice::where('product_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($prices)->toHaveCount(2);
+    expect($prices[0]->label)->toBe('Early Bird');
+    expect((float) $prices[0]->amount)->toBe(150.00);
+    expect($prices[1]->label)->toBe('Standard');
+
+    $reloadedMedia = $reloaded->getFirstMedia('product_image');
+    expect($reloadedMedia)->not->toBeNull();
+    expect($reloadedMedia->file_name)->toBe($logoName);
+});
+
+it('round-trips a product with no media and a single price', function () {
+    $product = Product::create([
+        'name'       => 'Lapel Pin',
+        'slug'       => 'lapel-pin',
+        'capacity'   => 999,
+        'status'     => 'published',
+        'sort_order' => 0,
+    ]);
+    ProductPrice::create([
+        'product_id' => $product->id,
+        'label'      => 'Member',
+        'amount'     => 5.00,
+        'sort_order' => 0,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportProducts([$product->id]);
+    expect($bundle['payload']['products'][0]['media'])->toBe([]);
+
+    Product::where('slug', 'lapel-pin')->delete();
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Product::where('slug', 'lapel-pin')->first();
+    expect($reloaded)->not->toBeNull();
+    expect($reloaded->name)->toBe('Lapel Pin');
+    expect(ProductPrice::where('product_id', $reloaded->id)->count())->toBe(1);
+});
+
+it('analyze() reports products with prices_count and exists_locally', function () {
+    Product::create([
+        'name'     => 'Existing Product',
+        'slug'     => 'existing-prod',
+        'capacity' => 10,
+        'status'   => 'draft',
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'products' => [
+                [
+                    'product' => ['name' => 'Existing Product', 'slug' => 'existing-prod'],
+                    'prices'  => [['label' => 'A'], ['label' => 'B']],
+                ],
+                [
+                    'product' => ['name' => 'New Product', 'slug' => 'new-prod'],
+                    'prices'  => [['label' => 'Solo']],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['products'])->toEqualCanonicalizing([
+        ['slug' => 'existing-prod', 'name' => 'Existing Product', 'prices_count' => 2, 'exists_locally' => true],
+        ['slug' => 'new-prod',      'name' => 'New Product',      'prices_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+// ── Session A001: events round-trip ────────────────────────────────────────
+
+it('round-trips an event with two tiers and three registrations', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+
+    $landingPage = Page::factory()->create(['slug' => 'event-landing', 'status' => 'published']);
+
+    $event = Event::create([
+        'title'             => 'Summer Gala',
+        'slug'              => 'summer-gala',
+        'description'       => 'An evening of music.',
+        'status'            => 'published',
+        'starts_at'         => '2027-06-15 18:00:00',
+        'ends_at'           => '2027-06-15 22:00:00',
+        'registration_mode' => 'open',
+        'author_id'         => $author->id,
+        'landing_page_id'   => $landingPage->id,
+    ]);
+
+    $vipTier = TicketTier::create([
+        'event_id'   => $event->id,
+        'name'       => 'VIP',
+        'price'      => 200.00,
+        'capacity'   => 20,
+        'sort_order' => 0,
+    ]);
+    $genTier = TicketTier::create([
+        'event_id'   => $event->id,
+        'name'       => 'General',
+        'price'      => 50.00,
+        'capacity'   => 200,
+        'sort_order' => 1,
+    ]);
+
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $vipTier->id,
+        'quantity'       => 1,
+        'name'           => 'Alice Donor',
+        'email'          => 'alice@example.com',
+        'status'         => 'registered',
+        'registered_at'  => now(),
+    ]);
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => $genTier->id,
+        'quantity'       => 2,
+        'name'           => 'Bob Volunteer',
+        'email'          => 'bob@example.com',
+        'status'         => 'registered',
+        'registered_at'  => now(),
+    ]);
+    EventRegistration::create([
+        'event_id'       => $event->id,
+        'ticket_tier_id' => null,
+        'quantity'       => 1,
+        'name'           => 'Comp Ticket',
+        'email'          => 'comp@example.com',
+        'status'         => 'attended',
+        'registered_at'  => now(),
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportEvents(
+        [$event->id],
+        ['with_registrations' => true],
+    );
+
+    expect($bundle['payload']['events'])->toHaveCount(1);
+    expect($bundle['payload']['events'][0]['tiers'])->toHaveCount(2);
+    expect($bundle['payload']['events'][0]['registrations'])->toHaveCount(3);
+    expect($bundle['payload']['pages'])->toHaveCount(1);
+    expect($bundle['payload']['pages'][0]['slug'])->toBe('event-landing');
+
+    // Wipe related rows; keep the event row to verify in-place overwrite.
+    EventRegistration::where('event_id', $event->id)->delete();
+    TicketTier::where('event_id', $event->id)->delete();
+    $event->update(['title' => 'Wiped', 'landing_page_id' => null]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Event::where('slug', 'summer-gala')->first();
+    expect($reloaded->id)->toBe($event->id);
+    expect($reloaded->title)->toBe('Summer Gala');
+    expect($reloaded->landing_page_id)->toBe($landingPage->id);
+
+    $tiers = TicketTier::where('event_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($tiers)->toHaveCount(2);
+    expect($tiers[0]->name)->toBe('VIP');
+    expect((float) $tiers[0]->price)->toBe(200.00);
+    expect($tiers[1]->name)->toBe('General');
+
+    $registrations = EventRegistration::where('event_id', $reloaded->id)->orderBy('name')->get();
+    expect($registrations)->toHaveCount(3);
+    expect($registrations[0]->name)->toBe('Alice Donor');
+    expect($registrations[0]->ticket_tier_id)->toBe($tiers->firstWhere('name', 'VIP')->id);
+    expect($registrations[1]->name)->toBe('Bob Volunteer');
+    expect($registrations[1]->quantity)->toBe(2);
+    expect($registrations[2]->name)->toBe('Comp Ticket');
+    expect($registrations[2]->ticket_tier_id)->toBeNull();
+    expect($registrations[2]->status)->toBe('attended');
+});
+
+it('exports events without registrations by default and leaves existing registrations untouched on import', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+
+    $event = Event::create([
+        'title'     => 'Quiet Event',
+        'slug'      => 'quiet-event',
+        'status'    => 'draft',
+        'starts_at' => '2027-07-01 09:00:00',
+        'author_id' => $author->id,
+    ]);
+
+    EventRegistration::create([
+        'event_id'      => $event->id,
+        'name'          => 'Existing reg',
+        'email'         => 'keep@example.com',
+        'status'        => 'registered',
+        'registered_at' => now(),
+        'quantity'      => 1,
+    ]);
+
+    $bundle = app(ContentExporter::class)->exportEvents([$event->id]);
+
+    expect($bundle['payload']['events'][0])->not->toHaveKey('registrations');
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    expect(EventRegistration::where('event_id', $event->id)->count())->toBe(1);
+    expect(EventRegistration::where('email', 'keep@example.com')->exists())->toBeTrue();
+});
+
+it('analyze() reports events with tier and registration counts', function () {
+    $author = User::factory()->create();
+    Event::create([
+        'title'     => 'Existing Gala',
+        'slug'      => 'existing-gala',
+        'status'    => 'draft',
+        'starts_at' => '2027-06-15 18:00:00',
+        'author_id' => $author->id,
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'events' => [
+                [
+                    'event'         => ['title' => 'Existing Gala', 'slug' => 'existing-gala'],
+                    'tiers'         => [['name' => 'A'], ['name' => 'B']],
+                    'registrations' => [['email' => 'x@example.com']],
+                ],
+                [
+                    'event'         => ['title' => 'New Event', 'slug' => 'new-event'],
+                    'tiers'         => [],
+                    'registrations' => [],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['events'])->toEqualCanonicalizing([
+        ['slug' => 'existing-gala', 'title' => 'Existing Gala', 'tiers_count' => 2, 'registrations_count' => 1, 'exists_locally' => true],
+        ['slug' => 'new-event',     'title' => 'New Event',     'tiers_count' => 0, 'registrations_count' => 0, 'exists_locally' => false],
+    ]);
+});
+
+// ── Session A001: collections round-trip ───────────────────────────────────
+
+it('round-trips a collection with three items, one tagged', function () {
+    $collection = Collection::create([
+        'name'        => 'Board Members',
+        'handle'      => 'board_members_a001',
+        'description' => 'Current board.',
+        'fields'      => [
+            ['key' => 'role',   'label' => 'Role',   'type' => 'text'],
+            ['key' => 'bio',    'label' => 'Bio',    'type' => 'textarea'],
+            ['key' => 'photo',  'label' => 'Photo',  'type' => 'image'],
+        ],
+        'source_type' => 'custom',
+        'is_public'   => true,
+        'is_active'   => true,
+    ]);
+
+    $taggedItem = CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'President', 'bio' => 'Long-time advocate.'],
+        'sort_order'    => 0,
+        'is_published'  => true,
+    ]);
+    CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'Treasurer', 'bio' => 'CPA, two terms.'],
+        'sort_order'    => 1,
+        'is_published'  => true,
+    ]);
+    CollectionItem::create([
+        'collection_id' => $collection->id,
+        'data'          => ['role' => 'Secretary', 'bio' => 'Joining this year.'],
+        'sort_order'    => 2,
+        'is_published'  => false,
+    ]);
+
+    $tag = Tag::firstOrCreate(['name' => 'Featured', 'type' => 'collection_item']);
+    $taggedItem->tags()->sync([$tag->id]);
+
+    $bundle = app(ContentExporter::class)->exportCollections([$collection->id]);
+
+    expect($bundle['payload'])->toHaveKey('collections');
+    expect($bundle['payload']['collections'])->toHaveCount(1);
+    $exported = $bundle['payload']['collections'][0];
+    expect($exported['collection']['handle'])->toBe('board_members_a001');
+    expect($exported['items'])->toHaveCount(3);
+    expect($exported['items'][0]['tags'])->toHaveCount(1);
+    expect($exported['items'][0]['tags'][0]['name'])->toBe('Featured');
+    expect($exported['items'][1]['tags'])->toBe([]);
+
+    // Wipe everything related and re-import.
+    CollectionItem::where('collection_id', $collection->id)->delete();
+    $collection->update(['name' => 'Wiped', 'is_active' => false]);
+
+    app(ContentImporter::class)->import($bundle, new ImportLog());
+
+    $reloaded = Collection::where('handle', 'board_members_a001')->first();
+    expect($reloaded->id)->toBe($collection->id);
+    expect($reloaded->name)->toBe('Board Members');
+    expect($reloaded->is_active)->toBeTrue();
+    expect($reloaded->fields)->toHaveCount(3);
+
+    $items = CollectionItem::where('collection_id', $reloaded->id)->orderBy('sort_order')->get();
+    expect($items)->toHaveCount(3);
+    expect($items[0]->data['role'])->toBe('President');
+    expect($items[0]->data['bio'])->toBe('Long-time advocate.');
+    expect($items[0]->is_published)->toBeTrue();
+    expect($items[2]->data['role'])->toBe('Secretary');
+    expect($items[2]->is_published)->toBeFalse();
+
+    $reloadedTags = $items[0]->tags;
+    expect($reloadedTags)->toHaveCount(1);
+    expect($reloadedTags[0]->name)->toBe('Featured');
+    expect($reloadedTags[0]->type)->toBe('collection_item');
+    expect($items[1]->tags)->toHaveCount(0);
+});
+
+it('analyze() reports collections with items_count and exists_locally', function () {
+    Collection::create([
+        'name'        => 'Existing Coll',
+        'handle'      => 'existing_coll',
+        'source_type' => 'custom',
+    ]);
+
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'collections' => [
+                [
+                    'collection' => ['name' => 'Existing Coll', 'handle' => 'existing_coll'],
+                    'items'      => [['data' => []], ['data' => []]],
+                ],
+                [
+                    'collection' => ['name' => 'New Coll', 'handle' => 'new_coll'],
+                    'items'      => [['data' => []]],
+                ],
+            ],
+        ],
+    ];
+
+    $manifest = app(ContentImporter::class)->analyze($bundle);
+
+    expect($manifest['collections'])->toEqualCanonicalizing([
+        ['handle' => 'existing_coll', 'name' => 'Existing Coll', 'items_count' => 2, 'exists_locally' => true],
+        ['handle' => 'new_coll',      'name' => 'New Coll',      'items_count' => 1, 'exists_locally' => false],
+    ]);
+});
+
+it('skips collections when import_collections opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'collections' => [[
+                'collection' => ['name' => 'Skip Me', 'handle' => 'skip_coll'],
+                'items'      => [['data' => []]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_collections' => false]);
+
+    expect(Collection::where('handle', 'skip_coll')->exists())->toBeFalse();
+});
+
+it('skips events when import_events opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'events' => [[
+                'event' => ['title' => 'Skip Me', 'slug' => 'skip-event', 'starts_at' => '2027-06-15 18:00:00'],
+                'tiers' => [],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_events' => false]);
+
+    expect(Event::where('slug', 'skip-event')->exists())->toBeFalse();
+});
+
+it('skips products when import_products opt is FALSE', function () {
+    $bundle = [
+        'format_version' => '1.1.0',
+        'payload' => [
+            'products' => [[
+                'product' => ['name' => 'Skip Me', 'slug' => 'skip-me', 'capacity' => 1, 'status' => 'draft'],
+                'prices'  => [['label' => 'X', 'amount' => 1.00]],
+            ]],
+        ],
+    ];
+
+    $log = new ImportLog();
+    app(ContentImporter::class)->import($bundle, $log, ['import_products' => false]);
+
+    expect(Product::where('slug', 'skip-me')->exists())->toBeFalse();
 });
 
 it('skips payload.media when import_media opt is FALSE', function () {
