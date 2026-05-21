@@ -156,21 +156,10 @@ class WidgetRenderer
             $html = $widgetType->template
                 ? Blade::render($widgetType->template, $templateVars)
                 : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
-            if ($widgetType->js) {
-                $scripts .= "\n" . $widgetType->js;
-            }
         } else {
             $html = $widgetType->code
                 ? '<script>' . $widgetType->code . '</script>'
                 : '';
-
-            if ($widgetType->css) {
-                $styles .= "\n" . $widgetType->css;
-            }
         }
 
         return ['html' => $html, 'styles' => $styles, 'scripts' => $scripts];
