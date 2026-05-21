@@ -33,6 +33,118 @@ use Illuminate\Support\Facades\Storage;
 
 class ContentImporter
 {
+    // ── SiteSettings export/import policy (session A001/3) ─────────────────
+    //
+    // The security boundary for the site_settings payload lives here. The
+    // exporter consults these lists pre-emptively at emit time so secrets
+    // never enter the bundle, and the importer re-applies them at write time
+    // so a tampered bundle still can't land a secret on a target install.
+    // Belt + suspenders by design — neither side trusts the other.
+
+    /**
+     * Explicit allow-list of keys the SiteSettings exporter will read out of
+     * SiteSetting. Anything not in this list is dropped silently. New keys
+     * land here only on review — additions don't auto-flow into bundles.
+     *
+     * @var array<int, string>
+     */
+    public const SITE_SETTINGS_ALLOW_LIST = [
+        // Site identity
+        'site_name',
+        'site_description',
+        'site_default_og_image',
+        'logo_path',
+        'favicon_path',
+        // Admin branding
+        'admin_brand_name',
+        'admin_logo_path',
+        'admin_primary_color',
+        'admin_secondary_color',
+        // SEO + custom snippets
+        'noindex_global',
+        'site_head_snippet',
+        'site_body_snippet',
+        'site_body_open_snippet',
+        // Routing prefixes
+        'blog_prefix',
+        'events_prefix',
+        'donations_prefix',
+        'portal_prefix',
+        'system_prefix',
+        // Publishing defaults
+        'default_content_template_default',
+        'default_content_template_event',
+        'default_content_template_post',
+        'auto_publish_pages',
+        'auto_publish_posts',
+        'event_auto_publish',
+        // Brand-relevant auth-flow copy
+        'system_page_content_email_verify',
+        'system_page_content_reset_password',
+        // Editor + display
+        'editor_color_swatches',
+        'image_breakpoints',
+        'timezone',
+        'dashboard_welcome',
+    ];
+
+    /**
+     * Deny-list prefixes. Anything starting with these is hard-rejected even
+     * if it somehow appears in a bundle's site_settings payload.
+     *
+     * @var array<int, string>
+     */
+    public const SITE_SETTINGS_DENY_PREFIXES = [
+        'stripe_',
+        'qb_',
+        'quickbooks_',
+        'mailchimp_',
+        'mail_',
+        'resend_',
+        'build_server_',
+    ];
+
+    /**
+     * Defence-in-depth tail-guard pattern: any key whose substring matches
+     * common secret-shaped suffixes is hard-rejected. Catches new keys we
+     * haven't named explicitly.
+     */
+    public const SITE_SETTINGS_DENY_REGEX = '/(_api_key|_secret|_token|_password|_webhook)/i';
+
+    /**
+     * Explicit per-key denies for install-state flags that aren't secrets
+     * but aren't valid to carry across installs either.
+     *
+     * @var array<int, string>
+     */
+    public const SITE_SETTINGS_DENY_NAMED = [
+        'installation_completed_at',
+        'horizon_enabled',
+    ];
+
+    /**
+     * Returns true if a SiteSetting key should never enter or leave a bundle.
+     * Checks named deny, prefix matches, and the regex tail-guard. Used by
+     * both the exporter (pre-emptive filter) and the importer (defensive
+     * re-check on inbound bundles).
+     */
+    public static function isSiteSettingKeyDenied(string $key): bool
+    {
+        if (in_array($key, self::SITE_SETTINGS_DENY_NAMED, true)) {
+            return true;
+        }
+        foreach (self::SITE_SETTINGS_DENY_PREFIXES as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                return true;
+            }
+        }
+        if (preg_match(self::SITE_SETTINGS_DENY_REGEX, $key)) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Absolute path of an extracted bundle's media/ root, set for the duration
      * of a single import() call when the source was a zip. When non-null, media
@@ -67,6 +179,7 @@ class ContentImporter
             'import_products'         => true,
             'import_events'           => true,
             'import_collections'      => true,
+            'import_site_settings'    => false,
         ];
     }
 
@@ -88,7 +201,10 @@ class ContentImporter
      *     navigation_menus: array<int, array{handle: string, label: string, items_count: int, exists_locally: bool}>,
      *     products: array<int, array{slug: string, name: string, prices_count: int, exists_locally: bool}>,
      *     events: array<int, array{slug: string, title: string, tiers_count: int, registrations_count: int, exists_locally: bool}>,
-     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>
+     *     collections: array<int, array{handle: string, name: string, items_count: int, exists_locally: bool}>,
+     *     site_settings: array{keys: array<int, string>, count: int, blocked_keys: array<int, string>},
+     *     manifest: array<string, mixed>|null,
+     *     manifest_warnings: array<int, string>
      * }
      */
     public function analyze(array $bundle): array
@@ -277,18 +393,77 @@ class ContentImporter
             unset($row);
         }
 
-        return [
-            'has_design'       => $designKeys !== [],
-            'design_keys'      => $designKeys,
-            'has_media'        => $hasMedia,
-            'media_count'      => $mediaCount,
-            'pages'            => $pages,
-            'templates'        => $templates,
-            'navigation_menus' => $navigationMenus,
-            'products'         => $products,
-            'events'           => $events,
-            'collections'      => $collections,
+        $siteSettings = is_array($payload['site_settings'] ?? null) ? $payload['site_settings'] : [];
+        $ssKeys       = [];
+        $ssBlocked    = [];
+        foreach ($siteSettings as $k => $entry) {
+            if (! is_string($k) || $k === '') {
+                continue;
+            }
+            if (self::isSiteSettingKeyDenied($k)) {
+                $ssBlocked[] = $k;
+            } else {
+                $ssKeys[] = $k;
+            }
+        }
+        $siteSettingsSummary = [
+            'keys'         => $ssKeys,
+            'count'        => count($ssKeys),
+            'blocked_keys' => $ssBlocked,
         ];
+
+        $manifest         = is_array($bundle['manifest'] ?? null) ? $bundle['manifest'] : null;
+        $manifestWarnings = $manifest === null ? [] : $this->verifyManifest($manifest, $payload);
+
+        return [
+            'has_design'        => $designKeys !== [],
+            'design_keys'       => $designKeys,
+            'has_media'         => $hasMedia,
+            'media_count'       => $mediaCount,
+            'pages'             => $pages,
+            'templates'         => $templates,
+            'navigation_menus'  => $navigationMenus,
+            'products'          => $products,
+            'events'            => $events,
+            'collections'       => $collections,
+            'site_settings'     => $siteSettingsSummary,
+            'manifest'          => $manifest,
+            'manifest_warnings' => $manifestWarnings,
+        ];
+    }
+
+    /**
+     * Cross-check a bundle's manifest sections against payload reality. Returns
+     * a list of human-readable warnings; an empty list means everything lines
+     * up. Manifest is documentation + integrity, never a security gate, so
+     * mismatches are warnings (not exceptions). Session A001/3.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @param  array<string, mixed>  $payload
+     * @return array<int, string>
+     */
+    protected function verifyManifest(array $manifest, array $payload): array
+    {
+        $warnings = [];
+
+        $sections = is_array($manifest['sections'] ?? null) ? $manifest['sections'] : [];
+        foreach ($sections as $section) {
+            $key           = $section['key']   ?? null;
+            $declaredCount = $section['count'] ?? null;
+            if (! is_string($key) || ! is_int($declaredCount)) {
+                continue;
+            }
+            $actual = is_array($payload[$key] ?? null) ? count($payload[$key]) : 0;
+            if ($actual !== $declaredCount) {
+                $warnings[] = "Manifest section '{$key}' declared {$declaredCount} items, payload has {$actual}.";
+            }
+        }
+
+        // Stray sections in payload that manifest doesn't declare are
+        // tolerated (a downstream importer might add new section types the
+        // manifest spec doesn't yet name). Only count mismatch is flagged.
+
+        return $warnings;
     }
 
     /**
@@ -317,9 +492,33 @@ class ContentImporter
         $designImported                 = false;
         $seededMediaIds                 = [];
 
+        // Manifest cross-check (session A001/3). If the bundle carries a
+        // manifest, log any declared-vs-actual count mismatches before the
+        // transaction opens. Mismatches are warnings, not errors — manifest is
+        // documentation, not a security gate.
+        if (is_array($bundle['manifest'] ?? null)) {
+            foreach ($this->verifyManifest($bundle['manifest'], $bundle['payload'] ?? []) as $msg) {
+                $log->warning($msg);
+            }
+        }
+
         try {
             DB::transaction(function () use ($bundle, $log, $opts, &$designImported, &$seededMediaIds) {
                 $payload = $bundle['payload'] ?? [];
+
+                // SiteSettings runs ahead of design/templates/pages so any
+                // downstream pass that reads SiteSetting::get() sees the
+                // imported values. Gated on import_site_settings (session
+                // A001/3 — default OFF; same posture as merge_design,
+                // SiteSettings carry brand/identity values an operator may
+                // not want overwritten by an inbound bundle).
+                if (! empty($payload['site_settings']) && is_array($payload['site_settings'])) {
+                    if ($opts['import_site_settings']) {
+                        $this->importSiteSettings($payload['site_settings'], $log);
+                    } else {
+                        $log->info('SiteSettings: bundle includes ' . count($payload['site_settings']) . ' setting entries, skipped (import_site_settings opt is off).');
+                    }
+                }
 
                 // Theme/design runs first so a combined bundle establishes the
                 // theme before templates/pages resolve against it. Gated on
@@ -501,6 +700,57 @@ class ContentImporter
         }
 
         return $defaults;
+    }
+
+    /**
+     * payload.site_settings pass — per-key upsert with defensive deny-list
+     * re-check. The exporter has already filtered against the same lists,
+     * but the importer never trusts the bundle: every inbound key is run
+     * through `isSiteSettingKeyDenied()` and any `type === 'encrypted'`
+     * entry is hard-skipped. Rich-text keys (`SiteSetting::RICH_TEXT_KEYS`)
+     * are sanitised on the way in. Cache invalidation matches the model's
+     * `set()` convention. Session A001/3.
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    protected function importSiteSettings(array $settings, ImportLog $log): void
+    {
+        foreach ($settings as $key => $entry) {
+            if (! is_string($key) || $key === '' || ! is_array($entry)) {
+                $log->warning('SiteSettings: skipping malformed entry.');
+                continue;
+            }
+
+            if (self::isSiteSettingKeyDenied($key)) {
+                $log->warning("SiteSettings: key '{$key}' blocked by importer deny-list (matched secret/credential pattern), skipped.");
+                continue;
+            }
+
+            $type = $entry['type'] ?? 'string';
+            if ($type === 'encrypted') {
+                $log->warning("SiteSettings: key '{$key}' has encrypted type, never imported.");
+                continue;
+            }
+
+            $value = $entry['value'] ?? null;
+
+            // Rich-text sanitisation at the import seam — same allow-list
+            // boundary `SiteSetting::set()` uses for through-model writes.
+            if (in_array($key, SiteSetting::RICH_TEXT_KEYS, true) && is_string($value)) {
+                $value = HtmlSanitizer::sanitize($value);
+            }
+
+            SiteSetting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'type'  => $type,
+                    'group' => $entry['group'] ?? null,
+                ],
+            );
+            Cache::forget("site_setting:{$key}");
+            $log->info("SiteSettings: imported '{$key}'.");
+        }
     }
 
     /**
