@@ -40,13 +40,10 @@ class ImportSessionActions
             'approved_at' => now(),
         ]);
 
-        $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
-        $subjects      = $this->preloadStagedSubjects($staged);
-        $sourceName    = $session->importSource?->name;
-        $sourceId      = $session->importSource?->id;
-        $sessionLabel  = $session->session_label ?: $session->filename;
-        $sourceDisplay = $sourceName ?: 'unknown source';
-        $approverName  = auth()->user()?->name;
+        $staged       = ImportStagedUpdate::where('import_session_id', $session->id)->get();
+        $subjects     = $this->preloadStagedSubjects($staged);
+        $ctx          = $this->sessionContext($session);
+        $approverName = auth()->user()?->name;
 
         foreach ($staged as $update) {
             $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
@@ -68,9 +65,9 @@ class ImportSessionActions
                     'notable_type'     => Contact::class,
                     'notable_id'       => $subject->id,
                     'author_id'        => auth()->id(),
-                    'body'             => "Changes applied from import from {$sourceDisplay} (session: {$sessionLabel}) — approved by {$approverName}",
+                    'body'             => "Changes applied from import from {$ctx['display']} (session: {$ctx['label']}) — approved by {$approverName}",
                     'occurred_at'      => now(),
-                    'import_source_id' => $sourceId,
+                    'import_source_id' => $ctx['id'],
                 ]);
             }
         }
@@ -83,12 +80,9 @@ class ImportSessionActions
         $this->cascadeForType($session);
 
         if ($session->model_type === ImportModelType::Contact) {
-            $staged        = ImportStagedUpdate::where('import_session_id', $session->id)->get();
-            $subjects      = $this->preloadStagedSubjects($staged);
-            $sourceName    = $session->importSource?->name;
-            $sourceId      = $session->importSource?->id;
-            $sessionLabel  = $session->session_label ?: $session->filename;
-            $sourceDisplay = $sourceName ?: 'unknown source';
+            $staged   = ImportStagedUpdate::where('import_session_id', $session->id)->get();
+            $subjects = $this->preloadStagedSubjects($staged);
+            $ctx      = $this->sessionContext($session);
 
             foreach ($staged as $update) {
                 $subject = $subjects[$update->subject_type][$update->subject_id] ?? null;
@@ -98,9 +92,9 @@ class ImportSessionActions
                         'notable_type'     => Contact::class,
                         'notable_id'       => $subject->id,
                         'author_id'        => auth()->id(),
-                        'body'             => "Staged changes from import from {$sourceDisplay} (session: {$sessionLabel}) were discarded during rollback.",
+                        'body'             => "Staged changes from import from {$ctx['display']} (session: {$ctx['label']}) were discarded during rollback.",
                         'occurred_at'      => now(),
-                        'import_source_id' => $sourceId,
+                        'import_source_id' => $ctx['id'],
                     ]);
                 }
             }
@@ -310,6 +304,21 @@ class ImportSessionActions
             ->count();
 
         return "Permanently delete this session and {$count} contact(s) created by it. Any staged updates are discarded. This cannot be undone.";
+    }
+
+    /**
+     * @return array{name: ?string, id: ?string, display: string, label: string}
+     */
+    private function sessionContext(ImportSession $session): array
+    {
+        $name = $session->importSource?->name;
+
+        return [
+            'name'    => $name,
+            'id'      => $session->importSource?->id,
+            'display' => $name ?: 'unknown source',
+            'label'   => $session->session_label ?: $session->filename,
+        ];
     }
 
     private function preloadStagedSubjects($staged): array
