@@ -25,9 +25,15 @@ test.describe('Site import / export rollup UI (session 310)', () => {
         await expect(page.locator('[data-testid="site-import-section"]')).toBeVisible();
 
         // Export Site button opens a confirmation modal with snapshot counts.
-        await page.getByRole('button', { name: 'Export Site', exact: true }).click();
+        // Click via the action's data-testid (set in SiteImportExportPage::
+        // exportSiteAction) — `getByRole('button', { name: 'Export Site' })`
+        // is ambiguous because `modalSubmitActionLabel` also labels the
+        // submit button "Export Site". Filament also pre-renders modal shells
+        // in the DOM with `isOpen: false`, so the modal selector filters to
+        // visible dialogs only.
+        await page.locator('[data-testid="site-export-action"]').click();
 
-        const modal = page.locator('.fi-modal-window, [role="dialog"]').filter({ hasText: 'Export Site' }).first();
+        const modal = page.locator('[role="dialog"]:visible').filter({ hasText: 'Export Site' });
         await expect(modal).toBeVisible({ timeout: 15_000 });
         await expect(modal).toContainText(/page/);
         await expect(modal).toContainText(/template/);
@@ -35,7 +41,7 @@ test.describe('Site import / export rollup UI (session 310)', () => {
         await expect(modal).toContainText(/media/);
 
         // Close the export modal without dispatching.
-        await page.getByRole('button', { name: 'Cancel' }).first().click();
+        await modal.getByRole('button', { name: 'Cancel' }).click();
         await expect(modal).toBeHidden({ timeout: 10_000 });
     });
 
@@ -63,7 +69,7 @@ test.describe('Site import / export rollup UI (session 310)', () => {
         try {
             await page.goto('/admin/site-import-export-page');
 
-            await page.getByRole('button', { name: 'Import Site', exact: true }).click();
+            await page.locator('[data-testid="site-import-action"]').click();
 
             const upload = page.locator('[data-testid="import-bundle-upload"]');
             await expect(upload).toBeVisible({ timeout: 15_000 });
