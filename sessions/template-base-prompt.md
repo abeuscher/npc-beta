@@ -104,6 +104,7 @@ Then stop. The user reviews the work and the next session's drafts, and initiate
 When the user says to close (after the next session's prompt is agreed):
 
 - **Session log**: write a log file at `sessions/NNN. Session Title — Log.md`. Use `sessions/template-session-log.md` as the format reference — copy its structure exactly, do not base it on previous logs.
+- **Bump the `VERSION` file** at the project root. Format is `0.<session>.<iteration>` (e.g. `0.313.02` for session 313's second iteration). The iteration suffix is the highest iteration number landed on the close branch. Bump VERSION even on sessions that made no application-code changes — VERSION marks the close, not the surface touched, and downstream consumers (the Fleet Manager agent `/api/health` payload, the build-pipeline GHCR tag) read it as an opaque close marker.
 - **Update `sessions/completed-sessions.md`**: append this session's row to the index table (number + title).
 - **Update `sessions/session-outlines.md`** (the roadmap): if this session resolved any forward stubs, edit or remove them. The Completed Sessions table is **not** here — it lives in `sessions/completed-sessions.md`.
 - **If this session belongs to a track:** update the track's `sessions/tracks/{name}.md` — bump the status snapshot (last update date, what's complete, what's active). If this session is the **terminal session of a phase** within the track, also do the **phase-expiry compression** below.
