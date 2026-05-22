@@ -8,15 +8,15 @@ First-cycle deliverable per the track doc § "Permanent inter-cycle artifacts." 
 
 ## Row format
 
-Every finding produces one row in its workstream's backlog table. Four columns for W-R1 through W-R4; W-R5 carries a fifth.
+Every finding produces one row in its workstream's backlog table. Four columns for W-R1 through W-R4 and W-R7; W-R5 and W-R6 carry a fifth.
 
 | Column | What it carries |
 |--------|-----------------|
 | **Intent (with citation)** | What the code is trying to do, in one phrase, followed by a recoverable citation (test name, docstring quote, commit message reference, session-log line, memory entry slug). "I think it's trying to..." is not Intent — see the intent-unrecoverable section. |
 | **Current shape** | The structural shape today, with file:line citations. Specific enough that a reader can land in the right file and see what the row describes. |
-| **Deviation** | The specific way the current shape diverges from the simplest expression of intent. Phrased in the workstream's vocabulary (multiplication / smearing / indirection / accidental work / misplaced seam). |
+| **Deviation** | The specific way the current shape diverges from the simplest expression of intent. Phrased in the workstream's vocabulary (multiplication / smearing / indirection / accidental work / misplaced seam / implicit ordering / misleading name). |
 | **Proposed move** | The concrete change. Includes LOC delta, file count delta, and risk class. For class-findings, names both dispatch options (pattern fix / instance fix). |
-| **What breaks if we move it** *(W-R5 only)* | The breakage analysis. Anything where this column can't be filled in is a candidate, not a finding — see the W-R5 candidate sub-section rule below. |
+| **What breaks if we move it** *(W-R5 and W-R6)* | The breakage analysis. For W-R5, what breaks if we move the seam; for W-R6, what breaks if we change the ordering or atomicity. Anything where this column can't be filled in is a candidate, not a finding — see the candidate sub-section rule below. |
 
 ### Citation forms (valid Intent sources)
 
@@ -68,6 +68,18 @@ These are illustrative starting points. Real cycle-1 findings refine these.
 |--------|---------------|-----------|---------------|---------------------------|
 | Page-builder Vue store owns editor state, controller owns persistence (cited from `sessions/273. … — Log.md` § /6 editor.ts composable extraction) | `PageBuilderApiController` exposes 11 endpoints; >50% are thin pass-through against `App\Services\PageBuilder\…` services that the Vue store could call via a single bulk endpoint | The boundary between controller and Vue store is drawn at "one endpoint per editor action"; the actual seam is "one bulk operation per editor save" | Collapse 11 single-action endpoints into one `POST /api/page-builder/save` taking the full edit transcript; service layer fans out. ~−250 LOC, ~6 files, **high risk.** | Per-action API consumers outside the editor (if any) — verify before lifting. The page-builder Playwright spec exercises the surface end-to-end and would need rework. |
 
+### W-R6 (Temporal shape and ordering invariants) — example (note the fifth column)
+
+| Intent | Current shape | Deviation | Proposed move | What breaks if we change the ordering/atomicity |
+|--------|---------------|-----------|---------------|--------------------------------------------------|
+| A donation create writes the donation row, updates the donor's lifetime-total, and dispatches the receipt email as one logical unit (cited from `tests/Feature/Donations/DonationCreateTest::it_updates_lifetime_total_and_sends_receipt`) | `DonationController::store` writes the donation, then calls `$donor->recalculateLifetimeTotal()`, then `Mail::send(...)` — three statements, no transaction wrapper | The three writes are one logical unit but run as three independent statements; a failure after the donation write but before the recalc leaves the donor total stale, and a failure before the mail leaves no receipt with no retry | Wrap the donation write + recalc in a single DB transaction; move the receipt mail to a queued job dispatched after commit so a mail failure can't roll back the financial write. ~+8 LOC, 1 file, medium risk. | Any caller that currently relies on the receipt being sent synchronously in-request (e.g. a test asserting the mail fake within the same request) — verify and update. Moving mail after-commit changes timing observable to tests. |
+
+### W-R7 (Naming-intent fidelity) — example
+
+| Intent | Current shape | Deviation | Proposed move |
+|--------|---------------|-----------|---------------|
+| `EventRegistrationService::validateRegistration()` checks that a registration request is well-formed (cited from `app/Services/EventRegistrationService.php` docstring "Validates an incoming registration request.") | The method validates the request *and* decrements per-tier capacity *and* writes the registration row before returning | The name promises a pure validation check; the body mutates capacity and persists — a reader calling `validate…` to pre-check a request would unknowingly commit it | **Split:** keep `validateRegistration()` as the pure check; move the capacity decrement + write to a separate `commitRegistration()` the caller invokes after validation passes. Structural change, ~+15 LOC across the service + its callers, medium risk (same profile as a Locality split). |
+
 ---
 
 ## Class-finding rows
@@ -87,7 +99,7 @@ The W-R2 worked example above is the canonical class-finding shape.
 
 Distinct from workstream findings. File when:
 
-- The surface pattern would have triggered a refactor finding (matches W-R1 / W-R2 / W-R3 / W-R4 / W-R5 detection patterns).
+- The surface pattern would have triggered a refactor finding (matches W-R1 / W-R2 / W-R3 / W-R4 / W-R5 / W-R6 / W-R7 detection patterns).
 - AND no recoverable Intent citation exists. Tests have been searched, docstrings read, commit messages walked, session logs grepped, memory entries checked — nothing supports an Intent claim.
 
 These do **not** land on the workstream backlog. They land in a dedicated *Intent-unrecoverable* section of the audit log.
@@ -110,9 +122,9 @@ These do **not** land on the workstream backlog. They land in a dedicated *Inten
 
 ### Why these matter
 
-Intent-unrecoverable findings inform the **next cycle's W-R5 (Seam quality) walk** — they surface boundaries that need documenting before any refactor lands. They are not in scope for the current cycle's apply session.
+Intent-unrecoverable findings inform the **next cycle's W-R5 (Seam quality) and W-R6 (Temporal) walks** — they surface boundaries and ordering invariants that need documenting before any refactor lands. They are not in scope for the current cycle's apply session.
 
-Expect a higher proportion of intent-unrecoverable findings in W-R5 than in the other workstreams (per the track doc) — many seam decisions are old enough that the original design call doesn't have a recoverable source.
+Expect a higher proportion of intent-unrecoverable findings in W-R5 and W-R6 than in the other workstreams (per the track doc) — many seam and ordering decisions are old enough that the original design call doesn't have a recoverable source.
 
 ---
 
@@ -144,8 +156,8 @@ The flag letter increments alphabetically within the workstream (`Flag W-R1/A`, 
 
 ---
 
-## W-R5 candidate sub-section
+## W-R5 / W-R6 candidate sub-section
 
-Special discipline for W-R5: a finding without breakage analysis ("what breaks if we move it") is **not a finding** — it's a candidate. Candidates land in a `W-R5 candidates (no breakage analysis)` sub-section of the audit log. They do not enter the apply-session backlog. The user reviews candidates at apply walkthrough and either ratifies (the agent finishes the breakage analysis) or drops.
+Special discipline for the two fifth-column workstreams: a finding without breakage analysis (W-R5 "what breaks if we move it", W-R6 "what breaks if we change the ordering/atomicity") is **not a finding** — it's a candidate. Candidates land in a `W-R5 candidates (no breakage analysis)` / `W-R6 candidates (no breakage analysis)` sub-section of the audit log. They do not enter the apply-session backlog. The user reviews candidates at apply walkthrough and either ratifies (the agent finishes the breakage analysis) or drops.
 
-A W-R5 finding without breakage analysis is just an opinion.
+A seam-move or reorder proposed without breakage analysis is just an opinion. This matters more for W-R6 than anywhere else: the cost of a wrong temporal change is a race, partial write, or stale read that the test suite usually won't catch, so an unsupported reorder is the most dangerous thing this track can ship.
