@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('backup:clean')->daily()->at('01:00');
         $schedule->command('backup:run')->daily()->at('01:30');
+        $schedule->command('exports:clean')->daily()->at('02:00');
         $schedule->command('media-library:clean')->daily()->onOneServer()->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions): void {

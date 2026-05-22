@@ -1,0 +1,207 @@
+<?php
+
+namespace App\Filament\Resources\PageResource\Concerns;
+
+use App\Filament\Pages\Settings\CmsSettingsPage;
+use App\Jobs\ExportBundleJob;
+use App\Models\PageWidget;
+use App\Models\Template;
+use App\Rules\ValidHtmlSnippet;
+use App\Services\ImportExport\ContentExporter;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+/**
+ * The "More actions" ellipsis group for a Page record (export variants, save
+ * as content template, header/footer snippets, delete). Shared by the
+ * page-builder editor and the page-details view so both surfaces expose the
+ * same secondary actions without divergence.
+ */
+trait HasPageSecondaryActions
+{
+    protected function pageSecondaryActionsGroup(): Actions\ActionGroup
+    {
+        return Actions\ActionGroup::make([
+            Actions\Action::make('exportPage')
+                ->label('Export Page')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->action(function (): StreamedResponse {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    $bundle   = app(ContentExporter::class)->exportPages([$this->record->id]);
+                    $filename = now()->format('Ymd-His') . '-page-' . $this->record->slug . '.json';
+
+                    return response()->streamDownload(
+                        fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                        $filename,
+                        ['Content-Type' => 'application/json'],
+                    );
+                }),
+
+            Actions\Action::make('exportPageWithMedia')
+                ->label('Export Page with media (zip)')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    ExportBundleJob::dispatch(
+                        'pages',
+                        [$this->record->id],
+                        (int) auth()->id(),
+                        'page-' . $this->record->slug,
+                        ['with_media' => true],
+                    );
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('exportPageWithTheme')
+                ->label('Export Page with theme (JSON)')
+                ->icon('heroicon-o-paint-brush')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Export Page with theme')
+                ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles alongside the page. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                ->modalSubmitActionLabel('Export with theme')
+                ->action(function (): StreamedResponse {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    $bundle   = app(ContentExporter::class)->exportPages([$this->record->id], ['with_design' => true]);
+                    $filename = now()->format('Ymd-His') . '-page-' . $this->record->slug . '-with-theme.json';
+
+                    return response()->streamDownload(
+                        fn () => print(json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                        $filename,
+                        ['Content-Type' => 'application/json'],
+                    );
+                }),
+
+            Actions\Action::make('exportPageWithThemeAndMedia')
+                ->label('Export Page with theme & media (zip)')
+                ->icon('heroicon-o-rectangle-stack')
+                ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                ->requiresConfirmation()
+                ->modalHeading('Export Page with theme & media')
+                ->modalDescription('The exported bundle will include this site\'s theme colours, typography, and button styles plus all referenced media files alongside the page. When imported elsewhere, the importer will surface a "Replace site theme" prompt — opting in will overwrite the target site\'s Theme editor settings.')
+                ->modalSubmitActionLabel('Export with theme & media')
+                ->action(function (): void {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    ExportBundleJob::dispatch(
+                        'pages',
+                        [$this->record->id],
+                        (int) auth()->id(),
+                        'page-' . $this->record->slug . '-full',
+                        ['with_design' => true, 'with_media' => true],
+                    );
+
+                    Notification::make()
+                        ->title('Export queued')
+                        ->body('Your bundle is being built in the background. You will be notified when it is ready to download.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('saveAsContentTemplate')
+                ->label('Save Block Layout as Template')
+                ->icon('heroicon-o-clipboard-document-list')
+                ->hidden(fn () => ! auth()->user()?->can('update_page'))
+                ->form([
+                    Forms\Components\TextInput::make('template_name')
+                        ->label('Template Name')
+                        ->required()
+                        ->maxLength(255),
+
+                    Forms\Components\Textarea::make('template_description')
+                        ->label('Description')
+                        ->rows(2)
+                        ->maxLength(1000),
+                ])
+                ->action(function (array $data) {
+                    abort_unless(auth()->user()?->can('update_page'), 403);
+
+                    if (! $this->record->widgets()->exists() && ! $this->record->layouts()->exists()) {
+                        Notification::make()
+                            ->title('No widgets to save')
+                            ->body('This page has no widgets. Add blocks first.')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+
+                    $template = Template::create([
+                        'name'        => $data['template_name'],
+                        'type'        => 'content',
+                        'description' => $data['template_description'] ?: null,
+                        'is_default'  => false,
+                        'created_by'  => auth()->id(),
+                    ]);
+
+                    PageWidget::copyOwnedStack($this->record, $template);
+
+                    Notification::make()
+                        ->title("Template saved: {$data['template_name']}")
+                        ->success()
+                        ->send();
+                })
+                ->modalHeading('Save Block Layout as Content Template')
+                ->modalSubmitActionLabel('Save Template'),
+
+            Actions\Action::make('editSnippets')
+                ->label('Edit Header & Footer Snippets')
+                ->icon('heroicon-o-code-bracket')
+                ->visible(fn () => auth()->user()?->can('edit_page_snippets') ?? false)
+                ->fillForm(fn () => [
+                    'head_snippet' => $this->record->head_snippet,
+                    'body_snippet' => $this->record->body_snippet,
+                ])
+                ->form([
+                    Forms\Components\Placeholder::make('snippet_info')
+                        ->label('')
+                        ->content(new \Illuminate\Support\HtmlString(
+                            'This control is for per-page code snippets only. If you are trying to install Google Tag Manager or any other site-wide scripts, please use the Site Header and Site Footer fields on the <a href="' . CmsSettingsPage::getUrl() . '" class="underline text-primary-600 dark:text-primary-400" target="_blank">CMS Settings Page</a>.'
+                        )),
+
+                    Forms\Components\Textarea::make('head_snippet')
+                        ->label('Head snippet (before </head>)')
+                        ->rows(4)
+                        ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                        ->rules([new ValidHtmlSnippet()]),
+
+                    Forms\Components\Textarea::make('body_snippet')
+                        ->label('Body snippet (before </body>)')
+                        ->rows(4)
+                        ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                        ->rules([new ValidHtmlSnippet()]),
+                ])
+                ->action(function (array $data) {
+                    abort_unless(auth()->user()?->can('edit_page_snippets'), 403);
+                    $this->record->update([
+                        'head_snippet' => $data['head_snippet'],
+                        'body_snippet' => $data['body_snippet'],
+                    ]);
+
+                    Notification::make()
+                        ->title('Snippets saved')
+                        ->success()
+                        ->send();
+                })
+                ->modalHeading('Header & Footer Snippets')
+                ->modalSubmitActionLabel('Save Snippets'),
+
+            Actions\DeleteAction::make()
+                ->label('Delete Page')
+                ->hidden(fn () => $this->record->type === 'system'),
+        ])
+            ->icon('heroicon-m-ellipsis-vertical')
+            ->tooltip('More actions');
+    }
+}

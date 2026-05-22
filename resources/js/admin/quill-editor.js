@@ -1,5 +1,6 @@
 import { openHeroiconPicker, setHeroiconsUrl } from './heroicon-picker.js';
 import { registerHeroiconBlot, HEROICON_TOOLBAR_BUTTON_SVG } from './heroicon-blot.js';
+import { applyToolbarTitles } from './quill-toolbar-titles.js';
 
 export default (state) => ({
     state,
@@ -81,6 +82,8 @@ export default (state) => ({
         if (toolbarButton && !toolbarButton.firstChild) {
             toolbarButton.innerHTML = HEROICON_TOOLBAR_BUTTON_SVG;
         }
+
+        applyToolbarTitles(quill.getModule('toolbar').container);
 
         if (this.state) quill.root.innerHTML = this.state;
 

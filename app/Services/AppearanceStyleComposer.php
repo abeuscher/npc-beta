@@ -136,7 +136,10 @@ class AppearanceStyleComposer
     {
         $config = $layout->layout_config ?? [];
 
-        $bg      = (bool) ($config['background_full_width'] ?? false);
+        // Parity with widget_types defaults (bg=true / content=false): a column
+        // layout with no explicit full-width key defaults to a full-bleed
+        // background, matching how widgets behave.
+        $bg      = (bool) ($config['background_full_width'] ?? true);
         $content = (bool) ($config['content_full_width']    ?? false);
 
         if (! $bg && $content) {

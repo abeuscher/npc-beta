@@ -258,8 +258,10 @@ class RecordDetailViewBuilderApiController extends Controller
             'display'       => $display,
             'columns'       => $columns,
             'layout_config' => [
-                'grid_template_columns' => implode(' ', array_fill(0, $columns, '1fr')),
-                'gap'                   => '1.5rem',
+                'grid_template_columns'  => implode(' ', array_fill(0, $columns, '1fr')),
+                'gap'                    => '1.5rem',
+                'background_full_width'  => true,
+                'content_full_width'     => false,
             ],
             'sort_order'    => $maxSort + 1,
         ]);

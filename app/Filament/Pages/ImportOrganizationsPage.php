@@ -7,6 +7,7 @@ use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\OrganizationImportFieldRegistry;
 use App\Models\ImportSource;
 use App\Services\Import\CsvTemplateService;
+use App\Services\Import\OrganizationFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
@@ -215,24 +216,9 @@ class ImportOrganizationsPage extends Page
         return $options;
     }
 
-    private function guessDestination(string $normalizedHeader): ?string
+    private function guessDestination(string $normalizedHeader, ?string $preset = null): ?string
     {
-        return match ($normalizedHeader) {
-            'name', 'organization', 'organization name', 'company', 'company name' => 'organization:name',
-            'type', 'organization type'                  => 'organization:type',
-            'website', 'url', 'web site'                 => 'organization:website',
-            'phone', 'phone number'                      => 'organization:phone',
-            'email', 'email address'                     => 'organization:email',
-            'address', 'address line 1', 'street'        => 'organization:address_line_1',
-            'address line 2', 'address 2', 'suite'       => 'organization:address_line_2',
-            'city', 'town'                               => 'organization:city',
-            'state', 'province', 'region'                => 'organization:state',
-            'postal code', 'zip', 'zip code', 'postcode' => 'organization:postal_code',
-            'country'                                    => 'organization:country',
-            'external id', 'external_id', 'id'           => 'organization:external_id',
-
-            default => null,
-        };
+        return (new OrganizationFieldMapper())->map($normalizedHeader, $preset);
     }
 
     private function getColumnMappingSchema(): array

@@ -459,6 +459,10 @@ it('creates a layout on a page', function () {
         'owner_id'   => $page->id,
         'label'      => 'Two Column',
     ]);
+
+    $layout = \App\Models\PageLayout::where('owner_id', $page->id)->latest('id')->first();
+    expect($layout->layout_config['background_full_width'])->toBeTrue();
+    expect($layout->layout_config['content_full_width'])->toBeFalse();
 });
 
 it('updates layout config', function () {

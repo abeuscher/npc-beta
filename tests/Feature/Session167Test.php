@@ -95,6 +95,41 @@ it('renders EditPage as a builder-only view', function () {
         ->assertSuccessful();
 });
 
+it('surfaces the secondary-actions menu on EditPage', function () {
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+    $this->actingAs($user);
+
+    $page = Page::factory()->create([
+        'type'   => 'default',
+        'status' => 'draft',
+    ]);
+
+    Livewire::test(EditPage::class, ['record' => $page->id])
+        ->assertSuccessful()
+        ->assertActionExists('exportPage')
+        ->assertActionExists('exportPageWithMedia')
+        ->assertActionExists('saveAsContentTemplate')
+        ->assertActionExists('editSnippets')
+        ->assertActionExists(\Filament\Actions\DeleteAction::class);
+});
+
+it('hides the delete action on EditPage for system pages', function () {
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+    $this->actingAs($user);
+
+    $page = Page::factory()->create([
+        'type'   => 'system',
+        'slug'   => 'system/builder-test',
+        'status' => 'published',
+    ]);
+
+    Livewire::test(EditPage::class, ['record' => $page->id])
+        ->assertSuccessful()
+        ->assertActionHidden(\Filament\Actions\DeleteAction::class);
+});
+
 // ── EditPostDetails ────────────────────────────────────────────────────────
 
 it('loads EditPostDetails and renders the metadata form', function () {
