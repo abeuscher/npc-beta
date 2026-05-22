@@ -29,30 +29,34 @@
     <div class="col-{{ \App\Support\FormFieldConfig::width('first_name') }}">
         <label for="sw_first_name" class="form-label">First name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_first_name" name="first_name" required
-               value="{{ old('first_name') }}" autocomplete="given-name">
-        @error('first_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+               value="{{ old('first_name') }}" autocomplete="given-name"
+               @error('first_name') aria-describedby="sw_first_name-error" aria-invalid="true" @enderror>
+        @error('first_name')<span id="sw_first_name-error" role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div class="col-{{ \App\Support\FormFieldConfig::width('last_name') }}">
         <label for="sw_last_name" class="form-label">Last name <span aria-hidden="true" class="required-star">*</span></label>
         <input type="text" id="sw_last_name" name="last_name" required
-               value="{{ old('last_name') }}" autocomplete="family-name">
-        @error('last_name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+               value="{{ old('last_name') }}" autocomplete="family-name"
+               @error('last_name') aria-describedby="sw_last_name-error" aria-invalid="true" @enderror>
+        @error('last_name')<span id="sw_last_name-error" role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div class="col-{{ \App\Support\FormFieldConfig::width('email') }}">
         <label for="sw_email" class="form-label">Email address <span aria-hidden="true" class="required-star">*</span></label>
         <input type="email" id="sw_email" name="email" required
-               value="{{ old('email') }}" autocomplete="email">
-        @error('email')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+               value="{{ old('email') }}" autocomplete="email"
+               @error('email') aria-describedby="sw_email-error" aria-invalid="true" @enderror>
+        @error('email')<span id="sw_email-error" role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div class="col-{{ \App\Support\FormFieldConfig::width('password') }}">
         <label for="sw_password" class="form-label">Password <span aria-hidden="true" class="required-star">*</span></label>
         <input type="password" id="sw_password" name="password" required
-               autocomplete="new-password" minlength="12">
+               autocomplete="new-password" minlength="12"
+               @error('password') aria-describedby="sw_password-error" aria-invalid="true" @enderror>
         <small class="form-hint">Minimum 12 characters.</small>
-        @error('password')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+        @error('password')<span id="sw_password-error" role="alert" class="form-error">{{ $message }}</span>@enderror
     </div>
 
     <div class="col-{{ \App\Support\FormFieldConfig::width('password_confirmation') }}">

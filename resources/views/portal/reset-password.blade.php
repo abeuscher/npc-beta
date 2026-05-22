@@ -22,16 +22,18 @@
         <div>
             <label for="email">Email address</label>
             <input type="email" id="email" name="email" required
-                   value="{{ old('email', request()->query('email')) }}" autocomplete="email">
-            @error('email')<span role="alert">{{ $message }}</span>@enderror
+                   value="{{ old('email', request()->query('email')) }}" autocomplete="email"
+                   @error('email') aria-describedby="email-error" aria-invalid="true" @enderror>
+            @error('email')<span id="email-error" role="alert">{{ $message }}</span>@enderror
         </div>
 
         <div>
             <label for="password">New password</label>
             <input type="password" id="password" name="password" required
-                   autocomplete="new-password" minlength="12">
+                   autocomplete="new-password" minlength="12"
+                   @error('password') aria-describedby="password-error" aria-invalid="true" @enderror>
             <small>Minimum 12 characters.</small>
-            @error('password')<span role="alert">{{ $message }}</span>@enderror
+            @error('password')<span id="password-error" role="alert">{{ $message }}</span>@enderror
         </div>
 
         <div>

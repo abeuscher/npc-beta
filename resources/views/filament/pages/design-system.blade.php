@@ -19,9 +19,11 @@
     @endif
 
     {{-- Tab navigation --}}
-    <div class="flex gap-2 border-b border-gray-200 dark:border-white/10 mb-6">
+    <div class="flex gap-2 border-b border-gray-200 dark:border-white/10 mb-6" role="tablist">
         <button
             wire:click="switchTab('text-styles')"
+            role="tab"
+            aria-selected="{{ $activeTab === 'text-styles' ? 'true' : 'false' }}"
             @class([
                 'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition',
                 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400' => $activeTab === 'text-styles',
@@ -32,6 +34,8 @@
         </button>
         <button
             wire:click="switchTab('buttons')"
+            role="tab"
+            aria-selected="{{ $activeTab === 'buttons' ? 'true' : 'false' }}"
             @class([
                 'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition',
                 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400' => $activeTab === 'buttons',
@@ -42,6 +46,8 @@
         </button>
         <button
             wire:click="switchTab('colors')"
+            role="tab"
+            aria-selected="{{ $activeTab === 'colors' ? 'true' : 'false' }}"
             @class([
                 'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition',
                 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400' => $activeTab === 'colors',

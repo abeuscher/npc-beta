@@ -27,15 +27,16 @@
             <div class="field">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required
-                       autocomplete="new-password" minlength="12">
+                       autocomplete="new-password" minlength="12"
+                       @error('password') aria-describedby="password-error" aria-invalid="true" @enderror>
                 <span class="hint">Minimum 12 characters.</span>
-                @error('password')<span class="error" role="alert">{{ $message }}</span>@enderror
+                @error('password')<span id="password-error" class="error" role="alert">{{ $message }}</span>@enderror
             </div>
 
             <div class="field">
                 <label for="password_confirmation">Confirm password</label>
                 <input type="password" id="password_confirmation" name="password_confirmation" required
-                       autocomplete="new-password" minlength="12">
+                       autocomplete="new-password" minlength="12" aria-describedby="mismatch-hint">
                 <span id="mismatch-hint" class="error" style="display:none" role="alert">Passwords do not match.</span>
             </div>
 

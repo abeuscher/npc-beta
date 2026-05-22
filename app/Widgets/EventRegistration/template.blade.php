@@ -170,15 +170,17 @@
                 <div class="col-{{ \App\Support\FormFieldConfig::width('name') }}">
                     <label for="reg_name" class="form-label">Full Name <span aria-hidden="true" class="required-star">*</span></label>
                     <input type="text" id="reg_name" name="name" required
-                           value="{{ old('name') }}" autocomplete="name">
-                    @error('name')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+                           value="{{ old('name') }}" autocomplete="name"
+                           @error('name') aria-describedby="reg_name-error" aria-invalid="true" @enderror>
+                    @error('name')<span id="reg_name-error" role="alert" class="form-error">{{ $message }}</span>@enderror
                 </div>
 
                 <div class="col-{{ \App\Support\FormFieldConfig::width('email') }}">
                     <label for="reg_email" class="form-label">Email Address <span aria-hidden="true" class="required-star">*</span></label>
                     <input type="email" id="reg_email" name="email" required
-                           value="{{ old('email') }}" autocomplete="email">
-                    @error('email')<span role="alert" class="form-error">{{ $message }}</span>@enderror
+                           value="{{ old('email') }}" autocomplete="email"
+                           @error('email') aria-describedby="reg_email-error" aria-invalid="true" @enderror>
+                    @error('email')<span id="reg_email-error" role="alert" class="form-error">{{ $message }}</span>@enderror
                 </div>
 
                 <div class="col-{{ \App\Support\FormFieldConfig::width('phone') }}">
