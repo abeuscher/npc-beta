@@ -96,6 +96,17 @@ Reopen only if user testing surfaces a concrete UX problem the must-have scroll-
 
 ---
 
+### Page Builder — Inspector/Modal Focus Management *(stub — carved out at session 317 from the E19 Aria sweep)*
+
+The E19 accessibility pass landed names + roles on every page-builder editor control but carved out the **focus-management** half as larger than one iteration:
+
+- **Confirm modals** (`ConfirmDeleteModal.vue`, `ConfirmResetModal.vue`) lack `role="dialog"` / `aria-modal="true"` / `aria-labelledby` and have no **focus trap** — focus can escape to the background while the modal is open, and focus is not returned to the triggering control on close.
+- **Inspector panel** does not move focus into itself when a widget is selected / a panel opens — keyboard users must tab in manually; no autofocus on the first control.
+
+Both need a small shared focus-trap composable (trap + restore-on-close + Escape-to-close) wired into the modals, plus a focus-move-on-open for the inspector. Vue-only, `npm run build`, no schema. Sized ~1 iteration once the composable shape is decided. Pairs naturally with any future page-builder accessibility work; not blocking the public-website demo (these are operator-facing editor controls). See `sessions/317. Accessibility Pass — Log.md` (findings B5/B6).
+
+---
+
 ### Code Review & Cleanup — 4-session housekeeping cycle ✅ *(closed at session 274; sessions 271 / 272 / 273 / 274 all closed)*
 
 Mid-cycle housekeeping pass, distinct from the **T1 terminal session** below. Lifted at session 269 close after the E11 (Page Builder Focus-Scroll Clamp) work was abandoned per the 204-rationale, opening calendar for a long-overdue cleanup pass. Window covered: **207 → 268** (~60 sessions of growth since the most recent code review at 205/206 and the most recent migration squash at 208). Originally planned as 270 / 271 / 272 / 273; renumbered after session 270 absorbed the PostgreSQL major-version-skew fix (an emergent unblocker for FM 021).
