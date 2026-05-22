@@ -56,7 +56,12 @@
       "Bash(curl -s -o /dev/null -w \"news http: %{http_code}\\\\n\" http://localhost/news)",
       "Bash(node -e 'const r=require\\(\"/tmp/lh-news.json\"\\); console.log\\(\"runtimeError:\", r.runtimeError? r.runtimeError.code+\" / \"+r.runtimeError.message : \"none\"\\); console.log\\(\"finalUrl:\", r.finalDisplayedUrl||r.finalUrl\\);')",
       "Bash(npx -y lighthouse http://localhost/ --only-categories=accessibility --output=json --output-path=/tmp/lh-home2.json --chrome-flags=\"--headless=new --no-sandbox --disable-gpu\" --quiet)",
-      "Bash(node -e 'const r=require\\(\"/tmp/lh-home2.json\"\\);console.log\\(\"Accessibility:\",Math.round\\(r.categories.accessibility.score*100\\)\\);for\\(const a of r.categories.accessibility.auditRefs\\){const au=r.audits[a.id];if\\(au&&au.score!==null&&au.score<1&&au.scoreDisplayMode!==\"notApplicable\"&&au.scoreDisplayMode!==\"manual\"\\)console.log\\(\" [FAIL]\",a.id\\);}')"
+      "Bash(node -e 'const r=require\\(\"/tmp/lh-home2.json\"\\);console.log\\(\"Accessibility:\",Math.round\\(r.categories.accessibility.score*100\\)\\);for\\(const a of r.categories.accessibility.auditRefs\\){const au=r.audits[a.id];if\\(au&&au.score!==null&&au.score<1&&au.scoreDisplayMode!==\"notApplicable\"&&au.scoreDisplayMode!==\"manual\"\\)console.log\\(\" [FAIL]\",a.id\\);}')",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).devDependencies['@axe-core/playwright']\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8090/)",
+      "Bash(curl -s -o /dev/null -w \"e2e home after clear: %{http_code}\\\\n\" http://localhost:8090/)",
+      "Bash(npx -y lighthouse http://localhost/about --only-categories=accessibility --output=json --output-path=/tmp/lh-about2.json --chrome-flags=\"--headless=new --no-sandbox --disable-gpu\" --quiet)",
+      "Bash(node -e 'const r=require\\(\"/tmp/lh-about2.json\"\\);console.log\\(\"About accessibility:\",Math.round\\(r.categories.accessibility.score*100\\)\\);for\\(const a of r.categories.accessibility.auditRefs\\){const au=r.audits[a.id];if\\(au&&au.score!==null&&au.score<1&&au.scoreDisplayMode!==\"notApplicable\"&&au.scoreDisplayMode!==\"manual\"\\)console.log\\(\"  [FAIL]\",a.id\\);}')"
     ],
     "additionalDirectories": [
       "/tmp"
