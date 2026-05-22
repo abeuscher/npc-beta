@@ -14,16 +14,8 @@ This file is the only home for items that are *small enough to bundle but large 
 
 *(Items destined for the next housekeeping batch session. Items default to **pre-Public-Website-Complete** unless tagged `[post-milestone]` — see Rule 12 in `release-plan.md`.)*
 
-- Hero widget: button-group alignment control (left / right / center).
-- Text editor: changing text color should not change the editor's own preview color — white text becomes illegible on the light editor background.
-- Default paragraph and list-item padding: replace the zero-reset with ~6px top / ~12px bottom on `p` and `li`.
-- Hero widget: expose a control for how the hero text block's max-width is bound inside the widget.
 - `[post-milestone]` Random Data Generator widget: add Organizations to the entity-generation list. *(Admin tool — doesn't block the public website demo.)*
-- Logo widget: respond to the hero widget's text-color override when the logo sits on a full-bleed hero (so the logo doesn't fight the chosen text color).
-- Logo widget: default `href` = site home, with override available in the inspector.
-- Default logo image: ship a placeholder logo asset so a fresh install has one.
 - Logo widget: text field → rich text + appearance control (small scope; just enough to set color / weight / size).
-- Default button style refresh — quick visual pass (not blue-on-blue, gentle gradients, hover states). Pre-design-system-editor stopgap.
 - Column layouts: default `layout_config.background_full_width` to `true` for parity with widget defaults shipped at E10 (verified s282 — widget_types ships bg=true/content=false; column layouts still fall back to bg=false in `AppearanceStyleComposer::resolveColumnLayoutFullWidth`).
 - Link-color mechanism consolidation (s290): there are now **three** link-recolor mechanisms and they need a clarity pass. (1) Nav widget's own `--nav-link-color` (Nav inspector, sets its own link color). (2) Hero's `nav_link_color` / `nav_hover_color` reach-over — a Hero knob that restyles the *site-chrome nav* (a sibling widget) but only when `overlap_nav: true`; effectively dead on this site because G12 forced overlap off everywhere (logo-contrast). (3) New generic `text.link_color` → `--np-link-color` (s290 G22 resolution) — recolors content links inside any widget; does NOT reach the nav. These are not duplicates (they target different elements), so the s290 link-color work did **not** make #2 removable — #2 is the real smell (a widget reaching across to restyle another widget), and that decision belongs to **G12** (Hero↔Nav overlap-nav / logo-contrast coupling), not to the link-color feature. Also a real UX-confusion point: a Hero inspector showing both "Link Color" (#3, hero content) and "Nav Link Color" (#2, site chrome, overlap-only) will confuse operators — fix is labeling + the G12 overlap decision. Cross-ref G12/G21/G22 in `sessions/public website/gap-report.md`.
 - Widget non-colour hardcoded values (s300 survey — scope-fenced, deliberately not migrated): rgba shadows / gradient stops / opacity tints — BlogPager (`--color-surface-hover` hover tint), MapEmbed + SocialSharing (rgba scrims under the kept `#fff` accents), Nav (dropdown `box-shadow` rgba), PricingChart (`rgba(0,0,0,.08)` hairline), ProductCarousel (fade-gradient `#000000` stops + rgba placeholder/mask). Not in the `--np-color-*` contract by design; held as deliberate exceptions in `WidgetColorTokenConsumptionTest`'s allow-list. Revisit only if a shadow/gradient token vocabulary is ever introduced.
@@ -72,6 +64,11 @@ This file is the only home for items that are *small enough to bundle but large 
 
 *(Log of what left the inbox and where it went. Keep the last ~2 batches' worth.)*
 
+- **2026-05-21 (session 314 close — Housekeeping Batch 2A):** 8 items left the inbox:
+  - 3 → shipped (Hero button-alignment + text-block-max-width controls; fresh-install placeholder logo image; logo wordmark responding to a full-bleed hero's text colour).
+  - 1 → verified already shipped as drift (logo default link = `/` was already the schema default).
+  - 3 → dropped as no-longer-valid (paragraph/list padding default — typography margin rhythm already owns it; button-style refresh — done as far as it goes pre-designer, belongs to the Design System Editor track; editor text-colour legibility — obsoleted by the inline editor).
+  - Remainder carries to Batch 2B (session 315). Also shipped the `npm run logbug` capture flow + close-gate digest + verify-at-walk staleness guard.
 - **2026-05-13 (session 282 close):** 16 housekeeping items surfaced from operator running list:
   - 11 → Inbox (above)
   - 3 → Promotion candidates (Table widget; Header/footer overhaul; Borders pass)
