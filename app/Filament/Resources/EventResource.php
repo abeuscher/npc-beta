@@ -16,6 +16,7 @@ use Filament\Forms;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Illuminate\Support\HtmlString;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -506,6 +507,28 @@ class EventResource extends Resource
             ->defaultSort('starts_at', 'asc')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('create_event') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate event')
+                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations and the landing page are not copied. The copy opens for editing.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Event $record) {
+                        abort_unless(auth()->user()?->can('create_event'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Event duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(EventResource::getUrl('edit', ['record' => $copy]));
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (Event $record): bool => $record->registrations()->exists()),
             ])

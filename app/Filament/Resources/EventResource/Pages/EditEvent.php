@@ -170,6 +170,28 @@ class EditEvent extends ReadOnlyAwareEditRecord
                 ->visible(fn () => auth()->user()?->can('update_event') && $this->getRecord()->status !== 'cancelled'),
 
             Actions\ActionGroup::make([
+                Actions\Action::make('duplicateEvent')
+                    ->label('Duplicate Event')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->visible(fn () => auth()->user()?->can('create_event') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate event')
+                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations and the landing page are not copied. The copy opens for editing.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function () {
+                        abort_unless(auth()->user()?->can('create_event'), 403);
+
+                        $copy = $this->getRecord()->duplicate();
+
+                        Notification::make()
+                            ->title('Event duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        $this->redirect(EventResource::getUrl('edit', ['record' => $copy]));
+                    }),
+
                 Actions\Action::make('viewRegistrants')
                     ->label('View registrants')
                     ->icon('heroicon-o-user-group')

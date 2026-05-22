@@ -195,6 +195,50 @@ class Event extends Model implements HasMedia
         }
     }
 
+    public function duplicate(?int $authorId = null): self
+    {
+        $copy = $this->replicate([
+            'slug', 'status', 'published_at', 'source', 'author_id',
+            'landing_page_id', 'registrants_deleted_at', 'import_session_id',
+        ]);
+
+        $base = $this->slug . '-copy';
+        $slug = $base;
+        $i    = 2;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $copy->title        = 'Copy of ' . $this->title;
+        $copy->slug         = $slug;
+        $copy->status       = 'draft';
+        $copy->published_at = null;
+        $copy->source       = Source::HUMAN;
+        $copy->author_id    = $authorId ?? auth()->id();
+        $copy->save();
+
+        foreach ($this->ticketTiers as $tier) {
+            $copy->ticketTiers()->create([
+                'name'       => $tier->name,
+                'price'      => $tier->price,
+                'capacity'   => $tier->capacity,
+                'sort_order' => $tier->sort_order,
+            ]);
+        }
+
+        $tagIds = $this->tags()->pluck('tags.id')->all();
+        if ($tagIds) {
+            $copy->tags()->sync($tagIds);
+        }
+
+        foreach ($this->media as $media) {
+            $media->copy($copy, $media->collection_name, $media->disk);
+        }
+
+        return $copy;
+    }
+
     public function isAtCapacity(): bool
     {
         $tiers = $this->ticketTiers;
