@@ -969,10 +969,6 @@ Add a layer explorer: a simple text-node tree of the page's widget structure (li
 
 UX improvements to the column layout construct: better visual affordances for column slots, responsive behaviour controls, drag/resize handles, and any inspector panel refinements needed. Benefits from the builder overhaul — rework to use the new properties panel and preview system. **Note: column layouts (`page_layouts`) are a distinct construct from widgets (`page_widgets`) — the two were deliberately separated because the variance in behaviour required a different model. This stub covers refinements to the layout construct; it does not propose re-unifying columns with widgets.**
 
-### Page Copy with Guardrails
-
-Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
-
 ### Content Export — Unified Options Modal *(surfaced at session 315)*
 
 Replace the four near-identical "Export …" rows in the secondary-actions ellipsis menu with a single **"Export …"** action that opens a small modal carrying two checkboxes: *Include theme* and *Include media*. Today the menu pre-bakes the 2×2 matrix of those two binary options into four separate items (`exportPage` / `exportPageWithMedia` / `exportPageWithTheme` / `exportPageWithThemeAndMedia`), which (a) bloats the menu and (b) truncates in Filament's narrow dropdown panel because the labels are long. Collapsing to one action with two toggles dissolves both symptoms; a panel-width tweak is the fallback only if any truncation remains after the collapse.
