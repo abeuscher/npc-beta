@@ -19,6 +19,7 @@
         "e2e:down": "docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml down -v"
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.11.3",
         "@playwright/test": "1.49.1",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/typography": "^0.5.19",
