@@ -93,6 +93,36 @@ it('duplicate clones the widget stack including layouts and nested widgets', fun
     expect($nested->layout->owner_id)->toBe($copy->id);
 });
 
+it('duplicate carries forward column-layout background appearance config', function () {
+    $original = Page::factory()->create(['type' => 'default']);
+    $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
+
+    $appearance = ['background' => ['color' => '#336699', 'gradient' => ['gradients' => [['type' => 'linear', 'from' => '#ff0000', 'to' => '#0000ff', 'angle' => 90]]]]];
+
+    $layout = $original->layouts()->create([
+        'label'             => 'Hero Section',
+        'display'           => 'grid',
+        'columns'           => 1,
+        'layout_config'     => ['background_full_width' => true],
+        'appearance_config' => $appearance,
+        'sort_order'        => 0,
+    ]);
+
+    $original->widgets()->create([
+        'widget_type_id' => $wt->id,
+        'layout_id'      => $layout->id,
+        'column_index'   => 0,
+        'config'         => ['content' => '<p>Inside</p>'],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $copy = $original->duplicate();
+    $copyLayout = $copy->layouts()->first();
+
+    expect($copyLayout->appearance_config)->toEqual($appearance);
+});
+
 it('duplicate re-points tags to the same tag rows without cloning them', function () {
     $original = Page::factory()->create();
     $tag = Tag::factory()->create();

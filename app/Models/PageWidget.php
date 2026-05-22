@@ -168,13 +168,14 @@ class PageWidget extends Model implements HasMedia
 
         foreach ($layouts as $layout) {
             $newLayout = PageLayout::create([
-                'owner_type'    => $target->getMorphClass(),
-                'owner_id'      => $target->getKey(),
-                'label'         => $layout->label,
-                'display'       => $layout->display,
-                'columns'       => $layout->columns,
-                'layout_config' => $layout->layout_config,
-                'sort_order'    => $layout->sort_order,
+                'owner_type'        => $target->getMorphClass(),
+                'owner_id'          => $target->getKey(),
+                'label'             => $layout->label,
+                'display'           => $layout->display,
+                'columns'           => $layout->columns,
+                'layout_config'     => $layout->layout_config,
+                'appearance_config' => $layout->appearance_config,
+                'sort_order'        => $layout->sort_order,
             ]);
 
             foreach ($layout->widgets as $widget) {
