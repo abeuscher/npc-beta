@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\PageResource\Pages;
 
 use App\Filament\Resources\PageResource;
+use App\Filament\Resources\PageResource\Concerns\HasPageSecondaryActions;
 use Filament\Actions;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPage extends EditRecord
 {
+    use HasPageSecondaryActions;
+
     protected static string $resource = PageResource::class;
 
     protected static string $view = 'filament.resources.page-resource.pages.edit-page';
@@ -43,6 +46,8 @@ class EditPage extends EditRecord
                 ->label('Edit Page Details')
                 ->icon('heroicon-o-cog-6-tooth')
                 ->url(fn () => PageResource::getUrl('details', ['record' => $this->record])),
+
+            $this->pageSecondaryActionsGroup(),
         ];
     }
 
