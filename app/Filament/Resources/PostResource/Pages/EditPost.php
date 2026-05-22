@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\PostResource\Pages;
 
 use App\Filament\Resources\PostResource;
+use App\Filament\Resources\PostResource\Concerns\HasPostSecondaryActions;
 use Filament\Actions;
 use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
 
 class EditPost extends EditRecord
 {
+    use HasPostSecondaryActions;
+
     protected static string $resource = PostResource::class;
 
     protected static string $view = 'filament.resources.post-resource.pages.edit-post';
@@ -35,6 +38,8 @@ class EditPost extends EditRecord
                 ->label('Edit Post Details')
                 ->icon('heroicon-o-cog-6-tooth')
                 ->url(fn () => PostResource::getUrl('details', ['record' => $this->record])),
+
+            $this->postSecondaryActionsGroup(),
         ];
     }
 

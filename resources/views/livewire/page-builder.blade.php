@@ -3,6 +3,7 @@
     x-data
     x-on:open-widget-picker.window="if ($event.detail?.ownerId === @js($ownerId)) { $wire.openAddModal($event.detail?.insertPosition ?? null, $event.detail?.layoutId ?? null, $event.detail?.columnIndex ?? null) }"
     x-on:open-save-template-modal.window="if ($event.detail?.ownerId === @js($ownerId)) { $wire.openSaveTemplateModal() }"
+    x-on:page-builder-save.window="if ($event.detail?.ownerId === @js($ownerId)) { $wire.saveChanges() }"
 >
 
     {{-- ------------------------------------------------------------------ --}}

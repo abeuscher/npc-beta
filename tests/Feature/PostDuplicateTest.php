@@ -36,3 +36,16 @@ it('list-level duplicate action creates a draft post copy and redirects to its e
     expect($copy->status)->toBe('draft');
     expect($copy->title)->toBe('Copy of Spring Newsletter');
 });
+
+it('post builder edit screen exposes the duplicate action in its ellipsis group', function () {
+    $original = Page::factory()->create(['slug' => 'gala-recap', 'type' => 'post']);
+
+    Livewire::actingAs($this->user)
+        ->test(PostResource\Pages\EditPost::class, ['record' => $original->id])
+        ->callAction('duplicatePost')
+        ->assertRedirect(PostResource::getUrl('edit', [
+            'record' => Page::where('slug', 'gala-recap-copy')->firstOrFail(),
+        ]));
+
+    expect(Page::where('slug', 'gala-recap-copy')->where('status', 'draft')->exists())->toBeTrue();
+});

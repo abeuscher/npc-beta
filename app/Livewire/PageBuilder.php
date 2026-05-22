@@ -167,6 +167,16 @@ class PageBuilder extends Component
     // Save as Content Template — only meaningful when the owner is a Page.
     // -------------------------------------------------------------------------
 
+    public function saveChanges(): void
+    {
+        $this->assertCanEdit();
+
+        Notification::make()
+            ->title('Saved')
+            ->success()
+            ->send();
+    }
+
     public function openSaveTemplateModal(): void
     {
         $this->saveTemplateName = '';

@@ -13,10 +13,10 @@ const props = defineProps<{
 
 const store = useEditorStore()
 
-function openSaveTemplateModal() {
+function saveChanges() {
   window.dispatchEvent(
-    new CustomEvent('open-save-template-modal', {
-      detail: { pageId: store.pageId },
+    new CustomEvent('page-builder-save', {
+      detail: { ownerId: store.ownerId },
     })
   )
 }
@@ -66,13 +66,13 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="store.mode === 'page' && store.rootWidgets.length > 0" class="vue-editor__footer">
+    <div v-if="store.mode === 'page'" class="vue-editor__footer">
       <button
         type="button"
-        class="vue-editor__save-template-btn"
-        @click="openSaveTemplateModal"
+        class="vue-editor__save-btn"
+        @click="saveChanges"
       >
-        Save as Template
+        Save changes
       </button>
     </div>
 
@@ -118,23 +118,23 @@ html.dark .vue-editor {
   border-top: 1px solid #e5e7eb;
 }
 
-.vue-editor__save-template-btn {
+.vue-editor__save-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: 0.5rem;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #374151;
+  border: 1px solid transparent;
+  background: rgb(var(--primary-600, 37 99 235));
+  color: #fff;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.vue-editor__save-template-btn:hover {
-  background: #f9fafb;
+.vue-editor__save-btn:hover {
+  background: rgb(var(--primary-500, 59 130 246));
 }
 
 @media (max-width: 768px) {
