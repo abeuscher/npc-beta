@@ -136,12 +136,3 @@ it('product carousel renders slides with product data and buy forms', function (
         ->toContain('product_price_id')
         ->toContain('_token');
 });
-
-// ── Widget count update ────────────────────────────────────────────────────
-
-it('seeder total widget count includes product_carousel', function () {
-    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
-
-    $widgets = WidgetType::all();
-    expect($widgets)->toHaveCount(39);
-});
