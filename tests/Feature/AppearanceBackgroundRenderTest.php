@@ -175,6 +175,36 @@ it('resolves both full_width knobs from instance override at root', function () 
     expect($result['content_full_width'])->toBeTrue();
 });
 
+it('defaults a column layout to full-bleed background when no full_width key is set', function () {
+    $layout = $this->page->layouts()->create([
+        'label'         => 'Default Layout',
+        'display'       => 'grid',
+        'columns'       => 2,
+        'layout_config' => [],
+        'sort_order'    => 0,
+    ]);
+
+    $result = $this->composer->resolveFullWidthForLayout($layout);
+
+    expect($result['background_full_width'])->toBeTrue();
+    expect($result['content_full_width'])->toBeFalse();
+});
+
+it('honours an explicit background_full_width=false on a column layout', function () {
+    $layout = $this->page->layouts()->create([
+        'label'         => 'Boxed Layout',
+        'display'       => 'grid',
+        'columns'       => 2,
+        'layout_config' => ['background_full_width' => false, 'content_full_width' => false],
+        'sort_order'    => 0,
+    ]);
+
+    $result = $this->composer->resolveFullWidthForLayout($layout);
+
+    expect($result['background_full_width'])->toBeFalse();
+    expect($result['content_full_width'])->toBeFalse();
+});
+
 it('forces both full_width knobs false for column-child widget', function () {
     $layout = $this->page->layouts()->create([
         'label'         => 'Test Layout',
