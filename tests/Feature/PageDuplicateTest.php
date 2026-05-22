@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\WidgetType;
 use App\WidgetPrimitive\Source;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -100,6 +102,30 @@ it('duplicate re-points tags to the same tag rows without cloning them', functio
 
     expect($copy->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
     expect(Tag::count())->toBe(1);
+});
+
+it('duplicate carries forward widget background-image media and button config', function () {
+    Storage::fake('public');
+
+    $original = Page::factory()->create(['type' => 'default']);
+    $wt = WidgetType::where('handle', 'text_block')->firstOrFail();
+
+    $widget = $original->widgets()->create([
+        'widget_type_id' => $wt->id,
+        'config'         => ['ctas' => [['text' => 'Donate', 'url' => '/give', 'style' => 'primary']]],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $widget->addMedia(UploadedFile::fake()->image('hero-bg.jpg', 800, 600))
+        ->usingFileName('hero-bg.jpg')
+        ->toMediaCollection('appearance_background_image', 'public');
+
+    $copy = $original->duplicate();
+    $copyWidget = $copy->widgets()->first();
+
+    expect($copyWidget->config['ctas'][0]['text'])->toBe('Donate');
+    expect($copyWidget->getFirstMedia('appearance_background_image'))->not->toBeNull();
 });
 
 it('list-level duplicate action creates a copy and redirects to its editor', function () {

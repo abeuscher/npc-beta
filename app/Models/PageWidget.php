@@ -220,7 +220,7 @@ class PageWidget extends Model implements HasMedia
 
     private static function copyMediaTo(self $source, self $target): void
     {
-        foreach ($source->getMedia() as $media) {
+        foreach ($source->media as $media) {
             $media->copy($target, $media->collection_name, $media->disk);
         }
     }
