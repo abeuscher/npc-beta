@@ -47,7 +47,18 @@ Specs that need a clean mid-run state call `resetDatabase()` from `helpers/db.ts
 
 ## Importer coverage
 
-All five CSV importers (contacts, events, donations, memberships, invoice details) have happy-path and update-strategy regression coverage — 10 specs total under `tests/e2e/importer/`. Each importer has its own fixture folder `tests/e2e/fixtures/{importer}/` containing `happy-path.csv`, `update-second-pass.csv`, and `happy-path.expected.json`. Fixtures are handcrafted, small (3–6 rows), PII-free, and use canonical header names so the wizard's field mapper auto-resolves most columns. The eight non-contact specs complement `tests/Feature/ImportSession194Test.php` — that Pest suite covers update-strategy logic at the service layer; these specs cover it end-to-end through the UI.
+The importer e2e suite covers the **browser-only** contract — the Filament/Livewire import wizard UI — not the per-importer data outcomes, which are owned by the service-layer Pest suite (`ImportEventsTest`, `ImportFinancialTest`, `ImportOrganizationsTest`, `NotesImporterTest`, `ImportSession194Test`, `ImportSessionActionsTest`, `ImportReviewTest`) and the off-Livewire fixture runner (`tests/Feature/Generated/ImportFixtureRunnerTest.php`, all 7 importers × 4 shapes). The Test Audit Cycle 1 sweep (A005) removed the importer specs that re-drove the same generic wizard purely to assert Pest-covered data. The kept specs each guard a distinct browser affordance:
+
+- `contacts-happy-path` — the full wizard flow (upload → map → commit → progress → done).
+- `contacts-update-strategy` — the two-pass re-import + the importer **approve** modal that applies staged updates.
+- `contacts-duplicate-header` — the review-step duplicate-finding UI.
+- `contacts-pii-rejection` — the PII-rejection phase + the violations-CSV **download**.
+- `donations-error-report` — the error table + the errored-rows **download**.
+- `donations-mapping-indicator` — Choices.js mapping-select search input (lazy-init).
+- `site-import-export` — FilePond bundle upload + manifest summary + gated import toggles.
+- `notes-happy-path` — the notes wizard happy path + approve.
+
+Fixture folders live at `tests/e2e/fixtures/{importer}/` (`happy-path.csv`, `update-second-pass.csv`, `happy-path.expected.json`) and are still consumed by the kept contacts/donations/notes specs and their shared wizard helpers. See `docs/testing/playwright-discipline.md` for the keep/redundant decision rule.
 
 ## Generated CSV fixtures (Pest, not Playwright)
 
@@ -55,7 +66,7 @@ For deeper adversarial coverage of the importer's per-row outcomes (clean / mess
 
 ## On-demand specs
 
-Specs tagged `@on-demand` are excluded from the default run and run only via `npm run test:e2e:on-demand`. They exist for deep-coverage sweeps that don't earn their cost in the regular regression cycle but want to live in the suite for episodic re-runs. The Organizations importer (`organizations-happy-path.spec.ts` + `organizations-update-strategy.spec.ts`) is the first example. Future on-demand suites are slotted as named pre-T1 stubs in `sessions/release-plan.md`.
+Specs tagged `@on-demand` are excluded from the default run and run only via `npm run test:e2e:on-demand`. They exist for deep-coverage sweeps that don't earn their cost in the regular regression cycle but want to live in the suite for episodic re-runs. There are currently **no** `@on-demand` specs — the Organizations importer pair that previously held the tag was removed in the A005 Test Audit (its data coverage is owned by `tests/Feature/ImportOrganizationsTest.php`). The runner script stays wired for future on-demand suites, slotted as named pre-T1 stubs in `sessions/release-plan.md`.
 
 ## Debugging a failure
 

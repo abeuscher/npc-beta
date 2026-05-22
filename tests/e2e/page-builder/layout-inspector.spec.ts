@@ -23,7 +23,7 @@ test.describe('Page builder — layout inspector', () => {
         }
     });
 
-    test('drives the three-tab layout inspector and persists background + padding', async ({ page }) => {
+    test('drives the three-tab layout inspector and writes background + padding to the layout appearance config', async ({ page }) => {
         const pageId = await findPageIdBySlug('home');
         expect(pageId).not.toBeNull();
 

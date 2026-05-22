@@ -23,7 +23,7 @@ test.describe('Dashboard View', () => {
         }
     });
 
-    test('loads, adds a widget, and the DB reflects the new arrangement', async ({ page }) => {
+    test('loads the dashboard arrangement view with the expected widgets and no preset/spacing tabs', async ({ page }) => {
         const configId = await findDashboardConfigIdByRoleName('super_admin');
         expect(configId).not.toBeNull();
 

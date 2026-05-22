@@ -138,23 +138,28 @@ it('includes only active donations in receipt calculation', function () {
         'started_at' => '2025-07-01',
     ]);
 
-    $activeDonations = Donation::query()
-        ->where('contact_id', $contact->id)
-        ->where('status', 'active')
-        ->whereYear('started_at', 2025)
-        ->get();
+    // Route through the REAL DonorsPage::buildBreakdown() (reflection — the
+    // in-file idiom) so the active-status filter is verified on the production
+    // receipt path, not on an inline query copy.
+    $page   = (new ReflectionClass(DonorsPage::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod($page, 'buildBreakdown');
+    $method->setAccessible(true);
 
-    $total = $activeDonations->sum('amount');
+    [$breakdown, $total] = $method->invoke($page, $contact->id, 2025);
 
-    expect($activeDonations)->toHaveCount(1)
-        ->and((float) $total)->toBe(100.0);
+    // Only the active $100 donation counts; the pending and cancelled rows are excluded.
+    expect($total)->toBe(100.0)
+        ->and($breakdown)->toHaveCount(1)
+        ->and($breakdown[0]['amount'])->toBe(100.0);
 });
 
 it('excludes donations from other tax years', function () {
     $contact = Contact::factory()->create(['email' => 'years@example.com']);
+    $fund    = Fund::factory()->create();
 
     Donation::factory()->create([
         'contact_id' => $contact->id,
+        'fund_id'    => $fund->id,
         'amount'     => 100.00,
         'status'     => 'active',
         'started_at' => '2024-06-01',
@@ -162,17 +167,20 @@ it('excludes donations from other tax years', function () {
 
     Donation::factory()->create([
         'contact_id' => $contact->id,
+        'fund_id'    => $fund->id,
         'amount'     => 200.00,
         'status'     => 'active',
         'started_at' => '2025-06-01',
     ]);
 
-    $donations2025 = Donation::query()
-        ->where('contact_id', $contact->id)
-        ->where('status', 'active')
-        ->whereYear('started_at', 2025)
-        ->get();
+    $page   = (new ReflectionClass(DonorsPage::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod($page, 'buildBreakdown');
+    $method->setAccessible(true);
 
-    expect($donations2025)->toHaveCount(1)
-        ->and((float) $donations2025->first()->amount)->toBe(200.0);
+    [$breakdown, $total] = $method->invoke($page, $contact->id, 2025);
+
+    // Only the 2025 donation counts; the 2024 row is excluded.
+    expect($total)->toBe(200.0)
+        ->and($breakdown)->toHaveCount(1)
+        ->and($breakdown[0]['amount'])->toBe(200.0);
 });

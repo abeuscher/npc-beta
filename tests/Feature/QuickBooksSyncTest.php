@@ -109,7 +109,7 @@ it('skips sync when transaction already has quickbooks_id', function () {
 
 // ── Success paths ──────────────────────────────────────────────────────────
 
-it('creates a sales receipt for inbound transactions', function () {
+it('syncs an inbound transaction via createSalesReceipt and records the returned quickbooks_id', function () {
     seedQbSyncConnection();
     seedSyncIncomeAccount();
 
@@ -136,7 +136,7 @@ it('creates a sales receipt for inbound transactions', function () {
     expect($transaction->qb_sync_error)->toBeNull();
 });
 
-it('creates a refund receipt for outbound transactions', function () {
+it('syncs an outbound refund via createRefundReceipt and records the returned quickbooks_id', function () {
     seedQbSyncConnection();
     seedSyncIncomeAccount();
 
