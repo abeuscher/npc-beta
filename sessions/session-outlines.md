@@ -973,6 +973,18 @@ UX improvements to the column layout construct: better visual affordances for co
 
 Add a "Copy Page" action with safety guardrails: confirmation dialog, auto-generated slug with `-copy` suffix, new page created in draft state, media references shared (not duplicated). Scope includes defining which page types are copyable and what gets carried over vs. reset.
 
+### Content Export — Unified Options Modal *(surfaced at session 315)*
+
+Replace the four near-identical "Export …" rows in the secondary-actions ellipsis menu with a single **"Export …"** action that opens a small modal carrying two checkboxes: *Include theme* and *Include media*. Today the menu pre-bakes the 2×2 matrix of those two binary options into four separate items (`exportPage` / `exportPageWithMedia` / `exportPageWithTheme` / `exportPageWithThemeAndMedia`), which (a) bloats the menu and (b) truncates in Filament's narrow dropdown panel because the labels are long. Collapsing to one action with two toggles dissolves both symptoms; a panel-width tweak is the fallback only if any truncation remains after the collapse.
+
+**Decision (s315):** export stays *in* the ellipsis menu on every content type that has it (pages, posts, events, templates, and the site export) — it does not graduate to a primary button. The modal is the unifying surface across all of them.
+
+**Why it's tractable:** the backend already supports both axes — `ContentExporter` and `ExportBundleJob` take `with_design` / `with_media`, and the four current items are just pre-selected combinations. The modal routes by the media toggle: no-media → synchronous `streamDownload` JSON; with-media → queued `ExportBundleJob` zip. So this is consolidation of an existing seam, not new export machinery.
+
+**Shape to resolve at session start:** one shared modal/options component reused across content types vs. per-type actions that share a trait — mirror of the `HasPageSecondaryActions` trait landed in s315, which is what surfaced this. Spans pages/posts/events/templates/site, so it wants its own session.
+
+**Why post-Beta:** the functionality all exists; this is UX consolidation — important but not Beta-blocking, and deliberately deferred to keep the pre-Beta session count from growing near the finish.
+
 ### Site Chrome Widgets & Navigation
 
 Build a logo block widget for the site header. Restructure the default header and footer into two-column layouts (logo/content on left, nav on right for header; address/content on left, nav on right for footer). Build a company address widget for the footer. Navigation widget is being built in session 169 — this stub covers the remaining chrome restructuring work.
