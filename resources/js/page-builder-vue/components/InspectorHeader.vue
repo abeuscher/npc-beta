@@ -60,6 +60,7 @@ function confirmReset() {
       <button
         type="button"
         title="Rename block"
+        aria-label="Rename block"
         class="inspector-header__edit-btn"
         @click="startEditing"
       >
@@ -70,6 +71,7 @@ function confirmReset() {
       <button
         type="button"
         title="Reset all settings to defaults"
+        aria-label="Reset all settings to defaults"
         class="inspector-header__reset-btn"
         :disabled="Object.keys(widget.config).length === 0"
         @click="openResetModal"
@@ -82,6 +84,7 @@ function confirmReset() {
         v-if="!widget.is_required"
         type="button"
         title="Delete block"
+        aria-label="Delete block"
         class="inspector-header__delete-btn"
         @click="showDeleteModal = true"
       >

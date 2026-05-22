@@ -21,6 +21,7 @@ function handleInput(e: Event) {
     type="number"
     :value="modelValue ?? ''"
     :min="field.min"
+    :aria-label="field.label || undefined"
     class="inspector-control"
     @input="handleInput"
   >

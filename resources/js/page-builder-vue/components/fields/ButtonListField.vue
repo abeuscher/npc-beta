@@ -73,6 +73,7 @@ function updateField(index: number, key: string, value: string) {
             type="button"
             class="button-list__action"
             title="Move up"
+            aria-label="Move button up"
             @click="moveUp(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -84,6 +85,7 @@ function updateField(index: number, key: string, value: string) {
             type="button"
             class="button-list__action"
             title="Move down"
+            aria-label="Move button down"
             @click="moveDown(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -94,6 +96,7 @@ function updateField(index: number, key: string, value: string) {
             type="button"
             class="button-list__action button-list__action--remove"
             title="Remove button"
+            aria-label="Remove button"
             @click="removeButton(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -108,6 +111,7 @@ function updateField(index: number, key: string, value: string) {
           type="text"
           :value="btn.text"
           placeholder="Button text"
+          :aria-label="`Button ${index + 1} text`"
           class="button-list__input"
           @input="updateField(index, 'text', ($event.target as HTMLInputElement).value)"
         >
@@ -115,11 +119,13 @@ function updateField(index: number, key: string, value: string) {
           type="text"
           :value="btn.url"
           placeholder="URL (e.g. /about or https://example.com)"
+          :aria-label="`Button ${index + 1} URL`"
           class="button-list__input"
           @input="updateField(index, 'url', ($event.target as HTMLInputElement).value)"
         >
         <select
           :value="btn.style"
+          :aria-label="`Button ${index + 1} style`"
           class="button-list__input"
           @change="updateField(index, 'style', ($event.target as HTMLSelectElement).value)"
         >

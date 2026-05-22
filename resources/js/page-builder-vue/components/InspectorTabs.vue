@@ -16,11 +16,13 @@ const emit = defineEmits<{
 
 <template>
   <div class="inspector-tabs">
-    <div class="inspector-tabs__list">
+    <div class="inspector-tabs__list" role="tablist">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
+        role="tab"
+        :aria-selected="activeTab === tab.id"
         class="inspector-tabs__btn"
         :class="{ 'inspector-tabs__btn--active': activeTab === tab.id }"
         :title="tab.label"

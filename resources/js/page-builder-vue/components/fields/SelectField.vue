@@ -79,6 +79,7 @@ if (props.field.options_from?.startsWith('collection_fields:')) {
 <template>
   <select
     :value="modelValue ?? ''"
+    :aria-label="field.label || undefined"
     class="inspector-control"
     @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
   >

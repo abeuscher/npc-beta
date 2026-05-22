@@ -89,6 +89,7 @@ function updateRow(index: number, key: string, value: any) {
             type="button"
             class="repeater__action"
             title="Move up"
+            aria-label="Move item up"
             @click="moveUp(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -100,6 +101,7 @@ function updateRow(index: number, key: string, value: any) {
             type="button"
             class="repeater__action"
             title="Move down"
+            aria-label="Move item down"
             @click="moveDown(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -110,6 +112,7 @@ function updateRow(index: number, key: string, value: any) {
             type="button"
             class="repeater__action repeater__action--remove"
             title="Remove"
+            aria-label="Remove item"
             @click="removeRow(index)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

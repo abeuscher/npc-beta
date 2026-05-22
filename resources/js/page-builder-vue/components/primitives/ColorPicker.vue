@@ -211,6 +211,7 @@ onBeforeUnmount(() => {
         :class="{
           'color-picker__trigger--compact': compact,
         }"
+        :aria-label="compact ? (hasValue ? `Color: ${modelValue}` : 'Choose color') : undefined"
         @click="togglePopover"
       >
         <span

@@ -15,6 +15,7 @@ const emit = defineEmits<{
   <input
     :type="field.type === 'url' ? 'url' : 'text'"
     :value="modelValue ?? ''"
+    :aria-label="field.label || undefined"
     class="inspector-control"
     @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
   >

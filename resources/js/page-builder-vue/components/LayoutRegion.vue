@@ -150,6 +150,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
       type="button"
       class="layout-region__selector"
       :title="`Select layout: ${layout.label || 'Column Layout'}`"
+      :aria-label="`Select layout: ${layout.label || 'Column Layout'}`"
       @click.stop="selectLayout"
     >
       <svg
@@ -166,8 +167,10 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
       </svg>
     </button>
 
-    <!-- Hover-revealed handle bar above the layout -->
-    <div class="layout-region__handle" @click.stop="selectLayout">
+    <!-- Hover-revealed handle bar above the layout. Redundant mouse affordance —
+         the same selectLayout action is keyboard-reachable via the always-visible
+         selector button above, so this is hidden from assistive tech. -->
+    <div class="layout-region__handle" aria-hidden="true" @click.stop="selectLayout">
       <span class="layout-region__handle-label">{{
         layout.label || 'Column Layout'
       }}</span>

@@ -264,6 +264,8 @@ watch(
           'preview-canvas__viewport-btn--active': presetViewport === vp.width,
         }"
         :title="`${vp.label} (${vp.width}px)`"
+        :aria-label="`${vp.label} viewport (${vp.width}px)`"
+        :aria-pressed="presetViewport === vp.width"
         @click="handleViewportChange(vp.width)"
       >
         <svg

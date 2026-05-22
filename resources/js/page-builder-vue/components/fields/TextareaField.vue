@@ -15,6 +15,7 @@ const emit = defineEmits<{
   <textarea
     :value="modelValue ?? ''"
     rows="4"
+    :aria-label="field.label || undefined"
     class="inspector-control inspector-textarea"
     @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
   ></textarea>
