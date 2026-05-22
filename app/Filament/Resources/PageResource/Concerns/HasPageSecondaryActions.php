@@ -24,6 +24,28 @@ trait HasPageSecondaryActions
     protected function pageSecondaryActionsGroup(): Actions\ActionGroup
     {
         return Actions\ActionGroup::make([
+            Actions\Action::make('duplicatePage')
+                ->label('Duplicate Page')
+                ->icon('heroicon-o-document-duplicate')
+                ->visible(fn () => (auth()->user()?->can('create_page') ?? false) && $this->record->type !== 'system')
+                ->requiresConfirmation()
+                ->modalHeading('Duplicate page')
+                ->modalDescription('Creates a draft copy of this page, including its blocks. The copy opens in the editor.')
+                ->modalSubmitActionLabel('Duplicate')
+                ->action(function () {
+                    abort_unless(auth()->user()?->can('create_page'), 403);
+
+                    $copy = $this->record->duplicate();
+
+                    Notification::make()
+                        ->title('Page duplicated')
+                        ->body('A draft copy was created. You are now editing the copy.')
+                        ->success()
+                        ->send();
+
+                    return redirect(\App\Filament\Resources\PageResource::getUrl('edit', ['record' => $copy]));
+                }),
+
             Actions\Action::make('exportPage')
                 ->label('Export Page')
                 ->icon('heroicon-o-arrow-down-tray')

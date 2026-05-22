@@ -213,6 +213,29 @@ class PageResource extends Resource
             ->defaultSort('updated_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('create_page') ?? false)
+                    ->hidden(fn (Page $record): bool => $record->type === 'system')
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate page')
+                    ->modalDescription('Creates a draft copy of this page, including its blocks. The copy opens in the editor.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Page $record) {
+                        abort_unless(auth()->user()?->can('create_page'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Page duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(PageResource::getUrl('edit', ['record' => $copy]));
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->hidden(fn (Page $record): bool => $record->type === 'system')
                     ->modalDescription(fn (Page $record): ?string => match ($record->type) {

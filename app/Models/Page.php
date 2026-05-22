@@ -116,6 +116,40 @@ class Page extends Model implements HasMedia
         return $this->morphToMany(Tag::class, 'taggable');
     }
 
+    public function duplicate(?int $authorId = null): self
+    {
+        $copy = $this->replicate(['slug', 'status', 'published_at', 'author_id', 'source']);
+
+        $base = $this->slug . '-copy';
+        $slug = $base;
+        $i    = 2;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $copy->title        = 'Copy of ' . $this->title;
+        $copy->slug         = $slug;
+        $copy->status       = 'draft';
+        $copy->published_at = null;
+        $copy->source       = Source::HUMAN;
+        $copy->author_id    = $authorId ?? auth()->id();
+        $copy->save();
+
+        PageWidget::copyOwnedStack($this, $copy);
+
+        $tagIds = $this->tags()->pluck('tags.id')->all();
+        if ($tagIds) {
+            $copy->tags()->sync($tagIds);
+        }
+
+        foreach ($this->media as $media) {
+            $media->copy($copy, $media->collection_name, $media->disk);
+        }
+
+        return $copy;
+    }
+
     public function bareSlug(): string
     {
         $prefix = match ($this->type) {
