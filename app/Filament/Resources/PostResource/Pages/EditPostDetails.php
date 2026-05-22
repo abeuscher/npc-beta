@@ -78,6 +78,28 @@ class EditPostDetails extends ReadOnlyAwareEditRecord
                 ->url(fn () => PostResource::getUrl('edit', ['record' => $this->record])),
 
             Actions\ActionGroup::make([
+                Actions\Action::make('duplicatePost')
+                    ->label('Duplicate Post')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate post')
+                    ->modalDescription('Creates a draft copy of this post, including its blocks. The copy opens in the editor.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function () {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        $copy = $this->record->duplicate();
+
+                        Notification::make()
+                            ->title('Post duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(PostResource::getUrl('edit', ['record' => $copy]));
+                    }),
+
                 Actions\Action::make('exportPost')
                     ->label('Export Post')
                     ->icon('heroicon-o-arrow-down-tray')

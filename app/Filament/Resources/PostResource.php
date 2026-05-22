@@ -141,6 +141,28 @@ class PostResource extends Resource
             ->defaultSort('published_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate post')
+                    ->modalDescription('Creates a draft copy of this post, including its blocks. The copy opens in the editor.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Page $record) {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Post duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(PostResource::getUrl('edit', ['record' => $copy]));
+                    }),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
