@@ -158,6 +158,28 @@ class ProductResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->withoutArchived())
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('create_product') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate product')
+                    ->modalDescription('Creates a draft copy of this product, including its price tiers. The copy opens for editing.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Product $record) {
+                        abort_unless(auth()->user()?->can('create_product'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Product duplicated')
+                            ->body('A draft copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(ProductResource::getUrl('edit', ['record' => $copy]));
+                    }),
                 Tables\Actions\Action::make('toggle_archive')
                     ->label(fn (Product $record): string => $record->is_archived ? 'Unarchive' : 'Archive')
                     ->icon(fn (Product $record): string => $record->is_archived ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-archive-box')

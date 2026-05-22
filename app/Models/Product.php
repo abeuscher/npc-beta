@@ -69,6 +69,41 @@ class Product extends Model implements HasMedia
         return $this->activePurchasesCount() >= $this->capacity;
     }
 
+    public function duplicate(): self
+    {
+        $copy = $this->replicate(['slug', 'status', 'published_at', 'source', 'is_archived']);
+
+        $base = $this->slug . '-copy';
+        $slug = $base;
+        $i    = 2;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $copy->name         = 'Copy of ' . $this->name;
+        $copy->slug         = $slug;
+        $copy->status       = 'draft';
+        $copy->published_at = null;
+        $copy->source       = Source::HUMAN;
+        $copy->is_archived  = false;
+        $copy->save();
+
+        foreach ($this->prices as $price) {
+            $copy->prices()->create([
+                'label'      => $price->label,
+                'amount'     => $price->amount,
+                'sort_order' => $price->sort_order,
+            ]);
+        }
+
+        foreach ($this->media as $media) {
+            $media->copy($copy, $media->collection_name, $media->disk);
+        }
+
+        return $copy;
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('product_image')->singleFile();
