@@ -46,6 +46,7 @@
                             type="button"
                             class="social-sharing__link"
                             title="{{ $titles[$platform] }}"
+                            aria-label="{{ $titles[$platform] }}"
                             x-data="{ copied: false }"
                             x-on:click="navigator.clipboard.writeText(window.location.href).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
                         >
@@ -57,6 +58,7 @@
                             href="{{ $shareUrls[$platform] }}"
                             class="social-sharing__link"
                             title="{{ $titles[$platform] }}"
+                            aria-label="{{ $titles[$platform] }}"
                             target="_blank"
                             rel="noopener"
                         >

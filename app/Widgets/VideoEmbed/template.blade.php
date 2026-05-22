@@ -36,6 +36,7 @@
     <div class="video-wrapper">
         <iframe
             src="{{ $embedUrl }}"
+            title="{{ $provider === 'vimeo' ? 'Vimeo video player' : 'YouTube video player' }}"
             allow="fullscreen; picture-in-picture"
             allowfullscreen
             loading="lazy"

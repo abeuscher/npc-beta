@@ -202,6 +202,8 @@
 </head>
 <body class="np-site {{ $bodyClass ?? 'page-unknown' }}">
 
+    <a href="#main" class="skip-link">Skip to content</a>
+
     {{-- Site-wide body-open snippet --}}
     {!! SiteSetting::get('site_body_open_snippet', '') !!}
 
@@ -223,7 +225,7 @@
     </div>
     @endunless
 
-    <main @if ($__contentSchemeVars) style="{{ $__contentSchemeVars }}" @endif>
+    <main id="main" @if ($__contentSchemeVars) style="{{ $__contentSchemeVars }}" @endif>
         @yield('content')
     </main>
 

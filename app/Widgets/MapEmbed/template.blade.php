@@ -22,6 +22,7 @@
             <iframe
                 src="{{ $embedUrl }}"
                 class="map-embed__iframe"
+                title="{{ $heading !== '' ? $heading : 'Embedded map' }}"
                 :style="active ? '' : 'pointer-events: none'"
                 allowfullscreen
                 loading="lazy"
@@ -30,8 +31,13 @@
 
             <div
                 class="map-embed__overlay"
+                role="button"
+                tabindex="0"
+                aria-label="Activate map to enable interaction"
                 x-show="!active"
                 x-on:click="active = true"
+                x-on:keydown.enter.prevent="active = true"
+                x-on:keydown.space.prevent="active = true"
             >
                 <span class="map-embed__overlay-hint">Click to interact with map</span>
             </div>
