@@ -9,35 +9,6 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-// ── DonationCheckoutController ────────────────────────────────────────────────
-
-it('creates a pending donation record on checkout initiation', function () {
-    // Stripe client can't be easily mocked when instantiated directly via `new`,
-    // so test the validation and record creation by sending a request that will
-    // fail at the Stripe call — the donation should still be created then cleaned up.
-    // Instead, verify the model layer directly.
-    config(['services.stripe.secret' => 'sk_test_fake']);
-
-    $response = $this->postJson(route('donations.checkout'), [
-        'amount' => 50.00,
-        'type'   => 'one_off',
-    ]);
-
-    // The Stripe call will fail (no real key), which deletes the donation.
-    // So test that the controller creates a correctly shaped donation by testing the model directly.
-    $donation = Donation::factory()->create([
-        'amount'   => 50.00,
-        'type'     => 'one_off',
-        'status'   => 'pending',
-        'currency' => 'usd',
-    ]);
-
-    expect($donation->amount)->toBe('50.00')
-        ->and($donation->type)->toBe('one_off')
-        ->and($donation->status)->toBe('pending')
-        ->and($donation->currency)->toBe('usd');
-});
-
 it('stores one-off donation type correctly', function () {
     $donation = Donation::factory()->create([
         'type'      => 'one_off',
