@@ -25,7 +25,7 @@ it('creates hero widget type with correct category and config schema after seedi
         ->and($hero->allowed_page_types)->toBeNull();
 
     $keys = collect($hero->config_schema)->pluck('key')->all();
-    expect($keys)->toBe(['content', 'background_video', 'text_position', 'ctas', 'fullscreen', 'scroll_indicator', 'overlap_nav', 'background_overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height']);
+    expect($keys)->toBe(['content', 'background_video', 'text_position', 'ctas', 'button_alignment', 'fullscreen', 'scroll_indicator', 'overlap_nav', 'background_overlay_opacity', 'nav_link_color', 'nav_hover_color', 'min_height', 'text_max_width']);
 });
 
 it('renders content from config in the hero template', function () {
@@ -308,4 +308,87 @@ it('adds overlap-nav class when full bleed is enabled', function () {
     $result = WidgetRenderer::render($pw);
 
     expect($result['html'])->toContain('hero--overlap-nav');
+});
+
+it('emits text_max_width as a CSS variable on the wrapper', function () {
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Width', 'slug' => 'hero-width', 'status' => 'published']);
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $hero->id,
+        'config'         => [
+            'content'         => '<h1>Test</h1>',
+            'text_max_width'  => '52rem',
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])->toContain('--hero-text-max-width: 52rem');
+});
+
+it('defaults text_max_width to 42rem when config is empty', function () {
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Width Default', 'slug' => 'hero-width-default', 'status' => 'published']);
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $hero->id,
+        'config'         => [],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])->toContain('--hero-text-max-width: 42rem');
+});
+
+it('derives button alignment from text_position when button_alignment is auto', function () {
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Btn Auto', 'slug' => 'hero-btn-auto', 'status' => 'published']);
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $hero->id,
+        'config'         => [
+            'content'          => '<h1>Test</h1>',
+            'text_position'    => 'bottom-right',
+            'button_alignment' => 'auto',
+            'ctas'             => [
+                ['text' => 'Go', 'url' => '/go', 'style' => 'primary'],
+            ],
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])->toContain('btn-group--right');
+});
+
+it('overrides text_position when button_alignment is set explicitly', function () {
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Btn Explicit', 'slug' => 'hero-btn-explicit', 'status' => 'published']);
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => $hero->id,
+        'config'         => [
+            'content'          => '<h1>Test</h1>',
+            'text_position'    => 'bottom-right',
+            'button_alignment' => 'left',
+            'ctas'             => [
+                ['text' => 'Go', 'url' => '/go', 'style' => 'primary'],
+            ],
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $result = WidgetRenderer::render($pw);
+
+    expect($result['html'])
+        ->toContain('btn-group--left')
+        ->not->toContain('btn-group--right');
 });

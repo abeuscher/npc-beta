@@ -104,5 +104,16 @@
                 color: var(--overlay-nav-hover-color, var(--nav-hover-color, inherit));
             }
         }
+
+        // Logo coupling. When the chrome sits on a full-bleed hero, the hero's
+        // text-color choice is the one the operator wants for content on top of
+        // it — including the wordmark next to the logo image. The placeholder
+        // SVG keeps its own static colors (it's a fresh-install nudge, not a
+        // styled mark); user-uploaded raster logos are untouched either way.
+        .widget-logo,
+        .widget-logo__link,
+        .widget-logo__text {
+            color: var(--overlay-text-color, inherit);
+        }
     }
 }

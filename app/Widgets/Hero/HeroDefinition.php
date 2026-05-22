@@ -58,6 +58,12 @@ class HeroDefinition extends WidgetDefinition
                     'text'           => 'Text Only',
                 ]],
             ]],
+            ['key' => 'button_alignment', 'type' => 'select', 'label' => 'Button Alignment', 'default' => 'auto', 'options' => [
+                'auto'   => 'Match Text Position',
+                'left'   => 'Left',
+                'center' => 'Center',
+                'right'  => 'Right',
+            ], 'group' => 'appearance'],
             ['key' => 'fullscreen',       'type' => 'toggle',  'label' => 'Full Viewport Height', 'default' => false, 'helper' => 'Makes the hero fill the entire browser window (100vh)', 'group' => 'appearance'],
             ['key' => 'scroll_indicator', 'type' => 'toggle',  'label' => 'Scroll Indicator', 'default' => false, 'helper' => 'Show animated down arrow at bottom (useful with full viewport height)', 'group' => 'appearance'],
             ['key' => 'overlap_nav',      'type' => 'toggle',  'label' => 'Full Bleed', 'default' => false, 'helper' => 'Hero extends behind the navigation bar', 'group' => 'appearance'],
@@ -70,6 +76,12 @@ class HeroDefinition extends WidgetDefinition
                 '32rem' => 'Large (32rem)',
                 '40rem' => 'Extra Large (40rem)',
             ], 'group' => 'appearance'],
+            ['key' => 'text_max_width',   'type' => 'select',  'label' => 'Text Block Max Width', 'default' => '42rem', 'options' => [
+                '32rem' => 'Narrow (32rem)',
+                '42rem' => 'Medium (42rem)',
+                '52rem' => 'Wide (52rem)',
+                '100%'  => 'Full Width',
+            ], 'group' => 'appearance'],
         ];
     }
 
@@ -80,6 +92,7 @@ class HeroDefinition extends WidgetDefinition
             'background_video'           => '',
             'text_position'              => 'center-center',
             'ctas'                       => '',
+            'button_alignment'           => 'auto',
             'fullscreen'                 => false,
             'scroll_indicator'           => false,
             'overlap_nav'                => false,
@@ -87,6 +100,7 @@ class HeroDefinition extends WidgetDefinition
             'nav_link_color'             => '',
             'nav_hover_color'            => '',
             'min_height'                 => '24rem',
+            'text_max_width'             => '42rem',
         ];
     }
 

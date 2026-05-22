@@ -65,6 +65,7 @@ class PostController extends Controller
         View::share('__navOverlap', $navOverlap);
         View::share('__navOverlayLinkColor', $navOverlap ? ($firstPw->config['nav_link_color'] ?? '') : '');
         View::share('__navOverlayHoverColor', $navOverlap ? ($firstPw->config['nav_hover_color'] ?? '') : '');
+        View::share('__navOverlayTextColor', $navOverlap ? ($firstPw->appearance_config['text']['color'] ?? '') : '');
 
         return view('pages.show', compact('page', 'blocks', 'inlineStyles', 'inlineScripts'));
     }

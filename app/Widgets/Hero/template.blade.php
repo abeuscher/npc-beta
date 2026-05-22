@@ -7,6 +7,8 @@
     $showScroll      = ($config['scroll_indicator'] ?? false) == true;
     $position        = $config['text_position'] ?? 'center-center';
     $minHeight       = $config['min_height'] ?? '24rem';
+    $textMaxWidth    = $config['text_max_width'] ?? '42rem';
+    $buttonAlignment = $config['button_alignment'] ?? 'auto';
 
     $videoUrl = '';
     if (!empty($configMedia['background_video'])) {
@@ -19,9 +21,13 @@
     if ($showScroll)  $classes[] = 'hero--has-scroll';
     $classes[] = 'hero--pos-' . ($position ?: 'center-center');
     if (!$fullscreen) $classes[] = 'hero--height-' . str_replace('rem', '', $minHeight);
+
+    $resolvedButtonAlignment = $buttonAlignment === 'auto'
+        ? (str_contains($position, 'center') ? 'center' : (str_contains($position, 'right') ? 'right' : 'left'))
+        : $buttonAlignment;
 @endphp
 
-<div class="{{ implode(' ', $classes) }}" style="--hero-overlay: {{ $overlayOpacity }};">
+<div class="{{ implode(' ', $classes) }}" style="--hero-overlay: {{ $overlayOpacity }}; --hero-text-max-width: {{ $textMaxWidth }};">
 
     @if ($videoUrl)
         <video class="hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
@@ -42,7 +48,7 @@
                 <div class="hero-ctas">
                     @include('widget-shared.buttons', [
                         'buttons'   => $ctas,
-                        'alignment' => str_contains($position, 'center') ? 'center' : (str_contains($position, 'right') ? 'right' : 'left'),
+                        'alignment' => $resolvedButtonAlignment,
                     ])
                 </div>
             @endif

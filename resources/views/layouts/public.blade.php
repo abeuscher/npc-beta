@@ -209,6 +209,7 @@
         $__navStyle = '';
         if (!empty($__navOverlayLinkColor ?? '')) $__navStyle .= '--overlay-nav-link-color:' . $__navOverlayLinkColor . ';';
         if (!empty($__navOverlayHoverColor ?? '')) $__navStyle .= '--overlay-nav-hover-color:' . $__navOverlayHoverColor . ';';
+        if (!empty($__navOverlayTextColor ?? '')) $__navStyle .= '--overlay-text-color:' . $__navOverlayTextColor . ';';
     @endphp
     @unless ($__suppressHeader ?? false)
     <div class="site-nav-wrapper {{ ($__navOverlap ?? false) ? 'site-nav-wrapper--overlay' : '' }}" @if ($__navStyle) style="{{ $__navStyle }}" @endif>

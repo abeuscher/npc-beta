@@ -229,3 +229,65 @@ it('renders a layout edge-to-edge when full_width is true', function () {
     $body = $response->getContent();
     expect($body)->toMatch('/widget--page_layout[^>]*>\s*<div class="page-layout"/');
 });
+
+it('emits --overlay-text-color on the nav wrapper when a hero with overlap_nav and text.color leads the page', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create([
+        'title'        => 'Hero Overlap',
+        'slug'         => 'hero-overlap',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $hero = WidgetType::where('handle', 'hero')->firstOrFail();
+    $page->widgets()->create([
+        'widget_type_id'    => $hero->id,
+        'config'            => [
+            'content'     => '<h1>Big Welcome</h1>',
+            'overlap_nav' => true,
+        ],
+        'appearance_config' => [
+            'text' => ['color' => '#ff00ff'],
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $response = $this->get('/hero-overlap');
+
+    $response->assertOk();
+    $response->assertSee('site-nav-wrapper--overlay', false);
+    $response->assertSee('--overlay-text-color:#ff00ff', false);
+});
+
+it('omits --overlay-text-color when overlap_nav is off', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create([
+        'title'        => 'Hero No Overlap',
+        'slug'         => 'hero-no-overlap',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $hero = WidgetType::where('handle', 'hero')->firstOrFail();
+    $page->widgets()->create([
+        'widget_type_id'    => $hero->id,
+        'config'            => [
+            'content'     => '<h1>Hello</h1>',
+            'overlap_nav' => false,
+        ],
+        'appearance_config' => [
+            'text' => ['color' => '#ff00ff'],
+        ],
+        'sort_order' => 0,
+        'is_active'  => true,
+    ]);
+
+    $response = $this->get('/hero-no-overlap');
+
+    $response->assertOk();
+    $body = $response->getContent();
+    expect($body)->not->toContain('--overlay-text-color');
+});
