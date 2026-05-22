@@ -14,13 +14,13 @@ When a cycle closes, its retrospective lands here. Per-session detail stays in t
 
 ## Status snapshot
 
-**Last update:** 2026-05-21 (track lifted at A003 close; first cycle scheduled as A005).
+**Last update:** 2026-05-22 (Cycle 1 closed at A005; retrospective + status landed here).
 
-**Complete:** none — track is newly lifted.
+**Complete:** Cycle 1 (**A005** — D1 Playwright spec discipline + D2 spec-claim integrity drain; `docs/testing/playwright-discipline.md` shipped).
 
-**Active:** Cycle 1 queued as **A005** (D1 + D2 dimensions; see below).
+**Active:** between cycles.
 
-**Next trigger:** A005 lands at the user's pace; subsequent cycles run **approximately every 50 sessions of growth**, evaluated against the same forcing-function rules `tracks/code-review-and-cleanup.md` documents (cadence OR forcing function, whichever fires first).
+**Next trigger:** approximately **session 365** (≈50 sessions of growth from A005's close position, with the numeric track around 314–318) **or** a forcing function — whichever fires first. The D2 drain-pressure rule is a standing forcing function: 5+ unresolved `[test-integrity]` entries in the housekeeping inbox lifts a D2 cycle regardless of cadence. Subsequent cycles default to the D3 (mutation slice) and D4 (Pest file relevance) dimensions not run in Cycle 1.
 
 **Prior partial audits — pre-track precursors:**
 
@@ -32,7 +32,43 @@ When a cycle closes, its retrospective lands here. Per-session detail stays in t
 
 ## Cycle Retrospectives
 
-*(Empty — Cycle 1 (A005) has not yet closed. When it does, its retrospective lands here in the shape `tracks/code-review-and-cleanup.md` uses: quantitative outcomes, load-bearing decisions, blind spots that surfaced, process incidents, won't-fixes reaffirmed.)*
+### Cycle 1 — D1 + D2 audit (A005)
+
+Window covered: the full `tests/e2e/` suite plus the s296 `[test-integrity]` backlog. Single agentic session; no carve-out (both dimensions fit). Test-code + planning-doc changes only — no application code. Work iteration merged via PR #20; close docs on `session-A005/2`.
+
+#### Quantitative outcomes
+
+| Gate | Pre-cycle | Cycle 1 close | Net delta |
+|------|-----------|---------------|-----------|
+| Playwright spec files | 28 | 16 | −12 (10 redundant importer specs + `inline-formatting-toolbar` parked + `ticket-tier-picker` CI-unstable) |
+| Pest tests | baseline | baseline −2 | −2 vacuous (DonationCheckout factory-echo, ProductCarousel magic-count) |
+| Pest tests renamed | — | 2 | QuickBooksSync sync-job titles → match mocked bodies |
+| Pest tests rewritten | — | 2 | TaxReceipt → route through real `DonorsPage::buildBreakdown()` |
+| e2e tests renamed | — | 2 | `layout-inspector`, `dashboard-settings` titles → match assertions |
+| Workflow docs shipped | 1 (`mutation-audits.md`) | 2 | + `docs/testing/playwright-discipline.md` |
+| `[test-integrity]` backlog | 8 entries (s296 Tier-3 ×5 + incidental ×1 + ticket-tier-picker + A003 informational) | drained | s296 Tier-3 + incidental + ticket-tier-picker dispositioned; A003 deletion records stay (informational) |
+
+#### Load-bearing decisions
+
+- **FixtureRunner-is-the-safety-net rule, codified.** Before deleting any importer Playwright spec as Redundant, the same data path must be verified covered by `tests/Feature/Generated/ImportFixtureRunnerTest.php` (7 importers × 4 shapes) or a namespaced per-importer Feature test. This rule is now written into `docs/testing/playwright-discipline.md` as the standing importer-disposition gate.
+- **Browser-only criterion shipped as a durable doc.** `docs/testing/playwright-discipline.md` is the artifact the next operator reads before adding a Playwright spec — Keep/Redundant/Mixed decision rule, local-first authoring discipline, the A003 anti-pattern catalog (URL-vs-route-registry mismatch, ambiguous `getByRole`, `.first()` on `[role="dialog"]` placeholders, `requiresConfirmation()` on custom Pages).
+- **D2 default lean = rename to match the assertion**, not expand the test. Applied uniformly except where the test asserted nothing meaningful (factory-echo / magic-count → delete) or re-implemented production logic inline (TaxReceipt → rewrite through the real method).
+- **Delete-not-requarantine for environment-blocked specs.** `ticket-tier-picker` was deleted rather than left `describe.skip`'d, per the A003 precedent and user policy; the coverage tradeoff (the multi-quantity spinner's *e2e* coverage) is recorded with a forward-queue note.
+
+#### Blind spots that surfaced
+
+- **The s296 lumping was imprecise.** `QuickBooksCustomerMatchingTest` was named in the backlog alongside `QuickBooksSyncTest` but its titles already matched its bodies — no action needed. Lesson: a `[test-integrity]` entry naming a *cluster* still needs per-test verification at drain time, not blanket action.
+- **The DonationCheckout factory-echo masked a genuine coverage gap.** Deleting the vacuous test exposed that the real checkout-initiation controller path is unverified. The deletion is correct (the test never tested that path), but the gap is now explicit in the forward queue rather than falsely "covered."
+
+#### Process incidents
+
+- **Cloud-session has no Docker** — the canonical local `./dev test` was unavailable. CI was the authoritative verification signal (push → `Tests` aggregate green); the TaxReceipt rewrite in particular relied on CI to confirm. Worked cleanly; the `Tests` aggregate landed green on the merged commit.
+- **Close docs landed on a separate branch.** The work iteration merged (PR #20) before close, so the close documents went on `session-A005/2` branched off the post-merge main and a second PR — rather than riding the work branch as the template's default assumes.
+
+#### Won't-fixes reaffirmed
+
+- **Page-builder cluster stays browser-required.** `inline-editing-foundation`, `inline-editing-phase2`, `layout-inspector` are JS-driven editor UI; kept. The `inline-editing-foundation:79` cold-load flake stays on passive watch rather than triggering selector-hardening this cycle (decide after evidence).
+- **A003 deletion records stay in the inbox** — they are informational `[test-integrity]` entries documenting already-executed dispositions, not actionable backlog.
 
 ---
 
