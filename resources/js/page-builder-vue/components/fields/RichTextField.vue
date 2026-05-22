@@ -4,6 +4,7 @@ import type { FieldDef, Widget } from '../../types'
 import { useEditorStore } from '../../stores/editor'
 import { registerHeroiconBlot, HEROICON_TOOLBAR_BUTTON_SVG } from '../../../admin/heroicon-blot.js'
 import { openHeroiconPicker, setHeroiconsUrl } from '../../../admin/heroicon-picker.js'
+import { applyToolbarTitles } from '../../../admin/quill-toolbar-titles.js'
 
 const props = defineProps<{
   field: FieldDef
@@ -64,6 +65,8 @@ onMounted(() => {
   if (toolbarButton && !toolbarButton.firstChild) {
     toolbarButton.innerHTML = HEROICON_TOOLBAR_BUTTON_SVG
   }
+
+  applyToolbarTitles(quillInstance.getModule('toolbar').container)
 
   if (props.modelValue) {
     quillInstance.root.innerHTML = props.modelValue

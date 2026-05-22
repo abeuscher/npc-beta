@@ -952,6 +952,13 @@ onMounted(() => {
   document.addEventListener('pointerdown', onOutsideMousedown, true)
   window.addEventListener('keydown', onWindowKeydown, true)
   measureBar()
+  // Mirror each button's accessible name into a title so the icon-only
+  // controls also surface a hover tooltip (aria-label already covers SR).
+  barEl.value?.querySelectorAll('button[aria-label]').forEach((btn) => {
+    if (!btn.getAttribute('title')) {
+      btn.setAttribute('title', btn.getAttribute('aria-label') ?? '')
+    }
+  })
   // Re-measure on canvas resize too
   const main = document.querySelector('.vue-editor__main')
   if (main && typeof ResizeObserver !== 'undefined') {
