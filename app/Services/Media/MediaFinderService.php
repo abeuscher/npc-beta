@@ -14,7 +14,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class MediaFinderService
 {
-    public function __construct(private MediaReferenceInventory $inventory) {}
+    public function __construct(
+        private MediaReferenceInventory $inventory,
+        private MediaContentHasher $hasher,
+    ) {}
 
     /**
      * Every media row the inventory does not recognise as referenced, with its
@@ -164,19 +167,13 @@ class MediaFinderService
 
     private function contentHash(Media $media): ?string
     {
-        try {
-            $path = $media->getPath();
-        } catch (\Throwable) {
-            return null;
+        // Prefer the persisted column (populated at upload + backfill); only read
+        // bytes for rows not yet hashed, so the scan is instant once backfilled.
+        if ($media->content_hash !== null) {
+            return $media->content_hash;
         }
 
-        if (! is_string($path) || ! is_file($path)) {
-            return null;
-        }
-
-        $hash = @hash_file('sha256', $path);
-
-        return $hash === false ? null : $hash;
+        return $this->hasher->hashFor($media);
     }
 
     private function previewUrl(Media $media): ?string

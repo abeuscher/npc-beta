@@ -20,6 +20,7 @@ use App\Services\WidgetPreviewRenderer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class PageBuilderApiController extends Controller
 {
@@ -375,6 +376,37 @@ class PageBuilderApiController extends Controller
         ]);
     }
 
+    public function useExistingImage(Request $request, PageWidget $widget): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $validated = $request->validate([
+            'key'      => 'required|string|max:255',
+            'media_id' => 'required|integer|exists:media,id',
+        ]);
+
+        $key = $validated['key'];
+        $collectionName = "config_{$key}";
+
+        // Copy the source into the collection first, then evict any prior media —
+        // copying before clearing keeps the source readable even when it is itself
+        // the media being reused. Copies bytes under the current path generator;
+        // reuse here is behavioural (operator picks a known asset), not yet
+        // byte-sharing — that is CAS (session 320).
+        $media = Media::findOrFail($validated['media_id'])
+            ->copy($widget, $collectionName, 'public');
+        $this->evictOtherMedia($widget, $collectionName, (int) $media->id);
+
+        $config = $widget->config ?? [];
+        $config[$key] = $media->id;
+        $widget->update(['config' => $this->stripDefaults($widget, $config)]);
+
+        return response()->json([
+            'media_id' => $media->id,
+            'url'      => $media->getUrl(),
+        ]);
+    }
+
     public function removeImage(PageWidget $widget, string $key): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
@@ -407,6 +439,39 @@ class PageBuilderApiController extends Controller
         return response()->json([
             'url' => $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl(),
         ]);
+    }
+
+    public function useExistingAppearanceImage(Request $request, PageWidget $widget): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('update_page'), 403);
+
+        $validated = $request->validate([
+            'media_id' => 'required|integer|exists:media,id',
+        ]);
+
+        $media = Media::findOrFail($validated['media_id'])
+            ->copy($widget, 'appearance_background_image', 'public');
+        $this->evictOtherMedia($widget, 'appearance_background_image', (int) $media->id);
+
+        return response()->json([
+            'url' => $media->hasGeneratedConversion('webp') ? $media->getUrl('webp') : $media->getUrl(),
+        ]);
+    }
+
+    /**
+     * Remove every media in a single-file collection except the one just added —
+     * the copy-first-then-evict counterpart to clearing before adding.
+     */
+    private function evictOtherMedia(PageWidget $widget, string $collection, int $keepId): void
+    {
+        Media::query()
+            ->where('model_type', $widget->getMorphClass())
+            ->where('model_id', $widget->getKey())
+            ->where('collection_name', $collection)
+            ->where('id', '!=', $keepId)
+            ->get()
+            ->each
+            ->delete();
     }
 
     public function removeAppearanceImage(PageWidget $widget): JsonResponse

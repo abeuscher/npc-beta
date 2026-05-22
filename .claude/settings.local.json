@@ -61,10 +61,18 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8090/)",
       "Bash(curl -s -o /dev/null -w \"e2e home after clear: %{http_code}\\\\n\" http://localhost:8090/)",
       "Bash(npx -y lighthouse http://localhost/about --only-categories=accessibility --output=json --output-path=/tmp/lh-about2.json --chrome-flags=\"--headless=new --no-sandbox --disable-gpu\" --quiet)",
-      "Bash(node -e 'const r=require\\(\"/tmp/lh-about2.json\"\\);console.log\\(\"About accessibility:\",Math.round\\(r.categories.accessibility.score*100\\)\\);for\\(const a of r.categories.accessibility.auditRefs\\){const au=r.audits[a.id];if\\(au&&au.score!==null&&au.score<1&&au.scoreDisplayMode!==\"notApplicable\"&&au.scoreDisplayMode!==\"manual\"\\)console.log\\(\"  [FAIL]\",a.id\\);}')"
+      "Bash(node -e 'const r=require\\(\"/tmp/lh-about2.json\"\\);console.log\\(\"About accessibility:\",Math.round\\(r.categories.accessibility.score*100\\)\\);for\\(const a of r.categories.accessibility.auditRefs\\){const au=r.audits[a.id];if\\(au&&au.score!==null&&au.score<1&&au.scoreDisplayMode!==\"notApplicable\"&&au.scoreDisplayMode!==\"manual\"\\)console.log\\(\"  [FAIL]\",a.id\\);}')",
+      "Bash(grep -nA3 \"test\\)\" ./dev)",
+      "Bash(grep -nE 'function .*Action|Action::make|mountAction|->arguments|\\\\$arguments|InteractsWithActions|HasActions|implements' app/Filament/Pages/DonorsPage.php)",
+      "Bash(grep -nE 'mountAction|filament-actions|wire:click|\\\\$this->' resources/views/filament/pages/donors.blade.php)",
+      "Bash(grep -nE 'function .*Action|Action::make|mountAction|->arguments|\\\\$arguments|use Filament|InteractsWithActions|HasActions' app/Filament/Concerns/RecordTimelinePage.php)",
+      "Bash(grep -nE 'mountAction|filament-actions|wire:click|\\\\$this->.*Action' resources/views/filament/pages/record-timeline.blade.php)",
+      "Bash(grep -rn \"function copy\\\\b\\\\|public function copy\" vendor/spatie/laravel-medialibrary/src/MediaCollections/Models/Media.php; echo \"---\"; sed -n '/public function copy/,/^    }/p' vendor/spatie/laravel-medialibrary/src/MediaCollections/Models/Media.php | head -30)",
+      "Bash(bash dev test --filter=MediaDedupTest)"
     ],
     "additionalDirectories": [
-      "/tmp"
+      "/tmp",
+      "/home/al/nonprofitcrm/vendor/spatie/laravel-medialibrary/src/MediaCollections/Models"
     ]
   }
 }

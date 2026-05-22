@@ -14,6 +14,7 @@ import type {
   Tag,
   PageRef,
   EventRef,
+  DedupMatch,
 } from './types'
 
 export class ApiError extends Error {
@@ -54,12 +55,17 @@ export interface ApiClient {
   getEvents(): Promise<{ events: EventRef[] }>
   getDataSource(source: string): Promise<{ options: Record<string, string> }>
 
+  // Upload-time dedup
+  dedupCheck(hash: string, fileName?: string | null): Promise<{ matches: DedupMatch[] }>
+
   // Image upload
   uploadImage(widgetId: string, key: string, file: File): Promise<{ media_id: number; url: string }>
+  useExistingImage(widgetId: string, key: string, mediaId: number): Promise<{ media_id: number; url: string }>
   removeImage(widgetId: string, key: string): Promise<{ removed: boolean }>
 
   // Appearance background image
   uploadAppearanceImage(widgetId: string, file: File): Promise<{ url: string }>
+  useExistingAppearanceImage(widgetId: string, mediaId: number): Promise<{ url: string }>
   removeAppearanceImage(widgetId: string): Promise<{ removed: boolean }>
 
   // Color swatches
@@ -227,12 +233,20 @@ export function createApiClient(
       return lookup('GET', `data-sources/${encodeURIComponent(source)}`)
     },
 
+    // Upload-time dedup
+    dedupCheck(hash, fileName) {
+      return lookup('POST', 'media-dedup-check', { hash, file_name: fileName ?? null })
+    },
+
     // Image upload
     uploadImage(widgetId, key, file) {
       const formData = new FormData()
       formData.append('key', key)
       formData.append('file', file)
       return postFormToLookup(`widgets/${widgetId}/image`, formData)
+    },
+    useExistingImage(widgetId, key, mediaId) {
+      return lookup('POST', `widgets/${widgetId}/use-existing-image`, { key, media_id: mediaId })
     },
     removeImage(widgetId, key) {
       return lookup('DELETE', `widgets/${widgetId}/image/${encodeURIComponent(key)}`)
@@ -243,6 +257,9 @@ export function createApiClient(
       const formData = new FormData()
       formData.append('file', file)
       return postFormToLookup(`widgets/${widgetId}/appearance-image`, formData)
+    },
+    useExistingAppearanceImage(widgetId, mediaId) {
+      return lookup('POST', `widgets/${widgetId}/use-existing-appearance-image`, { media_id: mediaId })
     },
     removeAppearanceImage(widgetId) {
       return lookup('DELETE', `widgets/${widgetId}/appearance-image`)

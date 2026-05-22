@@ -12,6 +12,7 @@
         wire:ignore
         class="w-full overflow-hidden border-b border-[#ccc]"
         data-upload-url="{{ route('filament.admin.inline-image-upload') }}"
+        data-dedup-check-url="{{ route('filament.admin.media-dedup-check') }}"
         data-heroicons-url="{{ route('filament.admin.heroicons.index') }}"
         data-model-type="{{ $inlineImageModelType }}"
         data-model-id="{{ $inlineImageModelId }}"

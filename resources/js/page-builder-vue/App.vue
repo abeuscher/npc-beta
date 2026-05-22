@@ -6,6 +6,7 @@ import EditorToolbar from './components/EditorToolbar.vue'
 import PreviewCanvas from './components/PreviewCanvas.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 import InlineFormatToolbar from './components/InlineFormatToolbar.vue'
+import DedupPromptModal from './components/DedupPromptModal.vue'
 
 const props = defineProps<{
   bootstrap: BootstrapData
@@ -80,6 +81,8 @@ onUnmounted(() => {
          page-builder, never destroyed at runtime, mounted into a fixed
          layer at app root via <Teleport>; never inside any v-html. -->
     <InlineFormatToolbar />
+
+    <DedupPromptModal />
   </div>
 </template>
 

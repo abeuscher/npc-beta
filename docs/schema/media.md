@@ -15,6 +15,7 @@ Spatie media library — stores file metadata and conversion state for models im
 | disk | string | no | |
 | conversions_disk | string | yes | |
 | size | bigint | no | File size in bytes |
+| content_hash | string | yes | SHA-256 hex of the stored original; populated at upload (MediaHasBeenAddedEvent) and backfilled via `media:backfill-hashes`. Indexed. Drives upload-time dedup and the Media Finder duplicate scan. |
 | manipulations | json | no | |
 | custom_properties | json | no | |
 | generated_conversions | json | no | Tracks which conversions have been generated |

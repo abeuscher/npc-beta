@@ -253,3 +253,21 @@ export type ReorderItem =
       type: 'layout'
       sort_order: number
     }
+
+export interface DedupMatch {
+  id: number
+  file_name: string
+  collection_name: string
+  size: number
+  mime_type: string | null
+  created_at: string | null
+  match_type: 'identical' | 'same_name'
+  duplicate_count: number
+  referenced: boolean
+  url: string | null
+}
+
+export type DedupDecision =
+  | { type: 'keep-new' }
+  | { type: 'use-existing'; mediaId: number }
+  | { type: 'cancel' }

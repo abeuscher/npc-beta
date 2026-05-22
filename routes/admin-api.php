@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\MediaDedupController;
 use App\Http\Controllers\Admin\PageBuilderApiController;
 use App\Http\Controllers\Admin\PresetController;
 use App\Http\Controllers\Admin\WidgetDefaultsController;
@@ -58,12 +59,17 @@ Route::get('pages', [PageBuilderApiController::class, 'pages']);
 Route::get('events', [PageBuilderApiController::class, 'events']);
 Route::get('data-sources/{source}', [PageBuilderApiController::class, 'dataSources']);
 
+// Upload-time dedup check (owner-agnostic — hashes only).
+Route::post('media-dedup-check', [MediaDedupController::class, 'check']);
+
 // Image upload.
 Route::post('widgets/{widget}/image', [PageBuilderApiController::class, 'uploadImage']);
+Route::post('widgets/{widget}/use-existing-image', [PageBuilderApiController::class, 'useExistingImage']);
 Route::delete('widgets/{widget}/image/{key}', [PageBuilderApiController::class, 'removeImage']);
 
 // Appearance background image.
 Route::post('widgets/{widget}/appearance-image', [PageBuilderApiController::class, 'uploadAppearanceImage']);
+Route::post('widgets/{widget}/use-existing-appearance-image', [PageBuilderApiController::class, 'useExistingAppearanceImage']);
 Route::delete('widgets/{widget}/appearance-image', [PageBuilderApiController::class, 'removeAppearanceImage']);
 
 // Color swatches.

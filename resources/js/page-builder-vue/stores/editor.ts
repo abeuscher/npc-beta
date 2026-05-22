@@ -18,6 +18,8 @@ import type {
   UpdateLayoutPayload,
   ReorderItem,
   EditorMode,
+  DedupMatch,
+  DedupDecision,
 } from '../types'
 import { createApiClient, type ApiClient } from '../api'
 import { useDebouncedSave } from '../composables/useDebouncedSave'
@@ -492,12 +494,33 @@ export const useEditorStore = defineStore('editor', () => {
   })
   refreshPreviewRef = refresh.refreshPreview
 
+  // Upload-time dedup prompt. When an upload's hash (or filename) matches an
+  // existing library asset, the upload action awaits the operator's choice
+  // here; the modal at app root reads `dedupPrompt` and calls `resolveDedup`.
+  const dedupPrompt = ref<{ matches: DedupMatch[] } | null>(null)
+  let dedupResolver: ((decision: DedupDecision) => void) | null = null
+
+  function requestDedupDecision(matches: DedupMatch[]): Promise<DedupDecision> {
+    return new Promise((resolve) => {
+      dedupResolver = resolve
+      dedupPrompt.value = { matches }
+    })
+  }
+
+  function resolveDedup(decision: DedupDecision): void {
+    dedupPrompt.value = null
+    const resolve = dedupResolver
+    dedupResolver = null
+    resolve?.(decision)
+  }
+
   const uploads = useUploadActions({
     widgets,
     dirtyWidgets,
     saving,
     requireApi,
     refreshPreview: refresh.refreshPreview,
+    requestDedupDecision,
   })
 
   const presets = usePresetActions({
@@ -762,6 +785,7 @@ export const useEditorStore = defineStore('editor', () => {
     themePalette,
     themeHeadingFamily,
     themeBodyFamily,
+    dedupPrompt,
 
     // Getters
     rootWidgets,
@@ -809,6 +833,7 @@ export const useEditorStore = defineStore('editor', () => {
     removeImage: uploads.removeImage,
     uploadAppearanceImage: uploads.uploadAppearanceImage,
     removeAppearanceImage: uploads.removeAppearanceImage,
+    resolveDedup,
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
     applyPreset: presets.applyPreset,

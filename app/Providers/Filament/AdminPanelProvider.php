@@ -58,6 +58,10 @@ class AdminPanelProvider extends PanelProvider
                     ->name('inline-image-upload')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);
 
+                \Illuminate\Support\Facades\Route::post('/media-dedup-check', [\App\Http\Controllers\Admin\MediaDedupController::class, 'check'])
+                    ->name('media-dedup-check')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
                 \Illuminate\Support\Facades\Route::get('/heroicons', [\App\Http\Controllers\Admin\HeroiconController::class, 'index'])
                     ->name('heroicons.index')
                     ->middleware(\Filament\Http\Middleware\Authenticate::class);

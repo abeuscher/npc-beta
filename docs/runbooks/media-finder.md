@@ -24,12 +24,12 @@ Lists unused candidates, each tagged:
 
 Clusters records that look like copies:
 
-- **Identical contents** — same SHA-256 over the stored bytes. The reliable "same file uploaded twice" signal.
+- **Identical contents** — same SHA-256 over the stored bytes. The reliable "same file uploaded twice" signal. The hash is read from the `media.content_hash` column (populated at upload, backfilled for older rows), so this pass is instant — it no longer re-reads every file.
 - **Same name & size** — a cheaper secondary signal for rows the hash pass did not already cluster.
 
 Each member shows whether it is still **referenced**, so you keep the in-use record and delete the stray copies. Note that in this app duplicate files are usually each owned by a *different* record (the same logo uploaded to two widgets), so each owner still needs its own copy — deleting a referenced member breaks that owner.
 
-> The duplicate scan is a **visibility** tool: it does not reclaim disk on its own, because each duplicate is a distinct file owned by a distinct record. Reclaiming disk (storing identical bytes once) and stopping re-uploads at the source are separate, larger pieces of work tracked as follow-ups.
+> The duplicate scan is a **visibility** tool: it does not reclaim disk on its own, because each duplicate is a distinct file owned by a distinct record. Stopping re-uploads at the source is now handled by upload-time dedup (below); reclaiming disk (storing identical bytes once) is the remaining follow-up — content-addressed storage with refcounted deletion.
 
 ## Missing-file scan
 
@@ -45,6 +45,19 @@ The per-row action here is **Delete record** — it removes the dangling `media`
 - Scans are read-only and run synchronously on demand. They make no changes.
 - **Delete** is per-row and requires confirmation. It removes the file and its conversions from disk and **cannot be undone**. There is no bulk delete and no automatic deletion.
 - The page is gated behind `manage_cms_settings`.
+
+## Upload-time dedup (prevention)
+
+The finder cleans up duplicates after the fact; upload-time dedup stops most of them from being created. Every media file carries a `content_hash` (SHA-256 of the stored bytes), set when it lands. When you upload an image in the **page builder** (widget image fields and appearance backgrounds) or the **rich-text editor** (inline images), the editor hashes the file first and checks it against the library:
+
+- **Exact match (same bytes)** — a prompt offers to **reuse** the existing asset instead of storing another copy. In the page builder you can also **upload as new**; in the rich-text editor, accepting reuse inserts the existing image's URL with no new upload at all.
+- **Same filename, different bytes** (an edited graphic) — surfaced on surfaces that keep the original filename, so you can pick the existing version to replace or keep the new one. Page-builder uploads use randomised filenames, so they match on content hash only.
+
+The reuse list shows a thumbnail, size, whether the asset is **in use on your site**, and how many copies exist; identical copies are collapsed to one entry, sorted in-use-first.
+
+> **Honest limit (until content-addressed storage lands):** choosing *reuse* for a widget field still writes a physical copy of the bytes for the new owner — the win this session is behavioural (a coherent, findable library and far fewer fresh re-uploads), not yet disk savings. Inline-image reuse is the exception: it inserts the existing URL and writes nothing new.
+
+**Surfaces not yet covered:** the Filament resource upload fields (post/event/product/widget-type thumbnails and headers) do not yet run the dedup prompt — that is scheduled post-Beta. The dashboard and record-detail builders' appearance-background uploads fall through to a normal upload (the check degrades silently where the route is absent).
 
 ## When to use it
 

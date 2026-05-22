@@ -359,9 +359,15 @@ The original stub text — preserved for reference:
 
 ---
 
-### Media Path Generator — UUID Shape *(stub — post-Beta 1; out-of-scope offshoot of session 303)*
+### Media Path Generator — UUID Shape *(scheduled — session 320; folded into the content-addressed-storage work)*
+
+Resolved as part of **session 320 (Content-Addressed Storage + Refcounted Delete)** — the path-generator switch is the same global change, so the UUID-shape goal is subsumed by the content-addressed path generator (keyed on `content_hash`) plus the one-time relocation migration. Original stub text retained below for reference.
 
 The eventual robust posture-B shape: switch Spatie's `DefaultPathGenerator` from `{media.id}/{file_name}` to a UUID path generator (`{media.uuid}/{file_name}`), so portable media no longer depends on preserving the bigint `media.id` across installs. Session 303 deliberately delivered posture B via explicit-id preservation only — the UUID-path switch is a global change touching every existing media file on disk + a one-time relocation migration, explicitly out of 303's scope. Flagged here as the cleaner long-term form; not scheduled.
+
+### Upload-time Dedup — Filament FileUpload Fields *(stub — post-Beta; deferred at session 319)*
+
+Session 319 shipped upload-time dedup (content-hash + warn-and-offer) on the **page-builder** image surfaces and **rich-text inline images**, but deliberately deferred the **Filament `SpatieMediaLibraryFileUpload` resource fields** (post/event/product thumbnails + headers + OG images, `WidgetTypeResource` thumbnails, `PageResource` details). Reason: those are packaged form components with no idiomatic hook to interrupt a form-save with a blocking three-way "use existing / replace / keep new" choice; a real reuse *picker* there is a custom Livewire component replicated across five resources, and these fields are low-frequency single-purpose slots (one thumbnail per post), not the bloat driver the way page-building re-uploads are. The cheap interim form — a detection-backed inline *warning* on file-select (`afterStateUpdated` → hash → `MediaDedupService` → `Notification::warning`) — was scoped out with the picker. The backend `MediaDedupService` + `media-dedup-check` endpoint already exist and are surface-agnostic, so this stub is a front-end wiring job, not new infrastructure. Lower priority than the CAS/reclamation session.
 
 ---
 

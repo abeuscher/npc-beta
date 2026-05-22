@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import type { ApiClient } from '../api'
-import type { Widget } from '../types'
+import type { DedupDecision, DedupMatch, Widget } from '../types'
+import { sha256Hex } from './hashFile'
 
 export interface UseUploadActionsDeps {
   widgets: Ref<Record<string, Widget>>
@@ -8,13 +9,40 @@ export interface UseUploadActionsDeps {
   saving: Ref<boolean>
   requireApi: () => ApiClient
   refreshPreview: (widgetId: string) => Promise<void>
+  requestDedupDecision: (matches: DedupMatch[]) => Promise<DedupDecision>
 }
 
 export function useUploadActions(deps: UseUploadActionsDeps) {
+  // Before storing an upload, hash the bytes and ask the library whether it
+  // already holds this asset. A match opens the warn-and-offer prompt; the
+  // operator's choice flows back here. Hashing or the check failing degrades
+  // silently to a plain upload — dedup is a nudge, never a gate.
+  async function dedupGate(file: File): Promise<DedupDecision> {
+    const hash = await sha256Hex(file)
+    if (!hash) return { type: 'keep-new' }
+
+    let matches: DedupMatch[]
+    try {
+      matches = (await deps.requireApi().dedupCheck(hash, file.name)).matches
+    } catch {
+      return { type: 'keep-new' }
+    }
+
+    if (matches.length === 0) return { type: 'keep-new' }
+
+    return deps.requestDedupDecision(matches)
+  }
+
   async function uploadImage(widgetId: string, key: string, file: File): Promise<string | null> {
+    const decision = await dedupGate(file)
+    if (decision.type === 'cancel') return null
+
     deps.saving.value = true
     try {
-      const res = await deps.requireApi().uploadImage(widgetId, key, file)
+      const res =
+        decision.type === 'use-existing'
+          ? await deps.requireApi().useExistingImage(widgetId, key, decision.mediaId)
+          : await deps.requireApi().uploadImage(widgetId, key, file)
       if (deps.widgets.value[widgetId]) {
         const w = deps.widgets.value[widgetId]
         w.config = { ...w.config, [key]: res.media_id }
@@ -45,9 +73,15 @@ export function useUploadActions(deps: UseUploadActionsDeps) {
   }
 
   async function uploadAppearanceImage(widgetId: string, file: File): Promise<string | null> {
+    const decision = await dedupGate(file)
+    if (decision.type === 'cancel') return null
+
     deps.saving.value = true
     try {
-      const res = await deps.requireApi().uploadAppearanceImage(widgetId, file)
+      const res =
+        decision.type === 'use-existing'
+          ? await deps.requireApi().useExistingAppearanceImage(widgetId, decision.mediaId)
+          : await deps.requireApi().uploadAppearanceImage(widgetId, file)
       if (deps.widgets.value[widgetId]) {
         deps.widgets.value[widgetId].appearance_image_url = res.url
       }

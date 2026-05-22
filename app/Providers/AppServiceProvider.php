@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\SiteSetting;
+use App\Services\Media\MediaContentHasher;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -12,8 +13,10 @@ use Filament\Tables\Actions\DeleteAction as TableDeleteAction;
 use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\ForceDeleteAction as TableForceDeleteAction;
 use Filament\Tables\Actions\ForceDeleteBulkAction;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Spatie\MediaLibrary\MediaCollections\Events\MediaHasBeenAddedEvent;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         BasePage::formActionsAlignment(Alignment::End);
+
+        // Hash every media's stored original once, as it lands. MediaHasBeenAddedEvent
+        // fires after the file is copied to the library on every addMedia* path
+        // (uploads, Media::copy(), importer seeding), so this single hook covers all.
+        Event::listen(MediaHasBeenAddedEvent::class, function (MediaHasBeenAddedEvent $event): void {
+            app(MediaContentHasher::class)->persist($event->media);
+        });
 
         // Filament's built-in JS pickers (not browser-native)
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native(false));
