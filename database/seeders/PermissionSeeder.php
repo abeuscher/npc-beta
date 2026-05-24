@@ -309,11 +309,15 @@ class PermissionSeeder extends Seeder
 
         // ── demo ─────────────────────────────────────────────────────────────
         // Shared public-demo account role, bound by the public /demo/enter
-        // auto-login route. Product-feel CMS + CRM surfaces a prospect needs,
-        // read-only finance/events. Explicitly NEVER granted (binding deny-list,
-        // session 292): user/role management, mail/email-template/financial/
-        // routing/theme/CMS settings, API keys, and any secret, integration,
-        // instance-config, or real-data-exfiltration surface. Never super_admin.
+        // auto-login route. Product-feel CMS + CRM surfaces a prospect needs.
+        // Width tuned at session 321: events + donations are full CRUD (so a
+        // prospect can drive those flows), backstopped by the droplet egress
+        // firewall (Stripe/email fail closed) and the daily demo:reset baseline.
+        // transactions/funds/campaigns stay view-only (financial ledger + config).
+        // Explicitly NEVER granted (binding deny-list, session 292): user/role
+        // management, mail/email-template/financial/routing/theme/CMS settings,
+        // API keys, imports, and any secret, integration, instance-config, or
+        // real-data-exfiltration surface. Never super_admin.
         $demo = Role::firstOrCreate(
             ['name' => 'demo', 'guard_name' => 'web'],
             ['label' => 'Demo'],
@@ -334,8 +338,8 @@ class PermissionSeeder extends Seeder
             $fullPermissions('collection_item'),
             $fullPermissions('navigation_menu'),
             $fullPermissions('product'),
-            $viewPermissions('event'),
-            $viewPermissions('donation'),
+            $fullPermissions('event'),
+            $fullPermissions('donation'),
             $viewPermissions('transaction'),
             $viewPermissions('fund'),
             $viewPermissions('campaign'),
