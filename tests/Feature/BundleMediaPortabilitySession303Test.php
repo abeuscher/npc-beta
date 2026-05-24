@@ -476,10 +476,11 @@ it('preserves media id, uuid and path and advances the sequence', function () {
     $origId   = $media->id;
     $origUuid = $media->uuid;
     $origName = $media->file_name;
+    $casPath  = $media->getPathRelativeToRoot();
 
     $envelope = app(ContentExporter::class)->exportMedia([$origId]);
     expect($envelope['payload']['media'][0]['id'])->toBe($origId);
-    expect($envelope['payload']['media'][0]['path'])->toBe("{$origId}/{$origName}");
+    expect($envelope['payload']['media'][0]['path'])->toBe($casPath);
 
     // Package while the source bytes still exist, then simulate a clean target.
     $out = s303PackageZip($envelope);
@@ -492,7 +493,7 @@ it('preserves media id, uuid and path and advances the sequence', function () {
     expect($row)->not->toBeNull();
     expect($row->uuid)->toBe($origUuid);
     expect($row->file_name)->toBe($origName);
-    expect(Storage::disk('public')->exists("{$origId}/{$origName}"))->toBeTrue();
+    expect(Storage::disk('public')->exists($casPath))->toBeTrue();
     expect($log->hasWarnings())->toBeFalse();
 
     // Sequence is past the explicit id — a fresh insert gets a higher id.
@@ -571,6 +572,7 @@ it('resolves a by-reference page bundle after a standalone media seed (end-to-en
     [$page, , $media] = s303PageWithLogoMedia('e2e-byref');
     $mediaId  = $media->id;
     $fileName = $media->file_name;
+    $casPath  = $media->getPathRelativeToRoot();
 
     // By-reference page bundle (JSON, descriptors only) + standalone media zip.
     $pageBundle  = app(ContentExporter::class)->exportPages([$page->id]);
@@ -583,9 +585,9 @@ it('resolves a by-reference page bundle after a standalone media seed (end-to-en
     DB::table('media')->where('id', $mediaId)->delete();
     Storage::fake('public');
 
-    // 1) Seed media (carries bytes) → file lands at {id}/{file_name}.
+    // 1) Seed media (carries bytes) → file lands at its content-addressed path.
     s303SeedMediaFromZip($out);
-    expect(Storage::disk('public')->exists("{$mediaId}/{$fileName}"))->toBeTrue();
+    expect(Storage::disk('public')->exists($casPath))->toBeTrue();
 
     // 2) Import the by-reference JSON page bundle → resolves off the seed.
     $log = new ImportLog();

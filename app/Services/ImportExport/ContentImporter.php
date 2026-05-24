@@ -768,9 +768,10 @@ class ContentImporter
 
     /**
      * payload.media pass — posture-B ID-preserving standalone media seed
-     * (media-portability draft decisions #3/#4/#6). Raw explicit-id insert so
-     * the on-disk path stays {id}/{file_name} and cheap by-reference page
-     * bundles resolve after a one-time push. Collision + orphan-owner policies
+     * (media-portability draft decisions #3/#4/#6). Raw explicit-id insert that
+     * also preserves content_hash, so the bytes are written at the row's
+     * content-addressed path (session 320) and cheap by-reference page bundles
+     * resolve after a one-time push. Collision + orphan-owner policies
      * are canonical; the Postgres sequence is reset to MAX(id)+1. Runs inside
      * the import transaction; returns the ids it actually seeded.
      *
@@ -789,6 +790,14 @@ class ContentImporter
 
             if (! $id || ! $fileName || ! $srcPath) {
                 $log->warning('Media descriptor missing id/file_name/path, skipped.');
+
+                continue;
+            }
+
+            // Defence in depth: the path is both the byte lookup and the write
+            // target, so refuse traversal even though it came from our exporter.
+            if (str_contains($srcPath, '..') || str_starts_with($srcPath, '/')) {
+                $log->warning("Media #{$id}: unsafe path '{$srcPath}', skipped.");
 
                 continue;
             }
@@ -849,6 +858,7 @@ class ContentImporter
                 'disk'                  => $targetDisk,
                 'conversions_disk'      => $desc['conversions_disk'] ?? $targetDisk,
                 'size'                  => $desc['size'] ?? strlen($bytes),
+                'content_hash'          => $desc['content_hash'] ?? null,
                 'manipulations'         => json_encode($desc['manipulations'] ?? []),
                 'custom_properties'     => json_encode($desc['custom_properties'] ?? []),
                 'generated_conversions' => json_encode([]),
@@ -858,7 +868,10 @@ class ContentImporter
                 'updated_at'            => now(),
             ]);
 
-            Storage::disk($targetDisk)->put("{$id}/{$fileName}", $bytes);
+            // Write the original bytes at the path the descriptor declares — the
+            // content-addressed location the seeded row (carrying the same
+            // content_hash) resolves to, or the legacy id path when no hash.
+            Storage::disk($targetDisk)->put($srcPath, $bytes);
             $seeded[] = (int) $id;
         }
 

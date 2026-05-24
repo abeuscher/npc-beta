@@ -335,8 +335,8 @@ it('round-trips a page with a logo widget media reference', function () {
 
     $widget->update(['config' => ['logo' => $media->id, 'text' => 'Acme', 'link_url' => '/']]);
 
-    // Sanity: file exists on the fake disk under {media_id}/{file_name}
-    expect(Storage::disk('public')->exists($media->id . '/' . $media->file_name))->toBeTrue();
+    // Sanity: file exists on the fake disk at its content-addressed path
+    expect(Storage::disk('public')->exists($media->getPathRelativeToRoot()))->toBeTrue();
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 

@@ -58,7 +58,7 @@ class MediaReferenceInventory
      *
      * @var array<int, array{0: string, 1: string}>
      */
-    private const EMBEDDED_SURFACES = [
+    public const EMBEDDED_SURFACES = [
         ['page_widgets', 'config'],
         ['collection_items', 'data'],
         ['events', 'description'],
@@ -200,8 +200,14 @@ class MediaReferenceInventory
     }
 
     /**
-     * Every media id whose canonical /storage/{id}/ path appears in a rich-text
+     * Every media id referenced by an embedded /storage/ URL in a rich-text
      * surface. Computed once per instance.
+     *
+     * Content-addressed URLs (/storage/cas/{shard}/{hash}/) identify content by
+     * hash, so an embedded hash marks every media row carrying that hash as
+     * referenced — conservative (it never falsely flags an embedded asset
+     * unused). Legacy /storage/{id}/ tokens are still resolved directly, so the
+     * inventory is correct before and after the content-addressed relocation.
      *
      * @return array<int, true>
      */
@@ -212,12 +218,25 @@ class MediaReferenceInventory
         }
 
         $ids = [];
+        $hashes = [];
 
         foreach (self::EMBEDDED_SURFACES as [$table, $column]) {
             foreach (DB::table($table)->pluck($column) as $content) {
-                foreach ($this->extractStorageIds((string) $content) as $id) {
+                $content = (string) $content;
+
+                foreach ($this->extractStorageIds($content) as $id) {
                     $ids[$id] = true;
                 }
+
+                foreach ($this->extractStorageHashes($content) as $hash) {
+                    $hashes[$hash] = true;
+                }
+            }
+        }
+
+        if (! empty($hashes)) {
+            foreach (Media::query()->whereIn('content_hash', array_keys($hashes))->pluck('id') as $id) {
+                $ids[(int) $id] = true;
             }
         }
 
@@ -225,8 +244,8 @@ class MediaReferenceInventory
     }
 
     /**
-     * Pull the media id out of every /storage/{id}/ token in a blob of content.
-     * Matches img src, anchor href, srcset, and conversion paths alike.
+     * Pull the media id out of every legacy /storage/{id}/ token in a blob of
+     * content. Matches img src, anchor href, srcset, and conversion paths alike.
      *
      * @return array<int, int>
      */
@@ -239,5 +258,21 @@ class MediaReferenceInventory
         preg_match_all('#/storage/(\d+)/#', $content, $matches);
 
         return array_map('intval', $matches[1] ?? []);
+    }
+
+    /**
+     * Pull the content hash out of every content-addressed /storage/cas/ token.
+     *
+     * @return array<int, string>
+     */
+    public function extractStorageHashes(string $content): array
+    {
+        if ($content === '' || ! str_contains($content, '/storage/cas/')) {
+            return [];
+        }
+
+        preg_match_all('#/storage/cas/[0-9a-f]{2}/([0-9a-f]{64})/#', $content, $matches);
+
+        return $matches[1] ?? [];
     }
 }

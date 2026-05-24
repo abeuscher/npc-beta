@@ -201,9 +201,9 @@ class ContentExporter
                     continue;
                 }
                 foreach ($item['media'] ?? [] as $desc) {
-                    $path = $desc['path'] ?? null;
-                    if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
-                        $ids[] = (int) $m[1];
+                    $id = $this->mediaIdFromDescriptor($desc);
+                    if ($id !== null) {
+                        $ids[] = $id;
                     }
                 }
             }
@@ -211,9 +211,9 @@ class ContentExporter
 
         foreach ($serializedPages as $page) {
             foreach ($page['media'] ?? [] as $desc) {
-                $path = $desc['path'] ?? null;
-                if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
-                    $ids[] = (int) $m[1];
+                $id = $this->mediaIdFromDescriptor($desc);
+                if ($id !== null) {
+                    $ids[] = $id;
                 }
             }
             $walk($page['widgets'] ?? []);
@@ -233,6 +233,25 @@ class ContentExporter
             ->get()
             ->map(fn (Media $m) => $this->serializeMediaRow($m))
             ->all();
+    }
+
+    /**
+     * Resolve a media descriptor's id: the explicit `id` field when present,
+     * else the legacy id parsed from a `{id}/` path token (older bundles, before
+     * paths became content-addressed).
+     */
+    private function mediaIdFromDescriptor(array $desc): ?int
+    {
+        if (isset($desc['id']) && is_numeric($desc['id'])) {
+            return (int) $desc['id'];
+        }
+
+        $path = $desc['path'] ?? null;
+        if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
     }
 
     /**
@@ -604,7 +623,8 @@ class ContentExporter
                 'collection_name' => $collection,
                 'file_name'       => $media->file_name,
                 'disk'            => $media->disk,
-                'path'            => $media->id . '/' . $media->file_name,
+                'id'              => $media->id,
+                'path'            => $media->getPathRelativeToRoot(),
                 'mime_type'       => $media->mime_type,
                 'size'            => $media->size,
             ];
@@ -686,7 +706,8 @@ class ContentExporter
                 'collection_name' => 'product_image',
                 'file_name'       => $media->file_name,
                 'disk'            => $media->disk,
-                'path'            => $media->id . '/' . $media->file_name,
+                'id'              => $media->id,
+                'path'            => $media->getPathRelativeToRoot(),
                 'mime_type'       => $media->mime_type,
                 'size'            => $media->size,
             ];
@@ -804,8 +825,9 @@ class ContentExporter
 
     /**
      * Posture-B descriptor: every column needed to recreate the row by raw
-     * explicit-id insert on the target, plus the on-disk path so the bytes
-     * land at {id}/{file_name} (media-portability draft decision #3).
+     * explicit-id insert on the target, plus content_hash and the on-disk path
+     * (content-addressed since session 320) so the seeded bytes land where the
+     * row resolves.
      *
      * @return array<string, mixed>
      */
@@ -827,7 +849,8 @@ class ContentExporter
             'custom_properties' => $m->custom_properties ?? [],
             'responsive_images' => $m->responsive_images ?? [],
             'order_column'      => $m->order_column,
-            'path'              => $m->id . '/' . $m->file_name,
+            'content_hash'      => $m->content_hash,
+            'path'              => $m->getPathRelativeToRoot(),
         ];
     }
 
@@ -918,7 +941,8 @@ class ContentExporter
                 'collection_name' => $collection,
                 'file_name'       => $media->file_name,
                 'disk'            => $media->disk,
-                'path'            => $media->id . '/' . $media->file_name,
+                'id'              => $media->id,
+                'path'            => $media->getPathRelativeToRoot(),
                 'mime_type'       => $media->mime_type,
                 'size'            => $media->size,
             ];
@@ -1084,7 +1108,8 @@ class ContentExporter
                 'collection_name' => $collectionName,
                 'file_name'       => $media->file_name,
                 'disk'            => $media->disk,
-                'path'            => $media->id . '/' . $media->file_name,
+                'id'              => $media->id,
+                'path'            => $media->getPathRelativeToRoot(),
                 'mime_type'       => $media->mime_type,
                 'size'            => $media->size,
             ];

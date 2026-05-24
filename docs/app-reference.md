@@ -264,7 +264,7 @@ CRM data is backed up nightly to a per-install DigitalOcean Spaces bucket. The p
 ### What gets backed up
 
 - The `nonprofitcrm` Postgres database (via `pg_dump`).
-- The Spatie media library tree under `storage/app/public`.
+- The Spatie media library tree under `storage/app/public`. As of session 320 this tree is content-addressed: files live at `cas/{hash[0:2]}/{hash}/...` rather than `{media.id}/...`. Backup and restore copy the tree by path, so the layout change is transparent to both — the procedures below are unchanged.
 
 ### Per-install bucket setup procedure
 

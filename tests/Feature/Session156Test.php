@@ -95,7 +95,7 @@ it('round-trips a page with an attached og_image media file', function () {
         ->preservingOriginal()
         ->toMediaCollection('og_image', 'public');
 
-    expect(Storage::disk('public')->exists($media->id . '/' . $media->file_name))->toBeTrue();
+    expect(Storage::disk('public')->exists($media->getPathRelativeToRoot()))->toBeTrue();
 
     $bundle = app(ContentExporter::class)->exportPages([$page->id]);
 

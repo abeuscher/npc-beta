@@ -71,7 +71,12 @@ it('gives identical bytes the same content_hash', function () {
 
 it('backfills content_hash for rows that lack one', function () {
     $media = ddAttach($this->widget, 'config_logo', 'BACKFILL-ME');
+
+    // Simulate a genuine pre-CAS legacy row: no hash, file at the id path
+    // (where a null-hash row's path generator resolves it).
+    $casPath = $media->getPathRelativeToRoot();
     Media::query()->update(['content_hash' => null]);
+    Storage::disk('public')->move($casPath, $media->id . '/' . $media->file_name);
 
     $this->artisan('media:backfill-hashes')->assertSuccessful();
 

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\SiteSetting;
 use App\Services\Media\MediaContentHasher;
+use App\Services\Media\MediaRelocator;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -29,11 +30,16 @@ class AppServiceProvider extends ServiceProvider
     {
         BasePage::formActionsAlignment(Alignment::End);
 
-        // Hash every media's stored original once, as it lands. MediaHasBeenAddedEvent
-        // fires after the file is copied to the library on every addMedia* path
-        // (uploads, Media::copy(), importer seeding), so this single hook covers all.
+        // Hash every media's stored original once, as it lands, then relocate it
+        // to its content-addressed path. MediaHasBeenAddedEvent fires after the
+        // file is copied to the library (at the legacy id path, before the hash
+        // exists) on every addMedia* path (uploads, Media::copy(), importer
+        // seeding), and before conversions are generated — so hashing then
+        // relocating here lands the original and all later conversions under the
+        // shared content-addressed directory.
         Event::listen(MediaHasBeenAddedEvent::class, function (MediaHasBeenAddedEvent $event): void {
             app(MediaContentHasher::class)->persist($event->media);
+            app(MediaRelocator::class)->relocate($event->media);
         });
 
         // Filament's built-in JS pickers (not browser-native)

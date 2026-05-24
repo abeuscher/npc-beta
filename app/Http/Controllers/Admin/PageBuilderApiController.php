@@ -390,9 +390,9 @@ class PageBuilderApiController extends Controller
 
         // Copy the source into the collection first, then evict any prior media —
         // copying before clearing keeps the source readable even when it is itself
-        // the media being reused. Copies bytes under the current path generator;
-        // reuse here is behavioural (operator picks a known asset), not yet
-        // byte-sharing — that is CAS (session 320).
+        // the media being reused. Under content-addressed storage (session 320)
+        // the copy resolves to the source's shared physical file, so this is a
+        // new row over the same bytes, not a fresh byte copy.
         $media = Media::findOrFail($validated['media_id'])
             ->copy($widget, $collectionName, 'public');
         $this->evictOtherMedia($widget, $collectionName, (int) $media->id);

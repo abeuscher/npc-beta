@@ -359,9 +359,9 @@ The original stub text — preserved for reference:
 
 ---
 
-### Media Path Generator — UUID Shape *(scheduled — session 320; folded into the content-addressed-storage work)*
+### Media Path Generator — UUID Shape *(✅ closed at session 320 — content-addressed storage)*
 
-Resolved as part of **session 320 (Content-Addressed Storage + Refcounted Delete)** — the path-generator switch is the same global change, so the UUID-shape goal is subsumed by the content-addressed path generator (keyed on `content_hash`) plus the one-time relocation migration. Original stub text retained below for reference.
+Resolved at **session 320 (Content-Addressed Storage + Refcounted Delete).** The path generator no longer keys on `media.id`; it keys on `content_hash` (`cas/{hash[0:2]}/{hash}/{file_name}` via `ContentAddressedPathGenerator`), with a one-time `media:relocate-cas` relocation that moved every existing file and collapsed byte-duplicates. This subsumes the original UUID-shape goal (portable media no longer depends on the bigint id) *and* delivers disk reclamation + refcounted delete. The media trilogy (318 → 319 → 320) is complete. Original stub text retained below for reference.
 
 The eventual robust posture-B shape: switch Spatie's `DefaultPathGenerator` from `{media.id}/{file_name}` to a UUID path generator (`{media.uuid}/{file_name}`), so portable media no longer depends on preserving the bigint `media.id` across installs. Session 303 deliberately delivered posture B via explicit-id preservation only — the UUID-path switch is a global change touching every existing media file on disk + a one-time relocation migration, explicitly out of 303's scope. Flagged here as the cleaner long-term form; not scheduled.
 
