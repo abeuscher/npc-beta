@@ -39,6 +39,18 @@ The public-demo droplet at `147.182.214.147` runs the same image stack as the de
 
 **`.env` propagation note:** `docker-compose.prod.yml` wires the host `.env` via `env_file:` (read at container *start*, not mounted as a live file), so edits to `/opt/nonprofitcrm/.env` do not reach the running container until you restart it (`docker compose -f docker-compose.prod.yml up -d` or `restart app worker`). `php artisan config:clear` only flushes the cached config file — it does not refresh the process environment. After restarting, run `config:clear` to drop any stale `bootstrap/cache/config.php` (the `bootstrap_cache` named volume persists across restarts). The `worker` container needs the same restart for queue jobs to see new env values.
 
+### Wiping a node to a bare machine
+
+The definitive teardown for a node installed via the deploy/FM path — removes every container and every named volume (database, media, caches), returning the box to a clean slate FM can re-provision onto. Run as root on the droplet. **Irreversible — destroys all data; restore from a backup blob if you need the data back.**
+
+```bash
+docker rm -f nonprofitcrm_nginx nonprofitcrm_app nonprofitcrm_worker nonprofitcrm_postgres nonprofitcrm_redis
+docker volume rm nonprofitcrm_bootstrap_cache nonprofitcrm_libs_build nonprofitcrm_postgres_data nonprofitcrm_redis_data nonprofitcrm_storage_data nonprofitcrm_widget_build
+docker system prune -a --volumes -f
+```
+
+The `prune` step also reclaims dangling images/networks so the next deploy pulls fresh. This leaves the host files (`/opt/nonprofitcrm/.env`, `nginx-certs/`) in place; delete `/opt/nonprofitcrm` too if you want FM to regenerate those.
+
 ---
 
 ## Admin UI — views and their files
