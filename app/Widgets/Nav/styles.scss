@@ -336,3 +336,60 @@
 // Responsive breakpoint is handled via an inline <style> block in the widget
 // template, which generates media queries using the configured pixel value.
 // No hardcoded breakpoint here — the template emits the rules per instance.
+
+// ── Columns orientation (footer preset) ──────────────────────────────────────
+//
+// Each top-level item becomes a heading column with its child links listed
+// beneath it — every link visible, no dropdowns and no JS. Intended for
+// "kitchen-sink" footers. Columns sit in a flex row and wrap on narrow widths;
+// the row's horizontal placement follows the same --nav-justify property the
+// horizontal layout uses (so left / center / right alignment still applies).
+
+.widget-nav--columns {
+    display: block;
+    min-height: 0;
+
+    .widget-nav__columns {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem 3rem;
+        justify-content: var(--nav-justify, flex-start);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .widget-nav__column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .widget-nav__column-heading {
+        color: var(--nav-link-color, inherit);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    a.widget-nav__column-heading:hover {
+        color: var(--nav-hover-color, var(--nav-link-color, inherit));
+    }
+
+    .widget-nav__column-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .widget-nav__column-link {
+        color: var(--nav-link-color, inherit);
+        text-decoration: none;
+
+        &:hover {
+            color: var(--nav-hover-color, var(--nav-link-color, inherit));
+        }
+    }
+}

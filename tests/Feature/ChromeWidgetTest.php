@@ -25,6 +25,29 @@ it('creates _header and _footer system pages via seeder', function () {
     expect(Page::where('slug', '_footer')->where('type', 'system')->exists())->toBeTrue();
 });
 
+it('seeds a columns footer navigation as the default footer', function () {
+    User::factory()->create();
+    $this->seed(\Database\Seeders\SystemPageSeeder::class);
+
+    $footer = Page::where('slug', '_footer')->where('type', 'system')->first();
+
+    $navWidget = $footer->widgets()->whereNull('layout_id')
+        ->whereHas('widgetType', fn ($q) => $q->where('handle', 'nav'))
+        ->first();
+
+    expect($navWidget)->not->toBeNull();
+    expect($navWidget->config['orientation'])->toBe('columns');
+
+    $footerMenu = NavigationMenu::where('handle', 'footer')->first();
+    expect($footerMenu)->not->toBeNull();
+    expect((string) $navWidget->config['navigation_menu_id'])->toBe((string) $footerMenu->id);
+
+    // Heading columns each carry child links (the kitchen-sink footer shape).
+    $headings = $footerMenu->items()->whereNull('parent_id')->get();
+    expect($headings->count())->toBeGreaterThan(0);
+    expect($footerMenu->items()->whereNotNull('parent_id')->count())->toBeGreaterThan(0);
+});
+
 it('seeds logo and nav widget types', function () {
     $this->seed(\Database\Seeders\WidgetTypeSeeder::class);
 

@@ -29,6 +29,10 @@ When a page slug changes, offer to set up a 301 redirect from the old slug to th
 
 A control or new widget that places anchors at horizontal widget breaks down the page, surfaced through a nav-shaped UI. Probably a new widget (because anchors insert at arbitrary points down the page in a way that's structurally column-primitive-like — the nav has to attach to specific widget boundaries). Needs design pass: control vs. widget? How do operators pick anchor points? Per-page layout flexibility vs. uniform site convention? Defer scoping until post-Beta when the use case has matured.
 
+### Nav widget variants — dropdown behaviors + separate mobile/desktop presets *(post-Beta)*
+
+Build out the Nav widget's variant surface. Session 322 added the first layout preset (Horizontal / Columns-footer); there's a lot more here that's cheap to add if tooled correctly. Candidates: additional dropdown behaviors (mega-menu, click-vs-hover, accordion), and decoupling mobile from desktop so an operator can pick a desktop preset and a different mobile preset independently rather than the single shared config today. The win is treating "nav layout" as a small set of composable presets rather than one monolithic config. Needs a design pass on how presets compose (layout × dropdown × mobile) before building.
+
 ---
 
 ## Active tracks

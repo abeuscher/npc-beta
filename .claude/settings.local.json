@@ -68,11 +68,40 @@
       "Bash(grep -nE 'function .*Action|Action::make|mountAction|->arguments|\\\\$arguments|use Filament|InteractsWithActions|HasActions' app/Filament/Concerns/RecordTimelinePage.php)",
       "Bash(grep -nE 'mountAction|filament-actions|wire:click|\\\\$this->.*Action' resources/views/filament/pages/record-timeline.blade.php)",
       "Bash(grep -rn \"function copy\\\\b\\\\|public function copy\" vendor/spatie/laravel-medialibrary/src/MediaCollections/Models/Media.php; echo \"---\"; sed -n '/public function copy/,/^    }/p' vendor/spatie/laravel-medialibrary/src/MediaCollections/Models/Media.php | head -30)",
-      "Bash(bash dev test --filter=MediaDedupTest)"
+      "Bash(bash dev test --filter=MediaDedupTest)",
+      "Bash(cd /home/al/nonprofitcrm; echo \"===copy\\(\\) in HasMedia/InteractsWithMedia===\"; grep -rn \"function copy\" vendor/spatie/laravel-medialibrary/src/ ; echo \"---\"; sed -n '/public function copy/,/^    }/p' vendor/spatie/laravel-medialibrary/src/MediaCollections/Models/Media.php 2>/dev/null | head -40)",
+      "Bash(grep -rln 'exists\\($media->id' tests/)",
+      "Bash(grep -n \"'path' *=> *\\\\$[a-zA-Z_]*->id . '/' . \\\\$[a-zA-Z_]*->file_name\" app/Services/ImportExport/ContentExporter.php)",
+      "Bash(grep -nE \"'path' +=> +\\\\\\\\\\\\$[a-zA-Z_]+->id ?\\\\. ?'/' ?\\\\. ?\\\\\\\\\\\\$[a-zA-Z_]+->file_name\" app/Services/ImportExport/ContentExporter.php)",
+      "Bash(sed -n '88,100p' tests/Feature/Session156Test.php)",
+      "Bash(sed -n '330,345p' tests/Feature/ContentImportExportTest.php)",
+      "Bash(echo \"\\(exit: $?\\)\")",
+      "Bash(grep -vE \"^\\\\s*#|^\\\\s*$\")",
+      "Bash(grep -nA12 \"nginx:\" docker-compose.prod.yml)",
+      "Bash(grep -nA2 \"isDemoMode\" app/Providers/AppServiceProvider.php)",
+      "Bash(grep -n \"fullPermissions\\\\|viewPermissions\\\\|\\\\$.*Permissions =\" database/seeders/PermissionSeeder.php)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('permissions',{}\\),indent=2\\)\\)\")",
+      "Bash(bash dev test tests/Feature/DemoRoleLockdownTest.php)",
+      "Bash(curl -s -o /dev/null -w \"status=%{http_code} redirect=%{redirect_url}\\\\n\" http://localhost:8090/demo/enter)",
+      "Bash(curl -s -o /dev/null -w \"status=%{http_code}  redirect=%{redirect_url}\\\\n\" http://localhost:8090/demo/enter)",
+      "Bash(grep -mE1 \"^APP_URL=|^SESSION_SECURE_COOKIE=|^SESSION_DOMAIN=|^SESSION_DRIVER=\" .env)",
+      "Bash(curl -sk -D - -o /dev/null https://localhost/demo/enter)",
+      "Bash(curl -s -D - -o /dev/null http://localhost/demo/enter)",
+      "Bash(grep -vE \"^\\\\s*$\" sessions/completed-sessions.md)",
+      "Bash(curl -s http://localhost/ -o /tmp/home.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(grep -o '<header[^>]*>.\\\\{0,400\\\\}' /tmp/home.html)",
+      "Bash(sed -n '1,60p' app/Models/NavigationMenu.php)",
+      "Bash(grep -n \"fillable\\\\|protected \\\\$\\\\|function \\\\|children\\\\|parent\" app/Models/NavigationItem.php)",
+      "Bash(grep -v \"INFO\\\\|^$\")",
+      "Bash(curl -s http://localhost/ -o /tmp/home2.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost/ -o /tmp/home3.html -w \"HTTP %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost/ -o /tmp/home4.html)",
+      "Bash(curl -s http://localhost/ -o /tmp/home5.html)"
     ],
     "additionalDirectories": [
       "/tmp",
-      "/home/al/nonprofitcrm/vendor/spatie/laravel-medialibrary/src/MediaCollections/Models"
+      "/home/al/nonprofitcrm/vendor/spatie/laravel-medialibrary/src/MediaCollections/Models",
+      "/home/al/fleetmanager/app/Filament/Resources"
     ]
   }
 }

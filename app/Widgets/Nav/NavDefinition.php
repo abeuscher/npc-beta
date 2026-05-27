@@ -35,6 +35,7 @@ class NavDefinition extends WidgetDefinition
     {
         return [
             ['key' => 'navigation_menu_id', 'type' => 'select', 'label' => 'Navigation Menu', 'options_from' => 'navigation_menus', 'group' => 'content'],
+            ['key' => 'orientation',        'type' => 'select', 'label' => 'Layout', 'default' => 'horizontal', 'options' => ['horizontal' => 'Horizontal', 'columns' => 'Columns (footer)'], 'group' => 'content', 'helper' => 'Columns lays each top-level item out as a heading with its links listed below — for footers. No dropdowns.'],
             ['key' => 'branding_type',      'type' => 'select', 'label' => 'Branding', 'default' => 'none', 'options' => ['none' => 'None', 'logo' => 'Logo Image', 'icon' => 'Icon Image', 'text' => 'Text'], 'group' => 'content'],
             ['key' => 'branding_image',     'type' => 'image',  'label' => 'Branding Image', 'group' => 'content', 'helper' => 'Used when branding is Logo or Icon'],
             ['key' => 'branding_text',      'type' => 'text',   'label' => 'Branding Text',  'group' => 'content', 'helper' => 'Used when branding is Text'],
@@ -60,6 +61,7 @@ public function defaults(): array
 {
     return [
         'navigation_menu_id' => 'a189ec8c-8dd1-4bd1-8d1f-6366ce317dec',
+        'orientation'        => 'horizontal',
         'branding_type'      => 'none',
         'branding_image'     => null,
         'branding_text'      => '',

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
 use App\Models\Page;
 use App\Models\PageLayout;
@@ -195,20 +196,96 @@ class SystemPageSeeder extends Seeder
         }
 
         $textType = WidgetType::where('handle', 'text_block')->first();
+        $navType  = WidgetType::where('handle', 'nav')->first();
         if (! $textType) {
             return;
         }
 
         $siteName = SiteSetting::get('site_name', config('app.name'));
 
+        // Columns footer navigation — each top-level item is a heading column
+        // with its links listed beneath (no dropdowns). Ships the Nav widget's
+        // columns preset as the out-of-the-box footer so a fresh install reads
+        // as production-ready.
+        if ($navType) {
+            $footerMenu = $this->seedFooterMenu();
+
+            $navConfig = $navType->getDefaultConfig();
+            $navConfig['navigation_menu_id'] = $footerMenu->id;
+            $navConfig['orientation']        = 'columns';
+            $navConfig['alignment']          = 'center';
+
+            $footerPage->widgets()->create([
+                'widget_type_id' => $navType->id,
+                'label'          => 'Footer Navigation',
+                'config'         => $navConfig,
+                'sort_order'     => 0,
+                'is_active'      => true,
+            ]);
+        }
+
         $footerPage->widgets()->create([
-            'widget_type_id' => $textType->id,
-            'label'          => 'Footer',
-            'config'         => [
+            'widget_type_id'    => $textType->id,
+            'label'             => 'Footer',
+            'config'            => [
                 'content' => '<p style="text-align:center">&copy; ' . date('Y') . ' ' . e($siteName) . '</p>',
             ],
-            'sort_order'     => 0,
-            'is_active'      => true,
+            'appearance_config' => [
+                'layout' => [
+                    'padding' => ['top' => 25, 'right' => 0, 'bottom' => 150, 'left' => 0],
+                ],
+            ],
+            'sort_order'        => 1,
+            'is_active'         => true,
         ]);
+    }
+
+    private function seedFooterMenu(): NavigationMenu
+    {
+        $menu = NavigationMenu::firstOrCreate(
+            ['handle' => 'footer'],
+            ['label'  => 'Footer'],
+        );
+
+        // Heading columns, each with its links beneath. Top-level items are the
+        // column headings (plain labels); their children are the links.
+        $groups = [
+            ['heading' => 'Organization', 'links' => [
+                ['label' => 'About',   'slug' => 'about'],
+                ['label' => 'Contact', 'slug' => 'contact'],
+            ]],
+            ['heading' => 'Activities', 'links' => [
+                ['label' => 'Events', 'slug' => 'events'],
+                ['label' => 'News',   'slug' => 'news'],
+            ]],
+            ['heading' => 'Legal', 'links' => [
+                ['label' => 'Privacy Policy', 'url' => '#'],
+                ['label' => 'Terms of Use',   'url' => '#'],
+            ]],
+        ];
+
+        foreach ($groups as $g => $group) {
+            $heading = NavigationItem::firstOrCreate(
+                ['label' => $group['heading'], 'navigation_menu_id' => $menu->id],
+                ['sort_order' => $g + 1, 'target' => '_self', 'is_visible' => true],
+            );
+
+            foreach ($group['links'] as $l => $link) {
+                $pageId = isset($link['slug']) ? Page::where('slug', $link['slug'])->value('id') : null;
+
+                NavigationItem::firstOrCreate(
+                    ['label' => $link['label'], 'navigation_menu_id' => $menu->id, 'parent_id' => $heading->id],
+                    [
+                        'page_id'    => $pageId,
+                        'url'        => $pageId ? null : ($link['url'] ?? '#'),
+                        'sort_order' => $l + 1,
+                        'target'     => '_self',
+                        'is_visible' => true,
+                    ]
+                );
+            }
+        }
+
+        return $menu;
     }
 }

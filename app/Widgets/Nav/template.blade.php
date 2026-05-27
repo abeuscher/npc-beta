@@ -4,6 +4,7 @@
     $brandingText    = $config['branding_text'];
     $brandingMedia   = $configMedia['branding_image'] ?? null;
     $alignment       = $config['alignment'];
+    $orientation     = $config['orientation'] ?? 'horizontal';
     $dropAnimation   = $config['drop_animation'];
     $dropAlign       = $config['drop_align'];
     $dropBorderColor = $config['drop_border_color'];
@@ -105,6 +106,41 @@
 
 @if ($navItems->isEmpty())
     {{-- Empty state: render nothing --}}
+@elseif ($orientation === 'columns')
+    {{-- Columns / footer preset: each top-level item is a heading column with
+         its children listed beneath. No dropdowns, no JS — every link visible. --}}
+    <nav
+        class="widget-nav widget-nav--columns"
+        aria-label="{{ $navMenu->label ?? 'Navigation' }}"
+        style="--nav-justify: {{ $justifyContent }}{{ !empty($navColorVars) ? '; ' . implode('; ', $navColorVars) : '' }}"
+    >
+        <ul class="widget-nav__columns">
+            @foreach ($navItems as $item)
+                @php
+                    $href = $resolveUrl($item);
+                    $headingIsLink = $item->page_id || ($item->url && $item->url !== '#');
+                @endphp
+                <li class="widget-nav__column">
+                    @if ($headingIsLink)
+                        <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" class="widget-nav__column-heading">{{ $item->label }}</a>
+                    @else
+                        <span class="widget-nav__column-heading">{{ $item->label }}</span>
+                    @endif
+
+                    @if ($item->children->isNotEmpty())
+                        <ul class="widget-nav__column-links">
+                            @foreach ($item->children as $child)
+                                @php $childHref = $resolveUrl($child); @endphp
+                                <li>
+                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" class="widget-nav__column-link {{ ($childHref !== '#' && $isActive($childHref)) ? 'is-active' : '' }}">{{ $child->label }}</a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    </nav>
 @else
 <style>
     @media (min-width: {{ $mobileBreakpoint + 1 }}px) {
@@ -118,7 +154,7 @@
 </style>
 <nav
     id="{{ $widgetId }}"
-    class="widget-nav widget-nav--drop-{{ $dropAnimation }} widget-nav--mobile-{{ $mobileAnimation }}"
+    class="widget-nav widget-nav--{{ $orientation }} widget-nav--drop-{{ $dropAnimation }} widget-nav--mobile-{{ $mobileAnimation }}"
     aria-label="{{ $navMenu->label ?? 'Navigation' }}"
     x-data="{
         mobileOpen: false,

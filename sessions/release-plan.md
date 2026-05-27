@@ -423,23 +423,23 @@ All entries are pre-Beta-1 blocking. Order is best-guess; items with rehearsal d
 - **success criterion:** *(revised at 311 mid-session after the original prompt captured the wrong feature shape; rewrite pending before the next slot)* A rich-text toolbar "Insert Table" affordance — operator picks rows × columns from a small popover and a real `<table>` element is inserted into the current rich-text field. The feature lives inside the existing Quill editor used everywhere (TextBlock content, PricingChart cells, etc.) — not a standalone Page Builder widget. The original "Table widget" framing was a wording slip in the 282-audit promotion; the actual ask was always a rich-text editor feature.
 - **artifact:** the toolbar affordance + table-handling in the existing rich-text pipeline.
 - **estimated time cost:** 1 session.
-- **status:** open. Session 311 was originally scoped against this entry but built the wrong feature shape (a standalone widget); the work was reset off the branch at user direction. Prompt at `sessions/311. Table Widget.md` retained pending rewrite to reflect the revised success criterion above.
+- **status:** **deferred to post-Public-Website-Complete at session 322** (no Beta-1 blocker requires tables; the owner moved it below the milestone divider so E17 is the last pre-milestone item). Session 311 was originally scoped against this entry but built the wrong feature shape (a standalone widget); the work was reset off the branch at user direction. Prompt at `sessions/311. Table Widget.md` retained pending rewrite to reflect the revised success criterion above.
 
-#### E16. Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)*
+#### E16. Header / footer defaults overhaul *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)* ✅ *(closed at session 322)*
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Header default changes — no longer full-width; reasonable centered chrome. Footer gains a stacking nav option (vertically stacked links instead of horizontal drop) and the default footer template includes the new stacking nav out of the box. Site chrome defaults reviewed for sensible production-ready appearance on a fresh install.
-- **artifact:** the feature itself.
+- **success criterion** *(closed at session 322)*: Header was already centered (the session-284 `public.blade.php` chrome-wrapper fix; confirmed via render, no change needed). The Nav widget gained a **Columns (footer)** layout preset alongside Horizontal — each top-level item becomes a heading column with its child links listed beneath, every link visible, **no dropdowns and no JS** (its own render path in the widget template). The seeded fresh-install footer ships this preset (a seeded `footer` menu of headed groups — Organization / Activities / Legal) plus a centered copyright with 25px top / 150px bottom padding. Reconciled with the session-284 footer (didn't regress it). Footer band left white by owner decision. Fast Pest 2680/0. Follow-up logged to the post-Beta backlog: Nav widget variants (dropdown behaviors + separate mobile/desktop presets).
+- **artifact:** the Nav columns preset + seeded footer default.
 - **estimated time cost:** 1 session.
 
-#### E17. Borders pass — widget controls + columns *(promoted from housekeeping inbox at 282 audit — pre-Public-Website-Complete)*
+#### E17. Border tool — universal widget appearance borders *(promoted from housekeeping inbox at 282 audit; scope refined in the session-322 close design discussion — the last pre-Public-Website-Complete item now that E15 deferred)*
 
 - **gate:** release
-- **prerequisites:** none; may coordinate with the Design System Editor track if it lands first
-- **success criterion:** Standard widget controls and columns gain consistent border options — top/bottom default; left/right inset available. Uniform visual polish pass across widgets that surface in the page builder. If the Design System Editor track promotes pre-Beta, this entry may fold into that track's "buttons first" pass per session sequencing.
-- **artifact:** the feature itself.
-- **estimated time cost:** 1 session.
+- **prerequisites:** none
+- **success criterion:** A reusable **border control** in the page-builder appearance layer — the definitive box-with-toggleable-edges tool (each of the 4 sides toggles independently, like the alignment tool is a known shape), plus a plain **width** number, a single **radius** number (all four corners), and the app's standard color picker. Built as a shared primitive (mirroring `NinePointAlignment` / `SpacingInput` / `ColorPicker`) so it can later register as an in-widget `border` field type. **v1 applies the outer-box border to every widget uniformly** via the shared appearance config (`AppearanceStyleComposer` + parity in `ChromeRenderer::buildInlineStyle` and the preview renderer), sibling to margin / padding / background, default all-sides-off (a concrete no-op → no regression on existing widgets). Verified on the **Text widget**, including borders turned on inside layouts to confirm correct render there. Value model is concrete: `{ top,right,bottom,left: bool; width: int(px); color: '#hex'; radius: int(px) }`. **Out of v1:** borders *beyond* the outer box (interior / column-to-column rules, borders on elements *inside* a widget — these are per-widget/per-context follow-ups), per-side width/color, and non-solid styles (dashed/dotted).
+- **artifact:** the border control primitive + appearance-layer wiring + render-surface parity, applied to all widgets, verified on the Text widget.
+- **estimated time cost:** 1+ session — **the tool is the priority, not single-session completion**; splitting across sessions is fine (owner directive at 322 close).
 
 #### Public Marketing Website track *(lifted at session 283 mid-session; pre-Public-Website-Complete)*
 

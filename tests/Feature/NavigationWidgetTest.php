@@ -223,6 +223,42 @@ it('applies dropdown animation class', function () {
     expect($html)->toContain('widget-nav--drop-slide');
 });
 
+it('defaults to the horizontal orientation class', function () {
+    $navType = seedNavWidget();
+    $menu    = createNavMenu();
+    createNavItem($menu, ['label' => 'Home', 'url' => '/']);
+
+    $html = renderNavWidget($navType, ['navigation_menu_id' => $menu->id]);
+
+    expect($html)
+        ->toContain('widget-nav--horizontal')
+        ->not->toContain('widget-nav--columns');
+});
+
+it('renders the columns preset as headings with visible child links', function () {
+    $navType = seedNavWidget();
+    $menu    = createNavMenu();
+    $heading = createNavItem($menu, ['label' => 'Organization', 'url' => '#']);
+    createNavItem($menu, ['label' => 'About', 'url' => '/about', 'parent_id' => $heading->id]);
+    createNavItem($menu, ['label' => 'Contact', 'url' => '/contact', 'parent_id' => $heading->id, 'sort_order' => 1]);
+
+    $html = renderNavWidget($navType, [
+        'navigation_menu_id' => $menu->id,
+        'orientation'        => 'columns',
+    ]);
+
+    expect($html)
+        ->toContain('widget-nav--columns')
+        ->toContain('widget-nav__column-heading')
+        ->toContain('Organization')
+        ->toContain('widget-nav__column-link')
+        ->toContain('About')
+        ->toContain('Contact')
+        // No dropdowns, no Alpine in the columns preset — every link is visible.
+        ->not->toContain('x-show')
+        ->not->toContain('widget-nav__dropdown');
+});
+
 it('renders mobile menu with nested sub-menus', function () {
     $navType = seedNavWidget();
     $menu    = createNavMenu();
