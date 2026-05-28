@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import ColorPicker from '../primitives/ColorPicker.vue'
 import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
@@ -60,6 +60,26 @@ const openPanel = ref<BgTab>(initialTab())
 function togglePanel(panel: Exclude<BgTab, null>) {
   openPanel.value = openPanel.value === panel ? null : panel
 }
+
+// Same stillness pair the BorderInput uses: scroll the just-opened panel
+// into view so a click near the bottom of the inspector pane isn't an
+// invisible no-op, and hold the panel's measured height as an invisible
+// spacer on close so the inspector doesn't jump. Policy here is "reserve
+// the last opened panel's height" (not max) — the three panels (color,
+// gradient, image) have different intrinsic heights, and reserving the max
+// would cause a downward jump when closing a shorter panel after the user
+// had opened a taller one earlier in the session.
+const panelWrapEl = ref<HTMLDivElement | null>(null)
+const reservedPanelHeight = ref(0)
+
+watch(openPanel, async (now) => {
+  if (!now) return
+  await nextTick()
+  const el = panelWrapEl.value
+  if (!el) return
+  reservedPanelHeight.value = el.offsetHeight
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+}, { immediate: true })
 
 function update(path: string, value: any) {
   emit('update', path, value)
@@ -140,6 +160,7 @@ function triggerFileInput() {
       </div>
     </div>
 
+    <div v-if="openPanel" ref="panelWrapEl" class="bg-panel__panel-wrap">
     <!-- Color panel -->
     <ColorPicker
       v-if="openPanel === 'color'"
@@ -218,6 +239,13 @@ function triggerFileInput() {
         <span v-else>Click to upload an image</span>
       </button>
     </div>
+    </div>
+
+    <div
+      v-else-if="reservedPanelHeight > 0"
+      :style="{ height: `${reservedPanelHeight}px` }"
+      aria-hidden="true"
+    />
   </div>
 </template>
 
@@ -235,6 +263,14 @@ function triggerFileInput() {
   font-size: 0.8125rem;
   font-weight: 600;
   color: #1f2937;
+}
+
+/* The wrapping div for the open panel and its matching spacer. flow-root
+ * keeps the inner popover's margin-top from collapsing through to the
+ * parent flex container — without it, wrapper.offsetHeight would not
+ * include the margin and the reserved spacer would be too short. */
+.bg-panel__panel-wrap {
+  display: flow-root;
 }
 
 /* ── Handle row ──────────────────────────────────────────────────────────── */
