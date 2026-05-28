@@ -79,6 +79,11 @@ class AppearanceStyleComposer
             }
         }
 
+        // Border — concrete value object, default all-sides-off (a no-op)
+        foreach (self::composeBorderProps($ac['layout']['border'] ?? []) as $prop) {
+            $styleProps[] = $prop;
+        }
+
         $fw = $this->resolveFullWidthForWidget($pw);
 
         return [
@@ -86,6 +91,50 @@ class AppearanceStyleComposer
             'background_full_width' => $fw['background_full_width'],
             'content_full_width'    => $fw['content_full_width'],
         ];
+    }
+
+    /**
+     * Emit border style declarations from a concrete border value object:
+     *   { top,right,bottom,left: bool; width: int(px); color: '#hex'; radius: int(px) }
+     *
+     * Shared by every appearance render surface (composer + ChromeRenderer) so
+     * the builder, the public page, and chrome agree. Only enabled sides emit a
+     * border; radius emits independently when > 0; box-sizing:border-box is
+     * added whenever a side is on so an enabled border doesn't grow the box.
+     *
+     * @return array<int, string>
+     */
+    public static function composeBorderProps(array $border): array
+    {
+        $props = [];
+
+        $width = isset($border['width']) ? max(0, (int) $border['width']) : 0;
+        $color = $border['color'] ?? '';
+        $colorOk = is_string($color) && preg_match(self::HEX_PATTERN, $color);
+
+        $anyOn = false;
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            if (empty($border[$side])) {
+                continue;
+            }
+            $anyOn = true;
+            $decl = 'border-' . $side . ':' . $width . 'px solid';
+            if ($colorOk) {
+                $decl .= ' ' . $color;
+            }
+            $props[] = $decl;
+        }
+
+        $radius = isset($border['radius']) ? max(0, (int) $border['radius']) : 0;
+        if ($radius > 0) {
+            $props[] = 'border-radius:' . $radius . 'px';
+        }
+
+        if ($anyOn) {
+            $props[] = 'box-sizing:border-box';
+        }
+
+        return $props;
     }
 
     /**

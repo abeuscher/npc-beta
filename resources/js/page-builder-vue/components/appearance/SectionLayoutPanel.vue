@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import SpacingInput, { type SpacingValue } from '../primitives/SpacingInput.vue'
+import BorderInput, { type BorderValue } from '../primitives/BorderInput.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +25,7 @@ const contentFullWidth = computed(() => !!props.config?.layout?.content_full_wid
 const backgroundFullWidth = computed(() => !!props.config?.layout?.background_full_width)
 const padding = computed(() => props.config?.layout?.padding ?? {})
 const margin  = computed(() => props.config?.layout?.margin ?? {})
+const border  = computed(() => props.config?.layout?.border ?? {})
 
 const backgroundDisabled = computed(() => props.fullWidthDisabled || contentFullWidth.value)
 const backgroundDisabledReason = computed(() => {
@@ -40,6 +42,10 @@ function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
   for (const side of ['top', 'right', 'bottom', 'left'] as const) {
     update(`${box}.${side}`, value[side])
   }
+}
+
+function applyBorder(value: BorderValue) {
+  update('border', value)
 }
 </script>
 
@@ -93,6 +99,14 @@ function applySpacing(box: 'padding' | 'margin', value: SpacingValue) {
         unit="px"
         :model-value="margin"
         @update:model-value="applySpacing('margin', $event)"
+      />
+    </div>
+
+    <div class="layout-panel__section">
+      <BorderInput
+        label="Border"
+        :model-value="border"
+        @update:model-value="applyBorder"
       />
     </div>
   </div>

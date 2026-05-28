@@ -131,6 +131,10 @@ class PricingChartDefinition extends WidgetDefinition
                 'margin' => [
                     'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0,
                 ],
+                'border' => [
+                    'top' => false, 'right' => false, 'bottom' => false, 'left' => false,
+                    'width' => 0, 'color' => '#000000', 'radius' => 0,
+                ],
             ],
         ];
     }

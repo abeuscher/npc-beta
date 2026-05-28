@@ -422,6 +422,52 @@ it('emits new layout style fields in chrome', function () {
     expect($result['html'])->toContain('margin-bottom:7px');
 });
 
+it('emits the universal border on a chrome widget in parity with the composer (session 323)', function () {
+    $page = Page::factory()->create([
+        'slug'         => '_header',
+        'type'         => 'system',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $widgetType = WidgetType::create([
+        'handle'        => 'test_chrome_border',
+        'label'         => 'Test Chrome Border',
+        'render_mode'   => 'server',
+        'collections'   => [],
+        'config_schema' => [],
+        'template'      => '<div class="test-chrome">Bordered</div>',
+    ]);
+
+    $page->widgets()->create([
+        'widget_type_id'    => $widgetType->id,
+        'label'             => 'Test',
+        'config'            => [],
+        'appearance_config' => ['layout' => ['border' => [
+            'top' => true, 'right' => false, 'bottom' => true, 'left' => false,
+            'width' => 2, 'color' => '#abcdef', 'radius' => 5,
+        ]]],
+        'sort_order'        => 1,
+        'is_active'         => true,
+    ]);
+
+    $result = ChromeRenderer::render('_header');
+
+    // Parity: chrome delegates to the same emitter the composer uses, so the
+    // chrome HTML carries exactly what composeBorderProps emits for this config.
+    $expected = \App\Services\AppearanceStyleComposer::composeBorderProps([
+        'top' => true, 'right' => false, 'bottom' => true, 'left' => false,
+        'width' => 2, 'color' => '#abcdef', 'radius' => 5,
+    ]);
+
+    expect($result)->not->toBeNull();
+    foreach ($expected as $decl) {
+        expect($result['html'])->toContain($decl);
+    }
+    expect($result['html'])->not->toContain('border-right');
+    expect($result['html'])->not->toContain('border-left');
+});
+
 // ── Logo widget ─────────────────────────────────────────────────────────────
 
 it('logo widget renders text and link', function () {

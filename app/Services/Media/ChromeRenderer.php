@@ -4,6 +4,7 @@ namespace App\Services\Media;
 
 use App\Models\Page;
 use App\Models\PageLayout;
+use App\Services\AppearanceStyleComposer;
 use App\Services\WidgetRenderer;
 
 class ChromeRenderer
@@ -236,6 +237,10 @@ class ChromeRenderer
             if ($val !== null) {
                 $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
+        }
+
+        foreach (AppearanceStyleComposer::composeBorderProps($appearanceConfig['layout']['border'] ?? []) as $prop) {
+            $styleProps[] = $prop;
         }
 
         return implode(';', $styleProps);

@@ -345,6 +345,106 @@ it('skips background-image props when no gradient and no image', function () {
         ->not->toContain('background-size');
 });
 
+// ── Border (session 323) ────────────────────────────────────────────────────
+
+it('emits no border props for the all-sides-off default', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => false, 'right' => false, 'bottom' => false, 'left' => false,
+            'width' => 0, 'color' => '#000000', 'radius' => 0,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->not->toContain('border-')
+        ->not->toContain('box-sizing');
+});
+
+it('emits a single enabled side with width, style, color and box-sizing', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => true, 'right' => false, 'bottom' => false, 'left' => false,
+            'width' => 2, 'color' => '#ff0000', 'radius' => 0,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->toContain('border-top:2px solid #ff0000')
+        ->toContain('box-sizing:border-box')
+        ->not->toContain('border-right')
+        ->not->toContain('border-bottom')
+        ->not->toContain('border-left');
+});
+
+it('emits all four sides when all are enabled', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => true, 'right' => true, 'bottom' => true, 'left' => true,
+            'width' => 1, 'color' => '#0a2540', 'radius' => 0,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->toContain('border-top:1px solid #0a2540')
+        ->toContain('border-right:1px solid #0a2540')
+        ->toContain('border-bottom:1px solid #0a2540')
+        ->toContain('border-left:1px solid #0a2540');
+});
+
+it('emits border-radius independently of any enabled side', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => false, 'right' => false, 'bottom' => false, 'left' => false,
+            'width' => 0, 'color' => '#000000', 'radius' => 8,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])
+        ->toContain('border-radius:8px')
+        ->not->toContain('box-sizing');
+});
+
+it('omits the color token from a side when the hex is malformed', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => true, 'right' => false, 'bottom' => false, 'left' => false,
+            'width' => 3, 'color' => 'red', 'radius' => 0,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('border-top:3px solid');
+    expect($result['inline_style'])->not->toContain('border-top:3px solid red');
+});
+
+it('coerces width and radius to int and clamps negatives to zero', function () {
+    $pw = makeWidget($this->page, $this->widgetType, [
+        'layout' => ['border' => [
+            'top' => true, 'right' => false, 'bottom' => false, 'left' => false,
+            'width' => '4.9', 'color' => '#000000', 'radius' => -5,
+        ]],
+    ]);
+    $result = $this->composer->compose($pw);
+    expect($result['inline_style'])->toContain('border-top:4px solid #000000');
+    expect($result['inline_style'])->not->toContain('border-radius');
+});
+
+it('composeBorderProps is a pure helper shared across render surfaces', function () {
+    $props = AppearanceStyleComposer::composeBorderProps([
+        'top' => true, 'right' => true, 'bottom' => false, 'left' => false,
+        'width' => 2, 'color' => '#123456', 'radius' => 4,
+    ]);
+    expect($props)->toBe([
+        'border-top:2px solid #123456',
+        'border-right:2px solid #123456',
+        'border-radius:4px',
+        'box-sizing:border-box',
+    ]);
+});
+
+it('composeBorderProps returns an empty array for an empty config', function () {
+    expect(AppearanceStyleComposer::composeBorderProps([]))->toBe([]);
+});
+
 // ── composeForLayout (session 207) ──────────────────────────────────────────
 
 function makeLayout(Page $page, array $ac = []): PageLayout
