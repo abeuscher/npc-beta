@@ -149,6 +149,7 @@ final class SystemModelProjector
             'title'                       => $event->title,
             'slug'                        => $event->slug,
             'url'                         => $url,
+            'has_landing_page'            => $event->landingPage !== null,
             'starts_at'                   => $event->starts_at?->toIso8601String() ?? '',
             'event_date'                  => DateFormat::format($event->starts_at, $eventDateFormat),
             'event_time'                  => $this->buildEventTime($event),

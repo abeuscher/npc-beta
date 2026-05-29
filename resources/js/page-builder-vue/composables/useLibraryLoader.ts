@@ -3,7 +3,6 @@ declare global {
     __widgetLibs?: Record<string, { css?: string; js?: string }>
     Swiper?: any
     Chart?: any & { getChart?(el: HTMLCanvasElement): any }
-    calendarJs?: any
     Alpine?: any
   }
 }
@@ -11,7 +10,6 @@ declare global {
 const globalChecks: Record<string, () => boolean> = {
   swiper: () => !!window.Swiper,
   'chart.js': () => !!window.Chart,
-  jcalendar: () => !!window.calendarJs,
 }
 
 export async function loadLibs(libs: string[]): Promise<void> {

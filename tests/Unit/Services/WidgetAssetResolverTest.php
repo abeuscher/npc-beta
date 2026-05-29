@@ -106,7 +106,6 @@ it('libsForWidgets walks WidgetType assets column, dedupes, resolves through the
         'libs' => [
             'swiper'   => ['js' => '/build/libs/swiper.js'],
             'chart.js' => ['js' => '/build/libs/chartjs.js'],
-            'jcalendar' => ['js' => '/build/libs/jcalendar.js'],
         ],
     ]);
 

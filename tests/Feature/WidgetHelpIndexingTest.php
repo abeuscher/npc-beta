@@ -19,7 +19,7 @@ it('indexes the canonical widgets article and the five widget help articles afte
         'widgets',
         'widget-bar-chart',
         'widget-donation-form',
-        'widget-event-calendar',
+        'widget-event-mini-calendar',
         'widget-event-registration',
         'widget-web-form',
     ];

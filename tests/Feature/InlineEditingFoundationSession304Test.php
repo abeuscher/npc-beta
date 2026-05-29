@@ -34,12 +34,14 @@ it('fails closed: inlineEditable() defaults to false on the base definition', fu
     // surface because the data-driven body — chart canvas, Swiper slides —
     // initialises asynchronously and the heading was the only inline-
     // editable node on each, so dropping it dropped them from the gate
-    // too). Authors use a sibling TextBlock for titles. Roster: 11.
+    // too). Authors use a sibling TextBlock for titles. Roster: 11
+    // (event_calendar retired at session 325 and replaced by
+    // event_mini_calendar, whose rich-text heading is inline-editable).
     foreach ([
         'text_block', 'hero', 'three_buckets', 'pricing_chart',
         'blog_listing', 'board_members', 'donation_form',
-        'event_calendar', 'events_listing', 'map_embed',
-        'social_sharing',
+        'events_listing', 'map_embed', 'social_sharing',
+        'event_mini_calendar',
     ] as $h) {
         expect($reg->find($h)->inlineEditable())->toBeTrue("$h should be inline-editable");
     }

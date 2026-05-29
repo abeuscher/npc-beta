@@ -120,16 +120,18 @@ not have to retro-annotate every template.
 
 ## 3. Phase 3 — the build sessions
 
+> **Update (session 325 close):** the "optional / no landing page" model is **retired**. Building the mini-calendar surfaced that it was collecting compensating complexity (dead-end URL fallback, `has_landing_page` conditionals, an inline-detail surface per widget). Resolution, owner-decided at 325: **every event has a real landing page**, created at event-creation time via a **Simple / Standard** choice. This honours the original "don't force art/copy" goal *better* — the simple page needs no image — while killing the dead-end at the root and simplifying every downstream widget to "just link." Consequences: **C (now "Event landing pages") is reshaped and reordered ahead of B**, because the listing fix (B) depends on every event having a resolvable URL. C ships as **session 326**, B as **session 327**.
+
 | # | Session | Scope | Depends on |
 |---|---|---|---|
-| **A** | **Events — calendar swap** | Retire `EventCalendar` widget (full sweep — see §4). Build the server-rendered mini-calendar widget (§2b). `data-tour` anchors. | — |
-| **B** | **Events — listing upgrade** | Additive to `EventsListing`: list-mode preset (day-grouped luma shape) alongside the existing grid/swiper; filter row (Event Type + Date Range); featured-event hero; art-fallback chain (§1a). `data-tour` anchors. | — |
-| **C** | **Event landing page (v1)** | Header, registration card (existing widget), About (existing), Share, Related events, `Event` schema/OG. Practical info folded into About. `data-tour` anchors. | B (related-events reuse) |
+| **A** | **Events — calendar swap** ✅ *(session 325)* | Retired `EventCalendar` (full sweep — §4). Built the server-rendered, self-contained mini-calendar (§2b): day/month list modes, density dots, expandable inline event detail, `data-tour` anchor. | — |
+| **C** | **Event landing pages — Simple & Standard** *(session 326; reshaped + moved ahead of B)* | Every event gets an LP at creation via a **Simple / Standard** toggle. **Simple** (free events only): a normal page seeded with hero + event-details (image optional, no reg form). **Standard** (forced once ticketed): hero + event details + registration card; the fuller v1 LP per §1b (About folded in, Share, Related events, `Event` schema/OG). LP is a plain `Page` linked via `events.landing_page_id`, editable in the builder; **deletion guarded via the existing `PageObserver` block-with-counts pattern** (no event left LP-less). Relink the mini-calendar + `EventsListing` rows to the LP URL and strip the dead-end fallback. `data-tour` anchors. | A |
+| **B** | **Events — listing upgrade** *(session 327)* | Additive to `EventsListing`: list-mode preset (day-grouped luma shape) alongside the existing grid/swiper; filter row (Event Type + Date Range); featured-event hero; art-fallback chain (§1a). Rows link to the now-always-present LP. `data-tour` anchors. | C (every event has a resolvable LP URL) |
 | **D** | **Per-page permission + locked landing** | `restricted_roles` column + migration + `PagePolicy` + page-builder API enforcement + super_admin-only multiselect UI + the demo arrival page seeded with `restricted_roles:['demo']`, re-applied by demo:reset (§2a). | — (independent) |
-| **E** | **Demo node assembly** | Header/footer duplication (§5); demo:reset extended to seed the curated showcase pages so they survive the daily wipe; **resolve the Faker/`--no-dev` blocker** (§6). | A, B, C, D |
+| **E** | **Demo node assembly** | Header/footer duplication (§5); demo:reset extended to seed the curated showcase pages so they survive the daily wipe; **resolve the Faker/`--no-dev` blocker** (§6). | A, C, B, D |
 | **F** | **Portal demo (back-end-only v1)** | Curate the admin demo's portal-management surface; reserve `portal.*` tour anchors; seed portal-shape data. *May fold into E.* | — |
 
-**Order:** A → B → C → D → E → F (A/B/D unblocked, can reorder; E gates on everything as it assembles the curated pages). **325 = A** (owner's pick at 324 close).
+**Order:** A ✅ → **C (326)** → **B (327)** → D → E → F (D still unblocked, can interleave; E gates on everything as it assembles the curated pages).
 
 **Count:** ~6 sessions for demo v1, possibly 5 if E+F merge. Not pinned harder than that.
 

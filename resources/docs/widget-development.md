@@ -136,7 +136,7 @@ For client-side interactivity, prefer Alpine.js (`x-data`) inline in the Blade t
 - For widget-specific JS that doesn't need a build step: use the `js` column on the widget type.
 - For JS that requires npm packages: add the import to `resources/js/public.js` and expose it on `window`.
 
-Currently exposed globals: `window.Swiper`, `window.SwiperModules` (Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode), `window.calendarJs`, `window.Chart`, `window.Alpine`.
+Currently exposed globals: `window.Swiper`, `window.SwiperModules` (Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode), `window.Chart`, `window.Alpine`.
 
 ---
 
@@ -341,7 +341,6 @@ Widgets that need seeded fixtures for a functional preview ship their own `DemoS
 | `App\Widgets\BarChart\DemoSeeder` | `chart-demo` collection with 10 monthly data points (label, value fields) | Bar Chart widget |
 | `App\Widgets\LogoGarden\DemoSeeder` | `logo-garden-demo` collection with 9 logo items (name, logo image) | Logo Garden widget |
 | `App\Widgets\BoardMembers\DemoSeeder` | `board-members-demo` collection with 6 members (name, photo, title, department, bio, social links) | Board Members widget |
-| `App\Widgets\EventCalendar\DemoSeeder` | 3 published upcoming events (demo-event-1…3) | Event Calendar widget |
 | `App\Widgets\DonationForm\DemoSeeder` | `demo-fund` Fund + `Spring Annual Appeal` Campaign | Donation Form widget |
 
 Every seeder must be idempotent — running it on an already-seeded DB must not duplicate rows or error out.

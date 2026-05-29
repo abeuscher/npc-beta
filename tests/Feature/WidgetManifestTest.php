@@ -118,7 +118,7 @@ it('every widget preset has the required shape and references valid config keys'
 
 it('demoSeeder() returns a valid class for seeder-backed widgets and null otherwise', function () {
     $expectedSeederHandles = [
-        'carousel', 'bar_chart', 'logo_garden', 'board_members', 'event_calendar', 'donation_form',
+        'carousel', 'bar_chart', 'logo_garden', 'board_members', 'donation_form',
     ];
 
     $registry = app(WidgetRegistry::class);

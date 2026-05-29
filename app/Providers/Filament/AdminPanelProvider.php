@@ -229,9 +229,9 @@ class AdminPanelProvider extends PanelProvider
             )
             // Public widget JS bundle — exposes per-widget Alpine factories
             // (window.NPWidgets.*) so the page builder preview can initialize
-            // interactive widgets (blog/events listing carousels, bar chart,
-            // event calendar). The bundle defines no globals besides NPWidgets
-            // and does not touch Alpine itself, so it coexists with Filament.
+            // interactive widgets (blog/events listing carousels, bar chart).
+            // The bundle defines no globals besides NPWidgets and does not
+            // touch Alpine itself, so it coexists with Filament.
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
@@ -239,7 +239,7 @@ class AdminPanelProvider extends PanelProvider
                     return $url ? new HtmlString('<script src="' . e($url) . '"></script>') : new HtmlString('');
                 }
             )
-            // Per-widget library bundles (swiper, chart.js, jcalendar). Emitted
+            // Per-widget library bundles (swiper, chart.js). Emitted
             // synchronously in the admin head so widget-primitive slots rendered
             // inside Livewire (e.g. DashboardSlotGridWidget) find window.Swiper
             // et al. already defined when their Alpine x-data init() fires —

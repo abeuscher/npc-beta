@@ -41,6 +41,16 @@ class WidgetTypeSeeder extends Seeder
             $placeholder->delete();
         }
 
+        // Remove event_calendar — retired in session 325. The interactive jcalendar
+        // widget is replaced by the server-rendered event_mini_calendar; the back-end
+        // scheduling use case is deferred to post-Beta. Drop any placed instances so
+        // they don't render against a missing definition.
+        $eventCalendar = WidgetType::where('handle', 'event_calendar')->first();
+        if ($eventCalendar) {
+            PageWidget::where('widget_type_id', $eventCalendar->id)->delete();
+            $eventCalendar->delete();
+        }
+
         app(WidgetRegistry::class)->sync();
     }
 }

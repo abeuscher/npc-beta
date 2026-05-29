@@ -1,15 +1,12 @@
 import Alpine from 'alpinejs'
 import Swiper from 'swiper'
 import { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode } from 'swiper/modules'
-import { calendarJs } from 'jcalendar.js/dist/calendar.export.js'
-import 'jcalendar.js/dist/calendar.js.min.css'
 import Chart from 'chart.js/auto'
 import customSelect from './admin/custom-select.js'
 import './portal/password-mismatch.js'
 
 window.Swiper = Swiper
 window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode }
-window.calendarJs = calendarJs
 window.Chart = Chart
 
 window.Alpine = Alpine

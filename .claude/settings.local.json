@@ -96,12 +96,27 @@
       "Bash(curl -s http://localhost/ -o /tmp/home2.html -w \"HTTP %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost/ -o /tmp/home3.html -w \"HTTP %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost/ -o /tmp/home4.html)",
-      "Bash(curl -s http://localhost/ -o /tmp/home5.html)"
+      "Bash(curl -s http://localhost/ -o /tmp/home5.html)",
+      "Bash(cd /home/al/nonprofitcrm; grep -rn \"updateLocalAppearanceConfig\" resources/js/page-builder-vue/stores/editor.ts | head; echo \"===\"; sed -n '/updateLocalAppearanceConfig/,/^  }/p' resources/js/page-builder-vue/stores/editor.ts | head -50)",
+      "Bash(sed -n '8,14p' app/Widgets/TextBlock/TextBlockDefinition.php)",
+      "Bash(sed -n '1,80p' tests/Feature/BuilderPublicRenderParityTest.php)",
+      "Bash(cd /home/al/nonprofitcrm; echo \"=== post-Beta backlog full ===\"; sed -n '/^## Post-Beta backlog/,/^## /p' sessions/session-outlines.md | head -80; echo \"=== broader keyword scan ===\"; grep -rinE \"highlight.*page|page.*highlight|onborda|driverjs|nextstepjs|reactour|shepherdjs|introjs\" sessions/ docs/ 2>/dev/null | head -10)",
+      "Bash(echo \"=== clean: who calls sync\\(\\) ===\" && grep -rn \"sync\\(\\)\" app database 2>/dev/null | grep -i widget; echo \"\"; echo \"=== toRow\\(\\): does it write config_schema? ===\" && grep -n \"toRow\\\\|config_schema\\\\|function toRow\" app/Widgets/Contracts/WidgetDefinition.php; echo \"\"; echo \"=== toRow body ===\" && sed -n '/function toRow/,/^    }/p' app/Widgets/Contracts/WidgetDefinition.php)",
+      "Bash(sed -n '1,60p' app/Models/PageLayout.php)",
+      "Bash(sed -n '1,70p' resources/js/page-builder-vue/components/LayoutRegion.vue)",
+      "Bash(cd /home/al/nonprofitcrm; rm resources/docs/widget-event-calendar.md && echo \"deleted widget-event-calendar.md\"; echo \"\"; echo \"=== widget-development.md context lines 135-145 ===\" && sed -n '135,145p' resources/docs/widget-development.md; echo \"=== lines 340-348 ===\" && sed -n '340,348p' resources/docs/widget-development.md)",
+      "Bash(python3 -c \"import json; m=json.load\\(open\\('public/build/widgets/manifest.json'\\)\\); print\\('libs keys:', list\\(m.get\\('libs',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(sed -n '438,460p' resources/scss/_custom.scss)",
+      "Bash(grep -rnB2 -A2 \"list-style: disc\\\\|list-style:disc\" resources/scss/_custom.scss)"
     ],
     "additionalDirectories": [
       "/tmp",
       "/home/al/nonprofitcrm/vendor/spatie/laravel-medialibrary/src/MediaCollections/Models",
-      "/home/al/fleetmanager/app/Filament/Resources"
+      "/home/al/fleetmanager/app/Filament/Resources",
+      "/home/al/nonprofitcrm/resources/js/page-builder-vue/stores",
+      "/home/al/nonprofitcrm/sessions",
+      "/home/al/nonprofitcrm/app/Widgets/Contracts",
+      "/home/al/nonprofitcrm/resources/docs"
     ]
   }
 }

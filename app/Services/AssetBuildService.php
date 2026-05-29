@@ -37,13 +37,6 @@ JS,
         'chart.js' => [
             'umd_js' => 'node_modules/chart.js/dist/chart.umd.min.js',
         ],
-        'jcalendar' => [
-            'js' => <<<'JS'
-import { calendarJs } from 'jcalendar.js/dist/calendar.export.js';
-window.calendarJs = calendarJs;
-JS,
-            'css' => ['node_modules/jcalendar.js/dist/calendar.js.min.css'],
-        ],
     ];
 
     /**

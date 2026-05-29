@@ -151,12 +151,13 @@ it('does not produce iframe for arbitrary urls', function () {
 
 // ── Widget type seeder ───────────────────────────────────────────────────────
 
-it('seeder creates event_calendar, bar_chart, and video_embed widget types', function () {
+it('seeder creates bar_chart, video_embed, and event_mini_calendar, and removes the retired event_calendar', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
-    expect(WidgetType::where('handle', 'event_calendar')->exists())->toBeTrue()
-        ->and(WidgetType::where('handle', 'bar_chart')->exists())->toBeTrue()
-        ->and(WidgetType::where('handle', 'video_embed')->exists())->toBeTrue();
+    expect(WidgetType::where('handle', 'bar_chart')->exists())->toBeTrue()
+        ->and(WidgetType::where('handle', 'video_embed')->exists())->toBeTrue()
+        ->and(WidgetType::where('handle', 'event_mini_calendar')->exists())->toBeTrue()
+        ->and(WidgetType::where('handle', 'event_calendar')->exists())->toBeFalse();
 });
 
 // ── Bar chart widget ─────────────────────────────────────────────────────────

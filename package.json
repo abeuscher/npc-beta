@@ -40,7 +40,6 @@
         "@vueuse/core": "^14.2.1",
         "alpinejs": "^3.0",
         "chart.js": "^4.5.1",
-        "jcalendar.js": "^2.12.6",
         "lucide-vue-next": "^1.0.0",
         "modern-normalize": "^3.0.1",
         "pinia": "^3.0.4",

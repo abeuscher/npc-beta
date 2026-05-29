@@ -20,8 +20,8 @@ use App\Widgets\BlogPager\BlogPagerDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use App\Widgets\DonationForm\DonationFormDefinition;
-use App\Widgets\EventCalendar\EventCalendarDefinition;
 use App\Widgets\EventDescription\EventDescriptionDefinition;
+use App\Widgets\EventMiniCalendar\EventMiniCalendarDefinition;
 use App\Widgets\EventRegistration\EventRegistrationDefinition;
 use App\Widgets\EventsListing\EventsListingDefinition;
 use App\Widgets\Hero\HeroDefinition;
@@ -103,7 +103,7 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new LogoDefinition());
         $registry->register(new VideoEmbedDefinition());
         $registry->register(new BarChartDefinition());
-        $registry->register(new EventCalendarDefinition());
+        $registry->register(new EventMiniCalendarDefinition());
         $registry->register(new CarouselDefinition());
         $registry->register(new LogoGardenDefinition());
         $registry->register(new BoardMembersDefinition());

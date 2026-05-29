@@ -49,11 +49,6 @@ it('bar_chart widget type has chart.js in libs', function () {
     expect($wt->assets['libs'] ?? [])->toContain('chart.js');
 });
 
-it('event_calendar widget type has jcalendar in libs', function () {
-    $wt = WidgetType::where('handle', 'event_calendar')->first();
-    expect($wt->assets['libs'] ?? [])->toContain('jcalendar');
-});
-
 it('text_block widget type has no libs', function () {
     $wt = WidgetType::where('handle', 'text_block')->first();
     expect($wt->assets['libs'] ?? [])->toBeEmpty();
@@ -82,15 +77,13 @@ it('buildLibraryBundles produces files and returns paths', function () {
 
         $libs = $method->invoke($service, 'http://fake-build-server:8080', 'test-key', false);
 
-        expect($libs)->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
+        expect($libs)->toHaveKeys(['swiper', 'chart.js']);
         expect($libs['swiper']['js'])->toBe('/build/libs/swiper.js');
         expect($libs['chart.js']['js'])->toBe('/build/libs/chartjs.js');
-        expect($libs['jcalendar']['js'])->toBe('/build/libs/jcalendar.js');
 
         // Files exist in the isolated dir, not the real served tree.
         expect(File::exists($tmp . '/libs/swiper.js'))->toBeTrue();
         expect(File::exists($tmp . '/libs/chartjs.js'))->toBeTrue();
-        expect(File::exists($tmp . '/libs/jcalendar.js'))->toBeTrue();
     } finally {
         File::deleteDirectory($tmp);
     }
@@ -122,7 +115,7 @@ it('manifest includes libs key after a successful build', function () {
 
         $manifest = json_decode(File::get($tmp . '/widgets/manifest.json'), true);
         expect($manifest)->toHaveKey('libs');
-        expect($manifest['libs'])->toHaveKeys(['swiper', 'chart.js', 'jcalendar']);
+        expect($manifest['libs'])->toHaveKeys(['swiper', 'chart.js']);
     } finally {
         File::deleteDirectory($tmp);
     }

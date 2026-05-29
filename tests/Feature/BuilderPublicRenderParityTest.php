@@ -46,13 +46,6 @@ function s307NormaliseRender(string $html): string
     // Strip the data-config-placeholder attribute (builder-only emission).
     $html = preg_replace('/\s+data-config-placeholder="[^"]*"/', '', $html);
 
-    // EventCalendar uses `Str::random(8)` to mint a per-render DOM id so
-    // multiple calendars on one page don't collide. The same call is made
-    // independently by each render branch, so the two ids never match.
-    // Normalise to a stable token — this is a deliberate divergence within
-    // a single widget render, not a public-vs-builder semantic difference.
-    $html = preg_replace('/id="cal-[A-Za-z0-9]{8}"/', 'id="cal-STABLE"', $html);
-
     // Strip empty inline-prose wrappers — a tag carrying data-config-key +
     // data-config-type with an empty body. Builder renders these for blank
     // non-`always` fields; public omits them entirely. After stripping the
@@ -249,9 +242,9 @@ it('EventsListing — heading parity', function () {
     expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
 });
 
-it('EventCalendar — heading parity', function () {
-    $page = Page::factory()->create(['slug' => 's307-ec', 'status' => 'published']);
-    $pw = s307MakeWidget($page, 'event_calendar', ['heading' => 'Calendar']);
+it('EventMiniCalendar — heading parity', function () {
+    $page = Page::factory()->create(['slug' => 's307-emc', 'status' => 'published']);
+    $pw = s307MakeWidget($page, 'event_mini_calendar', ['heading' => 'This Month']);
 
     ['builder' => $builder, 'public' => $public] = s307RenderPair($pw);
     expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
