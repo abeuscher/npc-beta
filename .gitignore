@@ -37,3 +37,6 @@ yarn-error.log
 
 # Claude Code scheduler runtime lock (ephemeral: sessionId/pid) — never commit
 .claude/scheduled_tasks.lock
+
+# Demo-site reference screenshots (local-only design scrap, not committed)
+sessions/demo website/scrap/
