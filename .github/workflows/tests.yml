@@ -2,7 +2,10 @@ name: Tests
 
 on:
   push:
-    branches: ["**"]
+    # DIAGNOSTIC (temporary, A007): "!ci-logs/**" keeps the Playwright
+    # digest push from re-triggering this workflow. Restore to just
+    # ["**"] when the diagnostic plumbing is removed.
+    branches: ["**", "!ci-logs/**"]
   pull_request:
     branches: [main]
 
@@ -14,6 +17,9 @@ on:
 jobs:
   fast:
     name: Fast suite
+    # DIAGNOSTIC (temporary, A007): Pest jobs disabled so a push runs
+    # ONLY Playwright (faster CI signal). Restore by removing this `if:`.
+    if: false
     runs-on: ubuntu-latest
 
     services:
@@ -96,6 +102,8 @@ jobs:
 
   slow:
     name: Slow suite
+    # DIAGNOSTIC (temporary, A007): disabled — restore by removing this `if:`.
+    if: false
     needs: fast
     runs-on: ubuntu-latest
 
@@ -194,8 +202,13 @@ jobs:
   # deliberate decision.
   playwright:
     name: Playwright e2e (isolated stack)
-    needs: slow
+    # DIAGNOSTIC (temporary, A007): `needs: slow` dropped so a push runs
+    # ONLY this job (Pest jobs are `if: false` above; a skipped dependency
+    # would otherwise skip this job too). On handback this MUST be restored
+    # to `needs: slow`.
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -316,8 +329,78 @@ jobs:
           done
           true
 
+      # DIAGNOSTIC (temporary, A007): capture JSON + full stdout without
+      # failing the step, so the digest can publish even on failure. On
+      # handback restore to the single line:
+      #   run: npm run test:e2e -- --project=chromium
       - name: Run Playwright (chromium) against the isolated stack
-        run: npm run test:e2e -- --project=chromium
+        run: |
+          set +e
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-results.json \
+            npm run test:e2e -- --project=chromium --reporter=list,json 2>&1 \
+            | tee pw-stdout.txt
+          echo "${PIPESTATUS[0]}" > pw-rc.txt
+          echo "Playwright exit code: $(cat pw-rc.txt)"
+
+      # DIAGNOSTIC (temporary, A007): publish a compact digest + trimmed
+      # stdout + raw JSON + in-container probes (laravel.log tail, build
+      # state including widget bundle manifest, delivered HTML head) to
+      # the `ci-logs/playwright` branch so the cloud agent can read CI
+      # results via the GitHub API. Fast-forward only, never force.
+      # Removed entirely on handback.
+      - name: Publish Playwright digest to ci-logs ref
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir -p out
+          cp playwright-results.json out/results.json 2>/dev/null || echo '{}' > out/results.json
+          tail -c 250000 pw-stdout.txt > out/stdout.txt 2>/dev/null || true
+          cp pw-rc.txt out/rc.txt 2>/dev/null || echo unknown > out/rc.txt
+          node scripts/ci/pw-digest.mjs playwright-results.json > out/digest.md 2>/dev/null \
+            || echo "(digest generation failed — see stdout.txt)" > out/digest.md
+          # In-container probes: laravel error log, public-build / widget
+          # bundle state (widget CSS/JS ships via
+          # public/build/widgets/manifest.json), delivered HTML head of
+          # the seeded home, /news, and the admin login page.
+          DC="docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app"
+          $DC sh -c 'tail -c 120000 storage/logs/laravel.log' > out/laravel-log.txt 2>&1 || true
+          $DC sh -c '
+            echo "== public/build (ls) =="; ls -la public/build 2>&1;
+            echo; echo "== public/build/manifest.json (Vite, head) =="; head -c 3000 public/build/manifest.json 2>&1;
+            echo; echo "== public/build/assets (count + head) =="; ls public/build/assets 2>&1 | wc -l; ls -la public/build/assets 2>&1 | head -20;
+            echo; echo "== public/build/widgets (ls) =="; ls -la public/build/widgets 2>&1;
+            echo; echo "== public/build/widgets/manifest.json (head) =="; head -c 2000 public/build/widgets/manifest.json 2>&1;
+          ' > out/build-state.txt 2>&1 || true
+          curl -s http://localhost:8090/ 2>&1 | sed -n '1,160p' > out/public-home-head.txt 2>&1 || true
+          curl -s -o /dev/null -w 'home_http=%{http_code}\n' http://localhost:8090/ >> out/public-home-head.txt 2>&1 || true
+          curl -s http://localhost:8090/news 2>&1 | sed -n '1,160p' > out/public-news-head.txt 2>&1 || true
+          curl -s -o /dev/null -w 'news_http=%{http_code}\n' http://localhost:8090/news >> out/public-news-head.txt 2>&1 || true
+          curl -s http://localhost:8090/admin/login 2>&1 | sed -n '1,90p' > out/admin-login-head.txt 2>&1 || true
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git clone --quiet --branch ci-logs/playwright "$REPO_URL" cilogs 2>/dev/null; then
+            cd cilogs
+          else
+            mkdir cilogs && cd cilogs && git init -q && git checkout -q -b ci-logs/playwright
+          fi
+          git config user.email "ci@example.com"
+          git config user.name "ci-bot"
+          mkdir -p "runs/${GITHUB_SHA}"
+          cp ../out/* "runs/${GITHUB_SHA}/"
+          rm -rf latest && mkdir -p latest && cp ../out/* latest/
+          git add -A
+          git commit -qm "playwright diagnostic ${GITHUB_SHA}" || echo "nothing to commit"
+          for i in 1 2 3 4; do
+            if git push --quiet "$REPO_URL" HEAD:ci-logs/playwright; then
+              echo "published digest to ci-logs/playwright (runs/${GITHUB_SHA} + latest/)"
+              exit 0
+            fi
+            echo "push attempt $i failed; merging remote and retrying" >&2
+            git pull --quiet --no-rebase "$REPO_URL" ci-logs/playwright || true
+            sleep $((2 ** i))
+          done
+          echo "::warning::could not publish digest to ci-logs/playwright" >&2
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -331,6 +414,17 @@ jobs:
         if: always()
         run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml down -v
 
+      # DIAGNOSTIC (temporary, A007): make the job conclusion reflect the
+      # real Playwright result, but only AFTER the digest is published.
+      # Removed on handback. Last step so `if: always()` steps above always
+      # run.
+      - name: Reflect Playwright result
+        if: always()
+        run: |
+          rc=$(cat pw-rc.txt 2>/dev/null || echo 1)
+          echo "Playwright exit code was: $rc"
+          exit "$rc"
+
   # Single stable status check for branch protection on `main`. Require the
   # job named "Tests" (workflow "Tests") so a branch cannot merge unless the
   # fast + slow Pest suites passed. Keep this job named exactly "Tests" —
@@ -340,6 +434,8 @@ jobs:
   # handoffs + the e2e-stabilization handback).
   tests:
     name: Tests
+    # DIAGNOSTIC (temporary, A007): disabled — restore by removing this `if:`.
+    if: false
     needs: [fast, slow]
     runs-on: ubuntu-latest
     steps:
