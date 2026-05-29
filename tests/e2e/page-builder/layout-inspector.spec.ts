@@ -43,18 +43,21 @@ test.describe('Page builder — layout inspector', () => {
         await expect(inspector).toBeVisible();
         await expect(inspector.locator('.layout-inspector__type-badge')).toHaveText('Column Layout');
 
-        // All three tabs should be present.
+        // All three tabs should be present. The inspector tab strip is a
+        // proper ARIA tablist (InspectorTabs.vue gives each button
+        // role="tab" + aria-selected, per the page-builder Aria sweep), so
+        // the tabs expose role "tab" — not the implicit "button".
         const tabStrip = inspector.locator('.inspector-tabs');
-        await expect(tabStrip.getByRole('button', { name: 'Column Settings' })).toBeVisible();
-        await expect(tabStrip.getByRole('button', { name: 'Margin & Padding' })).toBeVisible();
-        await expect(tabStrip.getByRole('button', { name: 'Background' })).toBeVisible();
+        await expect(tabStrip.getByRole('tab', { name: 'Column Settings' })).toBeVisible();
+        await expect(tabStrip.getByRole('tab', { name: 'Margin & Padding' })).toBeVisible();
+        await expect(tabStrip.getByRole('tab', { name: 'Background' })).toBeVisible();
 
         // Column Settings tab is active by default — both full-width checkboxes live there.
         await expect(inspector.getByText('Content fills page width')).toBeVisible();
         await expect(inspector.getByText('Background fills page width')).toBeVisible();
 
         // Switch to Margin & Padding — the shared SectionLayoutPanel should mount.
-        await tabStrip.getByRole('button', { name: 'Margin & Padding' }).click();
+        await tabStrip.getByRole('tab', { name: 'Margin & Padding' }).click();
         const layoutPanel = inspector.locator('.layout-panel');
         await expect(layoutPanel).toBeVisible();
 
@@ -66,7 +69,7 @@ test.describe('Page builder — layout inspector', () => {
         await paddingInputs.first().press('Tab');
 
         // Switch to Background — the shared BackgroundPanel should mount.
-        await tabStrip.getByRole('button', { name: 'Background' }).click();
+        await tabStrip.getByRole('tab', { name: 'Background' }).click();
         const bgPanel = inspector.locator('.bg-panel');
         await expect(bgPanel).toBeVisible();
 
