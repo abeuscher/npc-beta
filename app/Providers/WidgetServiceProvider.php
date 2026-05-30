@@ -21,6 +21,7 @@ use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use App\Widgets\DonationForm\DonationFormDefinition;
 use App\Widgets\EventDescription\EventDescriptionDefinition;
+use App\Widgets\EventImage\EventImageDefinition;
 use App\Widgets\EventMiniCalendar\EventMiniCalendarDefinition;
 use App\Widgets\EventRegistration\EventRegistrationDefinition;
 use App\Widgets\EventsListing\EventsListingDefinition;
@@ -84,6 +85,7 @@ class WidgetServiceProvider extends ServiceProvider
 
         $registry->register(new TextBlockDefinition());
         $registry->register(new EventDescriptionDefinition());
+        $registry->register(new EventImageDefinition());
         $registry->register(new EventRegistrationDefinition());
         $registry->register(new EventsListingDefinition());
         $registry->register(new BlogListingDefinition());

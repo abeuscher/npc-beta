@@ -107,7 +107,16 @@
       "Bash(cd /home/al/nonprofitcrm; rm resources/docs/widget-event-calendar.md && echo \"deleted widget-event-calendar.md\"; echo \"\"; echo \"=== widget-development.md context lines 135-145 ===\" && sed -n '135,145p' resources/docs/widget-development.md; echo \"=== lines 340-348 ===\" && sed -n '340,348p' resources/docs/widget-development.md)",
       "Bash(python3 -c \"import json; m=json.load\\(open\\('public/build/widgets/manifest.json'\\)\\); print\\('libs keys:', list\\(m.get\\('libs',{}\\).keys\\(\\)\\)\\)\")",
       "Bash(sed -n '438,460p' resources/scss/_custom.scss)",
-      "Bash(grep -rnB2 -A2 \"list-style: disc\\\\|list-style:disc\" resources/scss/_custom.scss)"
+      "Bash(grep -rnB2 -A2 \"list-style: disc\\\\|list-style:disc\" resources/scss/_custom.scss)",
+      "Bash(cd /home/al/nonprofitcrm; sed -n '/public function create/,/callHook\\(.afterCreate/p' vendor/filament/filament/src/Resources/Pages/CreateRecord.php | grep -n \"saveRelationships\\\\|callHook\\\\|handleRecordCreation\\\\|mutateFormDataBeforeCreate\\\\|getState\" | head -30)",
+      "Bash(grep -n 'WidgetTypeSeeder\\\\|landing\\\\|Event::\\\\|it\\(\\\\|createEvent\\\\|expect\\($event\\\\|->count\\(\\)' tests/Feature/ImportEventsTest.php)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(grep -nE 'system|isSystem|\\\\$category|function ' app/WidgetPrimitive/WidgetDefinition.php)",
+      "Bash(cd /home/al/nonprofitcrm *)",
+      "Bash(awk '/^## Inbox/{f=1} f{print NR\": \"$0} f&&c++>7{exit}' sessions/housekeeping-inbox.md)",
+      "Bash(grep -nE '^#{1,3} ' sessions/housekeeping-inbox.md)",
+      "Bash(grep -nE '^#{2,3} ' sessions/housekeeping-inbox.md)",
+      "Bash(awk 'BEGIN{p=\"\"} *)"
     ],
     "additionalDirectories": [
       "/tmp",
@@ -116,7 +125,9 @@
       "/home/al/nonprofitcrm/resources/js/page-builder-vue/stores",
       "/home/al/nonprofitcrm/sessions",
       "/home/al/nonprofitcrm/app/Widgets/Contracts",
-      "/home/al/nonprofitcrm/resources/docs"
+      "/home/al/nonprofitcrm/resources/docs",
+      "/home/al/nonprofitcrm/vendor/filament/filament/src/Resources/Pages",
+      "/home/al/nonprofitcrm/app/Models"
     ]
   }
 }
