@@ -37,7 +37,19 @@ class PageResource extends Resource
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
+        // This static override stands in for PagePolicy::delete(), so it must
+        // honour the same edit-lock rule (session 328).
+        if ($record->locked && ! (auth()->user()?->can('edit_locked_pages') ?? false)) {
+            return false;
+        }
+
         return $record->type !== 'system' && (auth()->user()?->can('delete_page') ?? false);
+    }
+
+    /** A locked page is off-limits to users without the edit-lock permission (session 328). */
+    protected static function isLockedFromCurrentUser(Page $record): bool
+    {
+        return $record->locked && ! (auth()->user()?->can('edit_locked_pages') ?? false);
     }
 
     /**
@@ -120,6 +132,15 @@ class PageResource extends Resource
                         ->default(fn () => \App\Models\SiteSetting::get('default_content_template_default') ?: 'none')
                         ->helperText('Widget preset — applied once at creation.')
                         ->hiddenOn('edit')
+                        ->columnSpanFull(),
+
+                    // Edit lock — only holders of edit_locked_pages see or set it.
+                    // Orthogonal to status: a locked page stays publicly visible
+                    // ("Published & Locked"); the lock only bars editing.
+                    Forms\Components\Toggle::make('locked')
+                        ->label('Lock editing (Published & Locked)')
+                        ->helperText('When on, only users with the “edit locked pages” permission can edit this page. The page stays publicly visible.')
+                        ->visible(fn (): bool => auth()->user()?->can('edit_locked_pages') ?? false)
                         ->columnSpanFull(),
                 ],
                 templateField: Forms\Components\Select::make('template_id')
@@ -212,7 +233,11 @@ class PageResource extends Resource
                     ->colors([
                         'gray'    => 'draft',
                         'success' => 'published',
-                    ]),
+                    ])
+                    ->icon(fn (Page $record): ?string => $record->locked ? 'heroicon-m-lock-closed' : null)
+                    ->tooltip(fn (Page $record): ?string => $record->locked
+                        ? 'Locked — only editors with the lock permission can edit this page.'
+                        : null),
 
                 Tables\Columns\TextColumn::make('published_at')
                     ->label('Published At')
@@ -394,7 +419,7 @@ class PageResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $blocked = 0;
                             $records->each(function (Page $record) use (&$blocked) {
-                                if ($record->type === 'system') {
+                                if ($record->type === 'system' || self::isLockedFromCurrentUser($record)) {
                                     return;
                                 }
                                 if ($record->event()->exists()) {
@@ -410,7 +435,7 @@ class PageResource extends Resource
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
                             $blocked = 0;
                             $records->each(function (Page $record) use (&$blocked) {
-                                if ($record->type === 'system') {
+                                if ($record->type === 'system' || self::isLockedFromCurrentUser($record)) {
                                     return;
                                 }
                                 if ($record->event()->exists()) {

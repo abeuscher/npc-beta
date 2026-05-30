@@ -42,6 +42,7 @@ class PageBuilderApiController extends Controller
     public function store(Request $request, $owner): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($owner);
 
         $validated = $request->validate([
             'widget_type_id'  => 'required|uuid|exists:widget_types,id',
@@ -111,6 +112,7 @@ class PageBuilderApiController extends Controller
     public function update(Request $request, PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $validated = $request->validate([
             'label'                       => 'nullable|string|max:255',
@@ -154,6 +156,7 @@ class PageBuilderApiController extends Controller
     public function destroy(PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $owner = $widget->owner;
 
@@ -180,6 +183,7 @@ class PageBuilderApiController extends Controller
     public function copy(PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $owner = $widget->owner;
 
@@ -215,6 +219,8 @@ class PageBuilderApiController extends Controller
 
     public function reorder(ReorderWidgetsRequest $request, $owner): JsonResponse
     {
+        $this->assertOwnerEditable($owner);
+
         $items = $request->normalizedItems();
 
         foreach ($items as $item) {
@@ -351,6 +357,7 @@ class PageBuilderApiController extends Controller
     public function uploadImage(Request $request, PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $request->validate([
             'key'  => 'required|string|max:255',
@@ -379,6 +386,7 @@ class PageBuilderApiController extends Controller
     public function useExistingImage(Request $request, PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $validated = $request->validate([
             'key'      => 'required|string|max:255',
@@ -410,6 +418,7 @@ class PageBuilderApiController extends Controller
     public function removeImage(PageWidget $widget, string $key): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $widget->clearMediaCollection("config_{$key}");
 
@@ -425,6 +434,7 @@ class PageBuilderApiController extends Controller
     public function uploadAppearanceImage(Request $request, PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $request->validate([
             'file' => 'required|file|mimes:png,jpg,jpeg,gif,webp,svg|max:51200',
@@ -444,6 +454,7 @@ class PageBuilderApiController extends Controller
     public function useExistingAppearanceImage(Request $request, PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $validated = $request->validate([
             'media_id' => 'required|integer|exists:media,id',
@@ -477,6 +488,7 @@ class PageBuilderApiController extends Controller
     public function removeAppearanceImage(PageWidget $widget): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($widget->owner);
 
         $widget->clearMediaCollection('appearance_background_image');
 
@@ -488,6 +500,7 @@ class PageBuilderApiController extends Controller
     public function storeLayout(Request $request, $owner): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($owner);
 
         $validated = $request->validate([
             'label'   => 'nullable|string|max:255',
@@ -530,6 +543,7 @@ class PageBuilderApiController extends Controller
     public function updateLayout(Request $request, PageLayout $layout): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($layout->owner);
 
         $validated = $request->validate([
             'label'             => 'nullable|string|max:255',
@@ -577,6 +591,7 @@ class PageBuilderApiController extends Controller
     public function destroyLayout(PageLayout $layout): JsonResponse
     {
         abort_unless(auth()->user()?->can('update_page'), 403);
+        $this->assertOwnerEditable($layout->owner);
 
         $owner = $layout->owner;
 
@@ -592,6 +607,23 @@ class PageBuilderApiController extends Controller
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    /**
+     * Deny edits to a locked Page for users without `edit_locked_pages`.
+     *
+     * The page-builder save routes are the real edit surface — `PagePolicy`
+     * guards the Filament resource, but the builder API mutates widgets/layouts
+     * directly. Mirrors `PagePolicy::update()`'s lock rule; super_admin passes
+     * via the Gate::before bypass that `can()` honours. Templates are unaffected.
+     */
+    private function assertOwnerEditable(Model $owner): void
+    {
+        if ($owner instanceof Page
+            && $owner->locked
+            && ! auth()->user()?->can('edit_locked_pages')) {
+            abort(403, 'This page is locked and cannot be edited.');
+        }
+    }
 
     private function formatWidget(PageWidget $pw, Model $owner): array
     {

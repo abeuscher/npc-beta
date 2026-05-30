@@ -8,3 +8,4 @@ folds the survivors into `sessions/housekeeping-inbox.md`, then clears this
 file back to this header. Do not hand-curate here; capture and move on.
 
 ---
+- [0.328.01 · 2026-05-30] Consider adding a slide editor - popout editor for repeaters to leverage and allow end user to change appearance of content slides for like events, blog, etc.

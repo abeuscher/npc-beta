@@ -54,6 +54,15 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                         ->visibleOn('edit')
                         ->hidden(fn (Forms\Get $get): bool => $get('type') !== 'system')
                         ->columnSpanFull(),
+
+                    // Edit lock — only holders of edit_locked_pages see or set it.
+                    // Orthogonal to status: a locked page stays publicly visible
+                    // ("Published & Locked"); the lock only bars editing.
+                    Forms\Components\Toggle::make('locked')
+                        ->label('Lock editing (Published & Locked)')
+                        ->helperText('When on, only users with the “edit locked pages” permission can edit this page. The page stays publicly visible.')
+                        ->visible(fn (): bool => auth()->user()?->can('edit_locked_pages') ?? false)
+                        ->columnSpanFull(),
                 ],
                 templateField: Forms\Components\Select::make('template_id')
                     ->label('Page Template')

@@ -86,6 +86,19 @@ it('denies the binding deny-list permissions and is never the policy-bypassing s
     expect($this->demo->isSuperAdmin())->toBeFalse();
 });
 
+it('keeps the demo role view-only on navigation menus and without the locked-page edit permission (session 328)', function () {
+    // The header/footer link structure lives in NavigationMenu/NavigationItem —
+    // a model the page `locked` flag cannot reach — so the demo nav is view-only.
+    expect($this->demo->can('view_any_navigation_menu'))->toBeTrue();
+    expect($this->demo->can('view_navigation_menu'))->toBeTrue();
+    foreach (['create_navigation_menu', 'update_navigation_menu', 'delete_navigation_menu'] as $denied) {
+        expect($this->demo->can($denied))->toBeFalse("demo must not have '{$denied}'");
+    }
+
+    // …and it must never hold the permission that bypasses the page edit lock.
+    expect($this->demo->can('edit_locked_pages'))->toBeFalse();
+});
+
 it('grants the intended product-feel width — full CRUD on events and donations (tuned at session 321)', function () {
     // The egress firewall (Stripe/email fail closed) + daily demo:reset baseline
     // backstop these write flows. Widened deliberately; still an allow-list.

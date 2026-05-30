@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Page;
 use Database\Seeders\DemoBaselineSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -30,7 +31,13 @@ class DemoResetCommand extends Command
 
         (new DemoBaselineSeeder())->run();
 
-        $this->info('Demo baseline restored.');
+        // Lock every page on the demo node so the shared `demo` account cannot
+        // edit the sample site's content (pages, posts, event landing pages, and
+        // the header/footer system pages — all the Page model). Idempotent and
+        // re-applied on every reset so the lock survives the daily wipe.
+        Page::query()->update(['locked' => true]);
+
+        $this->info('Demo baseline restored and pages locked.');
 
         return self::SUCCESS;
     }

@@ -48,6 +48,7 @@ class Page extends Model implements HasMedia
         'body_snippet',
         'custom_fields',
         'status',
+        'locked',
         'source',
         'published_at',
         'template_id',
@@ -56,11 +57,13 @@ class Page extends Model implements HasMedia
     protected $attributes = [
         'type'   => 'default',
         'status' => 'draft',
+        'locked' => false,
     ];
 
     protected $casts = [
         'custom_fields' => 'array',
         'noindex'       => 'boolean',
+        'locked'        => 'boolean',
         'published_at'  => 'datetime',
     ];
 

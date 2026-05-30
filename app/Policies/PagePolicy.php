@@ -24,11 +24,19 @@ class PagePolicy
 
     public function update(User $user, Page $page): bool
     {
+        if ($page->locked && ! $user->can('edit_locked_pages')) {
+            return false;
+        }
+
         return $user->can('update_page');
     }
 
     public function delete(User $user, Page $page): bool
     {
+        if ($page->locked && ! $user->can('edit_locked_pages')) {
+            return false;
+        }
+
         return $user->can('delete_page');
     }
 

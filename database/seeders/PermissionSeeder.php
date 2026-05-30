@@ -109,6 +109,14 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // Holders may edit pages flagged `locked` (PagePolicy + page-builder save
+        // API). Granted to the real CMS-editing roles below; never to `demo`, so
+        // the shared public demo account cannot edit the locked demo-site pages.
+        Permission::firstOrCreate([
+            'name'       => 'edit_locked_pages',
+            'guard_name' => 'web',
+        ]);
+
         Permission::firstOrCreate([
             'name'       => 'edit_site_chrome',
             'guard_name' => 'web',
@@ -171,6 +179,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('tag'),
             $fullPermissions('product'),
             $fullPermissions('navigation_menu'),
+            ['edit_locked_pages'],
         ));
 
         // ── crm_editor ───────────────────────────────────────────────────────
@@ -248,6 +257,7 @@ class PermissionSeeder extends Seeder
             $fullPermissions('collection'),
             $fullPermissions('collection_item'),
             $fullPermissions('navigation_menu'),
+            ['edit_locked_pages'],
         ));
 
         // ── developer ────────────────────────────────────────────────────────
@@ -304,6 +314,7 @@ class PermissionSeeder extends Seeder
                 'manage_mail_settings',
                 'manage_membership_tiers',
                 'edit_others_note',
+                'edit_locked_pages',
             ],
         ));
 
@@ -336,7 +347,10 @@ class PermissionSeeder extends Seeder
             $fullPermissions('form'),
             $fullPermissions('collection'),
             $fullPermissions('collection_item'),
-            $fullPermissions('navigation_menu'),
+            // The header/footer link structure lives in NavigationMenu/NavigationItem —
+            // a different model the page `locked` flag cannot reach. The demo has no
+            // need to edit the site nav, so it stays view-only (session 328).
+            $viewPermissions('navigation_menu'),
             $fullPermissions('product'),
             $fullPermissions('event'),
             $fullPermissions('donation'),

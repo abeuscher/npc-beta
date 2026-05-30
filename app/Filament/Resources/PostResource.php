@@ -46,6 +46,12 @@ class PostResource extends Resource
         return auth()->user()?->can('view_any_post') ?? false;
     }
 
+    /** A locked page/post is off-limits to users without the edit-lock permission (session 328). */
+    protected static function isLockedFromCurrentUser(Page $record): bool
+    {
+        return $record->locked && ! (auth()->user()?->can('edit_locked_pages') ?? false);
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema(
@@ -63,6 +69,13 @@ class PostResource extends Resource
                         ->default(fn () => \App\Models\SiteSetting::get('default_content_template_post') ?: 'none')
                         ->helperText('Widget preset — applied once at creation.')
                         ->hiddenOn('edit')
+                        ->columnSpanFull(),
+
+                    // Edit lock — only holders of edit_locked_pages see or set it.
+                    Forms\Components\Toggle::make('locked')
+                        ->label('Lock editing (Published & Locked)')
+                        ->helperText('When on, only users with the “edit locked pages” permission can edit this post. The post stays publicly visible.')
+                        ->visible(fn (): bool => auth()->user()?->can('edit_locked_pages') ?? false)
                         ->columnSpanFull(),
                 ],
                 imageFields: [
@@ -117,7 +130,11 @@ class PostResource extends Resource
                     ->colors([
                         'gray'    => 'draft',
                         'success' => 'published',
-                    ]),
+                    ])
+                    ->icon(fn (Page $record): ?string => $record->locked ? 'heroicon-m-lock-closed' : null)
+                    ->tooltip(fn (Page $record): ?string => $record->locked
+                        ? 'Locked — only editors with the lock permission can edit this post.'
+                        : null),
 
                 Tables\Columns\TextColumn::make('published_at')
                     ->label('Published At')
@@ -261,9 +278,25 @@ class PostResource extends Resource
                                 ->send();
                         }),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Page $record) {
+                                if (self::isLockedFromCurrentUser($record)) {
+                                    return;
+                                }
+                                $record->delete();
+                            });
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $records->each(function (Page $record) {
+                                if (self::isLockedFromCurrentUser($record)) {
+                                    return;
+                                }
+                                $record->forceDelete();
+                            });
+                        }),
                 ]),
             ]);
     }

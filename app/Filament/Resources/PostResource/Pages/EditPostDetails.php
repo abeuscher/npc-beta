@@ -31,6 +31,15 @@ class EditPostDetails extends ReadOnlyAwareEditRecord
                 extraTitleFields: [
                     Forms\Components\Hidden::make('type')
                         ->default('post'),
+
+                    // Edit lock — only holders of edit_locked_pages see or set it.
+                    // Orthogonal to status: a locked post stays publicly visible
+                    // ("Published & Locked"); the lock only bars editing.
+                    Forms\Components\Toggle::make('locked')
+                        ->label('Lock editing (Published & Locked)')
+                        ->helperText('When on, only users with the “edit locked pages” permission can edit this post. The post stays publicly visible.')
+                        ->visible(fn (): bool => auth()->user()?->can('edit_locked_pages') ?? false)
+                        ->columnSpanFull(),
                 ],
                 imageFields: [
                     SpatieMediaLibraryFileUpload::make('post_thumbnail')

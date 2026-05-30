@@ -72,3 +72,20 @@ it('soft reset is idempotent — re-running returns the same baseline, not a dou
     expect($second)->toBe($first);
     expect($second['contacts'])->toBe(DemoBaselineSeeder::BASELINE['contacts']);
 });
+
+it('locks every page on the demo node, idempotently across resets', function () {
+    app()->instance('env', 'demo');
+
+    // A pre-existing unlocked page must end up locked after the reset.
+    $page = Page::factory()->create(['locked' => false]);
+
+    $this->artisan('demo:reset', ['--soft' => true])->assertExitCode(0);
+
+    expect(Page::count())->toBeGreaterThan(0);
+    expect(Page::where('locked', false)->count())->toBe(0);
+    expect($page->fresh()->locked)->toBeTrue();
+
+    // Re-running keeps every page locked — no page slips back to unlocked.
+    $this->artisan('demo:reset', ['--soft' => true])->assertExitCode(0);
+    expect(Page::where('locked', false)->count())->toBe(0);
+});
