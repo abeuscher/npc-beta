@@ -2,7 +2,6 @@
 
 use App\Models\Event;
 use App\Models\Page;
-use App\Models\PageWidget;
 use App\Models\Template;
 use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -108,7 +107,6 @@ it('TemplateSeeder creates all built-in content templates', function () {
 
     expect($names)->toContain('Contact Page');
     expect($names)->toContain('About Page');
-    expect($names)->toContain('Event Landing Page');
     expect($names)->toContain('Blog Post');
     expect($names)->toContain('Blank');
 });
@@ -132,40 +130,9 @@ it('createLandingPageForEvent creates a page with correct slug and type', functi
     expect($page->slug)->toBe('events/test-event');
 });
 
-it('createLandingPageForEvent uses content template widget definitions', function () {
-    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
-    $this->artisan('db:seed', ['--class' => 'TemplateSeeder']);
-
-    $event = Event::factory()->create(['slug' => 'tpl-event']);
-
-    \App\Filament\Resources\EventResource::createLandingPageForEvent($event);
-
-    $page = Page::find($event->fresh()->landing_page_id);
-    $handles = PageWidget::forOwner($page)
-        ->join('widget_types', 'widget_types.id', '=', 'page_widgets.widget_type_id')
-        ->orderBy('page_widgets.sort_order')
-        ->pluck('widget_types.handle')
-        ->all();
-
-    expect($handles)->toBe(['event_description', 'event_registration']);
-});
-
-it('createLandingPageForEvent falls back to hardcoded widgets when template is missing', function () {
-    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
-
-    $event = Event::factory()->create(['slug' => 'fallback-event']);
-
-    \App\Filament\Resources\EventResource::createLandingPageForEvent($event);
-
-    $page = Page::find($event->fresh()->landing_page_id);
-    $handles = PageWidget::forOwner($page)
-        ->join('widget_types', 'widget_types.id', '=', 'page_widgets.widget_type_id')
-        ->orderBy('page_widgets.sort_order')
-        ->pluck('widget_types.handle')
-        ->all();
-
-    expect($handles)->toBe(['event_description', 'event_registration']);
-});
+// Preset derivation (hero + description, registration only when paid/capped)
+// is covered by EventLandingPageTest. The retired template-hydration branch
+// no longer drives landing-page creation.
 
 // ── Page rendering: template resolution ─────────────────────────────────────
 

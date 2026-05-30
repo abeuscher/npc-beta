@@ -81,7 +81,7 @@ class EventMiniCalendarDefinition extends WidgetDefinition
             version: '1.0.0',
             source: DataContract::SOURCE_SYSTEM_MODEL,
             fields: [
-                'title', 'slug', 'url', 'has_landing_page', 'starts_at', 'event_date', 'event_time',
+                'title', 'slug', 'url', 'starts_at', 'event_date', 'event_time',
                 'location', 'is_in_person', 'is_virtual', 'is_free', 'is_at_capacity',
                 'description', 'external_registration_url',
             ],

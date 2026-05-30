@@ -32,7 +32,6 @@
             'ym'               => $c->format('Y-m'),
             'title'            => $item['title'] ?? '',
             'url'              => $item['url'] ?? '',
-            'has_lp'           => (bool) ($item['has_landing_page'] ?? false),
             'time'             => $item['event_time'] ?? '',
             'event_date'       => $item['event_date'] ?? '',
             'datelabel'        => $c->format('M j'),

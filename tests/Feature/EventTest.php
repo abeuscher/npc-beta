@@ -220,7 +220,8 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
     expect($page)->not->toBeNull();
     expect($page->slug)->toBe('events/test-event');
     expect($page->type)->toBe('event');
-    expect(PageWidget::forOwner($page)->count())->toBe(2);
+    // Free event preset: event_image + event_description + social_sharing.
+    expect(PageWidget::forOwner($page)->count())->toBe(3);
     expect($event->fresh()->landing_page_id)->toBe($page->id);
 });
 

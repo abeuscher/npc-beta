@@ -7,7 +7,6 @@ use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
-use App\Models\Template;
 use App\Models\WidgetType;
 use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
@@ -90,8 +89,23 @@ class EventResource extends Resource
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Shared: create the standard landing page for an event
+    // Shared: create the landing page for an event
     // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Whether an event needs a registration surface on its landing page. An
+     * event needs registration the moment it has a ticket tier that is paid
+     * (price > 0) or has a capacity — a free, uncapped event does not. The
+     * operator can always add the registration widget by hand afterward.
+     */
+    public static function eventNeedsRegistration(Event $event): bool
+    {
+        return $event->ticketTiers()
+            ->where(function ($query) {
+                $query->where('price', '>', 0)->orWhereNotNull('capacity');
+            })
+            ->exists();
+    }
 
     public static function createLandingPageForEvent(Event $event): void
     {
@@ -112,28 +126,57 @@ class EventResource extends Resource
         // Override the auto-generated slug to include the events/ prefix.
         $page->update(['slug' => 'events/' . $event->slug]);
 
-        // Try to hydrate widgets from the "Event Landing Page" content template.
-        $template = Template::where('name', 'Event Landing Page')
-            ->where('type', 'content')
-            ->first();
+        // Seed the preset as a two-column block: the event image on the left,
+        // the description (plus the registration card when the event needs one
+        // — paid or capped, see eventNeedsRegistration) and a left-aligned,
+        // heading-less share row stacked on the right. Generous top/bottom
+        // padding frames the block. It is a normal page — fully editable after.
+        $layout = $page->layouts()->create([
+            'label'         => 'Event landing',
+            'display'       => 'grid',
+            'columns'       => 2,
+            'layout_config' => [
+                'grid_template_columns' => '1fr 1fr',
+                'gap'                   => '1.5rem',
+                'background_full_width' => true,
+                'content_full_width'    => false,
+            ],
+            'appearance_config' => [
+                'layout' => [
+                    'padding' => ['top' => 120, 'right' => 0, 'bottom' => 300, 'left' => 0],
+                ],
+            ],
+            'sort_order'    => 0,
+        ]);
 
-        if ($template && $template->widgets()->exists()) {
-            \App\Models\PageWidget::copyOwnedStack($template, $page);
+        // Left column: the event image.
+        $columns = [[
+            ['handle' => 'event_image', 'config' => ['event_slug' => $event->slug, 'image_source' => 'header']],
+        ]];
 
-            // Stamp the event slug onto every copied widget's config.
-            foreach ($page->widgets()->get() as $widget) {
-                $config = $widget->config ?? [];
-                $config['event_slug'] = $event->slug;
-                $widget->update(['config' => $config]);
-            }
-        } else {
-            // Fall back to hardcoded handles if template is missing or empty.
-            $fallbacks = [
-                ['handle' => 'event_description',  'sort_order' => 1],
-                ['handle' => 'event_registration', 'sort_order' => 2],
-            ];
+        // Right column: description, the registration card (paid/capped events
+        // only), then the share row.
+        $rightColumn = [
+            ['handle' => 'event_description', 'config' => ['event_slug' => $event->slug]],
+        ];
 
-            foreach ($fallbacks as $spec) {
+        if (static::eventNeedsRegistration($event)) {
+            $rightColumn[] = ['handle' => 'event_registration', 'config' => ['event_slug' => $event->slug]];
+        }
+
+        $shareAppearance = PageWidget::resolveAppearance([], 'social_sharing');
+        $shareAppearance['layout']['padding']['top'] = 25;
+        $rightColumn[] = [
+            'handle'     => 'social_sharing',
+            'config'     => ['heading' => '', 'alignment' => 'left'],
+            'appearance' => $shareAppearance,
+        ];
+
+        $columns[] = $rightColumn;
+
+        foreach ($columns as $columnIndex => $specs) {
+            $sortOrder = 0;
+            foreach ($specs as $spec) {
                 $widgetType = WidgetType::where('handle', $spec['handle'])->first();
                 if (! $widgetType) {
                     continue;
@@ -142,9 +185,11 @@ class EventResource extends Resource
                 $page->widgets()->create([
                     'widget_type_id'    => $widgetType->id,
                     'label'             => $widgetType->label,
-                    'config'            => ['event_slug' => $event->slug],
-                    'appearance_config' => \App\Models\PageWidget::resolveAppearance([], $spec['handle']),
-                    'sort_order'        => $spec['sort_order'],
+                    'layout_id'         => $layout->id,
+                    'column_index'      => $columnIndex,
+                    'config'            => $spec['config'],
+                    'appearance_config' => $spec['appearance'] ?? PageWidget::resolveAppearance([], $spec['handle']),
+                    'sort_order'        => $sortOrder++,
                     'is_active'         => true,
                 ]);
             }
@@ -514,7 +559,7 @@ class EventResource extends Resource
                     ->visible(fn () => auth()->user()?->can('create_event') ?? false)
                     ->requiresConfirmation()
                     ->modalHeading('Duplicate event')
-                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations and the landing page are not copied. The copy opens for editing.')
+                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations are not copied; the copy gets its own fresh landing page. The copy opens for editing.')
                     ->modalSubmitActionLabel('Duplicate')
                     ->action(function (Event $record) {
                         abort_unless(auth()->user()?->can('create_event'), 403);

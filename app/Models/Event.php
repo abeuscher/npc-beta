@@ -236,6 +236,11 @@ class Event extends Model implements HasMedia
             $media->copy($copy, $media->collection_name, $media->disk);
         }
 
+        // The copy gets its own fresh landing page (not a copy of the original's
+        // customised page). Created after tiers so a paid copy gets the
+        // registration widget.
+        \App\Filament\Resources\EventResource::createLandingPageForEvent($copy);
+
         return $copy;
     }
 
