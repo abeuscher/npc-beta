@@ -28,6 +28,7 @@ free and uncapped.
 | starts_at | timestamp | no | |
 | ends_at | timestamp | yes | |
 | registration_mode | string | no | default: 'open' |
+| sold_out | boolean | no | default: false. Operator-controllable flag (toggle on the event form). Surfaces the "Sold Out" badge in the events listing (cheap column read, no per-event capacity counting) and closes the landing-page registration form. Manual-only as of session 327 — no automatic flip when capacity is reached (deferred; see housekeeping inbox). |
 | external_registration_url | string | yes | |
 | auto_create_contacts | boolean | no | default: true |
 | mailing_list_opt_in_enabled | boolean | no | default: false |

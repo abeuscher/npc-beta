@@ -34,16 +34,20 @@ function handleUpdate(value: any) {
   store.updateLocalConfig(props.widget.id, props.field.key, value)
 }
 
-// Conditional visibility — `shown_when`/`hidden_when` are config keys; the
-// field is visible/hidden when that key is truthy in the widget's config.
+// Conditional visibility — `shown_when`/`hidden_when` are config key(s). A
+// single key (string) tests that key's truthiness; an array tests "any of
+// these keys truthy" (e.g. hide a carousel-only control when either layout
+// toggle is on). hidden_when wins when it matches.
 const isVisible = computed(() => {
   const config = props.widget.config
+  const anyTruthy = (cond: string | string[]) =>
+    Array.isArray(cond) ? cond.some((k) => !!config[k]) : !!config[cond]
 
-  if (typeof props.field.hidden_when === 'string' && config[props.field.hidden_when]) {
+  if (props.field.hidden_when != null && anyTruthy(props.field.hidden_when)) {
     return false
   }
 
-  if (typeof props.field.shown_when === 'string' && ! config[props.field.shown_when]) {
+  if (props.field.shown_when != null && ! anyTruthy(props.field.shown_when)) {
     return false
   }
 

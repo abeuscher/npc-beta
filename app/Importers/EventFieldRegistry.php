@@ -29,6 +29,7 @@ class EventFieldRegistry extends FieldRegistry
         'registrants_deleted_at',
         'custom_fields',
         'registration_mode',
+        'sold_out',
         'auto_create_contacts',
         'mailing_list_opt_in_enabled',
         'external_registration_url',

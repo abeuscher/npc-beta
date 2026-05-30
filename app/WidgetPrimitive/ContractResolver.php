@@ -273,7 +273,7 @@ final class ContractResolver
     {
         $key = 'event:' . sha1(serialize($contract->filters));
         if (! array_key_exists($key, $cache)) {
-            $query = Event::published()->with(['media', 'landingPage']);
+            $query = Event::published()->with(['media', 'landingPage', 'tags']);
 
             $dateRange = $contract->filters['date_range'] ?? null;
             if (is_array($dateRange)) {

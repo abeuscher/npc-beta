@@ -49,6 +49,13 @@ services:
       # runner's empty public/build → Filament @vite() 500s /admin/login.
       # app-only (worker renders no views) → single populator, no race.
       - app_public_build_e2e:/var/www/html/public/build
+      # Isolate bootstrap/cache from the bind mount: a local checkout carries a
+      # dev-built package manifest (lists Debugbar etc.), but this image's
+      # vendor is built for the test env — bind-mounting the dev manifest into
+      # it makes every artisan command fail ("Class … ServiceProvider not
+      # found"). A named volume lets the container regenerate the manifest
+      # against its own vendor. Own volume per service (no cross-service race).
+      - app_bootstrap_cache_e2e:/var/www/html/bootstrap/cache
     depends_on:
       - postgres
       - redis
@@ -124,6 +131,9 @@ services:
       # race that copy ("mkdir vendor/openspout/openspout: file exists"),
       # failing `compose up`. One populator per volume = deterministic.
       - worker_vendor_e2e:/var/www/html/vendor
+      # See the app service — isolate bootstrap/cache from the bind-mounted
+      # dev manifest. Own volume (one populator per fresh named volume).
+      - worker_bootstrap_cache_e2e:/var/www/html/bootstrap/cache
     depends_on:
       - postgres
       - redis
@@ -142,3 +152,5 @@ volumes:
   app_vendor_e2e:
   worker_vendor_e2e:
   app_public_build_e2e:
+  app_bootstrap_cache_e2e:
+  worker_bootstrap_cache_e2e:

@@ -32,6 +32,10 @@ class EventRegistrationController extends Controller
             return back()->withErrors(['register' => 'This event has been cancelled.']);
         }
 
+        if ($event->sold_out) {
+            return back()->withErrors(['register' => 'This event is sold out.']);
+        }
+
         if ($event->registration_mode !== 'open') {
             $message = match ($event->registration_mode) {
                 'none'     => 'This event does not require registration.',

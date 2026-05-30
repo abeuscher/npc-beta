@@ -380,6 +380,11 @@ class EventResource extends Resource
                                     ->required()
                                     ->live(),
 
+                                Forms\Components\Toggle::make('sold_out')
+                                    ->label('Sold out')
+                                    ->default(false)
+                                    ->helperText('Marks the event as sold out: shows a "Sold Out" badge in the events listing and closes the public registration form.'),
+
                                 Forms\Components\TextInput::make('external_registration_url')
                                     ->label('External registration URL')
                                     ->url()

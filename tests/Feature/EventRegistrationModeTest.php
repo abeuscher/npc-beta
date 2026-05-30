@@ -157,3 +157,38 @@ it('widget shows walk-in message when registration_mode is none', function () {
         ->assertOk()
         ->assertSee('No registration required');
 });
+
+it('registration is blocked with a sold-out message when the event is sold out', function () {
+    $event = Event::factory()->create(['status' => 'published', 'registration_mode' => 'open', 'sold_out' => true]);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane Doe',
+        'email'       => 'jane@example.com',
+        '_form_start' => time() - 10,
+        '_hp_name'    => '',
+    ])->assertRedirect()->assertSessionHasErrors('register');
+
+    expect(session('errors')->first('register'))->toBe('This event is sold out.');
+    expect(EventRegistration::count())->toBe(0);
+});
+
+it('widget closes the registration form with a sold-out message when the event is sold out', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $event = Event::factory()->create(['status' => 'published', 'registration_mode' => 'open', 'sold_out' => true]);
+
+    $widgetType = WidgetType::where('handle', 'event_registration')->first();
+    $page = Page::factory()->create(['status' => 'published']);
+    $page->widgets()->create([
+        'widget_type_id' => $widgetType->id,
+        'label'          => 'Event Registration',
+        'config'         => ['event_slug' => $event->slug],
+        'sort_order'     => 1,
+        'is_active'      => true,
+    ]);
+
+    $this->get('/' . $page->slug)
+        ->assertOk()
+        ->assertSee('This event is sold out. Registration is closed.')
+        ->assertDontSee('Register as member');
+});

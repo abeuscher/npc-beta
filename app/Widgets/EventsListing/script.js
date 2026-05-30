@@ -1,9 +1,54 @@
 window.NPWidgets = window.NPWidgets || {};
 
+// Static-layout (rows / day-grouped) event-type filter. Vanilla, progressive
+// enhancement: rows are server-rendered and fully visible without JS. Changing
+// the filter dropdown hides non-matching events, then collapses any day group
+// left with no visible events and surfaces a "no matches" message when
+// everything is filtered out.
+function initEventsListingFilter(root) {
+    const select = root.querySelector('[data-type-filter]');
+    if (!select) return;
+
+    const events = Array.from(root.querySelectorAll('[data-event-row]'));
+    const dayGroups = Array.from(root.querySelectorAll('[data-day-group]'));
+    const emptyMsg = root.querySelector('[data-filter-empty]');
+
+    function apply(tag) {
+        let anyVisible = false;
+        events.forEach((el) => {
+            const tags = (el.getAttribute('data-tags') || '').split(' ').filter(Boolean);
+            const show = tag === '' || tags.includes(tag);
+            el.hidden = !show;
+            if (show) anyVisible = true;
+        });
+        dayGroups.forEach((group) => {
+            group.hidden = group.querySelectorAll('[data-event-row]:not([hidden])').length === 0;
+        });
+        if (emptyMsg) emptyMsg.hidden = anyVisible;
+    }
+
+    select.addEventListener('change', () => apply(select.value));
+}
+
+function bootEventsListingLists() {
+    document.querySelectorAll('.widget-events-listing--list').forEach((root) => {
+        if (root.dataset.filterBooted) return;
+        root.dataset.filterBooted = '1';
+        initEventsListingFilter(root);
+    });
+}
+
+if (document.readyState !== 'loading') {
+    bootEventsListingLists();
+} else {
+    document.addEventListener('DOMContentLoaded', bootEventsListingLists);
+}
+
 window.NPWidgets.eventsListing = function () {
     return {
         swiper: null,
         search: '',
+        typeFilter: '',
         cfg: null,
 
         init() {
@@ -70,6 +115,9 @@ window.NPWidgets.eventsListing = function () {
                         || (item.location || '').toLowerCase().includes(q)
                         || (item.event_date || '').toLowerCase().includes(q);
                 });
+            }
+            if (this.typeFilter) {
+                indices = indices.filter(i => (this.cfg.items[i].tags || []).some(t => t.slug === this.typeFilter));
             }
             indices.sort((a, b) => {
                 const ia = this.cfg.items[a], ib = this.cfg.items[b];

@@ -3,11 +3,12 @@
     @php
         $isCancelled    = $item['status'] === 'cancelled';
         $isAtCapacity   = (bool) $item['is_at_capacity'];
+        $isSoldOut      = (bool) ($item['sold_out'] ?? false);
         $mode           = $item['registration_mode'] ?? 'open';
         $isFree         = (bool) $item['is_free'];
         $tiers          = $item['tiers'] ?? [];
         $tierCount      = count($tiers);
-        $regOpen        = $mode === 'open' && ! $isCancelled && ! $isAtCapacity;
+        $regOpen        = $mode === 'open' && ! $isCancelled && ! $isAtCapacity && ! $isSoldOut;
         $portalUser     = auth('portal')->user();
         $portalContact  = $portalUser?->contact;
 
@@ -43,6 +44,9 @@
         <div role="alert" class="alert alert--error">
             <strong>This event has been cancelled.</strong>
         </div>
+
+    @elseif ($isSoldOut)
+        <p class="text-muted">This event is sold out. Registration is closed.</p>
 
     @elseif ($isAtCapacity)
         <p class="text-muted">This event is at capacity. Registration is closed.</p>

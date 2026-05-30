@@ -7,11 +7,14 @@
 }
 
 .widget-events-listing__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
 
 .widget-events-listing__search {
-    width: 100%;
+    flex: 1 1 16rem;
     max-width: 24rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--np-color-border);
@@ -31,6 +34,26 @@
     }
 }
 
+.widget-events-listing__filter {
+    // Sit beside search rather than wrapping. The global form rule sets
+    // select { width: 100% }, which out-specifies a plain `width: auto`; an
+    // explicit flex-basis sets the main size directly and ignores it (the
+    // same trick the search box uses with `flex: 1 1 16rem`).
+    flex: 0 0 14rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--np-color-border);
+    border-radius: 0.375rem;
+    font-size: 0.9375rem;
+    background: transparent;
+    color: inherit;
+
+    &:focus {
+        outline: 2px solid var(--np-color-brand);
+        outline-offset: -1px;
+        border-color: transparent;
+    }
+}
+
 .widget-events-listing__empty {
     padding: 2rem 0;
     text-align: center;
@@ -39,7 +62,10 @@
 
 .widget-events-listing__swiper {
     overflow: hidden;
+}
 
+.widget-events-listing__swiper,
+.widget-events-listing--list {
     .content-grid {
         display: grid;
         gap: 1.5rem;
@@ -98,4 +124,224 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+}
+
+// ── Day-grouped list mode (the "luma" preset) ────────────────────────────────
+
+.widget-events-listing--list {
+    .events-list {
+        margin-bottom: 2rem;
+    }
+}
+
+.events-featured {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    // Separate the hero from the controls row / listing in every layout
+    // (carousel included) — without this the search box sits flush against
+    // the hero image.
+    margin-bottom: 2rem;
+
+    @media (max-width: 48rem) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.events-featured__media {
+    display: block;
+    aspect-ratio: 3 / 2;
+    border-radius: 0.5rem;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.events-featured__placeholder,
+.events-list__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: var(--np-color-brand);
+    color: var(--np-color-bg);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.events-featured__eyebrow {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--np-color-brand);
+}
+
+.events-featured__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    line-height: 1.3;
+
+    a {
+        color: inherit;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.events-featured__meta {
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+    color: var(--np-color-text-muted);
+}
+
+.events-featured__location {
+    margin: 0 0 0.5rem;
+    font-size: 0.9375rem;
+    color: var(--np-color-text-muted);
+}
+
+.events-featured__excerpt {
+    margin: 0.75rem 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--np-color-text);
+}
+
+.events-list__group {
+    & + & {
+        margin-top: 1.5rem;
+    }
+}
+
+// The heading is operator-authored rich text (styleable via tokens), so this
+// is just a layout hook — a divider and spacing. Typography comes from the
+// operator's markup + the site's heading styles.
+.events-list__day-heading {
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--np-color-border);
+
+    > * {
+        margin: 0;
+    }
+}
+
+.events-list__rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    // `columns` lays the rows into N tracks (inline grid-template-columns from
+    // the widget config). One column = the plain vertical list; more = a grid
+    // of rows. Column gap only — rows stay separated by their own top border.
+    display: grid;
+    column-gap: 1.5rem;
+    row-gap: 0;
+}
+
+// Drop the rows out of list-item display so the global prose-list rule
+// (.np-site ul:not(nav ul) li) can't force a disc marker — it out-specifies a
+// plain `list-style: none` on the <ul>. Mirrors the EventMiniCalendar fix.
+.events-list__row {
+    display: block;
+
+    & + & {
+        border-top: 1px solid var(--np-color-border);
+    }
+}
+
+.events-list__link {
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover .events-list__title {
+        text-decoration: underline;
+    }
+}
+
+.events-list__thumb {
+    display: block;
+    aspect-ratio: 3 / 2;
+    border-radius: 0.375rem;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.events-list__placeholder {
+    font-size: 0.8125rem;
+}
+
+.events-list__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.events-list__time {
+    font-size: 0.8125rem;
+    color: var(--np-color-text-muted);
+}
+
+.events-list__title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.events-list__location {
+    font-size: 0.875rem;
+    color: var(--np-color-text-muted);
+}
+
+.events-list__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0.25rem 0 0;
+}
+
+.events-list__badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+
+    &--free {
+        background-color: var(--np-color-success);
+        color: var(--np-color-bg);
+    }
+
+    &--soldout {
+        background-color: var(--np-color-error);
+        color: var(--np-color-bg);
+    }
+}
+
+.events-list__empty {
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--np-color-text-muted);
 }

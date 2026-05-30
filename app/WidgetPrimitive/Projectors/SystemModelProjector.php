@@ -176,8 +176,29 @@ final class SystemModelProjector
             'mailing_list_opt_in_enabled' => (bool) $event->getAttribute('mailing_list_opt_in_enabled'),
             'external_registration_url'   => (string) ($event->getAttribute('external_registration_url') ?? ''),
             'status'                      => (string) ($event->getAttribute('status') ?? ''),
+            'sold_out'                    => (bool) $event->getAttribute('sold_out'),
             'tiers'                       => $this->projectTiers($event),
+            'tags'                        => $this->projectTags($event),
         ];
+    }
+
+    /**
+     * Project the event's tags as a flat array of {name, slug}, ordered as
+     * eager-loaded. Returns an empty array when tags is not eager-loaded — the
+     * listing path eager-loads them for the client-side Event-Type facet.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function projectTags(Event $event): array
+    {
+        if (! $event->relationLoaded('tags')) {
+            return [];
+        }
+
+        return $event->tags->map(fn ($tag) => [
+            'name' => (string) $tag->name,
+            'slug' => (string) $tag->slug,
+        ])->values()->all();
     }
 
     /**

@@ -49,7 +49,7 @@ it('projects only contract-declared fields onto the EventRegistration single-row
     expect($dto)->toHaveKey('item')
         ->and($dto['item'])->not->toBeNull()
         ->and(array_keys($dto['item']))->toEqualCanonicalizing([
-            'slug', 'title', 'status', 'registration_mode', 'is_free',
+            'slug', 'title', 'status', 'registration_mode', 'sold_out', 'is_free',
             'is_in_person', 'mailing_list_opt_in_enabled', 'external_registration_url',
             'is_at_capacity', 'tiers',
         ])
