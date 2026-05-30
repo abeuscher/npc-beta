@@ -1,7 +1,8 @@
 @php
     // One expandable event row. The summary is a toggle (caret + time/date +
-    // title); the detail panel carries the facts we hold so a no-LP event is
-    // never a dead end. The landing-page link only renders when one exists.
+    // title); the detail panel is a rail-peek of the facts we hold. Every event
+    // has a landing page, so the "Event page" link renders whenever a URL is
+    // present.
     $e               = $e ?? [];
     $showDescription = $showDescription ?? true;
     $showDate        = $showDate ?? false;
@@ -39,7 +40,7 @@
         @if ($hasDescription)
             <div class="emc-event__desc">{!! \App\Services\Media\InlineImageRenderer::process($e['description']) !!}</div>
         @endif
-        @if (! empty($e['has_lp']) && ! empty($e['url']))
+        @if (! empty($e['url']))
             <a class="emc-event__link" href="{{ $e['url'] }}">Event page &rarr;</a>
         @endif
         @if (! empty($e['register_url']))

@@ -40,6 +40,42 @@ class PageResource extends Resource
         return $record->type !== 'system' && (auth()->user()?->can('delete_page') ?? false);
     }
 
+    /**
+     * Block deleting a page that is an event's landing page — every event must
+     * keep one. Returns true when the page is safe to delete; otherwise sends a
+     * notification and returns false (mirrors the OrganizationResource
+     * block-with-counts deletion guard).
+     */
+    public static function guardLandingPageDeletion(Page $page): bool
+    {
+        $event = $page->event;
+
+        if ($event === null) {
+            return true;
+        }
+
+        Notification::make()
+            ->title('Cannot delete')
+            ->body('This page is the landing page for the event “' . $event->title . '.” Every event keeps a landing page — delete or detach the event first.')
+            ->danger()
+            ->send();
+
+        return false;
+    }
+
+    protected static function notifyBlockedLandingPages(int $blocked): void
+    {
+        if ($blocked === 0) {
+            return;
+        }
+
+        Notification::make()
+            ->title('Some pages were not deleted')
+            ->body($blocked . ' ' . ($blocked === 1 ? 'page is' : 'pages are') . ' a landing page for an event and cannot be deleted. Delete or detach the event first.')
+            ->danger()
+            ->send();
+    }
+
 
     public static function form(Form $form): Form
     {
@@ -241,6 +277,11 @@ class PageResource extends Resource
                     ->modalDescription(fn (Page $record): ?string => match ($record->type) {
                         'member' => 'Warning: Deleting this page may render the member portal unusable. Are you sure you want to proceed?',
                         default  => null,
+                    })
+                    ->before(function (Tables\Actions\DeleteAction $action, Page $record) {
+                        if (! self::guardLandingPageDeletion($record)) {
+                            $action->cancel();
+                        }
                     }),
                 Tables\Actions\RestoreAction::make(),
                 Tables\Actions\ForceDeleteAction::make()
@@ -248,6 +289,11 @@ class PageResource extends Resource
                     ->modalDescription(fn (Page $record): ?string => match ($record->type) {
                         'member' => 'Warning: Permanently deleting this page may render the member portal unusable.',
                         default  => null,
+                    })
+                    ->before(function (Tables\Actions\ForceDeleteAction $action, Page $record) {
+                        if (! self::guardLandingPageDeletion($record)) {
+                            $action->cancel();
+                        }
                     }),
             ])
             ->bulkActions([
@@ -346,20 +392,34 @@ class PageResource extends Resource
 
                     Tables\Actions\DeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
-                            $records->each(function (Page $record) {
-                                if ($record->type !== 'system') {
-                                    $record->delete();
+                            $blocked = 0;
+                            $records->each(function (Page $record) use (&$blocked) {
+                                if ($record->type === 'system') {
+                                    return;
                                 }
+                                if ($record->event()->exists()) {
+                                    $blocked++;
+                                    return;
+                                }
+                                $record->delete();
                             });
+                            self::notifyBlockedLandingPages($blocked);
                         }),
                     Tables\Actions\RestoreBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make()
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
-                            $records->each(function (Page $record) {
-                                if ($record->type !== 'system') {
-                                    $record->forceDelete();
+                            $blocked = 0;
+                            $records->each(function (Page $record) use (&$blocked) {
+                                if ($record->type === 'system') {
+                                    return;
                                 }
+                                if ($record->event()->exists()) {
+                                    $blocked++;
+                                    return;
+                                }
+                                $record->forceDelete();
                             });
+                            self::notifyBlockedLandingPages($blocked);
                         }),
                 ]),
             ]);

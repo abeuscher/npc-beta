@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Filament\Resources\EventResource;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
 use App\Models\Donation;
@@ -162,6 +163,10 @@ class RandomDataGenerator
 
             $this->attachPoolImage($event, SampleImage::CATEGORY_STILL_PHOTOS, 'event_thumbnail');
             $this->attachPoolImage($event, SampleImage::CATEGORY_STILL_PHOTOS, 'event_header');
+
+            // Every generated event gets a landing page so the calendar and
+            // listing always have a resolvable URL to link to.
+            EventResource::createLandingPageForEvent($event);
         }
 
         return ['events' => $n];

@@ -88,38 +88,25 @@ class EditEvent extends ReadOnlyAwareEditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('createLandingPage')
-                ->label('Create basic landing page')
-                ->icon('heroicon-o-document-plus')
-                ->color('primary')
-                ->visible(fn () => auth()->user()?->can('update_event') && $this->getRecord()->landing_page_id === null)
-                ->requiresConfirmation()
-                ->modalHeading('Create landing page')
-                ->modalDescription('This will create a new draft page with event widgets pre-configured. You can edit it fully after creation.')
-                ->action(function () {
-                    abort_unless(auth()->user()?->can('update_event'), 403);
-
-                    $event = $this->getRecord();
-
-                    EventResource::createLandingPageForEvent($event);
-
-                    \Filament\Notifications\Notification::make()
-                        ->title('Landing page created')
-                        ->body('The page is saved as a draft. Edit it to customise before publishing.')
-                        ->success()
-                        ->send();
-
-                    $this->redirect(
-                        \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $event->fresh()->landingPage])
-                    );
-                }),
-
-            Actions\Action::make('editLandingPage')
-                ->label('Edit landing page')
+            Actions\Action::make('viewLandingPage')
+                ->label('View landing page')
                 ->icon('heroicon-o-pencil-square')
                 ->color('secondary')
-                ->visible(fn () => $this->getRecord()->landing_page_id !== null)
-                ->url(fn () => \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $this->getRecord()->landing_page_id])),
+                ->action(function () {
+                    $event = $this->getRecord();
+
+                    // Every event has a landing page. The only events that can
+                    // still arrive here without one are duplicates and imports;
+                    // create it on demand so the link always resolves.
+                    if ($event->landing_page_id === null) {
+                        EventResource::createLandingPageForEvent($event);
+                        $event = $event->fresh();
+                    }
+
+                    $this->redirect(
+                        \App\Filament\Resources\PageResource::getUrl('edit', ['record' => $event->landing_page_id])
+                    );
+                }),
 
             EmailPreviewWizardAction::make(
                 name: 'cancelEvent',
@@ -176,7 +163,7 @@ class EditEvent extends ReadOnlyAwareEditRecord
                     ->visible(fn () => auth()->user()?->can('create_event') ?? false)
                     ->requiresConfirmation()
                     ->modalHeading('Duplicate event')
-                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations and the landing page are not copied. The copy opens for editing.')
+                    ->modalDescription('Creates a draft copy of this event, including its ticket tiers and dates. Registrations are not copied; the copy gets its own fresh landing page. The copy opens for editing.')
                     ->modalSubmitActionLabel('Duplicate')
                     ->action(function () {
                         abort_unless(auth()->user()?->can('create_event'), 403);

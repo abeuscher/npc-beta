@@ -155,6 +155,8 @@ it('creates a new Event when no external ID match exists, writing an ImportIdMap
     expect(Event::count())->toBe(1)
         ->and(Event::first()->title)->toBe('Brand New Event')
         ->and(Event::first()->starts_at)->not->toBeNull()
+        // An imported event gets a landing page so calendar/listing links resolve.
+        ->and(Event::first()->landing_page_id)->not->toBeNull()
         ->and(ImportIdMap::where('import_source_id', $source->id)
             ->where('model_type', 'event')
             ->where('source_id', 'NEW-1')

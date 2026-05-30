@@ -48,11 +48,6 @@ class TemplateSeeder extends Seeder
             ['handle' => 'text_block', 'config' => []],
         ]);
 
-        $this->seedContentTemplate('Event Landing Page', 'Standard event landing page with description and registration widgets.', [
-            ['handle' => 'event_description',  'config' => []],
-            ['handle' => 'event_registration', 'config' => []],
-        ]);
-
         $blogPost = $this->seedContentTemplate('Blog Post', 'Standard blog post layout with content and a prev/next pager.', [
             ['handle' => 'text_block', 'config' => []],
             ['handle' => 'blog_pager', 'config' => []],

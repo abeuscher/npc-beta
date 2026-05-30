@@ -19,7 +19,8 @@ beforeEach(function () {
     $this->actingAs($this->user);
 });
 
-it('duplicate copies dates and tiers, drops landing page and registrations', function () {
+it('duplicate copies dates and tiers, gives the copy its own fresh landing page, drops registrations', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
     $author = User::factory()->create();
     $landing = Page::factory()->create(['type' => 'event']);
     $event = Event::factory()->create([
@@ -44,7 +45,9 @@ it('duplicate copies dates and tiers, drops landing page and registrations', fun
     expect($copy->published_at)->toBeNull();
     expect($copy->source)->toBe(Source::HUMAN);
     expect($copy->author_id)->toBe($this->user->id);
-    expect($copy->landing_page_id)->toBeNull();
+    // The copy gets its own fresh landing page — not the original's.
+    expect($copy->landing_page_id)->not->toBeNull();
+    expect($copy->landing_page_id)->not->toBe($landing->id);
 
     // Dates carry forward.
     expect($copy->starts_at->equalTo($event->starts_at))->toBeTrue();

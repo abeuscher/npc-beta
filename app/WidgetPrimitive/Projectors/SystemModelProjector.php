@@ -129,16 +129,22 @@ final class SystemModelProjector
         $thumb = $event->getFirstMediaUrl('event_thumbnail', 'webp')
             ?: $event->getFirstMediaUrl('event_thumbnail');
 
+        $headerImage = $event->getFirstMediaUrl('event_header', 'webp')
+            ?: $event->getFirstMediaUrl('event_header');
+
         $locationParts = array_filter([
             $event->getAttribute('address_line_1'),
             $event->getAttribute('city'),
             $event->getAttribute('state'),
         ]);
 
-        $eventsPrefix = config('site.events_prefix', 'events');
+        // Every event gets a landing page at creation, so the URL is simply its
+        // landing-page slug. Events that predate that flow (or were created
+        // outside it) yield an empty URL — widgets skip the link rather than
+        // linking to a dead-end index.
         $url = $event->landingPage
             ? url('/' . $event->landingPage->slug)
-            : url('/' . $eventsPrefix);
+            : '';
 
         $isAtCapacity = $this->eventIsAtCapacity($event);
 
@@ -149,7 +155,6 @@ final class SystemModelProjector
             'title'                       => $event->title,
             'slug'                        => $event->slug,
             'url'                         => $url,
-            'has_landing_page'            => $event->landingPage !== null,
             'starts_at'                   => $event->starts_at?->toIso8601String() ?? '',
             'event_date'                  => DateFormat::format($event->starts_at, $eventDateFormat),
             'event_time'                  => $this->buildEventTime($event),
@@ -162,6 +167,7 @@ final class SystemModelProjector
             'event_location'              => $this->buildEventLocation($event),
             'is_free'                     => (bool) $event->is_free,
             'image'                       => $thumb,
+            'header_image'                => $headerImage,
             'description'                 => (string) ($event->getAttribute('description') ?? ''),
             'is_in_person'                => (bool) $event->is_in_person,
             'is_virtual'                  => (bool) $event->is_virtual,
