@@ -32,7 +32,7 @@ it('seeder assigns category to all existing widgets', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $widgets = WidgetType::all();
-    expect($widgets)->toHaveCount(40);
+    expect($widgets)->toHaveCount(39); // ThreeBuckets deleted at session 330
 
     foreach ($widgets as $wt) {
         expect($wt->category)

@@ -126,25 +126,6 @@ it('Hero — builder and public renders match after normalisation', function () 
     expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
 });
 
-it('ThreeBuckets — one bucket filled, two empty (non-`always` wrappers)', function () {
-    $page = Page::factory()->create(['slug' => 's307-tb3', 'status' => 'published']);
-    $pw = s307MakeWidget($page, 'three_buckets', [
-        'heading_1' => 'Bucket One',
-        'body_1'    => '<p>First body.</p>',
-        'heading_2' => '',
-        'body_2'    => '',
-        'heading_3' => '',
-        'body_3'    => '',
-    ]);
-
-    ['builder' => $builder, 'public' => $public] = s307RenderPair($pw);
-
-    // Bucket 2/3 wrappers are non-`always`: builder emits empty editable
-    // wrappers with placeholders; public emits nothing. Normalisation strips
-    // both and the bucket-1 filled prose must round-trip identically.
-    expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
-});
-
 it('PricingChart — populated chart (the canonical 304 stress test)', function () {
     $page = Page::factory()->create(['slug' => 's307-pc-full', 'status' => 'published']);
     $pw = s307MakeWidget($page, 'pricing_chart', [

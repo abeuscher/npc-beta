@@ -8,9 +8,9 @@ This is a **process experiment** as much as a feature track. Whether it works is
 
 ## Status snapshot
 
-**Last update:** 2026-05-06 (track initiated; open questions resolved).
+**Last update:** 2026-05-31 (Widget Styling Contract arc launched on this track — session 330 landed, run as normal single-agent cadence, not the multi-agent experiment).
 
-**State:** Planning. No work landed. Open questions resolved (see Resolved decisions). Remaining blockers are operational, not architectural — see "Pre-launch blockers" below.
+**State:** The multi-agent parallel-execution experiment (Stages 5d+/6/7, E9/E10) is still **Planning — not launched** (operational blockers below remain). Separately, the **Widget Styling Contract arc** (source spec `sessions/styles-rework-spec.md`) is running as **normal-cadence single-agent sessions** on this track: **330 ✅** made the widget styling boundary explicit (audit + `ThreeBuckets` deletion + `@container` migration for the two full-width widgets + a consumption-gate test + doc refresh); **331** = the remaining column-capable widgets' `@container` migration; **332** = `@layer` cascade isolation. See sessions 330–332 prompts/logs.
 
 **Destination repo for extracted widgets:** `https://github.com/abeuscher/npc-widgets` (currently blank).
 
@@ -36,7 +36,7 @@ The track is also a chance to test multi-agent coordination on a low-risk surfac
 
 **In scope:**
 
-- **Sovereign Widget Stage 5d+** — per-widget preset authoring batches (three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block — eleven widgets, batched 4–6 per session).
+- **Sovereign Widget Stage 5d+** — per-widget preset authoring batches (carousel, bar_chart, logo_garden, board_members, donation_form, product_carousel, video_embed, web_form, text_block — nine widgets, batched 4–6 per session). *(List predates sessions 325/330: `event_calendar` was retired at 325, `three_buckets` deleted at 330 — both removed here.)*
 - **Sovereign Widget Stage 6** — Widget Browser UI admin page (search, filter, thumbnails, preset chips). New admin surface; no schema impact.
 - **Sovereign Widget Stage 7** — Install/Uninstall Mechanics. Two phases: a **design session with the user** (security model, package format, trust posture, semver, dependency resolution) followed by **implementation** (commands, admin UI, orphan cleanup) once design is locked. Stage 7 implementation does **not** merge to main during the experiment — see Reversibility posture.
 - **E9 — Widget Help Authoring & Help-System Integration.** Contract-layer change; lands as the **first** contract-touching work in the track so per-widget agents have a stable surface to write against.

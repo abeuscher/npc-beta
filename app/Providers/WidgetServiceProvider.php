@@ -51,7 +51,6 @@ use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
 use App\Widgets\ThisWeeksEvents\ThisWeeksEventsDefinition;
-use App\Widgets\ThreeBuckets\ThreeBucketsDefinition;
 use App\Widgets\VideoEmbed\VideoEmbedDefinition;
 use App\Widgets\WebForm\WebFormDefinition;
 use Illuminate\Support\Facades\View;
@@ -109,7 +108,6 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new CarouselDefinition());
         $registry->register(new LogoGardenDefinition());
         $registry->register(new BoardMembersDefinition());
-        $registry->register(new ThreeBucketsDefinition());
         $registry->register(new PricingChartDefinition());
         $registry->register(new HeroDefinition());
         $registry->register(new MapEmbedDefinition());

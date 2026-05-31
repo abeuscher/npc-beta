@@ -34,11 +34,12 @@ it('fails closed: inlineEditable() defaults to false on the base definition', fu
     // surface because the data-driven body — chart canvas, Swiper slides —
     // initialises asynchronously and the heading was the only inline-
     // editable node on each, so dropping it dropped them from the gate
-    // too). Authors use a sibling TextBlock for titles. Roster: 11
+    // too). Authors use a sibling TextBlock for titles. Roster: 10
     // (event_calendar retired at session 325 and replaced by
-    // event_mini_calendar, whose rich-text heading is inline-editable).
+    // event_mini_calendar, whose rich-text heading is inline-editable;
+    // three_buckets deleted at session 330).
     foreach ([
-        'text_block', 'hero', 'three_buckets', 'pricing_chart',
+        'text_block', 'hero', 'pricing_chart',
         'blog_listing', 'board_members', 'donation_form',
         'events_listing', 'map_embed', 'social_sharing',
         'event_mini_calendar',
@@ -192,7 +193,6 @@ it('never annotates a Tier-B field as inline-editable in any widget template', f
     // in place because they flow into CSS / attributes / chart config.
     $tierB = [
         'pricing_chart' => ['gap'],
-        'three_buckets' => ['gap'],
         'image'         => ['max_width', 'alt_text'],
         'board_members' => ['image_aspect_ratio'],
         'nav'           => ['branding_text'],

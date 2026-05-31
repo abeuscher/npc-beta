@@ -70,6 +70,28 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Widget-interior containment context (the "np-widget" container)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// A widget interior responds to ITS OWN width via @container, never to the
+// viewport via @media — viewport width is the wrong signal once a widget can
+// land in a narrow column (the .layout-column { min-width: 0 } blowout class).
+// This establishes the named containment context the widget SCSS queries
+// against (`@container np-widget (max-width: ...)`).
+//
+// Applied per-handle, NOT to every .widget wrapper: `container-type:
+// inline-size` implies `contain: layout style inline-size`, which makes the
+// element a containing block for abs-positioned descendants and a new stacking
+// context. Scoping to the handles whose SCSS actually declares interior
+// queries keeps that blast radius off widgets that don't need it. Add a handle
+// here when its SCSS adopts @container. — Session 330.
+.widget--product_carousel,
+.widget--pricing_chart {
+    container-type: inline-size;
+    container-name: np-widget;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Site nav wrapper — overlay mode for hero full-bleed
 // ─────────────────────────────────────────────────────────────────────────────
 

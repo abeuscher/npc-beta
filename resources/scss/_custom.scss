@@ -133,8 +133,8 @@
 
 // Rich-text alignment driven by Quill's ql-align-* classes, emitted per block
 // inside any data-config-type="richtext" container. Applies uniformly to
-// Hero, TextBlock, ThreeBuckets, and any future richtext-bearing widget that
-// follows the same wrapper convention.
+// Hero, TextBlock, and any future richtext-bearing widget that follows the
+// same wrapper convention.
 [data-config-type="richtext"] {
     .ql-align-center  { text-align: center; }
     .ql-align-right   { text-align: right; }

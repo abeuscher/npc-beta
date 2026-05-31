@@ -57,32 +57,6 @@ it('seeder creates board_members widget with correct config schema', function ()
         ->toContain('collection_handle');
 });
 
-it('seeder creates three_buckets widget with correct config schema', function () {
-    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
-
-    $wt = WidgetType::where('handle', 'three_buckets')->first();
-
-    expect($wt)->not->toBeNull()
-        ->and($wt->label)->toBe('Three Buckets')
-        ->and($wt->category)->toBe(['content', 'layout'])
-        ->and($wt->collections)->toBe([]);
-
-    $keys = collect($wt->config_schema)->pluck('key')->all();
-    expect($keys)->toContain('heading_1')
-        ->toContain('body_1')
-        ->toContain('ctas_1')
-        ->toContain('heading_2')
-        ->toContain('body_2')
-        ->toContain('ctas_2')
-        ->toContain('heading_3')
-        ->toContain('body_3')
-        ->toContain('ctas_3')
-        ->toContain('heading_alignment')
-        ->toContain('body_alignment')
-        ->toContain('button_alignment')
-        ->toContain('gap');
-});
-
 // ── Board members demo seeder ───────────────────────────────────────────────
 
 it('board members demo seeder creates collection and items', function () {
@@ -175,44 +149,4 @@ it('board members template renders member cards with semantic HTML', function ()
     $response->assertSee('<article', false);
     $response->assertSee('linkedin.com/in/janedoe');
     $response->assertSee('github.com/janedoe');
-});
-
-// ── Three buckets blade rendering ───────────────────────────────────────────
-
-it('three buckets template renders three columns with headings body and buttons', function () {
-    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
-
-    $page = Page::factory()->create(['slug' => 'buckets-test', 'status' => 'published']);
-    $wt = WidgetType::where('handle', 'three_buckets')->first();
-
-    $page->widgets()->create([
-        'widget_type_id' => $wt->id,
-        'config'         => [
-            'heading_1' => 'Mission',
-            'body_1'    => '<p>We serve the community.</p>',
-            'ctas_1'    => [['text' => 'Learn More', 'url' => '/about', 'style' => 'primary']],
-            'heading_2' => 'Vision',
-            'body_2'    => '<p>A better tomorrow.</p>',
-            'ctas_2'    => [['text' => 'Our Plan', 'url' => '/plan', 'style' => 'secondary']],
-            'heading_3' => 'Values',
-            'body_3'    => '<p>Integrity and trust.</p>',
-            'ctas_3'    => [],
-        ],
-        'sort_order' => 0,
-        'is_active'  => true,
-    ]);
-
-    $response = $this->get('/buckets-test');
-
-    $response->assertOk();
-    $response->assertSee('Mission');
-    $response->assertSee('Vision');
-    $response->assertSee('Values');
-    $response->assertSee('<p>We serve the community.</p>', false);
-    $response->assertSee('<p>A better tomorrow.</p>', false);
-    $response->assertSee('<p>Integrity and trust.</p>', false);
-    $response->assertSee('Learn More');
-    $response->assertSee('Our Plan');
-    $response->assertSee('widget-three-buckets', false);
-    $response->assertSee('three-buckets__bucket', false);
 });

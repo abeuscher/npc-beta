@@ -23,7 +23,7 @@ app/Widgets/Nav/
 └── styles.scss              # optional — present only if the widget has SCSS
 ```
 
-- The folder is PascalCase (e.g. `Nav`, `BlogPager`, `ThreeBuckets`).
+- The folder is PascalCase (e.g. `Nav`, `BlogPager`, `BoardMembers`).
 - The class is `{PascalName}Definition` in the matching namespace `App\Widgets\{PascalName}`.
 - The widget's **handle** (which may be snake_case — e.g. `bar_chart`, `portal_signup`) lives in `handle()` / the DB row. Folder name and handle are independent.
 

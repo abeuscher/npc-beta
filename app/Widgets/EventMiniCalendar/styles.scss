@@ -1,5 +1,9 @@
-// Server-rendered events mini-calendar for an index right rail. Desktop-only:
-// the rail collapses on narrow viewports, so the widget hides there.
+// Server-rendered events mini-calendar. Sits in an index right rail on wide
+// viewports; when the host column layout collapses (≤ $bp-md) it stacks below
+// the listing — width-capped and centred — rather than hiding. (Session 330
+// removed a `@media (max-width: 1023px) { display: none }` that made it vanish
+// in a dead 769–1023px window between its hide threshold and the layout's
+// collapse threshold; no other widget self-hides, owner call.)
 .widget-event-mini-calendar {
     font-size: 0.875rem;
     // No explicit color: inherit the wrapper's text colour so the widget's
@@ -11,10 +15,6 @@
     // cell into a squat rectangle. There is no wrong way to size it.
     max-width: 21rem;
     margin-inline: auto;
-
-    @media (max-width: 1023px) {
-        display: none;
-    }
 }
 
 .widget-event-mini-calendar__heading {
