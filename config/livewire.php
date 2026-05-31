@@ -68,7 +68,10 @@ return [
         'rules' => ['required', 'file', 'max:786432'], // 768 MB — Livewire's temp-upload rule is validated BEFORE Filament's ->maxSize, so the 12MB default rejected large bundle/theme/media imports
 
         'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
-        'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'
+        // Every Filament FileUpload field funnels through this temp-upload endpoint,
+        // so BlockDemoUploads here gates new-file uploads for the demo role across
+        // all admin forms at once. Throttle preserved (was Livewire's null default).
+        'middleware' => ['throttle:60,1', \App\Http\Middleware\BlockDemoUploads::class],
         'preview_mimes' => [   // Supported file types for temporary pre-signed file URLs...
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
             'mov', 'avi', 'wmv', 'mp3', 'm4a',

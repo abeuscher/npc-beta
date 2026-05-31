@@ -9,8 +9,14 @@ use App\Filament\Pages\Settings\MailSettingsPage;
 use App\Filament\Pages\SiteImportExportPage;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\UserResource;
+use App\Http\Middleware\BlockDemoUploads;
+use App\Models\Page;
+use App\Models\PageWidget;
 use App\Models\User;
+use App\Models\WidgetType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -114,4 +120,113 @@ it('grants the intended product-feel width — full CRUD on events and donations
     expect($this->demo->can('create_transaction'))->toBeFalse();
     expect($this->demo->can('create_fund'))->toBeFalse();
     expect($this->demo->can('create_campaign'))->toBeFalse();
+});
+
+// ── Session 329 — demo upload lockdown ────────────────────────────────────────
+// New-file uploads are blocked for the demo role at every chokepoint; existing-
+// media reuse (no new file) stays open. BlockDemoUploads is the server-side
+// boundary (the FileUpload field-disable in AppServiceProvider is only UX).
+
+/**
+ * A published, unlocked page + one widget the demo role may otherwise edit
+ * (demo holds full page CRUD), so a 403 isolates the upload gate rather than a
+ * missing permission or the page lock.
+ */
+function demoUploadWidget(): PageWidget
+{
+    $page = Page::factory()->create([
+        'slug'   => 'demo-upload-' . uniqid(),
+        'status' => 'published',
+    ]);
+
+    $widgetType = WidgetType::create([
+        'handle'        => 'demo_upload_widget_' . uniqid(),
+        'label'         => 'Demo Upload Widget',
+        'render_mode'   => 'server',
+        'collections'   => [],
+        'config_schema' => [],
+    ]);
+
+    return $page->widgets()->create([
+        'widget_type_id'    => $widgetType->id,
+        'label'             => 'Test',
+        'config'            => [],
+        'query_config'      => [],
+        'appearance_config' => ['background' => ['color' => '#ffffff']],
+        'sort_order'        => 0,
+        'is_active'         => true,
+    ]);
+}
+
+it('blocks the demo role from uploading a new page-builder image (config + appearance chokepoints)', function () {
+    Storage::fake('public');
+    $widget = demoUploadWidget();
+
+    $this->actingAs($this->demo)
+        ->post("/admin/api/page-builder/widgets/{$widget->id}/image", [
+            'key'  => 'image',
+            'file' => UploadedFile::fake()->image('new.jpg', 400, 300),
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($this->demo)
+        ->post("/admin/api/page-builder/widgets/{$widget->id}/appearance-image", [
+            'file' => UploadedFile::fake()->image('bg.jpg', 400, 300),
+        ])
+        ->assertForbidden();
+});
+
+it('blocks the demo role from the rich-text inline-image upload', function () {
+    Storage::fake('public');
+    $widget = demoUploadWidget();
+
+    $this->actingAs($this->demo)
+        ->post('/admin/inline-image-upload', [
+            'model_type' => 'page_widget',
+            'model_id'   => $widget->id,
+            'file'       => UploadedFile::fake()->image('inline.jpg', 400, 300),
+        ])
+        ->assertForbidden();
+});
+
+it('gates the Livewire temporary-upload endpoint (covers every Filament FileUpload field)', function () {
+    // Every Filament FileUpload field funnels through this one endpoint, so
+    // confirming the gate is attached here proves the whole admin-form surface
+    // is covered. gatherMiddleware() includes the controller-applied middleware
+    // that Livewire reads from config('livewire.temporary_file_upload.middleware').
+    $route = app('router')->getRoutes()->getByName('livewire.upload-file');
+
+    expect($route)->not->toBeNull();
+    expect($route->gatherMiddleware())->toContain(BlockDemoUploads::class);
+});
+
+it('still lets the demo role set an image from existing media (no new file)', function () {
+    Storage::fake('public');
+    $widget = demoUploadWidget();
+
+    // Seed a stored media row at the model level (not through a gated endpoint),
+    // then reuse it — the reuse path introduces no new file and stays open.
+    $source = $widget->addMedia(UploadedFile::fake()->image('seed.jpg', 400, 300))
+        ->toMediaCollection('config_image', 'public');
+
+    $this->actingAs($this->demo)
+        ->post("/admin/api/page-builder/widgets/{$widget->id}/use-existing-image", [
+            'key'      => 'image',
+            'media_id' => $source->id,
+        ])
+        ->assertOk();
+});
+
+it('still lets a non-demo user upload (the gate is scoped to the demo role, not demo mode)', function () {
+    Storage::fake('public');
+    $widget = demoUploadWidget();
+
+    $admin = User::factory()->create();
+    $admin->givePermissionTo(['view_page', 'update_page']);
+
+    $this->actingAs($admin)
+        ->post("/admin/api/page-builder/widgets/{$widget->id}/appearance-image", [
+            'file' => UploadedFile::fake()->image('bg.jpg', 400, 300),
+        ])
+        ->assertOk();
 });

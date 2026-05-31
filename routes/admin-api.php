@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\MediaDedupController;
 use App\Http\Controllers\Admin\PageBuilderApiController;
 use App\Http\Controllers\Admin\PresetController;
 use App\Http\Controllers\Admin\WidgetDefaultsController;
+use App\Http\Middleware\BlockDemoUploads;
 use App\Http\Middleware\ResolvePageBuilderOwner;
 use Illuminate\Support\Facades\Route;
 
@@ -62,13 +63,16 @@ Route::get('data-sources/{source}', [PageBuilderApiController::class, 'dataSourc
 // Upload-time dedup check (owner-agnostic — hashes only).
 Route::post('media-dedup-check', [MediaDedupController::class, 'check']);
 
-// Image upload.
-Route::post('widgets/{widget}/image', [PageBuilderApiController::class, 'uploadImage']);
+// Image upload. New-file uploads are gated against the demo role (session 329);
+// existing-media reuse introduces no new file and stays open.
+Route::post('widgets/{widget}/image', [PageBuilderApiController::class, 'uploadImage'])
+    ->middleware(BlockDemoUploads::class);
 Route::post('widgets/{widget}/use-existing-image', [PageBuilderApiController::class, 'useExistingImage']);
 Route::delete('widgets/{widget}/image/{key}', [PageBuilderApiController::class, 'removeImage']);
 
 // Appearance background image.
-Route::post('widgets/{widget}/appearance-image', [PageBuilderApiController::class, 'uploadAppearanceImage']);
+Route::post('widgets/{widget}/appearance-image', [PageBuilderApiController::class, 'uploadAppearanceImage'])
+    ->middleware(BlockDemoUploads::class);
 Route::post('widgets/{widget}/use-existing-appearance-image', [PageBuilderApiController::class, 'useExistingAppearanceImage']);
 Route::delete('widgets/{widget}/appearance-image', [PageBuilderApiController::class, 'removeAppearanceImage']);
 

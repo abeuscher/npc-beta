@@ -54,9 +54,10 @@ class AdminPanelProvider extends PanelProvider
                     ->name('invitation.show');
                 \Illuminate\Support\Facades\Route::post('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'store'])
                     ->name('invitation.store');
+                // New-file upload — gated against the demo role (session 329).
                 \Illuminate\Support\Facades\Route::post('/inline-image-upload', [\App\Http\Controllers\Admin\InlineImageUploadController::class, 'store'])
                     ->name('inline-image-upload')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                    ->middleware([\Filament\Http\Middleware\Authenticate::class, \App\Http\Middleware\BlockDemoUploads::class]);
 
                 \Illuminate\Support\Facades\Route::post('/media-dedup-check', [\App\Http\Controllers\Admin\MediaDedupController::class, 'check'])
                     ->name('media-dedup-check')

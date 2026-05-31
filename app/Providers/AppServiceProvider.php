@@ -8,6 +8,7 @@ use App\Services\Media\MediaRelocator;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Pages\BasePage;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables\Actions\DeleteAction as TableDeleteAction;
@@ -45,6 +46,19 @@ class AppServiceProvider extends ServiceProvider
         // Filament's built-in JS pickers (not browser-native)
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->native(false));
         DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->native(false));
+
+        // Demo role cannot upload new files (session 329). Disable every Filament
+        // FileUpload field with a clear message — the matching UX for the
+        // server-side gate (BlockDemoUploads on the Livewire temp-upload endpoint),
+        // so the demo sees a disabled field instead of a raw error. Scoped to the
+        // role, not demo mode, so an admin/super_admin maintaining the node still
+        // uploads. The Vue page-builder + inline-image surfaces are not Filament
+        // fields, so they fall back to the endpoint 403.
+        FileUpload::configureUsing(function (FileUpload $upload): void {
+            if (auth()->user()?->hasRole('demo')) {
+                $upload->disabled()->helperText('File uploads are disabled in the demo.');
+            }
+        });
 
         $singleDescription = fn (object $record): string =>
             'You are about to permanently delete this ' .
