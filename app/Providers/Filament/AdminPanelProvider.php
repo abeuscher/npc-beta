@@ -256,7 +256,12 @@ class AdminPanelProvider extends PanelProvider
                     $html = '';
                     foreach (app(WidgetAssetResolver::class)->allLibs() as $lib => $entry) {
                         if (! empty($entry['css'])) {
-                            $html .= '<link rel="stylesheet" href="' . e($entry['css']) . '" data-widget-lib="' . e($lib) . '">';
+                            // Vendor CSS into `@layer reset` (sessions 332/333) so widget
+                            // styles (`@layer widgets`) win by layer order — matching the
+                            // public bundle. A plain unlayered <link> beats every layer,
+                            // which made the editor render Swiper's default pager instead
+                            // of the designed one (an editor↔public parity break).
+                            $html .= '<style data-widget-lib="' . e($lib) . '">@import url("' . e($entry['css']) . '") layer(reset);</style>';
                         }
                         if (! empty($entry['js'])) {
                             $html .= '<script src="' . e($entry['js']) . '" data-widget-lib="' . e($lib) . '"></script>';

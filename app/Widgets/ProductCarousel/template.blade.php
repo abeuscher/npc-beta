@@ -12,6 +12,7 @@
         x-data="{
             swiper: null,
             init() {
+                if (!window.Swiper || !window.SwiperModules) return;
                 const modules = [window.SwiperModules.EffectCoverflow];
                 @if($showNavigation) modules.push(window.SwiperModules.Navigation); @endif
                 @if($showPagination) modules.push(window.SwiperModules.Pagination); @endif

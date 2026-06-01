@@ -9,7 +9,7 @@ window.NPWidgets.blogListing = function () {
         init() {
             this.cfg = JSON.parse(this.$refs.listingData.textContent);
             const swiperEl = this.$refs.swiperEl;
-            if (!swiperEl || !window.Swiper) return;
+            if (!swiperEl || !window.Swiper || !window.SwiperModules) return;
 
             this.swiper = new window.Swiper(swiperEl, this.buildOpts());
         },
@@ -35,8 +35,13 @@ window.NPWidgets.blogListing = function () {
         },
 
         rebuildSlides() {
-            const indices = this.getFilteredIndices(this.search, this.cfg.sortDefault);
             const swiperEl = this.$refs.swiperEl;
+            // Guard the Swiper globals: this runs from an x-effect on init, which
+            // can fire before the Swiper library has loaded (e.g. the page-builder
+            // preview). buildOpts() reads window.SwiperModules unguarded, so bail
+            // until the lib is present — reinitAlpine re-runs init once it loads.
+            if (!swiperEl || !window.Swiper || !window.SwiperModules) return;
+            const indices = this.getFilteredIndices(this.search, this.cfg.sortDefault);
             if (this.swiper) this.swiper.destroy(true, true);
 
             const wrapper = swiperEl.querySelector('.swiper-wrapper');

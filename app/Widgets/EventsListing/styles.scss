@@ -75,6 +75,11 @@
     .content-card {
         display: flex;
         flex-direction: column;
+        // Let the grid track shrink below the card's intrinsic content width so
+        // `grid-template-columns: repeat(N, 1fr)` renders N even tracks. Without
+        // this, `min-width: auto` lets a card with longer content claim more than
+        // its 1fr share and the "equal" columns distort at narrow widths.
+        min-width: 0;
 
         img {
             width: 100%;

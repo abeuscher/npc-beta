@@ -5,6 +5,7 @@ use App\Models\PageWidget;
 use App\Models\User;
 use App\Models\WidgetType;
 use App\Services\AssetBuildService;
+use App\Services\WidgetAssetResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -118,6 +119,64 @@ it('manifest includes libs key after a successful build', function () {
         expect($manifest['libs'])->toHaveKeys(['swiper', 'chart.js']);
     } finally {
         File::deleteDirectory($tmp);
+    }
+});
+
+// ── Phase 3: editor↔public vendor-CSS layer parity (session 333) ─────────────
+//
+// The page-builder canvas renders public widget HTML inside the Filament admin
+// document, so widget styles (@layer widgets) and the vendor lib CSS share one
+// cascade. On the public site `public.scss` compiles the vendor CSS into
+// `@layer reset`, so widget overrides win by layer order (session 332). The
+// admin head emits the same vendor CSS for the editor — and if it ships as a
+// bare <link>, it is UNLAYERED and beats every layer, so the editor rendered
+// Swiper's default pager instead of the widget's designed one (a WYSIWYG break
+// found at session 333). This guard locks the fix: the admin head must emit
+// vendor CSS into `@layer reset` (via `@import … layer(reset)`), never as an
+// unlayered stylesheet link.
+//
+// This is the standing parity guard for the layering bug. A Playwright
+// editor-vs-public behaviour/computed-style harness is NOT viable on the
+// isolated e2e stack: that stack deliberately does not run the widget build
+// pipeline (no build server in CI — see tests/e2e/page-builder/
+// full-width-matrix.spec.ts), so the swiper lib + widget CSS bundle the bug
+// depends on are never produced there. Asserting the emission contract at the
+// render layer is build-pipeline-independent and catches the exact regression.
+
+it('admin head emits vendor lib CSS into @layer reset, never as an unlayered <link>', function () {
+    // Bind a resolver with a fixture manifest declaring a swiper lib + CSS, so
+    // this runs even when the build pipeline has produced no real manifest
+    // (CI does not run build:public before the test suite).
+    $manifestPath = sys_get_temp_dir() . '/np-s333-manifest-' . uniqid('', true) . '.json';
+    File::put($manifestPath, json_encode([
+        'css'  => 'public-widgets-test.css',
+        'js'   => 'public-widgets-test.js',
+        'libs' => [
+            'swiper'   => ['css' => '/build/libs/swiper.css', 'js' => '/build/libs/swiper.js'],
+            'chart.js' => ['js' => '/build/libs/chartjs.js'],
+        ],
+    ]));
+    app()->instance(WidgetAssetResolver::class, new WidgetAssetResolver($manifestPath));
+
+    try {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+        $this->actingAs($admin);
+
+        $html = $this->get('/admin')->assertOk()->getContent();
+
+        // The swiper CSS is emitted, layered into @layer reset.
+        expect($html)
+            ->toContain('<style data-widget-lib="swiper">')
+            ->toContain('@import url("/build/libs/swiper.css") layer(reset)')
+            // …and never as the unlayered <link> that caused the parity break.
+            ->not->toContain('<link rel="stylesheet" href="/build/libs/swiper.css"');
+
+        // The JS lib still ships as a plain synchronous <script> (unchanged;
+        // only CSS needs layering).
+        expect($html)->toContain('<script src="/build/libs/swiper.js" data-widget-lib="swiper">');
+    } finally {
+        File::delete($manifestPath);
     }
 });
 

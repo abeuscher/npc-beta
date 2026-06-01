@@ -20,20 +20,25 @@ export async function loadLibs(libs: string[]): Promise<void> {
     const entry = manifest[lib]
     if (!entry) continue
 
-    if (entry.css && !document.querySelector(`link[data-widget-lib='${lib}']`)) {
+    if (entry.css && !document.querySelector(`style[data-widget-lib='${lib}']`)) {
       promises.push(
-        new Promise<void>((resolve) => {
-          const link = document.createElement('link')
-          link.rel = 'stylesheet'
-          link.href = entry.css!
-          link.dataset.widgetLib = lib
-          link.onload = () => resolve()
-          link.onerror = () => {
+        (async () => {
+          // Mirror the public bundle: vendor CSS lives in `@layer reset` so widget
+          // styles (`@layer widgets`) win by layer order, not specificity (session
+          // 332). Injected as a plain <link> the vendor CSS would be unlayered and
+          // beat every layer — which made the editor render Swiper's default pager
+          // instead of the designed one. Fetch + wrap so it lands in the right layer.
+          try {
+            const res = await fetch(entry.css!)
+            const css = await res.text()
+            const style = document.createElement('style')
+            style.dataset.widgetLib = lib
+            style.textContent = `@layer reset {\n${css}\n}`
+            document.head.appendChild(style)
+          } catch {
             console.warn('Failed to load widget lib CSS:', lib)
-            resolve()
           }
-          document.head.appendChild(link)
-        })
+        })()
       )
     }
 

@@ -34,6 +34,7 @@
             x-data="{
                 swiper: null,
                 init() {
+                    if (!window.Swiper || !window.SwiperModules) return;
                     this.swiper = new window.Swiper(this.$refs.container, {
                         modules: [window.SwiperModules.Autoplay],
                         slidesPerView: {{ $logosPerRow }},
@@ -75,6 +76,7 @@
             x-data="{
                 swiper: null,
                 init() {
+                    if (!window.Swiper || !window.SwiperModules) return;
                     this.swiper = new window.Swiper(this.$refs.container, {
                         modules: [window.SwiperModules.Autoplay, window.SwiperModules.FreeMode],
                         slidesPerView: {{ $logosPerRow }},
