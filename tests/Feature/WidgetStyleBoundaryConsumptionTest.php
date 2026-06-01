@@ -100,21 +100,14 @@ function widgetScssViewportMediaHits(): array
 // session 330; no widget may reintroduce a host spacing Sass var.
 const WIDGET_SCSS_GUTTER_BASELINE = [];
 
-// Viewport @media: the column-capable widgets whose @media → @container
-// conversion changes when collapse fires (deferred to the mobile-appearance
-// design pass). Migrating one means deleting its line(s) here in the same
-// reviewed pass. (EventMiniCalendar's `display:none` viewport rule was removed
-// at session 330 — owner call, it now stacks on collapse instead of hiding.)
-const WIDGET_SCSS_VIEWPORT_MEDIA_BASELINE = [
-    'app/Widgets/BoardMembers/styles.scss:127',     // deferred: column-capable grid collapse
-    'app/Widgets/BoardMembers/styles.scss:138',     // deferred: column-capable grid collapse
-    'app/Widgets/EventsListing/styles.scss:147',    // deferred: column-capable featured-grid collapse
-    'app/Widgets/LogoGarden/styles.scss:42',        // deferred: column-capable cell wrap
-    'app/Widgets/LogoGarden/styles.scss:46',        // deferred: column-capable cell wrap
-    'app/Widgets/LogoGarden/styles.scss:84',        // deferred: column-capable flip-container wrap
-    'app/Widgets/LogoGarden/styles.scss:88',        // deferred: column-capable flip-container wrap
-    'app/Widgets/MapEmbed/styles.scss:46',          // deferred: column-capable heading shrink
-];
+// Viewport @media: ZERO. Session 331 migrated the last of the column-capable
+// widgets (MapEmbed — heading field removed entirely; BoardMembers, LogoGarden,
+// EventsListing — @media → @container np-widget) to respond to their own width.
+// No widget interior may reintroduce a viewport @media; any new one fails.
+// (EventMiniCalendar's `display:none` viewport rule was removed at session 330 —
+// owner call, it now stacks on collapse instead of hiding. Nav's runtime-
+// breakpoint @media lives in template.blade.php, outside this scss-only corpus.)
+const WIDGET_SCSS_VIEWPORT_MEDIA_BASELINE = [];
 
 it('widget SCSS carries no host spacing Sass var ($gutter)', function () {
     $current  = widgetScssGutterHits();

@@ -1,100 +1,113 @@
 .widget-logo-garden {
     --logo-columns: 5;
+    --logo-gap: 1rem;
     --logo-container-bg: var(--np-color-bg);
     --logo-max-height: 150px;
 
-    // Static + flipper: flexbox with centered last row
+    // ── Layout ───────────────────────────────────────────────────────────────
+    // Static + flipper wrap their cells with flexbox and centre each row, so a
+    // partial last row sits centred rather than flushed left (logos must never
+    // bunch to one side). `gap` is the single spacing source; each cell takes a
+    // 1/N share of the row with that same --logo-gap subtracted once — no magic
+    // numbers, no second place that encodes spacing. The responsive collapse
+    // only changes the column count. (Carousel / smooth are Swiper-driven and
+    // opt out of this layout.)
     &--static,
     &--flipper {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 1rem;
+        gap: var(--logo-gap);
     }
 
-    // Carousel overrides
     &--carousel {
         position: relative;
 
         .swiper {
             overflow: hidden;
         }
-
-        // Swiper manages slide widths — don't apply flex width to cells
-        .logo-garden__cell {
-            width: auto;
-        }
     }
 }
 
-// Shared cell styles
+.widget-logo-garden--static .logo-garden__cell,
+.widget-logo-garden--flipper .logo-garden__flip-container {
+    width: calc((100% - (var(--logo-columns) - 1) * var(--logo-gap)) / var(--logo-columns));
+
+    @container np-widget (max-width: #{$bp-md}) {
+        width: calc((100% - 2 * var(--logo-gap)) / 3);
+    }
+
+    @container np-widget (max-width: #{$bp-sm}) {
+        width: calc((100% - 1 * var(--logo-gap)) / 2);
+    }
+}
+
+// ── Cell ─────────────────────────────────────────────────────────────────────
+// One logo slot: a background swatch with padding holding the logo's bounding
+// box and an optional name. It does not size the logo; that is the bounding
+// box's job.
 .logo-garden__cell {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--logo-container-bg);
+    gap: 0.5rem;
+    box-sizing: border-box;
+    min-width: 0;
     padding: 1rem;
-    min-height: calc(var(--logo-max-height) + 2rem);
-    // Width calculated from logos_per_row, accounting for gap
-    width: calc((100% - (var(--logo-columns) - 1) * 1rem) / var(--logo-columns));
+    background: var(--logo-container-bg);
+}
 
-    @media (max-width: $bp-md) {
-        width: calc((100% - 2rem) / 3);
-    }
+// ── Bounding box ─────────────────────────────────────────────────────────────
+// The container that holds one image: full cell width, a fixed height cap. The
+// image fits inside it preserving its own aspect ratio, centred, never
+// overflowing and never distorted — a 30×120 mark and a 600×100 wordmark both
+// display faithfully. The image carries no padding and no width math; the box
+// bounds it and the image just fits.
+.logo-garden__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    height: var(--logo-max-height);
+}
 
-    @media (max-width: $bp-sm) {
-        width: calc((100% - 1rem) / 2);
-    }
+// <x-picture> emits the class on the <img> (plain, or inside a <picture>); make
+// the <picture> transparent so the image is the flex child either way.
+.logo-garden__media picture {
+    display: contents;
 }
 
 .logo-garden__img {
     display: block;
-    max-height: var(--logo-max-height);
-    max-width: var(--logo-max-height);
+    max-width: 100%;
+    max-height: 100%;
     width: auto;
     height: auto;
-    object-fit: contain;
-
-    // Also target the img inside <picture>
-    img {
-        max-height: var(--logo-max-height);
-        max-width: var(--logo-max-height);
-        width: auto;
-        height: auto;
-        object-fit: contain;
-    }
 }
 
 .logo-garden__name {
     display: block;
-    margin-top: 0.5rem;
     font-size: 0.75rem;
     text-align: center;
     color: var(--np-color-text);
 }
 
-// Flipper 3D styles
+// ── Flipper 3D ───────────────────────────────────────────────────────────────
+// A flex item like the static cell; the faces are absolutely stacked and each
+// holds the same bounding box.
 .logo-garden__flip-container {
     perspective: 600px;
-    min-height: calc(var(--logo-max-height) + 2rem);
-    // Same width calculation as cells
-    width: calc((100% - (var(--logo-columns) - 1) * 1rem) / var(--logo-columns));
-
-    @media (max-width: $bp-md) {
-        width: calc((100% - 2rem) / 3);
-    }
-
-    @media (max-width: $bp-sm) {
-        width: calc((100% - 1rem) / 2);
-    }
+    box-sizing: border-box;
+    min-width: 0;
+    height: calc(var(--logo-max-height) + 2rem);
 }
 
 .logo-garden__flipper {
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: inherit;
     transition: transform 0.6s ease-in-out;
     transform-style: preserve-3d;
 
@@ -110,8 +123,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--logo-container-bg);
+    gap: 0.5rem;
+    box-sizing: border-box;
     padding: 1rem;
+    background: var(--logo-container-bg);
     backface-visibility: hidden;
 }
 

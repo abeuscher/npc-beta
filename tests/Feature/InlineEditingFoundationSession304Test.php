@@ -34,14 +34,15 @@ it('fails closed: inlineEditable() defaults to false on the base definition', fu
     // surface because the data-driven body — chart canvas, Swiper slides —
     // initialises asynchronously and the heading was the only inline-
     // editable node on each, so dropping it dropped them from the gate
-    // too). Authors use a sibling TextBlock for titles. Roster: 10
+    // too). Authors use a sibling TextBlock for titles. Roster: 9
     // (event_calendar retired at session 325 and replaced by
     // event_mini_calendar, whose rich-text heading is inline-editable;
-    // three_buckets deleted at session 330).
+    // three_buckets deleted at session 330; map_embed heading removed at
+    // session 331 — same demotion as BarChart / ProductCarousel).
     foreach ([
         'text_block', 'hero', 'pricing_chart',
         'blog_listing', 'board_members', 'donation_form',
-        'events_listing', 'map_embed', 'social_sharing',
+        'events_listing', 'social_sharing',
         'event_mini_calendar',
     ] as $h) {
         expect($reg->find($h)->inlineEditable())->toBeTrue("$h should be inline-editable");
@@ -49,12 +50,12 @@ it('fails closed: inlineEditable() defaults to false on the base definition', fu
 
     // Excluded by design — Image (only text fields are alt_text/max_width,
     // both Tier-B), Nav (branding_text is Tier-B; parent/child_template are
-    // data-driven {{item.*}}), and the session-308 demotions BarChart /
-    // ProductCarousel (heading removed; no other Tier-A surfaces). The
-    // widget-level gate keeps the inline editor from attaching to anything
-    // in these widgets regardless of any template annotation that might be
-    // added.
-    foreach (['image', 'nav', 'bar_chart', 'product_carousel'] as $h) {
+    // data-driven {{item.*}}), the session-308 demotions BarChart /
+    // ProductCarousel, and the session-331 demotion MapEmbed (heading
+    // removed; no other Tier-A surfaces). The widget-level gate keeps the
+    // inline editor from attaching to anything in these widgets regardless
+    // of any template annotation that might be added.
+    foreach (['image', 'nav', 'bar_chart', 'product_carousel', 'map_embed'] as $h) {
         $def = $reg->find($h);
         if ($def === null) {
             continue;

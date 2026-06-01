@@ -88,8 +88,7 @@ it('seeder creates map_embed widget with correct config schema', function () {
         ->and($wt->collections)->toBe([]);
 
     $keys = collect($wt->config_schema)->pluck('key')->filter()->values()->all();
-    expect($keys)->toContain('heading')
-        ->toContain('map_input')
+    expect($keys)->toContain('map_input')
         ->toContain('aspect_ratio')
         ->toContain('min_height')
         ->toContain('max_height');
@@ -111,7 +110,6 @@ it('map embed blade renders iframe when valid URL provided', function () {
     $pw = $page->widgets()->create([
         'widget_type_id' => $wt->id,
         'config'         => [
-            'heading'      => 'Our Location',
             'map_input'    => 'https://www.google.com/maps/embed/v1/place?q=Central+Park',
             'aspect_ratio' => '16/9',
             'min_height'   => 300,
@@ -123,7 +121,6 @@ it('map embed blade renders iframe when valid URL provided', function () {
     $result = WidgetRenderer::render($pw);
 
     expect($result['html'])
-        ->toContain('Our Location')
         ->toContain('widget-map-embed')
         ->toContain('map-embed__iframe')
         ->toContain('google.com/maps/embed')

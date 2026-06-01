@@ -84,9 +84,12 @@
 // element a containing block for abs-positioned descendants and a new stacking
 // context. Scoping to the handles whose SCSS actually declares interior
 // queries keeps that blast radius off widgets that don't need it. Add a handle
-// here when its SCSS adopts @container. — Session 330.
+// here when its SCSS adopts @container. — Sessions 330, 331.
 .widget--product_carousel,
-.widget--pricing_chart {
+.widget--pricing_chart,
+.widget--board_members,
+.widget--logo_garden,
+.widget--events_listing {
     container-type: inline-size;
     container-name: np-widget;
 }

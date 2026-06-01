@@ -2,11 +2,6 @@
     padding: 1rem 0;
 }
 
-.map-embed__heading {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-}
-
 .map-embed__container {
     position: relative;
     overflow: hidden;
@@ -41,10 +36,4 @@
     border-radius: 999px;
     pointer-events: none;
     user-select: none;
-}
-
-@media (max-width: $bp-sm) {
-    .map-embed__heading {
-        font-size: 1.25rem;
-    }
 }

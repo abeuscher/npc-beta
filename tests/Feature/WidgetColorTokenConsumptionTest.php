@@ -76,7 +76,7 @@ function widgetScssColorHits(): array
 //     fill. There is no `success-contrast` token; white is the deliberate
 //     legible-on-dark-success accent (confirmed at survey, judgment #3).
 //
-//   MapEmbed :39 / SocialSharing :62 — `color: #fff` on a black `rgba(...)`
+//   MapEmbed :34 / SocialSharing :62 — `color: #fff` on a black `rgba(...)`
 //     scrim overlay. Scrim-contrast white is theme-independent by design;
 //     the scrim itself is a non-colour rgba (out of contract). Deliberate
 //     accent (judgment #4).
@@ -85,7 +85,7 @@ function widgetScssColorHits(): array
 // five means deleting it here in the same reviewed pass.
 const WIDGET_SCSS_COLOR_BASELINE = [
     'app/Widgets/EventsListing/styles.scss:122',  // #fff on --np-color-success fill (judgment #3)
-    'app/Widgets/MapEmbed/styles.scss:39',        // #fff on rgba scrim (judgment #4)
+    'app/Widgets/MapEmbed/styles.scss:34',        // #fff on rgba scrim (judgment #4)
     'app/Widgets/ProductCarousel/styles.scss:25', // #000000 gradient stop (scope-fenced)
     'app/Widgets/ProductCarousel/styles.scss:30', // #000000 gradient stop (scope-fenced)
     'app/Widgets/SocialSharing/styles.scss:62',   // #fff on rgba scrim (judgment #4)

@@ -123,8 +123,10 @@
 }
 
 // ── Responsive ──────────────────────────────────────────────────────────────
+// Responds to the widget's own width (the host `np-widget` container), not the
+// viewport — see resources/scss/_layout.scss. — Session 331.
 
-@media (max-width: $bp-md) {
+@container np-widget (max-width: #{$bp-md}) {
     // Override all column counts to 2 at tablet
     [class*="board-members--cols-"] .board-member {
         width: calc((100% - 1.5rem) / 2);
@@ -135,7 +137,7 @@
     }
 }
 
-@media (max-width: $bp-sm) {
+@container np-widget (max-width: #{$bp-sm}) {
     [class*="board-members--cols-"] .board-member {
         width: 100%;
     }

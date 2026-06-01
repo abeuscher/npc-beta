@@ -1,5 +1,4 @@
 @php
-    $heading     = $config['heading'] ?? '';
     $mapInput    = $config['map_input'] ?? '';
     $aspectRatio = $config['aspect_ratio'] ?? '16/9';
     $minHeight   = ($config['min_height'] ?? 300) . 'px';
@@ -10,8 +9,6 @@
 
 @if ($embedUrl)
     <div class="widget-map-embed">
-        @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => 'map-embed__heading', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
-
         <div
             class="map-embed__container"
             style="aspect-ratio: {{ $aspectRatio }}; min-height: {{ $minHeight }}"
@@ -22,7 +19,7 @@
             <iframe
                 src="{{ $embedUrl }}"
                 class="map-embed__iframe"
-                title="{{ $heading !== '' ? $heading : 'Embedded map' }}"
+                title="Embedded map"
                 :style="active ? '' : 'pointer-events: none'"
                 allowfullscreen
                 loading="lazy"

@@ -28,7 +28,12 @@ class MapEmbedDefinition extends WidgetDefinition
 
     public function inlineEditable(): bool
     {
-        return true;
+        // Session 331: heading removed in favour of an authored TextBlock
+        // sibling (may return later as a rich-text field). The heading was
+        // MapEmbed's only inline-editable surface — map_input is the Inspector
+        // embed-code field and the map itself is an iframe — so the widget is
+        // no longer inline-eligible; the eligibility roster drops 10 → 9.
+        return false;
     }
 
     public function assets(): array
@@ -40,7 +45,6 @@ class MapEmbedDefinition extends WidgetDefinition
     {
         return [
             ['type' => 'notice', 'label' => 'Privacy', 'content' => 'Google may use embedded maps to collect visitor data. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google\'s Privacy Policy</a>.', 'variant' => 'warning'],
-            ['key' => 'heading',      'type' => 'text',     'label' => 'Heading', 'group' => 'content', 'subtype' => 'title'],
             ['key' => 'map_input',    'type' => 'textarea',  'label' => 'Google Maps link or embed code', 'group' => 'content'],
             ['key' => 'aspect_ratio', 'type' => 'select',   'label' => 'Aspect Ratio', 'default' => '16/9', 'options' => ['16/9' => '16:9', '4/3' => '4:3', '1/1' => '1:1', '21/9' => '21:9'], 'group' => 'appearance'],
             ['key' => 'min_height',   'type' => 'number',   'label' => 'Minimum height (px)', 'default' => 300, 'advanced' => true, 'group' => 'appearance'],
@@ -51,7 +55,6 @@ class MapEmbedDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [
-            'heading'      => '',
             'map_input'    => '',
             'aspect_ratio' => '16/9',
             'min_height'   => 300,

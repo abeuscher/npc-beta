@@ -57,11 +57,13 @@
                     @foreach ($resolvedLogos as $logo)
                         <div class="swiper-slide">
                             <div class="logo-garden__cell">
-                                <x-picture
-                                    :media="$logo['media']"
-                                    alt="{{ e($logo['name']) }}"
-                                    class="logo-garden__img"
-                                />
+                                <div class="logo-garden__media">
+                                    <x-picture
+                                        :media="$logo['media']"
+                                        alt="{{ e($logo['name']) }}"
+                                        class="logo-garden__img"
+                                    />
+                                </div>
                                 @if ($showName && $logo['name'])
                                     <span class="logo-garden__name">{{ $logo['name'] }}</span>
                                 @endif
@@ -103,11 +105,13 @@
                     @foreach ($resolvedLogos as $logo)
                         <div class="swiper-slide">
                             <div class="logo-garden__cell">
-                                <x-picture
-                                    :media="$logo['media']"
-                                    alt="{{ e($logo['name']) }}"
-                                    class="logo-garden__img"
-                                />
+                                <div class="logo-garden__media">
+                                    <x-picture
+                                        :media="$logo['media']"
+                                        alt="{{ e($logo['name']) }}"
+                                        class="logo-garden__img"
+                                    />
+                                </div>
                                 @if ($showName && $logo['name'])
                                     <span class="logo-garden__name">{{ $logo['name'] }}</span>
                                 @endif
@@ -122,7 +126,7 @@
         {{-- Flipper mode — CSS 3D flip with Alpine.js --}}
         <div
             class="widget-logo-garden widget-logo-garden--flipper"
-            style="--logo-columns: {{ $logosPerRow }}; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-columns: {{ $logosPerRow }}; --logo-gap: {{ (int) ($config['gap'] ?? 16) }}px; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             @foreach ($resolvedLogos as $i => $logo)
                 @php
@@ -137,21 +141,25 @@
                 >
                     <div class="logo-garden__flipper" :class="{ 'is-flipped': flipped }">
                         <div class="logo-garden__flip-face logo-garden__flip-front">
-                            <x-picture
-                                :media="$logo['media']"
-                                alt="{{ e($logo['name']) }}"
-                                class="logo-garden__img"
-                            />
+                            <div class="logo-garden__media">
+                                <x-picture
+                                    :media="$logo['media']"
+                                    alt="{{ e($logo['name']) }}"
+                                    class="logo-garden__img"
+                                />
+                            </div>
                             @if ($showName && $logo['name'])
                                 <span class="logo-garden__name">{{ $logo['name'] }}</span>
                             @endif
                         </div>
                         <div class="logo-garden__flip-face logo-garden__flip-back">
-                            <x-picture
-                                :media="$nextLogo['media']"
-                                alt="{{ e($nextLogo['name']) }}"
-                                class="logo-garden__img"
-                            />
+                            <div class="logo-garden__media">
+                                <x-picture
+                                    :media="$nextLogo['media']"
+                                    alt="{{ e($nextLogo['name']) }}"
+                                    class="logo-garden__img"
+                                />
+                            </div>
                             @if ($showName && $nextLogo['name'])
                                 <span class="logo-garden__name">{{ $nextLogo['name'] }}</span>
                             @endif
@@ -165,16 +173,18 @@
         {{-- Static grid mode --}}
         <div
             class="widget-logo-garden widget-logo-garden--static"
-            style="--logo-columns: {{ $logosPerRow }}; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
+            style="--logo-columns: {{ $logosPerRow }}; --logo-gap: {{ (int) ($config['gap'] ?? 16) }}px; --logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
             @foreach ($resolvedLogos as $logo)
                 <div class="logo-garden__cell">
-                    <x-picture
-                        :media="$logo['media']"
-                        alt="{{ e($logo['name']) }}"
-                        class="logo-garden__img"
-                        title="{{ e($logo['name']) }}"
-                    />
+                    <div class="logo-garden__media">
+                        <x-picture
+                            :media="$logo['media']"
+                            alt="{{ e($logo['name']) }}"
+                            class="logo-garden__img"
+                            title="{{ e($logo['name']) }}"
+                        />
+                    </div>
                     @if ($showName && $logo['name'])
                         <span class="logo-garden__name">{{ $logo['name'] }}</span>
                     @endif

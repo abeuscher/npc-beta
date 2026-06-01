@@ -247,17 +247,6 @@ it('BoardMembers — heading parity (non-empty heading satisfies outer gate)', f
     expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
 });
 
-it('MapEmbed — heading parity', function () {
-    $page = Page::factory()->create(['slug' => 's307-me', 'status' => 'published']);
-    $pw = s307MakeWidget($page, 'map_embed', [
-        'heading'   => 'Find us',
-        'map_input' => 'https://www.google.com/maps/embed?pb=!1m18!parity-test',
-    ]);
-
-    ['builder' => $builder, 'public' => $public] = s307RenderPair($pw);
-    expect(s307NormaliseRender($builder))->toBe(s307NormaliseRender($public));
-});
-
 it('SocialSharing — heading parity (heading also seeds share-link text; documented dual-purpose coupling)', function () {
     $page = Page::factory()->create(['slug' => 's307-ss', 'status' => 'published']);
     $pw = s307MakeWidget($page, 'social_sharing', [
