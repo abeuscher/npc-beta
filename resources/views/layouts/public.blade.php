@@ -158,8 +158,11 @@
     @if ($navFamily)
         {{-- nav_family bucket has no per-element compiler path; emit a direct
              rule so the bucket actually affects rendered nav widgets without
-             requiring an SCSS rebuild. --}}
-        <style>.np-site nav, .np-site nav a { font-family: {!! $navFamily !!}; }</style>
+             requiring an SCSS rebuild. Chrome typography → the `host` layer
+             (session 332) so it shares the host theme's cascade position and
+             nothing host-side escapes unlayered. The `host` layer is already
+             declared by the public.scss bundle loaded above. --}}
+        <style>@layer host { .np-site nav, .np-site nav a { font-family: {!! $navFamily !!}; } }</style>
     @endif
 
     {{-- Widget CSS/JS bundle from build server manifest --}}

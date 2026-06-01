@@ -1,5 +1,8 @@
 @use "variables" as *;
 
+@layer host {
+
+
 // All public button CSS is wrapped in .np-site — the public style namespace
 // documented in _base.scss ("never add bare element selectors outside
 // .np-site"). Bare .btn selectors otherwise leak into the Filament admin,
@@ -216,3 +219,4 @@
 }
 
 } // .np-site
+}

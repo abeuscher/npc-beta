@@ -33,6 +33,7 @@ const DESIGN_GROUP_FILES = [
     'tests/Feature/DesignSystemButtonsTest.php',
     'tests/Feature/WidgetColorTokenConsumptionTest.php',
     'tests/Feature/WidgetStyleBoundaryConsumptionTest.php',
+    'tests/Feature/WidgetStyleLayerDisciplineTest.php',
     'tests/Feature/TemplateAppearanceResolverTest.php',
     'tests/Feature/GradientComposerTest.php',
     'tests/Feature/PageBlockRendererLayoutTest.php',
@@ -105,6 +106,6 @@ it('keeps the design group equal to the reviewed explicit list', function () {
 });
 
 it('lists exactly the reviewed number of design-group files', function () {
-    expect(DESIGN_GROUP_FILES)->toHaveCount(21);
+    expect(DESIGN_GROUP_FILES)->toHaveCount(22);
     expect(DESIGN_GROUP_FILES)->toBe(array_unique(DESIGN_GROUP_FILES));
 });

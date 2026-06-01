@@ -84,7 +84,7 @@ function widgetScssColorHits(): array
 // Everything else migrated to `var(--np-color-*)`. Migrating one of these
 // five means deleting it here in the same reviewed pass.
 const WIDGET_SCSS_COLOR_BASELINE = [
-    'app/Widgets/EventsListing/styles.scss:122',  // #fff on --np-color-success fill (judgment #3)
+    'app/Widgets/EventsListing/styles.scss:123',  // #fff on --np-color-success fill (judgment #3)
     'app/Widgets/MapEmbed/styles.scss:34',        // #fff on rgba scrim (judgment #4)
     'app/Widgets/ProductCarousel/styles.scss:25', // #000000 gradient stop (scope-fenced)
     'app/Widgets/ProductCarousel/styles.scss:30', // #000000 gradient stop (scope-fenced)

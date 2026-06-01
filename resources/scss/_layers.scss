@@ -1,0 +1,19 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Cascade layer order (session 332) — declared once, document-global.
+//
+//   reset   ← modern-normalize + swiper vendor CSS (lowest)
+//   host    ← every host partial + runtime typography/colour emit (the .np-site
+//             theme); each partial wraps its own body in `@layer host { }`
+//   widgets ← widget interior SCSS (highest, in the build-server bundle)
+//
+// Widget interiors win over host base by LAYER ORDER, not selector specificity.
+// Operator `custom_scss` (public.blade) is deliberately left UNLAYERED so it
+// beats every layer. The build-server widget bundle restates this same order
+// (AssetBuildService::collectSources) so the two stylesheets share one global
+// layer ordering. — Widget Styling Contract arc, session 332.
+//
+// This partial is @use'd FIRST in public.scss so its order statement is emitted
+// ahead of any `@layer host { }` block (module CSS emits in use-order); that is
+// what fixes the layer positions before the browser sees a layered rule.
+// ─────────────────────────────────────────────────────────────────────────────
+@layer reset, host, widgets;

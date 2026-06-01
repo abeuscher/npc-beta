@@ -176,12 +176,13 @@ button.emc-day--selected {
 }
 
 // ── Expandable event row ────────────────────────────────────────────────────
-// The global prose-list rule (.np-site ul:not(nav ul) li) forces a disc marker
-// on every li and out-specifies the list's `list-style: none`. These rows are
-// not prose — drop them out of list-item display so no marker box renders. The
-// caret is the only affordance we want.
+// These rows are not prose — no list marker. Since session 332 the host
+// typography rule (.np-site ul:not(nav ul) li, the `host` cascade layer) loses
+// to this widget-layer declaration by layer order, so the natural `list-style:
+// none` directly on the row now holds (it previously could not out-specify the
+// host rule, which forced the old `display: block` marker-box workaround).
 .emc-event {
-    display: block;
+    list-style: none;
 }
 
 .emc-event__toggle {

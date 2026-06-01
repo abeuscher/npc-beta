@@ -425,7 +425,14 @@ JS,
             '_custom.scss',
         ];
 
-        $combined = '';
+        // Cascade layer order (session 332) — declared FIRST so the bundle's
+        // own `@layer reset, host, widgets;` matches the Vite public.scss
+        // ordering (layers are document-global by name). Host partials already
+        // wrap their own bodies in `@layer host { }` (resources/scss/*), so the
+        // loop below carries layered content through unchanged; only the runtime
+        // emit (button overrides + typography + colour) is wrapped here. Widget
+        // SCSS lands in the `widgets` layer (see below). See _layers.scss.
+        $combined = "@layer reset, host, widgets;\n";
         foreach ($partialOrder as $partial) {
             $path = resource_path('scss/' . $partial);
             if (file_exists($path)) {
@@ -436,28 +443,34 @@ JS,
             }
         }
 
-        // Append button style overrides from Design System settings
+        // Append button style overrides from Design System settings — host
+        // theme CSS, so into the `host` layer.
         $buttonOverrides = $this->generateButtonOverrideCss();
         if ($buttonOverrides) {
-            $combined .= "// ── button-overrides (from DB) ──\n" . $buttonOverrides . "\n";
+            $combined .= "// ── button-overrides (from DB) ──\n@layer host {\n" . $buttonOverrides . "\n}\n";
         }
 
         // Append Design System typography (per-breakpoint sizes), scoped under
         // .np-site exactly like every other public partial (see _base.scss) so
-        // the bare element selectors cannot leak into the Filament admin.
+        // the bare element selectors cannot leak into the Filament admin. Into
+        // the `host` layer (low) so a widget's own heading/type rules win by
+        // layer order — this is what retires the 330 specificity workarounds.
         $typographyCss = TypographyCompiler::compileScoped(['.np-site']);
         if ($typographyCss) {
-            $combined .= "// ── typography (from DB) ──\n" . $typographyCss . "\n";
+            $combined .= "// ── typography (from DB) ──\n@layer host {\n" . $typographyCss . "\n}\n";
         }
 
         // Append the Theme colour tokens, scoped under .np-site exactly like
         // the typography block above (see _base.scss) — the canonical
         // --np-color-* contract delivered into the public bundle. Folds into
         // collectSources()/the source hash automatically, so the 296 drift
-        // guard covers the palette with no key-list change.
+        // guard covers the palette with no key-list change. Into the `host`
+        // layer; the --np-color-* custom properties cascade normally regardless
+        // (custom properties are unaffected by layers), so inheritance into
+        // widget interiors is preserved.
         $colorTokensCss = ColorTokenCompiler::compileScoped(['.np-site']);
         if ($colorTokensCss) {
-            $combined .= "// ── colour tokens (from DB) ──\n" . $colorTokensCss . "\n";
+            $combined .= "// ── colour tokens (from DB) ──\n@layer host {\n" . $colorTokensCss . "\n}\n";
         }
 
         if ($combined) {
@@ -505,9 +518,15 @@ JS,
                 if (file_exists($fullPath)) {
                     $content = file_get_contents($fullPath);
                     $content = preg_replace('/@use\s+"variables"\s+as\s+\*;\s*\n?/', '', $content);
+                    // Widget interiors live in the highest layer so they win
+                    // over host base by layer order, not selector specificity
+                    // (session 332). The order statement is restated per source
+                    // (idempotent) so the layer positions hold regardless of
+                    // concatenation order; $variablesContent stays outside the
+                    // layer block (Sass var defs emit no CSS). See _layers.scss.
                     $scss[] = [
                         'path' => 'widgets/' . $wt->handle . '/' . basename($scssPath),
-                        'content' => $variablesContent . $content,
+                        'content' => "@layer reset, host, widgets;\n" . $variablesContent . "@layer widgets {\n" . $content . "\n}\n",
                     ];
                 }
             }

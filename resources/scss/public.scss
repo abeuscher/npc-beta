@@ -1,16 +1,12 @@
-// Reset
-@use "../../node_modules/modern-normalize/modern-normalize.css";
+@use "sass:meta";
 
-// Swiper carousel
-@use "../../node_modules/swiper/swiper";
-@use "../../node_modules/swiper/modules/navigation";
-@use "../../node_modules/swiper/modules/pagination";
-@use "../../node_modules/swiper/modules/effect-fade";
+// Layer order first (see _layers.scss) — module CSS emits in use-order, so the
+// `@layer reset, host, widgets;` statement lands ahead of every host block.
+@use "layers";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Custom SCSS partials — variables loaded per-file via @use
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Host partials — each wraps its own body in `@layer host { }` (session 332),
+// so both this Vite bundle and the build-server widget bundle (which reads the
+// same files) emit identically-layered host CSS.
 @use "base";
 @use "layout";
 @use "grid";
@@ -20,3 +16,16 @@
 @use "icons";
 @use "media";
 @use "custom";
+
+// Reset + vendor CSS into the lowest layer. `@use` cannot carry a layer, so the
+// CSS is pulled in via meta.load-css() inside the @layer reset block. Physical
+// position (after the host @use'd blocks) does not matter — layer order, set by
+// the statement above, places `reset` lowest regardless.
+@layer reset {
+    @include meta.load-css("../../node_modules/modern-normalize/modern-normalize.css");
+
+    @include meta.load-css("../../node_modules/swiper/swiper");
+    @include meta.load-css("../../node_modules/swiper/modules/navigation");
+    @include meta.load-css("../../node_modules/swiper/modules/pagination");
+    @include meta.load-css("../../node_modules/swiper/modules/effect-fade");
+}

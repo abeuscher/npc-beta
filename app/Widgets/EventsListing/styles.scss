@@ -35,11 +35,12 @@
 }
 
 .widget-events-listing__filter {
-    // Sit beside search rather than wrapping. The global form rule sets
-    // select { width: 100% }, which out-specifies a plain `width: auto`; an
-    // explicit flex-basis sets the main size directly and ignores it (the
-    // same trick the search box uses with `flex: 1 1 16rem`).
-    flex: 0 0 14rem;
+    // Sit beside search rather than wrapping, sized to its content. Since
+    // session 332 this widget-layer `width: auto` beats the global form rule
+    // (.np-site select { width: 100% }, the `host` cascade layer) by layer
+    // order — it previously could not out-specify it, which forced the old
+    // `flex: 0 0 14rem` flex-basis workaround.
+    width: auto;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--np-color-border);
     border-radius: 0.375rem;
@@ -252,11 +253,14 @@
     row-gap: 0;
 }
 
-// Drop the rows out of list-item display so the global prose-list rule
-// (.np-site ul:not(nav ul) li) can't force a disc marker — it out-specifies a
-// plain `list-style: none` on the <ul>. Mirrors the EventMiniCalendar fix.
+// No list marker on these rows. Since session 332 the host typography rule
+// (.np-site ul:not(nav ul) li, the `host` cascade layer) loses to this
+// widget-layer declaration by layer order, so the natural `list-style: none`
+// directly on the row now holds — it previously could not out-specify the host
+// rule, which forced the old `display: block` marker-box workaround. Mirrors
+// the EventMiniCalendar revert.
 .events-list__row {
-    display: block;
+    list-style: none;
 
     & + & {
         border-top: 1px solid var(--np-color-border);
