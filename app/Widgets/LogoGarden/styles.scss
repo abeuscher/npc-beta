@@ -32,14 +32,6 @@
 .widget-logo-garden--static .logo-garden__cell,
 .widget-logo-garden--flipper .logo-garden__flip-container {
     width: calc((100% - (var(--logo-columns) - 1) * var(--logo-gap)) / var(--logo-columns));
-
-    @container np-widget (max-width: #{$bp-md}) {
-        width: calc((100% - 2 * var(--logo-gap)) / 3);
-    }
-
-    @container np-widget (max-width: #{$bp-sm}) {
-        width: calc((100% - 1 * var(--logo-gap)) / 2);
-    }
 }
 
 // ── Cell ─────────────────────────────────────────────────────────────────────

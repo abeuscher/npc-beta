@@ -163,29 +163,3 @@
         margin-top: auto;
     }
 }
-
-// ── Mobile ─────────────────────────────────────────────────────────────────
-// Responds to the widget's own width (the host `np-widget` container), not the
-// viewport — see resources/scss/_layout.scss. — Session 330.
-
-@container np-widget (max-width: #{$bp-md}) {
-    .pricing-chart__columns {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-    }
-
-    .pricing-chart__column {
-        grid-template-rows: none;
-        grid-row: auto;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .pricing-chart__attribute-row--empty {
-        display: none;
-    }
-
-    .pricing-chart__column-ctas {
-        margin-top: 1.5rem;
-    }
-}

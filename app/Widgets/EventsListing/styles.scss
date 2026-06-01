@@ -144,13 +144,6 @@
     // (carousel included) — without this the search box sits flush against
     // the hero image.
     margin-bottom: 2rem;
-
-    // Stack the featured hero when the widget's own width narrows (its
-    // `np-widget` container), not the viewport — see resources/scss/_layout.scss.
-    // 48rem was the published $bp-md (768px) literal; normalised here. — Session 331.
-    @container np-widget (max-width: #{$bp-md}) {
-        grid-template-columns: 1fr;
-    }
 }
 
 .events-featured__media {

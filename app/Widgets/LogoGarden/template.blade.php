@@ -40,12 +40,7 @@
                         spaceBetween: {{ (int) ($config['gap'] ?? 16) }},
                         loop: true,
                         autoplay: { delay: {{ $carouselDuration }}, disableOnInteraction: false },
-                        allowTouchMove: false,
-                        breakpoints: {
-                            0: { slidesPerView: Math.min(2, {{ $logosPerRow }}) },
-                            576: { slidesPerView: Math.min(3, {{ $logosPerRow }}) },
-                            768: { slidesPerView: {{ $logosPerRow }} }
-                        }
+                        allowTouchMove: false
                     });
                 }
             }"
@@ -88,12 +83,7 @@
                         freeMode: true,
                         speed: {{ $carouselDuration }},
                         autoplay: { delay: 0, disableOnInteraction: false },
-                        allowTouchMove: false,
-                        breakpoints: {
-                            0: { slidesPerView: Math.min(2, {{ $logosPerRow }}) },
-                            576: { slidesPerView: Math.min(3, {{ $logosPerRow }}) },
-                            768: { slidesPerView: {{ $logosPerRow }} }
-                        }
+                        allowTouchMove: false
                     });
                 }
             }"

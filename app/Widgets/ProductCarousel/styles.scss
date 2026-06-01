@@ -131,11 +131,3 @@
         }
     }
 }
-
-// Responds to the widget's own width (the host `np-widget` container), not the
-// viewport — see resources/scss/_layout.scss. — Session 330.
-@container np-widget (max-width: #{$bp-sm}) {
-    .product-slide {
-        width: 260px;
-    }
-}

@@ -121,24 +121,3 @@
     font-size: 0.875rem;
     color: var(--np-color-brand);
 }
-
-// ── Responsive ──────────────────────────────────────────────────────────────
-// Responds to the widget's own width (the host `np-widget` container), not the
-// viewport — see resources/scss/_layout.scss. — Session 331.
-
-@container np-widget (max-width: #{$bp-md}) {
-    // Override all column counts to 2 at tablet
-    [class*="board-members--cols-"] .board-member {
-        width: calc((100% - 1.5rem) / 2);
-    }
-
-    .board-members--cols-1 .board-member {
-        width: 100%;
-    }
-}
-
-@container np-widget (max-width: #{$bp-sm}) {
-    [class*="board-members--cols-"] .board-member {
-        width: 100%;
-    }
-}

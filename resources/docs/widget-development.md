@@ -131,14 +131,8 @@ Conventions:
 - Use BEM for child elements: `.product-slide__image`, `.product-slide__name`.
 - **Colour:** read `var(--np-color-*)` tokens only — never hardcode a hex or reference a `$color-*` Sass variable (see `docs/theme-color-tokens.md`).
 - **Spacing & type:** the widget **owns its own values** (carry the literal, or a local `--my-widget-*` custom property as `PricingChart`'s `--pc-*` namespace does). Do **not** read host Sass internals like `$gutter` or host type vars — there is no published spacing/type token vocabulary, by design.
-- **Responsive — use `@container`, not `@media`.** A widget interior must respond to **its own width**, not the viewport: a widget can land full-width or in a narrow column, and viewport width is the wrong signal (it never collapses a squished column on a wide screen). Query the named host container:
-  ```scss
-  @container np-widget (max-width: #{$bp-md}) {
-      .my-widget__grid { grid-template-columns: 1fr; }
-  }
-  ```
-  The host establishes the `np-widget` containment context, but **per handle, not universally** — `container-type` carries a containing-block/stacking blast radius. When your SCSS adopts `@container`, add your wrapper handle to the `np-widget` rule in `resources/scss/_layout.scss`. `ProductCarousel` and `PricingChart` are the reference examples.
-- **Breakpoints** `$bp-sm … $bp-xxl` are fixed **build-time** Sass constants (from `_variables.scss`), not runtime/editable. Sass resolves them to literals before the browser sees them, so they work inside `@container` conditions via `#{$bp-md}` interpolation. Use them so widgets collapse at the same widths the host layout does.
+- **Responsive.** A widget renders its configured layout (column count, slides-per-view, etc.) at **every** width — there is no automatic width-based collapse. A widget placed in a narrow column reflects the operator's chosen count, and changing it is the operator's call. Do **not** add viewport `@media` rules, and do **not** add `@container` width-collapse: the `np-widget` containment context that briefly backed it was **removed in session 332** because it silently overrode operator count controls. A proper per-widget mobile model is future widget-system work; when it lands, this is the place to document the convention.
+- **Breakpoints** `$bp-sm … $bp-xxl` are fixed **build-time** Sass constants (from `_variables.scss`), not runtime/editable. They remain available for build-time logic, but are **not** currently used for widget width-collapse (see Responsive, above).
 - Do not use `@use` — the build server inlines `_variables.scss` at the top of the bundle.
 
 ### Inline CSS/JS
