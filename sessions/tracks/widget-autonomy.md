@@ -8,15 +8,31 @@ This is a **process experiment** as much as a feature track. Whether it works is
 
 ## Status snapshot
 
-**Last update:** 2026-05-31 (Widget Styling Contract arc: sessions 330 + 331 landed, run as normal single-agent cadence, not the multi-agent experiment).
+**Last update:** 2026-06-01 (Widget Styling Contract arc **concluded at session 332** — see Phase Retrospectives below).
 
-**State:** The multi-agent parallel-execution experiment (Stages 5d+/6/7, E9/E10) is still **Planning — not launched** (operational blockers below remain). Separately, the **Widget Styling Contract arc** (source spec `sessions/styles-rework-spec.md`) is running as **normal-cadence single-agent sessions** on this track: **330 ✅** made the widget styling boundary explicit (audit + `ThreeBuckets` deletion + `@container` migration for the two full-width widgets + a consumption-gate test + doc refresh); **331 ✅** finished the remaining column-capable widgets' `@container` migration (BoardMembers / EventsListing / LogoGarden — viewport-`@media` baseline now empty) and, by owner call, removed MapEmbed's inert heading field and rebuilt LogoGarden's layout (bounding-box container for faithful logo containment; flexbox-centered, single-source gap); **332** = `@layer` cascade isolation (prompt drafted — the arc's deferred highest-blast-radius piece, and its closing session). **333 = Mobile Nav** (hamburger + footer columns) follows the arc, heading the new **Mobile Public-Site Readiness** pre-Beta push (see `sessions/session-outlines.md` + `sessions/mobile-collapse-brief.md`). See sessions 330–332 prompts/logs.
+**State:** The multi-agent parallel-execution experiment (Stages 5d+/6/7, E9/E10) is still **Planning — not launched** (operational blockers below remain). Separately, the **Widget Styling Contract arc** (source spec `sessions/styles-rework-spec.md`), run as normal-cadence single-agent sessions on this track, **concluded at session 332** — the `@layer` cascade isolation was kept, the 330/331 `@container` migration was rolled back (it overrode operator count controls), and three editor↔public fidelity bugs it surfaced were scoped to **333 = Page Builder ↔ Public Widget Parity** (promoted ahead of the Mobile push; Mobile Nav → 334). Compressed history in **Phase Retrospectives** below; per-session detail in the 330–332 logs (`sessions/archived/`).
 
 **Destination repo for extracted widgets:** `https://github.com/abeuscher/npc-widgets` (currently blank).
 
 **Track owns:** all widget-touching work for the duration of the experiment — `app/Widgets/*`, the widget contract surface (`WidgetDefinition`, `WidgetRegistry`, `WidgetType`), the public widget asset bundle, and the page-builder Vue surfaces that consume widget definitions. Main track stops touching these surfaces while the experiment runs.
 
 **Track does not own:** Vue page-builder UI work that doesn't touch widget shape (E11 focus-scroll clamp stays on main). Fleet Manager surface — explicit tripwire; agents stop and surface if any FM contract file is touched.
+
+---
+
+## Phase Retrospectives
+
+### Widget Styling Contract arc (sessions 330–332)
+
+Source spec `sessions/styles-rework-spec.md`; run as normal single-agent cadence on this track (not the multi-agent experiment). **330** audited the widget styling boundary (five matrices — the leak surface was far smaller than the spec implied), deleted `ThreeBuckets` (the sole `$gutter` leak), migrated the two full-width widgets to `@container`, and added the consumption gate. **331** finished the column-capable `@container` migration and, by owner call, removed MapEmbed's inert heading and rebuilt LogoGarden for faithful logo containment. **332** landed `@layer` cascade isolation (host CSS in `reset / host / widgets` layers; widget interiors win by layer order, not specificity) **and then rolled the entire `@container` migration back** — live investigation showed it keyed widget collapse to mobile *viewport* breakpoints (768/576) applied to *container* width, so a column-placed widget rendered its phone layout on desktop and silently overrode the operator's configured count.
+
+**Key decisions / carry-forwards:**
+- `@layer` is the chosen cascade-isolation mechanism and **stands** (the one durable artifact of the arc).
+- The container-query responsive model was **rejected** in favor of *preserve user control*: a widget renders its configured count at every width; a cramped result in a narrow column is the operator's own undoable choice. Real per-widget mobile responsiveness is **future widget-system work**, not a host-CSS collapse.
+- The rollback surfaced three editor↔public fidelity bugs — an editor Swiper-load **race**, an uneven `1fr` grid (`.content-card` missing `min-width:0`), and a possible layout-column drop — **none introduced by 330/331**. Scoped to session **333 (Page Builder ↔ Public Widget Parity)**, promoted ahead of the Mobile Public-Site Readiness push (Mobile Nav → 334).
+- Process note: the 332 rollback was driven by **real-browser observation** (Playwright on the live site + the admin editor), after a code-only reading initially mis-diagnosed the cause — the standing lesson carried into the 333 prompt ("reproduce before you fix; observe, don't assert").
+
+Per-session detail lives in the 330–332 logs under `sessions/archived/`.
 
 ---
 
