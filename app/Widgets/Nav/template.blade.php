@@ -157,7 +157,6 @@
     class="widget-nav widget-nav--{{ $orientation }} widget-nav--drop-{{ $dropAnimation }} widget-nav--mobile-{{ $mobileAnimation }}"
     aria-label="{{ $navMenu->label ?? 'Navigation' }}"
     x-data="{
-        mobileOpen: false,
         activeDropdown: null,
         hoverTimeout: null,
         openDropdown(id) {
@@ -170,9 +169,8 @@
             }, 150);
         },
         closeAll() { this.activeDropdown = null; },
-        toggleMobile() { this.mobileOpen = !this.mobileOpen; },
     }"
-    @keydown.escape.window="closeAll(); mobileOpen = false"
+    @keydown.escape.window="closeAll()"
     style="--nav-justify: {{ $justifyContent }}; --nav-align: {{ $alignItems }}{{ !empty($navColorVars) ? '; ' . implode('; ', $navColorVars) : '' }}"
 >
     {{-- Branding slot --}}
@@ -192,16 +190,20 @@
         </div>
     @endif
 
-    {{-- Mobile hamburger --}}
-    <button
-        class="widget-nav__hamburger"
-        @click="toggleMobile()"
-        :aria-expanded="mobileOpen.toString()"
-        aria-controls="{{ $widgetId }}-mobile"
+    {{-- Mobile toggle — CSS-only: a visually-hidden checkbox holds the
+         open/closed state, the hamburger + close-X are <label>s for it, and the
+         menu reveal + body scroll-lock are driven by :checked in the stylesheet.
+         No JS. --}}
+    <input
+        type="checkbox"
+        id="{{ $widgetId }}-toggle"
+        class="widget-nav__toggle"
         aria-label="Toggle navigation menu"
+        aria-controls="{{ $widgetId }}-mobile"
     >
-        <span class="widget-nav__hamburger-bar" :class="mobileOpen && 'is-active'"></span>
-    </button>
+    <label for="{{ $widgetId }}-toggle" class="widget-nav__hamburger">
+        <span class="widget-nav__hamburger-bar" aria-hidden="true"></span>
+    </label>
 
     {{-- Desktop menu --}}
     <ul class="widget-nav__menu" role="menubar" id="{{ $widgetId }}-menu">
@@ -316,10 +318,9 @@
     <div
         class="widget-nav__mobile"
         id="{{ $widgetId }}-mobile"
-        x-show="mobileOpen"
-        x-cloak
         role="menu"
         aria-label="{{ $navMenu->label ?? 'Navigation' }}"
+        @if (!empty($navColorVars)) style="{{ implode('; ', $navColorVars) }}" @endif
     >
         <ul class="widget-nav__mobile-list">
             @foreach ($navItems as $index => $item)
@@ -330,59 +331,44 @@
                     $hasChildren = $item->children->isNotEmpty();
                     $mobileItemId = $widgetId . '-mob-' . $index;
                 @endphp
-                <li
-                    class="widget-nav__mobile-item"
-                    role="none"
+                <li class="widget-nav__mobile-item" role="none">
                     @if ($hasChildren)
-                        x-data="{ subOpen: false }"
+                        <input type="checkbox" id="{{ $mobileItemId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($item->label) }}">
                     @endif
-                >
                     <span role="menuitem" class="widget-nav__mobile-item-wrap">
                         {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass) !!}
                         @if ($hasChildren)
-                            <button
-                                class="widget-nav__mobile-toggle"
-                                @click="subOpen = !subOpen"
-                                :aria-expanded="subOpen.toString()"
-                                aria-label="Expand {{ e($item->label) }}"
-                            >
-                                <span class="widget-nav__mobile-chevron" :class="subOpen && 'is-open'"></span>
-                            </button>
+                            <label for="{{ $mobileItemId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
+                                <span class="widget-nav__mobile-chevron"></span>
+                            </label>
                         @endif
                     </span>
 
                     @if ($hasChildren)
-                        <ul class="widget-nav__mobile-sub" role="menu" x-show="subOpen" x-collapse>
+                        <ul class="widget-nav__mobile-sub" role="menu">
                             @foreach ($item->children as $childIndex => $child)
                                 @php
                                     $childHref = $resolveUrl($child);
                                     $childActive = $isActive($childHref);
                                     $childActiveClass = $childActive ? 'is-active' : '';
                                     $childHasChildren = $child->children->isNotEmpty();
+                                    $mobileChildId = $mobileItemId . '-' . $childIndex;
                                 @endphp
-                                <li
-                                    class="widget-nav__mobile-item widget-nav__mobile-item--child"
-                                    role="none"
+                                <li class="widget-nav__mobile-item widget-nav__mobile-item--child" role="none">
                                     @if ($childHasChildren)
-                                        x-data="{ subOpen2: false }"
+                                        <input type="checkbox" id="{{ $mobileChildId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($child->label) }}">
                                     @endif
-                                >
                                     <span role="menuitem" class="widget-nav__mobile-item-wrap">
                                         {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass) !!}
                                         @if ($childHasChildren)
-                                            <button
-                                                class="widget-nav__mobile-toggle"
-                                                @click="subOpen2 = !subOpen2"
-                                                :aria-expanded="subOpen2.toString()"
-                                                aria-label="Expand {{ e($child->label) }}"
-                                            >
-                                                <span class="widget-nav__mobile-chevron" :class="subOpen2 && 'is-open'"></span>
-                                            </button>
+                                            <label for="{{ $mobileChildId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
+                                                <span class="widget-nav__mobile-chevron"></span>
+                                            </label>
                                         @endif
                                     </span>
 
                                     @if ($childHasChildren)
-                                        <ul class="widget-nav__mobile-sub widget-nav__mobile-sub--l3" role="menu" x-show="subOpen2" x-collapse>
+                                        <ul class="widget-nav__mobile-sub widget-nav__mobile-sub--l3" role="menu">
                                             @foreach ($child->children as $grandchild)
                                                 @php
                                                     $gcHref = $resolveUrl($grandchild);

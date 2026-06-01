@@ -9,8 +9,11 @@
     align-items: var(--nav-align, center);
     justify-content: var(--nav-justify, flex-start);
     gap: 0;
-    position: relative;
     min-height: 5rem;
+    // Intentionally NOT a positioning context: the mobile drop-down is absolute
+    // and must anchor to the full-width header (.page-layout), not this nav. The
+    // desktop dropdowns anchor to .widget-nav__item, which has its own
+    // position: relative, so they are unaffected.
 }
 
 // ── Link colors ──────────────────────────────────────────────────────────────
@@ -198,6 +201,23 @@
     }
 }
 
+// ── Mobile toggle checkbox (CSS-only, no JS) ─────────────────────────────────
+// Visually hidden but kept focusable so keyboard users can operate the menu;
+// the focus ring is mirrored onto the hamburger <label>.
+.widget-nav__toggle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.widget-nav__toggle:focus-visible ~ .widget-nav__hamburger {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
 // ── Hamburger button ─────────────────────────────────────────────────────────
 
 .widget-nav__hamburger {
@@ -241,27 +261,51 @@
     top: 7px;
 }
 
-// Hamburger → X transition
-.widget-nav__hamburger-bar.is-active {
+// Hamburger → X transition, driven by the toggle checkbox.
+.widget-nav__toggle:checked ~ .widget-nav__hamburger .widget-nav__hamburger-bar {
     background-color: transparent;
 }
 
-.widget-nav__hamburger-bar.is-active::before {
+.widget-nav__toggle:checked ~ .widget-nav__hamburger .widget-nav__hamburger-bar::before {
     top: 0;
     transform: rotate(45deg);
 }
 
-.widget-nav__hamburger-bar.is-active::after {
+.widget-nav__toggle:checked ~ .widget-nav__hamburger .widget-nav__hamburger-bar::after {
     top: 0;
     transform: rotate(-45deg);
 }
 
 // ── Mobile menu ──────────────────────────────────────────────────────────────
 
+// Hidden by default; revealed purely by the toggle checkbox (no JS). The menu
+// is an absolutely-positioned drop-down anchored below the header, NOT a fixed
+// overlay: nothing is pulled out of the document, so there is no scroll-lock, no
+// forced scrollbar, and no hop. A menu taller than the screen simply extends the
+// page's own scroll — the nav scrolls with the page (the nav is never fixed or
+// sticky). The desktop hide (>breakpoint) is the template's inline
+// `display: none !important` rule.
+//
+// `.widget-nav` is intentionally NOT a positioning context (see its rule above:
+// no `position: relative`), so this drop anchors to the nearest containing
+// block — the full-width `.page-layout` (it owns the header's chrome and carries
+// `container-type: inline-size`). `top: 100%` drops it just below the header at
+// full width, instead of being trapped in the nav's narrow grid cell.
 .widget-nav__mobile {
     display: none;
-    width: 100%;
-    order: 10;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--np-color-bg);
+    color: var(--np-color-text, inherit);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+    padding: 0.5rem 1.5rem 1.5rem;
+}
+
+.widget-nav__toggle:checked ~ .widget-nav__mobile {
+    display: block;
 }
 
 .widget-nav__mobile-list {
@@ -296,15 +340,30 @@
     transition: transform 0.2s ease;
 }
 
-.widget-nav__mobile-chevron.is-open {
+// Per-item sub-menu expander — same CSS-only checkbox pattern as the top toggle.
+.widget-nav__mobile-subtoggle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.widget-nav__mobile-subtoggle:checked ~ .widget-nav__mobile-item-wrap .widget-nav__mobile-chevron {
     transform: rotate(-135deg);
 }
 
 .widget-nav__mobile-sub {
+    display: none;
     list-style: none;
     margin: 0;
     padding: 0;
     padding-left: 1rem;
+}
+
+.widget-nav__mobile-subtoggle:checked ~ .widget-nav__mobile-sub {
+    display: block;
 }
 
 .widget-nav__mobile-sub--l3 {
@@ -319,20 +378,6 @@
     font-size: 0.9em;
 }
 
-// ── Mobile animation variants ────────────────────────────────────────────────
-
-.widget-nav--mobile-slide .widget-nav__mobile {
-    overflow: hidden;
-}
-
-.widget-nav--mobile-fade .widget-nav__mobile {
-    transition: opacity 0.25s ease;
-}
-
-.widget-nav--mobile-fade .widget-nav__mobile[x-cloak] {
-    opacity: 0;
-}
-
 // Responsive breakpoint is handled via an inline <style> block in the widget
 // template, which generates media queries using the configured pixel value.
 // No hardcoded breakpoint here — the template emits the rules per instance.
@@ -342,8 +387,9 @@
 // Each top-level item becomes a heading column with its child links listed
 // beneath it — every link visible, no dropdowns and no JS. Intended for
 // "kitchen-sink" footers. Columns sit in a flex row and wrap on narrow widths;
-// the row's horizontal placement follows the same --nav-justify property the
-// horizontal layout uses (so left / center / right alignment still applies).
+// the row's horizontal placement follows the widget's alignment config via
+// --nav-justify (already mapped left/center/right → flex-start/center/flex-end
+// in the template), so choosing "left" left-aligns the footer cleanly.
 
 .widget-nav--columns {
     display: block;

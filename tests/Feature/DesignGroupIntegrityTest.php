@@ -42,6 +42,7 @@ const DESIGN_GROUP_FILES = [
     'tests/Feature/AppearanceImageUploadTest.php',
     'tests/Feature/AppearanceLayerRegressionTest.php',
     'tests/Feature/BuilderPublicRenderParityTest.php',
+    'tests/Feature/NavMobileCollapseTest.php',
 ];
 
 function discoverDesignTaggedFiles(): array
@@ -106,6 +107,6 @@ it('keeps the design group equal to the reviewed explicit list', function () {
 });
 
 it('lists exactly the reviewed number of design-group files', function () {
-    expect(DESIGN_GROUP_FILES)->toHaveCount(22);
+    expect(DESIGN_GROUP_FILES)->toHaveCount(23);
     expect(DESIGN_GROUP_FILES)->toBe(array_unique(DESIGN_GROUP_FILES));
 });
