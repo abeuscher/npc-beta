@@ -68,6 +68,7 @@ it('is idempotent across re-runs — exactly one of each widget on contact_overv
 
     $counts = $overview->pageWidgets()
         ->with('widgetType')
+        ->orderBy('sort_order')
         ->get()
         ->groupBy(fn (PageWidget $pw) => $pw->widgetType->handle)
         ->map(fn ($group) => $group->count())
