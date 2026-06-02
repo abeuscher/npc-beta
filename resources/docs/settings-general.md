@@ -37,6 +37,17 @@ The Routing section controls the URL prefix for blog posts, events, the member p
 
 **Warning:** changing any prefix rewrites all affected slugs automatically, but any external links or bookmarks pointing to the old URLs will immediately return 404. Redirect handling is not currently built.
 
+### What you can and cannot route
+
+These settings rename the **URL namespace** for each content type — the first path segment only. They do **not** let you choose which page or controller answers a given route.
+
+That distinction is deliberate, and it is a security boundary:
+
+- **The login and authentication flow is locked to fixed system controllers.** Sign-in, sign-up, password reset, and email verification are served by dedicated controllers (not by editable CMS pages), and their form-submission endpoints sit at fixed root paths (`/login`, `/logout`, …) that ignore the prefix entirely. You can rename the **System pages prefix** (e.g. `/system/login` → `/auth/login`), but you cannot repoint the login route at an arbitrary page. Allowing that would let the authentication surface be remapped onto operator- or attacker-editable content — exactly the kind of footgun we keep out of reach.
+- **The content namespaces are yours to set.** Blog, events, member portal, and donations prefixes only rename where content lives. Renaming a namespace is cheap and safe, so it's left fully editable.
+
+In short: the *prefixes* are configurable; the *binding of the auth flow to its controllers* is not.
+
 ## System Page Content
 
 These rich-text fields control the content displayed on system pages that cannot use the standard CMS page builder.

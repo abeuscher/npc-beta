@@ -37,11 +37,6 @@ class SystemPageSeeder extends Seeder
                 'bare_slug'     => 'forgot-password',
                 'widget_handle' => 'portal_forgot_password',
             ],
-            [
-                'title'         => 'My Account',
-                'bare_slug'     => 'account',
-                'widget_handle' => 'portal_account_dashboard',
-            ],
         ];
 
         foreach ($pages as $def) {
@@ -77,6 +72,16 @@ class SystemPageSeeder extends Seeder
                     'is_active'      => true,
                 ]);
             }
+        }
+
+        // ── Retire the legacy account dashboard page (session 337) ──────────
+        // The member home moved to the /members dashboard; /system/account is
+        // now a redirect alias (see routes/web.php). Drop the orphaned system
+        // page + its widget so it no longer duplicates the portal dashboard.
+        $accountSlug   = $prefix ? $prefix . '/account' : 'account';
+        $legacyAccount = Page::where('slug', $accountSlug)->where('type', 'system')->first();
+        if ($legacyAccount) {
+            $legacyAccount->forceDelete();
         }
 
         // ── Chrome system pages (header & footer) ───────────────────────────

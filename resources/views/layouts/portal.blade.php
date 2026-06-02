@@ -8,6 +8,20 @@
 
     @vite(['resources/scss/public.scss', 'resources/js/public.js'])
 
+    {{-- Widget CSS bundle from the build-server manifest — same delivery path as
+         layouts.public, so page-builder widgets placed on portal pages (e.g. the
+         dashboard BarChart) get their compiled CSS/JS here too. --}}
+    @php
+        $__widgetManifest = null;
+        $__manifestPath = public_path('build/widgets/manifest.json');
+        if (file_exists($__manifestPath)) {
+            $__widgetManifest = json_decode(file_get_contents($__manifestPath), true);
+        }
+    @endphp
+    @if ($__widgetManifest && ! empty($__widgetManifest['css']))
+        <link rel="stylesheet" href="/build/widgets/{{ $__widgetManifest['css'] }}">
+    @endif
+
     @if (!empty($inlineStyles))
         <style>{!! $inlineStyles !!}</style>
     @endif
@@ -40,7 +54,7 @@
                     </form>
                 </div>
             </div>
-            <nav class="portal-nav">
+            <nav class="portal-nav" data-tour="portal.nav">
                 <ul>
                     @foreach ($portalNav as $item)
                         @php
@@ -55,6 +69,21 @@
         </div>
     </header>
 
+    @php
+        $portalPrefix = \App\Models\SiteSetting::get('portal_prefix', 'members');
+        $isDashboard  = isset($page) && $page->slug === $portalPrefix;
+        $heroTitle    = $page->title ?? 'Member Area';
+        $heroFirstName = auth('portal')->user()?->contact?->first_name;
+    @endphp
+    <section class="portal-hero"@if ($isDashboard) data-tour="portal.dashboard"@endif>
+        <div class="site-container">
+            <h1 class="portal-hero__title">{{ $heroTitle }}</h1>
+            @if ($isDashboard && $heroFirstName)
+                <p class="portal-hero__subtitle">Welcome back, {{ $heroFirstName }}.</p>
+            @endif
+        </div>
+    </section>
+
     <main>
         <div class="site-container portal-content">
             @yield('content')
@@ -63,6 +92,11 @@
 
     @if (!empty($inlineScripts))
         <script>{!! $inlineScripts !!}</script>
+    @endif
+
+    {{-- Widget JS bundle from the build-server manifest (mirrors layouts.public). --}}
+    @if ($__widgetManifest && ! empty($__widgetManifest['js']))
+        <script src="/build/widgets/{{ $__widgetManifest['js'] }}"></script>
     @endif
 
     @stack('scripts')

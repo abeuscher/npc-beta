@@ -19,7 +19,7 @@
         </div>
     @endif
 
-    <section class="portal-section">
+    <section class="portal-section" data-tour="portal.account">
         <h2>Mailing Address</h2>
 
         @if (session('household_address_choice'))

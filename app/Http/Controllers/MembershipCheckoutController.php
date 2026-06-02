@@ -111,8 +111,9 @@ class MembershipCheckoutController extends Controller
         // ── Build Stripe Checkout Session ───────────────────────────────
         $amountCents = (int) round((float) $tier->default_price * 100);
 
-        $portalPrefix = SiteSetting::get('system_prefix', 'system');
-        $accountUrl   = url(($portalPrefix ? '/' . $portalPrefix : '') . '/account');
+        // Member home is the dashboard at the portal prefix (/members; session 337).
+        $portalPrefix = SiteSetting::get('portal_prefix', 'members');
+        $accountUrl   = url('/' . $portalPrefix);
         $successUrl   = $accountUrl . '?membership=success';
         $cancelUrl    = $accountUrl . '?membership=cancelled';
 

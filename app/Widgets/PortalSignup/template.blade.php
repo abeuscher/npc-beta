@@ -3,6 +3,11 @@
     $hasPaidTiers = $tiers->contains(fn ($t) => $t->default_price && $t->default_price > 0);
 @endphp
 
+<div class="portal-auth portal-auth--wide">
+    <div class="portal-auth-card">
+        <p class="portal-auth-card__brand">{{ \App\Models\SiteSetting::get('site_name', config('app.name')) }}</p>
+        <h1 class="portal-auth-card__title">Create your account</h1>
+
 @if ($errors->any())
     <div role="alert" class="alert alert--error">
         <ul class="error-list">
@@ -97,10 +102,14 @@
     @endif
 
     <div class="col-12">
-        <button type="submit" class="btn btn--primary">
+        <button type="submit" class="btn btn--primary portal-auth-card__submit">
             <span x-text="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? 'Create account & pay' : 'Create account'; })()">Create account</span>
         </button>
     </div>
 </form>
 
-<p class="text-muted text-sm portal-alt-link"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>
+        <div class="portal-auth-card__links">
+            <p class="text-muted text-sm"><a href="{{ route('portal.login') }}">Already have an account? Log in</a></p>
+        </div>
+    </div>
+</div>

@@ -164,6 +164,10 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 
 All public controllers live in `app/Http/Controllers/`. Portal routes are prefixed by the `portal_prefix` site setting (default: `members`). Blog prefix is the `blog_prefix` site setting (default: `news`).
 
+**Routing prefixes are namespaces, not route→page bindings (security boundary).** The Routing section of General Settings (`system_prefix`, `portal_prefix`, `blog_prefix`, `events_prefix`, `donations_prefix`) renames the first URL path segment for each content type — nothing more. The **authentication flow is deliberately not remappable**: sign-in / sign-up / password-reset / email-verify GET routes are served by fixed controllers (`Portal\LoginController` etc.) under `system_prefix`, and their POST endpoints sit at fixed root paths (`/login`, `/logout`, …) that ignore the prefix so a form action never depends on operator-editable config. The operator may rename the `system_prefix` segment, but cannot point the login route at an arbitrary CMS page — that would let the auth surface be remapped onto editable content. The content prefixes (blog/events/portal/donations) only rename where content lives and are fully operator-editable because doing so is cheap and safe. In short: prefixes are configurable; the binding of the auth flow to its controllers is not.
+
+> **Member portal page topology (session 337).** Auth pages live under `system_prefix` (`/system/login`, `/system/signup`, `/system/forgot-password`). The logged-in portal — dashboard, account edit, event registrations — lives under `portal_prefix` (`/members`, `/members/account`, `/members/event-registrations`) as `type=member` pages served by the catch-all page route (auth + verified-email enforced in `PageController::show`). Post-login lands on the `/members` dashboard; the legacy `/system/account` path is a redirect alias to it. The `portal` navigation menu (`layouts.portal`) links the `/members` pages.
+
 ---
 
 ## Page builder — key components

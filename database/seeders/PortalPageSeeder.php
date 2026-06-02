@@ -17,13 +17,18 @@ class PortalPageSeeder extends Seeder
     {
         $this->call(WidgetTypeSeeder::class);
 
+        // Illustrative data source for the dashboard BarChart (idempotent).
+        (new \App\Widgets\BarChart\DemoSeeder())->run();
+
         $authorId = User::value('id');
         $prefix   = SiteSetting::get('portal_prefix', 'members');
 
         // ── Pages ─────────────────────────────────────────────────────────────
 
-        // Dashboard — slug is exactly the portal prefix (no sub-segment).
-        // Bypass PageObserver so it doesn't double-prefix the bare slug.
+        // Dashboard — slug is exactly the portal prefix (no sub-segment) and is
+        // the post-login landing. Bypass PageObserver so it doesn't double-prefix
+        // the bare slug. Illustrative content only (TextBlock + BarChart) — not
+        // wired to the member's own records (the portal-security scoping rule).
         $dashboard = Page::where('slug', $prefix)->first();
 
         if (! $dashboard) {
@@ -39,36 +44,33 @@ class PortalPageSeeder extends Seeder
         }
 
         $this->seedWidget($dashboard, 'text_block', 'Welcome', [
-            'content' => '<p>Welcome to the member area.</p>',
+            'content' => '<p>Welcome to your member area. Here is a snapshot of recent activity.</p>',
         ], 1);
 
-        // Edit Account
-        $editAccount = Page::firstOrCreate(
-            ['slug' => $prefix . '/edit-account'],
+        $this->seedWidget($dashboard, 'bar_chart', 'Activity', [
+            'collection_handle' => 'chart-demo',
+            'x_field'           => 'label',
+            'y_field'           => 'value',
+            'x_label'           => 'Month',
+            'y_label'           => 'Visits',
+            'bar_fill_color'    => '',
+        ], 2);
+
+        // Account — combined contact-edit + change-password (session 337). Both
+        // forms live on one page reached from the portal nav.
+        $account = Page::firstOrCreate(
+            ['slug' => $prefix . '/account'],
             [
                 'author_id'    => $authorId,
-                'title'        => 'Edit Account',
+                'title'        => 'Account',
                 'type'         => 'member',
                 'status' => 'published',
                 'published_at' => now(),
             ]
         );
 
-        $this->seedWidget($editAccount, 'portal_contact_edit', 'Edit Contact Info', [], 1);
-
-        // Change Password
-        $changePassword = Page::firstOrCreate(
-            ['slug' => $prefix . '/change-password'],
-            [
-                'author_id'    => $authorId,
-                'title'        => 'Change Password',
-                'type'         => 'member',
-                'status' => 'published',
-                'published_at' => now(),
-            ]
-        );
-
-        $this->seedWidget($changePassword, 'portal_change_password', 'Change Password', [], 1);
+        $this->seedWidget($account, 'portal_contact_edit', 'Edit Contact Info', [], 1);
+        $this->seedWidget($account, 'portal_change_password', 'Change Password', [], 2);
 
         // Event Registrations
         $eventRegs = Page::firstOrCreate(
@@ -84,6 +86,14 @@ class PortalPageSeeder extends Seeder
 
         $this->seedWidget($eventRegs, 'portal_event_registrations', 'Event Registrations', [], 1);
 
+        // Reconcile: retire the old split pages, now folded into /account.
+        foreach (['edit-account', 'change-password'] as $staleSlug) {
+            $stale = Page::where('slug', $prefix . '/' . $staleSlug)->first();
+            if ($stale) {
+                $stale->forceDelete();
+            }
+        }
+
         // ── Portal navigation menu ────────────────────────────────────────────
 
         $menu = NavigationMenu::firstOrCreate(
@@ -91,18 +101,23 @@ class PortalPageSeeder extends Seeder
             ['label'  => 'Portal'],
         );
 
+        // Drop the defunct split-page nav items before reseeding the menu.
+        NavigationItem::where('navigation_menu_id', $menu->id)
+            ->whereIn('label', ['Edit Account', 'Change Password'])
+            ->delete();
+
         $navItems = [
-            ['label' => 'Dashboard',          'page' => $dashboard,       'sort' => 1],
-            ['label' => 'Edit Account',        'page' => $editAccount,     'sort' => 2],
-            ['label' => 'Change Password',     'page' => $changePassword,  'sort' => 3],
-            ['label' => 'Event Registrations', 'page' => $eventRegs,       'sort' => 4],
+            ['label' => 'Dashboard',           'page' => $dashboard, 'sort' => 1],
+            ['label' => 'Account',             'page' => $account,   'sort' => 2],
+            ['label' => 'Event Registrations', 'page' => $eventRegs, 'sort' => 3],
         ];
 
         foreach ($navItems as $item) {
-            NavigationItem::firstOrCreate(
+            NavigationItem::updateOrCreate(
                 ['label' => $item['label'], 'navigation_menu_id' => $menu->id],
                 [
                     'page_id'    => $item['page']->id,
+                    'url'        => null,
                     'sort_order' => $item['sort'],
                     'target'     => '_self',
                     'is_visible' => true,

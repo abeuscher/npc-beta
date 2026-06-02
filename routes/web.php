@@ -117,11 +117,14 @@ Route::get("{$systemBase}/email/verify/{id}/{hash}", [EmailVerificationControlle
 
 $portalAuth = ['portal.auth', 'verified:portal.verification.notice'];
 
+// Legacy alias. The member home moved to the dashboard at the portal prefix
+// (/members, a type=member page; session 337). Kept as a named redirect so the
+// existing route('portal.account') callers (post-login, email-verify,
+// forgot-password, account updates) land on the dashboard without churn.
 Route::get("{$systemBase}/account", function () {
-    $prefix = \App\Models\SiteSetting::get('system_prefix', 'system');
-    $slug   = $prefix ? $prefix . '/account' : 'account';
+    $prefix = \App\Models\SiteSetting::get('portal_prefix', 'members');
 
-    return app(\App\Http\Controllers\PageController::class)->show($slug);
+    return redirect('/' . $prefix);
 })->name('portal.account')->middleware($portalAuth);
 
 Route::post('/account/events/{slug}/register', [PortalEventRegistrationController::class, 'store'])->name('portal.events.register')->middleware($portalAuth);

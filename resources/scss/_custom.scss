@@ -477,6 +477,123 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Portal hero + auth language (session 337)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// One branded band, shared by the logged-in portal hero (dashboard / account /
+// event registrations, rendered in layouts.portal) and the logged-out auth
+// screens (sign-in / sign-up / reset, rendered in layouts.public). The two
+// chromes differ, but the band, type, and button language are the same — so the
+// portal reads as one designed surface across the auth boundary.
+
+@mixin portal-band {
+    background-color: $color-primary;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.22));
+    color: #fff;
+}
+
+// ── Logged-in portal hero band (page-title header) ──────────────────────────
+.portal-hero {
+    @include portal-band;
+    padding: 2.5rem 0;
+
+    @media (min-width: $bp-md) {
+        padding: 3.25rem 0;
+    }
+}
+
+.portal-hero__title {
+    margin: 0;
+    color: #fff;
+    font-size: 1.875rem;
+    line-height: 1.15;
+}
+
+.portal-hero__subtitle {
+    margin: 0.5rem 0 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+}
+
+// Active portal nav link.
+.portal-nav a[aria-current="page"] {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+// Vertical rhythm between stacked widgets inside a portal page (dashboard
+// TextBlock + BarChart; account contact-edit + change-password blocks).
+.portal-content .widget + .widget {
+    margin-top: 1.5rem;
+}
+
+// ── Auth screens — centered card floating on the branded band ───────────────
+.widget--portal_login,
+.widget--portal_signup,
+.widget--portal_forgot_password {
+    @include portal-band;
+}
+
+.portal-auth {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+.portal-auth-card {
+    width: 100%;
+    max-width: 26rem;
+    background: $input-bg;
+    color: $color-text;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.35);
+    padding: 2.5rem 2rem;
+
+    .dark & {
+        background: $color-bg-surface-dk;
+        color: $color-text-dark;
+    }
+}
+
+.portal-auth--wide .portal-auth-card {
+    max-width: 34rem;
+}
+
+.portal-auth-card__brand {
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: $color-primary;
+    text-align: center;
+}
+
+.portal-auth-card__title {
+    margin: 0 0 1.5rem;
+    font-size: 1.375rem;
+    text-align: center;
+    color: $color-text-heading;
+
+    .dark & { color: $color-text-heading-dk; }
+}
+
+.portal-auth-card__intro {
+    margin: -0.75rem 0 1.25rem;
+    text-align: center;
+}
+
+.portal-auth-card__submit {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.portal-auth-card__links {
+    margin-top: 1.5rem;
+    text-align: center;
+
+    p { margin: 0.25rem 0; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Widget: events listing
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -773,8 +890,29 @@
 // Widget: portal contact edit
 // ─────────────────────────────────────────────────────────────────────────────
 
+.portal-section {
+    background: $input-bg;
+    border: 1px solid $color-border;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+
+    &:last-child { margin-bottom: 0; }
+
+    .dark & {
+        background: $color-bg-surface-dk;
+        border-color: $color-border-dark;
+    }
+
+    > h2 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.25rem;
+    }
+}
+
 .portal-section + .portal-section {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 }
 
 .portal-household-choice {
