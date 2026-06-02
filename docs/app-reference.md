@@ -320,6 +320,10 @@ The success-record file at `storage/app/private/fleet/last-backup-at` is **not**
 
 Backup restoration is intentionally manual at v1 — high-stakes operations benefit from the operator pausing to verify each step rather than a click-button shortcut.
 
+### Demo-node restore (`demo:restore`)
+
+The one exception to manual-only restore is the **demo node**, which resets on a schedule by restoring a curated baseline blob (session 336; see `docs/fleet-manager-agent-contract.md` § Demo-node reset coordination). `php artisan demo:restore [blob]` automates steps 2–5 above against a **local** blob FM has pushed onto the node — it never fetches the blob itself, so the demo node needs no outbound egress. It is **hard-gated to `isDemoMode()`** (`APP_ENV=demo`) at the top of the command and refuses to run anywhere else, so the destructive wipe-and-replace can never reach a real customer node. The blob path defaults to `storage/app/backups/demo-baseline.zip` (a directory `config/backup.php` already excludes from `backup:run`); pass an explicit path to override. After restoring the DB (`db:wipe --drop-views --drop-types` → `gunzip` the dump → `psql -f`) and the media tree (`storage/app/public`), it overwrites the `base_url` `SiteSetting` from this node's own `APP_URL` so the authoring environment's value never leaks onto the node. `demo:reset` (the code-reseed path) is retained for local/dev convenience; the demo node's reset cron points at `demo:restore`.
+
 ---
 
 ## Fleet Manager mTLS — cert paths
