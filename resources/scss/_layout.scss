@@ -72,6 +72,61 @@
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Vertical section-spacing primitive (session 335)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The operator's section padding/margin used to be written as literal inline
+// values (padding-top:80px) — and inline always beats a stylesheet, so nothing
+// could compress them on a phone. Now AppearanceStyleComposer (and ChromeRenderer
+// in lockstep) emit the VERTICAL axis as --np-* custom properties; this host rule
+// turns those properties into actual padding/margin, and the two cascading
+// @media steps below scale them down at tablet (≤768) and mobile (≤576).
+//
+// The 0px var() fallback preserves the "concrete 0 = no override" semantic: a
+// side the operator left at 0 emits no custom property, resolves to 0px here, and
+// the wrappers carry no intrinsic vertical padding/margin of their own — so an
+// unset widget is byte-for-byte unchanged. Horizontal spacing is never touched.
+//
+// .np-chrome-section is the hook for chrome root widgets, which render as a bare
+// wrapper with no .widget class (ChromeRenderer::renderPage).
+//
+// Single source of truth for the compression: $section-spacing-ratio. Tablet is
+// ×ratio, mobile ×ratio² — tune the whole ruleset by editing one number.
+
+$section-spacing-ratio: 0.8;
+
+.widget,
+.page-layout,
+.np-chrome-section {
+    padding-top:    var(--np-pad-top, 0px);
+    padding-bottom: var(--np-pad-bottom, 0px);
+    margin-top:     var(--np-mar-top, 0px);
+    margin-bottom:  var(--np-mar-bottom, 0px);
+}
+
+@media (max-width: $bp-md) {
+    .widget,
+    .page-layout,
+    .np-chrome-section {
+        padding-top:    calc(var(--np-pad-top, 0px) * #{$section-spacing-ratio});
+        padding-bottom: calc(var(--np-pad-bottom, 0px) * #{$section-spacing-ratio});
+        margin-top:     calc(var(--np-mar-top, 0px) * #{$section-spacing-ratio});
+        margin-bottom:  calc(var(--np-mar-bottom, 0px) * #{$section-spacing-ratio});
+    }
+}
+
+@media (max-width: $bp-sm) {
+    .widget,
+    .page-layout,
+    .np-chrome-section {
+        padding-top:    calc(var(--np-pad-top, 0px) * #{$section-spacing-ratio * $section-spacing-ratio});
+        padding-bottom: calc(var(--np-pad-bottom, 0px) * #{$section-spacing-ratio * $section-spacing-ratio});
+        margin-top:     calc(var(--np-mar-top, 0px) * #{$section-spacing-ratio * $section-spacing-ratio});
+        margin-bottom:  calc(var(--np-mar-bottom, 0px) * #{$section-spacing-ratio * $section-spacing-ratio});
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Site nav wrapper — overlay mode for hero full-bleed
 // ─────────────────────────────────────────────────────────────────────────────
 

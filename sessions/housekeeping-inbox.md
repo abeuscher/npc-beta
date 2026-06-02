@@ -14,6 +14,7 @@ This file is the only home for items that are *small enough to bundle but large 
 
 *(Items destined for the next housekeeping batch session. Items default to **pre-Public-Website-Complete** unless tagged `[post-milestone]` — see Rule 12 in `release-plan.md`.)*
 
+- `[post-milestone]` `[0.334.01 · 2026-06-02]` **Column-collapse ordering** — operators need a way to control the *order* widgets/columns stack in when a layout collapses to one column on mobile (right now the stack order is whatever the source order is). The owner flagged this as the **most-pressing remaining mobile item** at 335 close. Packages naturally with the deferred **per-breakpoint page-editor authoring** (the "correct" mobile fix the 335 section-spacing primitive made room for) — likely lands together rather than as standalone housekeeping. (Captured mid-335 via `logbug`; folded at 335 close.)
 - `[0.331.01 · 2026-06-01]` On a layout column-count change, if a column being removed still holds content, alert the operator before deleting it — it's too easy to blow away content in that unrelated action. (Captured mid-331 via `logbug`; folded at 332 close. **Corroborates session 332's bug "E"** — a layout column lost on a columns change; folded into the 333 parity session's bounded E repro.)
 - `[post-milestone]` `[0.330.01 · 2026-06-01]` Gradient feature enhancements (the operator request was explicitly *not gating any release*): in the GradientPicker — add a checkered gray background behind the swatches/samples so transparency reads clearly; support flat percentage stops and multiple colours so operators can build stripes and other repeating/patterned backgrounds. (Captured mid-331 via `logbug`; folded at 331 close.)
 - `[0.329.02 · 2026-05-31]` Widget thumbnail audit — some widgets have no dummy/demo data, so their regenerated `static.png` thumbnails render blank. Audit the widget set, identify which lack representative seed content, and give them demo data (or a non-blank fallback) so the Widget Browser / picker thumbnails are populated. (Captured mid-329 via `logbug`; folded at 330 close.)
@@ -103,6 +104,7 @@ This file is the only home for items that are *small enough to bundle but large 
 
 - **Text editor reachability fix + Quill full-screen button + Playwright usability test** → folded into **E8 (UI/UX Sprint)**. E8 already covers Quill drag-resize handle; expand its scope at session start.
 - **Default button style long-term parameterization** → folded into the **Design System Editor** track (already on radar — "buttons first").
+- `[0.334.01 · 2026-06-02]` **Background images don't carry on site import/export** → folded into **session 336 (Demo Node Restore Wiring)**. The demo's restore-from-blob delivery depends on a faithful backup round-trip; 336's export-fidelity pass triages which export path drops background images (likely the selective portability-bundle path, not the full backup the demo uses) and fixes what genuinely breaks the full-backup round-trip. (Captured mid-335 via `logbug`; owner noted it may be a re-record — confirmed valid, now scoped to 336.)
 
 ---
 

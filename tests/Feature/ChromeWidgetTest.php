@@ -418,8 +418,10 @@ it('emits new layout style fields in chrome', function () {
 
     expect($result)->not->toBeNull();
     expect($result['html'])->toContain('background-color:#123456');
-    expect($result['html'])->toContain('padding-top:15px');
-    expect($result['html'])->toContain('margin-bottom:7px');
+    // Vertical → --np-* custom properties so the host rule scales it at narrow
+    // widths, in lockstep with the page render path (session 335).
+    expect($result['html'])->toContain('--np-pad-top:15px');
+    expect($result['html'])->toContain('--np-mar-bottom:7px');
 });
 
 it('emits the universal border on a chrome widget in parity with the composer (session 323)', function () {

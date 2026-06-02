@@ -359,7 +359,9 @@ it('public renderer emits padding and margin from appearance_config.layout', fun
     $response = $this->get('/spacing-test');
 
     $response->assertOk();
-    $response->assertSee('padding-top:10px', false);
+    // Vertical (top/bottom) → --np-* custom properties (session 335); horizontal
+    // (left/right) stays a literal declaration.
+    $response->assertSee('--np-pad-top:10px', false);
     $response->assertSee('padding-left:40px', false);
-    $response->assertSee('margin-bottom:25px', false);
+    $response->assertSee('--np-mar-bottom:25px', false);
 });

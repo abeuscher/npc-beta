@@ -86,8 +86,13 @@ class ChromeRenderer
                 if ($result['html'] !== null) {
                     $appearanceConfig = $pw->appearance_config ?? [];
                     $inlineStyle = static::buildInlineStyle($appearanceConfig);
+                    // np-chrome-section is the host-rule hook for the vertical
+                    // section-spacing primitive: chrome root widgets render as a
+                    // bare wrapper (no .widget class), so without this class the
+                    // --np-* spacing custom properties would have nothing to
+                    // consume them. Only emitted when there is an inline style.
                     $inner = $inlineStyle
-                        ? "<div style=\"{$inlineStyle}\">{$result['html']}</div>"
+                        ? "<div class=\"np-chrome-section\" style=\"{$inlineStyle}\">{$result['html']}</div>"
                         : $result['html'];
 
                     $widgetType = $pw->widgetType;
@@ -153,18 +158,27 @@ class ChromeRenderer
             $gridStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
         }
 
+        // Horizontal stays literal; vertical (top/bottom) becomes --np-* custom
+        // properties so the host rule on .page-layout can scale it at narrow
+        // widths, in lockstep with the page render path.
         $appearanceStyle = '';
         $spacingKeys = [
-            'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-            'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-            'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-            'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+            'padding_right' => 'padding-right', 'padding_left' => 'padding-left',
+            'margin_right' => 'margin-right', 'margin_left' => 'margin-left',
         ];
         foreach ($spacingKeys as $key => $cssProp) {
             $val = isset($config[$key]) && $config[$key] !== '' ? (int) $config[$key] : null;
             if ($val !== null) {
                 $appearanceStyle .= $cssProp . ':' . $val . 'px;';
             }
+        }
+
+        $verticalVars = AppearanceStyleComposer::composeVerticalSpacingVars(
+            ['top' => $config['padding_top'] ?? '', 'bottom' => $config['padding_bottom'] ?? ''],
+            ['top' => $config['margin_top'] ?? '', 'bottom' => $config['margin_bottom'] ?? ''],
+        );
+        foreach ($verticalVars as $prop) {
+            $appearanceStyle .= $prop . ';';
         }
         if (! empty($config['background_color'])) {
             $appearanceStyle .= 'background-color:' . $config['background_color'] . ';';
@@ -223,20 +237,28 @@ class ChromeRenderer
             $styleProps[] = 'color:' . $textColor;
         }
 
+        // Vertical (top/bottom) padding/margin is emitted as --np-* custom
+        // properties so the host-layer rule can scale it at narrow widths, in
+        // lockstep with the page render path (AppearanceStyleComposer). Horizontal
+        // stays literal, preserving chrome's existing emission.
         $padding = $appearanceConfig['layout']['padding'] ?? [];
         $margin  = $appearanceConfig['layout']['margin'] ?? [];
 
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : null;
             if ($val !== null) {
                 $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
             }
         }
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : null;
             if ($val !== null) {
                 $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
+        }
+
+        foreach (AppearanceStyleComposer::composeVerticalSpacingVars($padding, $margin) as $prop) {
+            $styleProps[] = $prop;
         }
 
         foreach (AppearanceStyleComposer::composeBorderProps($appearanceConfig['layout']['border'] ?? []) as $prop) {

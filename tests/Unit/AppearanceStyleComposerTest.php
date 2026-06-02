@@ -124,9 +124,11 @@ it('emits padding and margin', function () {
         ],
     ]);
     $result = $this->composer->compose($pw);
+    // Vertical (top/bottom) is emitted as --np-* custom properties so the host
+    // rule can scale it at narrow widths (session 335); horizontal stays literal.
     expect($result['inline_style'])
-        ->toContain('padding-top:10px')
-        ->toContain('padding-bottom:20px')
+        ->toContain('--np-pad-top:10px')
+        ->toContain('--np-pad-bottom:20px')
         ->toContain('margin-left:5px');
 });
 
@@ -135,7 +137,7 @@ it('casts spacing to int', function () {
         'layout' => ['padding' => ['top' => '15.7']],
     ]);
     $result = $this->composer->compose($pw);
-    expect($result['inline_style'])->toContain('padding-top:15px');
+    expect($result['inline_style'])->toContain('--np-pad-top:15px');
 });
 
 // ── Full width — two-knob shape ─────────────────────────────────────────────
@@ -486,14 +488,16 @@ it('emits layout padding and margin per side for present non-zero values', funct
         ],
     ]);
     $style = $this->composer->composeForLayout($layout);
+    // Vertical (top/bottom) → --np-* custom properties (session 335); horizontal
+    // (left/right) stays a literal declaration.
     expect($style)
-        ->toContain('padding-top:12px')
+        ->toContain('--np-pad-top:12px')
         ->toContain('padding-right:24px')
-        ->toContain('padding-bottom:12px')
+        ->toContain('--np-pad-bottom:12px')
         ->toContain('padding-left:24px')
-        ->toContain('margin-top:8px')
+        ->toContain('--np-mar-top:8px')
         ->not->toContain('margin-right')
-        ->not->toContain('margin-bottom')
+        ->not->toContain('--np-mar-bottom')
         ->not->toContain('margin-left');
 });
 
@@ -548,18 +552,29 @@ it('produces byte-equivalent CSS for pre-207 layout_config after data migration'
         'margin_bottom'    => '4',
     ];
 
-    // Reproduce the pre-207 renderer logic.
+    // Reproduce the post-335 emission contract: horizontal (left/right) stays a
+    // literal declaration; vertical (top/bottom) is emitted as --np-* custom
+    // properties so the host rule can scale it at narrow widths. This still locks
+    // the 207 data-migration equivalence — under the current emission shape.
     $preStyle = '';
     $spacingKeys = [
-        'padding_top' => 'padding-top', 'padding_right' => 'padding-right',
-        'padding_bottom' => 'padding-bottom', 'padding_left' => 'padding-left',
-        'margin_top' => 'margin-top', 'margin_right' => 'margin-right',
-        'margin_bottom' => 'margin-bottom', 'margin_left' => 'margin-left',
+        'padding_right' => 'padding-right', 'padding_left' => 'padding-left',
+        'margin_right' => 'margin-right', 'margin_left' => 'margin-left',
     ];
     foreach ($spacingKeys as $key => $cssProp) {
         $val = isset($preMigration[$key]) && $preMigration[$key] !== '' ? (int) $preMigration[$key] : null;
         if ($val !== null) {
             $preStyle .= $cssProp . ':' . $val . 'px;';
+        }
+    }
+    $verticalVars = [
+        '--np-pad-top' => 'padding_top', '--np-pad-bottom' => 'padding_bottom',
+        '--np-mar-top' => 'margin_top', '--np-mar-bottom' => 'margin_bottom',
+    ];
+    foreach ($verticalVars as $cssVar => $key) {
+        $val = isset($preMigration[$key]) && $preMigration[$key] !== '' ? (int) $preMigration[$key] : 0;
+        if ($val !== 0) {
+            $preStyle .= $cssVar . ':' . $val . 'px;';
         }
     }
     if (! empty($preMigration['background_color'])) {

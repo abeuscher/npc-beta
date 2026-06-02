@@ -61,22 +61,28 @@ class AppearanceStyleComposer
             $styleProps[] = 'text-shadow:0 1px 3px rgba(0,0,0,0.6)';
         }
 
-        // Padding — concrete 0 means "no override; let SCSS/intrinsic default apply"
+        // Horizontal padding/margin stays a literal declaration; vertical
+        // (top/bottom) is emitted as --np-* custom properties so the host-layer
+        // rule can scale it down at narrow widths (see composeVerticalSpacingVars).
+        // Concrete 0 means "no override; let SCSS/intrinsic default apply".
         $padding = $ac['layout']['padding'] ?? [];
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : 0;
             if ($val !== 0) {
                 $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
             }
         }
 
-        // Margin — concrete 0 means "no override; let SCSS/intrinsic default apply"
         $margin = $ac['layout']['margin'] ?? [];
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : 0;
             if ($val !== 0) {
                 $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
+        }
+
+        foreach (self::composeVerticalSpacingVars($padding, $margin) as $prop) {
+            $styleProps[] = $prop;
         }
 
         // Border — concrete value object, default all-sides-off (a no-op)
@@ -236,7 +242,7 @@ class AppearanceStyleComposer
         }
 
         $padding = $ac['layout']['padding'] ?? [];
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($padding[$side]) && $padding[$side] !== '' ? (int) $padding[$side] : 0;
             if ($val !== 0) {
                 $styleProps[] = 'padding-' . $side . ':' . $val . 'px';
@@ -244,14 +250,55 @@ class AppearanceStyleComposer
         }
 
         $margin = $ac['layout']['margin'] ?? [];
-        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+        foreach (['right', 'left'] as $side) {
             $val = isset($margin[$side]) && $margin[$side] !== '' ? (int) $margin[$side] : 0;
             if ($val !== 0) {
                 $styleProps[] = 'margin-' . $side . ':' . $val . 'px';
             }
         }
 
+        foreach (self::composeVerticalSpacingVars($padding, $margin) as $prop) {
+            $styleProps[] = $prop;
+        }
+
         return implode(';', $styleProps);
+    }
+
+    /**
+     * Vertical section-spacing primitive (session 335).
+     *
+     * Emit top/bottom padding & margin as --np-* custom properties instead of
+     * literal padding/margin declarations, so a single host-layer @media
+     * rule can scale them down at tablet/mobile widths — inline literals always
+     * beat a stylesheet, which is exactly why nothing could compress them before.
+     * The host rule consumes each property with a 0px fallback (resources/scss/
+     * _layout.scss), so a side that is concrete 0 (or unset) emits no property
+     * and resolves to the wrapper's intrinsic spacing — preserving the existing
+     * "concrete 0 = no override" semantic. Horizontal (left/right) is unchanged
+     * and stays a literal declaration at each call site.
+     *
+     * @param  array<string, mixed>  $padding  side-keyed (top/right/bottom/left)
+     * @param  array<string, mixed>  $margin   side-keyed (top/right/bottom/left)
+     * @return array<int, string>
+     */
+    public static function composeVerticalSpacingVars(array $padding, array $margin): array
+    {
+        $props = [];
+        $map = [
+            ['--np-pad-top',    $padding, 'top'],
+            ['--np-pad-bottom', $padding, 'bottom'],
+            ['--np-mar-top',    $margin,  'top'],
+            ['--np-mar-bottom', $margin,  'bottom'],
+        ];
+
+        foreach ($map as [$cssVar, $src, $side]) {
+            $val = isset($src[$side]) && $src[$side] !== '' ? (int) $src[$side] : 0;
+            if ($val !== 0) {
+                $props[] = $cssVar . ':' . $val . 'px';
+            }
+        }
+
+        return $props;
     }
 
     private function composeBackgroundImage(PageWidget $pw, array $ac, array &$styleProps): void

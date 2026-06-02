@@ -443,9 +443,30 @@ These describe the v2.1.0 security posture; items carry status as either **shipp
 
 3. **Audit-sink discipline.** FM emits an external append-only audit log of every action against the CRM contract surface (poll dispatch, log fetch, install / restore actions when those land), mirrored to a write-only object-locked Spaces bucket FM cannot delete from after write. The CRM-side nginx access logs are the CRM-side complement — together the two form the cross-repo audit trail. (FM's broader admin-action audit posture is FM-side scope and not specified by this contract.)
 
+### Demo-node reset coordination
+
+*(v2.3.0 revision, session 335 — no contract surface change, no version bump. This documents an FM-driven coordination, not an HTTP endpoint; it lives here because this doc is the canonical CRM↔FM coordination surface FM WebFetches.)*
+
+The single demo node (`APP_ENV=demo`, `isDemoMode()`) resets on a schedule by **restoring a curated baseline blob** — the `RestoreFromBlob` route flagged as the alternative in the CRM→FM demo-node handoff (CRM session 321), now **selected** over the local `demo:reset` reseed. The responsibility split:
+
+- **FM owns the loop.** FM provisions the node, generates its `.env`, writes the reset schedule (cron), and **pushes the curated baseline blob onto the node through its provisioning channel** — the same channel that writes `.env`, **not** the runtime mTLS HTTP contract. The blob is *pushed*, never pulled: the node needs **no outbound egress** for the reset, so the demo node's egress firewall (deny outbound except DNS/NTP/GHCR, block SMTP — the one security control that matters) stays as tight as the local-cron route would have kept it. FM sets env-specific values (`base_url`, `IMAGE_TAG`) at provision time.
+- **CRM provides the restore primitive.** A demo-mode-gated `demo:restore` artisan command restores the pushed blob (DB + media) and fixes up env-specific values from the node's own `.env`. It is **hard-gated to `isDemoMode()` at the code level** and refuses to run otherwise — a restore-from-arbitrary-blob primitive must never be reachable or runnable on a real customer node.
+
+Consequences for FM-side coordination:
+
+- **`IMAGE_TAG` unpin.** The demo node's `IMAGE_TAG` pin (handoff item 2, *"so rolling upgrades don't disrupt a live demo"*) is **lifted** — FM may upgrade the demo node like any other. To preserve the pin's original intent, schedule upgrades into the daily reset window (upgrade + restore together, off-peak) so an upgrade never interrupts a live prospect session.
+- **Baseline alignment.** FM and CRM align on the canonical baseline blob — how it is produced (the operator authors the demo, then snapshots via `backup:run` or the existing `/api/backup/trigger` + `/api/backup/blob` endpoints) and handed to FM for distribution. This is the *"we'll align the baseline"* step the handoff names.
+- **Faker / `--no-dev`.** The restore-from-blob route makes the demo's Faker dependency a non-issue on the node: synthetic data is generated in the authoring environment (dev-deps present) when the snapshot is built; the production demo node only ever restores a blob and never runs Faker.
+
+The CRM-side `demo:restore` command lands in the demo session following 335; this revision records the coordination decision so FM can start its half in parallel. No HTTP endpoint, no `CONTRACT_VERSION` change — the contract stays `2.3.0`.
+
 ---
 
 ## CHANGELOG
+
+### `2.3.0` revision — 2026-06-01 (session 335)
+
+**Documentation revision — no contract surface change, no version bump.** Records the **demo-node reset coordination** decision (new § Demo-node reset coordination, under Security posture): the single demo node resets by restoring a curated baseline blob (`RestoreFromBlob`) rather than the local `demo:reset` reseed. FM owns the loop — provisions the node, writes the reset cron, and **pushes** the baseline blob onto the node via its provisioning channel (not the HTTP contract; the node needs no outbound egress, keeping the demo egress firewall tight). CRM provides a `demo:restore` artisan command, **hard-gated to `isDemoMode()`**, that restores the pushed blob (DB + media) and fixes env-specific values from the node's `.env`. The demo node's `IMAGE_TAG` pin is lifted (upgrades ride the daily reset window). The CRM-side `demo:restore` implementation lands in the demo session following 335; `HealthController::CONTRACT_VERSION` stays `2.3.0`. No HTTP surface change; FM-side consumers need no code change to the four endpoints — they pick up the coordination note on the next WebFetch refresh.
 
 ### `2.3.0` revision — 2026-05-15 (session 291)
 

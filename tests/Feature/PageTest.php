@@ -182,7 +182,8 @@ it('contains a layout in .site-container by default and emits new style fields',
     $response->assertOk();
     $response->assertSee('site-container', false);
     $response->assertSee('background-color:#abcdef', false);
-    $response->assertSee('padding-top:12px', false);
+    // Vertical → --np-* custom property (session 335); horizontal stays literal.
+    $response->assertSee('--np-pad-top:12px', false);
     $response->assertSee('margin-left:8px', false);
     $response->assertSee('Inside contained', false);
 });
