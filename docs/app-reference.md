@@ -39,6 +39,16 @@ The public-demo droplet at `147.182.214.147` runs the same image stack as the de
 
 **`.env` propagation note:** `docker-compose.prod.yml` wires the host `.env` via `env_file:` (read at container *start*, not mounted as a live file), so edits to `/opt/nonprofitcrm/.env` do not reach the running container until you restart it (`docker compose -f docker-compose.prod.yml up -d` or `restart app worker`). `php artisan config:clear` only flushes the cached config file — it does not refresh the process environment. After restarting, run `config:clear` to drop any stale `bootstrap/cache/config.php` (the `bootstrap_cache` named volume persists across restarts). The `worker` container needs the same restart for queue jobs to see new env values.
 
+### Deploy pipeline + version recognition
+
+Push to `main` triggers `.github/workflows/deploy.yml`:
+
+1. **Resolve + enforce VERSION.** Reads the root `VERSION` file as the image tag and **fails if that tag is already published to GHCR** (immutable tags — "bump VERSION before merging to main"). So every deploy needs a fresh `VERSION`; bump it before merging, including a mid-session deploy-to-test (see `CLAUDE.md` Git Workflow). The demo-droplet workflow `deploy-demo.yml` is SHA-tagged (`demo-<sha>`) and is exempt.
+2. **Build + push** `ghcr.io/.../nonprofitcrm-app:<VERSION>` (+ `:latest`) — the tag becomes usable as an FM upgrade target here, mid-Action.
+3. **Deploy to the droplet** over SSH: `pull` → `up -d --wait` → `migrate --force` → `view:clear` + `config:clear`. When the Action goes green, the deploy server is already serving the new image.
+
+**Where the running version surfaces (and the recognition lag).** A container reports its version from `/var/cache/app/VERSION` — baked from the `APP_VERSION` build arg at image build, exposed via `config('fleet.agent.app_version')`, returned by `GET /api/health` as `version`. It is correct the instant the container is up (no runtime cache). **Fleet Manager** shows the version from the latest `health_checks` row, written by its `poll-active-clients` scheduler task that polls every node **once a minute**. So after a deploy, FM keeps showing the old version for up to ~60s until its next poll — that gap is the lag, and it is FM-side, not the node. To check without waiting: curl the node's own `/api/health` (with the FM client cert) for the lag-free truth, or open the client's detail page in FM, which fires a synchronous poll on load and updates immediately.
+
 ### Wiping a node to a bare machine
 
 The definitive teardown for a node installed via the deploy/FM path — removes every container and every named volume (database, media, caches), returning the box to a clean slate FM can re-provision onto. Run as root on the droplet. **Irreversible — destroys all data; restore from a backup blob if you need the data back.**

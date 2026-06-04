@@ -20,6 +20,7 @@ Branches use the convention `session-NNN/N` where NNN is the session number and 
   - `git merge` into main, locally or remotely.
   - `git commit` while on main.
 - **Merge to main is the user's job, always.** Do not merge to main yourself.
+- **Bump `VERSION` before any merge-to-main that will deploy — including a mid-session deploy-to-test, not only at the close gate.** Every push to `main` runs `.github/workflows/deploy.yml`, whose *Enforce immutable version tag* step rejects a `VERSION` already published to GHCR ("Version tags are immutable — bump VERSION before merging to main"), so an unbumped `VERSION` fails the deploy. When the user signals they want to deploy or see work on the deployed server mid-session, proactively bump `VERSION` to `0.<session>.<iteration>` on the session branch and tell them — don't make them do a version-bump branch dance. (The demo-droplet workflow `deploy-demo.yml` is SHA-tagged and exempt; only the `main` deploy enforces this.)
 - **Next iteration:** After the user merges and reports back, start from main: `git checkout main && git pull && git checkout -b session-NNN/2`. Repeat as needed.
 - **Session close documents** (log, outlines update, next-session prompt) go on the final iteration branch for the session.
 - **Only branch from main.** Never create a branch off another branch.
