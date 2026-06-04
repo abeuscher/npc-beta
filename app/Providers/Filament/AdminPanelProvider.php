@@ -326,6 +326,7 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::TOPBAR_START,
                 fn (): HtmlString => new HtmlString(
                     '<a href="' . e(url('/')) . '" target="_blank" rel="noopener noreferrer"'
+                    . ' data-tour="topbar.view-site"'
                     . ' class="ms-3 flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-500 ring-1 ring-gray-200 hover:text-gray-800 hover:ring-gray-400 dark:text-gray-400 dark:ring-gray-700 dark:hover:text-gray-200">'
                     . '<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">'
                     . '<path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>'
@@ -368,6 +369,78 @@ class AdminPanelProvider extends PanelProvider
                     }
 
                     return view('components.help-slide-over', ['article' => $article]);
+                }
+            )
+            // === Guided product tour (session 338) ===
+            // Owned, stable `data-tour` anchors injected onto admin chrome so the
+            // driver.js tour pins selectors we control, not Filament's churn-prone
+            // classes (the session 249 selector-fragility mitigation). Markers are
+            // display:none (admin.css); the tour resolves the real target by
+            // DOM-traversing from each marker (next sibling / parent).
+            ->renderHook(
+                PanelsRenderHook::CONTENT_START,
+                fn (): HtmlString => new HtmlString('<div data-tour="page.content" class="np-tour-anchor"></div>')
+            )
+            ->renderHook(
+                PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE,
+                fn (): HtmlString => new HtmlString('<div data-tour="resource.records" class="np-tour-anchor"></div>')
+            )
+            // Tour route map: emit each tour-target page's URL only when the
+            // current viewer's role can reach it. The tour skips steps whose page
+            // is absent, so a restricted role (e.g. the demo prospect) gets a
+            // shorter tour rather than a 404.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                function (): HtmlString {
+                    $urls = [];
+
+                    try {
+                        $urls['dashboard'] = \App\Filament\Pages\Dashboard::getUrl();
+                    } catch (\Throwable) {
+                    }
+
+                    // Resources the tour visits directly — emitted only when the
+                    // viewer can view them, so the tour skips inaccessible steps.
+                    $resources = [
+                        'contacts'     => \App\Filament\Resources\ContactResource::class,
+                        'donations'    => \App\Filament\Resources\DonationResource::class,
+                        'mailingLists' => \App\Filament\Resources\MailingListResource::class,
+                        'memberships'  => \App\Filament\Resources\MembershipResource::class,
+                        'events'       => \App\Filament\Resources\EventResource::class,
+                        // Stripe payments live here as real rows; the demo role
+                        // has view-only access (the credentials-bearing Finance
+                        // Settings page stays locked and is not a tour target).
+                        'transactions' => \App\Filament\Resources\TransactionResource::class,
+                    ];
+                    foreach ($resources as $key => $resource) {
+                        try {
+                            if ($resource::canViewAny()) {
+                                $urls[$key] = $resource::getUrl();
+                            }
+                        } catch (\Throwable) {
+                        }
+                    }
+
+                    // Locked-but-sellable features: navigate to the real page when
+                    // the viewer can reach it, otherwise to a demo-safe showcase
+                    // (no real data, no secrets) so the prospect still sees the
+                    // feature without the lockdown being weakened.
+                    try {
+                        $urls['roles'] = \App\Filament\Resources\RoleResource::canViewAny()
+                            ? \App\Filament\Resources\RoleResource::getUrl()
+                            : \App\Filament\Pages\TourRolesShowcasePage::getUrl();
+                    } catch (\Throwable) {
+                    }
+                    try {
+                        $urls['importer'] = \App\Filament\Pages\ImporterPage::canAccess()
+                            ? \App\Filament\Pages\ImporterPage::getUrl()
+                            : \App\Filament\Pages\TourImportShowcasePage::getUrl();
+                    } catch (\Throwable) {
+                    }
+
+                    return new HtmlString(
+                        '<script>window.__npTour=' . json_encode(['urls' => $urls]) . ';</script>'
+                    );
                 }
             );
     }

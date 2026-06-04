@@ -1504,3 +1504,33 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     opacity: 0.75;
 }
 
+/* === Guided product tour (driver.js, session 338) === */
+/* Anchor markers are layout-invisible — the tour DOM-traverses from them to the
+   real target (next sibling / parent); the marker itself is never highlighted. */
+.np-tour-anchor {
+    display: none;
+}
+.np-tour-progress {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+/* Match the popover primary action to the admin accent. */
+.driver-popover .driver-popover-next-btn {
+    background-color: #f59e0b;
+    color: #1f2937;
+    text-shadow: none;
+    border: none;
+    font-weight: 600;
+}
+.driver-popover .driver-popover-next-btn:hover {
+    background-color: #d97706;
+}
+.driver-popover .driver-popover-title {
+    font-size: 1rem;
+}
+

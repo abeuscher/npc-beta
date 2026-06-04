@@ -6,6 +6,9 @@ import permissionTable from './admin/permission-table.js';
 import quillEditor from './admin/quill-editor.js';
 import customSelect from './admin/custom-select.js';
 import './admin/sidebar-expand-scroll.js';
+import { initTour } from './admin/tour/index.js';
+
+initTour();
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('helpSearch', helpSearch);
