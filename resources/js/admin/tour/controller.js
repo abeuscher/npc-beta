@@ -7,6 +7,12 @@
 // every cross-page transition: the active step index is persisted before a hard
 // navigation and resumed on the next page load.
 //
+// Interactive steps (step.interactive) hand control to the user: the spotlighted
+// element is the real link/button, the Next button is hidden, and clicking the
+// element advances the tour through the navigation it triggers (a one-shot
+// listener persists the next step, then the native click navigates and resume
+// picks it up on the destination page).
+//
 // The reusable primitives here — `resolveAnchor` (anchors.js) plus
 // `driver().highlight()` for a buttonless single-element spotlight — are what a
 // later contextual-help mode points at one feature on demand; keep them
@@ -132,11 +138,46 @@ async function runFromCurrentPage() {
 
     activeDriver = driver({
         allowClose: true,
-        overlayOpacity: 0.5,
+        overlayColor: '#0b1220',
+        overlayOpacity: 0.55,
         smoothScroll: true,
         stagePadding: 6,
         stageRadius: 8,
+        popoverClass: 'np-tour-popover',
         steps: driverSteps,
+        // Interactive steps: attach a one-shot listener so the user's click on
+        // the real element advances the tour through its own navigation.
+        onHighlightStarted: (element) => {
+            // Clear any stale spotlight class driver left on a previous element
+            // when a Livewire morph detached its reference — otherwise two
+            // elements stay ringed (seen on the same-page help finale).
+            document.querySelectorAll('.driver-active-element').forEach((el) => {
+                if (el !== element && el.id !== 'driver-dummy-element') {
+                    el.classList.remove('driver-active-element');
+                }
+            });
+
+            const st = getState();
+            const gi = st ? st.index : null;
+            const t = gi != null ? tour[gi] : null;
+            if (t && t.interactive && element) {
+                element.addEventListener(
+                    'click',
+                    () => setState({ active: true, index: gi + 1 }),
+                    { once: true, capture: true }
+                );
+            }
+        },
+        // A distinct "Exit Tour" affordance in the popover, same effect as the ✕.
+        onPopoverRender: (popover) => {
+            if (!popover.footer) return;
+            const exit = document.createElement('button');
+            exit.type = 'button';
+            exit.className = 'np-tour-exit-btn';
+            exit.textContent = 'Exit Tour';
+            exit.addEventListener('click', () => stopTour());
+            popover.footer.insertBefore(exit, popover.footer.firstChild);
+        },
         onNextClick: () => {
             const local = activeDriver.getActiveIndex();
             if (local < driverSteps.length - 1) {
@@ -170,17 +211,35 @@ function buildStep(step, element, globalIndex, total) {
     const isLast = globalIndex === total - 1;
     const isFirst = globalIndex === 0;
     const progress = `<span class="np-tour-progress">Step ${globalIndex + 1} of ${total}</span>`;
+
+    // Interactive steps hide Next — the user advances by clicking the real
+    // element the step points at. But only when that element actually resolved;
+    // if it didn't (e.g. no contacts to open into), keep Next so the tour can't
+    // strand the user on a centered step with no way forward.
+    const buttons =
+        step.interactive && element ? ['previous', 'close'] : ['previous', 'next', 'close'];
+
     const popover = {
         title: step.title || '',
         description: progress + (step.description || ''),
         side: step.side || 'bottom',
         align: step.align || 'start',
-        showButtons: ['previous', 'next', 'close'],
+        showButtons: buttons,
         disableButtons: isFirst ? ['previous'] : [],
         nextBtnText: isLast ? 'Done' : 'Next →',
         prevBtnText: '← Back',
     };
     const built = { popover };
-    if (element) built.element = element;
+    // For self-target `data-tour` anchors, hand driver a live CSS selector so it
+    // re-queries a fresh element on every highlight — immune to the Livewire DOM
+    // morph that detaches a captured element between two steps on the same page
+    // (e.g. the membership panel and "View transactions" on a contact record).
+    // Traversal anchors (next/parent/navRow) live on list pages we navigate away
+    // from, so the captured element is fine.
+    if (step.anchor && step.anchor.tour && !step.anchor.target) {
+        built.element = `[data-tour="${step.anchor.tour}"]`;
+    } else if (element) {
+        built.element = element;
+    }
     return built;
 }

@@ -421,6 +421,25 @@ class AdminPanelProvider extends PanelProvider
                         }
                     }
 
+                    // The contact the tour opens to show one rich record: the
+                    // seeded "hero" (active membership + a run of donations) when
+                    // present, else the newest contact (the contacts list sorts
+                    // created_at desc, so it is the first row). The tour highlights
+                    // exactly this contact's row by matching its URL, so both stay
+                    // in lockstep.
+                    try {
+                        if (\App\Filament\Resources\ContactResource::canViewAny()) {
+                            $hero = \App\Models\Contact::query()
+                                ->where('email', 'tour.hero@nphelper.demo')
+                                ->first()
+                                ?? \App\Models\Contact::query()->latest()->first();
+                            if ($hero) {
+                                $urls['contactRecord'] = \App\Filament\Resources\ContactResource::getUrl('edit', ['record' => $hero]);
+                            }
+                        }
+                    } catch (\Throwable) {
+                    }
+
                     // Locked-but-sellable features: navigate to the real page when
                     // the viewer can reach it, otherwise to a demo-safe showcase
                     // (no real data, no secrets) so the prospect still sees the

@@ -65,6 +65,22 @@ export async function resolveAnchor(anchor) {
         return link;
     }
 
+    // The table row whose record link points at a given URL-map page — used to
+    // spotlight a specific (seeded) record in a list and invite the click that
+    // navigates into it. Matched by our own route URL, never a row index.
+    if (anchor.navRow) {
+        const urls = (window.__npTour && window.__npTour.urls) || {};
+        const url = urls[anchor.navRow];
+        if (!url) return null;
+        const path = new URL(url, window.location.origin).pathname;
+        return await waitForElement(() => {
+            const marker = document.querySelector('[data-tour="resource.records"]');
+            const scope = (marker && marker.nextElementSibling) || document;
+            const link = scope.querySelector(`a[href$="${path}"]`);
+            return link ? link.closest('tr') : null;
+        });
+    }
+
     if (anchor.tour) {
         const marker = await waitForElement(() =>
             document.querySelector(`[data-tour="${anchor.tour}"]`)

@@ -1,5 +1,6 @@
 <div
     class="help-search-container"
+    data-tour="help.search"
     x-data="helpSearch()"
     x-on:click.away="close()"
     x-on:keydown.escape.window="close()"

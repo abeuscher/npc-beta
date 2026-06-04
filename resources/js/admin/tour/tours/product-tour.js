@@ -5,7 +5,9 @@
 //
 // `page` is a key into window.__npTour.urls (server-emitted only for pages the
 // viewer can reach). A step whose page the role can't reach is skipped, so the
-// tour adapts to the viewer rather than breaking.
+// tour adapts to the viewer rather than breaking. `interactive: true` steps hand
+// the click to the user — they navigate the product themselves and the tour
+// follows.
 
 export const productTour = [
     {
@@ -17,18 +19,36 @@ export const productTour = [
     },
     {
         page: 'contacts',
-        anchor: { tour: 'resource.records', target: 'next' },
+        anchor: { navRow: 'contactRecord' },
+        interactive: true,
         title: 'Contacts',
         description:
-            'Every supporter is one rich record — profile, giving history, memberships, event attendance, and notes, together. Click any row to open the full profile.',
+            'Every supporter is one rich record — profile, giving history, memberships, event attendance, and notes, together. <strong>Click this contact</strong> to open their record.',
         side: 'top',
     },
     {
-        page: 'donations',
-        anchor: { tour: 'resource.records', target: 'next' },
-        title: 'Donations',
+        page: 'contactRecord',
+        anchor: { tour: 'record.membership' },
+        title: 'One record, the whole picture',
         description:
-            'Track every gift and see each donor’s full giving history at a glance — the heartbeat of a nonprofit.',
+            'Open a supporter and everything about them is right here. This is their membership — tier, status, and renewals, tracked automatically.',
+        side: 'top',
+    },
+    {
+        page: 'contactRecord',
+        anchor: { tour: 'view-transactions' },
+        interactive: true,
+        title: 'Their giving & payments',
+        description:
+            'And their full giving and payment history is one click away. <strong>Click “View transactions”</strong> to see it.',
+        side: 'bottom',
+    },
+    {
+        page: 'transactions',
+        anchor: { tour: 'resource.records', target: 'next' },
+        title: 'Payments & accounting',
+        description:
+            'Every gift and payment — donations, event tickets, membership dues — runs through Stripe and lands here as a real transaction, and syncs to QuickBooks so your books stay current without double entry.',
         side: 'top',
     },
     {
@@ -36,15 +56,7 @@ export const productTour = [
         anchor: { tour: 'resource.records', target: 'next' },
         title: 'Mailing lists',
         description:
-            'Build segments here and sync them straight to your email tool (Mailchimp) — no exporting spreadsheets back and forth.',
-        side: 'top',
-    },
-    {
-        page: 'memberships',
-        anchor: { tour: 'resource.records', target: 'next' },
-        title: 'Memberships',
-        description:
-            'Offer tiered memberships with renewals, so your recurring supporters are tracked and managed automatically.',
+            'Build segments here and sync them straight to Mailchimp — no exporting spreadsheets back and forth.',
         side: 'top',
     },
     {
@@ -56,25 +68,34 @@ export const productTour = [
         side: 'top',
     },
     {
-        page: 'transactions',
-        anchor: { tour: 'resource.records', target: 'next' },
-        title: 'Payments & accounting',
-        description:
-            'Every payment — events, products, memberships, donations — runs through Stripe and lands here as a real transaction. It all syncs to QuickBooks in the background, so your books stay current without double entry.',
-        side: 'top',
-    },
-    {
         page: 'importer',
-        anchor: { tour: 'page.content', target: 'parent' },
+        anchor: null,
         title: 'Bring your data in (and out)',
         description:
             'Guided importers move your existing contacts, donations, and more into the CRM — upload a spreadsheet, map your columns, preview, import. And your data is always yours to export back out.',
     },
     {
         page: 'roles',
-        anchor: { tour: 'page.content', target: 'parent' },
+        anchor: { tour: 'resource.records', target: 'next' },
         title: 'Roles & permissions',
         description:
-            'Create as many roles as you need and control exactly who can see and do what — fine-grained, down to read, write, and delete on every part of the system. That’s the tour — close this and explore anything you like.',
+            'Create as many roles as you need and control exactly who can see and do what — fine-grained, down to read, write, and delete on every part of the system.',
+        side: 'top',
+    },
+    {
+        page: 'dashboard',
+        anchor: { tour: 'help.search' },
+        title: 'That’s the tour',
+        description:
+            'Curious about anything else? Search any feature right here and jump straight to help for it.',
+        side: 'bottom',
+    },
+    {
+        page: 'dashboard',
+        anchor: { tour: 'help.flyout' },
+        title: 'Help is always one click away',
+        description:
+            'And the <strong>?</strong> on every screen opens help for that exact page. Close this and explore anything you like.',
+        side: 'bottom',
     },
 ];

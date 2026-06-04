@@ -44,9 +44,38 @@ class DemoBaselineSeeder extends Seeder
         try {
             app(RandomDataGenerator::class)->wipe();
             app(RandomDataGenerator::class)->generate(self::BASELINE);
+            $this->designateHeroContact();
         } finally {
             $previous ? Auth::login($previous) : Auth::logout();
         }
+    }
+
+    /**
+     * Float one well-stocked generated contact to the top of the contacts list
+     * (sorted created_at desc) so the guided product tour opens to a rich
+     * record — an active membership plus a run of donations and their
+     * transactions, all already created by the generator. The tour finds it by
+     * this email (see AdminPanelProvider's tour URL map); promoting an existing
+     * contact reuses the generator's correct financial wiring rather than
+     * hand-building it.
+     */
+    protected function designateHeroContact(): void
+    {
+        $hero = \App\Models\Contact::query()
+            ->whereHas('memberships', fn ($q) => $q->where('status', 'active'))
+            ->whereHas('donations')
+            ->first()
+            ?? \App\Models\Contact::query()->whereHas('memberships')->first()
+            ?? \App\Models\Contact::query()->latest('id')->first();
+
+        if (! $hero) {
+            return;
+        }
+
+        $hero->forceFill([
+            'email'      => 'tour.hero@nphelper.demo',
+            'created_at' => now(),
+        ])->save();
     }
 
     /**

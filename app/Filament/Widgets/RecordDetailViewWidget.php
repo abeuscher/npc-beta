@@ -14,6 +14,12 @@ class RecordDetailViewWidget extends Widget
 
     protected static bool $isDiscovered = false;
 
+    // Render eagerly rather than Filament's default lazy-on-scroll: this panel is
+    // the record's at-a-glance summary (membership, giving) that belongs in the
+    // initial paint, and the guided tour anchors a step on it — a lazy,
+    // below-the-fold panel is never in the DOM when the tour looks for it.
+    protected static bool $isLazy = false;
+
     protected int | string | array $columnSpan = 'full';
 
     public ?Model $record = null;

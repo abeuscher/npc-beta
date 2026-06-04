@@ -14,7 +14,7 @@
                 icon="heroicon-m-play-circle"
                 data-np-tour-start
             >
-                Take a quick tour
+                Tour the Product
             </x-filament::button>
         </div>
     </x-filament::section>

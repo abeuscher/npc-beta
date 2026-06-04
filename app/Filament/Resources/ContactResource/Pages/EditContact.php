@@ -99,18 +99,19 @@ class EditContact extends ReadOnlyAwareEditRecord
     protected function getReadOnlyHeaderActions(): array
     {
         return [
-            Actions\Action::make('notes')
-                ->label('Timeline')
-                ->icon('heroicon-o-document-text')
-                ->color('secondary')
-                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
+            Actions\Action::make('view_transactions')
+                ->label('View transactions →')
+                ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
+                ->extraAttributes(['data-tour' => 'view-transactions'])
+                ->url(fn () => TransactionResource::getUrl('index')
+                    . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 
             Actions\ActionGroup::make([
-                Actions\Action::make('view_transactions')
-                    ->label('View transactions →')
-                    ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
-                    ->url(fn () => TransactionResource::getUrl('index')
-                        . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
+                Actions\Action::make('notes')
+                    ->label('Timeline')
+                    ->icon('heroicon-o-document-text')
+                    ->color('secondary')
+                    ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
             ]),
         ];
     }
@@ -118,20 +119,21 @@ class EditContact extends ReadOnlyAwareEditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('notes')
-                ->label('Timeline')
-                ->icon('heroicon-o-document-text')
-                ->color('secondary')
-                ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
+            Actions\Action::make('view_transactions')
+                ->label('View transactions →')
+                ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
+                ->extraAttributes(['data-tour' => 'view-transactions'])
+                ->url(fn () => TransactionResource::getUrl('index')
+                    . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 
             Actions\DeleteAction::make(),
 
             Actions\ActionGroup::make([
-                Actions\Action::make('view_transactions')
-                    ->label('View transactions →')
-                    ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
-                    ->url(fn () => TransactionResource::getUrl('index')
-                        . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
+                Actions\Action::make('notes')
+                    ->label('Timeline')
+                    ->icon('heroicon-o-document-text')
+                    ->color('secondary')
+                    ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
 
                 Actions\Action::make('promote_to_member')
                     ->label('Promote to Member')
