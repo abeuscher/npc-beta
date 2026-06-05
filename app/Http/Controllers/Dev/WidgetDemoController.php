@@ -94,10 +94,6 @@ class WidgetDemoController extends Controller
 
     private function resolveBaseline(string $handle): array
     {
-        if (class_exists(\Barryvdh\Debugbar\Facades\Debugbar::class)) {
-            \Barryvdh\Debugbar\Facades\Debugbar::disable();
-        }
-
         $def = app(WidgetRegistry::class)->find($handle);
 
         if (! $def) {
