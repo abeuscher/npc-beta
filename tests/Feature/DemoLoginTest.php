@@ -28,7 +28,7 @@ function enterDemoMode(): void
 
 it('imports demo.json with zero importer warnings and publishes the split page', function () {
     $bundle = json_decode(
-        file_get_contents(base_path('sessions/public website/demo.json')),
+        file_get_contents(base_path('tests/Fixtures/demo.json')),
         true
     );
 
