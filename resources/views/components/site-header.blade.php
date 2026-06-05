@@ -42,7 +42,7 @@
             </svg>
         </button>
 
-        <nav role="group" class="site-nav" :class="open ? 'is-open' : ''">
+        <nav class="site-nav" :class="open ? 'is-open' : ''">
             @foreach ($headerNavItems as $item)
                 @php
                     $href = ($item->page_id && $item->page) ? url('/' . $item->page->slug) : ($item->url ?? '#');

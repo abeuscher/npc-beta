@@ -328,7 +328,13 @@ class AppearanceStyleComposer
             $layers[] = $gradientCss;
         }
         if ($imageUrl !== null) {
-            $layers[] = 'url(' . $imageUrl . ')';
+            // Quote the URL so filenames with spaces or parentheses (e.g.
+            // "photo (1).jpg") produce valid CSS rather than silently failing to
+            // paint; escape backslash/quote for CSS string safety. The whole
+            // inline style is html-escaped by the renderer, so the emitted quotes
+            // round-trip through the attribute unchanged.
+            $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $imageUrl);
+            $layers[] = 'url("' . $escaped . '")';
         }
         $styleProps[] = 'background-image:' . implode(', ', $layers);
 

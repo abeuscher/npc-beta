@@ -117,7 +117,21 @@
 
 .hero--pos-top-left .hero-body > .site-container,
 .hero--pos-center-left .hero-body > .site-container,
-.hero--pos-bottom-left .hero-body > .site-container     { align-items: flex-start; }
+.hero--pos-bottom-left .hero-body > .site-container     {
+    align-items: flex-start;
+
+    // Flush-left finish (session 340, closes Page Composition Fidelity G2). The
+    // hero template nests a second .site-container inside the one the renderer
+    // already wraps a (content-not-full-width) hero in, so left-aligned content
+    // double-insets and reads as indented from the site header rather than flush
+    // beneath it. For the left variants only, neutralize the inner container's
+    // width cap, centering, and horizontal padding so .hero-inner aligns to the
+    // outer container's content edge. Center/right variants are untouched.
+    width: 100%;
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+}
 
 .hero--pos-top-center .hero-body > .site-container,
 .hero--pos-center-center .hero-body > .site-container,

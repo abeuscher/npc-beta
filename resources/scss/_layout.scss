@@ -82,10 +82,16 @@
 // turns those properties into actual padding/margin, and the two cascading
 // @media steps below scale them down at tablet (≤768) and mobile (≤576).
 //
-// The 0px var() fallback preserves the "concrete 0 = no override" semantic: a
-// side the operator left at 0 emits no custom property, resolves to 0px here, and
-// the wrappers carry no intrinsic vertical padding/margin of their own — so an
-// unset widget is byte-for-byte unchanged. Horizontal spacing is never touched.
+// Each wrapper RESETS the four --np-* properties to a concrete 0px (below) so
+// they do not inherit (session 340). The composer emits a property inline only
+// for a non-zero side — a 0/unset side emits nothing — so without the reset a
+// child whose own side is 0 would inherit the PARENT container's value (e.g. a
+// column layout's padding bleeding 50px onto every child widget), because
+// var(--np-*, 0px) only uses its fallback when the property is unset on the
+// element AND every ancestor. The reset makes an unset/0 side resolve to this
+// element's own 0px, while a non-zero inline --np-* (an operator override) still
+// wins — inline custom properties beat this layer'd declaration. Horizontal
+// spacing is a literal declaration and never uses this mechanism.
 //
 // .np-chrome-section is the hook for chrome root widgets, which render as a bare
 // wrapper with no .widget class (ChromeRenderer::renderPage).
@@ -98,6 +104,13 @@ $section-spacing-ratio: 0.8;
 .widget,
 .page-layout,
 .np-chrome-section {
+    // Reset to a concrete 0px so these properties never inherit from an
+    // ancestor wrapper; a non-zero inline --np-* override still wins.
+    --np-pad-top:    0px;
+    --np-pad-bottom: 0px;
+    --np-mar-top:    0px;
+    --np-mar-bottom: 0px;
+
     padding-top:    var(--np-pad-top, 0px);
     padding-bottom: var(--np-pad-bottom, 0px);
     margin-top:     var(--np-mar-top, 0px);

@@ -87,6 +87,24 @@ it('consumes the --np-* properties in the host layer with a 0px no-override fall
     expect($src)->toContain('.np-chrome-section');
 });
 
+it('resets the --np-* spacing properties to 0px on each wrapper so they cannot inherit (session 340)', function () {
+    // The --np-* custom properties INHERIT. A column layout's own vertical
+    // padding (e.g. --np-pad-top:50px on .page-layout) therefore bled onto every
+    // child .widget whose own side was 0 — because a 0 side emits no property and
+    // var(--np-pad-top, 0px) only falls back to 0px when the property is unset on
+    // the element AND every ancestor. Each wrapper must reset the four properties
+    // to a concrete 0px so an unset/0 child resolves to its own 0, not the
+    // parent's value; a non-zero inline --np-* (an operator override) still wins,
+    // because inline custom properties beat this layer'd declaration.
+    $src = sectionSpacingScssSource();
+
+    expect($src)
+        ->toContain('--np-pad-top:    0px')
+        ->toContain('--np-pad-bottom: 0px')
+        ->toContain('--np-mar-top:    0px')
+        ->toContain('--np-mar-bottom: 0px');
+});
+
 it('scales vertical spacing down at the tablet and mobile breakpoints from one tunable ratio', function () {
     $src = sectionSpacingScssSource();
 

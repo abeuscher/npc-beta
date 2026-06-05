@@ -14,12 +14,20 @@
                     $isExternal = $urlHost && $urlHost !== $siteHost && ! str_ends_with($urlHost, '.' . $siteHost);
                     $style = $btn['style'] ?? 'primary';
                     $hover = $buttonStyles[$style]['hover'] ?? 'opacity';
+                    // Explicit per-button target wins; a button with no target set
+                    // falls back to the legacy auto behavior (external URLs open in
+                    // a new tab).
+                    $explicitTarget = $btn['target'] ?? null;
+                    $target = in_array($explicitTarget, ['_self', '_blank'], true)
+                        ? $explicitTarget
+                        : ($isExternal ? '_blank' : '_self');
+                    $newTab = $target === '_blank';
                 @endphp
                 <a
                     href="{{ e($url) }}"
                     class="btn btn--{{ $style }}"
                     data-hover="{{ $hover }}"
-                    @if ($isExternal) target="_blank" rel="noopener noreferrer" @endif
+                    @if ($newTab) target="_blank" rel="noopener noreferrer" @endif
                 >
                     {{ $btn['text'] }}
                     @if ($isExternal)

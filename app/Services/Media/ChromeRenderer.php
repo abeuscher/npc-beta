@@ -116,11 +116,7 @@ class ChromeRenderer
             } else {
                 $layout = $item['data'];
                 $layoutHtml = static::renderLayoutBlock($layout, $styles, $scripts);
-                $bgFw = (bool) ($layout->layout_config['background_full_width'] ?? false);
-                $contentFw = (bool) ($layout->layout_config['content_full_width'] ?? false);
-                if (! $bgFw && $contentFw) {
-                    $bgFw = true;
-                }
+                $bgFw = app(AppearanceStyleComposer::class)->resolveFullWidthForLayout($layout)['background_full_width'];
                 $html .= $bgFw ? $layoutHtml : '<div class="site-container">' . $layoutHtml . '</div>';
             }
         }
@@ -136,7 +132,7 @@ class ChromeRenderer
         $gridStyle = 'display:' . $display . ';';
 
         if ($display === 'grid') {
-            $gridStyle .= 'grid-template-columns:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
+            $gridStyle .= '--layout-cols:' . ($config['grid_template_columns'] ?? str_repeat('1fr ', $layout->columns)) . ';';
         }
 
         if (! empty($config['gap'])) {
@@ -158,31 +154,14 @@ class ChromeRenderer
             $gridStyle .= 'flex-wrap:' . $config['flex_wrap'] . ';';
         }
 
-        // Horizontal stays literal; vertical (top/bottom) becomes --np-* custom
-        // properties so the host rule on .page-layout can scale it at narrow
-        // widths, in lockstep with the page render path.
-        $appearanceStyle = '';
-        $spacingKeys = [
-            'padding_right' => 'padding-right', 'padding_left' => 'padding-left',
-            'margin_right' => 'margin-right', 'margin_left' => 'margin-left',
-        ];
-        foreach ($spacingKeys as $key => $cssProp) {
-            $val = isset($config[$key]) && $config[$key] !== '' ? (int) $config[$key] : null;
-            if ($val !== null) {
-                $appearanceStyle .= $cssProp . ':' . $val . 'px;';
-            }
-        }
-
-        $verticalVars = AppearanceStyleComposer::composeVerticalSpacingVars(
-            ['top' => $config['padding_top'] ?? '', 'bottom' => $config['padding_bottom'] ?? ''],
-            ['top' => $config['margin_top'] ?? '', 'bottom' => $config['margin_bottom'] ?? ''],
-        );
-        foreach ($verticalVars as $prop) {
-            $appearanceStyle .= $prop . ';';
-        }
-        if (! empty($config['background_color'])) {
-            $appearanceStyle .= 'background-color:' . $config['background_color'] . ';';
-        }
+        // Per-layout appearance (background/gradient, horizontal padding/margin,
+        // and the vertical section-spacing --np-* properties) is composed from the
+        // nested appearance_config.layout shape via the shared composer — the same
+        // path the page-body renderer uses (PageBlockRenderer::renderLayoutBlock),
+        // so header/footer chrome honors per-layout appearance identically to a
+        // page body instead of reading the long-removed flat layout_config keys.
+        $composer = app(AppearanceStyleComposer::class);
+        $appearanceStyle = $composer->composeForLayout($layout);
 
         // Group children by column_index
         $slots = [];
@@ -216,9 +195,15 @@ class ChromeRenderer
             $columnHtml .= '<div class="layout-column">' . $slotHtml . '</div>';
         }
 
-        $gridHtml = '<div class="layout-grid" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
+        // Emit the per-layout collapse_mobile toggle (default true) so chrome
+        // columns stack on mobile via the same _layout.scss @container rule the
+        // page body uses. The grid track is the --layout-cols custom property
+        // (above) rather than a literal grid-template-columns, so the collapse
+        // override is not defeated by an inline declaration.
+        $collapseMobile = ($config['collapse_mobile'] ?? true) !== false;
+        $gridHtml = '<div class="layout-grid" data-collapse-mobile="' . ($collapseMobile ? 'true' : 'false') . '" style="' . e($gridStyle) . '">' . $columnHtml . '</div>';
 
-        $contentFw = (bool) ($config['content_full_width'] ?? false);
+        $contentFw = $composer->resolveFullWidthForLayout($layout)['content_full_width'];
         $innerHtml = $contentFw ? $gridHtml : '<div class="site-container">' . $gridHtml . '</div>';
 
         return '<div class="page-layout"' . ($appearanceStyle ? ' style="' . e($appearanceStyle) . '"' : '') . '>' . $innerHtml . '</div>';

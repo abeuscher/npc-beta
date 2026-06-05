@@ -49,6 +49,31 @@ it('defines columns as a repeater with the expected nested fields', function () 
     expect($ctas['type'])->toBe('buttons');
 });
 
+it('surfaces the columns repeater in the inspector with CTAs editable, hiding the inline-edited fields', function () {
+    // s340: PricingChart CTAs were unreachable — the columns repeater was
+    // inspector:false and the buttons partial is render-only (no inline editing
+    // for the buttons type). The repeater is now inspector-visible, scoped to
+    // Title + CTAs; the text/feature fields stay inspector:false (edited inline
+    // on the page). RepeaterField hides an inspector:false sub-field but keeps
+    // its data, so nothing is dropped.
+    $def = new PricingChartDefinition();
+    $columns = collect($def->schema())->firstWhere('key', 'columns');
+
+    // The repeater itself must be inspector-visible (absence of the flag = shown).
+    expect($columns['inspector'] ?? true)->not->toBeFalse();
+
+    $byKey = collect($columns['fields'])->keyBy('key');
+
+    // CTAs (and the identifying Title) are editable in the inspector.
+    expect($byKey['ctas']['inspector'] ?? true)->not->toBeFalse();
+    expect($byKey['title']['inspector'] ?? true)->not->toBeFalse();
+
+    // The inline-edited text/feature fields are hidden from this control.
+    foreach (['emphasize', 'eyebrow', 'price', 'lead_content', 'attribute_rows'] as $hidden) {
+        expect($byKey[$hidden]['inspector'] ?? null)->toBeFalse("[{$hidden}] should be inspector:false");
+    }
+});
+
 it('defaults round-trip through validate() with a concrete value for every schema key', function () {
     $def = new PricingChartDefinition();
     $def->validate();

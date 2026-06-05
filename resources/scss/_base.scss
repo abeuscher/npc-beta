@@ -236,7 +236,12 @@
 // Utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-.visually-hidden {
+// .sr-only is the name widgets reference for visually-hidden labels (e.g.
+// BoardMembers social-icon text); it shares the project's existing
+// visually-hidden rule so that text is hidden from sight but read by assistive
+// tech instead of rendering visible on the public site.
+.visually-hidden,
+.sr-only {
     position: absolute;
     width: 1px;
     height: 1px;

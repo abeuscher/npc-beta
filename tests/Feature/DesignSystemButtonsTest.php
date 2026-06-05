@@ -182,6 +182,54 @@ it('does not flag relative urls as external', function () {
     expect($view)->not->toContain('target="_blank"');
 });
 
+// ── Explicit per-button link target ──
+
+it('honors an explicit new-tab target on an internal-url button', function () {
+    config(['app.url' => 'https://example.org']);
+
+    $view = view('widget-shared.buttons', [
+        'buttons' => [
+            ['text' => 'Docs', 'url' => '/docs', 'style' => 'primary', 'target' => '_blank'],
+        ],
+    ])->render();
+
+    // Internal URL would not auto-open a new tab, but the explicit target does.
+    expect($view)
+        ->toContain('href="/docs"')
+        ->toContain('target="_blank"')
+        ->toContain('rel="noopener noreferrer"');
+});
+
+it('honors an explicit same-tab target overriding the external auto-new-tab', function () {
+    config(['app.url' => 'https://example.org']);
+
+    $view = view('widget-shared.buttons', [
+        'buttons' => [
+            ['text' => 'Partner', 'url' => 'https://other-site.com/x', 'style' => 'primary', 'target' => '_self'],
+        ],
+    ])->render();
+
+    // External URL would auto-open in a new tab, but the explicit _self wins.
+    expect($view)->not->toContain('target="_blank"');
+});
+
+it('falls back to the external auto-new-tab when no target is set (legacy buttons unchanged)', function () {
+    config(['app.url' => 'https://example.org']);
+
+    $view = view('widget-shared.buttons', [
+        'buttons' => [
+            ['text' => 'External', 'url' => 'https://other-site.com/x', 'style' => 'primary'],
+            ['text' => 'Internal', 'url' => '/about', 'style' => 'primary'],
+        ],
+    ])->render();
+
+    // External (no target key) still opens in a new tab; internal still does not.
+    expect($view)
+        ->toContain('target="_blank"')
+        ->toContain('rel="noopener noreferrer"')
+        ->toContain('href="/about"');
+});
+
 // ── Page access ──
 
 it('restricts design system page to authorized users', function () {

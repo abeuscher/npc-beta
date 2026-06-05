@@ -341,12 +341,17 @@ it('renders a column layout on a system page', function () {
     expect($result)->not->toBeNull();
     expect($result['html'])->toContain('page-layout');
     expect($result['html'])->toContain('display:grid');
-    expect($result['html'])->toContain('grid-template-columns:auto 1fr');
+    // Parity with the page-body renderer: the column track is the --layout-cols
+    // custom property (not a literal grid-template-columns), so the stylesheet's
+    // container-query collapse is not defeated by an inline declaration.
+    expect($result['html'])->toContain('--layout-cols:auto 1fr');
+    expect($result['html'])->not->toContain('grid-template-columns:');
+    expect($result['html'])->toContain('data-collapse-mobile="true"');
     expect($result['html'])->toContain('layout-column');
     expect($result['html'])->toContain('Layout child content');
 });
 
-it('wraps chrome layout in site-container by default', function () {
+it('contains chrome layout content in a site-container by default (parity full-width default)', function () {
     $page = Page::factory()->create([
         'slug'         => '_header',
         'type'         => 'system',
@@ -363,9 +368,13 @@ it('wraps chrome layout in site-container by default', function () {
 
     $result = ChromeRenderer::render('_header');
 
+    // Parity default (resolveFullWidthForLayout): a layout with no explicit
+    // full-width keys is full-bleed background with contained content — the grid
+    // sits inside an inner .site-container and the .page-layout itself is not
+    // outer-wrapped. Mirrors how a page body renders the same bare layout.
     expect($result)->not->toBeNull();
     expect($result['html'])->toContain('site-container');
-    expect($result['html'])->toMatch('/<div class="site-container"><div class="page-layout"/');
+    expect($result['html'])->toMatch('/<div class="page-layout"[^>]*><div class="site-container"><div class="layout-grid"/');
 });
 
 it('renders chrome layout edge-to-edge when full_width is true', function () {
@@ -394,7 +403,14 @@ it('renders chrome layout edge-to-edge when full_width is true', function () {
     expect($result['html'])->toContain('page-layout');
 });
 
-it('emits new layout style fields in chrome', function () {
+it('composes per-layout appearance from nested appearance_config in chrome (parity with page body)', function () {
+    // The page builder writes layout appearance to appearance_config.layout
+    // (nested), which composeForLayout reads — NOT the long-removed flat
+    // layout_config keys (background_color / padding_top) the chrome renderer
+    // used to read. This is the s340 chrome-parity fix: chrome routes through
+    // AppearanceStyleComposer::composeForLayout exactly like the page body, so
+    // per-layout background + padding reach the rendered chrome instead of
+    // silently vanishing.
     $page = Page::factory()->create([
         'slug'         => '_header',
         'type'         => 'system',
@@ -403,25 +419,92 @@ it('emits new layout style fields in chrome', function () {
     ]);
 
     $page->layouts()->create([
-        'display'       => 'grid',
-        'columns'       => 1,
-        'layout_config' => [
-            'grid_template_columns' => '1fr',
-            'background_color'      => '#123456',
-            'padding_top'           => '15',
-            'margin_bottom'         => '7',
+        'display'           => 'grid',
+        'columns'           => 1,
+        'layout_config'     => ['grid_template_columns' => '1fr'],
+        'appearance_config' => [
+            'background' => ['color' => '#123456'],
+            'layout'     => [
+                'padding' => ['top' => '15', 'right' => '24', 'bottom' => '0', 'left' => '0'],
+                'margin'  => ['top' => '0', 'right' => '0', 'bottom' => '7', 'left' => '0'],
+            ],
         ],
-        'sort_order'    => 0,
+        'sort_order'        => 0,
     ]);
 
     $result = ChromeRenderer::render('_header');
 
     expect($result)->not->toBeNull();
     expect($result['html'])->toContain('background-color:#123456');
-    // Vertical → --np-* custom properties so the host rule scales it at narrow
-    // widths, in lockstep with the page render path (session 335).
+    // Horizontal padding stays a literal declaration ...
+    expect($result['html'])->toContain('padding-right:24px');
+    // ... vertical (top/bottom) is emitted as --np-* custom properties so the
+    // host rule scales it at narrow widths, in lockstep with the page body.
     expect($result['html'])->toContain('--np-pad-top:15px');
     expect($result['html'])->toContain('--np-mar-bottom:7px');
+    // The flat legacy keys are no longer the source of truth.
+    expect($result['html'])->not->toContain('grid-template-columns:');
+});
+
+it('reaches HTML with both data-collapse-mobile and nested appearance padding (s340 drift guard)', function () {
+    // Standing guard against the chrome renderer drifting back into a stale
+    // duplicate of the page-body path. A single chrome column layout carrying a
+    // collapse_mobile setting AND nested appearance_config.layout.padding must
+    // render with the collapse attribute, the --layout-cols track, and the
+    // padding all present — the exact silent-drift class the s340 parity fix
+    // closed.
+    $page = Page::factory()->create([
+        'slug'         => '_footer',
+        'type'         => 'system',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $page->layouts()->create([
+        'display'           => 'grid',
+        'columns'           => 2,
+        'layout_config'     => [
+            'grid_template_columns' => '1fr 1fr',
+            'collapse_mobile'       => true,
+        ],
+        'appearance_config' => [
+            'layout' => ['padding' => ['top' => '0', 'right' => '40', 'bottom' => '0', 'left' => '40']],
+        ],
+        'sort_order'        => 0,
+    ]);
+
+    $result = ChromeRenderer::render('_footer');
+
+    expect($result)->not->toBeNull();
+    expect($result['html'])
+        ->toContain('data-collapse-mobile="true"')
+        ->toContain('--layout-cols:1fr 1fr')
+        ->toContain('padding-left:40px')
+        ->toContain('padding-right:40px');
+});
+
+it('emits data-collapse-mobile="false" on a chrome layout that opts out', function () {
+    $page = Page::factory()->create([
+        'slug'         => '_footer',
+        'type'         => 'system',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $page->layouts()->create([
+        'display'       => 'grid',
+        'columns'       => 2,
+        'layout_config' => [
+            'grid_template_columns' => '1fr 1fr',
+            'collapse_mobile'       => false,
+        ],
+        'sort_order'    => 0,
+    ]);
+
+    $result = ChromeRenderer::render('_footer');
+
+    expect($result)->not->toBeNull();
+    expect($result['html'])->toContain('data-collapse-mobile="false"');
 });
 
 it('emits the universal border on a chrome widget in parity with the composer (session 323)', function () {

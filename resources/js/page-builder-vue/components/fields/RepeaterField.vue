@@ -22,6 +22,15 @@ const nestedFields = computed<FieldDef[]>(() =>
   Array.isArray(props.field.fields) ? props.field.fields : []
 )
 
+// Sub-fields render in the inspector unless explicitly marked inspector:false
+// (mirrors InspectorPanel's top-level convention). The unfiltered nestedFields
+// list still drives defaultRow(), so a hidden sub-field keeps its seeded /
+// inline-edited value — it is only hidden from this inspector control, never
+// dropped from the data.
+const visibleFields = computed<FieldDef[]>(() =>
+  nestedFields.value.filter((f) => f.inspector !== false)
+)
+
 function defaultRow(): Record<string, any> {
   const out: Record<string, any> = {}
   for (const f of nestedFields.value) {
@@ -124,7 +133,7 @@ function updateRow(index: number, key: string, value: any) {
 
       <div class="repeater__fields">
         <RepeaterRowField
-          v-for="nested in nestedFields"
+          v-for="nested in visibleFields"
           :key="nested.key"
           :field="nested"
           :widget="widget"

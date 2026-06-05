@@ -15,7 +15,7 @@ This doc carries the **status snapshot** and the **forward plan**. The reusable 
 
 ## Status snapshot
 
-**Last update:** 2026-06-04 (session 339 close).
+**Last update:** 2026-06-05 (session 340 close — gap **G2** closed).
 
 **Opened:** session 339. The public-site restyle (a designer comp executed against the imported home page) was the first pass in everything but name — it produced the methodology now captured in the finding-template, and the first gap findings (below). It was *not* run as a clean fidelity pass; it was a real revision that happened to exercise the same machinery, which is why the early miscommunications happened and why this track exists.
 
@@ -72,7 +72,7 @@ First findings, from the session 339 pass. Each is a candidate for the Widget Au
 | # | Gap | Workaround used in 339 | Proposed system change |
 |---|-----|------------------------|------------------------|
 | G1 | **Rich text can't colour part of a block.** The HTML sanitizer strips inline `style` from text tags, so a heading-in-one-colour over body-in-another inside a single text block is impossible. | Split the heading into its own band (one widget per band). | A sanitizer-safe text-colour mechanism (allow-listed colour class, or a heading-colour appearance key on text_block). |
-| G2 | **Hero widget double-contains inside a column.** The Hero widget wraps its content in its own `.site-container`; placed inside an already-contained column layout it insets ~50px and won't sit flush to the page container. | Swapped the hero to a plain text block. | Make the hero's inner container conditional (only when full-bleed), or document that hero ≠ column-child. |
+| ~~G2~~ | ~~**Hero widget double-contains inside a column.**~~ **Closed s340.** The Hero widget wraps its content in its own `.site-container`; placed inside an already-contained column layout it insets ~50px and won't sit flush to the page container. | Swapped the hero to a plain text block. | **Done (s340):** the `.hero--pos-*-left` variants in `_custom.scss` neutralize the inner `.site-container`'s width cap / centering / horizontal padding so left-aligned content sits flush to the outer container edge (left-position variants only). |
 | G3 | **Two text blocks can't share one grid column.** `.widget--text_block { height: 100% }` makes each fill the column; two in one column fight and overflow the band. | Gave each block its own band. | Stack-safe multi-widget columns (drop the unconditional `height:100%`, or a column stacking mode). |
 | G4 | **No per-breakpoint section spacing.** The section-spacing primitive (s335) only scales *down* on mobile, so tight-desktop and larger-mobile spacing can't come from one setting (the comp's "80px between mobile cells" vs. a tight desktop). | Prioritised the desktop comp; mobile cells stack evenly but at the scaled-down gap, not 80px. | A mobile-specific spacing override, or a min-gap floor for stacked column children. |
 

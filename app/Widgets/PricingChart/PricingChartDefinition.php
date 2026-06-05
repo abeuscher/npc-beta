@@ -60,13 +60,20 @@ class PricingChartDefinition extends WidgetDefinition
             ['key' => 'attribute_row_count', 'type' => 'select', 'label' => 'Feature rows per column', 'group' => 'content', 'default' => 'auto', 'options' => $countOptions(0, 12), 'helper' => 'How many comparison rows each column shows. Lowering this hides the extra rows — their content is kept, not deleted.'],
             ['key' => 'emphasized_column',   'type' => 'select', 'label' => 'Emphasized column',    'group' => 'content', 'default' => '0', 'options' => $emphasizeOptions, 'helper' => 'Visually highlight one column as the recommended choice.'],
 
-            ['key' => 'columns', 'type' => 'repeater', 'label' => 'Columns', 'group' => 'content', 'item_label' => 'Column', 'inspector' => false, 'fields' => [
-                ['key' => 'emphasize',    'type' => 'toggle',   'label' => 'Emphasize this column', 'default' => false, 'helper' => 'Visually highlight this column as the recommended choice.'],
-                ['key' => 'eyebrow',      'type' => 'text',     'label' => 'Eyebrow',      'default' => '', 'helper' => 'Short label above the title (e.g. "Recommended"). Optional.'],
+            // The columns repeater is inspector-visible so operators can set each
+            // column's CTAs — the buttons partial is render-only, so CTAs cannot
+            // be inline-edited on the canvas the way the text fields are. The
+            // text/feature fields are edited directly on the page, so they are
+            // marked inspector:false to keep this control focused on Title + CTAs;
+            // their data is preserved either way (RepeaterField hides a sub-field,
+            // never drops it). Title stays visible to identify the column.
+            ['key' => 'columns', 'type' => 'repeater', 'label' => 'Columns', 'group' => 'content', 'item_label' => 'Column', 'helper' => 'Each column\'s text is edited directly on the page; set its buttons (CTAs) here.', 'fields' => [
+                ['key' => 'emphasize',    'type' => 'toggle',   'label' => 'Emphasize this column', 'default' => false, 'inspector' => false, 'helper' => 'Visually highlight this column as the recommended choice.'],
+                ['key' => 'eyebrow',      'type' => 'text',     'label' => 'Eyebrow',      'default' => '', 'inspector' => false, 'helper' => 'Short label above the title (e.g. "Recommended"). Optional.'],
                 ['key' => 'title',        'type' => 'text',     'label' => 'Title',        'default' => ''],
-                ['key' => 'price',        'type' => 'richtext', 'label' => 'Price',        'default' => ''],
-                ['key' => 'lead_content', 'type' => 'richtext', 'label' => 'Lead content', 'default' => '', 'helper' => 'Optional intro block above the attribute rows.'],
-                ['key' => 'attribute_rows', 'type' => 'repeater', 'label' => 'Attribute rows', 'item_label' => 'Row', 'fields' => [
+                ['key' => 'price',        'type' => 'richtext', 'label' => 'Price',        'default' => '', 'inspector' => false],
+                ['key' => 'lead_content', 'type' => 'richtext', 'label' => 'Lead content', 'default' => '', 'inspector' => false, 'helper' => 'Optional intro block above the attribute rows.'],
+                ['key' => 'attribute_rows', 'type' => 'repeater', 'label' => 'Attribute rows', 'item_label' => 'Row', 'inspector' => false, 'fields' => [
                     ['key' => 'label', 'type' => 'text',     'label' => 'Label', 'default' => ''],
                     ['key' => 'value', 'type' => 'richtext', 'label' => 'Value', 'default' => ''],
                 ]],

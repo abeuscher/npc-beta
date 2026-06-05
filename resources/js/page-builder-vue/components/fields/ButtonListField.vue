@@ -25,7 +25,7 @@ function update(newList: any[]) {
 }
 
 function addButton() {
-  update([...buttons.value, { text: '', url: '', style: 'primary' }])
+  update([...buttons.value, { text: '', url: '', style: 'primary', target: '_self' }])
 }
 
 function removeButton(index: number) {
@@ -134,6 +134,15 @@ function updateField(index: number, key: string, value: string) {
             :key="value"
             :value="value"
           >{{ label }}</option>
+        </select>
+        <select
+          :value="btn.target ?? '_self'"
+          :aria-label="`Button ${index + 1} link target`"
+          class="button-list__input"
+          @change="updateField(index, 'target', ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="_self">Same tab</option>
+          <option value="_blank">New tab</option>
         </select>
       </div>
     </div>
