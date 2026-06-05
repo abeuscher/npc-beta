@@ -317,7 +317,7 @@ Push to the branch the workflow listens on (`release/public-demo` for the demo, 
 
 1. Build `app` and `web` Docker images, push to GHCR with the appropriate tag.
 2. SCP `docker-compose.prod.yml` to `/opt/nonprofitcrm/`.
-3. SSH to the droplet, run `docker compose pull` + `up -d` + `migrate --force` + `storage:link` + cache clears + `build:public`.
+3. SSH to the droplet, run `docker compose pull` + `up -d` + `migrate --force` + `widgets:sync` + `storage:link` + cache clears + `build:public`.
 
 Watch the run in GitHub → Actions. Common failure modes:
 
@@ -333,11 +333,19 @@ Watch the run in GitHub → Actions. Common failure modes:
 
 The deploy workflow's `migrate --force` step runs cleanly on first install as of session 260 — `docker-compose.prod.yml` declares a postgres healthcheck and both `deploy.yml` / `deploy-demo.yml` invoke `docker compose up -d --wait --remove-orphans`, so migrate runs against a postgres that's actually accepting connections (not just process-up). Tables land first-attempt; `migrate:status` after first deploy shows the canonical migration list.
 
-The workflow does NOT run the seeder. After first deploy, run it once to land the admin user, roles, starter pages, and sample images:
+The workflow does NOT run the full seeder (it is deliberately kept out of the deploy path for data-safety — it would clobber operator content). After first deploy, run it once to land the admin user, roles, starter pages, and sample images:
 
 ```bash
 docker exec nonprofitcrm_app php artisan db:seed --force
 docker exec nonprofitcrm_app php artisan storage:link
+```
+
+**Widget schema sync runs on every deploy (since session 341).** The full seeder is data-destructive and stays out of the deploy path, but the idempotent `widgets:sync` step (added after `migrate --force`) re-syncs widget definitions into `widget_types.config_schema` on every deploy. Without it, a *pure-schema* widget change (a new/changed inspector control with no migration) ships in the image but never reaches an already-installed server — the page builder and public render both read fields from that column, not the live PHP class. **If a node is already stuck on stale widget schema** (deployed before this step existed, or upgraded out-of-band), the immediate unstick is to run the widget sync by hand — either the command directly or the seeder it lives in:
+
+```bash
+docker exec nonprofitcrm_app php artisan widgets:sync
+# or, equivalently, the seeder path that also runs it:
+docker exec nonprofitcrm_app php artisan db:seed --class=WidgetTypeSeeder --force
 ```
 
 Then log in to `https://<your_domain>/admin` with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`. For demo droplets, use the **Random Data Generator** widget on the dashboard to populate scrub contacts / donations / events.
