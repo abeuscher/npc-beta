@@ -6,6 +6,7 @@ use App\Filament\Resources\TemplateResource\Pages;
 use App\Models\Template;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -112,6 +113,32 @@ class TemplateResource extends Resource
                         ? Pages\EditContentTemplate::getUrl(['record' => $record])
                         : Pages\EditPageTemplate::getUrl(['record' => $record])
                     ),
+
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('update_page') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate template')
+                    ->modalDescription('Creates a copy of this template, including its widgets and layouts. The copy is never the default. It opens in the editor.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Template $record) {
+                        abort_unless(auth()->user()?->can('update_page'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Template duplicated')
+                            ->body('A copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect($copy->type === 'content'
+                            ? Pages\EditContentTemplate::getUrl(['record' => $copy])
+                            : Pages\EditPageTemplate::getUrl(['record' => $copy])
+                        );
+                    }),
 
                 Tables\Actions\Action::make('setDefault')
                     ->label('Set Default')

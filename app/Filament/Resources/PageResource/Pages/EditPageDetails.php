@@ -45,6 +45,7 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                             'member'  => 'Member Page',
                         ])
                         ->default('default')
+                        ->helperText('The kind of page — a public Web Page or a logged-in Member Page.')
                         ->hiddenOn('edit')
                         ->columnSpanFull(),
 
@@ -68,7 +69,7 @@ class EditPageDetails extends ReadOnlyAwareEditRecord
                     ->label('Page Template')
                     ->options(fn () => Template::page()->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id'))
                     ->default(fn () => Template::page()->where('is_default', true)->value('id'))
-                    ->helperText('Header, footer, and styling.'),
+                    ->helperText('The header, footer, and styling that frame this page. Stays linked — change it any time.'),
                 imageFields: [
                     SpatieMediaLibraryFileUpload::make('post_thumbnail')
                         ->label('Thumbnail image')

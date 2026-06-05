@@ -31,8 +31,33 @@ function setDisplay(display: 'flex' | 'grid') {
 }
 
 function onColumnsChange(e: Event) {
-  const value = parseInt((e.target as HTMLInputElement).value, 10)
+  const input = e.target as HTMLInputElement
+  const value = parseInt(input.value, 10)
   if (isNaN(value) || value < 1 || value > 12) return
+
+  // Decreasing the column count drops the slots at indices >= the new count;
+  // any widgets in them stop rendering on the page. Confirm before hiding
+  // populated columns so content doesn't vanish as a side effect of an
+  // unrelated change (mirrors the delete-layout confirm in LayoutInspectorPanel).
+  const current = props.layout.columns ?? 1
+  if (value < current) {
+    const slots = (props.layout.slots ?? {}) as Record<string | number, unknown[]>
+    let hidden = 0
+    for (let i = value; i < current; i++) {
+      hidden += (slots[i] ?? slots[String(i)] ?? []).length
+    }
+    if (hidden > 0) {
+      const w = hidden === 1 ? 'widget' : 'widgets'
+      const it = hidden === 1 ? 'it' : 'them'
+      const ok = window.confirm(
+        `Reducing the column count will hide ${hidden} ${w} in the dropped column${current - value === 1 ? '' : 's'} — ${it} will no longer appear on the page. Move ${it} into another column first to keep ${it} visible.\n\nReduce the column count anyway?`
+      )
+      if (!ok) {
+        input.value = String(current)
+        return
+      }
+    }
+  }
 
   const config = { ...(props.layout.layout_config ?? {}) }
   if (props.layout.display === 'grid') {
@@ -135,6 +160,9 @@ function getFlexBasis(slotIdx: number): string {
         >
         <span>Background fills page width</span>
       </label>
+      <p v-if="backgroundDisabled" class="layout-inspector__hint layout-inspector__hint--disabled">
+        {{ backgroundDisabledReason }}
+      </p>
       <label class="layout-inspector__checkbox-row">
         <input
           type="checkbox"
@@ -474,6 +502,15 @@ function getFlexBasis(slotIdx: number): string {
   font-size: 0.6875rem;
   color: #9ca3af;
   line-height: 1.4;
+}
+
+/* Reason a control is disabled, shown inline under the faded checkbox so the
+   "why" no longer lives only in a hover tooltip. Indented to sit under the
+   checkbox label, with a touch more emphasis than a plain field hint. */
+.layout-inspector__hint--disabled {
+  margin: 0.25rem 0 0 1.5rem;
+  color: #6b7280;
+  font-style: italic;
 }
 
 .layout-inspector__toggle-group {

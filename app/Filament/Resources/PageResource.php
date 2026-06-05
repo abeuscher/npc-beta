@@ -114,6 +114,7 @@ class PageResource extends Resource
                             'member'  => 'Member Page',
                         ])
                         ->default('default')
+                        ->helperText('The kind of page — a public Web Page or a logged-in Member Page.')
                         ->hiddenOn('edit')
                         ->columnSpanFull(),
 
@@ -130,7 +131,7 @@ class PageResource extends Resource
                         ->label('Content Template')
                         ->options(fn () => collect(['none' => 'None (blank)'])->merge(Template::content()->orderBy('name')->pluck('name', 'id')))
                         ->default(fn () => \App\Models\SiteSetting::get('default_content_template_default') ?: 'none')
-                        ->helperText('Widget preset — applied once at creation.')
+                        ->helperText('Pre-fills the page with a starter set of widgets, copied in once when the page is created. You can edit or remove them afterward.')
                         ->hiddenOn('edit')
                         ->columnSpanFull(),
 
@@ -147,7 +148,7 @@ class PageResource extends Resource
                     ->label('Page Template')
                     ->options(fn () => Template::page()->orderByDesc('is_default')->orderBy('name')->pluck('name', 'id'))
                     ->default(fn () => Template::page()->where('is_default', true)->value('id'))
-                    ->helperText('Header, footer, and styling.'),
+                    ->helperText('The header, footer, and styling that frame this page. Stays linked — change it any time.'),
                 imageFields: [
                     SpatieMediaLibraryFileUpload::make('post_thumbnail')
                         ->label('Thumbnail image')

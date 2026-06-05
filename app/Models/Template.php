@@ -176,4 +176,23 @@ class Template extends Model
     {
         return $this->morphMany(PageLayout::class, 'owner');
     }
+
+    /**
+     * Duplicate this template, copying its configuration and its owned chrome
+     * stack (root widgets + column layouts). A copy is never the default
+     * (only one default per type) and is attributed to the current user; the
+     * header/footer page references are shared as-is.
+     */
+    public function duplicate(): self
+    {
+        $copy = $this->replicate(['is_default']);
+        $copy->name       = 'Copy of ' . $this->name;
+        $copy->is_default = false;
+        $copy->created_by = auth()->id();
+        $copy->save();
+
+        PageWidget::copyOwnedStack($this, $copy);
+
+        return $copy;
+    }
 }

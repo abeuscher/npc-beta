@@ -120,4 +120,28 @@ class Organization extends Model
     {
         return $this->belongsTo(ImportSession::class);
     }
+
+    /**
+     * Duplicate this organisation's own attributes (plus its tags) into a new
+     * record. Real related records — donations, memberships, affiliations,
+     * notes, sponsored events — are deliberately NOT copied; they belong to the
+     * original. Import provenance and source reset for a hand-made copy.
+     */
+    public function duplicate(): self
+    {
+        $copy = $this->replicate(['source', 'import_source_id', 'import_session_id', 'external_id']);
+        $copy->name              = 'Copy of ' . $this->name;
+        $copy->source            = Source::HUMAN;
+        $copy->import_source_id  = null;
+        $copy->import_session_id = null;
+        $copy->external_id       = null;
+        $copy->save();
+
+        $tagIds = $this->tags()->pluck('tags.id')->all();
+        if ($tagIds) {
+            $copy->tags()->sync($tagIds);
+        }
+
+        return $copy;
+    }
 }

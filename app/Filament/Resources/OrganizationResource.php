@@ -141,6 +141,28 @@ class OrganizationResource extends Resource
             ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('gray')
+                    ->visible(fn () => auth()->user()?->can('create_organization') ?? false)
+                    ->requiresConfirmation()
+                    ->modalHeading('Duplicate organization')
+                    ->modalDescription('Creates a copy of this organization’s details and tags. Donations, memberships, affiliations, and notes are not copied. The copy opens in the editor.')
+                    ->modalSubmitActionLabel('Duplicate')
+                    ->action(function (Organization $record) {
+                        abort_unless(auth()->user()?->can('create_organization'), 403);
+
+                        $copy = $record->duplicate();
+
+                        Notification::make()
+                            ->title('Organization duplicated')
+                            ->body('A copy was created. You are now editing the copy.')
+                            ->success()
+                            ->send();
+
+                        return redirect(OrganizationResource::getUrl('edit', ['record' => $copy]));
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->before(function (Tables\Actions\DeleteAction $action, Organization $record) {
                         if (! self::guardDeletion($record)) {
