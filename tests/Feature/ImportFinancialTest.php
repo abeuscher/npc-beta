@@ -418,6 +418,68 @@ it('collapses multiple line-item rows into one Transaction with line_items JSON'
     expect($tx->line_items[1]['item'])->toBe('T-shirt');
 });
 
+it('resolves conflicting parent fields with first-row-wins across an invoice group', function () {
+    $source  = ImportSource::create(['name' => 'Source A']);
+    $contact = Contact::factory()->create(['email' => 'alice@example.com']);
+
+    // Two rows share one invoice number but carry a conflicting parent field
+    // (payment method: Card vs Cash). Parent fields are captured from the first
+    // row of the group only, so the first row's value must win on the Transaction.
+    $path = financialCsv([
+        ['Email', 'Invoice #', 'Invoice date', 'Item', 'Item amount', 'Payment method', 'Status'],
+        ['alice@example.com', 'INV-300', '01/15/2025', 'Event registration', '25.00', 'Card', 'Paid'],
+        ['alice@example.com', 'INV-300', '01/15/2025', 'T-shirt', '30.00', 'Cash', 'Paid'],
+    ]);
+
+    $session = ImportSession::create([
+        'session_label'    => 'Invoices run',
+        'import_source_id' => $source->id,
+        'model_type'       => 'invoice_detail',
+        'status'           => 'pending',
+        'filename'         => 'invoices.csv',
+        'row_count'        => 2,
+        'imported_by'      => $this->admin->id,
+    ]);
+
+    $log = ImportLog::create([
+        'model_type'         => 'invoice_detail',
+        'filename'           => basename($path),
+        'storage_path'       => $path,
+        'column_map'         => [
+            'Email'          => 'contact:email',
+            'Invoice #'      => 'invoice:invoice_number',
+            'Invoice date'   => 'invoice:invoice_date',
+            'Item'           => 'invoice:item',
+            'Item amount'    => 'invoice:item_amount',
+            'Payment method' => 'invoice:payment_type',
+            'Status'         => 'invoice:status',
+        ],
+        'row_count'          => 2,
+        'duplicate_strategy' => 'skip',
+        'match_key'          => 'contact:email',
+        'contact_match_key'  => 'contact:email',
+        'import_source_id'   => $source->id,
+        'status'             => 'pending',
+    ]);
+
+    $page = new ImportInvoiceDetailsProgressPage();
+    $page->importLogId     = $log->id;
+    $page->importSessionId = $session->id;
+    $page->importSourceId  = $source->id;
+    $page->contactStrategy = 'error';
+    $page->mount();
+
+    $page->runCommit();
+
+    expect(Transaction::count())->toBe(1);
+
+    $tx = Transaction::first();
+    expect($tx->invoice_number)->toBe('INV-300');
+    expect($tx->line_items)->toHaveCount(2);
+    // First row's "Card" wins; the second row's "Cash" is ignored.
+    expect($tx->payment_method)->toBe('Card');
+});
+
 it('enriches an existing Transaction with fill-blanks-only semantics', function () {
     $source  = ImportSource::create(['name' => 'Source A']);
     $contact = Contact::factory()->create(['email' => 'alice@example.com']);

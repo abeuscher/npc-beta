@@ -4,6 +4,7 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Fund;
 use App\Models\Transaction;
+use App\Services\StripeCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -53,6 +54,50 @@ it('validates donation amount maximum of $10,000', function () {
 
     $response->assertUnprocessable()
         ->assertJsonValidationErrors('amount');
+});
+
+// ── Checkout initiation — create-pending-then-route-on-Stripe-result ──────────
+
+it('creates a pending donation and returns the Stripe checkout url on success', function () {
+    config(['services.stripe.secret' => 'sk_test_fake']);
+
+    $session = \Stripe\Checkout\Session::constructFrom(['url' => 'https://checkout.stripe.test/session_123']);
+    $this->mock(StripeCheckoutService::class, function ($mock) use ($session) {
+        $mock->shouldReceive('createSession')->once()->andReturn($session);
+    });
+
+    $response = $this->postJson(route('donations.checkout'), [
+        'amount' => 50,
+        'type'   => 'one_off',
+    ]);
+
+    $response->assertOk()
+        ->assertJson(['url' => 'https://checkout.stripe.test/session_123']);
+
+    expect(Donation::count())->toBe(1);
+    $donation = Donation::first();
+    expect($donation->status)->toBe('pending');
+    expect((float) $donation->amount)->toBe(50.0);
+    expect($donation->type)->toBe('one_off');
+});
+
+it('deletes the pending donation when Stripe checkout creation fails', function () {
+    config(['services.stripe.secret' => 'sk_test_fake']);
+
+    $this->mock(StripeCheckoutService::class, function ($mock) {
+        $mock->shouldReceive('createSession')->once()->andThrow(new \Exception('stripe unreachable'));
+    });
+
+    $response = $this->postJson(route('donations.checkout'), [
+        'amount' => 50,
+        'type'   => 'one_off',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJson(['error' => 'Could not initiate checkout. Please try again.']);
+
+    // The pending donation created before the Stripe call is rolled back on failure.
+    expect(Donation::count())->toBe(0);
 });
 
 // ── Stripe webhook — donation checkout completed ──────────────────────────────
