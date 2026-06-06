@@ -4,6 +4,7 @@ use App\WidgetPrimitive\Views\DashboardView;
 use App\Models\PageWidget;
 use App\Models\User;
 use App\Models\WidgetType;
+use App\Services\WidgetRegistry;
 use Database\Seeders\DashboardViewSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -60,7 +61,16 @@ it('rejects widget creation from a user without the permission', function () {
 // ── allowedSlots enforcement ────────────────────────────────────────────────
 
 it('rejects widget creation when the widget handle does not allow dashboard_grid', function () {
-    $notDashboard = WidgetType::whereNotIn('handle', ['memos', 'quick_actions', 'this_weeks_events'])->first();
+    // Derive the dashboard-grid set from the registry (the controller's own
+    // source of truth) rather than a hardcoded list, so this never lands on a
+    // dashboard-allowed widget the list forgot — random_data_generator allows
+    // the slot too, and an unordered ->first() could otherwise return it.
+    $dashboardHandles = collect(app(WidgetRegistry::class)->all())
+        ->filter(fn ($def) => in_array('dashboard_grid', $def->allowedSlots(), true))
+        ->map(fn ($def) => $def->handle())
+        ->all();
+
+    $notDashboard = WidgetType::whereNotIn('handle', $dashboardHandles)->first();
 
     $response = $this->actingAs($this->superAdmin)
         ->postJson(dashboardUrl($this->config->id, 'widgets'), [
