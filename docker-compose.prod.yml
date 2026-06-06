@@ -8,9 +8,14 @@ services:
     container_name: nonprofitcrm_app
     restart: unless-stopped
     env_file: .env
+    # bootstrap/cache is deliberately NOT a persistent volume — it holds only
+    # derived, image-specific files (packages.php/services.php/compiled). A
+    # persistent mount let a manifest written by a pre-image survive an image
+    # swap and shadow the new image's vendor (the 0.345.06 Debugbar deploy
+    # brick). The image bakes + chowns the dir, so no mount is needed.
+    # BootstrapCacheVolumeTest guards against re-adding it.
     volumes:
       - storage_data:/var/www/html/storage
-      - bootstrap_cache:/var/www/html/bootstrap/cache
       - widget_build:/var/www/html/public/build/widgets
       - libs_build:/var/www/html/public/build/libs
     networks:
@@ -83,9 +88,10 @@ services:
     restart: unless-stopped
     command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     env_file: .env
+    # bootstrap/cache deliberately not persisted here either — see the app
+    # service note above.
     volumes:
       - storage_data:/var/www/html/storage
-      - bootstrap_cache:/var/www/html/bootstrap/cache
     networks:
       - nonprofitcrm
     depends_on:
@@ -113,7 +119,6 @@ volumes:
   postgres_data:
   redis_data:
   storage_data:
-  bootstrap_cache:
   widget_build:
   libs_build:
 
