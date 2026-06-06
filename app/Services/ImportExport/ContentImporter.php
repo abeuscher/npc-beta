@@ -2,165 +2,48 @@
 
 namespace App\Services\ImportExport;
 
-use App\Filament\Pages\DesignSystemPage;
 use App\Models\Collection;
-use App\Models\CollectionItem;
-use App\Models\Contact;
 use App\Models\Event;
-use App\Models\EventRegistration;
-use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
-use App\Models\Organization;
 use App\Models\Page;
-use App\Models\PageWidget;
 use App\Models\Product;
-use App\Models\ProductPrice;
-use App\Models\SiteSetting;
-use App\Models\Tag;
 use App\Models\Template;
-use App\Models\TicketTier;
-use App\Models\User;
 use App\Services\AssetBuildService;
-use App\Services\ColorTokenResolver;
-use App\Services\TemplateAppearanceResolver;
-use App\Services\TypographyResolver;
-use App\Models\WidgetType;
-use App\Support\HtmlSanitizer;
+use App\Services\ImportExport\Import\BundleMediaArchive;
+use App\Services\ImportExport\Import\CollectionImporter;
+use App\Services\ImportExport\Import\DesignImporter;
+use App\Services\ImportExport\Import\EventImporter;
+use App\Services\ImportExport\Import\MediaImporter;
+use App\Services\ImportExport\Import\NavigationImporter;
+use App\Services\ImportExport\Import\PageImporter;
+use App\Services\ImportExport\Import\ProductImporter;
+use App\Services\ImportExport\Import\SiteSettingsImporter;
+use App\Services\ImportExport\Import\TemplateImporter;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
+/**
+ * Orchestrates site-bundle import. `analyze()` is a pure pre-flight inspection
+ * the import UI drives; `import()` validates the envelope, opens one transaction
+ * and walks the payload sections in dependency order (settings → design → media
+ * → templates → pages → navigation → products → events → collections), then runs
+ * the post-commit CSS rebuild + conversion regeneration. The per-section write
+ * logic is delegated to the collaborators under
+ * {@see \App\Services\ImportExport\Import}. Pairs with {@see ContentExporter}.
+ */
 class ContentImporter
 {
-    // ── SiteSettings export/import policy (session A001/3) ─────────────────
-    //
-    // The security boundary for the site_settings payload lives here. The
-    // exporter consults these lists pre-emptively at emit time so secrets
-    // never enter the bundle, and the importer re-applies them at write time
-    // so a tampered bundle still can't land a secret on a target install.
-    // Belt + suspenders by design — neither side trusts the other.
-
-    /**
-     * Explicit allow-list of keys the SiteSettings exporter will read out of
-     * SiteSetting. Anything not in this list is dropped silently. New keys
-     * land here only on review — additions don't auto-flow into bundles.
-     *
-     * @var array<int, string>
-     */
-    public const SITE_SETTINGS_ALLOW_LIST = [
-        // Site identity
-        'site_name',
-        'site_description',
-        'site_default_og_image',
-        'logo_path',
-        'favicon_path',
-        // Admin branding
-        'admin_brand_name',
-        'admin_logo_path',
-        'admin_primary_color',
-        'admin_secondary_color',
-        // SEO + custom snippets
-        'noindex_global',
-        'site_head_snippet',
-        'site_body_snippet',
-        'site_body_open_snippet',
-        // Routing prefixes
-        'blog_prefix',
-        'events_prefix',
-        'donations_prefix',
-        'portal_prefix',
-        'system_prefix',
-        // Publishing defaults
-        'default_content_template_default',
-        'default_content_template_event',
-        'default_content_template_post',
-        'auto_publish_pages',
-        'auto_publish_posts',
-        'event_auto_publish',
-        // Brand-relevant auth-flow copy
-        'system_page_content_email_verify',
-        'system_page_content_reset_password',
-        // Editor + display
-        'editor_color_swatches',
-        'image_breakpoints',
-        'timezone',
-        'dashboard_welcome',
-    ];
-
-    /**
-     * Deny-list prefixes. Anything starting with these is hard-rejected even
-     * if it somehow appears in a bundle's site_settings payload.
-     *
-     * @var array<int, string>
-     */
-    public const SITE_SETTINGS_DENY_PREFIXES = [
-        'stripe_',
-        'qb_',
-        'quickbooks_',
-        'mailchimp_',
-        'mail_',
-        'resend_',
-        'build_server_',
-    ];
-
-    /**
-     * Defence-in-depth tail-guard pattern: any key whose substring matches
-     * common secret-shaped suffixes is hard-rejected. Catches new keys we
-     * haven't named explicitly.
-     */
-    public const SITE_SETTINGS_DENY_REGEX = '/(_api_key|_secret|_token|_password|_webhook)/i';
-
-    /**
-     * Explicit per-key denies for install-state flags that aren't secrets
-     * but aren't valid to carry across installs either.
-     *
-     * @var array<int, string>
-     */
-    public const SITE_SETTINGS_DENY_NAMED = [
-        'installation_completed_at',
-        'horizon_enabled',
-    ];
-
-    /**
-     * Returns true if a SiteSetting key should never enter or leave a bundle.
-     * Checks named deny, prefix matches, and the regex tail-guard. Used by
-     * both the exporter (pre-emptive filter) and the importer (defensive
-     * re-check on inbound bundles).
-     */
-    public static function isSiteSettingKeyDenied(string $key): bool
-    {
-        if (in_array($key, self::SITE_SETTINGS_DENY_NAMED, true)) {
-            return true;
-        }
-        foreach (self::SITE_SETTINGS_DENY_PREFIXES as $prefix) {
-            if (str_starts_with($key, $prefix)) {
-                return true;
-            }
-        }
-        if (preg_match(self::SITE_SETTINGS_DENY_REGEX, $key)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Absolute path of an extracted bundle's media/ root, set for the duration
-     * of a single import() call when the source was a zip. When non-null, media
-     * descriptors resolve from the archive first; when null the importer is on
-     * the unchanged JSON/local-disk path (media-portability draft decision #2).
-     */
-    private ?string $mediaRoot = null;
-
-    /**
-     * Per-import flag (session 309). When false, pages whose slug already
-     * exists on this install are skipped with a warning instead of being
-     * overwritten in place. Defaults to true so direct service callers keep
-     * the existing overwrite semantics; the import UI passes false when the
-     * operator declines the "Replace duplicate pages" checkbox.
-     */
-    private bool $replaceDuplicatePages = true;
+    public function __construct(
+        private SiteSettingsImporter $siteSettings,
+        private DesignImporter $design,
+        private MediaImporter $media,
+        private TemplateImporter $templates,
+        private PageImporter $pages,
+        private NavigationImporter $navigation,
+        private ProductImporter $products,
+        private EventImporter $events,
+        private CollectionImporter $collections,
+    ) {}
 
     /**
      * Canonical default opts for import(). Kept in one place so analyze()/UI
@@ -400,7 +283,7 @@ class ContentImporter
             if (! is_string($k) || $k === '') {
                 continue;
             }
-            if (self::isSiteSettingKeyDenied($k)) {
+            if (SiteSettingsBundlePolicy::isDenied($k)) {
                 $ssBlocked[] = $k;
             } else {
                 $ssKeys[] = $k;
@@ -487,10 +370,10 @@ class ContentImporter
 
         $opts = array_replace(self::defaultImportOpts(), $opts);
 
-        $this->mediaRoot                = $mediaRoot;
-        $this->replaceDuplicatePages    = (bool) $opts['replace_duplicate_pages'];
-        $designImported                 = false;
-        $seededMediaIds                 = [];
+        $archive               = new BundleMediaArchive($mediaRoot);
+        $replaceDuplicatePages = (bool) $opts['replace_duplicate_pages'];
+        $designImported        = false;
+        $seededMediaIds        = [];
 
         // Manifest cross-check (session A001/3). If the bundle carries a
         // manifest, log any declared-vs-actual count mismatches before the
@@ -502,127 +385,122 @@ class ContentImporter
             }
         }
 
-        try {
-            DB::transaction(function () use ($bundle, $log, $opts, &$designImported, &$seededMediaIds) {
-                $payload = $bundle['payload'] ?? [];
+        DB::transaction(function () use ($bundle, $log, $opts, $archive, $replaceDuplicatePages, &$designImported, &$seededMediaIds) {
+            $payload = $bundle['payload'] ?? [];
 
-                // SiteSettings runs ahead of design/templates/pages so any
-                // downstream pass that reads SiteSetting::get() sees the
-                // imported values. Gated on import_site_settings (session
-                // A001/3 — default OFF; same posture as merge_design,
-                // SiteSettings carry brand/identity values an operator may
-                // not want overwritten by an inbound bundle).
-                if (! empty($payload['site_settings']) && is_array($payload['site_settings'])) {
-                    if ($opts['import_site_settings']) {
-                        $this->importSiteSettings($payload['site_settings'], $log);
-                    } else {
-                        $log->info('SiteSettings: bundle includes ' . count($payload['site_settings']) . ' setting entries, skipped (import_site_settings opt is off).');
-                    }
+            // SiteSettings runs ahead of design/templates/pages so any
+            // downstream pass that reads SiteSetting::get() sees the
+            // imported values. Gated on import_site_settings (session
+            // A001/3 — default OFF; same posture as merge_design,
+            // SiteSettings carry brand/identity values an operator may
+            // not want overwritten by an inbound bundle).
+            if (! empty($payload['site_settings']) && is_array($payload['site_settings'])) {
+                if ($opts['import_site_settings']) {
+                    $this->siteSettings->import($payload['site_settings'], $log);
+                } else {
+                    $log->info('SiteSettings: bundle includes ' . count($payload['site_settings']) . ' setting entries, skipped (import_site_settings opt is off).');
+                }
+            }
+
+            // Theme/design runs first so a combined bundle establishes the
+            // theme before templates/pages resolve against it. Gated on
+            // merge_design (session 309 — default off).
+            if (! empty($payload['design']) && is_array($payload['design'])) {
+                if ($opts['merge_design']) {
+                    $this->design->import($payload['design'], $log);
+                    $designImported = true;
+                } else {
+                    $log->info('Theme: bundle includes a design payload, skipped (merge_design opt is off).');
+                }
+            }
+
+            // ID-preserving media seed runs before templates/pages so
+            // by-reference content resolves against the seeded rows. Gated
+            // on import_media (session 309 — default on).
+            if (! empty($payload['media']) && is_array($payload['media'])) {
+                if ($opts['import_media']) {
+                    $seededMediaIds = $this->media->import($payload['media'], $log, $archive);
+                } else {
+                    $log->info('Media: bundle includes a media seed list, skipped (import_media opt is off).');
+                }
+            }
+
+            foreach ($payload['templates'] ?? [] as $templateData) {
+                $this->templates->import($templateData, $log, $archive);
+            }
+
+            if ($opts['import_pages']) {
+                foreach ($payload['pages'] ?? [] as $pageData) {
+                    $this->pages->import($pageData, $log, $archive, $replaceDuplicatePages);
                 }
 
-                // Theme/design runs first so a combined bundle establishes the
-                // theme before templates/pages resolve against it. Gated on
-                // merge_design (session 309 — default off).
-                if (! empty($payload['design']) && is_array($payload['design'])) {
-                    if ($opts['merge_design']) {
-                        $this->importDesign($payload['design'], $log);
-                        $designImported = true;
-                    } else {
-                        $log->info('Theme: bundle includes a design payload, skipped (merge_design opt is off).');
-                    }
-                }
-
-                // ID-preserving media seed runs before templates/pages so
-                // by-reference content resolves against the seeded rows. Gated
-                // on import_media (session 309 — default on).
-                if (! empty($payload['media']) && is_array($payload['media'])) {
-                    if ($opts['import_media']) {
-                        $seededMediaIds = $this->importMedia($payload['media'], $log);
-                    } else {
-                        $log->info('Media: bundle includes a media seed list, skipped (import_media opt is off).');
-                    }
-                }
-
+                // Re-link page templates to their chrome pages now that the pages exist.
                 foreach ($payload['templates'] ?? [] as $templateData) {
-                    $this->importTemplate($templateData, $log);
-                }
-
-                if ($opts['import_pages']) {
-                    foreach ($payload['pages'] ?? [] as $pageData) {
-                        $this->importPage($pageData, $log);
-                    }
-
-                    // Re-link page templates to their chrome pages now that the pages exist.
-                    foreach ($payload['templates'] ?? [] as $templateData) {
-                        if (($templateData['type'] ?? null) === 'page') {
-                            $this->relinkTemplateChrome($templateData, $log);
-                        }
-                    }
-                } elseif (! empty($payload['pages'])) {
-                    $log->info('Pages: bundle includes ' . count($payload['pages']) . ' page entries, skipped (import_pages opt is off).');
-                }
-
-                // Navigation runs after pages so item.page_slug references
-                // resolve against rows the import just landed. Session A001.
-                if (! empty($payload['navigation_menus']) && is_array($payload['navigation_menus'])) {
-                    if ($opts['import_navigation']) {
-                        foreach ($payload['navigation_menus'] as $menuData) {
-                            $this->importNavigationMenu($menuData, $log);
-                        }
-                    } else {
-                        $log->info('Navigation: bundle includes ' . count($payload['navigation_menus']) . ' menu entries, skipped (import_navigation opt is off).');
+                    if (($templateData['type'] ?? null) === 'page') {
+                        $this->templates->relinkChrome($templateData, $log);
                     }
                 }
+            } elseif (! empty($payload['pages'])) {
+                $log->info('Pages: bundle includes ' . count($payload['pages']) . ' page entries, skipped (import_pages opt is off).');
+            }
 
-                // Nav-widget config rewiring post-pass (session A001/4).
-                // Runs unconditionally if pages were imported: any nav widget
-                // on a freshly-imported page whose config carries
-                // `navigation_menu_handle` needs final reconciliation against
-                // the menus that actually exist on the target install (the
-                // bundle may have menus we just imported, or the target may
-                // already have them, or neither — the post-pass handles all
-                // three cases including the warn-and-null path for stale
-                // references with no matching menu anywhere).
-                if ($opts['import_pages']) {
-                    $this->relinkNavWidgetMenus($log);
-                }
-
-                if (! empty($payload['products']) && is_array($payload['products'])) {
-                    if ($opts['import_products']) {
-                        foreach ($payload['products'] as $productData) {
-                            $this->importProduct($productData, $log);
-                        }
-                    } else {
-                        $log->info('Products: bundle includes ' . count($payload['products']) . ' product entries, skipped (import_products opt is off).');
+            // Navigation runs after pages so item.page_slug references
+            // resolve against rows the import just landed. Session A001.
+            if (! empty($payload['navigation_menus']) && is_array($payload['navigation_menus'])) {
+                if ($opts['import_navigation']) {
+                    foreach ($payload['navigation_menus'] as $menuData) {
+                        $this->navigation->import($menuData, $log);
                     }
+                } else {
+                    $log->info('Navigation: bundle includes ' . count($payload['navigation_menus']) . ' menu entries, skipped (import_navigation opt is off).');
                 }
+            }
 
-                // Events run after pages so landing_page_slug resolves
-                // against the pages we just imported. Session A001.
-                if (! empty($payload['events']) && is_array($payload['events'])) {
-                    if ($opts['import_events']) {
-                        foreach ($payload['events'] as $eventData) {
-                            $this->importEvent($eventData, $log);
-                        }
-                    } else {
-                        $log->info('Events: bundle includes ' . count($payload['events']) . ' event entries, skipped (import_events opt is off).');
-                    }
-                }
+            // Nav-widget config rewiring post-pass (session A001/4).
+            // Runs unconditionally if pages were imported: any nav widget
+            // on a freshly-imported page whose config carries
+            // `navigation_menu_handle` needs final reconciliation against
+            // the menus that actually exist on the target install (the
+            // bundle may have menus we just imported, or the target may
+            // already have them, or neither — the post-pass handles all
+            // three cases including the warn-and-null path for stale
+            // references with no matching menu anywhere).
+            if ($opts['import_pages']) {
+                $this->navigation->relinkNavWidgetMenus($log);
+            }
 
-                if (! empty($payload['collections']) && is_array($payload['collections'])) {
-                    if ($opts['import_collections']) {
-                        foreach ($payload['collections'] as $collectionData) {
-                            $this->importCollection($collectionData, $log);
-                        }
-                    } else {
-                        $log->info('Collections: bundle includes ' . count($payload['collections']) . ' collection entries, skipped (import_collections opt is off).');
+            if (! empty($payload['products']) && is_array($payload['products'])) {
+                if ($opts['import_products']) {
+                    foreach ($payload['products'] as $productData) {
+                        $this->products->import($productData, $log, $archive);
                     }
+                } else {
+                    $log->info('Products: bundle includes ' . count($payload['products']) . ' product entries, skipped (import_products opt is off).');
                 }
-            });
-        } finally {
-            $this->mediaRoot             = null;
-            $this->replaceDuplicatePages = true;
-        }
+            }
+
+            // Events run after pages so landing_page_slug resolves
+            // against the pages we just imported. Session A001.
+            if (! empty($payload['events']) && is_array($payload['events'])) {
+                if ($opts['import_events']) {
+                    foreach ($payload['events'] as $eventData) {
+                        $this->events->import($eventData, $log, $archive);
+                    }
+                } else {
+                    $log->info('Events: bundle includes ' . count($payload['events']) . ' event entries, skipped (import_events opt is off).');
+                }
+            }
+
+            if (! empty($payload['collections']) && is_array($payload['collections'])) {
+                if ($opts['import_collections']) {
+                    foreach ($payload['collections'] as $collectionData) {
+                        $this->collections->import($collectionData, $log);
+                    }
+                } else {
+                    $log->info('Collections: bundle includes ' . count($payload['collections']) . ' collection entries, skipped (import_collections opt is off).');
+                }
+            }
+        });
 
         // Rebuild the public CSS bundle outside the transaction (the build
         // server is a 30s HTTP call — never hold a DB transaction across it).
@@ -645,244 +523,6 @@ class ContentImporter
         foreach ($seededMediaIds as $mediaId) {
             \App\Jobs\RegenerateMediaConversionsJob::dispatch((int) $mediaId);
         }
-    }
-
-    /**
-     * payload.design pass — deep-merge each imported design row over its
-     * resolver default shape and persist. Never sweeps, replaces wholesale, or
-     * zeroes unknown keys: a key absent from the bundle keeps the default
-     * concrete value (session 303; the 295 em-rhythm-revert lesson /
-     * concrete-values rule). Runs inside the import transaction.
-     *
-     * @param  array<string, mixed>  $design
-     */
-    protected function importDesign(array $design, ImportLog $log): void
-    {
-        $buttonDefaults = DesignSystemPage::defaultButtonStyles();
-        $buttonDefaults['icon']        = DesignSystemPage::defaultIconSettings();
-        $buttonDefaults['form_append'] = DesignSystemPage::defaultFormAppendSettings();
-
-        $rows = [
-            'theme_colors'  => ColorTokenResolver::defaults(),
-            'typography'    => TypographyResolver::defaults(),
-            'button_styles' => $buttonDefaults,
-        ];
-
-        foreach ($rows as $key => $defaults) {
-            if (! array_key_exists($key, $design) || ! is_array($design[$key])) {
-                continue;
-            }
-
-            $incoming = $design[$key];
-            if ($key === 'typography') {
-                // Same flat→per-breakpoint normaliser the read path applies.
-                $incoming = TypographyResolver::migrate($incoming);
-            }
-
-            $merged = $this->deepMergeOverDefaults($defaults, $incoming);
-
-            SiteSetting::updateOrCreate(
-                ['key' => $key],
-                ['value' => json_encode($merged), 'type' => 'json', 'group' => 'design'],
-            );
-            Cache::forget("site_setting:{$key}");
-            $log->info("Theme: imported '{$key}'.");
-        }
-    }
-
-    /**
-     * Recursive merge of imported values over a concrete default base. Never
-     * removes a default key; a null override keeps the default (the 295
-     * lesson — change values, never null configuration). List arrays are
-     * replaced wholesale, associative arrays recursed.
-     *
-     * @param  array<mixed>  $defaults
-     * @param  array<mixed>  $imported
-     * @return array<mixed>
-     */
-    protected function deepMergeOverDefaults(array $defaults, array $imported): array
-    {
-        foreach ($imported as $key => $value) {
-            if (is_array($value)
-                && isset($defaults[$key]) && is_array($defaults[$key])
-                && ! array_is_list($defaults[$key]) && ! array_is_list($value)) {
-                $defaults[$key] = $this->deepMergeOverDefaults($defaults[$key], $value);
-            } elseif ($value !== null) {
-                $defaults[$key] = $value;
-            }
-        }
-
-        return $defaults;
-    }
-
-    /**
-     * payload.site_settings pass — per-key upsert with defensive deny-list
-     * re-check. The exporter has already filtered against the same lists,
-     * but the importer never trusts the bundle: every inbound key is run
-     * through `isSiteSettingKeyDenied()` and any `type === 'encrypted'`
-     * entry is hard-skipped. Rich-text keys (`SiteSetting::RICH_TEXT_KEYS`)
-     * are sanitised on the way in. Cache invalidation matches the model's
-     * `set()` convention. Session A001/3.
-     *
-     * @param  array<string, mixed>  $settings
-     */
-    protected function importSiteSettings(array $settings, ImportLog $log): void
-    {
-        foreach ($settings as $key => $entry) {
-            if (! is_string($key) || $key === '' || ! is_array($entry)) {
-                $log->warning('SiteSettings: skipping malformed entry.');
-                continue;
-            }
-
-            if (self::isSiteSettingKeyDenied($key)) {
-                $log->warning("SiteSettings: key '{$key}' blocked by importer deny-list (matched secret/credential pattern), skipped.");
-                continue;
-            }
-
-            $type = $entry['type'] ?? 'string';
-            if ($type === 'encrypted') {
-                $log->warning("SiteSettings: key '{$key}' has encrypted type, never imported.");
-                continue;
-            }
-
-            $value = $entry['value'] ?? null;
-
-            // Rich-text sanitisation at the import seam — same allow-list
-            // boundary `SiteSetting::set()` uses for through-model writes.
-            if (in_array($key, SiteSetting::RICH_TEXT_KEYS, true) && is_string($value)) {
-                $value = HtmlSanitizer::sanitize($value);
-            }
-
-            SiteSetting::updateOrCreate(
-                ['key' => $key],
-                [
-                    'value' => $value,
-                    'type'  => $type,
-                    'group' => $entry['group'] ?? null,
-                ],
-            );
-            Cache::forget("site_setting:{$key}");
-            $log->info("SiteSettings: imported '{$key}'.");
-        }
-    }
-
-    /**
-     * payload.media pass — posture-B ID-preserving standalone media seed
-     * (media-portability draft decisions #3/#4/#6). Raw explicit-id insert that
-     * also preserves content_hash, so the bytes are written at the row's
-     * content-addressed path (session 320) and cheap by-reference page bundles
-     * resolve after a one-time push. Collision + orphan-owner policies
-     * are canonical; the Postgres sequence is reset to MAX(id)+1. Runs inside
-     * the import transaction; returns the ids it actually seeded.
-     *
-     * @param  array<int, array<string, mixed>>  $descriptors
-     * @return array<int, int>
-     */
-    protected function importMedia(array $descriptors, ImportLog $log): array
-    {
-        $targetDisk = config('media-library.disk_name', 'public');
-        $seeded     = [];
-
-        foreach ($descriptors as $desc) {
-            $id       = $desc['id'] ?? null;
-            $fileName = $desc['file_name'] ?? null;
-            $srcPath  = $desc['path'] ?? null;
-
-            if (! $id || ! $fileName || ! $srcPath) {
-                $log->warning('Media descriptor missing id/file_name/path, skipped.');
-
-                continue;
-            }
-
-            // Defence in depth: the path is both the byte lookup and the write
-            // target, so refuse traversal even though it came from our exporter.
-            if (str_contains($srcPath, '..') || str_starts_with($srcPath, '/')) {
-                $log->warning("Media #{$id}: unsafe path '{$srcPath}', skipped.");
-
-                continue;
-            }
-
-            // Collision policy: identical → idempotent skip; divergent → warn
-            // and skip (operator re-exports from a clean source). No clobber.
-            $existing = DB::table('media')->where('id', $id)->first();
-            if ($existing) {
-                if (($existing->uuid ?? null) === ($desc['uuid'] ?? null)
-                    && $existing->file_name === $fileName) {
-                    $log->info("Media #{$id}: already seeded, skipped.");
-                } else {
-                    $log->warning("Media #{$id}: id exists with a different uuid/file_name on this install — skipped (export from a clean source to resolve).");
-                }
-
-                continue;
-            }
-
-            // Resolve bytes archive-first, then the source disk.
-            $bytes = null;
-            $archiveAbs = $this->archiveFile($srcPath);
-            if ($archiveAbs !== null) {
-                $bytes = file_get_contents($archiveAbs);
-            } elseif (! str_contains($srcPath, '..') && ! str_starts_with($srcPath, '/')
-                && Storage::disk($desc['disk'] ?? 'public')->exists($srcPath)) {
-                $bytes = Storage::disk($desc['disk'] ?? 'public')->get($srcPath);
-            }
-
-            if ($bytes === null || $bytes === false) {
-                $log->warning("Media #{$id}: file bytes not found in the bundle or on disk, skipped.");
-
-                continue;
-            }
-
-            // Orphan-owner policy: park the media even if its original owner
-            // row is absent on this install (resolution is path-based).
-            $modelType = $desc['model_type'] ?? null;
-            $modelId   = $desc['model_id'] ?? null;
-            if (is_string($modelType) && class_exists($modelType) && $modelId !== null) {
-                try {
-                    if (! $modelType::query()->whereKey($modelId)->exists()) {
-                        $log->info("Media #{$id}: owner {$modelType}#{$modelId} absent — parked.");
-                    }
-                } catch (\Throwable) {
-                    // Owner check is best-effort/informational only.
-                }
-            }
-
-            DB::table('media')->insert([
-                'id'                    => $id,
-                'uuid'                  => $desc['uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
-                'model_type'            => $modelType ?? '',
-                'model_id'              => $modelId ?? 0,
-                'collection_name'       => $desc['collection_name'] ?? 'default',
-                'name'                  => $desc['name'] ?? pathinfo($fileName, PATHINFO_FILENAME),
-                'file_name'             => $fileName,
-                'mime_type'             => $desc['mime_type'] ?? null,
-                'disk'                  => $targetDisk,
-                'conversions_disk'      => $desc['conversions_disk'] ?? $targetDisk,
-                'size'                  => $desc['size'] ?? strlen($bytes),
-                'content_hash'          => $desc['content_hash'] ?? null,
-                'manipulations'         => json_encode($desc['manipulations'] ?? []),
-                'custom_properties'     => json_encode($desc['custom_properties'] ?? []),
-                'generated_conversions' => json_encode([]),
-                'responsive_images'     => json_encode($desc['responsive_images'] ?? []),
-                'order_column'          => $desc['order_column'] ?? null,
-                'created_at'            => now(),
-                'updated_at'            => now(),
-            ]);
-
-            // Write the original bytes at the path the descriptor declares — the
-            // content-addressed location the seeded row (carrying the same
-            // content_hash) resolves to, or the legacy id path when no hash.
-            Storage::disk($targetDisk)->put($srcPath, $bytes);
-            $seeded[] = (int) $id;
-        }
-
-        if (! empty($seeded)) {
-            // Keep autoincrement ahead of the explicit ids we just inserted.
-            DB::statement(
-                "SELECT setval(pg_get_serial_sequence('media', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM media), 1))"
-            );
-        }
-
-        return $seeded;
     }
 
     /**
@@ -911,1051 +551,5 @@ class ContentImporter
         if (! isset($bundle['payload']) || ! is_array($bundle['payload'])) {
             throw new InvalidImportBundleException('Bundle is missing or has invalid payload.');
         }
-    }
-
-    // ── Templates ───────────────────────────────────────────────────────────
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    protected function importTemplate(array $data, ImportLog $log): void
-    {
-        $name = $data['name'] ?? null;
-        $type = $data['type'] ?? null;
-
-        if (! $name || ! in_array($type, ['page', 'content'], true)) {
-            $log->warning('Template entry missing name or type, skipped.');
-
-            return;
-        }
-
-        $template = Template::where('name', $name)->where('type', $type)->first();
-
-        if (! $template) {
-            $template = Template::create([
-                'name'        => $name,
-                'type'        => $type,
-                'description' => $data['description'] ?? null,
-                'is_default'  => false,
-                'created_by'  => $this->resolveAuthorId(),
-            ]);
-        } else {
-            $template->update([
-                'description' => $data['description'] ?? $template->description,
-            ]);
-        }
-
-        if ($type === 'content') {
-            // Replace the template's widget stack with whatever the bundle carries.
-            $template->widgets()->delete();
-            $template->layouts()->delete();
-
-            // Widgets array is the new format; `definition` is the pre-polymorphism
-            // format, still accepted so older bundles round-trip cleanly.
-            $widgets = $data['widgets'] ?? $data['definition'] ?? [];
-
-            foreach ($widgets as $item) {
-                $itemType = $item['type'] ?? 'widget';
-
-                if ($itemType === 'layout') {
-                    $this->hydrateLayoutForOwner($template, $item, $log);
-                } else {
-                    $this->hydrateRootWidgetForOwner($template, $item, $log);
-                }
-            }
-
-            return;
-        }
-
-        // Colour keys from pre-297 export bundles are intentionally ignored —
-        // colour is now the site-wide Theme palette, not template-owned.
-        //
-        // Session-301 columns carried additively + concretely: an older
-        // bundle without these keys keeps the template's concrete current
-        // value (never null); an unknown scheme string falls back to Default
-        // (concrete-values rule — the render-time resolver guards too).
-        $incomingScheme = $data['scheme'] ?? null;
-        $scheme = is_string($incomingScheme) && in_array($incomingScheme, TemplateAppearanceResolver::schemes(), true)
-            ? $incomingScheme
-            : ($template->scheme ?: TemplateAppearanceResolver::DEFAULT_SCHEME);
-
-        $template->update([
-            'custom_scss' => $data['custom_scss'] ?? null,
-            'scheme'      => $scheme,
-            'no_header'   => (bool) ($data['no_header'] ?? $template->no_header),
-            'no_footer'   => (bool) ($data['no_footer'] ?? $template->no_footer),
-        ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    protected function relinkTemplateChrome(array $data, ImportLog $log): void
-    {
-        $name = $data['name'] ?? null;
-        if (! $name) {
-            return;
-        }
-
-        $template = Template::where('name', $name)->where('type', 'page')->first();
-        if (! $template) {
-            return;
-        }
-
-        $update = [];
-
-        if (! empty($data['header_page_slug'])) {
-            $headerPage = Page::where('slug', $data['header_page_slug'])->first();
-            if ($headerPage) {
-                $update['header_page_id'] = $headerPage->id;
-            } else {
-                $log->warning("Template \"{$name}\": header page slug '{$data['header_page_slug']}' not found.");
-            }
-        }
-
-        if (! empty($data['footer_page_slug'])) {
-            $footerPage = Page::where('slug', $data['footer_page_slug'])->first();
-            if ($footerPage) {
-                $update['footer_page_id'] = $footerPage->id;
-            } else {
-                $log->warning("Template \"{$name}\": footer page slug '{$data['footer_page_slug']}' not found.");
-            }
-        }
-
-        if (! empty($update)) {
-            $template->update($update);
-        }
-    }
-
-    // ── Pages ───────────────────────────────────────────────────────────────
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    protected function importPage(array $data, ImportLog $log): void
-    {
-        $slug = $data['slug'] ?? null;
-        if (! $slug) {
-            $log->warning('Page entry missing slug, skipped.');
-
-            return;
-        }
-
-        $existing = Page::withTrashed()->where('slug', $slug)->first();
-
-        if ($existing && ! $this->replaceDuplicatePages) {
-            $log->info("Page \"{$slug}\": slug already exists on this install, skipped (replace_duplicate_pages opt is off).");
-
-            return;
-        }
-
-        $templateId = null;
-        if (! empty($data['template_name'])) {
-            $template = Template::page()->where('name', $data['template_name'])->first();
-            if ($template) {
-                $templateId = $template->id;
-            } else {
-                $log->warning("Page \"{$slug}\": template '{$data['template_name']}' not found, falling back to default.");
-                $templateId = Template::page()->where('is_default', true)->value('id');
-            }
-        }
-
-        $publishedAt = ! empty($data['published_at'])
-            ? \Carbon\Carbon::parse($data['published_at'])
-            : null;
-
-        $attributes = [
-            'title'            => $data['title'] ?? 'Untitled',
-            'slug'             => $slug,
-            'type'             => $data['type'] ?? 'default',
-            'template_id'      => $templateId,
-            'status'           => $data['status'] ?? 'draft',
-            'meta_title'       => $data['meta_title'] ?? null,
-            'meta_description' => $data['meta_description'] ?? null,
-            'noindex'          => $data['noindex'] ?? false,
-            'head_snippet'     => $data['head_snippet'] ?? null,
-            'body_snippet'     => $data['body_snippet'] ?? null,
-            'custom_fields'    => $data['custom_fields'] ?? [],
-            'published_at'     => $publishedAt,
-        ];
-
-        if ($existing) {
-            // Overwrite in place — keep author_id and id, replace everything else.
-            // Restore if soft-deleted so the import is visible in the default list.
-            if (method_exists($existing, 'trashed') && $existing->trashed()) {
-                $existing->restore();
-            }
-
-            $existing->update($attributes);
-            $page = $existing;
-
-            // Wipe the existing widget tree so the imported one is canonical.
-            // Layouts cascade their widgets via FK on delete; root widgets need an explicit delete.
-            $page->widgets()->delete();
-            $page->layouts()->delete();
-        } else {
-            $attributes['author_id'] = $this->resolveAuthorId();
-            if (! empty($data['id'])) {
-                $attributes['id'] = $data['id'];
-            }
-            $page = Page::create($attributes);
-        }
-
-        $this->rewirePageMedia($page, $data['media'] ?? [], $log);
-        $this->hydrateWidgets($page, $data['widgets'] ?? [], $log);
-    }
-
-    /**
-     * Reattach page-level media collections (post_thumbnail, post_header, og_image)
-     * from the bundle's media descriptors. Mirrors `rewireWidgetMedia()`.
-     *
-     * @param  array<int, array<string, mixed>>  $descriptors
-     */
-    protected function rewirePageMedia(Page $page, array $descriptors, ImportLog $log): void
-    {
-        if (empty($descriptors)) {
-            return;
-        }
-
-        foreach ($descriptors as $desc) {
-            $collectionName = $desc['collection_name'] ?? null;
-            $disk           = $desc['disk'] ?? 'public';
-            $path           = $desc['path'] ?? null;
-
-            if (! $collectionName || ! $path) {
-                $log->warning("Page \"{$page->slug}\": media descriptor missing collection/path, skipped.");
-
-                continue;
-            }
-
-            // Defence in depth: refuse path traversal even though the descriptor came from our own exporter.
-            if (str_contains($path, '..') || str_starts_with($path, '/')) {
-                $log->warning("Page \"{$page->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
-
-                continue;
-            }
-
-            $archiveAbs = $this->archiveFile($path);
-            if ($archiveAbs !== null) {
-                $page
-                    ->addMedia($archiveAbs)
-                    ->preservingOriginal()
-                    ->usingFileName(basename($path))
-                    ->toMediaCollection($collectionName, $disk);
-            } elseif (Storage::disk($disk)->exists($path)) {
-                $page
-                    ->addMediaFromDisk($path, $disk)
-                    ->preservingOriginal()
-                    ->toMediaCollection($collectionName, $disk);
-            } else {
-                $log->warning("Page \"{$page->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
-
-                continue;
-            }
-        }
-    }
-
-    /**
-     * Walk the serialized widget tree and recreate widgets and layouts on the target page.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     */
-    protected function hydrateWidgets(Page $page, array $items, ImportLog $log): void
-    {
-        foreach ($items as $item) {
-            $type = $item['type'] ?? 'widget';
-
-            if ($type === 'layout') {
-                $this->hydrateLayout($page, $item, $log);
-
-                continue;
-            }
-
-            $this->hydrateRootWidget($page, $item, $log);
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    protected function hydrateRootWidget(Page $page, array $item, ImportLog $log): void
-    {
-        $this->hydrateRootWidgetForOwner($page, $item, $log, $page->slug);
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    protected function hydrateRootWidgetForOwner(\Illuminate\Database\Eloquent\Model $owner, array $item, ImportLog $log, ?string $label = null): void
-    {
-        $label = $label ?? ($owner->name ?? (string) $owner->getKey());
-        $widgetType = $this->resolveWidgetType($item['handle'] ?? null, $label, $log);
-        if (! $widgetType) {
-            return;
-        }
-
-        $widget = $owner->widgets()->create([
-            'layout_id'         => null,
-            'column_index'      => null,
-            'widget_type_id'    => $widgetType->id,
-            'label'             => $item['label'] ?? null,
-            'config'            => $this->sanitizeWidgetConfig($item['config'] ?? [], $widgetType, $label, $log),
-            'query_config'      => $item['query_config'] ?? [],
-            'appearance_config' => $item['appearance_config'] ?? [],
-            'sort_order'        => $item['sort_order'] ?? 0,
-            'is_active'         => $item['is_active'] ?? true,
-        ]);
-
-        $this->rewireWidgetMedia($widget, $item['media'] ?? [], $log);
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    protected function hydrateLayout(Page $page, array $item, ImportLog $log): void
-    {
-        $this->hydrateLayoutForOwner($page, $item, $log, $page->slug);
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    protected function hydrateLayoutForOwner(\Illuminate\Database\Eloquent\Model $owner, array $item, ImportLog $log, ?string $label = null): void
-    {
-        $label = $label ?? ($owner->name ?? (string) $owner->getKey());
-        $layout = $owner->layouts()->create([
-            'label'             => $item['label'] ?? null,
-            'display'           => $item['display'] ?? 'grid',
-            'columns'           => $item['columns'] ?? 2,
-            'layout_config'     => $item['layout_config'] ?? [],
-            'appearance_config' => $item['appearance_config'] ?? [],
-            'sort_order'        => $item['sort_order'] ?? 0,
-        ]);
-
-        foreach ($item['slots'] ?? [] as $columnIndex => $slotWidgets) {
-            foreach ($slotWidgets as $slotItem) {
-                $widgetType = $this->resolveWidgetType($slotItem['handle'] ?? null, $label, $log);
-                if (! $widgetType) {
-                    continue;
-                }
-
-                $widget = $owner->widgets()->create([
-                    'layout_id'         => $layout->id,
-                    'column_index'      => (int) $columnIndex,
-                    'widget_type_id'    => $widgetType->id,
-                    'label'             => $slotItem['label'] ?? null,
-                    'config'            => $this->sanitizeWidgetConfig($slotItem['config'] ?? [], $widgetType, $label, $log),
-                    'query_config'      => $slotItem['query_config'] ?? [],
-                    'appearance_config' => $slotItem['appearance_config'] ?? [],
-                    'sort_order'        => $slotItem['sort_order'] ?? 0,
-                    'is_active'         => $slotItem['is_active'] ?? true,
-                ]);
-
-                $this->rewireWidgetMedia($widget, $slotItem['media'] ?? [], $log);
-            }
-        }
-    }
-
-    protected function resolveWidgetType(?string $handle, string $pageSlug, ImportLog $log): ?WidgetType
-    {
-        if (! $handle) {
-            $log->warning("Page \"{$pageSlug}\": widget entry missing handle, skipped.");
-
-            return null;
-        }
-
-        $widgetType = WidgetType::where('handle', $handle)->first();
-        if (! $widgetType) {
-            $log->warning("Page \"{$pageSlug}\": widget type '{$handle}' not found on this install, skipped.");
-        }
-
-        return $widgetType;
-    }
-
-    /**
-     * Apply graceful-fallback rules to a widget config before persisting:
-     * - missing collection_handle → cleared, warning logged.
-     *
-     * @param  array<string, mixed>  $config
-     * @return array<string, mixed>
-     */
-    protected function sanitizeWidgetConfig(array $config, WidgetType $widgetType, string $pageSlug, ImportLog $log): array
-    {
-        $handle = $config['collection_handle'] ?? null;
-
-        if ($handle) {
-            $exists = Collection::where('handle', $handle)
-                ->where('is_public', true)
-                ->where('is_active', true)
-                ->exists();
-
-            if (! $exists) {
-                $log->warning("Page \"{$pageSlug}\": collection '{$handle}' not found on this install, widget config cleared.");
-                $config['collection_handle'] = '';
-            }
-        }
-
-        // Nav widget cross-install reference rewiring (session A001/4). The
-        // Nav widget's config carries `navigation_menu_id` as a UUID — when
-        // the menu is recreated on import with a fresh UUID, the stored id
-        // becomes a dangling reference. The exporter emits
-        // `navigation_menu_handle` alongside the UUID for portability.
-        //
-        // We attempt resolution here (best-effort: menu may already exist on
-        // the target if the target had it pre-import), but the authoritative
-        // pass is `relinkNavWidgetMenus()` after both pages AND nav menus
-        // have landed. That post-pass owns the final menu_id + the warning
-        // for unresolvable handles, so this stage stays quiet to avoid
-        // false-positive warnings on the common case of "menu lands later
-        // in the same bundle."
-        if ($widgetType->handle === 'nav') {
-            $menuHandle = $config['navigation_menu_handle'] ?? null;
-            if (is_string($menuHandle) && $menuHandle !== '') {
-                $menuId = NavigationMenu::where('handle', $menuHandle)->value('id');
-                if ($menuId) {
-                    $config['navigation_menu_id'] = $menuId;
-                }
-                // Unresolved → don't warn here; relinkNavWidgetMenus() runs
-                // after the navigation_menus pass and will either resolve
-                // or warn-then-null then.
-            } elseif (! empty($config['navigation_menu_id'])) {
-                // Legacy bundle (pre-A001/4) without the handle — verify the
-                // UUID still resolves; if not, null + warn so it renders
-                // empty rather than appearing to reference something.
-                if (! NavigationMenu::whereKey($config['navigation_menu_id'])->exists()) {
-                    $log->warning("Page \"{$pageSlug}\": nav widget's navigation_menu_id '{$config['navigation_menu_id']}' no longer exists on this install, left unassigned.");
-                    $config['navigation_menu_id'] = null;
-                }
-            }
-        }
-
-        // Image/video config keys hold media ids that are about to be replaced
-        // by the rewiring step. Clear them now so we never serve a stale id.
-        // Richtext config keys are sanitised via the same allow-list the model
-        // saving boundary uses — defence-in-depth at the import seam.
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            $type = $field['type'] ?? '';
-            $key  = $field['key'] ?? null;
-            if (! $key) {
-                continue;
-            }
-
-            if (in_array($type, ['image', 'video'], true) && isset($config[$key])) {
-                $config[$key] = null;
-                continue;
-            }
-
-            if ($type === 'richtext' && isset($config[$key]) && is_string($config[$key])) {
-                $config[$key] = HtmlSanitizer::sanitize($config[$key]);
-            }
-        }
-
-        return $config;
-    }
-
-    /**
-     * For each media descriptor, look up the file on its disk, attach a new
-     * Spatie media row to the widget, and patch the widget config to point at
-     * the new media id.
-     *
-     * @param  array<int, array<string, mixed>>  $descriptors
-     */
-    protected function rewireWidgetMedia(PageWidget $widget, array $descriptors, ImportLog $log): void
-    {
-        if (empty($descriptors)) {
-            return;
-        }
-
-        $config = $widget->config ?? [];
-
-        foreach ($descriptors as $desc) {
-            $key            = $desc['key'] ?? null;
-            $collectionName = $desc['collection_name'] ?? ($key ? "config_{$key}" : null);
-            $disk           = $desc['disk'] ?? 'public';
-            $path           = $desc['path'] ?? null;
-
-            if (! $key || ! $collectionName || ! $path) {
-                $log->warning("Widget media descriptor missing key/collection/path, skipped.");
-
-                continue;
-            }
-
-            // Defence in depth: refuse path traversal even though the descriptor came from our own exporter.
-            if (str_contains($path, '..') || str_starts_with($path, '/')) {
-                $log->warning("Widget media descriptor for key '{$key}' has unsafe path, skipped.");
-
-                continue;
-            }
-
-            $archiveAbs = $this->archiveFile($path);
-            if ($archiveAbs !== null) {
-                $media = $widget
-                    ->addMedia($archiveAbs)
-                    ->preservingOriginal()
-                    ->usingFileName(basename($path))
-                    ->toMediaCollection($collectionName, $disk);
-            } elseif (Storage::disk($disk)->exists($path)) {
-                $media = $widget
-                    ->addMediaFromDisk($path, $disk)
-                    ->preservingOriginal()
-                    ->toMediaCollection($collectionName, $disk);
-            } else {
-                $log->warning("Media file for key '{$key}' not found at '{$path}' on disk '{$disk}', widget left unset.");
-
-                continue;
-            }
-
-            $config[$key] = $media->id;
-        }
-
-        $widget->update(['config' => $config]);
-    }
-
-    // ── Navigation (session A001) ──────────────────────────────────────────
-
-    /**
-     * Mirrors NavigationMenuResource::saveItems() — the menu is upserted by
-     * handle, its items are deleted wholesale, then re-inserted in two passes
-     * (roots first to get parent ids, then children). page_slug references
-     * resolve against existing Page rows; absent slugs warn and leave page_id
-     * null so the link degrades to inert rather than dangling.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    protected function importNavigationMenu(array $data, ImportLog $log): void
-    {
-        $handle = $data['menu']['handle'] ?? null;
-        $label  = $data['menu']['label'] ?? null;
-
-        if (! is_string($handle) || $handle === '' || ! is_string($label)) {
-            $log->warning('Navigation menu entry missing handle or label, skipped.');
-
-            return;
-        }
-
-        $menu = NavigationMenu::updateOrCreate(
-            ['handle' => $handle],
-            ['label' => $label],
-        );
-
-        NavigationItem::where('navigation_menu_id', $menu->id)->delete();
-
-        $roots = is_array($data['items'] ?? null) ? $data['items'] : [];
-        foreach ($roots as $sortOrder => $rootData) {
-            $parent = NavigationItem::create($this->navigationItemAttributes(
-                $rootData,
-                $menu->id,
-                parentId:  null,
-                sortOrder: (int) ($rootData['sort_order'] ?? $sortOrder),
-                log:       $log,
-                menuLabel: $label,
-            ));
-
-            $children = is_array($rootData['children'] ?? null) ? $rootData['children'] : [];
-            foreach ($children as $childSort => $childData) {
-                NavigationItem::create($this->navigationItemAttributes(
-                    $childData,
-                    $menu->id,
-                    parentId:  $parent->id,
-                    sortOrder: (int) ($childData['sort_order'] ?? $childSort),
-                    log:       $log,
-                    menuLabel: $label,
-                ));
-            }
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     * @return array<string, mixed>
-     */
-    protected function navigationItemAttributes(array $item, string $menuId, ?string $parentId, int $sortOrder, ImportLog $log, string $menuLabel): array
-    {
-        $pageId = null;
-        if (! empty($item['page_slug'])) {
-            $pageId = Page::where('slug', $item['page_slug'])->value('id');
-            if (! $pageId) {
-                $log->warning("Navigation menu \"{$menuLabel}\": page slug '{$item['page_slug']}' not found, link left without a page reference.");
-            }
-        }
-
-        return [
-            'navigation_menu_id' => $menuId,
-            'parent_id'          => $parentId,
-            'label'              => $item['label'] ?? '',
-            'url'                => $pageId ? null : ($item['url'] ?? null),
-            'page_id'            => $pageId,
-            'target'             => in_array($item['target'] ?? '_self', ['_self', '_blank'], true) ? $item['target'] : '_self',
-            'is_visible'         => (bool) ($item['is_visible'] ?? true),
-            'sort_order'         => $sortOrder,
-        ];
-    }
-
-    /**
-     * Walk every nav widget on the install and reconcile its config
-     * `navigation_menu_id` against `navigation_menu_handle`. The bundle's
-     * widget config carries both for portability; the authoritative
-     * resolution happens here, after both the pages pass and the
-     * navigation_menus pass have completed inside the same transaction.
-     * Mirrors the `relinkTemplateChrome` pattern. Session A001/4.
-     */
-    protected function relinkNavWidgetMenus(ImportLog $log): void
-    {
-        $navType = WidgetType::where('handle', 'nav')->first();
-        if (! $navType) {
-            return;
-        }
-
-        // Only widgets whose config carries the portable handle are touched.
-        // A nav widget created through the admin UI (no handle in config)
-        // has an authoritative `navigation_menu_id` set by the UI and is
-        // not a candidate for rewiring.
-        $widgets = PageWidget::where('widget_type_id', $navType->id)->get();
-        foreach ($widgets as $widget) {
-            $config     = $widget->config ?? [];
-            $menuHandle = $config['navigation_menu_handle'] ?? null;
-            if (! is_string($menuHandle) || $menuHandle === '') {
-                continue;
-            }
-
-            $menuId = NavigationMenu::where('handle', $menuHandle)->value('id');
-            if ($menuId && ($config['navigation_menu_id'] ?? null) === $menuId) {
-                continue; // already correct
-            }
-
-            if ($menuId) {
-                $config['navigation_menu_id'] = $menuId;
-                $widget->update(['config' => $config]);
-            } else {
-                $log->warning("Nav widget '{$widget->id}': navigation menu '{$menuHandle}' not found, left unassigned.");
-                if (($config['navigation_menu_id'] ?? null) !== null) {
-                    $config['navigation_menu_id'] = null;
-                    $widget->update(['config' => $config]);
-                }
-            }
-        }
-    }
-
-    // ── Products (session A001) ────────────────────────────────────────────
-
-    /**
-     * Upsert a product by slug, replace its price list wholesale, and rewire
-     * its single product_image media collection from the bundle's descriptor.
-     * Mirrors the page pattern: identity = slug, related rows are canonical
-     * from the bundle. Session A001.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    protected function importProduct(array $data, ImportLog $log): void
-    {
-        $productData = $data['product'] ?? null;
-        $slug        = $productData['slug'] ?? null;
-
-        if (! is_array($productData) || ! is_string($slug) || $slug === '') {
-            $log->warning('Product entry missing product.slug, skipped.');
-
-            return;
-        }
-
-        $attributes = [
-            'name'         => $productData['name'] ?? 'Untitled',
-            'slug'         => $slug,
-            'description'  => $productData['description'] ?? null,
-            'capacity'     => $productData['capacity'] ?? 0,
-            'status'       => $productData['status'] ?? 'draft',
-            'sort_order'   => $productData['sort_order'] ?? 0,
-            'is_archived'  => (bool) ($productData['is_archived'] ?? false),
-            'published_at' => ! empty($productData['published_at'])
-                ? \Carbon\Carbon::parse($productData['published_at'])
-                : null,
-        ];
-
-        $product = Product::updateOrCreate(['slug' => $slug], $attributes);
-
-        // Prices are canonical from the bundle. Wipe and re-create so a
-        // dropped tier in the source doesn't leave a stale tier on the target.
-        ProductPrice::where('product_id', $product->id)->delete();
-        foreach ($data['prices'] ?? [] as $sortIndex => $priceRow) {
-            if (! is_array($priceRow)) {
-                continue;
-            }
-            ProductPrice::create([
-                'product_id'      => $product->id,
-                'label'           => $priceRow['label'] ?? 'Price',
-                'amount'          => $priceRow['amount'] ?? 0,
-                'stripe_price_id' => $priceRow['stripe_price_id'] ?? null,
-                'sort_order'      => (int) ($priceRow['sort_order'] ?? $sortIndex),
-            ]);
-        }
-
-        $this->rewireProductMedia($product, $data['media'] ?? [], $log);
-    }
-
-    /**
-     * Mirrors rewirePageMedia() for the product_image single-file collection.
-     *
-     * @param  array<int, array<string, mixed>>  $descriptors
-     */
-    protected function rewireProductMedia(Product $product, array $descriptors, ImportLog $log): void
-    {
-        if (empty($descriptors)) {
-            return;
-        }
-
-        $product->clearMediaCollection('product_image');
-
-        foreach ($descriptors as $desc) {
-            $collectionName = $desc['collection_name'] ?? null;
-            $disk           = $desc['disk'] ?? 'public';
-            $path           = $desc['path'] ?? null;
-
-            if (! $collectionName || ! $path) {
-                $log->warning("Product \"{$product->slug}\": media descriptor missing collection/path, skipped.");
-
-                continue;
-            }
-
-            if (str_contains($path, '..') || str_starts_with($path, '/')) {
-                $log->warning("Product \"{$product->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
-
-                continue;
-            }
-
-            $archiveAbs = $this->archiveFile($path);
-            if ($archiveAbs !== null) {
-                $product
-                    ->addMedia($archiveAbs)
-                    ->preservingOriginal()
-                    ->usingFileName(basename($path))
-                    ->toMediaCollection($collectionName, $disk);
-            } elseif (Storage::disk($disk)->exists($path)) {
-                $product
-                    ->addMediaFromDisk($path, $disk)
-                    ->preservingOriginal()
-                    ->toMediaCollection($collectionName, $disk);
-            } else {
-                $log->warning("Product \"{$product->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
-
-                continue;
-            }
-        }
-    }
-
-    // ── Events (session A001) ──────────────────────────────────────────────
-
-    /**
-     * Upsert an event by slug, replace its tiers wholesale, and replace its
-     * registrations when present. Registrations resolve contact/organization
-     * by email/name when those rows exist on the target; absent matches leave
-     * the FK null and rely on the registration's denormalised fields. Tier
-     * back-references on registrations use ticket_tier_name within the event.
-     * Session A001.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    protected function importEvent(array $data, ImportLog $log): void
-    {
-        $eventData = $data['event'] ?? null;
-        $slug      = $eventData['slug'] ?? null;
-
-        if (! is_array($eventData) || ! is_string($slug) || $slug === '') {
-            $log->warning('Event entry missing event.slug, skipped.');
-
-            return;
-        }
-
-        $landingPageId = null;
-        if (! empty($eventData['landing_page_slug'])) {
-            $landingPageId = Page::where('slug', $eventData['landing_page_slug'])->value('id');
-            if (! $landingPageId) {
-                $log->warning("Event \"{$slug}\": landing page slug '{$eventData['landing_page_slug']}' not found on this install.");
-            }
-        }
-
-        $sponsorOrgId = null;
-        if (! empty($eventData['sponsor_organization_name'])) {
-            $sponsorOrgId = Organization::where('name', $eventData['sponsor_organization_name'])->value('id');
-        }
-
-        $attributes = [
-            'title'                       => $eventData['title'] ?? 'Untitled',
-            'slug'                        => $slug,
-            'description'                 => $eventData['description'] ?? null,
-            'status'                      => $eventData['status'] ?? 'draft',
-            'address_line_1'              => $eventData['address_line_1'] ?? null,
-            'address_line_2'              => $eventData['address_line_2'] ?? null,
-            'city'                        => $eventData['city'] ?? null,
-            'state'                       => $eventData['state'] ?? null,
-            'zip'                         => $eventData['zip'] ?? null,
-            'map_url'                     => $eventData['map_url'] ?? null,
-            'map_label'                   => $eventData['map_label'] ?? null,
-            'meeting_url'                 => $eventData['meeting_url'] ?? null,
-            'meeting_label'               => $eventData['meeting_label'] ?? null,
-            'meeting_details'             => $eventData['meeting_details'] ?? null,
-            'registration_mode'           => $eventData['registration_mode'] ?? 'open',
-            'external_registration_url'   => $eventData['external_registration_url'] ?? null,
-            'auto_create_contacts'        => (bool) ($eventData['auto_create_contacts'] ?? true),
-            'mailing_list_opt_in_enabled' => (bool) ($eventData['mailing_list_opt_in_enabled'] ?? false),
-            'custom_fields'               => $eventData['custom_fields'] ?? [],
-            'starts_at'                   => ! empty($eventData['starts_at']) ? \Carbon\Carbon::parse($eventData['starts_at']) : null,
-            'ends_at'                     => ! empty($eventData['ends_at']) ? \Carbon\Carbon::parse($eventData['ends_at']) : null,
-            'published_at'                => ! empty($eventData['published_at']) ? \Carbon\Carbon::parse($eventData['published_at']) : null,
-            'landing_page_id'             => $landingPageId,
-            'sponsor_organization_id'     => $sponsorOrgId,
-        ];
-
-        $existing = Event::where('slug', $slug)->first();
-        if ($existing) {
-            $existing->update($attributes);
-            $event = $existing;
-        } else {
-            $attributes['author_id'] = $this->resolveAuthorId();
-            $event = Event::create($attributes);
-        }
-
-        // Tiers are canonical from the bundle. Wipe + re-insert. The cascade
-        // would null registration.ticket_tier_id, so registrations re-resolve
-        // by name after both passes land.
-        TicketTier::where('event_id', $event->id)->delete();
-        $tierIdsByName = [];
-        foreach ($data['tiers'] ?? [] as $sortIndex => $tierRow) {
-            if (! is_array($tierRow)) {
-                continue;
-            }
-            $tier = TicketTier::create([
-                'event_id'   => $event->id,
-                'name'       => $tierRow['name'] ?? 'General',
-                'price'      => $tierRow['price'] ?? 0,
-                'capacity'   => $tierRow['capacity'] ?? null,
-                'sort_order' => (int) ($tierRow['sort_order'] ?? $sortIndex),
-            ]);
-            $tierIdsByName[$tier->name] = $tier->id;
-        }
-
-        // Registrations wipe + re-insert when the bundle carries them.
-        // Absence (with_registrations=false at export time) leaves any
-        // existing registrations untouched.
-        if (array_key_exists('registrations', $data) && is_array($data['registrations'])) {
-            EventRegistration::where('event_id', $event->id)->delete();
-            foreach ($data['registrations'] as $regRow) {
-                if (! is_array($regRow)) {
-                    continue;
-                }
-
-                $contactId = null;
-                if (! empty($regRow['contact_email'])) {
-                    $contactId = Contact::where('email', $regRow['contact_email'])->value('id');
-                }
-
-                $orgId = null;
-                if (! empty($regRow['organization_name'])) {
-                    $orgId = Organization::where('name', $regRow['organization_name'])->value('id');
-                }
-
-                $tierId = null;
-                if (! empty($regRow['ticket_tier_name'])) {
-                    $tierId = $tierIdsByName[$regRow['ticket_tier_name']] ?? null;
-                }
-
-                // Imported registrations are historical data, not live sign-ups:
-                // suppress the EventRegistrationObserver (confirmation email +
-                // contact auto-create). Mirrors RandomDataGenerator's seam.
-                EventRegistration::withoutEvents(fn () => EventRegistration::create([
-                    'event_id'            => $event->id,
-                    'ticket_tier_id'      => $tierId,
-                    'quantity'            => (int) ($regRow['quantity'] ?? 1),
-                    'contact_id'          => $contactId,
-                    'organization_id'     => $orgId,
-                    'name'                => $regRow['name'] ?? '',
-                    'email'               => $regRow['email'] ?? '',
-                    'phone'               => $regRow['phone'] ?? null,
-                    'company'             => $regRow['company'] ?? null,
-                    'address_line_1'      => $regRow['address_line_1'] ?? null,
-                    'address_line_2'      => $regRow['address_line_2'] ?? null,
-                    'city'                => $regRow['city'] ?? null,
-                    'state'               => $regRow['state'] ?? null,
-                    'zip'                 => $regRow['zip'] ?? null,
-                    'status'              => $regRow['status'] ?? 'registered',
-                    'registered_at'       => ! empty($regRow['registered_at']) ? \Carbon\Carbon::parse($regRow['registered_at']) : now(),
-                    'notes'               => $regRow['notes'] ?? null,
-                    'mailing_list_opt_in' => (bool) ($regRow['mailing_list_opt_in'] ?? false),
-                    'ticket_type'         => $regRow['ticket_type'] ?? null,
-                    'ticket_fee'          => $regRow['ticket_fee'] ?? null,
-                    'payment_state'       => $regRow['payment_state'] ?? null,
-                    'custom_fields'       => $regRow['custom_fields'] ?? [],
-                ]));
-            }
-        }
-
-        $this->rewireEventMedia($event, $data['media'] ?? [], $log);
-    }
-
-    /**
-     * Mirrors rewirePageMedia() for event-level media collections.
-     *
-     * @param  array<int, array<string, mixed>>  $descriptors
-     */
-    protected function rewireEventMedia(Event $event, array $descriptors, ImportLog $log): void
-    {
-        if (empty($descriptors)) {
-            return;
-        }
-
-        foreach ($descriptors as $desc) {
-            $collectionName = $desc['collection_name'] ?? null;
-            $disk           = $desc['disk'] ?? 'public';
-            $path           = $desc['path'] ?? null;
-
-            if (! $collectionName || ! $path) {
-                $log->warning("Event \"{$event->slug}\": media descriptor missing collection/path, skipped.");
-
-                continue;
-            }
-
-            if (str_contains($path, '..') || str_starts_with($path, '/')) {
-                $log->warning("Event \"{$event->slug}\": media descriptor for collection '{$collectionName}' has unsafe path, skipped.");
-
-                continue;
-            }
-
-            $event->clearMediaCollection($collectionName);
-
-            $archiveAbs = $this->archiveFile($path);
-            if ($archiveAbs !== null) {
-                $event
-                    ->addMedia($archiveAbs)
-                    ->preservingOriginal()
-                    ->usingFileName(basename($path))
-                    ->toMediaCollection($collectionName, $disk);
-            } elseif (Storage::disk($disk)->exists($path)) {
-                $event
-                    ->addMediaFromDisk($path, $disk)
-                    ->preservingOriginal()
-                    ->toMediaCollection($collectionName, $disk);
-            } else {
-                $log->warning("Event \"{$event->slug}\": media file for collection '{$collectionName}' not found at '{$path}' on disk '{$disk}', skipped.");
-
-                continue;
-            }
-        }
-    }
-
-    // ── Collections (session A001) ─────────────────────────────────────────
-
-    /**
-     * Upsert a collection by handle, replace its items wholesale, and re-tag
-     * each item via firstOrCreate(name,type). Item `data` JSON travels
-     * verbatim — the collection's `fields` config is the shape's source of
-     * truth, not the importer. Item-level media is out of scope for the
-     * first pass. Session A001.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    protected function importCollection(array $data, ImportLog $log): void
-    {
-        $collectionData = $data['collection'] ?? null;
-        $handle         = $collectionData['handle'] ?? null;
-
-        if (! is_array($collectionData) || ! is_string($handle) || $handle === '') {
-            $log->warning('Collection entry missing collection.handle, skipped.');
-
-            return;
-        }
-
-        $attributes = [
-            'name'             => $collectionData['name'] ?? $handle,
-            'handle'           => $handle,
-            'description'      => $collectionData['description'] ?? null,
-            'fields'           => $collectionData['fields'] ?? [],
-            'accepted_sources' => $collectionData['accepted_sources'] ?? ['human'],
-            'source_type'      => $collectionData['source_type'] ?? 'custom',
-            'is_public'        => (bool) ($collectionData['is_public'] ?? false),
-            'is_active'        => (bool) ($collectionData['is_active'] ?? true),
-        ];
-
-        $collection = Collection::where('handle', $handle)->first();
-        if ($collection) {
-            $collection->update($attributes);
-        } else {
-            $collection = Collection::create($attributes);
-        }
-
-        CollectionItem::where('collection_id', $collection->id)->delete();
-
-        foreach ($data['items'] ?? [] as $sortIndex => $itemRow) {
-            if (! is_array($itemRow)) {
-                continue;
-            }
-
-            $item = CollectionItem::create([
-                'collection_id' => $collection->id,
-                'data'          => $itemRow['data'] ?? [],
-                'sort_order'    => (int) ($itemRow['sort_order'] ?? $sortIndex),
-                'is_published'  => (bool) ($itemRow['is_published'] ?? false),
-            ]);
-
-            $tagIds = [];
-            foreach ($itemRow['tags'] ?? [] as $tagRow) {
-                $tagName = $tagRow['name'] ?? null;
-                $tagType = $tagRow['type'] ?? 'collection_item';
-                if (! is_string($tagName) || $tagName === '') {
-                    continue;
-                }
-                $tag = Tag::firstOrCreate(
-                    ['name' => $tagName, 'type' => $tagType],
-                );
-                $tagIds[] = $tag->id;
-            }
-
-            if (! empty($tagIds)) {
-                $item->tags()->sync($tagIds);
-            }
-        }
-    }
-
-    // ── Helpers ─────────────────────────────────────────────────────────────
-
-    /**
-     * Archive-first resolution (media-portability draft decision #2): the
-     * absolute path of a descriptor's file inside the extracted bundle media
-     * tree, or null when there is no archive or the file is absent — in which
-     * case callers fall back to the unchanged local-disk behaviour. Re-guards
-     * traversal and confirms the resolved path stays within the media root.
-     */
-    private function archiveFile(string $path): ?string
-    {
-        if ($this->mediaRoot === null || $path === '') {
-            return null;
-        }
-        if (str_contains($path, '..') || str_starts_with($path, '/')) {
-            return null;
-        }
-
-        $abs = $this->mediaRoot . '/' . $path;
-        if (! is_file($abs)) {
-            return null;
-        }
-
-        $real     = realpath($abs);
-        $rootReal = realpath($this->mediaRoot);
-        if ($real === false || $rootReal === false || ! str_starts_with($real, $rootReal . '/')) {
-            return null;
-        }
-
-        return $real;
-    }
-
-    protected function resolveAuthorId(): int
-    {
-        if (auth()->check()) {
-            return (int) auth()->id();
-        }
-
-        $first = User::orderBy('id')->value('id');
-        if (! $first) {
-            throw new \RuntimeException('No users exist on this install — cannot import pages.');
-        }
-
-        return (int) $first;
     }
 }
