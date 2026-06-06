@@ -14,13 +14,13 @@ When a cycle closes, its retrospective lands here and the cluster's release-plan
 
 ## Status snapshot
 
-**Last update:** 2026-05-10 (Cycle 2 closed at session 274; carve-out successor 275 closed; retrospective + forward plan landed here).
+**Last update:** 2026-06-06 (Cycle 3 lifted by cadence; **audit 344 closed**; two carve-outs scoped before the squash).
 
 **Complete:** Cycle 1 (sessions 205 / 206 audit + apply, 208 squash; carve-out 207 — Column Layout Inspector Appearance Unification). Cycle 2 (sessions 271 / 272 audit, 273 apply, 274 squash; carve-out 275 — Rich-Text Surface Sanitization Hardening).
 
-**Active:** between cycles. Standing inter-cycle gate (convention-drift Pest test) lives at `tests/Feature/Infrastructure/FmContractVersionParityTest.php` for the FM contract surface; a broader convention-drift test is a Cycle 3 deliverable per the forward plan below.
+**Active:** **Cycle 3 in progress** (lifted at 344 by cadence — ~70 sessions of drift since the 274 close). Compressed 3-session shape expanded to 5 by two carve-outs: **344 audit ✅** → 345 apply → 346 carve-out (bundle ContentImporter/ContentExporter split) → 347 carve-out (InlineFormatToolbar extraction) → 348 squash. The audit folded Cycle 2's audit-pair into one pass + ran the three Cycle-3 standing additions (static-reflection scan — landed as the reusable `scripts/filament-signature-scan.php`; boolean-settings sweep; integration-seam sweep). Findings + Open Flags (344-A…344-G) + carve-out decisions in `sessions/344. … — Log.md`. The broader convention-drift Pest test is the **345** deliverable (the existing `tests/Feature/Infrastructure/FmContractVersionParityTest.php` remains the FM-contract gate). The W11 large-file advisory was regenerated this cycle at `sessions/code-review-large-files-partial-extraction.md` (dangling reference reconciled).
 
-**Next trigger:** approximately session **324** (Cycle 2 closed at 274; ~50 sessions of growth is the target cadence). Trigger condition is "session ~324 OR a forcing function — whichever comes first." Forcing functions historically: a refactor that wants a clean baseline, a flag carry-forward that's been deferred two cycles in a row, an audit-shaped finding surfacing during regular work that warrants a full sweep.
+**Next trigger:** approximately session **398** (after the Cycle-3 squash at 348; ~50 sessions of growth is the target cadence). Trigger condition is "session ~398 OR a forcing function — whichever comes first." Forcing functions historically: a refactor that wants a clean baseline, a flag carry-forward that's been deferred two cycles in a row, an audit-shaped finding surfacing during regular work that warrants a full sweep.
 
 ---
 
