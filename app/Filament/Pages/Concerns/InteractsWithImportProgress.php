@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Shared behaviour for the five CSV import progress pages. Each page uses
+ * Shared behaviour for the seven CSV import progress pages. Each page uses
  * this trait and provides entity-specific processing via the abstract methods.
  *
  * The contacts progress page diverges the most — it overrides mount() and
@@ -544,7 +544,7 @@ trait InteractsWithImportProgress
         return $out;
     }
 
-    // ─── Contact resolution helpers (shared by all five pages) ───────────
+    // ─── Contact resolution helpers (shared by the six contact-resolving pages) ───────────
 
     /**
      * Look up a contact by its ImportIdMap entry for the current import source.

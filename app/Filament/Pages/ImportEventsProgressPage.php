@@ -625,19 +625,6 @@ class ImportEventsProgressPage extends Page
         };
     }
 
-    private function contactNotFoundMessage(string $matchKey, array $contactLookup, ?string $externalId): string
-    {
-        [, $field] = EventImportFieldRegistry::split($matchKey);
-
-        $value = $field === 'external_id'
-            ? $externalId
-            : ($contactLookup[$field] ?? null);
-
-        $display = $value ?: '(blank)';
-
-        return "Contact not found: {$field} = {$display}. Import contacts first, or re-check the Contact Match Key column.";
-    }
-
     private function mapEventStatus(?string $source): string
     {
         if (blank($source)) {

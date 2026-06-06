@@ -167,10 +167,6 @@ export const useEditorStore = defineStore('editor', () => {
 
   // ── Getters ────────────────────────────────────────────────────────────
 
-  const rootWidgets = computed(() =>
-    rootOrder.value.map((id) => widgets.value[id]).filter(Boolean)
-  )
-
   const selectedWidget = computed(() => {
     if (selectedItemType.value !== 'widget' || !selectedItemId.value) return null
     return widgets.value[selectedItemId.value] ?? null
@@ -195,17 +191,9 @@ export const useEditorStore = defineStore('editor', () => {
     },
   })
 
-  function childrenOf(_parentId: string): Record<number, Widget[]> {
-    // Legacy helper — widgets no longer have children. Layouts hold widgets in slots.
-    return {}
-  }
-
   function isWidgetDirty(id: string): boolean {
     return dirtyWidgets.value.has(id)
   }
-
-  // No more column widgets — kept for backward compat with any stale references.
-  const columnTargets = computed(() => [] as Widget[])
 
   // ── Composable wiring (forward-referenced for circular deps) ───────────
   // useDebouncedSave's afterSave callback references refreshPreview, which
@@ -788,13 +776,10 @@ export const useEditorStore = defineStore('editor', () => {
     dedupPrompt,
 
     // Getters
-    rootWidgets,
     selectedWidget,
     selectedLayout,
     selectedBlockId,
-    childrenOf,
     isWidgetDirty,
-    columnTargets,
     widgetRefreshing: refresh.widgetRefreshing,
     widgetIndicatorStage: refresh.widgetIndicatorStage,
     widgetPreviewError: refresh.widgetPreviewError,

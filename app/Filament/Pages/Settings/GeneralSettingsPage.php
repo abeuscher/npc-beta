@@ -41,7 +41,7 @@ class GeneralSettingsPage extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_url'            => SiteSetting::get('base_url', 'http://localhost'),
+            'site_url'            => SiteSetting::get('base_url', config('app.url')),
             'admin_brand_name'    => SiteSetting::get('admin_brand_name', ''),
             'admin_primary_color' => SiteSetting::get('admin_primary_color', '#f59e0b'),
             'admin_secondary_color' => SiteSetting::get('admin_secondary_color', '#73bbbb'),

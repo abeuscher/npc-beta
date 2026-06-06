@@ -6,7 +6,6 @@ use App\Enums\ImportModelType;
 use App\Filament\Pages\Concerns\InteractsWithImportWizard;
 use App\Importers\MembershipImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
-use App\Services\Import\FieldMapper;
 use App\Services\Import\MembershipFieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;

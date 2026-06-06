@@ -18,12 +18,12 @@ use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
- * Shared behaviour for the five CSV import wizard pages. Each page uses this
+ * Shared behaviour for the seven CSV import wizard pages. Each page uses this
  * trait and provides its own configuration via the abstract methods below.
  *
  * Contacts diverges the most — it overrides several methods (processUploadedFile,
  * getColumnMappingSchema, getPreviewSchema, runImport) and uses the trait only
- * for the pure utility helpers. The four non-contact importers delegate almost
+ * for the pure utility helpers. The six non-contact importers delegate almost
  * everything to the trait.
  */
 trait InteractsWithImportWizard
@@ -46,7 +46,7 @@ trait InteractsWithImportWizard
     // Optional (declare if noise detection is desired):
     //   noiseColumns — array of header indices flagged as system metadata
 
-    // ─── Pure utility methods (identical across all five pages) ──────────
+    // ─── Pure utility methods (identical across all seven pages) ──────────
 
     protected function topNav(int $currentIndex, bool $isFirst, bool $isLast): Forms\Components\Placeholder
     {
@@ -398,7 +398,7 @@ trait InteractsWithImportWizard
             ));
     }
 
-    // ─── Review Data step (shared by all five wizard pages) ──────────────
+    // ─── Review Data step (shared by all seven wizard pages) ──────────────
 
     protected function buildReviewStep(): Wizard\Step
     {

@@ -91,7 +91,7 @@ class AppServiceProvider extends ServiceProvider
             $settings = SiteSetting::all()->keyBy('key');
             config([
                 'site.name'          => $settings->get('site_name')?->value    ?? config('app.name'),
-                'site.base_url'      => $settings->get('base_url')?->value      ?? 'http://localhost',
+                'site.base_url'      => $settings->get('base_url')?->value      ?? config('app.url'),
                 'site.blog_prefix'         => $settings->get('blog_prefix')?->value         ?? 'news',
                 'site.donations_prefix'    => $settings->get('donations_prefix')?->value    ?? 'donate',
                 'site.description'   => $settings->get('site_description')?->value ?? '',

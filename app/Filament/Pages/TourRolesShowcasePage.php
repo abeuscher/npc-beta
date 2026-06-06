@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Forms\Components\PermissionTable;
 use Filament\Pages\Page;
 
 /**

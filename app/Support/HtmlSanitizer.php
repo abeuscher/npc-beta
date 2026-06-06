@@ -4,7 +4,6 @@ namespace App\Support;
 
 use DOMDocument;
 use DOMElement;
-use DOMNode;
 use DOMText;
 
 final class HtmlSanitizer

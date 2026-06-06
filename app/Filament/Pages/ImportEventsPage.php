@@ -8,7 +8,6 @@ use App\Importers\EventImportFieldRegistry;
 use App\Services\Import\CsvTemplateService;
 use App\Models\ImportSource;
 use App\Services\Import\EventFieldMapper;
-use App\Services\Import\FieldMapper;
 use Filament\Forms;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
