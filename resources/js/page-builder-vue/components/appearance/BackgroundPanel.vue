@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import ColorPicker from '../primitives/ColorPicker.vue'
 import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
-import { composeGradientCss } from '../../helpers/gradient'
+import { composeGradientCss } from '../../utils/gradient'
 
 type BgTab = 'color' | 'gradient' | 'image' | null
 

@@ -69,4 +69,11 @@ class EventRegistrationDefinition extends WidgetDefinition
             cardinality: DataContract::CARDINALITY_ONE,
         );
     }
+
+    public function assets(): array
+    {
+        return [
+            'js' => ['app/Widgets/EventRegistration/script.js'],
+        ];
+    }
 }

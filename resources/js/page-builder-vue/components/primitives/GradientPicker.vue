@@ -5,7 +5,7 @@ import {
   composeGradientCss,
   type GradientLayer,
   type GradientValue,
-} from '../../helpers/gradient'
+} from '../../utils/gradient'
 
 const props = withDefaults(
   defineProps<{

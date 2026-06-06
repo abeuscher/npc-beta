@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { ApiClient } from '../api'
 import type { DedupDecision, DedupMatch, Widget } from '../types'
-import { sha256Hex } from './hashFile'
+import { sha256Hex } from '../utils/hashFile'
 
 export interface UseUploadActionsDeps {
   widgets: Ref<Record<string, Widget>>

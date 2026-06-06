@@ -131,8 +131,7 @@
         @endphp
 
         @if ($portalUser)
-            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid widget-event-registration__form" style="margin-bottom: 0.5rem;"
-                  onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
+            <form method="POST" action="{{ route('portal.events.register', $item['slug']) }}" class="form-grid widget-event-registration__form" style="margin-bottom: 0.5rem;">
                 @csrf
                 @php $renderTierPicker(); @endphp
 
@@ -158,8 +157,7 @@
 
             <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Or register as a guest</h3>
 
-            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid widget-event-registration__form"
-                  onsubmit="if(this._busy)return false;this._busy=true;setTimeout(()=>this.querySelector('button[type=submit]').disabled=true,0);">
+            <form method="POST" action="{{ route('events.register', $item['slug']) }}" class="form-grid widget-event-registration__form">
                 @csrf
 
                 {{-- Honeypot --}}
@@ -258,30 +256,5 @@
                 </div>
             </form>
         @endif
-
-        <script>
-        (function () {
-            var forms = document.querySelectorAll('form.widget-event-registration__form');
-            forms.forEach(function (form) {
-                var subtotalEl = form.querySelector('[data-event-registration-subtotal]');
-                var inputs = form.querySelectorAll('input[data-tier-price-cents]');
-                if (inputs.length === 0) { return; }
-                function recalc() {
-                    var cents = 0;
-                    inputs.forEach(function (i) {
-                        var q = parseInt(i.value || '0', 10) || 0;
-                        var p = parseInt(i.getAttribute('data-tier-price-cents') || '0', 10) || 0;
-                        if (q < 0) q = 0;
-                        cents += q * p;
-                    });
-                    if (subtotalEl) {
-                        subtotalEl.textContent = (cents / 100).toFixed(2);
-                    }
-                }
-                inputs.forEach(function (i) { i.addEventListener('input', recalc); });
-                recalc();
-            });
-        })();
-        </script>
     @endif
 @endif
