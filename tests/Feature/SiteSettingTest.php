@@ -26,23 +26,6 @@ it('returns the value from the database when key exists', function () {
     expect(SiteSetting::get('site_name'))->toBe('Test Org');
 });
 
-it('casts boolean values correctly', function () {
-    SiteSetting::create([
-        'key'   => 'use_pico',
-        'value' => 'true',
-        'group' => 'styles',
-        'type'  => 'boolean',
-    ]);
-
-    expect(SiteSetting::get('use_pico'))->toBeTrue();
-
-    Cache::forget('site_setting:use_pico');
-
-    SiteSetting::where('key', 'use_pico')->update(['value' => 'false']);
-
-    expect(SiteSetting::get('use_pico'))->toBeFalse();
-});
-
 it('casts integer values correctly', function () {
     SiteSetting::create([
         'key'   => 'some_count',

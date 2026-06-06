@@ -62,7 +62,6 @@ class SiteSetting extends Model
     private static function castValue(mixed $value, string $type): mixed
     {
         return match ($type) {
-            'boolean'   => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'integer'   => (int) $value,
             'json'      => json_decode($value, true),
             'encrypted' => filled($value) ? (function () use ($value) {

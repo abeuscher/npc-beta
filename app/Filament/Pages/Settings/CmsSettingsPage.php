@@ -44,7 +44,7 @@ class CmsSettingsPage extends Page
             'site_description'   => SiteSetting::get('site_description', ''),
             'timezone'           => SiteSetting::get('timezone', 'America/Chicago'),
             'contact_email'      => SiteSetting::get('contact_email', ''),
-            'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'false') === 'true',
+            'event_auto_publish'  => SiteSetting::get('event_auto_publish', 'true') === 'true',
             'auto_publish_pages'  => SiteSetting::get('auto_publish_pages', 'true') === 'true',
             'auto_publish_posts'  => SiteSetting::get('auto_publish_posts', 'true') === 'true',
             'build_server_url'       => SiteSetting::get('build_server_url', '') ?: config('services.build_server.url', ''),

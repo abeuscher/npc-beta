@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
             ['key' => 'timezone',         'value' => 'America/Chicago',    'group' => 'general', 'type' => 'string'],
             ['key' => 'contact_email',    'value' => '',                   'group' => 'general', 'type' => 'string'],
             ['key' => 'installation_completed_at', 'value' => null,         'group' => 'general', 'type' => 'string'],
-            ['key' => 'use_pico',         'value' => 'false',              'group' => 'styles',  'type' => 'boolean'],
+            ['key' => 'use_pico',         'value' => 'false',              'group' => 'styles',  'type' => 'string'],
             ['key' => 'custom_css_path',  'value' => null,                 'group' => 'styles',  'type' => 'string'],
             ['key' => 'logo_path',        'value' => null,                 'group' => 'styles',  'type' => 'string'],
             ['key' => 'admin_brand_name', 'value' => 'NonprofitCRM',       'group' => 'admin',   'type' => 'string'],

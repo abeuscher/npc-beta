@@ -28,7 +28,7 @@ beforeEach(function () {
         ['key' => 'site_description', 'value' => '',                 'group' => 'general', 'type' => 'string'],
         ['key' => 'timezone',         'value' => 'America/Chicago',  'group' => 'general', 'type' => 'string'],
         ['key' => 'contact_email',    'value' => '',                 'group' => 'general', 'type' => 'string'],
-        ['key' => 'use_pico',         'value' => 'false',            'group' => 'styles',  'type' => 'boolean'],
+        ['key' => 'use_pico',         'value' => 'false',            'group' => 'styles',  'type' => 'string'],
     ];
     foreach ($defaults as $s) {
         SiteSetting::firstOrCreate(['key' => $s['key']], $s);
