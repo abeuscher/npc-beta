@@ -112,41 +112,16 @@ class ImportEventsProgressPage extends Page
 
     protected function accumulateOutcome(array &$report, array $outcome): void
     {
-        match ($outcome['outcome']) {
-            'imported' => $report['imported']++,
-            'updated'  => $report['updated']++,
-            'skipped'  => $report['skipped']++,
-            'error'    => null,
-        };
-
-        if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
-            $report['skipReasons'][$outcome['skipReason']]
-                = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
-        }
-
-        if ($outcome['outcome'] === 'error') {
-            $report['errorCount']++;
-            $report['errors'][] = $outcome;
-        }
+        $this->accumulateBaseOutcome($report, $outcome);
 
         $this->accumulateEntityCounts($report, $outcome['entities'] ?? []);
     }
 
     protected function buildRowContext(ImportLog $log): array
     {
-        $columnMap        = $log->column_map ?? [];
-        $customFieldMap   = $log->custom_field_map ?? [];
-        $relationalMap    = $log->relational_map ?? [];
-        $eventMatchKey    = $log->match_key ?: EventImportFieldRegistry::defaultEventMatchKey();
-        $contactMatchKey  = $log->contact_match_key ?: 'contact:email';
-
         return [
-            'columnMap'         => $columnMap,
-            'customFieldMap'    => $customFieldMap,
-            'relationalMap'     => $relationalMap,
-            'eventMatchKey'     => $eventMatchKey,
-            'contactMatchKey'   => $contactMatchKey,
-            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
+            ...$this->baseNamespacedContext($log),
+            'eventMatchKey' => $log->match_key ?: EventImportFieldRegistry::defaultEventMatchKey(),
         ];
     }
 
@@ -171,17 +146,11 @@ class ImportEventsProgressPage extends Page
 
     // ─── Hook: afterPiiScan ─────────────────────────────────────────────
 
-    protected function afterPiiScan(ImportLog $log): void
+    protected function customFieldModelType(): ?string
     {
-        $customFieldLog = $this->resolveCustomFieldDefs($log);
-
-        $log->update([
-            'status'           => 'processing',
-            'started_at'       => now(),
-            'custom_field_log' => $customFieldLog ?: null,
-        ]);
-
-        $this->customFieldLog = $customFieldLog;
+        // Event registrations carry *contact* custom fields, not event ones
+        // (the importer's long-standing default).
+        return 'contact';
     }
 
     // ─── Row processing ─────────────────────────────────────────────────
@@ -356,26 +325,15 @@ class ImportEventsProgressPage extends Page
 
             // Resolve Contact. No create/update path — this session is read-only
             // against Contact records.
-            try {
-                $contact = $this->resolveContactByNamespacedKey(
-                    $context['contactMatchKey'],
-                    $contactLookup,
-                    $contactExternalId,
-                    EventImportFieldRegistry::class,
-                );
-            } catch (\RuntimeException $e) {
-                $colInfo = $contactMatchSource
-                    ? " (from column {$contactMatchSource['col']}: \"{$contactMatchSource['header']}\")"
-                    : '';
-                throw new \RuntimeException($e->getMessage() . $colInfo);
-            }
+            [$contact, $matchField, $matchValue] = $this->resolveRowContact(
+                $context['contactMatchKey'],
+                $contactLookup,
+                $contactExternalId,
+                $contactMatchSource,
+                EventImportFieldRegistry::class,
+            );
 
             if (! $contact) {
-                [, $matchField] = EventImportFieldRegistry::split($context['contactMatchKey']);
-                $matchValue = $matchField === 'external_id'
-                    ? $contactExternalId
-                    : ($contactLookup[$matchField] ?? null);
-
                 if (blank($matchValue)) {
                     return ['outcome' => 'skipped', 'row' => $rowNumber, 'skipReason' => 'blank_contact_key'];
                 }

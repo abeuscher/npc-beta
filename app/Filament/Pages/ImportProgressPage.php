@@ -144,17 +144,9 @@ class ImportProgressPage extends Page
         return ImportContactsPage::getUrl();
     }
 
-    protected function afterPiiScan(ImportLog $log): void
+    protected function customFieldModelType(): ?string
     {
-        $customFieldLog = $this->resolveCustomFieldDefs($log, 'contact');
-
-        $log->update([
-            'status'           => 'processing',
-            'started_at'       => now(),
-            'custom_field_log' => $customFieldLog ?: null,
-        ]);
-
-        $this->customFieldLog = $customFieldLog;
+        return 'contact';
     }
 
     protected function accumulateOutcome(array &$report, array $outcome): void

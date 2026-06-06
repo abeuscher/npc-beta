@@ -102,17 +102,9 @@ class ImportMembershipsProgressPage extends Page
 
     // ─── Abstract method implementations ────────────────────────────────
 
-    protected function afterPiiScan(ImportLog $log): void
+    protected function customFieldModelType(): ?string
     {
-        $customFieldLog = $this->resolveCustomFieldDefs($log, 'membership');
-
-        $log->update([
-            'status'           => 'processing',
-            'started_at'       => now(),
-            'custom_field_log' => $customFieldLog ?: null,
-        ]);
-
-        $this->customFieldLog = $customFieldLog;
+        return 'membership';
     }
 
     protected function emptyDryRunReport(): array
@@ -139,33 +131,12 @@ class ImportMembershipsProgressPage extends Page
 
     protected function buildRowContext(ImportLog $log): array
     {
-        return [
-            'columnMap'         => $log->column_map ?? [],
-            'customFieldMap'    => $log->custom_field_map ?? [],
-            'relationalMap'     => $log->relational_map ?? [],
-            'contactMatchKey'   => $log->contact_match_key ?: 'contact:email',
-            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
-        ];
+        return $this->baseNamespacedContext($log);
     }
 
     protected function accumulateOutcome(array &$report, array $outcome): void
     {
-        match ($outcome['outcome']) {
-            'imported' => $report['imported']++,
-            'updated'  => $report['updated']++,
-            'skipped'  => $report['skipped']++,
-            'error'    => null,
-        };
-
-        if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
-            $report['skipReasons'][$outcome['skipReason']]
-                = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
-        }
-
-        if ($outcome['outcome'] === 'error') {
-            $report['errorCount']++;
-            $report['errors'][] = $outcome;
-        }
+        $this->accumulateBaseOutcome($report, $outcome);
 
         $entities = $outcome['entities'] ?? [];
 
@@ -297,29 +268,17 @@ class ImportMembershipsProgressPage extends Page
             }
 
             // Resolve Contact.
-            $contact        = null;
             $contactCreated = false;
 
-            try {
-                $contact = $this->resolveContactByNamespacedKey(
-                    $context['contactMatchKey'],
-                    $contactLookup,
-                    $contactExternalId,
-                    MembershipImportFieldRegistry::class,
-                );
-            } catch (\RuntimeException $e) {
-                $colInfo = $contactMatchSource
-                    ? " (from column {$contactMatchSource['col']}: \"{$contactMatchSource['header']}\")"
-                    : '';
-                throw new \RuntimeException($e->getMessage() . $colInfo);
-            }
+            [$contact, $matchField, $matchValue] = $this->resolveRowContact(
+                $context['contactMatchKey'],
+                $contactLookup,
+                $contactExternalId,
+                $contactMatchSource,
+                MembershipImportFieldRegistry::class,
+            );
 
             if (! $contact) {
-                [, $matchField] = MembershipImportFieldRegistry::split($context['contactMatchKey']);
-                $matchValue = $matchField === 'external_id'
-                    ? $contactExternalId
-                    : ($contactLookup[$matchField] ?? null);
-
                 if (blank($matchValue)) {
                     return ['outcome' => 'skipped', 'row' => $rowNumber, 'skipReason' => 'blank_contact_key'];
                 }

@@ -86,17 +86,9 @@ class ImportInvoiceDetailsProgressPage extends Page
         return false;
     }
 
-    protected function afterPiiScan(ImportLog $log): void
+    protected function customFieldModelType(): ?string
     {
-        $customFieldLog = $this->resolveCustomFieldDefs($log, 'transaction');
-
-        $log->update([
-            'status'           => 'processing',
-            'started_at'       => now(),
-            'custom_field_log' => $customFieldLog ?: null,
-        ]);
-
-        $this->customFieldLog = $customFieldLog;
+        return 'transaction';
     }
 
     protected function emptyDryRunReport(): array
@@ -128,13 +120,7 @@ class ImportInvoiceDetailsProgressPage extends Page
 
     protected function buildRowContext(ImportLog $log): array
     {
-        return [
-            'columnMap'         => $log->column_map ?? [],
-            'customFieldMap'    => $log->custom_field_map ?? [],
-            'relationalMap'     => $log->relational_map ?? [],
-            'contactMatchKey'   => $log->contact_match_key ?: 'contact:email',
-            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
-        ];
+        return $this->baseNamespacedContext($log);
     }
 
     protected function saveMappingToSource(ImportSource $source, ImportLog $log, array $fieldMap, array $customFieldMap): void
@@ -541,29 +527,17 @@ class ImportInvoiceDetailsProgressPage extends Page
             }
 
             // Resolve contact.
-            $contact        = null;
             $contactCreated = false;
 
-            try {
-                $contact = $this->resolveContactByNamespacedKey(
-                    $context['contactMatchKey'],
-                    $contactLookup,
-                    $contactExternalId,
-                    InvoiceImportFieldRegistry::class,
-                );
-            } catch (\RuntimeException $e) {
-                $colInfo = $contactMatchSource
-                    ? " (from column {$contactMatchSource['col']}: \"{$contactMatchSource['header']}\")"
-                    : '';
-                throw new \RuntimeException($e->getMessage() . $colInfo);
-            }
+            [$contact, $matchField, $matchValue] = $this->resolveRowContact(
+                $context['contactMatchKey'],
+                $contactLookup,
+                $contactExternalId,
+                $contactMatchSource,
+                InvoiceImportFieldRegistry::class,
+            );
 
             if (! $contact) {
-                [, $matchField] = InvoiceImportFieldRegistry::split($context['contactMatchKey']);
-                $matchValue = $matchField === 'external_id'
-                    ? $contactExternalId
-                    : ($contactLookup[$matchField] ?? null);
-
                 if (blank($matchValue)) {
                     return ['skip' => true, 'error' => false, 'skipReason' => 'blank_contact_key'];
                 }

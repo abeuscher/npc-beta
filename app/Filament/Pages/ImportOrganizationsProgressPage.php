@@ -94,17 +94,9 @@ class ImportOrganizationsProgressPage extends Page
     public array $csvHeaders    = [];
     public bool  $mappingSaved  = false;
 
-    protected function afterPiiScan(ImportLog $log): void
+    protected function customFieldModelType(): ?string
     {
-        $customFieldLog = $this->resolveCustomFieldDefs($log, 'organization');
-
-        $log->update([
-            'status'           => 'processing',
-            'started_at'       => now(),
-            'custom_field_log' => $customFieldLog ?: null,
-        ]);
-
-        $this->customFieldLog = $customFieldLog;
+        return 'organization';
     }
 
     protected function emptyDryRunReport(): array
@@ -141,22 +133,7 @@ class ImportOrganizationsProgressPage extends Page
 
     protected function accumulateOutcome(array &$report, array $outcome): void
     {
-        match ($outcome['outcome']) {
-            'imported' => $report['imported']++,
-            'updated'  => $report['updated']++,
-            'skipped'  => $report['skipped']++,
-            'error'    => null,
-        };
-
-        if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
-            $report['skipReasons'][$outcome['skipReason']]
-                = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
-        }
-
-        if ($outcome['outcome'] === 'error') {
-            $report['errorCount']++;
-            $report['errors'][] = $outcome;
-        }
+        $this->accumulateBaseOutcome($report, $outcome);
 
         $entities = $outcome['entities'] ?? [];
 

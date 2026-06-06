@@ -82,11 +82,80 @@ trait InteractsWithImportProgress
      */
     protected function afterPiiScan(ImportLog $log): void
     {
-        // Default: no custom field resolution.
+        $modelType = $this->customFieldModelType();
+
+        if ($modelType === null) {
+            // No custom field resolution for this importer (e.g. Notes).
+            $log->update([
+                'status'     => 'processing',
+                'started_at' => now(),
+            ]);
+
+            return;
+        }
+
+        $customFieldLog = $this->resolveCustomFieldDefs($log, $modelType);
+
         $log->update([
-            'status'     => 'processing',
-            'started_at' => now(),
+            'status'           => 'processing',
+            'started_at'       => now(),
+            'custom_field_log' => $customFieldLog ?: null,
         ]);
+
+        $this->customFieldLog = $customFieldLog;
+    }
+
+    /**
+     * The model_type custom field definitions resolve against during
+     * afterPiiScan, or null when this importer has no custom fields. Each
+     * custom-field progress page overrides this; the default (null) keeps the
+     * no-custom-field path (Notes).
+     */
+    protected function customFieldModelType(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Apply the imported/updated/skipped/error tally, the skip-reason count,
+     * and the error capture that the five namespaced custom-field pages share.
+     * Each page calls this from accumulateOutcome(), then folds its own entity
+     * counts after. (Contacts and Invoice keep their own variants.)
+     */
+    protected function accumulateBaseOutcome(array &$report, array $outcome): void
+    {
+        match ($outcome['outcome']) {
+            'imported' => $report['imported']++,
+            'updated'  => $report['updated']++,
+            'skipped'  => $report['skipped']++,
+            'error'    => null,
+        };
+
+        if ($outcome['outcome'] === 'skipped' && isset($outcome['skipReason'])) {
+            $report['skipReasons'][$outcome['skipReason']]
+                = ($report['skipReasons'][$outcome['skipReason']] ?? 0) + 1;
+        }
+
+        if ($outcome['outcome'] === 'error') {
+            $report['errorCount']++;
+            $report['errors'][] = $outcome;
+        }
+    }
+
+    /**
+     * The five-key row context shared by the simple namespaced progress pages
+     * (Memberships/Notes/Donations/InvoiceDetails). Events merges its own
+     * eventMatchKey on top; Organizations and Contacts build their own.
+     */
+    protected function baseNamespacedContext(ImportLog $log): array
+    {
+        return [
+            'columnMap'         => $log->column_map ?? [],
+            'customFieldMap'    => $log->custom_field_map ?? [],
+            'relationalMap'     => $log->relational_map ?? [],
+            'contactMatchKey'   => $log->contact_match_key ?: 'contact:email',
+            'duplicateStrategy' => $log->duplicate_strategy ?: 'skip',
+        ];
     }
 
     // ─── Mount ───────────────────────────────────────────────────────────
@@ -633,6 +702,54 @@ trait InteractsWithImportProgress
             false,
             $externalId,
         );
+    }
+
+    /**
+     * Resolve a Contact for a namespaced import row, performing the resolve +
+     * the column-context error rewrap every namespaced page shares, and
+     * pre-computing the matchField / matchValue the not-found branch needs.
+     *
+     * Returns [contact, matchField, matchValue]. When a contact is found,
+     * matchField/matchValue are null. When none is found, contact is null and
+     * the pair describes the attempted key — the caller owns the not-found
+     * decision (skip vs error vs auto-create), which is what genuinely differs
+     * across the namespaced pages.
+     *
+     * @param  array{col: mixed, header: mixed}|null  $matchSource
+     * @return array{0: ?Contact, 1: ?string, 2: mixed}
+     */
+    protected function resolveRowContact(
+        string $matchKey,
+        array $contactLookup,
+        ?string $externalId,
+        ?array $matchSource,
+        string $registryClass,
+    ): array {
+        try {
+            $contact = $this->resolveContactByNamespacedKey(
+                $matchKey,
+                $contactLookup,
+                $externalId,
+                $registryClass,
+            );
+        } catch (\RuntimeException $e) {
+            $colInfo = $matchSource
+                ? " (from column {$matchSource['col']}: \"{$matchSource['header']}\")"
+                : '';
+
+            throw new \RuntimeException($e->getMessage() . $colInfo);
+        }
+
+        if ($contact) {
+            return [$contact, null, null];
+        }
+
+        [, $matchField] = $registryClass::split($matchKey);
+        $matchValue = $matchField === 'external_id'
+            ? $externalId
+            : ($contactLookup[$matchField] ?? null);
+
+        return [null, $matchField, $matchValue];
     }
 
     /**
