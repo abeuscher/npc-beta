@@ -152,23 +152,56 @@ class RandomDataGenerator
         $types      = ['nonprofit', 'for_profit', 'government', 'other'];
         $industries = ['Education', 'Healthcare', 'Arts & Culture', 'Environment', 'Human Services', 'Faith-Based', 'Civic', 'Research'];
 
+        // Draw names (and any attributes a record supplies) from the curated
+        // scrub-data dictionary rather than faker's company generator. Shuffled
+        // per run for cross-run variety, then cycled when n exceeds the
+        // dictionary size — organization names are not unique, so reuse is fine.
+        $dictionary = $this->organizationDictionary();
+        shuffle($dictionary);
+        $size = count($dictionary);
+
         for ($i = 0; $i < $n; $i++) {
+            $entry = $dictionary[$i % $size];
+
             Organization::factory()->create([
-                'name'        => fake()->company(),
-                'type'        => fake()->randomElement($types),
-                'industry'    => fake()->randomElement($industries),
-                'website'     => fake()->url(),
-                'phone'       => fake()->phoneNumber(),
-                'email'       => fake()->companyEmail(),
-                'city'        => fake()->city(),
-                'state'       => fake()->stateAbbr(),
-                'postal_code' => fake()->postcode(),
-                'country'     => 'US',
+                'name'        => $entry['name'],
+                'type'        => $entry['type'] ?? fake()->randomElement($types),
+                'industry'    => $entry['industry'] ?? fake()->randomElement($industries),
+                'website'     => $entry['website'] ?? fake()->url(),
+                'phone'       => $entry['phone'] ?? fake()->phoneNumber(),
+                'email'       => $entry['email'] ?? fake()->companyEmail(),
+                'city'        => $entry['city'] ?? fake()->city(),
+                'state'       => $entry['state'] ?? fake()->stateAbbr(),
+                'postal_code' => $entry['postal_code'] ?? fake()->postcode(),
+                'country'     => $entry['country'] ?? 'US',
                 'source'      => Source::SCRUB_DATA,
             ]);
         }
 
         return ['organizations' => $n];
+    }
+
+    /**
+     * The curated scrub-data organization dictionary — each entry carries a
+     * required `name` plus optional type/industry/website/phone/email/location
+     * attributes (anything omitted falls back to faker in generateOrganizations).
+     * Falls back to a single faker-named entry if the file is missing or
+     * unreadable so generation never hard-fails.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function organizationDictionary(): array
+    {
+        $path = resource_path('data/scrub-organizations.json');
+
+        if (! is_file($path)) {
+            return [['name' => fake()->company()]];
+        }
+
+        $decoded = is_array($d = json_decode((string) file_get_contents($path), true)) ? $d : [];
+        $valid   = array_values(array_filter($decoded, fn ($e) => is_array($e) && ! empty($e['name'])));
+
+        return $valid !== [] ? $valid : [['name' => fake()->company()]];
     }
 
     protected function generateEvents(int $n): array

@@ -69,6 +69,35 @@ it('zero counts produce a no-op summary with no rows created', function () {
     ])->and(Contact::count())->toBe($contactsBefore);
 });
 
+it('generates organizations from the curated dictionary, tagged source = scrub_data', function () {
+    asSuperAdmin();
+
+    $summary = app(RandomDataGenerator::class)->generate(['organizations' => 6]);
+
+    expect($summary['organizations'])->toBe(6)
+        ->and(Organization::where('source', Source::SCRUB_DATA)->count())->toBe(6);
+
+    // Names are drawn from the curated dictionary, not faker's company generator.
+    $dictionaryNames = collect(json_decode(file_get_contents(resource_path('data/scrub-organizations.json')), true))
+        ->pluck('name')
+        ->all();
+
+    Organization::where('source', Source::SCRUB_DATA)->pluck('name')->each(
+        fn ($name) => expect($dictionaryNames)->toContain($name)
+    );
+});
+
+it('cycles the organization dictionary when the requested count exceeds it', function () {
+    asSuperAdmin();
+
+    $dictionarySize = count(json_decode(file_get_contents(resource_path('data/scrub-organizations.json')), true));
+
+    $summary = app(RandomDataGenerator::class)->generate(['organizations' => $dictionarySize + 2]);
+
+    expect($summary['organizations'])->toBe($dictionarySize + 2)
+        ->and(Organization::where('source', Source::SCRUB_DATA)->count())->toBe($dictionarySize + 2);
+})->group('slow');
+
 it('generates contacts tagged with source = scrub_data', function () {
     asSuperAdmin();
 
