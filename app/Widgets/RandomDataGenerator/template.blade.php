@@ -27,6 +27,7 @@
                   confirming: false,
                   counts: {
                       contacts: {{ (int) old('counts.contacts', 0) }},
+                      organizations: {{ (int) old('counts.organizations', 0) }},
                       events: {{ (int) old('counts.events', 0) }},
                       registrations: {{ (int) old('counts.registrations', 0) }},
                       donations: {{ (int) old('counts.donations', 0) }},
@@ -42,7 +43,7 @@
             @csrf
 
             <fieldset class="np-random-data-generator__fields">
-                @foreach (['contacts', 'events', 'registrations', 'donations', 'memberships', 'posts', 'products'] as $type)
+                @foreach (['contacts', 'organizations', 'events', 'registrations', 'donations', 'memberships', 'posts', 'products'] as $type)
                     <label class="np-random-data-generator__field">
                         <span class="np-random-data-generator__field-label">{{ ucfirst($type) }}</span>
                         <input type="number"
@@ -69,6 +70,7 @@
                 <p class="np-random-data-generator__modal-body">
                     Generate
                     <span x-text="counts.contacts"></span> contacts,
+                    <span x-text="counts.organizations"></span> organizations,
                     <span x-text="counts.events"></span> events,
                     <span x-text="counts.registrations"></span> registrations,
                     <span x-text="counts.donations"></span> donations,
@@ -96,6 +98,7 @@
             <p class="np-random-data-generator__counts">
                 Currently tagged <code>scrub_data</code>:
                 {{ $scrubCounts['contacts'] }} contacts,
+                {{ $scrubCounts['organizations'] }} organizations,
                 {{ $scrubCounts['events'] }} events,
                 {{ $scrubCounts['registrations'] }} registrations,
                 {{ $scrubCounts['donations'] }} donations,
@@ -120,6 +123,7 @@
                     <h4 class="np-random-data-generator__modal-heading">Confirm wipe</h4>
                     <p class="np-random-data-generator__modal-body">
                         Permanently delete {{ $scrubCounts['contacts'] }} contacts,
+                        {{ $scrubCounts['organizations'] }} organizations,
                         {{ $scrubCounts['events'] }} events,
                         {{ $scrubCounts['registrations'] }} registrations,
                         {{ $scrubCounts['donations'] }} donations,

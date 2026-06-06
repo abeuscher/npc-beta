@@ -6,6 +6,7 @@ use App\Models\Donation;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\Membership;
+use App\Models\Organization;
 use App\Models\Page;
 use App\Models\Product;
 use App\Models\ProductPrice;
@@ -57,6 +58,7 @@ it('zero counts produce a no-op summary with no rows created', function () {
 
     expect($summary)->toBe([
         'contacts'      => 0,
+        'organizations' => 0,
         'events'        => 0,
         'registrations' => 0,
         'donations'     => 0,
@@ -250,6 +252,7 @@ it('wipe — clean install with no scrub data is a no-op (returns zeros)', funct
         'events'        => 0,
         'posts'         => 0,
         'products'      => 0,
+        'organizations' => 0,
         'contacts'      => 0,
     ]);
 });
@@ -457,4 +460,37 @@ it('wipe — also removes scrub-tagged products and cascades their ProductPrices
     expect($deleted['products'])->toBe(3)
         ->and(Product::where('source', Source::SCRUB_DATA)->count())->toBe(0)
         ->and(ProductPrice::whereIn('product_id', $productIds)->count())->toBe(0);
+});
+
+it('generates organizations tagged scrub_data with realistic fields', function () {
+    asSuperAdmin();
+
+    $summary = app(RandomDataGenerator::class)->generate(['organizations' => 5]);
+
+    expect($summary['organizations'])->toBe(5)
+        ->and(Organization::where('source', Source::SCRUB_DATA)->count())->toBe(5);
+
+    foreach (Organization::where('source', Source::SCRUB_DATA)->get() as $org) {
+        expect($org->name)->not->toBeEmpty()
+            ->and($org->type)->toBeIn(['nonprofit', 'for_profit', 'government', 'other'])
+            ->and($org->industry)->not->toBeEmpty()
+            ->and($org->city)->not->toBeEmpty();
+    }
+});
+
+it('wipe — also removes scrub-tagged organizations, leaving real ones intact', function () {
+    asSuperAdmin();
+
+    $service = app(RandomDataGenerator::class);
+
+    $realOrg = Organization::factory()->create();
+    $service->generate(['organizations' => 3]);
+
+    expect(Organization::where('source', Source::SCRUB_DATA)->count())->toBe(3);
+
+    $deleted = $service->wipe();
+
+    expect($deleted['organizations'])->toBe(3)
+        ->and(Organization::where('source', Source::SCRUB_DATA)->withTrashed()->count())->toBe(0)
+        ->and(Organization::where('id', $realOrg->id)->exists())->toBeTrue();
 });

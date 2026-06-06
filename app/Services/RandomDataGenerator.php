@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\Membership;
 use App\Models\MembershipTier;
+use App\Models\Organization;
 use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\Product;
@@ -32,6 +33,7 @@ class RandomDataGenerator
     {
         return [
             'contacts'      => Contact::where('source', Source::SCRUB_DATA)->withTrashed()->count(),
+            'organizations' => Organization::where('source', Source::SCRUB_DATA)->withTrashed()->count(),
             'events'        => Event::where('source', Source::SCRUB_DATA)->count(),
             'registrations' => EventRegistration::where('source', Source::SCRUB_DATA)->count(),
             'donations'     => Donation::where('source', Source::SCRUB_DATA)->count(),
@@ -57,6 +59,7 @@ class RandomDataGenerator
                 'events'        => Event::where('source', Source::SCRUB_DATA)->delete(),
                 'posts'         => $this->wipeScrubPages(),
                 'products'      => Product::where('source', Source::SCRUB_DATA)->delete(),
+                'organizations' => Organization::where('source', Source::SCRUB_DATA)->withTrashed()->forceDelete(),
                 'contacts'      => Contact::where('source', Source::SCRUB_DATA)->withTrashed()->forceDelete(),
             ];
         });
@@ -100,6 +103,7 @@ class RandomDataGenerator
         return DB::transaction(function () use ($counts) {
             $summary = [
                 'contacts'      => 0,
+                'organizations' => 0,
                 'events'        => 0,
                 'registrations' => 0,
                 'donations'     => 0,
@@ -109,7 +113,7 @@ class RandomDataGenerator
                 'products'      => 0,
             ];
 
-            foreach (['contacts', 'events', 'registrations', 'donations', 'memberships', 'posts', 'products'] as $type) {
+            foreach (['contacts', 'organizations', 'events', 'registrations', 'donations', 'memberships', 'posts', 'products'] as $type) {
                 $method = 'generate' . ucfirst($type);
                 $result = $this->{$method}((int) ($counts[$type] ?? 0));
                 foreach ($result as $key => $value) {
@@ -137,6 +141,34 @@ class RandomDataGenerator
         }
 
         return ['contacts' => $n];
+    }
+
+    protected function generateOrganizations(int $n): array
+    {
+        if ($n === 0) {
+            return ['organizations' => 0];
+        }
+
+        $types      = ['nonprofit', 'for_profit', 'government', 'other'];
+        $industries = ['Education', 'Healthcare', 'Arts & Culture', 'Environment', 'Human Services', 'Faith-Based', 'Civic', 'Research'];
+
+        for ($i = 0; $i < $n; $i++) {
+            Organization::factory()->create([
+                'name'        => fake()->company(),
+                'type'        => fake()->randomElement($types),
+                'industry'    => fake()->randomElement($industries),
+                'website'     => fake()->url(),
+                'phone'       => fake()->phoneNumber(),
+                'email'       => fake()->companyEmail(),
+                'city'        => fake()->city(),
+                'state'       => fake()->stateAbbr(),
+                'postal_code' => fake()->postcode(),
+                'country'     => 'US',
+                'source'      => Source::SCRUB_DATA,
+            ]);
+        }
+
+        return ['organizations' => $n];
     }
 
     protected function generateEvents(int $n): array

@@ -16,6 +16,7 @@ class RandomDataGeneratorController extends Controller
         $validated = $request->validate([
             'counts'               => ['required', 'array'],
             'counts.contacts'      => ['integer', 'min:0', 'max:1000'],
+            'counts.organizations' => ['integer', 'min:0', 'max:1000'],
             'counts.events'        => ['integer', 'min:0', 'max:1000'],
             'counts.registrations' => ['integer', 'min:0', 'max:1000'],
             'counts.donations'     => ['integer', 'min:0', 'max:1000'],
@@ -31,8 +32,9 @@ class RandomDataGeneratorController extends Controller
         }
 
         return back()->with('rdg_status', sprintf(
-            'Generated %d contacts, %d events, %d registrations, %d donations, %d memberships, %d posts, %d products, %d transactions.',
+            'Generated %d contacts, %d organizations, %d events, %d registrations, %d donations, %d memberships, %d posts, %d products, %d transactions.',
             $summary['contacts'],
+            $summary['organizations'],
             $summary['events'],
             $summary['registrations'],
             $summary['donations'],
@@ -50,8 +52,9 @@ class RandomDataGeneratorController extends Controller
         $deleted = $generator->wipe();
 
         return back()->with('rdg_status', sprintf(
-            'Wiped scrub data: %d contacts, %d events, %d registrations, %d donations, %d memberships, %d posts, %d products, %d transactions.',
+            'Wiped scrub data: %d contacts, %d organizations, %d events, %d registrations, %d donations, %d memberships, %d posts, %d products, %d transactions.',
             $deleted['contacts'],
+            $deleted['organizations'],
             $deleted['events'],
             $deleted['registrations'],
             $deleted['donations'],
