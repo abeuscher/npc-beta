@@ -520,7 +520,10 @@ class ImportEventsProgressPage extends Page
             $payload['import_session_id'] = $this->importSessionId;
         }
 
-        return EventRegistration::create($payload);
+        // Imported registrations are historical data, not live sign-ups:
+        // suppress the EventRegistrationObserver (confirmation email + contact
+        // auto-create). Mirrors RandomDataGenerator's seam.
+        return EventRegistration::withoutEvents(fn () => EventRegistration::create($payload));
     }
 
     /**

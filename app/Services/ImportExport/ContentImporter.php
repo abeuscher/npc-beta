@@ -1757,7 +1757,10 @@ class ContentImporter
                     $tierId = $tierIdsByName[$regRow['ticket_tier_name']] ?? null;
                 }
 
-                EventRegistration::create([
+                // Imported registrations are historical data, not live sign-ups:
+                // suppress the EventRegistrationObserver (confirmation email +
+                // contact auto-create). Mirrors RandomDataGenerator's seam.
+                EventRegistration::withoutEvents(fn () => EventRegistration::create([
                     'event_id'            => $event->id,
                     'ticket_tier_id'      => $tierId,
                     'quantity'            => (int) ($regRow['quantity'] ?? 1),
@@ -1780,7 +1783,7 @@ class ContentImporter
                     'ticket_fee'          => $regRow['ticket_fee'] ?? null,
                     'payment_state'       => $regRow['payment_state'] ?? null,
                     'custom_fields'       => $regRow['custom_fields'] ?? [],
-                ]);
+                ]));
             }
         }
 

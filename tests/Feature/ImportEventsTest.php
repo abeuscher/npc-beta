@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\ImportEventsProgressPage;
+use App\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -14,6 +15,7 @@ use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -293,6 +295,37 @@ it('creates exactly one EventRegistration per committed row, linked to the right
     expect($event->registrations()->count())->toBe(2)
         ->and($event->registrations()->where('contact_id', $alice->id)->count())->toBe(1)
         ->and($event->registrations()->where('contact_id', $bob->id)->count())->toBe(1);
+});
+
+it('does not send a confirmation email for imported event registrations (Flag 344-C)', function () {
+    Mail::fake();
+
+    $source = ImportSource::create(['name' => 'Source NoMail']);
+    Contact::factory()->create(['email' => 'imported@example.com']);
+
+    $path = eventsCsv([
+        ['Event ID', 'Event title', 'Start date', 'Email'],
+        ['EV-NM1', 'Imported Workshop', '05/02/2026 13:00:00', 'imported@example.com'],
+    ]);
+
+    $log = eventsLog($path, [
+        'Event ID'    => 'event:external_id',
+        'Event title' => 'event:title',
+        'Start date'  => 'event:starts_at',
+        'Email'       => 'contact:email',
+    ], 1, $source->id);
+    $session = eventsSession($this->admin, $source->id);
+    $page    = mountEventsPage($log, $session, $source->id);
+
+    $page->runCommit();
+    while (! $page->done) {
+        $page->tick();
+    }
+
+    // The registration was created (this is suppression, not absence) …
+    expect(EventRegistration::where('email', 'imported@example.com')->count())->toBe(1);
+    // … but the EventRegistrationObserver's confirmation email never fired.
+    Mail::assertNotSent(RegistrationConfirmation::class);
 });
 
 // ── Transaction dedupe across two runs ───────────────────────────────────────

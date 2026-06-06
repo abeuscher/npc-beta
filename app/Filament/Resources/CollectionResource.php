@@ -20,7 +20,6 @@ namespace App\Filament\Resources;
  */
 
 use App\Filament\Resources\CollectionResource\Pages;
-use App\Filament\Resources\CollectionResource\RelationManagers\CollectionItemsRelationManager;
 use App\Models\Collection;
 use App\WidgetPrimitive\Source;
 use Filament\Forms;
@@ -285,13 +284,6 @@ class CollectionResource extends Resource
                     ? null
                     : static::getUrl('edit', ['record' => $record])
             );
-    }
-
-    public static function getRelationManagers(): array
-    {
-        return [
-            CollectionItemsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array
