@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Page;
 use App\Models\SiteSetting;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
@@ -63,11 +64,18 @@ class DemoRestoreCommand extends Command
 
             $this->info('Fixing env-specific values from .env …');
             $this->fixEnvSpecificValues();
+
+            // Lock every page so the shared `demo` account cannot edit the
+            // sample site's content. demo:reset applies the same lock after
+            // re-seeding; the restored blob is expected to carry locked=true
+            // already, but re-assert it here so a blob built from an unlocked
+            // authoring environment can never ship an editable demo. Idempotent.
+            Page::query()->update(['locked' => true]);
         } finally {
             $files->deleteDirectory($work);
         }
 
-        $this->info('Demo baseline restored from blob.');
+        $this->info('Demo baseline restored from blob and pages locked.');
 
         return self::SUCCESS;
     }

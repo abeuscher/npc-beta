@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardBuilderApiController;
+use App\Http\Middleware\BlockDemoUploads;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,7 @@ Route::prefix('configs/{dashboardConfig}')->group(function () {
     Route::delete('widgets/{widget}', [DashboardBuilderApiController::class, 'destroy']);
     Route::get('widgets/{widget}/preview', [DashboardBuilderApiController::class, 'preview']);
     Route::get('widget-types', [DashboardBuilderApiController::class, 'widgetTypes']);
-    Route::post('widgets/{widget}/appearance-image', [DashboardBuilderApiController::class, 'uploadAppearanceImage']);
+    Route::post('widgets/{widget}/appearance-image', [DashboardBuilderApiController::class, 'uploadAppearanceImage'])
+        ->middleware(BlockDemoUploads::class);
     Route::delete('widgets/{widget}/appearance-image', [DashboardBuilderApiController::class, 'removeAppearanceImage']);
 });

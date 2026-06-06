@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\RecordDetailViewBuilderApiController;
+use App\Http\Middleware\BlockDemoUploads;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,7 +26,8 @@ Route::prefix('views/{view}')->group(function () {
     Route::delete('widgets/{widget}', [RecordDetailViewBuilderApiController::class, 'destroy']);
     Route::get('widgets/{widget}/preview', [RecordDetailViewBuilderApiController::class, 'preview']);
     Route::get('widget-types', [RecordDetailViewBuilderApiController::class, 'widgetTypes']);
-    Route::post('widgets/{widget}/appearance-image', [RecordDetailViewBuilderApiController::class, 'uploadAppearanceImage']);
+    Route::post('widgets/{widget}/appearance-image', [RecordDetailViewBuilderApiController::class, 'uploadAppearanceImage'])
+        ->middleware(BlockDemoUploads::class);
     Route::delete('widgets/{widget}/appearance-image', [RecordDetailViewBuilderApiController::class, 'removeAppearanceImage']);
 
     Route::post('layouts', [RecordDetailViewBuilderApiController::class, 'storeLayout']);

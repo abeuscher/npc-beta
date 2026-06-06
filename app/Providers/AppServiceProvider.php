@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\SiteSetting;
 use App\Services\Media\MediaContentHasher;
 use App\Services\Media\MediaRelocator;
+use App\Services\Media\MediaSvgSanitizer;
 use Filament\Actions\DeleteAction as PageDeleteAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -38,7 +39,14 @@ class AppServiceProvider extends ServiceProvider
         // seeding), and before conversions are generated — so hashing then
         // relocating here lands the original and all later conversions under the
         // shared content-addressed directory.
+        //
+        // SVGs are sanitized first — stripping any executable content before the
+        // hash is computed, so the hash and the relocation see the cleaned bytes.
+        // This is the single seam that covers every upload path (session 345,
+        // Flag 344-A); registerMediaConversions() skips SVG, so the raw original
+        // would otherwise be served as a runnable document on direct navigation.
         Event::listen(MediaHasBeenAddedEvent::class, function (MediaHasBeenAddedEvent $event): void {
+            app(MediaSvgSanitizer::class)->sanitize($event->media);
             app(MediaContentHasher::class)->persist($event->media);
             app(MediaRelocator::class)->relocate($event->media);
         });

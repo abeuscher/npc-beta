@@ -230,3 +230,31 @@ it('still lets a non-demo user upload (the gate is scoped to the demo role, not 
         ])
         ->assertOk();
 });
+
+// ── Session 345 — Flag 344-E: close the BlockDemoUploads chokepoint gap ───────
+// The dashboard-builder and record-detail-view-builder appearance-image upload
+// routes lacked BlockDemoUploads, breaking the single-chokepoint invariant (not
+// exploitable today — the demo role lacks manage_dashboard_config /
+// manage_record_detail_views — but the gate belongs on every new-file path).
+// The demo-role permission deny-list means a request-level 403 cannot isolate
+// the middleware from the permission gate, so assert the middleware is attached.
+
+it('attaches BlockDemoUploads to the dashboard + record-detail appearance-image upload routes', function () {
+    $find = function (string $uriNeedle) {
+        foreach (app('router')->getRoutes() as $route) {
+            if (in_array('POST', $route->methods(), true) && str_contains($route->uri(), $uriNeedle)) {
+                return $route;
+            }
+        }
+
+        return null;
+    };
+
+    $dashboard = $find('dashboard-builder/configs/{dashboardConfig}/widgets/{widget}/appearance-image');
+    $recordDetail = $find('record-detail-view-builder/views/{view}/widgets/{widget}/appearance-image');
+
+    expect($dashboard)->not->toBeNull();
+    expect($recordDetail)->not->toBeNull();
+    expect($dashboard->gatherMiddleware())->toContain(BlockDemoUploads::class);
+    expect($recordDetail->gatherMiddleware())->toContain(BlockDemoUploads::class);
+});
