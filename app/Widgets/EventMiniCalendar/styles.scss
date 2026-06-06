@@ -15,6 +15,22 @@
     // cell into a squat rectangle. There is no wrong way to size it.
     max-width: 21rem;
     margin-inline: auto;
+
+    // Query container for the fluid scale below. The widget sizes itself against
+    // its OWN box (the rail width, capped at 21rem) rather than the page, so a
+    // narrow column scales the whole widget down instead of letting the day grid
+    // overflow the panel edge. cqi on a descendant resolves here, never higher.
+    container-type: inline-size;
+}
+
+// Fluid down-scale. The ceiling is today's 0.875rem, so at or above the 21rem
+// cap the widget is pixel-identical to before — this only ever scales it DOWN
+// in a narrow rail, never up. Internal spacing/dots are `em` below so they ride
+// this one font-size lever. (cqi resolves against .widget-event-mini-calendar,
+// the container above; on a browser without container queries the clamp drops
+// and the inherited 0.875rem holds.)
+.widget-event-mini-calendar__scale {
+    font-size: clamp(0.72rem, 0.5rem + 1.8cqi, 0.875rem);
 }
 
 .widget-event-mini-calendar__heading {
@@ -59,8 +75,12 @@
 .emc-month__weekdays,
 .emc-month__days {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
+    // minmax(0, 1fr) — not a bare 1fr — so the seven tracks can shrink below
+    // their content's intrinsic width. Without this the grid refuses to compress
+    // past the day numbers' min-content and overflows the panel in a narrow rail
+    // (the rightmost column + dots spill outside the widget background).
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.15em;
 }
 
 .emc-month__weekday {
@@ -123,21 +143,21 @@ button.emc-day--selected {
 // Density indicator. Magnitude reads through dot size, one colour token.
 .emc-day__dot {
     display: block;
-    margin-top: 2px;
+    margin-top: 0.15em;
     border-radius: 50%;
     background: var(--np-color-brand);
-    width: 4px;
-    height: 4px;
+    width: 0.3em;
+    height: 0.3em;
 }
 
 .emc-day--med .emc-day__dot {
-    width: 6px;
-    height: 6px;
+    width: 0.45em;
+    height: 0.45em;
 }
 
 .emc-day--high .emc-day__dot {
-    width: 8px;
-    height: 8px;
+    width: 0.6em;
+    height: 0.6em;
 }
 
 // ── Events list beneath the calendar ───────────────────────────────────────

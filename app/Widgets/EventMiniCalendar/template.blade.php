@@ -112,6 +112,7 @@
     data-current-index="1"
     x-data="NPWidgets.eventMiniCalendar()"
 >
+    <div class="widget-event-mini-calendar__scale">
     @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'widget-event-mini-calendar__heading', 'key' => 'heading', 'type' => 'richtext', 'value' => $heading, 'label' => 'Heading'])
 
     @foreach ($months as $month)
@@ -192,4 +193,5 @@
             @endforeach
         </div>
     @endif
+    </div>
 </div>
