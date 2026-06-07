@@ -150,6 +150,16 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 
+# Deep liveness probe: boot the full framework via artisan so a bootstrap-level
+# fatal (e.g. a stale manifest naming a removed provider) trips the healthcheck.
+# Without this the app container reported healthy the instant php-fpm's process
+# started — `compose up --wait` false-greened past a non-booting image into the
+# migrate step. Image-baked so it propagates through the normal upgrade path and
+# covers the worker too (shared image). Targets the failure directly: the
+# Debugbar brick killed artisan as well as the web tier.
+HEALTHCHECK --interval=30s --timeout=15s --start-period=40s --retries=3 \
+  CMD php /var/www/html/artisan app:health-check || exit 1
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
 
