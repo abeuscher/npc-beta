@@ -3,25 +3,43 @@
 namespace App\Services\ImportExport;
 
 use App\Models\Collection as CollectionModel;
-use App\Models\CollectionItem;
 use App\Models\Event;
-use App\Models\EventRegistration;
-use App\Models\NavigationItem;
 use App\Models\NavigationMenu;
 use App\Models\Page;
-use App\Models\PageLayout;
-use App\Models\PageWidget;
 use App\Models\Product;
-use App\Models\SiteSetting;
-use App\Models\Tag;
 use App\Models\Template;
-use App\Models\TicketTier;
+use App\Services\ImportExport\Export\CollectionSerializer;
+use App\Services\ImportExport\Export\DesignSerializer;
+use App\Services\ImportExport\Export\EventSerializer;
+use App\Services\ImportExport\Export\MediaSerializer;
+use App\Services\ImportExport\Export\NavigationSerializer;
+use App\Services\ImportExport\Export\PageSerializer;
+use App\Services\ImportExport\Export\ProductSerializer;
+use App\Services\ImportExport\Export\SiteSettingsSerializer;
+use App\Services\ImportExport\Export\TemplateSerializer;
 use Illuminate\Support\Collection;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+/**
+ * Orchestrates site-bundle export. Each public `exportX()` entry point assembles
+ * a payload and wraps it in the versioned envelope (format_version + manifest);
+ * the per-entity serialization is delegated to the collaborators under
+ * {@see \App\Services\ImportExport\Export}. Pairs with {@see ContentImporter}.
+ */
 class ContentExporter
 {
     public const FORMAT_VERSION = '1.1.0';
+
+    public function __construct(
+        private PageSerializer $pages,
+        private TemplateSerializer $templates,
+        private EventSerializer $events,
+        private ProductSerializer $products,
+        private NavigationSerializer $navigation,
+        private CollectionSerializer $collections,
+        private MediaSerializer $media,
+        private DesignSerializer $design,
+        private SiteSettingsSerializer $siteSettings,
+    ) {}
 
     /**
      * Export one or more pages (by id) into a bundle envelope.
@@ -32,7 +50,7 @@ class ContentExporter
      */
     public function exportPages(array $pageIds, array $opts = []): array
     {
-        $pages   = $this->serializePages($pageIds);
+        $pages   = $this->pages->serializeMany($pageIds);
         $payload = ['templates' => [], 'pages' => $pages];
 
         $this->attachOptIns($payload, $pages, [], $opts);
@@ -53,8 +71,8 @@ class ContentExporter
         $templates     = Template::whereIn('id', $templateIds)->get();
         $nestedPageIds = $this->collectChromePageIds($templates);
 
-        $serializedTemplates = $this->serializeTemplates($templates);
-        $pages               = $this->serializePages($nestedPageIds);
+        $serializedTemplates = $this->templates->serializeMany($templates);
+        $pages               = $this->pages->serializeMany($nestedPageIds);
         $payload             = ['templates' => $serializedTemplates, 'pages' => $pages];
 
         $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
@@ -97,21 +115,21 @@ class ContentExporter
         $nestedPageIds = $this->collectChromePageIds($templates);
         $allPageIds    = array_values(array_unique(array_merge($pageIds, $nestedPageIds)));
 
-        $serializedTemplates = $this->serializeTemplates($templates);
-        $pages               = $this->serializePages($allPageIds);
+        $serializedTemplates = $this->templates->serializeMany($templates);
+        $pages               = $this->pages->serializeMany($allPageIds);
 
         $payload = [
             'templates'        => $serializedTemplates,
             'pages'            => $pages,
-            'navigation_menus' => $this->serializeNavigationMenus($navMenuIds),
-            'products'         => $this->serializeProducts($productIds),
-            'collections'      => $this->serializeCollections($collectionIds),
+            'navigation_menus' => $this->navigation->serializeMany($navMenuIds),
+            'products'         => $this->products->serializeMany($productIds),
+            'collections'      => $this->collections->serializeMany($collectionIds),
         ];
 
         if (! empty($eventIds)) {
-            $events = $this->collectEventsForExport($eventIds);
+            $events = $this->events->collectForExport($eventIds);
             $payload['events'] = $events
-                ->map(fn (Event $e) => $this->serializeEvent($e, (bool) $opts['with_registrations']))
+                ->map(fn (Event $e) => $this->events->serialize($e, (bool) $opts['with_registrations']))
                 ->all();
         } else {
             $payload['events'] = [];
@@ -140,8 +158,8 @@ class ContentExporter
         $nestedPageIds = $this->collectChromePageIds($templates);
         $allPageIds    = array_values(array_unique(array_merge($pageIds, $nestedPageIds)));
 
-        $serializedTemplates = $this->serializeTemplates($templates);
-        $pages               = $this->serializePages($allPageIds);
+        $serializedTemplates = $this->templates->serializeMany($templates);
+        $pages               = $this->pages->serializeMany($allPageIds);
         $payload             = ['templates' => $serializedTemplates, 'pages' => $pages];
 
         $this->attachOptIns($payload, $pages, $serializedTemplates, $opts);
@@ -162,96 +180,12 @@ class ContentExporter
     protected function attachOptIns(array &$payload, array $serializedPages, array $serializedTemplates, array $opts): void
     {
         if (! empty($opts['with_design'])) {
-            $design = [];
-            foreach (['theme_colors', 'typography', 'button_styles'] as $key) {
-                $value = SiteSetting::get($key);
-                if (is_array($value)) {
-                    $design[$key] = $value;
-                }
-            }
-            $payload['design'] = $design;
+            $payload['design'] = $this->design->collect();
         }
 
         if (! empty($opts['with_media'])) {
-            $payload['media'] = $this->collectReferencedMedia($serializedPages, $serializedTemplates);
+            $payload['media'] = $this->media->collectReferenced($serializedPages, $serializedTemplates);
         }
-    }
-
-    /**
-     * Walk the per-page / per-widget media descriptors already produced by the
-     * page serializer and collect every media id they reference, then emit a
-     * posture-B descriptor list (same shape exportMedia() emits) so the bundle
-     * carries a self-contained media seed that the importer can replay before
-     * pages re-attach their by-reference references.
-     *
-     * @param  array<int, array<string, mixed>>  $serializedPages
-     * @param  array<int, array<string, mixed>>  $serializedTemplates
-     * @return array<int, array<string, mixed>>
-     */
-    protected function collectReferencedMedia(array $serializedPages, array $serializedTemplates): array
-    {
-        $ids = [];
-
-        $walk = function (array $widgets) use (&$ids, &$walk): void {
-            foreach ($widgets as $item) {
-                if (($item['type'] ?? 'widget') === 'layout') {
-                    foreach ($item['slots'] ?? [] as $slotWidgets) {
-                        $walk($slotWidgets);
-                    }
-                    continue;
-                }
-                foreach ($item['media'] ?? [] as $desc) {
-                    $id = $this->mediaIdFromDescriptor($desc);
-                    if ($id !== null) {
-                        $ids[] = $id;
-                    }
-                }
-            }
-        };
-
-        foreach ($serializedPages as $page) {
-            foreach ($page['media'] ?? [] as $desc) {
-                $id = $this->mediaIdFromDescriptor($desc);
-                if ($id !== null) {
-                    $ids[] = $id;
-                }
-            }
-            $walk($page['widgets'] ?? []);
-        }
-
-        foreach ($serializedTemplates as $tpl) {
-            $walk($tpl['widgets'] ?? []);
-        }
-
-        $ids = array_values(array_unique($ids));
-        if (empty($ids)) {
-            return [];
-        }
-
-        return Media::whereIn('id', $ids)
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Media $m) => $this->serializeMediaRow($m))
-            ->all();
-    }
-
-    /**
-     * Resolve a media descriptor's id: the explicit `id` field when present,
-     * else the legacy id parsed from a `{id}/` path token (older bundles, before
-     * paths became content-addressed).
-     */
-    private function mediaIdFromDescriptor(array $desc): ?int
-    {
-        if (isset($desc['id']) && is_numeric($desc['id'])) {
-            return (int) $desc['id'];
-        }
-
-        $path = $desc['path'] ?? null;
-        if (is_string($path) && preg_match('/^(\d+)\//', $path, $m)) {
-            return (int) $m[1];
-        }
-
-        return null;
     }
 
     /**
@@ -324,62 +258,25 @@ class ContentExporter
      */
     public function exportDesign(): array
     {
-        $design = [];
-        foreach (['theme_colors', 'typography', 'button_styles'] as $key) {
-            $value = SiteSetting::get($key);
-            if (is_array($value)) {
-                $design[$key] = $value;
-            }
-        }
-
-        return $this->envelope(['design' => $design], 'exportDesign');
+        return $this->envelope(['design' => $this->design->collect()], 'exportDesign');
     }
 
     /**
      * Export the curated visual/SEO/routing slice of SiteSettings as
      * `payload.site_settings`. Source of truth for what travels is
-     * `ContentImporter::SITE_SETTINGS_ALLOW_LIST`; the importer's deny-list
-     * is applied here defensively so secrets can never enter the bundle even
-     * if a key accidentally appears on both lists. Encrypted-type rows are
-     * hard-skipped. Session A001/3.
-     *
-     * The bundle's per-key envelope captures `value` + `type` + `group`
-     * exactly as stored, so a round-trip re-creates the row faithfully
-     * regardless of cast semantics. Mail / finance / build-server clusters
-     * are excluded per the operator's standing scope decision (see the
-     * deny-list constants on `ContentImporter`).
+     * {@see SiteSettingsBundlePolicy::ALLOW_LIST}; the deny-list is applied
+     * defensively so secrets can never enter the bundle even if a key
+     * accidentally appears on both lists. Encrypted-type rows are hard-skipped.
+     * Session A001/3.
      *
      * @return array<string, mixed>
      */
     public function exportSiteSettings(): array
     {
-        $settings = [];
-        $rows = SiteSetting::whereIn('key', ContentImporter::SITE_SETTINGS_ALLOW_LIST)
-            ->get();
-
-        foreach ($rows as $row) {
-            // Defence-in-depth: even allow-listed keys are dropped if they
-            // match the deny-list (e.g. accidental future overlap) or carry
-            // the `encrypted` type. The importer re-checks on the inbound
-            // side so neither half trusts the other.
-            if (ContentImporter::isSiteSettingKeyDenied($row->key)) {
-                continue;
-            }
-            if ($row->type === 'encrypted') {
-                continue;
-            }
-
-            $settings[$row->key] = [
-                'value' => $row->value,
-                'type'  => $row->type,
-                'group' => $row->group,
-            ];
-        }
-
         return $this->envelope(
-            ['site_settings' => $settings],
+            ['site_settings' => $this->siteSettings->collect()],
             'exportSiteSettings',
-            ['allow_list' => ContentImporter::SITE_SETTINGS_ALLOW_LIST],
+            ['allow_list' => SiteSettingsBundlePolicy::ALLOW_LIST],
         );
     }
 
@@ -394,21 +291,23 @@ class ContentExporter
     public function exportMedia(array $mediaIds): array
     {
         return $this->envelope([
-            'media' => Media::whereIn('id', $mediaIds)
-                ->orderBy('id')
-                ->get()
-                ->map(fn (Media $m) => $this->serializeMediaRow($m))
-                ->all(),
+            'media' => $this->media->serializeIds($mediaIds),
         ], 'exportMedia');
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function exportAllMedia(): array
+    {
+        return $this->envelope([
+            'media' => $this->media->serializeAll(),
+        ], 'exportAllMedia');
+    }
+
+    /**
      * Export one or more collections (by id) into a bundle envelope. Each
-     * entry carries the collection shell + its full item list. Each item's
-     * custom `data` JSON travels verbatim (no shape policing — the
-     * collection's `fields` config is the source of truth) and each item's
-     * tags travel by (name, type). Item-level media is out of scope for the
-     * first pass. Session A001.
+     * entry carries the collection shell + its full item list. Session A001.
      *
      * @param  array<int, string>  $collectionIds
      * @return array<string, mixed>
@@ -416,53 +315,8 @@ class ContentExporter
     public function exportCollections(array $collectionIds): array
     {
         return $this->envelope([
-            'collections' => $this->serializeCollections($collectionIds),
+            'collections' => $this->collections->serializeMany($collectionIds),
         ], 'exportCollections');
-    }
-
-    /**
-     * @param  array<int, string>  $collectionIds
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeCollections(array $collectionIds): array
-    {
-        if (empty($collectionIds)) {
-            return [];
-        }
-
-        return CollectionModel::whereIn('id', $collectionIds)
-            ->with(['collectionItems' => fn ($q) => $q->orderBy('sort_order'), 'collectionItems.tags'])
-            ->get()
-            ->map(fn (CollectionModel $c) => $this->serializeCollection($c))
-            ->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeCollection(CollectionModel $collection): array
-    {
-        return [
-            'collection' => [
-                'name'             => $collection->name,
-                'handle'           => $collection->handle,
-                'description'      => $collection->description,
-                'fields'           => $collection->fields ?? [],
-                'accepted_sources' => $collection->accepted_sources ?? ['human'],
-                'source_type'      => $collection->source_type,
-                'is_public'        => (bool) $collection->is_public,
-                'is_active'        => (bool) $collection->is_active,
-            ],
-            'items' => $collection->collectionItems->map(fn (CollectionItem $item) => [
-                'sort_order'   => (int) $item->sort_order,
-                'is_published' => (bool) $item->is_published,
-                'data'         => $item->data ?? [],
-                'tags'         => $item->tags->map(fn (Tag $t) => [
-                    'name' => $t->name,
-                    'type' => $t->type,
-                ])->all(),
-            ])->all(),
-        ];
     }
 
     /**
@@ -479,7 +333,7 @@ class ContentExporter
      */
     public function exportEvents(array $eventIds, array $opts = []): array
     {
-        $events = $this->collectEventsForExport($eventIds);
+        $events = $this->events->collectForExport($eventIds);
 
         $landingPageIds = $events
             ->pluck('landing_page_id')
@@ -490,147 +344,9 @@ class ContentExporter
         $withRegistrations = (bool) ($opts['with_registrations'] ?? false);
 
         return $this->envelope([
-            'pages'  => $this->serializePages($landingPageIds),
-            'events' => $events->map(fn (Event $e) => $this->serializeEvent($e, $withRegistrations))->all(),
+            'pages'  => $this->pages->serializeMany($landingPageIds),
+            'events' => $events->map(fn (Event $e) => $this->events->serialize($e, $withRegistrations))->all(),
         ], 'exportEvents');
-    }
-
-    /**
-     * @param  array<int, string>  $eventIds
-     * @return \Illuminate\Database\Eloquent\Collection<int, Event>
-     */
-    protected function collectEventsForExport(array $eventIds): \Illuminate\Database\Eloquent\Collection
-    {
-        if (empty($eventIds)) {
-            return Event::whereRaw('1 = 0')->get();
-        }
-
-        return Event::whereIn('id', $eventIds)
-            ->with([
-                'ticketTiers' => fn ($q) => $q->orderBy('sort_order'),
-                'registrations.ticketTier',
-                'registrations.contact',
-                'registrations.organization',
-                'landingPage',
-                'sponsorOrganization',
-                'media',
-            ])
-            ->get();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeEvent(Event $event, bool $withRegistrations): array
-    {
-        $tierNamesById = $event->ticketTiers->pluck('name', 'id')->all();
-
-        $entry = [
-            'event' => [
-                'title'                        => $event->title,
-                'slug'                         => $event->slug,
-                'description'                  => $event->description,
-                'status'                       => $event->status,
-                'address_line_1'               => $event->address_line_1,
-                'address_line_2'               => $event->address_line_2,
-                'city'                         => $event->city,
-                'state'                        => $event->state,
-                'zip'                          => $event->zip,
-                'map_url'                      => $event->map_url,
-                'map_label'                    => $event->map_label,
-                'meeting_url'                  => $event->meeting_url,
-                'meeting_label'                => $event->meeting_label,
-                'meeting_details'              => $event->meeting_details,
-                'registration_mode'            => $event->registration_mode,
-                'external_registration_url'    => $event->external_registration_url,
-                'auto_create_contacts'         => (bool) $event->auto_create_contacts,
-                'mailing_list_opt_in_enabled'  => (bool) $event->mailing_list_opt_in_enabled,
-                'custom_fields'                => $event->custom_fields ?? [],
-                'starts_at'                    => $event->starts_at?->toIso8601String(),
-                'ends_at'                      => $event->ends_at?->toIso8601String(),
-                'published_at'                 => $event->published_at?->toIso8601String(),
-                'landing_page_slug'            => $event->landingPage?->slug,
-                'sponsor_organization_name'    => $event->sponsorOrganization?->name,
-            ],
-            'tiers' => $event->ticketTiers->map(fn (TicketTier $t) => [
-                'name'       => $t->name,
-                'price'      => $t->price,
-                'capacity'   => $t->capacity,
-                'sort_order' => (int) $t->sort_order,
-            ])->all(),
-            'media' => $this->serializeEventMedia($event),
-        ];
-
-        // Registrations key is present iff the operator opted in. Absence on
-        // re-import means "leave existing registrations alone"; presence
-        // (even when empty) means "registrations are canonical from bundle".
-        if ($withRegistrations) {
-            $entry['registrations'] = $event->registrations
-                ->map(fn (EventRegistration $r) => $this->serializeRegistration($r, $tierNamesById))
-                ->all();
-        }
-
-        return $entry;
-    }
-
-    /**
-     * @param  array<string, string>  $tierNamesById
-     * @return array<string, mixed>
-     */
-    protected function serializeRegistration(EventRegistration $r, array $tierNamesById): array
-    {
-        return [
-            'ticket_tier_name'         => $r->ticket_tier_id ? ($tierNamesById[$r->ticket_tier_id] ?? null) : null,
-            'quantity'                 => (int) ($r->quantity ?? 1),
-            'name'                     => $r->name,
-            'email'                    => $r->email,
-            'phone'                    => $r->phone,
-            'company'                  => $r->company,
-            'address_line_1'           => $r->address_line_1,
-            'address_line_2'           => $r->address_line_2,
-            'city'                     => $r->city,
-            'state'                    => $r->state,
-            'zip'                      => $r->zip,
-            'status'                   => $r->status,
-            'registered_at'            => $r->registered_at?->toIso8601String(),
-            'notes'                    => $r->notes,
-            'mailing_list_opt_in'      => (bool) $r->mailing_list_opt_in,
-            'ticket_type'              => $r->ticket_type,
-            'ticket_fee'               => $r->ticket_fee,
-            'payment_state'            => $r->payment_state,
-            'custom_fields'            => $r->custom_fields ?? [],
-            'contact_email'            => $r->contact?->email,
-            'organization_name'        => $r->organization?->name,
-        ];
-    }
-
-    /**
-     * Mirrors serializePageMedia() for the event media collections.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeEventMedia(Event $event): array
-    {
-        $descriptors = [];
-
-        foreach (['event_thumbnail', 'event_header', 'event_og_image'] as $collection) {
-            $media = $event->getFirstMedia($collection);
-            if (! $media) {
-                continue;
-            }
-
-            $descriptors[] = [
-                'collection_name' => $collection,
-                'file_name'       => $media->file_name,
-                'disk'            => $media->disk,
-                'id'              => $media->id,
-                'path'            => $media->getPathRelativeToRoot(),
-                'mime_type'       => $media->mime_type,
-                'size'            => $media->size,
-            ];
-        }
-
-        return $descriptors;
     }
 
     /**
@@ -644,76 +360,8 @@ class ContentExporter
     public function exportProducts(array $productIds): array
     {
         return $this->envelope([
-            'products' => $this->serializeProducts($productIds),
+            'products' => $this->products->serializeMany($productIds),
         ], 'exportProducts');
-    }
-
-    /**
-     * @param  array<int, string>  $productIds
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeProducts(array $productIds): array
-    {
-        if (empty($productIds)) {
-            return [];
-        }
-
-        return Product::whereIn('id', $productIds)
-            ->with(['prices' => fn ($q) => $q->orderBy('sort_order'), 'media'])
-            ->get()
-            ->map(fn (Product $p) => $this->serializeProduct($p))
-            ->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeProduct(Product $product): array
-    {
-        return [
-            'product' => [
-                'name'         => $product->name,
-                'slug'         => $product->slug,
-                'description'  => $product->description,
-                'capacity'     => $product->capacity,
-                'status'       => $product->status,
-                'sort_order'   => $product->sort_order,
-                'is_archived'  => (bool) $product->is_archived,
-                'published_at' => $product->published_at?->toIso8601String(),
-            ],
-            'prices' => $product->prices->map(fn ($price) => [
-                'label'           => $price->label,
-                'amount'          => $price->amount,
-                'stripe_price_id' => $price->stripe_price_id,
-                'sort_order'      => (int) $price->sort_order,
-            ])->all(),
-            'media' => $this->serializeProductMedia($product),
-        ];
-    }
-
-    /**
-     * Mirrors serializePageMedia() for the product_image single-file collection.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeProductMedia(Product $product): array
-    {
-        $descriptors = [];
-
-        $media = $product->getFirstMedia('product_image');
-        if ($media) {
-            $descriptors[] = [
-                'collection_name' => 'product_image',
-                'file_name'       => $media->file_name,
-                'disk'            => $media->disk,
-                'id'              => $media->id,
-                'path'            => $media->getPathRelativeToRoot(),
-                'mime_type'       => $media->mime_type,
-                'size'            => $media->size,
-            ];
-        }
-
-        return $descriptors;
     }
 
     /**
@@ -728,130 +376,8 @@ class ContentExporter
     public function exportNavigation(array $menuIds): array
     {
         return $this->envelope([
-            'navigation_menus' => $this->serializeNavigationMenus($menuIds),
+            'navigation_menus' => $this->navigation->serializeMany($menuIds),
         ], 'exportNavigation');
-    }
-
-    /**
-     * @param  array<int, string>  $menuIds
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeNavigationMenus(array $menuIds): array
-    {
-        if (empty($menuIds)) {
-            return [];
-        }
-
-        return NavigationMenu::whereIn('id', $menuIds)
-            ->with(['items' => fn ($q) => $q->orderBy('sort_order')])
-            ->get()
-            ->map(fn (NavigationMenu $menu) => $this->serializeNavigationMenu($menu))
-            ->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeNavigationMenu(NavigationMenu $menu): array
-    {
-        $pageSlugsById = Page::whereIn(
-            'id',
-            $menu->items->pluck('page_id')->filter()->unique()->all()
-        )->pluck('slug', 'id')->all();
-
-        $itemsById = $menu->items->keyBy('id');
-
-        $children = [];
-        foreach ($menu->items as $item) {
-            if ($item->parent_id === null) {
-                continue;
-            }
-            $children[$item->parent_id][] = $item;
-        }
-
-        $roots = $menu->items
-            ->filter(fn (NavigationItem $i) => $i->parent_id === null)
-            ->sortBy('sort_order')
-            ->values();
-
-        $serialized = [];
-        foreach ($roots as $root) {
-            $entry            = $this->serializeNavigationItem($root, $pageSlugsById);
-            $entry['children'] = collect($children[$root->id] ?? [])
-                ->sortBy('sort_order')
-                ->map(fn (NavigationItem $c) => $this->serializeNavigationItem($c, $pageSlugsById))
-                ->values()
-                ->all();
-            $serialized[] = $entry;
-        }
-
-        return [
-            'menu' => [
-                'handle' => $menu->handle,
-                'label'  => $menu->label,
-            ],
-            'items' => $serialized,
-        ];
-    }
-
-    /**
-     * @param  array<string, string>  $pageSlugsById
-     * @return array<string, mixed>
-     */
-    protected function serializeNavigationItem(NavigationItem $item, array $pageSlugsById): array
-    {
-        return [
-            'label'      => $item->label,
-            'url'        => $item->url,
-            'page_slug'  => $item->page_id ? ($pageSlugsById[$item->page_id] ?? null) : null,
-            'target'     => $item->target,
-            'is_visible' => (bool) $item->is_visible,
-            'sort_order' => (int) $item->sort_order,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function exportAllMedia(): array
-    {
-        return $this->envelope([
-            'media' => Media::orderBy('id')
-                ->get()
-                ->map(fn (Media $m) => $this->serializeMediaRow($m))
-                ->all(),
-        ], 'exportAllMedia');
-    }
-
-    /**
-     * Posture-B descriptor: every column needed to recreate the row by raw
-     * explicit-id insert on the target, plus content_hash and the on-disk path
-     * (content-addressed since session 320) so the seeded bytes land where the
-     * row resolves.
-     *
-     * @return array<string, mixed>
-     */
-    protected function serializeMediaRow(Media $m): array
-    {
-        return [
-            'id'                => $m->id,
-            'uuid'              => $m->uuid,
-            'model_type'        => $m->model_type,
-            'model_id'          => $m->model_id,
-            'collection_name'   => $m->collection_name,
-            'name'              => $m->name,
-            'file_name'         => $m->file_name,
-            'mime_type'         => $m->mime_type,
-            'disk'              => $m->disk,
-            'conversions_disk'  => $m->conversions_disk,
-            'size'              => $m->size,
-            'manipulations'     => $m->manipulations ?? [],
-            'custom_properties' => $m->custom_properties ?? [],
-            'responsive_images' => $m->responsive_images ?? [],
-            'order_column'      => $m->order_column,
-            'content_hash'      => $m->content_hash,
-            'path'              => $m->getPathRelativeToRoot(),
-        ];
     }
 
     /**
@@ -874,295 +400,5 @@ class ContentExporter
         }
 
         return array_values(array_unique($ids));
-    }
-
-    // ── Page serialization ──────────────────────────────────────────────────
-
-    /**
-     * @param  array<int, string>  $pageIds
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializePages(array $pageIds): array
-    {
-        if (empty($pageIds)) {
-            return [];
-        }
-
-        return Page::whereIn('id', $pageIds)
-            ->with('media')
-            ->get()
-            ->map(fn (Page $page) => $this->serializePage($page))
-            ->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializePage(Page $page): array
-    {
-        $template = $page->template_id ? Template::find($page->template_id) : null;
-
-        return [
-            'id'               => $page->id,
-            'title'            => $page->title,
-            'slug'             => $page->slug,
-            'type'             => $page->type,
-            'template_name'    => $template?->name,
-            'status'           => $page->status,
-            'meta_title'       => $page->meta_title,
-            'meta_description' => $page->meta_description,
-            'noindex'          => $page->noindex,
-            'head_snippet'     => $page->head_snippet,
-            'body_snippet'     => $page->body_snippet,
-            'custom_fields'    => $page->custom_fields ?? [],
-            'published_at'     => $page->published_at?->toIso8601String(),
-            'media'            => $this->serializePageMedia($page),
-            'widgets'          => $this->serializeWidgetTree($page->id),
-        ];
-    }
-
-    /**
-     * Build media descriptors for any single-file collection registered on the
-     * Page model that has an attached file.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializePageMedia(Page $page): array
-    {
-        $descriptors = [];
-
-        foreach (['post_thumbnail', 'post_header', 'og_image'] as $collection) {
-            $media = $page->getFirstMedia($collection);
-            if (! $media) {
-                continue;
-            }
-
-            $descriptors[] = [
-                'collection_name' => $collection,
-                'file_name'       => $media->file_name,
-                'disk'            => $media->disk,
-                'id'              => $media->id,
-                'path'            => $media->getPathRelativeToRoot(),
-                'mime_type'       => $media->mime_type,
-                'size'            => $media->size,
-            ];
-        }
-
-        return $descriptors;
-    }
-
-    /**
-     * Walk a page's widget+layout tree, injecting media descriptors per widget.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeWidgetTree(string $pageId): array
-    {
-        $page = \App\Models\Page::find($pageId);
-
-        return $page ? $this->serializeWidgetTreeForOwner($page) : [];
-    }
-
-    /**
-     * Walk any owner's widget+layout tree (Page or Template).
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeWidgetTreeForOwner(\Illuminate\Database\Eloquent\Model $owner): array
-    {
-        $roots = PageWidget::forOwner($owner)
-            ->whereNull('layout_id')
-            ->with(['widgetType', 'media'])
-            ->orderBy('sort_order')
-            ->get();
-
-        $layouts = PageLayout::forOwner($owner)
-            ->with(['widgets.widgetType', 'widgets.media'])
-            ->orderBy('sort_order')
-            ->get();
-
-        $items = [];
-
-        foreach ($roots as $pw) {
-            $items[] = ['sort' => $pw->sort_order, 'data' => $this->serializeWidget($pw)];
-        }
-
-        foreach ($layouts as $layout) {
-            $items[] = ['sort' => $layout->sort_order, 'data' => $this->serializeLayout($layout)];
-        }
-
-        usort($items, fn ($a, $b) => $a['sort'] <=> $b['sort']);
-
-        return array_column($items, 'data');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeWidget(PageWidget $pw): array
-    {
-        $entry = [
-            'type'              => 'widget',
-            'handle'            => $pw->widgetType?->handle,
-            'label'             => $pw->label,
-            'config'            => $this->serializeWidgetConfigReferences($pw),
-            'query_config'      => $pw->query_config ?? [],
-            'appearance_config' => $pw->appearance_config ?? [],
-            'sort_order'        => $pw->sort_order,
-            'is_active'         => $pw->is_active,
-            'media'             => $this->serializeWidgetMedia($pw),
-        ];
-
-        if ($pw->column_index !== null) {
-            $entry['column_index'] = $pw->column_index;
-        }
-
-        return $entry;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeLayout(PageLayout $layout): array
-    {
-        $slots = [];
-        foreach ($layout->widgets as $widget) {
-            $idx = $widget->column_index ?? 0;
-            $slots[$idx][] = $this->serializeWidget($widget);
-        }
-
-        return [
-            'type'              => 'layout',
-            'label'             => $layout->label,
-            'display'           => $layout->display,
-            'columns'           => $layout->columns,
-            'layout_config'     => $layout->layout_config ?? [],
-            'appearance_config' => $layout->appearance_config ?? [],
-            'sort_order'        => $layout->sort_order,
-            'slots'             => $slots,
-        ];
-    }
-
-    /**
-     * Resolve UUID-typed cross-entity references in a widget's config to
-     * their human-readable identifiers, alongside the original UUID. Mirror
-     * of the page `template_name` / nav `page_slug` patterns: the bundle
-     * carries both the original FK and a portable identifier, and the
-     * importer prefers the portable one. Session A001/4.
-     *
-     * Currently scoped to the single known UUID-shaped widget reference:
-     * the Nav widget's `navigation_menu_id`. Other entity-reference widgets
-     * (BoardMembers, EventDescription, ProductDisplay, WebForm) already
-     * use slug/handle in config and round-trip cleanly without rewiring.
-     *
-     * @return array<string, mixed>
-     */
-    protected function serializeWidgetConfigReferences(PageWidget $pw): array
-    {
-        $config = $pw->config ?? [];
-        $handle = $pw->widgetType?->handle;
-
-        if ($handle === 'nav' && ! empty($config['navigation_menu_id'])) {
-            $menu = NavigationMenu::find($config['navigation_menu_id']);
-            if ($menu) {
-                $config['navigation_menu_handle'] = $menu->handle;
-            }
-        }
-
-        return $config;
-    }
-
-    /**
-     * Build media descriptors for any image/video field on the widget's config_schema
-     * that has an attached Spatie media row.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeWidgetMedia(PageWidget $pw): array
-    {
-        $widgetType = $pw->widgetType;
-        if (! $widgetType) {
-            return [];
-        }
-
-        $descriptors = [];
-
-        foreach ($widgetType->config_schema ?? [] as $field) {
-            if (! in_array($field['type'] ?? '', ['image', 'video'], true)) {
-                continue;
-            }
-
-            $key = $field['key'] ?? null;
-            if (! $key) {
-                continue;
-            }
-
-            $collectionName = "config_{$key}";
-            $media = $pw->getFirstMedia($collectionName);
-            if (! $media) {
-                continue;
-            }
-
-            $descriptors[] = [
-                'key'             => $key,
-                'collection_name' => $collectionName,
-                'file_name'       => $media->file_name,
-                'disk'            => $media->disk,
-                'id'              => $media->id,
-                'path'            => $media->getPathRelativeToRoot(),
-                'mime_type'       => $media->mime_type,
-                'size'            => $media->size,
-            ];
-        }
-
-        return $descriptors;
-    }
-
-    // ── Template serialization ──────────────────────────────────────────────
-
-    /**
-     * @param  Collection<int, Template>  $templates
-     * @return array<int, array<string, mixed>>
-     */
-    protected function serializeTemplates(Collection $templates): array
-    {
-        return $templates->map(fn (Template $t) => $this->serializeTemplate($t))->all();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeTemplate(Template $template): array
-    {
-        $data = [
-            'name'        => $template->name,
-            'type'        => $template->type,
-            'description' => $template->description,
-            'is_default'  => $template->is_default,
-        ];
-
-        if ($template->type === 'content') {
-            $data['widgets'] = $this->serializeWidgetTreeForOwner($template);
-
-            return $data;
-        }
-
-        // Page template — chrome page slug references + custom SCSS.
-        // Colour is no longer per-template (session-297 relocation to the
-        // site-wide Theme palette); the colour columns were dropped.
-        $data['custom_scss']      = $template->custom_scss;
-        $data['header_page_slug'] = $template->headerPage?->slug;
-        $data['footer_page_slug'] = $template->footerPage?->slug;
-
-        // Session-301 per-template structural deviation. Additive — carried
-        // so a template's selected scheme + chrome suppression round-trips
-        // (dropping them would silently lose a page's deviation config). The
-        // standalone portable-theme feature is a separate post-301 session;
-        // this is only the correctness carry-through of the new columns.
-        $data['scheme']    = $template->scheme;
-        $data['no_header'] = (bool) $template->no_header;
-        $data['no_footer'] = (bool) $template->no_footer;
-
-        return $data;
     }
 }
