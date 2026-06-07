@@ -188,4 +188,15 @@ test.describe('Page builder — inline formatting toolbar', () => {
         expect(html).toContain('target="_blank"');
         expect(html).toMatch(/rel="[^"]*noopener[^"]*"/);
     });
+
+    test('Cmd/Ctrl+K from inside the editor opens the link popover (§F4.2 — keyboard composable)', async ({ page }) => {
+        await page.goto(`/admin/pages/${pageId}/edit`);
+        const { editor } = await activate(page, textBlockId);
+
+        // The shortcut fires only for keystrokes originating inside the active
+        // editor (the §K window listener gate); click into the editor first.
+        await editor.click();
+        await page.keyboard.press('ControlOrMeta+k');
+        await expect(page.locator('.ift-link-popover')).toBeVisible({ timeout: 5_000 });
+    });
 });

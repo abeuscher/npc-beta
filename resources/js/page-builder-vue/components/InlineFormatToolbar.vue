@@ -26,8 +26,9 @@ import InlineLinkPopover from './inline-toolbar/InlineLinkPopover.vue'
 import { useEditorStore } from '../stores/editor'
 import { useInlineToolbarPosition } from '../composables/useInlineToolbarPosition'
 import { useInlineLinkPopover } from '../composables/useInlineLinkPopover'
+import { useInlineMediaInsert } from '../composables/useInlineMediaInsert'
+import { useInlineToolbarKeyboard } from '../composables/useInlineToolbarKeyboard'
 import { HEROICON_TOOLBAR_BUTTON_SVG } from '../../admin/heroicon-blot.js'
-import { openHeroiconPicker, setHeroiconsUrl } from '../../admin/heroicon-picker.js'
 
 // docs/inline-formatting-toolbar-spec.md is the contract for this component.
 // Section refs in comments below pin each behaviour rule to its spec rule.
@@ -74,14 +75,6 @@ const formatState = ref<FormatState>(emptyState())
 const openPopover = ref<null | 'text-style' | 'color' | 'highlight' | 'link' | 'overflow'>(null)
 const popoverAnchor = ref<HTMLElement | null>(null)
 
-const errorToast = ref('')
-let errorToastTimer: ReturnType<typeof setTimeout> | null = null
-const imageUploading = ref(false)
-
-// Roving tabindex within the toolbar buttons.
-const focusedIdx = ref(0)
-const buttonRefs = ref<HTMLElement[]>([])
-
 // Link popover (§G) — state + insert/edit flow live in the composable; the
 // InlineLinkPopover sub-component is the view bound to this controller. The
 // composable receives the orchestrator's Quill helpers, open-popover state,
@@ -91,6 +84,12 @@ const linkCtl = useInlineLinkPopover({
   handle, store, withQuill, openPopover, showPopoverAnchored, recomputeFormatState,
 })
 const { openLinkPopover, cancelLinkPopover } = linkCtl
+
+// §F7 media insertions (image upload + heroicon embed + their error toast) and
+// §K keyboard/a11y (roving tabindex + Alt+F10/Cmd+K) live in their own
+// composables; each manages its own listeners/cleanup.
+const { openImage, openHeroicon, imageUploading, errorToast } = useInlineMediaInsert({ handle, store, withQuill })
+const { focusedIdx, registerBtn, onToolbarKeydown } = useInlineToolbarKeyboard({ handle, openLinkPopover })
 
 // Editor-change subscription cleanup.
 let cleanupForHandle: (() => void) | null = null
@@ -436,156 +435,6 @@ function onColorPicked(hex: string): void {
   openPopover.value = null
 }
 
-// ── §F7 image + heroicon ────────────────────────────────────────────────
-
-let imageInput: HTMLInputElement | null = null
-
-function openImage(): void {
-  const h = handle.value
-  if (!h) return
-  if (!imageInput) {
-    imageInput = document.createElement('input')
-    imageInput.type = 'file'
-    imageInput.accept = 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml'
-    imageInput.style.display = 'none'
-    document.body.appendChild(imageInput)
-    imageInput.addEventListener('change', onImageChosen)
-  }
-  imageInput.value = ''
-  imageInput.click()
-}
-
-async function onImageChosen(): Promise<void> {
-  const file = imageInput?.files?.[0]
-  if (!file) return
-  const h = handle.value
-  if (!h) return
-  const q = h.quill
-  let range: any = null
-  try { range = q.getSelection() } catch { /* selection lost */ }
-  if (!range) {
-    try { range = { index: q.getLength() - 1, length: 0 } } catch { range = { index: 0, length: 0 } }
-  }
-  const uploadUrl = store.inlineImageUploadUrl
-  if (!uploadUrl) return
-  imageUploading.value = true
-  try {
-    const form = new FormData()
-    form.append('file', file)
-    form.append('model_type', 'page_widget')
-    form.append('model_id', h.widgetId)
-    const csrfMeta = document.head.querySelector('meta[name=csrf-token]') as HTMLMetaElement | null
-    const res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: { 'X-CSRF-TOKEN': csrfMeta?.content ?? '' },
-      body: form,
-    })
-    const data = await res.json()
-    if (data.url) {
-      q.insertEmbed(range.index, 'image', data.url, 'user')
-      q.setSelection(range.index + 1, 0, 'user')
-    } else {
-      showError('Image upload failed.')
-    }
-  } catch (e) {
-    console.error('Inline image upload failed', e)
-    showError('Image upload failed.')
-  } finally {
-    imageUploading.value = false
-  }
-}
-
-function openHeroicon(anchor: HTMLElement): void {
-  const h = handle.value
-  if (!h) return
-  if (store.heroiconsUrl) setHeroiconsUrl(store.heroiconsUrl)
-  const q = h.quill
-  let range: any = null
-  try { range = q.getSelection() } catch { /* selection lost */ }
-  if (!range) {
-    try { range = { index: q.getLength() - 1, length: 0 } } catch { range = { index: 0, length: 0 } }
-  }
-  openHeroiconPicker(anchor, (icon: { name: string; svg: string }) => {
-    withQuill((qq) => {
-      const Quill = (window as any).Quill
-      qq.insertEmbed(range.index, 'heroicon', icon, Quill?.sources?.USER ?? 'user')
-      qq.setSelection(range.index + 1, 0, Quill?.sources?.SILENT ?? 'silent')
-    })
-  })
-}
-
-function showError(msg: string): void {
-  errorToast.value = msg
-  if (errorToastTimer) clearTimeout(errorToastTimer)
-  errorToastTimer = setTimeout(() => {
-    errorToast.value = ''
-    errorToastTimer = null
-  }, 4000)
-}
-
-// ── §K keyboard / accessibility ─────────────────────────────────────────
-
-function registerBtn(el: HTMLElement | null): void {
-  if (el && !buttonRefs.value.includes(el)) buttonRefs.value.push(el)
-}
-
-function enabledButtons(): HTMLElement[] {
-  return buttonRefs.value.filter((b) => !b.hasAttribute('disabled') && b.offsetParent !== null)
-}
-
-function onToolbarKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    const h = handle.value
-    if (h) {
-      h.quill.focus()
-    }
-    return
-  }
-  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'Home' || e.key === 'End') {
-    e.preventDefault()
-    const list = enabledButtons()
-    if (list.length === 0) return
-    const cur = list.indexOf(document.activeElement as HTMLElement)
-    let next = cur
-    if (e.key === 'ArrowRight') next = Math.min(list.length - 1, cur + 1)
-    else if (e.key === 'ArrowLeft') next = Math.max(0, cur - 1)
-    else if (e.key === 'Home') next = 0
-    else next = list.length - 1
-    list[next]?.focus()
-    focusedIdx.value = next
-  }
-}
-
-function onEditorKeydown(e: KeyboardEvent): void {
-  // §K9: Alt+F10 enters the toolbar
-  if (e.altKey && e.key === 'F10') {
-    e.preventDefault()
-    const list = enabledButtons()
-    list[0]?.focus()
-    focusedIdx.value = 0
-    return
-  }
-  // §F4.2: Cmd/Ctrl+K opens link popover
-  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-    e.preventDefault()
-    const linkBtn = buttonRefs.value.find((b) => b.dataset.tbControl === 'link')
-    if (linkBtn) openLinkPopover(linkBtn)
-  }
-}
-
-// Bind Alt+F10 + Cmd+K once on mount (live for as long as the page builder
-// is on screen). The handler is a no-op when no handle is active.
-function onWindowKeydown(e: KeyboardEvent): void {
-  if (!handle.value) return
-  const target = e.target as HTMLElement | null
-  // Only react when the keystroke comes from inside the active Quill editor
-  // (the active host element).
-  if (target && handle.value.hostEl.contains(target)) {
-    onEditorKeydown(e)
-  }
-}
-
 // ── popover anchoring ───────────────────────────────────────────────────
 
 function togglePopover(kind: Exclude<typeof openPopover.value, null>, anchor: HTMLElement, width = 240): void {
@@ -636,7 +485,6 @@ function onPopoverKeydown(e: KeyboardEvent): void {
 onMounted(() => {
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   document.addEventListener('pointerdown', onOutsideMousedown, true)
-  window.addEventListener('keydown', onWindowKeydown, true)
   measureBar()
   // Mirror each button's accessible name into a title so the icon-only
   // controls also surface a hover tooltip (aria-label already covers SR).
@@ -656,10 +504,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onOutsideMousedown, true)
-  window.removeEventListener('keydown', onWindowKeydown, true)
   teardownForHandle()
-  if (errorToastTimer) clearTimeout(errorToastTimer)
-  if (imageInput && imageInput.parentNode) imageInput.parentNode.removeChild(imageInput)
 })
 
 // ── group visibility ────────────────────────────────────────────────────
