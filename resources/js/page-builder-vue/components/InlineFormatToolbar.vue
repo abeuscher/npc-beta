@@ -281,25 +281,6 @@ function withQuill<T>(fn: (q: any) => T): T | undefined {
   }
 }
 
-// Restore the last known good range on the editor before applying a
-// format. Without this, the native browser selection may have drifted
-// (popover opened, button focused) and q.format()/formatText would
-// silently no-op. We use Quill's SILENT source so this doesn't fire
-// editor-change re-entry.
-function restoreRange(q: any): { index: number; length: number } | null {
-  if (!savedRange) return null
-  try {
-    const len = q.getLength()
-    const idx = Math.max(0, Math.min(savedRange.index, len - 1))
-    const lenClamped = Math.max(0, Math.min(savedRange.length, len - 1 - idx))
-    const Quill = (window as any).Quill
-    q.setSelection(idx, lenClamped, Quill?.sources?.SILENT ?? 'silent')
-    return { index: idx, length: lenClamped }
-  } catch {
-    return null
-  }
-}
-
 // All format handlers below operate on savedRange via formatText/formatLine
 // rather than q.format(). q.format() internally calls getSelection(true)
 // which calls focus() → setRange() → addRange(); if native selection has
