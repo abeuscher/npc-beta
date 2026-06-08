@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bkgzD1dKCYnWTwlxswggzwfj0INKlIXdd3N9pT1oc4tBVpw06jC8HzzAGDQyzzo
+\restrict ilFzAE7quyDV6ltMnDNYq44kvbr4UInpYcNcVoSUThdTfx6efb8B8PBflToGiod
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -413,6 +413,8 @@ CREATE TABLE public.event_registrations (
     custom_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
     source character varying(255) DEFAULT 'human'::character varying NOT NULL,
     organization_id uuid,
+    ticket_tier_id uuid,
+    quantity smallint DEFAULT '1'::smallint NOT NULL,
     CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY['pending'::text, 'registered'::text, 'waitlisted'::text, 'cancelled'::text, 'attended'::text])))
 );
 
@@ -438,7 +440,6 @@ CREATE TABLE public.events (
     is_virtual boolean DEFAULT false NOT NULL,
     meeting_url character varying(2048),
     is_free boolean DEFAULT true NOT NULL,
-    capacity integer,
     is_recurring boolean DEFAULT false NOT NULL,
     recurrence_type character varying(255),
     recurrence_rule json,
@@ -447,7 +448,6 @@ CREATE TABLE public.events (
     landing_page_id uuid,
     meeting_label character varying(255),
     meeting_details text,
-    price numeric(8,2) DEFAULT '0'::numeric NOT NULL,
     external_registration_url character varying(255),
     registration_mode character varying(255) DEFAULT 'open'::character varying NOT NULL,
     auto_create_contacts boolean DEFAULT true NOT NULL,
@@ -461,6 +461,7 @@ CREATE TABLE public.events (
     published_at timestamp(0) without time zone,
     source character varying(255) DEFAULT 'human'::character varying NOT NULL,
     sponsor_organization_id uuid,
+    sold_out boolean DEFAULT false NOT NULL,
     CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
     CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
 );
@@ -636,7 +637,9 @@ CREATE TABLE public.help_articles (
     embedding jsonb,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone,
-    category character varying(255)
+    category character varying(255),
+    search_weight integer DEFAULT 0 NOT NULL,
+    parent_slug character varying(255)
 );
 
 
@@ -921,7 +924,8 @@ CREATE TABLE public.media (
     responsive_images json NOT NULL,
     order_column integer,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    content_hash character varying(255)
 );
 
 
@@ -1105,6 +1109,22 @@ CREATE TABLE public.notes (
 
 
 --
+-- Name: notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notifications (
+    id uuid NOT NULL,
+    type character varying(255) NOT NULL,
+    notifiable_type character varying(255) NOT NULL,
+    notifiable_id bigint NOT NULL,
+    data json NOT NULL,
+    read_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
 -- Name: organizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1198,6 +1218,7 @@ CREATE TABLE public.pages (
     body_snippet text,
     template_id uuid,
     source character varying(255) DEFAULT 'human'::character varying NOT NULL,
+    locked boolean DEFAULT false NOT NULL,
     CONSTRAINT pages_type_check CHECK (((type)::text = ANY (ARRAY[('default'::character varying)::text, ('post'::character varying)::text, ('event'::character varying)::text, ('member'::character varying)::text, ('system'::character varying)::text])))
 );
 
@@ -1541,16 +1562,29 @@ CREATE TABLE public.templates (
     type character varying(255) NOT NULL,
     description text,
     is_default boolean DEFAULT false NOT NULL,
-    primary_color character varying(255),
-    header_bg_color character varying(255),
-    footer_bg_color character varying(255),
-    nav_link_color character varying(255),
-    nav_hover_color character varying(255),
-    nav_active_color character varying(255),
     custom_scss text,
     header_page_id uuid,
     footer_page_id uuid,
     created_by bigint,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    scheme character varying(255) DEFAULT 'default'::character varying NOT NULL,
+    no_header boolean DEFAULT false NOT NULL,
+    no_footer boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: ticket_tiers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ticket_tiers (
+    id uuid NOT NULL,
+    event_id uuid NOT NULL,
+    name character varying(255) NOT NULL,
+    price numeric(8,2) DEFAULT '0'::numeric NOT NULL,
+    capacity integer,
+    sort_order integer DEFAULT 0 NOT NULL,
     created_at timestamp(0) without time zone,
     updated_at timestamp(0) without time zone
 );
@@ -2292,6 +2326,14 @@ ALTER TABLE ONLY public.notes
 
 
 --
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2545,6 +2587,14 @@ ALTER TABLE ONLY public.tags
 
 ALTER TABLE ONLY public.templates
     ADD CONSTRAINT templates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ticket_tiers ticket_tiers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ticket_tiers
+    ADD CONSTRAINT ticket_tiers_pkey PRIMARY KEY (id);
 
 
 --
@@ -2857,6 +2907,13 @@ CREATE INDEX mailing_list_filters_mailing_list_id_index ON public.mailing_list_f
 
 
 --
+-- Name: media_content_hash_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX media_content_hash_index ON public.media USING btree (content_hash);
+
+
+--
 -- Name: media_model_type_model_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2976,6 +3033,13 @@ CREATE INDEX notes_type_index ON public.notes USING btree (type);
 
 
 --
+-- Name: notifications_notifiable_type_notifiable_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notifications_notifiable_type_notifiable_id_index ON public.notifications USING btree (notifiable_type, notifiable_id);
+
+
+--
 -- Name: organizations_import_external_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3092,6 +3156,13 @@ CREATE INDEX sessions_user_id_index ON public.sessions USING btree (user_id);
 --
 
 CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING btree (taggable_type, taggable_id);
+
+
+--
+-- Name: ticket_tiers_event_id_sort_order_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ticket_tiers_event_id_sort_order_index ON public.ticket_tiers USING btree (event_id, sort_order);
 
 
 --
@@ -3325,6 +3396,14 @@ ALTER TABLE ONLY public.event_registrations
 
 ALTER TABLE ONLY public.event_registrations
     ADD CONSTRAINT event_registrations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: event_registrations event_registrations_ticket_tier_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.event_registrations
+    ADD CONSTRAINT event_registrations_ticket_tier_id_foreign FOREIGN KEY (ticket_tier_id) REFERENCES public.ticket_tiers(id) ON DELETE SET NULL;
 
 
 --
@@ -3712,6 +3791,14 @@ ALTER TABLE ONLY public.templates
 
 
 --
+-- Name: ticket_tiers ticket_tiers_event_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ticket_tiers
+    ADD CONSTRAINT ticket_tiers_event_id_foreign FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
 -- Name: transactions transactions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3771,13 +3858,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bkgzD1dKCYnWTwlxswggzwfj0INKlIXdd3N9pT1oc4tBVpw06jC8HzzAGDQyzzo
+\unrestrict ilFzAE7quyDV6ltMnDNYq44kvbr4UInpYcNcVoSUThdTfx6efb8B8PBflToGiod
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict 8VxmJLjDv0YH1ZGYCT5IAAEx2QyTz8OcL3P0npOQx7l1ACxdG8oBe8x1JglemsA
+\restrict EQLoND8q8O3IeGMz3elDJHtQ3FeqJ92aXjSGj3Ifg5muEmg4xpmyAzQRDLH5vws
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -3897,6 +3984,19 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 96	2026_05_05_120000_add_affiliations_drop_contact_organization_id_add_org_gaps	16
 97	2026_05_06_120000_add_donation_credits_table	16
 98	2026_05_07_120000_split_full_width_into_background_and_content	16
+99	2026_05_10_120000_convert_collection_items_trix_to_quill	17
+100	2026_05_10_130000_decode_url_tokens_in_richtext_config	17
+101	2026_05_10_140000_add_search_weight_to_help_articles	17
+102	2026_05_10_150000_add_parent_slug_to_help_articles	17
+103	2026_05_10_160000_create_ticket_tiers	17
+104	2026_05_11_120000_add_quantity_to_event_registrations	17
+105	2026_05_17_120000_relocate_template_colors_to_theme	17
+106	2026_05_18_120000_add_scheme_and_chrome_suppression_to_templates	17
+107	2026_05_18_130000_create_notifications_table	17
+108	2026_05_22_120000_add_content_hash_to_media	17
+109	2026_05_22_130000_relocate_media_to_content_addressed_storage	17
+110	2026_05_30_120000_add_sold_out_to_events_table	18
+111	2026_05_30_130000_add_locked_to_pages_table	19
 \.
 
 
@@ -3904,12 +4004,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 98, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 111, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8VxmJLjDv0YH1ZGYCT5IAAEx2QyTz8OcL3P0npOQx7l1ACxdG8oBe8x1JglemsA
+\unrestrict EQLoND8q8O3IeGMz3elDJHtQ3FeqJ92aXjSGj3Ifg5muEmg4xpmyAzQRDLH5vws
 
