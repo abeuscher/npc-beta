@@ -78,7 +78,7 @@ class PageWidget extends Model implements HasMedia
                 continue;
             }
 
-            if ($type === 'richtext') {
+            if ($type === 'richtext' || $type === 'table') {
                 if (is_string($config[$key])) {
                     $config[$key] = HtmlSanitizer::sanitize($config[$key]);
                 }

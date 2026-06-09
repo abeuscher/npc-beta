@@ -438,6 +438,51 @@ it('a target="_top" is stripped (not in the allow-list)', function () {
     expect(HtmlSanitizer::sanitize($in))->not->toContain('target=');
 });
 
+// ─── Table cells (session 349 — Table widget) ─────────────────────────────────
+
+it('table structure round-trips', function () {
+    $in = '<table><tbody><tr><th>H</th></tr><tr><td>C</td></tr></tbody></table>';
+    expect(HtmlSanitizer::sanitize($in))->toBe($in);
+});
+
+it('colspan and rowspan survive on td and th when valid integers', function () {
+    $in  = '<table><tbody><tr><th colspan="2">H</th></tr><tr><td rowspan="3">C</td></tr></tbody></table>';
+    $out = HtmlSanitizer::sanitize($in);
+    expect($out)->toContain('colspan="2"')->toContain('rowspan="3"');
+});
+
+it('a constrained alignment class on a cell survives', function () {
+    $in = '<table><tbody><tr><td class="np-table-cell--center">C</td></tr></tbody></table>';
+    expect(HtmlSanitizer::sanitize($in))->toContain('class="np-table-cell--center"');
+});
+
+it('non-integer colspan is stripped', function () {
+    $in = '<table><tbody><tr><td colspan="2; evil">C</td></tr></tbody></table>';
+    expect(HtmlSanitizer::sanitize($in))->not->toContain('colspan');
+});
+
+it('zero and over-bound spans are stripped', function () {
+    $zero = '<table><tbody><tr><td colspan="0">C</td></tr></tbody></table>';
+    $huge = '<table><tbody><tr><td rowspan="9999">C</td></tr></tbody></table>';
+    expect(HtmlSanitizer::sanitize($zero))->not->toContain('colspan');
+    expect(HtmlSanitizer::sanitize($huge))->not->toContain('rowspan');
+});
+
+it('style, event-handlers and disallowed attributes are stripped from cells', function () {
+    $in  = '<table><tbody><tr><td style="color:red" onclick="x()" bgcolor="red">C</td></tr></tbody></table>';
+    $out = HtmlSanitizer::sanitize($in);
+    expect($out)->not->toContain('style=')
+        ->not->toContain('onclick')
+        ->not->toContain('bgcolor')
+        ->toContain('C');
+});
+
+it('a script smuggled inside a cell is removed, sibling text preserved', function () {
+    $in  = '<table><tbody><tr><td><script>alert(1)</script>safe</td></tr></tbody></table>';
+    $out = HtmlSanitizer::sanitize($in);
+    expect($out)->not->toContain('<script>')->toContain('safe');
+});
+
 it('a target="javascript:alert(1)" is stripped', function () {
     $in = '<p><a href="https://example.com" target="javascript:alert(1)">x</a></p>';
     expect(HtmlSanitizer::sanitize($in))->not->toContain('target=');

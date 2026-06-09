@@ -49,6 +49,7 @@ use App\Widgets\SetupChecklist\SetupChecklistDefinition;
 use App\Widgets\RecentNotes\RecentNotesDefinition;
 use App\Widgets\ProductDisplay\ProductDisplayDefinition;
 use App\Widgets\SocialSharing\SocialSharingDefinition;
+use App\Widgets\Table\TableDefinition;
 use App\Widgets\TextBlock\TextBlockDefinition;
 use App\Widgets\ThisWeeksEvents\ThisWeeksEventsDefinition;
 use App\Widgets\VideoEmbed\VideoEmbedDefinition;
@@ -109,6 +110,7 @@ class WidgetServiceProvider extends ServiceProvider
         $registry->register(new LogoGardenDefinition());
         $registry->register(new BoardMembersDefinition());
         $registry->register(new PricingChartDefinition());
+        $registry->register(new TableDefinition());
         $registry->register(new HeroDefinition());
         $registry->register(new MapEmbedDefinition());
         $registry->register(new SocialSharingDefinition());

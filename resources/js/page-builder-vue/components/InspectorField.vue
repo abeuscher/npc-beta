@@ -16,6 +16,8 @@ import NinePointAlignment from './primitives/NinePointAlignment.vue'
 import ImageUploadField from './fields/ImageUploadField.vue'
 import ButtonListField from './fields/ButtonListField.vue'
 import RepeaterField from './fields/RepeaterField.vue'
+import TableEditorField from './fields/TableEditorField.vue'
+import BorderInput from './primitives/BorderInput.vue'
 
 const props = defineProps<{
   field: FieldDef
@@ -68,6 +70,7 @@ const componentMap: Record<string, any> = {
   video: ImageUploadField,
   buttons: ButtonListField,
   repeater: RepeaterField,
+  table: TableEditorField,
 }
 
 const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
@@ -104,6 +107,15 @@ const fieldComponent = computed(() => componentMap[props.field.type] ?? null)
       <NinePointAlignment
         :model-value="fieldValue ?? 'center'"
         :label="field.label"
+        @update:model-value="handleUpdate"
+      />
+    </template>
+
+    <template v-else-if="field.type === 'border'">
+      <BorderInput
+        :model-value="fieldValue"
+        :label="field.label"
+        :allow-interior="field.allow_interior === true"
         @update:model-value="handleUpdate"
       />
     </template>

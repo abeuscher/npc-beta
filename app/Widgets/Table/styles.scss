@@ -1,0 +1,69 @@
+// Table widget (session 349) — public render styling. The table structure +
+// cell content live in the sanitized HTML; every colour, alignment, gridline,
+// and column width is driven by the widget appearance config via CSS custom
+// properties + modifier classes set on .np-table by the template. No literal
+// colours here — they all arrive as --np-table-* custom properties.
+.np-table {
+    width: 100%;
+
+    // Horizontal scroll for wide tables — the outer border (composeBorderProps)
+    // lives on this box so a scrolling table keeps its frame.
+    &__scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    th {
+        background: var(--np-table-header-bg);
+        color: var(--np-table-header-text);
+        text-align: var(--np-table-header-align);
+        vertical-align: var(--np-table-header-valign);
+        font-weight: 600;
+    }
+
+    td {
+        background: var(--np-table-body-bg);
+        color: var(--np-table-body-text);
+        text-align: var(--np-table-body-align);
+        vertical-align: var(--np-table-body-valign);
+    }
+
+    p {
+        margin: 0;
+    }
+
+    // Fixed layout so the colgroup percentage widths take effect.
+    &--fixed table {
+        table-layout: fixed;
+    }
+
+    // Interior gridlines, sharing the border tool's width + colour. The outer
+    // frame is the wrapper border; these are the lines *between* rows/columns,
+    // so they sit on cells that have a predecessor (never the first row/column,
+    // which the outer frame covers).
+    &--inner-h tbody tr + tr > * {
+        border-top: var(--np-table-border-w) solid var(--np-table-border-c);
+    }
+
+    &--inner-v tbody tr > * + * {
+        border-left: var(--np-table-border-w) solid var(--np-table-border-c);
+    }
+
+    // Zebra striping — alternate body rows only. The editor always serializes a
+    // <tbody>; the header row sits at :nth-child(1) (odd) so it is never striped,
+    // and header cells are <th> so the td selector skips them regardless.
+    &--zebra tbody tr:nth-child(even) td {
+        background: var(--np-table-zebra-bg);
+        color: var(--np-table-zebra-text);
+    }
+}

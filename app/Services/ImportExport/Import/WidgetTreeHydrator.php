@@ -195,7 +195,7 @@ class WidgetTreeHydrator
                 continue;
             }
 
-            if ($type === 'richtext' && isset($config[$key]) && is_string($config[$key])) {
+            if (($type === 'richtext' || $type === 'table') && isset($config[$key]) && is_string($config[$key])) {
                 $config[$key] = HtmlSanitizer::sanitize($config[$key]);
             }
         }

@@ -35,7 +35,21 @@ final class HtmlSanitizer
         'svg'  => ['xmlns', 'viewbox', 'fill', 'stroke', 'stroke-width', 'aria-hidden'],
         'path' => ['d', 'stroke-linecap', 'stroke-linejoin', 'fill', 'stroke', 'stroke-width'],
         'li'   => ['class', 'data-list'],
+        // Table cells (session 349, Table widget). colspan/rowspan are
+        // structural and pass through validated as bounded positive integers
+        // (see SPAN_MAX); class carries the constrained alignment helper
+        // (np-table-cell--{left,center,right}) and survives via the standard
+        // arbitrary-class allowance, which is non-executable. style / script /
+        // event-handlers are still stripped — this is untrusted (pasted) input.
+        'table' => ['class'],
+        'tr'    => ['class'],
+        'td'    => ['class', 'colspan', 'rowspan'],
+        'th'    => ['class', 'colspan', 'rowspan'],
     ];
+
+    // Upper bound on a validated colspan/rowspan — large enough for any real
+    // table, small enough to reject absurd values smuggled through paste.
+    private const SPAN_MAX = 1000;
 
     // Session 305 (companion change §6.2 of inline-formatting-toolbar-spec):
     // the inline toolbar's link popover saves "Open in new tab" as
@@ -160,6 +174,11 @@ final class HtmlSanitizer
                 continue;
             }
 
+            if (($name === 'colspan' || $name === 'rowspan') && ! self::isBoundedSpan($value)) {
+                $element->removeAttribute($attr->nodeName);
+                continue;
+            }
+
             if ($name === 'href' && ! self::isAllowedHrefUri($value)) {
                 $element->removeAttribute('href');
                 continue;
@@ -186,6 +205,17 @@ final class HtmlSanitizer
                 continue;
             }
         }
+    }
+
+    private static function isBoundedSpan(string $value): bool
+    {
+        if (preg_match('/^[0-9]+$/', trim($value)) !== 1) {
+            return false;
+        }
+
+        $n = (int) $value;
+
+        return $n >= 1 && $n <= self::SPAN_MAX;
     }
 
     private static function hasClassToken(DOMElement $element, string $token): bool

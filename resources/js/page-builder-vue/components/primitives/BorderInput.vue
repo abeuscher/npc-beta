@@ -10,11 +10,19 @@ export interface BorderValue {
   width: number
   color: string
   radius: number
+  // Interior gridlines — only surfaced when `allowInterior` is set (the Table
+  // widget). They share the border's width + colour; no separate swatch.
+  inner_horizontal: boolean
+  inner_vertical: boolean
 }
 
 const props = defineProps<{
   modelValue: Partial<BorderValue> | null | undefined
   label?: string
+  // Opt-in: show interior horizontal/vertical line toggles and hide the radius
+  // control (a radius makes no sense on a gridded box). Off for every widget
+  // except the Table widget, so the shared control is unchanged elsewhere.
+  allowInterior?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -38,10 +46,18 @@ const current = computed<BorderValue>(() => ({
   width:  coerceInt(props.modelValue?.width),
   color:  props.modelValue?.color ?? '#000000',
   radius: coerceInt(props.modelValue?.radius),
+  inner_horizontal: !!props.modelValue?.inner_horizontal,
+  inner_vertical:   !!props.modelValue?.inner_vertical,
 }))
 
 function toggleSide(side: Side): void {
   emit('update:modelValue', { ...current.value, [side]: !current.value[side] })
+}
+
+type Interior = 'inner_horizontal' | 'inner_vertical'
+
+function toggleInterior(key: Interior): void {
+  emit('update:modelValue', { ...current.value, [key]: !current.value[key] })
 }
 
 function setWidth(raw: string): void {
@@ -94,6 +110,13 @@ const edges: { key: Side; x1: number; y1: number; x2: number; y2: number }[] = [
   { key: 'bottom', x1: 8,  y1: 40, x2: 40, y2: 40 },
   { key: 'left',   x1: 8,  y1: 8,  x2: 8,  y2: 40 },
 ]
+
+// Interior gridlines — a centre cross inside the 48-unit frame. Horizontal =
+// lines between rows; vertical = lines between columns.
+const interiorEdges: { key: Interior; x1: number; y1: number; x2: number; y2: number }[] = [
+  { key: 'inner_horizontal', x1: 8,  y1: 24, x2: 40, y2: 24 },
+  { key: 'inner_vertical',   x1: 24, y1: 8,  x2: 24, y2: 40 },
+]
 </script>
 
 <template>
@@ -131,6 +154,23 @@ const edges: { key: Side; x1: number; y1: number; x2: number; y2: number }[] = [
               />
               <title>{{ edge.key }}</title>
             </g>
+            <g
+              v-for="edge in (allowInterior ? interiorEdges : [])"
+              :key="edge.key"
+              class="border-input__edge"
+              :class="{ 'border-input__edge--on': current[edge.key] }"
+              @click="toggleInterior(edge.key)"
+            >
+              <line
+                :x1="edge.x1" :y1="edge.y1" :x2="edge.x2" :y2="edge.y2"
+                class="border-input__hit"
+              />
+              <line
+                :x1="edge.x1" :y1="edge.y1" :x2="edge.x2" :y2="edge.y2"
+                class="border-input__line border-input__line--interior"
+              />
+              <title>{{ edge.key === 'inner_horizontal' ? 'interior rows' : 'interior columns' }}</title>
+            </g>
           </svg>
         </div>
       </div>
@@ -159,7 +199,7 @@ const edges: { key: Side; x1: number; y1: number; x2: number; y2: number }[] = [
         >
       </div>
 
-      <div class="border-input__field">
+      <div v-if="!allowInterior" class="border-input__field">
         <label class="inspector-label border-input__field-label">Radius</label>
         <input
           type="number"
@@ -250,6 +290,10 @@ const edges: { key: Side; x1: number; y1: number; x2: number; y2: number }[] = [
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   transition: stroke 0.1s ease, stroke-width 0.1s ease;
+}
+
+.border-input__line--interior {
+  stroke-dasharray: 3 2;
 }
 
 .border-input__edge:hover .border-input__line {
