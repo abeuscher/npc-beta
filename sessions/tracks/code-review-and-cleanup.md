@@ -14,11 +14,11 @@ When a cycle closes, its retrospective lands here and the cluster's release-plan
 
 ## Status snapshot
 
-**Last update:** 2026-06-07 (Cycle 3 lifted by cadence; **audit 344 + apply 345 + carve-out A 346 + carve-out B 347 closed**; the squash 348 next — the 348 squash + 349 Table-widget prompts were drafted at the 347 close).
+**Last update:** 2026-06-08 (**Cycle 3 fully closed** at the 348 migration squash — audit 344 + apply 345 + carve-out A 346 + carve-out B 347 + squash 348 all ✅; Cycle-3 retrospective added below).
 
-**Complete:** Cycle 1 (sessions 205 / 206 audit + apply, 208 squash; carve-out 207 — Column Layout Inspector Appearance Unification). Cycle 2 (sessions 271 / 272 audit, 273 apply, 274 squash; carve-out 275 — Rich-Text Surface Sanitization Hardening).
+**Complete:** Cycle 1 (sessions 205 / 206 audit + apply, 208 squash; carve-out 207 — Column Layout Inspector Appearance Unification). Cycle 2 (sessions 271 / 272 audit, 273 apply, 274 squash; carve-out 275 — Rich-Text Surface Sanitization Hardening). Cycle 3 (session 344 audit, 345 apply, 348 squash; carve-outs 346 — Bundle Import/Export Split + 347 — InlineFormatToolbar Extraction).
 
-**Active:** **Cycle 3 in progress** (lifted at 344 by cadence — ~70 sessions of drift since the 274 close). Compressed 3-session shape expanded to 5 by two carve-outs: **344 audit ✅ → 345 apply ✅ → 346 carve-out A ✅ → 347 carve-out B ✅** → 348 squash. The audit folded Cycle 2's audit-pair into one pass + ran the three Cycle-3 standing additions (static-reflection scan — landed as the reusable `scripts/filament-signature-scan.php`; boolean-settings sweep; integration-seam sweep). Findings + Open Flags (344-A…344-G) + carve-out decisions in `sessions/344. … — Log.md`. **345 apply** consumed the W7/W8/W11/W12/Open-Flags backlog on `session-345/1` (Open Flags 344-A…E applied + 344-F blessed-delegation; 344-G deferred; the importer W7 trait-dedup held importer-suite parity 251/251), and landed the **convention-drift Pest test** — `tests/Feature/Infrastructure/ConventionDriftTest.php` (the standing inter-cycle gate; the existing `FmContractVersionParityTest.php` remains the FM-contract gate). Fast Pest 2799 → 2814/0. Drift note: the audit's "dead" `SiteSetting::castValue()` boolean branch was actually tested, so it was fully retired (branch + test + fixtures). The W11 large-file advisory was regenerated this cycle at `sessions/code-review-large-files-partial-extraction.md` (dangling reference reconciled). **346 carve-out A** (`session-346/1`) clean-split the two >1k bundle files into per-domain collaborator classes — behaviour-preserving, owner chose genuine decomposition over a light file-move: `ContentExporter` 1168→404 + an `Export/` set (WidgetTree/Page/Template/Event/Product/Navigation/Collection/Media/Design/SiteSettings serializers); `ContentImporter` 1961→555 + an `Import/` set (the mirror importers + a `WidgetTreeHydrator` + per-import `BundleMediaArchive`/`BundleAuthorResolver` carrying the formerly-`$this`-held media-root/dup state); the SiteSettings allow/deny policy lifted to a shared `SiteSettingsBundlePolicy`. No new tests (the 2407-line round-trip suite is the net, run 119/0 after each extraction); fast Pest 2814 → 2816/0 (+2 are the `BootstrapCacheVolumeTest` guards that arrived via the 345/2 deploy-brick fix merged in to keep the branch current). VERSION 0.346.01. **347 carve-out B** (`session-347/1`) — behaviour-preserving admin-only split of `InlineFormatToolbar.vue` **1768 → 1071 LOC (−39%)** into 4 composables (`useInlineToolbarPosition` / `useInlineLinkPopover` / `useInlineMediaInsert` / `useInlineToolbarKeyboard`) + 3 popover sub-components under `components/inline-toolbar/`, plus a dead `restoreRange` orphan removed; the orchestrator keeps format-state compute + dispatch per the audit seam map; Vue-only, no schema. The toolbar had no committed behaviour coverage (the 306 suite was a parked spec deleted by A005), so the net was re-established as a standing Playwright spec `tests/e2e/page-builder/inline-formatting-toolbar.spec.ts` (7/7) + the `design`-group parity guard (259/0) + `npm run build`; fast Pest 2816/0 unchanged. Owner accepted 1071 over pushing under 1k (the remaining levers — lifting dispatch, the roving-tabindex-coupled bar-button DRY, or dormant-overflow plumbing — were declined). VERSION 0.347.01.
+**Active:** none. Cycle 3 closed at the 348 squash; no cycle is in flight. See the Cycle-3 retrospective below for the full per-session detail.
 
 **Next trigger:** approximately session **398** (after the Cycle-3 squash at 348; ~50 sessions of growth is the target cadence). Trigger condition is "session ~398 OR a forcing function — whichever comes first." Forcing functions historically: a refactor that wants a clean baseline, a flag carry-forward that's been deferred two cycles in a row, an audit-shaped finding surfacing during regular work that warrants a full sweep.
 
@@ -90,13 +90,47 @@ Both are class-of-bug "the test would have caught it if a test exercised that pa
 
 References: `sessions/archived/271–274. … — Log.md` for full per-session detail.
 
+### Cycle 3 — Audit / Apply / Squash + two Carve-outs (sessions 344 / 345 / 348; carve-outs 346 / 347)
+
+Window covered: sessions 274 → 343, ~70 sessions of growth since Cycle 2's squash. The compressed 3-session shape (344 audit / 345 apply / 348 squash) expanded to 5 by two carve-outs lifted at the audit close (346 — Bundle Import/Export Split; 347 — InlineFormatToolbar Extraction), both placed before the squash so the squash absorbed any migrations they produced. The audit folded Cycle 2's audit-pair into one pass and ran the three Cycle-3 standing additions (static-reflection scan, boolean-settings sweep, integration-seam sweep).
+
+#### Quantitative outcomes
+
+| Gate | Pre-cycle baseline (343) | Cycle 3 close (348) | Net delta |
+|------|--------------------------|---------------------|-----------|
+| Fast Pest | 2799 / 0 | 2812 / 0 | +13 (345 +15 apply; 346 +2 `BootstrapCacheVolume` guards via the 345/2 merge; 347 +0 Vue-only; 348 −4 obsolete migration-test fallout) |
+| Migrations on disk | 13 (274 → 347 window) | 0 | −13 absorbed into 3915→4015-line schema dump |
+| `ContentImporter` | 1961 LOC monolith | 555 + `Import/` collaborators | 346 clean split |
+| `ContentExporter` | 1168 LOC monolith | 404 + `Export/` collaborators | 346 clean split |
+| `InlineFormatToolbar.vue` | 1768 LOC | 1071 + 4 composables + 3 sub-components | 347 split (−39%) |
+| Open Flags (344-A…G) | — | A–E applied, F blessed, G deferred | 5 fixed / 1 blessed / 1 carried |
+| Standing inter-cycle gates | FM parity test only | + `ConventionDriftTest` + `filament-signature-scan.php` | +2 (345 / 344) |
+
+#### Load-bearing decisions and gates
+
+- **`ConventionDriftTest` (345/5)** — the Cycle-3 standing deliverable; one gate wrapping the reusable `scripts/filament-signature-scan.php` (no `[KNOWN-BAD]` signature hits — pins the `getRelationManagers` inert-dead-code class Cycle 2 missed), the `model_type` lowercase-short-name convention, the load-bearing trait constants, and the boolean-SiteSetting convention. Now permanent alongside `FmContractVersionParityTest`.
+- **`filament-signature-scan.php` (344)** — reflects every app Filament subclass against its framework ancestors; caught the live `getRelationManagers` v2/v3 method-name bug (dead code that compiled and broke no test) on first run. Reusable each cycle.
+- **Carve-out shape reaffirmed** — 346/347 lifted at the audit close per the 207/275 precedent, both behaviour-preserving clean decompositions the owner chose over light file-moves, both absorbed by the squash.
+- **Squash data-phase discipline (348)** — the reusable insight: on `migrate:fresh`, migrations run before seeders against an empty DB, so data-phase transforms are no-ops at fresh-install time and the seeders alone produce the end shape; the green suite is the standing proof (verified concretely — media 44/44 `content_hash` + CAS layout on disk; dropped-column writes self-check). Phase 5 stayed a separate buffer commit for the one obsolete migration-test fallout (`MemosTrixToQuillTest`, 4 cases), mirroring 274.
+
+#### Process incidents
+
+- **Mid-346 deploy-brick (FM-surfaced).** The 0.341.01→0.345.06 upgrade bricked a live node and the auto-deploy server with a stale `bootstrap/cache` package manifest naming the 342-removed Debugbar provider (a persistent named volume shadowed the new image's manifest, fataling at framework bootstrap). Fixed on `session-345/2` — entrypoint manifest-clear + a baked HEALTHCHECK booting framework+DB (so a non-booting image fails at `docker_up` instead of false-greening into migrate), the `bootstrap_cache` volume dropped from prod compose, `BootstrapCacheVolumeTest` guarding both — merged + deployed by the owner. Not the FM contract endpoint; `HealthController` untouched, v2.3.0.
+
+#### Carry-forwards into Cycle 4
+
+- **Flag 344-G** (Transaction/Campaign/Fund audit-trail observer) — judgment call, deferred at 345 and again at 348. First cycle-boundary carry; per the cadence rule a flag deferred two cycles running becomes a forcing function.
+- Standing won't-fixes reaffirmed: three large importer PHP files, `ImporterPage` action closures, chunked-tick→queued-job, Flag B (Contacts importer convergence), `_custom.scss` partial extraction.
+
+References: `sessions/(archived/)344 / 345 / 346 / 347 / 348. … — Log.md` for full per-session detail.
+
 ---
 
-## Forward plan — Cycle 3 shape
+## Forward plan — next cycle (≈ session 398)
 
 ### Cycle shape — 3 sessions instead of 4
 
-Cycle 2's four-session shape was a tiny bit long. Cycle 3 compresses to **3 sessions: audit / apply / squash**.
+Cycle 2's four-session shape was a tiny bit long. The canonical shape is **3 sessions: audit / apply / squash**, with carve-outs lifted at the audit close when apply scope exceeds the ~6-iteration ceiling. Cycle 3 ran exactly this — 3 sessions + 2 carve-outs (346/347) — and confirmed it: the audit folds both halves, apply stays bounded, and the squash stays a clean standalone.
 
 - **Audit session** (single, replacing 271 + 272). Folds horizontal sweeps (W1/W5/W6/W9/W10/W11/W12 quantitative output) and subsystem deep walks (W2/W3/W4/W4b/W4c) into one session. Output is the merged W7/W8 tables, the Open Flags block, and the carve-out decisions. The sweep findings feed the deep walks within the same context window. Drop the audit-pair shape; one audit session handles both halves.
 - **Apply session** (replaces 273). Six-iteration ceiling — past 6 iterations is the carve-out smell. Apply consumes the W7/W8/W11/W12/Open Flags backlog deliberately; iterations land per-extraction-or-fix on a single `session-NNN/1` branch.
@@ -129,7 +163,7 @@ Lifted from Cycle 2's blind-spot list and process incidents:
 ### Permanent inter-cycle artifacts
 
 - **`tests/Feature/Infrastructure/FmContractVersionParityTest.php`** (273/4) — gates FM contract version-stamp drift across `HealthController`, `BackupController`, and the spec doc's `Contract Version:` line. Existing.
-- **Convention-drift Pest test** — Cycle 3 deliverable; lives alongside the FM parity test once shipped.
+- **Convention-drift Pest test** — shipped at 345/5 as `tests/Feature/Infrastructure/ConventionDriftTest.php`, alongside the FM parity test; wraps `scripts/filament-signature-scan.php` + the `model_type` / trait-constant / boolean-SiteSetting conventions. Each cycle adds rows for new convention drift the audit surfaces.
 - **`sessions/code-review-large-files-partial-extraction.md`** — advisory artifact from Cycle 2 (session 270, predating the cluster). Reusable as a starting input for Cycle 3 audit's W11 row evaluations; refresh during the audit session by re-running its grep counts.
 
 ### What stays in the release plan vs. what stays here
