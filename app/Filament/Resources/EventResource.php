@@ -8,6 +8,7 @@ use App\Models\Page;
 use App\Models\PageWidget;
 use App\Models\SiteSetting;
 use App\Models\WidgetType;
+use App\WidgetPrimitive\Source;
 use App\Forms\Components\QuillEditor;
 use App\Forms\Components\UsStateSelect;
 use App\Traits\HasPageBuilderForm;
@@ -121,6 +122,13 @@ class EventResource extends Resource
             'published_at' => $autoPublish ? now() : null,
             'type'         => 'event',
             'author_id'    => $event->author_id,
+            // Inherit the event's source so a scrub event's landing page is
+            // itself tagged scrub and gets cleaned up by the scrub wipe — the
+            // page is never an independent CMS page, it lives and dies with its
+            // event. Without this it defaulted to 'human' and orphaned on wipe.
+            // Fall back to HUMAN (the prior implicit default) for a source-less
+            // event so the NOT NULL pages.source is never violated.
+            'source'       => $event->source ?? Source::HUMAN,
         ]);
 
         // Override the auto-generated slug to include the events/ prefix.
