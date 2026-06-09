@@ -433,6 +433,16 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 - The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these four endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. `/api/backup/blob` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface; there is no blob-write, blob-delete, or blob-mutation affordance on `/api/backup/blob` (write is mediated by `/api/backup/trigger` only).
 
+### Data-access boundary — counts only, never raw node data *(governs the planned `data_hygiene` subcheck)*
+
+A standing boundary for any future data-visibility work (the **Fleet Data Hygiene** track, CRM-side `sessions/tracks/fleet-data-hygiene.md`): **Fleet Manager must never be *built* to read a node's actual data — even though mTLS makes it technically possible.** This extends the "no DB rows in any response" rule above, forward to the planned hygiene work:
+
+- A planned additive `data_hygiene` subcheck on `/api/health` will carry **aggregate counts only** (e.g. orphaned-page count, residual scrub-record count, orphan-media count) — non-PII integers, never rows, titles, emails, or contents. No raw-data / row-dumping endpoint will be added to this contract.
+- **Deep audit** (reading actual records) is **node-local + consent-gated** — run via artisan on a node the owner controls, never an FM-initiated capability over the wire.
+- FM gates any data-touching operation behind a **manual, user-editable per-node "maintenance / auditable" toggle** (default off) — an FM-side guardrail against accidental intrusion; defense-in-depth, the node may also refuse gated ops unless a node-side flag is set.
+
+Not yet shipped; recorded here so the boundary governs the work whenever it lands. Adding the subcheck bumps `CONTRACT_VERSION`.
+
 ### Recovery posture and FM-side trust assumptions
 
 These describe the v2.1.0 security posture; items carry status as either **shipped at this revision** (item 1) or **FM-side intended posture, Beta-1 scope** (items 2 + 3). FM-side absorption sessions promote the intended items to shipped status; this section updates without a contract bump as that happens. v2.3.0 (this revision) adds the FM-side-readable half of the restore primitive via `/api/backup/blob` — restore execution itself remains manual `pg_restore` operator-side per the existing posture; FM 022 wraps the blob fetch + manual restore drill into an operator-facing affordance, but the CRM never executes restore on its own behalf.
@@ -463,6 +473,10 @@ The CRM-side `demo:restore` command lands in the demo session following 335; thi
 ---
 
 ## CHANGELOG
+
+### `2.3.0` revision — 2026-06-09 (session 349)
+
+**Documentation revision — no contract surface change, no version bump.** Records a forward **data-access boundary** (new § Data-access boundary, under Security posture) governing the planned **Fleet Data Hygiene** work (CRM-side `sessions/tracks/fleet-data-hygiene.md`): Fleet Manager must never be *built* to read a node's actual data. The planned additive `data_hygiene` `/api/health` subcheck will carry **aggregate counts only** (orphaned-page / residual-scrub-record / orphan-media counts) — never raw rows or contents; deep audit stays node-local + consent-gated; a manual per-node "maintenance/auditable" toggle in FM gates any data-touching op. Nothing shipped yet — the subcheck is a future additive change that will bump `CONTRACT_VERSION` when it lands. `HealthController::CONTRACT_VERSION` stays `2.3.0`. FM-side consumers need no code change; they pick up the boundary note on the next WebFetch refresh.
 
 ### `2.3.0` revision — 2026-06-01 (session 335)
 

@@ -19,7 +19,7 @@ This doc carries:
 
 **Trigger:** post-launch fast-follow, OR earlier on negative pre-launch feedback about table / long-form authoring.
 
-**Down-payment already made:** session **349** ships a block-level Table widget backed by an *embedded* `prosemirror-tables` editor, isolated to that one widget. It solves the table piece, lands the team's first ProseMirror integration, and validates the HTML-round-trip + sanitizer-extension patterns this track reuses — so the track starts with ProseMirror already proven in the codebase, not cold.
+**Down-payment landed ✅:** session **349** shipped a block-level Table widget backed by an *embedded* `prosemirror-tables` editor, isolated to that one widget. It solved the table piece, landed the team's first ProseMirror integration, and proved the patterns this track reuses: HTML round-trip (HTML→doc on open, doc→HTML on save, no PM-JSON in storage), the `HtmlSanitizer` cell-attribute extension (validated `colspan`/`rowspan`), a minimal isolated schema, and a custom NodeView (the per-column `<colgroup>`). The track now starts with ProseMirror **proven in the codebase, not cold** — see `sessions/349. Table Widget — Log.md`.
 
 ---
 
