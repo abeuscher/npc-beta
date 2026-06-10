@@ -281,6 +281,23 @@ watch(
         @click="preventNavigation"
         @submit.prevent
       >
+        <!-- Read-only header chrome band (resolved + rendered server-side
+             exactly as the public layout does). Inert content; the hover
+             affordance deep-links into the template chrome editor. -->
+        <div
+          v-if="store.showChrome && store.chromeHeader"
+          class="preview-chrome preview-chrome--header"
+        >
+          <div class="preview-chrome__html" v-html="store.chromeHeader.html"></div>
+          <a
+            v-if="store.chromeHeader.edit_url"
+            :href="store.chromeHeader.edit_url"
+            class="preview-chrome__edit"
+            title="Edit the site header (opens the template chrome editor)"
+            @click.stop
+          >Edit header ↗</a>
+        </div>
+
         <draggable
           :list="store.pageItems"
           :group="{ name: 'page-items', pull: true, put: rootPutFilter }"
@@ -310,6 +327,21 @@ watch(
           class="preview-canvas__empty"
         >
           No blocks yet. Click <strong>+ Widget</strong> below to get started.
+        </div>
+
+        <!-- Read-only footer chrome band — mirror of the header band. -->
+        <div
+          v-if="store.showChrome && store.chromeFooter"
+          class="preview-chrome preview-chrome--footer"
+        >
+          <div class="preview-chrome__html" v-html="store.chromeFooter.html"></div>
+          <a
+            v-if="store.chromeFooter.edit_url"
+            :href="store.chromeFooter.edit_url"
+            class="preview-chrome__edit"
+            title="Edit the site footer (opens the template chrome editor)"
+            @click.stop
+          >Edit footer ↗</a>
         </div>
       </div>
     </div>
@@ -375,6 +407,57 @@ watch(
   border: 1px solid #e5e7eb;
   background: #fff;
   padding-top: 1.5rem;
+}
+
+/* ── Read-only chrome bands (header/footer context) ───────────────────── */
+
+.preview-chrome {
+  position: relative;
+}
+
+/* Inert: chrome is edited on its own screen, not here. */
+.preview-chrome__html {
+  pointer-events: none;
+}
+
+.preview-chrome:hover {
+  outline: 1px dashed #c7d2fe;
+  outline-offset: -1px;
+}
+
+.preview-chrome__edit {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.3125rem;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.preview-chrome--footer .preview-chrome__edit {
+  top: auto;
+  bottom: 0.375rem;
+}
+
+.preview-chrome:hover .preview-chrome__edit {
+  opacity: 1;
+}
+
+.preview-chrome__edit:hover {
+  color: var(--c-primary-700, #4338ca);
+  border-color: var(--c-primary-300, #a5b4fc);
 }
 
 .preview-canvas__empty {

@@ -79,6 +79,18 @@
     @endif
 
     {{-- ------------------------------------------------------------------ --}}
+    {{-- Chrome-band widget instance styles — the same per-widget <style>     --}}
+    {{-- output the public layout emits for the header/footer, so the         --}}
+    {{-- read-only chrome bands in the preview render with their styles.      --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @php
+        $__chromeStyles = collect($bootstrapData['chrome'] ?? [])->filter()->pluck('styles')->filter()->implode("\n");
+    @endphp
+    @if ($__chromeStyles !== '')
+        <style>{!! $__chromeStyles !!}</style>
+    @endif
+
+    {{-- ------------------------------------------------------------------ --}}
     {{-- Vue editor app                                                       --}}
     {{-- ------------------------------------------------------------------ --}}
     <div data-page-builder-app data-bootstrap='@json($bootstrapData)' wire:ignore></div>
