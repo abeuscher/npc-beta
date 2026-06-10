@@ -21,6 +21,41 @@ const columnsMenuOpen = ref(false)
 // Layer explorer dropdown
 const layerMenuOpen = ref(false)
 
+// Overlay-nav parity with the public layout (PageController::show). When the
+// page's first root widget is a hero with overlap_nav on, the public render
+// wraps the header in `.site-nav-wrapper--overlay` carrying the three
+// `--overlay-*` nav colour custom properties. We derive it from the live store
+// rather than threading it through chromeBands() — the source config already
+// rides the first widget item, so the editor tracks the toggle reactively and
+// stays byte-for-byte with PageController's resolution.
+const navOverlay = computed<{ overlap: boolean; linkColor?: string; hoverColor?: string; textColor?: string }>(() => {
+  const first = store.pageItems[0]
+  if (!first || first.type !== 'widget') return { overlap: false }
+  const w = first as Widget & { type: 'widget' }
+  if (w.widget_type_handle !== 'hero' || !w.config?.overlap_nav) {
+    return { overlap: false }
+  }
+  return {
+    overlap: true,
+    linkColor: w.config?.nav_link_color ?? '',
+    hoverColor: w.config?.nav_hover_color ?? '',
+    textColor: w.appearance_config?.text?.color ?? '',
+  }
+})
+
+// Inline `--overlay-*` style string, mirroring public.blade.php's $__navStyle:
+// only non-empty colours are emitted; undefined when not in overlay mode so the
+// wrapper carries no style attribute (parity with the @if ($__navStyle) guard).
+const navOverlayStyle = computed<string | undefined>(() => {
+  const o = navOverlay.value
+  if (!o.overlap) return undefined
+  const parts: string[] = []
+  if (o.linkColor) parts.push(`--overlay-nav-link-color:${o.linkColor}`)
+  if (o.hoverColor) parts.push(`--overlay-nav-hover-color:${o.hoverColor}`)
+  if (o.textColor) parts.push(`--overlay-text-color:${o.textColor}`)
+  return parts.length ? parts.join(';') : undefined
+})
+
 const allItems = computed(() => {
   const items: { id: string; label: string; type: 'widget' | 'layout'; handle: string; nested: boolean }[] = []
   for (const item of store.pageItems) {
@@ -288,7 +323,20 @@ watch(
           v-if="store.showChrome && store.chromeHeader"
           class="preview-chrome preview-chrome--header"
         >
-          <div class="preview-chrome__html" v-html="store.chromeHeader.html"></div>
+          <!-- Reproduce the public layout's chrome wrappers
+               (.site-nav-wrapper[.--overlay] > header.site-header) so the
+               same server HTML attaches the same .np-site chrome styles the
+               front end gets. The .preview-chrome affordance stays the outer
+               layer (hover outline + edit deep-link). -->
+          <div
+            class="site-nav-wrapper"
+            :class="{ 'site-nav-wrapper--overlay': navOverlay.overlap }"
+            :style="navOverlayStyle"
+          >
+            <header class="site-header">
+              <div class="preview-chrome__html" v-html="store.chromeHeader.html"></div>
+            </header>
+          </div>
           <a
             v-if="store.chromeHeader.edit_url"
             :href="store.chromeHeader.edit_url"
@@ -334,7 +382,11 @@ watch(
           v-if="store.showChrome && store.chromeFooter"
           class="preview-chrome preview-chrome--footer"
         >
-          <div class="preview-chrome__html" v-html="store.chromeFooter.html"></div>
+          <!-- Mirror of the header band: reproduce the public footer.site-footer
+               wrapper so chrome footer styles attach, affordance kept outer. -->
+          <footer class="site-footer">
+            <div class="preview-chrome__html" v-html="store.chromeFooter.html"></div>
+          </footer>
           <a
             v-if="store.chromeFooter.edit_url"
             :href="store.chromeFooter.edit_url"

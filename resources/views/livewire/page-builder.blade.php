@@ -67,6 +67,19 @@
         <style>{!! $__pbTypographyCss !!}</style>
     @endif
 
+    {{-- nav_family parity with the public layout (public.blade.php emits the
+         same rule scoped to `.np-site nav`). The nav_family bucket has no
+         per-element compiler path, so the canvas would otherwise fall back to
+         the body family and the chrome nav font would drift from the front end.
+         Emitted into the `host` layer (already declared by the editor CSS
+         bundle) scoped to the preview canvas. --}}
+    @php
+        $__pbNavFamily = $__pbTypography['buckets']['nav_family'] ?? null;
+    @endphp
+    @if ($__pbNavFamily)
+        <style>@layer host { .widget-preview-scope nav, .widget-preview-scope nav a { font-family: {!! $__pbNavFamily !!}; } }</style>
+    @endif
+
     {{-- ------------------------------------------------------------------ --}}
     {{-- Per-template content scheme — the SAME shared-resolver string the    --}}
     {{-- public layout applies to <main>, scoped here to the preview content  --}}
