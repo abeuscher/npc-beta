@@ -269,6 +269,7 @@ watch(
           flexShrink: isNarrowViewport ? 0 : undefined,
           '--np-preview-container-max-width': previewContainerMaxWidth,
           containerType: 'inline-size',
+          containerName: 'np-viewport',
         }"
         @click="preventNavigation"
         @submit.prevent

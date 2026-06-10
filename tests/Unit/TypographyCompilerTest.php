@@ -136,6 +136,15 @@ it('scopes the @media breakpoint blocks under the given prefix', function () {
     expect($css)->toContain('@media (max-width: 576px) { .np-preview h1:not(nav h1) { font-size: 1.5rem; } }');
 });
 
+it('emits @container np-viewport breakpoint blocks in container-query mode', function () {
+    $css = TypographyCompiler::compileScoped(['.np-preview'], TypographyResolver::defaults(), containerQueries: true);
+
+    // Base declarations are unchanged; only the breakpoint wrapper differs.
+    expect($css)->toContain('.np-preview h1:not(nav h1) { ');
+    expect($css)->toContain('@container np-viewport (max-width: 576px) { .np-preview h1:not(nav h1) { font-size: 1.5rem; } }');
+    expect($css)->not->toContain('@media');
+});
+
 it('detects Google Fonts families in buckets and elements', function () {
     $state = TypographyResolver::defaults();
     $state['buckets']['heading_family'] = "'Inter', sans-serif";

@@ -44,6 +44,46 @@ it('collects widget css and js from widget type records', function () {
     expect($jsContents)->toContain('console.log("test")');
 });
 
+it('build() writes an editor-variant bundle with width media rewritten to container queries', function () {
+    $outDir = sys_get_temp_dir() . '/asset-build-' . uniqid('', true);
+    $libsDir = $outDir . '/libs';
+
+    config([
+        'services.build_server.url' => 'http://bundleserver.test',
+        'services.build_server.api_key' => 'test-key',
+    ]);
+
+    $compiledCss = '@media (max-width: 768px) { .widget { padding-top: 8px; } } @media print { .a { display: none; } }';
+    \Illuminate\Support\Facades\Http::fake([
+        '*' => \Illuminate\Support\Facades\Http::response([
+            'success' => true,
+            'files' => [
+                'css' => ['content' => base64_encode($compiledCss)],
+                'js'  => ['content' => base64_encode('console.log(1);')],
+            ],
+        ]),
+    ]);
+
+    $result = (new AssetBuildService($outDir, $libsDir))->build();
+
+    expect($result->success)->toBeTrue();
+
+    $manifest = json_decode(file_get_contents($outDir . '/manifest.json'), true);
+    expect($manifest['editor_css'])
+        ->toBe(str_replace('public-widgets-', 'public-widgets-editor-', $manifest['css']));
+
+    // The editor variant carries the rewrite; the public bundle is untouched.
+    $editor = file_get_contents($outDir . '/' . $manifest['editor_css']);
+    expect($editor)->toContain('@container np-viewport (max-width: 768px)');
+    expect($editor)->not->toContain('@media (max-width: 768px)');
+    expect($editor)->toContain('@media print');
+
+    $public = file_get_contents($outDir . '/' . $manifest['css']);
+    expect($public)->toBe($compiledCss);
+
+    \Illuminate\Support\Facades\File::deleteDirectory($outDir);
+});
+
 it('build:public command fails gracefully when build server is unconfigured', function () {
     config(['services.build_server.url' => null]);
 

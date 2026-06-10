@@ -142,6 +142,7 @@ JS,
         $hash = $this->hashSources($sources);
         $cssFilename = "public-widgets-{$hash}.css";
         $jsFilename = "public-widgets-{$hash}.js";
+        $editorCssFilename = "public-widgets-editor-{$hash}.css";
 
         // Build request payload
         $payload = [
@@ -216,6 +217,16 @@ JS,
             }
             File::put($cssPath, $cssContent);
             $cssSize = strlen($cssContent);
+
+            // Editor variant: the same bundle with width-keyed @media rules
+            // rewritten to @container np-viewport so the page-builder preview
+            // (a fixed-width inline-size container) honours breakpoints at
+            // the preset width instead of the real browser window. Loaded
+            // only by the admin panel; the public bundle is untouched.
+            File::put(
+                $this->outputDir . '/' . $editorCssFilename,
+                EditorCssTransformer::transform($cssContent),
+            );
         }
 
         if (! empty($body['files']['js']['content'])) {
@@ -237,6 +248,7 @@ JS,
         // Write manifest
         $manifest = [
             'css' => $cssSize > 0 ? $cssFilename : null,
+            'editor_css' => $cssSize > 0 ? $editorCssFilename : null,
             'js' => $jsSize > 0 ? $jsFilename : null,
             'libs' => $libs,
             'built_at' => now()->toIso8601String(),
@@ -244,7 +256,7 @@ JS,
         File::put($this->manifestPath, json_encode($manifest, JSON_PRETTY_PRINT));
 
         // Clean up old bundles
-        $this->cleanOldBundles($cssFilename, $jsFilename);
+        $this->cleanOldBundles($cssFilename, $jsFilename, $editorCssFilename);
 
         $elapsed = round((microtime(true) - $startTime) * 1000);
 
@@ -563,7 +575,7 @@ JS,
         ];
     }
 
-    protected function cleanOldBundles(string $currentCss, string $currentJs): void
+    protected function cleanOldBundles(string $currentCss, string $currentJs, string $currentEditorCss): void
     {
         if (! File::isDirectory($this->outputDir)) {
             return;
@@ -573,12 +585,12 @@ JS,
             $name = $file->getFilename();
 
             // Keep the manifest and current bundles
-            if ($name === 'manifest.json' || $name === $currentCss || $name === $currentJs) {
+            if ($name === 'manifest.json' || $name === $currentCss || $name === $currentJs || $name === $currentEditorCss) {
                 continue;
             }
 
             // Only delete files that match our naming pattern
-            if (preg_match('/^public-widgets-[a-f0-9]{8}\.(css|js)$/', $name)) {
+            if (preg_match('/^public-widgets(?:-editor)?-[a-f0-9]{8}\.(css|js)$/', $name)) {
                 File::delete($file->getPathname());
             }
         }

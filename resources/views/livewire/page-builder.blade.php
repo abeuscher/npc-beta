@@ -25,9 +25,14 @@
         //     editor's H1–H6 sizing matches the inactive preview
         //     instead of dropping to Quill's defaults. — Session 308
         //     iteration 3.
+        // containerQueries: the breakpoint font-size ramps emit as
+        // `@container np-viewport (max-width: …)` so they track the preview's
+        // simulated viewport (the scope element is the np-viewport query
+        // container) instead of the real browser window.
         $__pbTypographyCss = \App\Services\TypographyCompiler::compileScoped(
             ['.widget-preview-scope', '.ql-snow .ql-editor'],
             $__pbTypography,
+            containerQueries: true,
         );
         $__pbBucketVars = [];
         $__pbHeadingFamily = $__pbTypography['buckets']['heading_family'] ?? null;

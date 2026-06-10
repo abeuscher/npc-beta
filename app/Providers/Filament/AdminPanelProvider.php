@@ -201,12 +201,17 @@ class AdminPanelProvider extends PanelProvider
             // The build server bundle includes ALL public styles (base + widgets).
             // Base element selectors are namespaced under .np-site in the SCSS source,
             // so they only apply inside the preview container (which carries .np-site).
+            // The EDITOR variant of the bundle is served here: width-keyed @media
+            // rules rewritten to @container np-viewport so the preview honours
+            // breakpoints at the simulated viewport width, not the browser window
+            // (the preview scope is the np-viewport query container). Falls back
+            // to the public bundle when the manifest predates the variant.
             // JS-dependent widgets (carousels, maps, charts) render HTML/CSS only —
             // interactive JS loading is deferred to session 140.
             ->renderHook(
                 'panels::head.end',
                 function (): HtmlString {
-                    $url = app(WidgetAssetResolver::class)->widgetCss();
+                    $url = app(WidgetAssetResolver::class)->widgetEditorCss();
                     return $url ? new HtmlString('<link rel="stylesheet" href="' . e($url) . '">') : new HtmlString('');
                 }
             )
