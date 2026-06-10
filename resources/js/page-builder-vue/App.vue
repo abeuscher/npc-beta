@@ -3,6 +3,7 @@ import { onMounted, onUnmounted } from 'vue'
 import type { BootstrapData } from './types'
 import { useEditorStore } from './stores/editor'
 import EditorToolbar from './components/EditorToolbar.vue'
+import CanvasControlBar from './components/CanvasControlBar.vue'
 import PreviewCanvas from './components/PreviewCanvas.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 import InlineFormatToolbar from './components/InlineFormatToolbar.vue'
@@ -57,6 +58,8 @@ onUnmounted(() => {
 <template>
   <div class="vue-editor">
     <EditorToolbar />
+
+    <CanvasControlBar />
 
     <div class="vue-editor__layout">
       <div class="vue-editor__main" style="min-width: 0">

@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useEditorStore } from '../stores/editor'
 
 export interface ViewportPreset {
   width: number
@@ -11,27 +12,25 @@ export const viewportPresets: ViewportPreset[] = [
   { width: 375, label: 'Mobile' },
 ]
 
+// The preset itself lives in the editor store (lifted so the canvas control
+// bar, the canvas zoom, and breakpoint-aware inspector controls all share one
+// source of truth); this composable keeps only the per-canvas pane
+// measurement and the zoom derivation.
 export function useViewport() {
-  const presetViewport = ref(1920)
+  const store = useEditorStore()
   const paneWidth = ref(0)
 
   const zoomFactor = computed(() =>
-    paneWidth.value > 0 ? Math.min(1, paneWidth.value / presetViewport.value) : 1
+    paneWidth.value > 0 ? Math.min(1, paneWidth.value / store.presetViewport) : 1
   )
 
   function computeZoom(width: number): void {
     paneWidth.value = width
   }
 
-  function setViewport(width: number): void {
-    presetViewport.value = width
-  }
-
   return {
-    presetViewport,
     zoomFactor,
     viewportPresets,
     computeZoom,
-    setViewport,
   }
 }

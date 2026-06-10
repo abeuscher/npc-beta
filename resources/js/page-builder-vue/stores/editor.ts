@@ -162,6 +162,15 @@ export const useEditorStore = defineStore('editor', () => {
   // doesn't intercept drops when an empty slot is the target.
   const dragging = ref(false)
 
+  // Canvas viewport preset (px). Lifted out of useViewport so the canvas
+  // control bar, the canvas zoom derivation, and breakpoint-aware inspector
+  // controls all read one source of truth.
+  const presetViewport = ref(1920)
+
+  function setViewport(width: number): void {
+    presetViewport.value = width
+  }
+
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
@@ -766,6 +775,8 @@ export const useEditorStore = defineStore('editor', () => {
     events,
     saving,
     dragging,
+    presetViewport,
+    setViewport,
     inlineImageUploadUrl,
     heroiconsUrl,
     themeEditorUrl,
