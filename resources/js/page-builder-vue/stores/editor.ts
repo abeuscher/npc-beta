@@ -171,6 +171,19 @@ export const useEditorStore = defineStore('editor', () => {
     presetViewport.value = width
   }
 
+  // Full-screen editing mode. Deliberately not persisted across loads:
+  // entering an edit page always starts windowed so the surrounding Filament
+  // form (title, slug, status) stays discoverable.
+  const fullscreen = ref(false)
+  // Inspector drawer state while full-screen — starts collapsed every time
+  // the mode is entered.
+  const fullscreenInspectorOpen = ref(false)
+
+  function toggleFullscreen(): void {
+    fullscreen.value = !fullscreen.value
+    fullscreenInspectorOpen.value = false
+  }
+
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
@@ -777,6 +790,9 @@ export const useEditorStore = defineStore('editor', () => {
     dragging,
     presetViewport,
     setViewport,
+    fullscreen,
+    fullscreenInspectorOpen,
+    toggleFullscreen,
     inlineImageUploadUrl,
     heroiconsUrl,
     themeEditorUrl,

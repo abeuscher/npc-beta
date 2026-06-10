@@ -13,8 +13,44 @@ const presetIcons: Record<number, string> = {
 </script>
 
 <template>
-  <div class="canvas-control-bar">
-    <div class="canvas-control-bar__left"></div>
+  <div
+    class="canvas-control-bar"
+    :class="{ 'canvas-control-bar--fullscreen': store.fullscreen }"
+  >
+    <div class="canvas-control-bar__left">
+      <button
+        type="button"
+        class="canvas-control-bar__fullscreen-btn"
+        :title="store.fullscreen ? 'Exit full screen' : 'Edit full screen'"
+        :aria-label="store.fullscreen ? 'Exit full screen' : 'Edit full screen'"
+        :aria-pressed="store.fullscreen"
+        @click="store.toggleFullscreen()"
+      >
+        <svg
+          v-if="!store.fullscreen"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="h-4 w-4"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+        </svg>
+        <svg
+          v-else
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="h-4 w-4"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+        </svg>
+        <span class="canvas-control-bar__fullscreen-label">{{ store.fullscreen ? 'Exit full screen' : 'Full screen' }}</span>
+      </button>
+    </div>
 
     <div class="canvas-control-bar__viewport">
       <span class="canvas-control-bar__viewport-label">Viewport:</span>
@@ -67,6 +103,45 @@ const presetIcons: Record<number, string> = {
   gap: 0.25rem;
 }
 
+.canvas-control-bar__fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.canvas-control-bar__fullscreen-btn:hover {
+  color: var(--c-primary-700, #4338ca);
+  background-color: #f3f4f6;
+  border-color: var(--c-primary-300, #a5b4fc);
+}
+
+/* Full-screen: the bar leaves the editor flow and pins to the top-left of
+   the screen as a compact floating cluster — the one piece of chrome that
+   stays put while the canvas scrolls beneath. z-index sits above the
+   overlay (40) and below the modals (50). */
+.canvas-control-bar--fullscreen {
+  position: fixed;
+  top: 0.625rem;
+  left: 0.75rem;
+  z-index: 45;
+  margin-bottom: 0;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
 .canvas-control-bar__viewport {
   display: flex;
   align-items: center;
@@ -110,4 +185,7 @@ html.dark .canvas-control-bar__viewport-label     { color: rgb(156 163 175); }
 html.dark .canvas-control-bar__viewport-btn       { color: rgb(156 163 175); }
 html.dark .canvas-control-bar__viewport-btn:hover { color: rgb(229 231 235); background-color: rgb(55 65 81); }
 html.dark .canvas-control-bar__viewport-size      { color: rgb(107 114 128); }
+html.dark .canvas-control-bar__fullscreen-btn        { color: rgb(156 163 175); border-color: rgb(75 85 99); }
+html.dark .canvas-control-bar__fullscreen-btn:hover  { color: rgb(229 231 235); background-color: rgb(55 65 81); }
+html.dark .canvas-control-bar--fullscreen            { background: rgb(17 24 39); border-color: rgb(55 65 81); }
 </style>
