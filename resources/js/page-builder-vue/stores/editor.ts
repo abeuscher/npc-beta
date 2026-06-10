@@ -162,6 +162,38 @@ export const useEditorStore = defineStore('editor', () => {
   // doesn't intercept drops when an empty slot is the target.
   const dragging = ref(false)
 
+  // Canvas viewport preset (px). Lifted out of useViewport so the canvas
+  // control bar, the canvas zoom derivation, and breakpoint-aware inspector
+  // controls all read one source of truth.
+  const presetViewport = ref(1920)
+
+  function setViewport(width: number): void {
+    presetViewport.value = width
+  }
+
+  // Full-screen editing mode. Deliberately not persisted across loads:
+  // entering an edit page always starts windowed so the surrounding Filament
+  // form (title, slug, status) stays discoverable.
+  const fullscreen = ref(false)
+  // Inspector drawer state while full-screen — starts collapsed every time
+  // the mode is entered.
+  const fullscreenInspectorOpen = ref(false)
+
+  function toggleFullscreen(): void {
+    fullscreen.value = !fullscreen.value
+    fullscreenInspectorOpen.value = false
+  }
+
+  // Groundwork for per-breakpoint authoring (the deferred session-335 item):
+  // the authoring breakpoint the canvas is simulating, derived from the
+  // viewport preset. This is the AUTHORING label future per-breakpoint
+  // inspector controls key their read/write off — not the public CSS tier
+  // (the 1024 preset maps to 'tablet' here even though the ≤768 public
+  // rules don't fire at 1024). Nothing consumes it yet.
+  const activeBreakpoint = computed<'desktop' | 'tablet' | 'mobile'>(() =>
+    presetViewport.value >= 1200 ? 'desktop' : presetViewport.value >= 768 ? 'tablet' : 'mobile'
+  )
+
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
@@ -766,6 +798,12 @@ export const useEditorStore = defineStore('editor', () => {
     events,
     saving,
     dragging,
+    presetViewport,
+    setViewport,
+    fullscreen,
+    fullscreenInspectorOpen,
+    toggleFullscreen,
+    activeBreakpoint,
     inlineImageUploadUrl,
     heroiconsUrl,
     themeEditorUrl,

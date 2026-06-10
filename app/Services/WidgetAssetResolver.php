@@ -46,6 +46,23 @@ class WidgetAssetResolver
     }
 
     /**
+     * URL of the editor-variant CSS bundle — the public bundle with
+     * width-keyed @media rules rewritten to @container np-viewport for the
+     * page-builder preview. Falls back to the public bundle when the
+     * manifest predates the editor variant, so a stale manifest degrades to
+     * the old (viewport-keyed) behaviour rather than an unstyled preview.
+     */
+    public function widgetEditorCss(): ?string
+    {
+        $filename = $this->manifest()['editor_css'] ?? null;
+        if (is_string($filename) && $filename !== '') {
+            return self::BUNDLE_URL_PREFIX . $filename;
+        }
+
+        return $this->widgetCss();
+    }
+
+    /**
      * URL of the main widget JS bundle, or null when the build server
      * has not produced one yet.
      */

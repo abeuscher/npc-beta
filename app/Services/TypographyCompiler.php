@@ -68,9 +68,15 @@ class TypographyCompiler
      * rules apply only inside those containers (e.g. the page-builder preview and
      * the Quill rich-text editor). Multiple scopes produce a grouped selector.
      *
+     * With $containerQueries the breakpoint blocks are emitted as
+     * `@container np-viewport (max-width: …)` instead of `@media`, so they
+     * evaluate against the page-builder preview's simulated viewport width
+     * (the np-viewport query container) rather than the browser window —
+     * the editor-faithfulness counterpart of EditorCssTransformer.
+     *
      * @param  array<int, string>  $scopes
      */
-    public static function compileScoped(array $scopes, ?array $typography = null): string
+    public static function compileScoped(array $scopes, ?array $typography = null, bool $containerQueries = false): string
     {
         $scopes = array_values(array_filter(array_map('trim', $scopes)));
         if (! $scopes) {
@@ -92,7 +98,7 @@ class TypographyCompiler
             if ($decls) {
                 $blocks[] = implode(', ', $prefixed) . ' { ' . implode('; ', $decls) . '; }';
             }
-            foreach (self::mediaSizeBlocks($config, $prefixed) as $mediaBlock) {
+            foreach (self::mediaSizeBlocks($config, $prefixed, $containerQueries) as $mediaBlock) {
                 $blocks[] = $mediaBlock;
             }
         }
@@ -229,24 +235,29 @@ class TypographyCompiler
     /**
      * The three narrower-breakpoint @media blocks for one element: each
      * re-declares only font-size at that breakpoint's ramped value, wrapped
-     * in @media (max-width: Npx). line-height stays the unitless base value
+     * in @media (max-width: Npx) — or @container np-viewport (max-width: Npx)
+     * in container-query mode. line-height stays the unitless base value
      * (rides the size) and heading margin-bottom stays em-relative — neither
      * needs per-breakpoint emission.
      *
      * @param  array<int, string>  $selectors
      * @return array<int, string>
      */
-    private static function mediaSizeBlocks(array $config, array $selectors): array
+    private static function mediaSizeBlocks(array $config, array $selectors, bool $containerQueries = false): array
     {
         $font = $config['font'] ?? [];
         $out  = [];
+
+        $atRule = $containerQueries
+            ? '@container ' . EditorCssTransformer::CONTAINER_NAME . ' '
+            : '@media ';
 
         foreach (self::BREAKPOINT_MAXWIDTH as $bp => $maxWidth) {
             $size = self::sizeAt($font, $bp);
             if ($size === null) {
                 continue;
             }
-            $out[] = '@media (max-width: ' . $maxWidth . 'px) { '
+            $out[] = $atRule . '(max-width: ' . $maxWidth . 'px) { '
                 . implode(', ', $selectors)
                 . ' { font-size: ' . $size['value'] . $size['unit'] . '; } }';
         }
