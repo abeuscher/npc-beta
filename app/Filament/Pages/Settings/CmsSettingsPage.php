@@ -62,6 +62,7 @@ class CmsSettingsPage extends Page
             'default_content_template_post'    => SiteSetting::get('default_content_template_post', ''),
             'default_content_template_event'   => SiteSetting::get('default_content_template_event', ''),
             'noindex_global'  => SiteSetting::get('noindex_global', 'false') === 'true',
+            'custom_json_ld'  => SiteSetting::get('custom_json_ld', ''),
         ]);
     }
 
@@ -126,6 +127,14 @@ class CmsSettingsPage extends Page
                         Forms\Components\Toggle::make('noindex_global')
                             ->label('Block search engines from indexing this site')
                             ->helperText('When enabled, every public page emits a "noindex,nofollow" meta tag. Use during staging or pre-launch — disable before going live.')
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('custom_json_ld')
+                            ->label('Site-wide JSON-LD')
+                            ->rows(6)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new \App\Rules\ValidJsonLd()])
+                            ->helperText('Optional structured-data graph emitted on every public page (a JSON object or array, e.g. an Organization or SoftwareApplication graph). Added as a JSON-LD script alongside the per-page one. Leave blank to disable.')
                             ->columnSpanFull(),
 
                         $this->sectionSaveAction('search-visibility', 'Search Engine Visibility')->columnSpanFull(),
@@ -357,6 +366,7 @@ class CmsSettingsPage extends Page
         SiteSetting::set('default_content_template_event', $data['default_content_template_event'] ?? '');
 
         SiteSetting::set('noindex_global', ! empty($data['noindex_global']) ? 'true' : 'false');
+        SiteSetting::set('custom_json_ld', $data['custom_json_ld'] ?? '');
 
         SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');
 
@@ -432,6 +442,7 @@ class CmsSettingsPage extends Page
             })(),
             'search-visibility' => (function () use ($data) {
                 SiteSetting::set('noindex_global', ! empty($data['noindex_global']) ? 'true' : 'false');
+                SiteSetting::set('custom_json_ld', $data['custom_json_ld'] ?? '');
             })(),
             'build-server' => (function () use ($data) {
                 SiteSetting::set('build_server_url', $data['build_server_url'] ?? '');

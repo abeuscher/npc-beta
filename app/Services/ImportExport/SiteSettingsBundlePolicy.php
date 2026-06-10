@@ -33,6 +33,7 @@ class SiteSettingsBundlePolicy
         'admin_secondary_color',
         // SEO + custom snippets
         'noindex_global',
+        'custom_json_ld',
         'site_head_snippet',
         'site_body_snippet',
         'site_body_open_snippet',

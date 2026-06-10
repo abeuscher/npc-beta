@@ -324,6 +324,166 @@ it('generates Event JSON-LD for event pages', function () {
         ->and($ld)->toHaveKey('startDate');
 });
 
+// ── Custom JSON-LD slot ──────────────────────────────────────────────────────
+
+it('emits a site-wide custom JSON-LD graph as a separate ld+json script', function () {
+    SiteSetting::set('custom_json_ld', '{"@context":"https://schema.org","@type":"Organization","name":"Test Org"}');
+
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('"@type":"Organization"', false)
+        ->assertSee('"name":"Test Org"', false);
+});
+
+it('emits a per-page custom JSON-LD graph from custom_fields', function () {
+    Page::factory()->create([
+        'slug'          => 'team/jane',
+        'title'         => 'Jane',
+        'status'        => 'published',
+        'published_at'  => now(),
+        'custom_fields' => ['json_ld' => '{"@context":"https://schema.org","@type":"Person","name":"Jane Doe"}'],
+    ]);
+
+    $this->get('/team/jane')
+        ->assertOk()
+        ->assertSee('"@type":"Person"', false)
+        ->assertSee('"name":"Jane Doe"', false);
+});
+
+it('emits the auto graph plus both custom graphs as three separate ld+json scripts', function () {
+    SiteSetting::set('custom_json_ld', '{"@type":"Organization","name":"Site Org"}');
+
+    Page::factory()->create([
+        'slug'          => 'team/jane',
+        'title'         => 'Jane',
+        'status'        => 'published',
+        'published_at'  => now(),
+        'custom_fields' => ['json_ld' => '{"@type":"Person","name":"Jane Doe"}'],
+    ]);
+
+    $content = $this->get('/team/jane')->assertOk()->getContent();
+
+    // Auto WebPage graph + site-wide Organization + per-page Person.
+    expect(substr_count($content, 'application/ld+json'))->toBe(3);
+});
+
+it('escapes a </script> breakout attempt in custom JSON-LD so it cannot break out', function () {
+    $payload = '</script><script>alert(1)</script>';
+    SiteSetting::set('custom_json_ld', '{"@type":"Organization","name":"' . $payload . '"}');
+
+    $page = Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    // JSON_HEX_TAG escapes every < and > in the emitted string, so it carries
+    // no raw angle brackets — the HTML parser can never see a closing </script>
+    // — yet the value round-trips intact when decoded.
+    $encoded = SeoMetaGenerator::forPage($page)['custom_json_ld'][0];
+    expect($encoded)->not->toContain('<')
+        ->and($encoded)->not->toContain('>')
+        ->and(json_decode($encoded, true)['name'])->toBe($payload);
+
+    // And the rendered page never carries the raw injected <script> tag.
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('<script>alert(1)', false);
+});
+
+it('drops invalid JSON in the custom slot instead of emitting it raw', function () {
+    SiteSetting::set('custom_json_ld', '{ this is not valid json');
+
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('not valid json', false);
+});
+
+it('drops a non-object/array scalar in the custom slot', function () {
+    SiteSetting::set('custom_json_ld', '"just a bare string"');
+
+    $page = Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    expect(SeoMetaGenerator::forPage($page)['custom_json_ld'])->toBe([]);
+});
+
+// ── ValidJsonLd rule ─────────────────────────────────────────────────────────
+
+it('passes a JSON object through the JSON-LD rule', function () {
+    $rule   = new \App\Rules\ValidJsonLd();
+    $failed = false;
+
+    $rule->validate('json_ld', '{"@type":"Organization"}', function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeFalse();
+});
+
+it('passes a JSON array through the JSON-LD rule', function () {
+    $rule   = new \App\Rules\ValidJsonLd();
+    $failed = false;
+
+    $rule->validate('json_ld', '[{"@type":"Organization"},{"@type":"Person"}]', function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeFalse();
+});
+
+it('passes a blank value through the JSON-LD rule', function () {
+    $rule   = new \App\Rules\ValidJsonLd();
+    $failed = false;
+
+    $rule->validate('json_ld', '', function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeFalse();
+});
+
+it('fails malformed JSON in the JSON-LD rule', function () {
+    $rule   = new \App\Rules\ValidJsonLd();
+    $failed = false;
+
+    $rule->validate('json_ld', '{ not valid', function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeTrue();
+});
+
+it('fails a bare scalar in the JSON-LD rule', function () {
+    $rule   = new \App\Rules\ValidJsonLd();
+    $failed = false;
+
+    $rule->validate('json_ld', '42', function () use (&$failed) {
+        $failed = true;
+    });
+
+    expect($failed)->toBeTrue();
+});
+
 // ── Snippet validation ───────────────────────────────────────────────────────
 
 it('passes valid HTML through the snippet rule', function () {

@@ -50,6 +50,11 @@ it('blockquote round-trips', function () {
         ->toBe('<blockquote>q</blockquote>');
 });
 
+it('blockquote with cite attribution round-trips', function () {
+    expect(HtmlSanitizer::sanitize('<blockquote>A quote<cite>Author</cite></blockquote>'))
+        ->toBe('<blockquote>A quote<cite>Author</cite></blockquote>');
+});
+
 it('inline code round-trips', function () {
     expect(HtmlSanitizer::sanitize('<code>x</code>'))->toBe('<code>x</code>');
 });

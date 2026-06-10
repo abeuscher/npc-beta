@@ -12,7 +12,7 @@ class SeoMetaGenerator
     /**
      * Generate all SEO meta data for a given page.
      *
-     * @return array{title: string, description: string, og_image: string, canonical: string, og_type: string, json_ld: string|null}
+     * @return array{title: string, description: string, og_image: string, canonical: string, og_type: string, json_ld: string|null, custom_json_ld: list<string>}
      */
     public static function forPage(Page $page): array
     {
@@ -28,13 +28,61 @@ class SeoMetaGenerator
         $jsonLd = static::generateJsonLd($page, $title, $description, $ogImage, $canonical, $siteName);
 
         return [
-            'title'       => $title,
-            'description' => $description,
-            'og_image'    => $ogImage,
-            'canonical'   => $canonical,
-            'og_type'     => $ogType,
-            'json_ld'     => $jsonLd ? json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
+            'title'          => $title,
+            'description'    => $description,
+            'og_image'       => $ogImage,
+            'canonical'      => $canonical,
+            'og_type'        => $ogType,
+            'json_ld'        => $jsonLd ? json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null,
+            'custom_json_ld' => static::customGraphs($page),
         ];
+    }
+
+    /**
+     * Operator-authored JSON-LD graphs that augment the auto-generated graph:
+     * the site-wide `custom_json_ld` SiteSetting slot and the per-page
+     * `custom_fields['json_ld']` slot. Each is validated and re-encoded for
+     * safe emission (see safeJsonLd); invalid input is dropped, not emitted.
+     * Returns 0–2 breakout-safe JSON strings, emitted as separate
+     * `<script type="application/ld+json">` tags alongside the auto graph.
+     *
+     * @return list<string>
+     */
+    private static function customGraphs(Page $page): array
+    {
+        return array_values(array_filter([
+            static::safeJsonLd(SiteSetting::get('custom_json_ld', '')),
+            static::safeJsonLd(data_get($page->custom_fields, 'json_ld')),
+        ]));
+    }
+
+    /**
+     * Validate a raw JSON-LD string and return a breakout-safe re-encoding, or
+     * null if the input is empty or is not a JSON object/array.
+     *
+     * The re-encode uses JSON_HEX_TAG, which escapes every `<` and `>` as
+     * < / > — so a `</script>` smuggled into the input can no longer
+     * be recognised as a closing tag and the value cannot break out of the
+     * surrounding `<script>` element. This is the right tool for operator-
+     * authored script content; HtmlSanitizer would strip `<script>` outright.
+     */
+    private static function safeJsonLd(mixed $raw): ?string
+    {
+        if (! is_string($raw)) {
+            return null;
+        }
+
+        $raw = trim($raw);
+        if ($raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+            return null;
+        }
+
+        return json_encode($decoded, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: null;
     }
 
     /**

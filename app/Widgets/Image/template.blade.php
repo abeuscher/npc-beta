@@ -27,6 +27,11 @@
     // Default lazy — only a hero / above-the-fold image should opt into eager.
     $eager       = ($config['loading_priority'] ?? 'lazy') === 'eager';
     $loadingAttr = $eager ? 'eager' : 'lazy';
+
+    // Responsive sizes: PageBlockRenderer derives a per-column value from the
+    // grid fraction (e.g. 60vw in a 3fr column). Falls back to 100vw outside a
+    // multi-column layout — the partial's own default, restated concretely.
+    $pictureSizes = ($columnSizes ?? null) ?: '100vw';
 @endphp
 
 @if (!empty($configMedia['image']))
@@ -39,6 +44,7 @@
         :style="$style"
         :loading="$loadingAttr"
         :fetchpriority="$eager ? 'high' : null"
+        :sizes="$pictureSizes"
     />
 
     @if ($linkUrl)</a>@endif

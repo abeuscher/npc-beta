@@ -26,6 +26,7 @@ class WidgetRenderer
         string $slotHandle = 'page_builder_canvas',
         ?Model $record = null,
         bool $inlineEditing = false,
+        ?string $columnSizes = null,
     ): array
     {
         $widgetType = $pw->widgetType;
@@ -150,6 +151,10 @@ class WidgetRenderer
                 // run for both public and builder, so they stay slot-keyed;
                 // editing-only behaviour is now this distinct flag.
                 'inlineEditing'      => $inlineEditing,
+                // Responsive `sizes` derived from the widget's grid column
+                // fraction by PageBlockRenderer (null outside a multi-column
+                // layout → the image partial's 100vw default). Image widget.
+                'columnSizes'        => $columnSizes,
             ];
 
             if (! empty($columnChildren)) {
