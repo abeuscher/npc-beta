@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.3.0`
+**Contract Version:** `2.4.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -54,14 +54,15 @@ mTLS — terminated by nginx at the TLS layer.
   "status": "green|yellow|red",
   "version": "0.291.1",
   "timestamp": "2026-04-30T15:42:00+00:00",
-  "contract_version": "2.3.0",
+  "contract_version": "2.4.0",
   "subchecks": {
     "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
     "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
     "redis":          { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
     "disk":           { "status": "green", "value": 42,                          "threshold": [80, 95], "message": null },
     "last_backup_at": { "status": "green", "value": "2026-04-29T01:30:00+00:00", "threshold": [24, 36], "message": null },
-    "version":        { "status": "green", "value": "0.291.1",                   "threshold": null,     "message": null }
+    "version":        { "status": "green", "value": "0.291.1",                   "threshold": null,     "message": null },
+    "data_hygiene":   { "status": "green", "value": { "orphan_event_pages": 0, "scrub_records": 0, "orphan_media_dirs": 0, "dead_owner_media": 0 }, "threshold": 100, "message": null }
   }
 }
 ```
@@ -83,11 +84,11 @@ Every subcheck — present and future — has the same four keys:
 | Field       | Type                | Description                                                                                                                                                |
 |-------------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `status`    | string              | One of `green`, `yellow`, `red`, or `unknown`. `unknown` means the subcheck cannot determine its state yet (e.g., the underlying mechanism has not yet produced a successful result). Subcheck-level only — `unknown` never propagates to the top-level `status` field. |
-| `value`     | mixed (`null` ok)   | Subcheck-specific payload (string, integer percent, ISO timestamp, or `null`).                                                                             |
-| `threshold` | mixed (`null` ok)   | The bound that drove the status, or `null` if the subcheck has no numeric threshold.                                                                       |
+| `value`     | mixed (`null` ok)   | Subcheck-specific payload (string, integer percent, ISO timestamp, an object of named non-PII integer counts, or `null`).                                  |
+| `threshold` | mixed (`null` ok)   | The bound that drove the status — a `[low, high]` pair, a single integer soft bound, or `null` if the subcheck has no numeric threshold.                    |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
-### Subchecks (v2.3.0 — six stable keys, unchanged from v1.2.0)
+### Subchecks (v2.4.0 — seven keys; `data_hygiene` added in v2.4.0, the prior six unchanged from v1.2.0)
 
 | Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
 |------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -97,16 +98,45 @@ Every subcheck — present and future — has the same four keys:
 | `disk`           | integer (percent used)       | `[80, 95]`          | `yellow` at ≥80 %, `red` at ≥95 %. Measured against `/`. Returns `red` with `value: null` if usage cannot be read.                                                                                  |
 | `last_backup_at` | ISO 8601 timestamp (`null` when status is `unknown`) | `[24, 36]` | Threshold-driven against the most recent successful backup. `green` < 24h, `yellow` 24–36h, `red` > 36h. `unknown` when no successful backup exists yet (pipeline installed but no run completed, or the success-record file is missing/empty/unparseable). Fleet Manager treats `unknown` as yellow-tier (don't alarm, but surface). |
 | `version`        | string                       | `null`              | Always `green`. Mirrors top-level `version` field. A `dev` build is not a failure state.                                                                                                            |
+| `data_hygiene`   | object of four named integer counts | integer (soft yellow) | **Count-only, non-PII, informational** (added v2.4.0). `value` is `{orphan_event_pages, scrub_records, orphan_media_dirs, dead_owner_media}` — aggregate counts of accumulated derived/cruft data on the node, never raw rows. `green` while the total is under the soft `threshold`, `yellow` at/above it; **never `red`**. **Excluded from the worst-of overall status** — see the rule below. See § `data_hygiene` subcheck for the full semantics + privacy boundary. |
+
+### `data_hygiene` subcheck (v2.4.0) — count-only, informational
+
+Surfaces the node-local **Fleet Data Hygiene** audit (CRM-side `sessions/tracks/fleet-data-hygiene.md`) as an aggregate signal so Fleet Manager sees at a glance what derived/cruft data has piled up on each node. It is the FM-visible half of that track; the cleanup itself stays node-local (artisan commands).
+
+- **`value` — four named integer counts, never raw rows.**
+
+  ```json
+  "value": {
+    "orphan_event_pages": 12,
+    "scrub_records": 0,
+    "orphan_media_dirs": 3,
+    "dead_owner_media": 0
+  }
+  ```
+
+  - `orphan_event_pages` — `type=event` landing pages that no Event references.
+  - `scrub_records` — rows still tagged `source=scrub_data` (synthetic test data left on a live box).
+  - `orphan_media_dirs` — content-addressed media directories referenced by no live media row.
+  - `dead_owner_media` — media rows whose owning model has been hard-deleted.
+
+- **Privacy boundary (governing constraint).** Only these aggregate counts ever cross the wire — non-PII integers. **No record, slug, title, id, email, file path, or content is ever surfaced** through this subcheck or anywhere on the contract. The deep audit (the actual offending records) is **node-local + consent-gated** — run via `php artisan app:data-hygiene --deep` on a node the owner controls — and is **never** an FM-initiated capability. The contract is designed so FM *cannot* read node data, not merely policied not to. See § Data-access boundary under Security posture.
+
+- **Status semantics — informational, never red.** `green` while the **total** across the four categories is under `threshold`; `yellow` at/above it. `threshold` is a single integer soft bound (default 100, CRM-side adjustable). A cruft pile — however large — is not a node-health emergency, so the subcheck **never emits `red`**. `message` is `null` when green; when yellow it carries a short count-only summary (e.g. `"147 items of accumulated cruft (counts only)"`), never a record identifier.
+
+- **Excluded from the worst-of overall status.** Unlike every other subcheck, `data_hygiene` does **not** participate in the top-level `status` derivation (see the worst-of rule below). Its own `yellow` surfaces a per-node attention chip for FM to display, but benign cruft never drags a node's overall health to `yellow`. FM consumers should render the `data_hygiene` line on its own merits and not fold its status into a node's headline health.
+
+- **Freshness.** The CRM computes the counts behind a short server-side cache (≈10-minute TTL) because the audit walks the media filesystem and scans the media table, and `/api/health` is polled frequently. The reported counts may therefore lag live state by up to the TTL — operationally irrelevant for data that accumulates over hours/days. FM should treat the counts as a recent-but-not-instantaneous snapshot.
 
 ### Overall status — worst-of rule
 
 ```
-red     if any subcheck is red
-yellow  if any subcheck is yellow OR unknown, and none are red
-green   if all subchecks are green
+red     if any subcheck other than data_hygiene is red
+yellow  if any subcheck other than data_hygiene is yellow OR unknown, and none are red
+green   if all subchecks other than data_hygiene are green
 ```
 
-`unknown` at the subcheck level ranks equivalently to `yellow` for the purposes of computing the top-level `status`. Top-level `status` is therefore always one of `{green, yellow, red}`; `unknown` never propagates to the top level.
+**`data_hygiene` is excluded from this derivation** (added v2.4.0) — it is informational and never affects the top-level `status` (see the `data_hygiene` subcheck section above). Every other subcheck rolls in as before. `unknown` at the subcheck level ranks equivalently to `yellow` for the purposes of computing the top-level `status`. Top-level `status` is therefore always one of `{green, yellow, red}`; `unknown` never propagates to the top level.
 
 The `unknown` ≡ `yellow` ranking is a v1.1.0 lean. Operational experience may show that missing data should rank above yellow (more concerning) or below yellow (less concerning); the ranking may be revisited in a future bump.
 
@@ -433,15 +463,15 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 - The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these four endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. `/api/backup/blob` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface; there is no blob-write, blob-delete, or blob-mutation affordance on `/api/backup/blob` (write is mediated by `/api/backup/trigger` only).
 
-### Data-access boundary — counts only, never raw node data *(governs the planned `data_hygiene` subcheck)*
+### Data-access boundary — counts only, never raw node data *(governs the `data_hygiene` subcheck)*
 
-A standing boundary for any future data-visibility work (the **Fleet Data Hygiene** track, CRM-side `sessions/tracks/fleet-data-hygiene.md`): **Fleet Manager must never be *built* to read a node's actual data — even though mTLS makes it technically possible.** This extends the "no DB rows in any response" rule above, forward to the planned hygiene work:
+A standing boundary for all data-visibility work (the **Fleet Data Hygiene** track, CRM-side `sessions/tracks/fleet-data-hygiene.md`): **Fleet Manager must never be *built* to read a node's actual data — even though mTLS makes it technically possible.** This extends the "no DB rows in any response" rule above to the hygiene work:
 
-- A planned additive `data_hygiene` subcheck on `/api/health` will carry **aggregate counts only** (e.g. orphaned-page count, residual scrub-record count, orphan-media count) — non-PII integers, never rows, titles, emails, or contents. No raw-data / row-dumping endpoint will be added to this contract.
-- **Deep audit** (reading actual records) is **node-local + consent-gated** — run via artisan on a node the owner controls, never an FM-initiated capability over the wire.
-- FM gates any data-touching operation behind a **manual, user-editable per-node "maintenance / auditable" toggle** (default off) — an FM-side guardrail against accidental intrusion; defense-in-depth, the node may also refuse gated ops unless a node-side flag is set.
+- The additive `data_hygiene` subcheck on `/api/health` (**shipped at v2.4.0**) carries **aggregate counts only** (orphan-page / residual-scrub-record / orphan-media-directory / dead-owner-media counts) — non-PII integers, never rows, titles, emails, or contents. No raw-data / row-dumping endpoint is added to this contract. See § `data_hygiene` subcheck.
+- **Deep audit** (reading actual records) is **node-local + consent-gated** — run via `php artisan app:data-hygiene --deep` on a node the owner controls, never an FM-initiated capability over the wire.
+- FM gates any data-touching operation behind a **manual, user-editable per-node "maintenance / auditable" toggle** (default off) — an FM-side guardrail against accidental intrusion; defense-in-depth, the node may also refuse gated ops unless a node-side flag is set. **This toggle is Fleet Manager repo work** (the remaining Phase-2 half) — it pairs with the gated deep-audit / cleanup / remediation operations, not with the always-safe count-only subcheck, which needs no gate.
 
-Not yet shipped; recorded here so the boundary governs the work whenever it lands. Adding the subcheck bumps `CONTRACT_VERSION`.
+Shipped at v2.4.0 (the count-only subcheck); the FM-side toggle + subcheck consumption is the remaining FM-repo half.
 
 ### Recovery posture and FM-side trust assumptions
 
@@ -473,6 +503,19 @@ The CRM-side `demo:restore` command lands in the demo session following 335; thi
 ---
 
 ## CHANGELOG
+
+### `2.4.0` — 2026-06-10 (session 353)
+
+**Additive within v2 major.** Adds a seventh `/api/health` subcheck, `data_hygiene`, surfacing the node-local **Fleet Data Hygiene** audit (CRM-side `sessions/tracks/fleet-data-hygiene.md`, Phase 2) as a **count-only, non-PII** signal so Fleet Manager sees per-node accumulated cruft at a glance. Realises the forward data-access boundary recorded in the 349 revision.
+
+- New subcheck `data_hygiene` on `/api/health`. `value` is an object of four named integer counts — `{orphan_event_pages, scrub_records, orphan_media_dirs, dead_owner_media}` — sourced from `DataHygieneAudit::counts()`. **Aggregate counts only; no raw rows, slugs, titles, ids, emails, paths, or contents ever cross the wire.** The deep records mode stays node-local + consent-gated (`php artisan app:data-hygiene --deep`), never an FM-initiated capability.
+- **Informational, never red.** `green` while the total across the four categories is under a single-integer soft `threshold` (default 100, CRM-side adjustable), `yellow` at/above it. `message` is `null` when green; a count-only summary when yellow.
+- **Excluded from the worst-of overall status.** Unlike every other subcheck, `data_hygiene` does not participate in the top-level `status` derivation — a cruft pile is not a node-health emergency, so its `yellow` surfaces a per-node attention chip without dragging the node's headline health. The worst-of rule section is updated accordingly.
+- **Freshness.** The CRM computes the counts behind a short server-side cache (≈10-minute TTL) — the audit walks the media filesystem and scans the media table, and `/api/health` is polled frequently. Counts may lag live state by up to the TTL (operationally irrelevant for hours/days-scale accumulation). No scheduled precompute is used (the worker runs no `schedule:work`).
+- `value` and `threshold` shape notes generalised: `value` may now be an object of named non-PII integer counts; `threshold` may be a single integer soft bound (in addition to the existing `[low, high]` pair / `null` forms). The prior six subcheck keys are unchanged.
+- `HealthController::CONTRACT_VERSION` bumps `2.3.0 → 2.4.0` (via the shared `HasContractVersion` trait; `BackupController` reads the same constant, so its `contract_version` field moves to `2.4.0` automatically).
+- **Forward-compatible with v2.3.0 consumers.** A v2.3.0 consumer iterating the documented subchecks ignores the unknown `data_hygiene` key and keeps working unchanged. FM-side consumers wanting to surface the signal upgrade to read the new subcheck (object `value`, informational status, excluded-from-worst-of semantics).
+- **Out of scope (FM-repo work / future).** The per-node "maintenance/auditable" toggle gating data-touching ops, and FM-side consumption/display of the subcheck, are Fleet Manager repo work — handed off, not in this revision. Bounded remediation (cleanup-on-upgrade + toggle-gated remediation trigger) is Phase 3, future. No migration; no schema change; no new endpoint.
 
 ### `2.3.0` revision — 2026-06-09 (session 349)
 

@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Fleet\HealthController;
 use Illuminate\Database\Connection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +14,21 @@ uses(TestCase::class, RefreshDatabase::class);
 beforeEach(function () {
     config(['fleet.agent.app_version' => 'testver1']);
     Storage::fake('local');
+    // The data_hygiene subcheck's audit walks the media disk; fake it so the
+    // count is a deterministic 0 in the one test that exercises the real audit,
+    // rather than depending on whatever cas/ tree exists on the host filesystem.
+    Storage::fake(config('media-library.disk_name', 'public'));
+    // The subcheck reads its counts through a short-TTL cache (the audit walks the
+    // filesystem + scans media). Seed a zero default (array store, per phpunit.xml)
+    // so unrelated cases — including the DB-mock failure paths — never trigger the
+    // audit's DB/FS access; data_hygiene cases override it, and one case clears it
+    // to exercise the real cache-miss audit path.
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, [
+        'orphan_event_pages' => 0,
+        'scrub_records'      => 0,
+        'orphan_media_dirs'  => 0,
+        'dead_owner_media'   => 0,
+    ]);
 });
 
 // Auth is enforced at the TLS layer by nginx (mTLS). The application sees no
@@ -29,17 +46,17 @@ it('returns the documented top-level keys on a successful poll', function () {
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
-it('reports contract_version 2.3.0', function () {
+it('reports contract_version 2.4.0', function () {
     $response = $this->getJson('/api/health');
 
-    $response->assertJsonPath('contract_version', '2.3.0');
+    $response->assertJsonPath('contract_version', '2.4.0');
 });
 
-it('returns the six documented subcheck keys', function () {
+it('returns the seven documented subcheck keys', function () {
     $response = $this->getJson('/api/health');
 
     expect(array_keys($response->json('subchecks')))
-        ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version']);
+        ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version', 'data_hygiene']);
 });
 
 it('shapes each subcheck with status, value, threshold, message keys', function () {
@@ -221,6 +238,146 @@ it('marks redis red and overall red when Redis::ping throws, while still returni
         ->assertJsonPath('subchecks.redis.value', 'unreachable');
 
     expect($response->json('subchecks.redis.message'))->toBe('RuntimeException');
+});
+
+// ── data_hygiene subcheck (v2.4.0 — count-only, informational) ───────────────
+
+it('shapes data_hygiene with the four named integer counts and nothing else', function () {
+    // Drive the counts from a seeded cache so the value is deterministic and
+    // independent of the host filesystem (the audit walks the media disk).
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, [
+        'orphan_event_pages' => 4,
+        'scrub_records'      => 0,
+        'orphan_media_dirs'  => 1,
+        'dead_owner_media'   => 2,
+    ]);
+
+    $response = $this->getJson('/api/health');
+
+    $value = $response->json('subchecks.data_hygiene.value');
+
+    expect(array_keys($value))
+        ->toEqualCanonicalizing(['orphan_event_pages', 'scrub_records', 'orphan_media_dirs', 'dead_owner_media']);
+
+    foreach ($value as $count) {
+        expect($count)->toBeInt();
+    }
+});
+
+it('emits counts only — no raw records, slugs, titles, ids, or paths cross the wire', function () {
+    // The privacy boundary: the entire data_hygiene payload is aggregate
+    // integers; the only non-integer fields are the uniform subcheck envelope
+    // (status string, integer threshold, null/summary message — never a record).
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, [
+        'orphan_event_pages' => 7,
+        'scrub_records'      => 3,
+        'orphan_media_dirs'  => 0,
+        'dead_owner_media'   => 0,
+    ]);
+
+    $entry = $this->getJson('/api/health')->json('subchecks.data_hygiene');
+
+    // value carries only non-negative integers — no nested record data.
+    foreach ($entry['value'] as $count) {
+        expect($count)->toBeInt()->toBeGreaterThanOrEqual(0);
+    }
+
+    // message, when present, is a count-only summary — it must not echo any
+    // record identifier. It only ever mentions the numeric total.
+    if ($entry['message'] !== null) {
+        expect($entry['message'])->toContain('counts only');
+    }
+});
+
+it('is green with a null message while the total is under the soft threshold', function () {
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, [
+        'orphan_event_pages' => 5,
+        'scrub_records'      => 4,
+        'orphan_media_dirs'  => 0,
+        'dead_owner_media'   => 0,
+    ]);
+
+    $response = $this->getJson('/api/health');
+
+    $response->assertJsonPath('subchecks.data_hygiene.status', 'green')
+        ->assertJsonPath('subchecks.data_hygiene.threshold', 100)
+        ->assertJsonPath('subchecks.data_hygiene.message', null);
+});
+
+it('reports a soft yellow with a count-only summary once the total reaches the threshold, never red', function () {
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, [
+        'orphan_event_pages' => 120,
+        'scrub_records'      => 0,
+        'orphan_media_dirs'  => 30,
+        'dead_owner_media'   => 0,
+    ]);
+
+    $response = $this->getJson('/api/health');
+
+    expect($response->json('subchecks.data_hygiene.status'))->toBe('yellow')
+        ->and($response->json('subchecks.data_hygiene.status'))->not->toBe('red');
+
+    $response->assertJsonPath('subchecks.data_hygiene.message', '150 items of accumulated cruft (counts only)');
+});
+
+it('computes the real audit on a cache miss — a fresh node reports all-zero counts and green', function () {
+    Cache::forget(HealthController::DATA_HYGIENE_CACHE_KEY);
+
+    $response = $this->getJson('/api/health');
+
+    // Fresh DB + faked (empty) media disk → every category is zero, status green.
+    $response->assertJsonPath('subchecks.data_hygiene.status', 'green')
+        ->assertJsonPath('subchecks.data_hygiene.value', [
+            'orphan_event_pages' => 0,
+            'scrub_records'      => 0,
+            'orphan_media_dirs'  => 0,
+            'dead_owner_media'   => 0,
+        ])
+        ->assertJsonPath('subchecks.data_hygiene.message', null);
+});
+
+it('reads the audit counts through the cache rather than recomputing per poll', function () {
+    $seeded = [
+        'orphan_event_pages' => 11,
+        'scrub_records'      => 0,
+        'orphan_media_dirs'  => 0,
+        'dead_owner_media'   => 0,
+    ];
+    Cache::put(HealthController::DATA_HYGIENE_CACHE_KEY, $seeded);
+
+    $response = $this->getJson('/api/health');
+
+    // The endpoint returns the cached value verbatim — proof it reads through the
+    // cache and does not re-run the FS-walking / media-scanning audit on the hot path.
+    expect($response->json('subchecks.data_hygiene.value'))->toBe($seeded);
+});
+
+it('excludes data_hygiene from the worst-of overall status — even a yellow (or hypothetical red) never drags the top level', function () {
+    $reflection = new ReflectionMethod(HealthController::class, 'overallStatus');
+    $reflection->setAccessible(true);
+    $controller = new HealthController();
+
+    $build = fn (array $statuses) => array_map(
+        fn ($status) => ['status' => $status, 'value' => null, 'threshold' => null, 'message' => null],
+        $statuses,
+    );
+
+    // All health subchecks green; data_hygiene yellow → overall stays green.
+    expect($reflection->invoke($controller, $build([
+        'app' => 'green', 'database' => 'green', 'redis' => 'green',
+        'disk' => 'green', 'last_backup_at' => 'green', 'version' => 'green',
+        'data_hygiene' => 'yellow',
+    ])))->toBe('green');
+
+    // data_hygiene never emits red, but even a hypothetical red must not propagate.
+    expect($reflection->invoke($controller, $build([
+        'app' => 'green', 'data_hygiene' => 'red',
+    ])))->toBe('green');
+
+    // A genuine health-subcheck yellow still drags overall, unchanged by the carve-out.
+    expect($reflection->invoke($controller, $build([
+        'app' => 'green', 'disk' => 'yellow', 'data_hygiene' => 'green',
+    ])))->toBe('yellow');
 });
 
 // ── Rate limit ───────────────────────────────────────────────────────────────

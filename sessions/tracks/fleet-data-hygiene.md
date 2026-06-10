@@ -8,11 +8,11 @@ This doc carries: the premise, the **privacy boundary** (load-bearing), the prev
 
 ## Status snapshot
 
-**Last update:** 2026-06-10 (Phase 1 closed at session 352).
+**Last update:** 2026-06-10 (Phase 2 CRM half shipped at session 353).
 
-**Status: PHASE 1 ✅ CLOSED (session 352) — Phase 2 active next.** The in-repo prevention + detection half shipped: the CI keystone scrub-residue test (the launch gate) and the node-local `app:data-hygiene` audit, on a build-once `DataHygieneAudit` core whose count-only `counts()` is the seam Phase 2 consumes. Detail in *Phase Retrospectives* below; full landing in `sessions/352. Fleet Data Hygiene — Prevention & Detection — Log.md`. **Phase 2 (FM visibility — the count-only `/api/health` subcheck + the FM per-node maintenance toggle) is the boundary half; prompts drafted (session 353).**
+**Status: PHASE 1 ✅ CLOSED (352) — PHASE 2 CRM HALF ✅ SHIPPED (353); FM-side absorption pending.** Phase 1 shipped the in-repo prevention + detection half (the CI keystone scrub-residue test + the node-local `app:data-hygiene` audit on a build-once `DataHygieneAudit` core whose count-only `counts()` is the Phase-2 seam). **Phase 2 (353, boundary-touching)** shipped the CRM half of FM visibility: a count-only `data_hygiene` `/api/health` subcheck reading `counts()` — additive contract bump **v2.3.0 → v2.4.0**; `value` is the four-category non-PII breakdown; **informational, never red, excluded from the worst-of overall status** (benign cruft never drags node health); counts cached ~10 min (`Cache::remember`) to stay cheap on the polled endpoint, sidestepping the scheduler-runner gap; **counts only over the wire** — no raw records, the `--deep` mode stays node-local. **Remaining Phase-2 work is FM-side** (handed off via the FM repo's `sessions/data-hygiene-handoff-from-crm.md` + the Cross-Repo block): consume the subcheck (refresh contract cache to v2.4.0, parse the object `value`, honor the excluded-from-worst-of semantics) and build the manual per-node **"maintenance/auditable" toggle** gating any data-touching op. The **Phase-2 phase-expiry compression waits until the FM side lands** (the phase isn't complete until both halves ship). Detail in *Phase Retrospectives* below; full CRM landings in `sessions/352. * — Log.md` and `sessions/353. Fleet Data Hygiene — FM Visibility — Log.md`.
 
-**Trigger:** pre-release — the launch-gate prevention half is now in. Phase 2 (FM visibility, boundary/cross-repo) and Phase 3 (remediation, future) are the remainder.
+**Trigger:** pre-release — prevention (Phase 1) + CRM-side FM visibility (Phase 2 CRM half) are in. The FM-side Phase-2 absorption (toggle + subcheck consumption) and Phase 3 (remediation, future) are the remainder.
 
 ---
 
@@ -51,7 +51,7 @@ Neither alone suffices: CI proves the cleanup *code* is correct; the audit tells
 ## Forward plan (sequenced)
 
 1. **Phase 1 — CRM prevention + detection ✅ closed (session 352, one session).** The CI keystone scrub-residue test + the `app:data-hygiene` audit shipped. Detail in *Phase Retrospectives*; full landing in `sessions/352. *— Log.md`.
-2. **Phase 2 — FM visibility (boundary).** Count-only `data_hygiene` health subcheck (contract bump) + the FM per-node maintenance toggle. Cross-repo. ~1 CRM session + FM-side absorption.
+2. **Phase 2 — FM visibility (boundary).** Count-only `data_hygiene` health subcheck (contract bump) + the FM per-node maintenance toggle. Cross-repo. **CRM half ✅ shipped at session 353** (the subcheck, additive v2.3.0 → v2.4.0); **FM-side absorption pending** (consume the subcheck + build the maintenance toggle — handed off via the FM repo's `data-hygiene-handoff-from-crm.md`).
 3. **Phase 3 — bounded remediation (future).** Cleanup-on-upgrade via the established one-time-repair-migration pattern (shipped alongside the bug fix that caused the cruft, runs once on deploy), plus a toggle-gated remediation trigger. Never silent destructive auto-delete on every deploy.
 
 ---

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\Fleet;
 
 use App\Http\Controllers\Api\Fleet\Concerns\HasContractVersion;
 use App\Http\Controllers\Controller;
+use App\Services\DataHygieneAudit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +20,17 @@ class HealthController extends Controller
     private const DISK_YELLOW_THRESHOLD = 80;
     private const DISK_RED_THRESHOLD = 95;
 
+    /**
+     * Total accumulated-cruft count at/above which data_hygiene reports a soft
+     * yellow. Informational only (never red, never drags overall) — a generous,
+     * adjustable bound so a heavily-crufted node surfaces for operator attention.
+     */
+    private const DATA_HYGIENE_YELLOW_THRESHOLD = 100;
+
+    /** Cache key + TTL keeping the FS-walking, media-scanning audit off the hot path. */
+    public const DATA_HYGIENE_CACHE_KEY = 'fleet.health.data_hygiene.counts';
+    private const DATA_HYGIENE_CACHE_TTL = 600; // seconds (10 min)
+
     public function index(): JsonResponse
     {
         $subchecks = [
@@ -27,6 +40,7 @@ class HealthController extends Controller
             'disk'           => $this->checkDisk(),
             'last_backup_at' => $this->checkLastBackupAt(),
             'version'        => $this->checkVersion(),
+            'data_hygiene'   => $this->checkDataHygiene(),
         ];
 
         return response()->json([
@@ -183,9 +197,58 @@ class HealthController extends Controller
         ];
     }
 
+    /**
+     * Count-only data-hygiene signal (Fleet Data Hygiene track, Phase 2). The
+     * value is the four-category non-PII aggregate from DataHygieneAudit::counts()
+     * — orphan event pages, residual scrub records, orphan media directories,
+     * dead-owner media rows. PRIVACY BOUNDARY: counts only ever cross the FM wire;
+     * no record, slug, title, id, or path is ever surfaced here. The deep records
+     * mode stays node-local (the `app:data-hygiene --deep` CLI).
+     *
+     * counts() walks the media filesystem and scans every media row, and
+     * /api/health is polled ~once a minute per node, so the result is cached
+     * behind a short TTL: cruft accumulates over hours/days, so a 10-minute-stale
+     * count is operationally identical to a live one, while the expensive path
+     * runs at most once per TTL window regardless of poll rate. (A scheduled
+     * precompute is not an option — the worker runs no schedule:work; see
+     * docs/app-reference.md "Scheduler runner — known gap".)
+     *
+     * Informational: a cruft pile is never a health emergency, so this subcheck
+     * never goes red and is excluded from the worst-of overall status
+     * (see overallStatus()). At most a soft yellow above a generous total.
+     */
+    private function checkDataHygiene(): array
+    {
+        $counts = Cache::remember(
+            self::DATA_HYGIENE_CACHE_KEY,
+            self::DATA_HYGIENE_CACHE_TTL,
+            fn () => app(DataHygieneAudit::class)->counts(),
+        );
+
+        $total = array_sum($counts);
+
+        $status = $total >= self::DATA_HYGIENE_YELLOW_THRESHOLD ? 'yellow' : 'green';
+
+        return [
+            'status'    => $status,
+            'value'     => $counts,
+            'threshold' => self::DATA_HYGIENE_YELLOW_THRESHOLD,
+            'message'   => $status === 'yellow'
+                ? "{$total} items of accumulated cruft (counts only)"
+                : null,
+        ];
+    }
+
     private function overallStatus(array $subchecks): string
     {
-        $statuses = array_column($subchecks, 'status');
+        // data_hygiene is informational — accumulated cruft is not a node-health
+        // emergency, so it is excluded from the worst-of derivation. Its own
+        // status still surfaces a soft yellow for attention; it just never drags
+        // the top-level status. Every other subcheck rolls in.
+        $statuses = array_column(
+            array_diff_key($subchecks, ['data_hygiene' => true]),
+            'status',
+        );
 
         if (in_array('red', $statuses, true)) {
             return 'red';

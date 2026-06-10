@@ -15,7 +15,7 @@ beforeEach(function () {
 
 // Auth is enforced at the TLS layer by nginx (mTLS). The application sees no
 // auth signal — request arrival IS the auth proof. There are no
-// application-layer auth tests for this endpoint at v2.3.0; auth verification
+// application-layer auth tests for this endpoint at v2.4.0; auth verification
 // lives in the manual-testing curl scenarios and in FM-side integration tests.
 
 // ── Success paths ────────────────────────────────────────────────────────────
