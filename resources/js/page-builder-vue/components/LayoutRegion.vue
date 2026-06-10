@@ -149,7 +149,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
     <button
       type="button"
       class="layout-region__selector"
-      :title="`Select layout: ${layout.label || 'Column Layout'}`"
+      :title="`Select layout: ${layout.label || 'Column Layout'} (drag to reorder)`"
       :aria-label="`Select layout: ${layout.label || 'Column Layout'}`"
       @click.stop="selectLayout"
     >
@@ -166,18 +166,6 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
         <rect x="14" y="3" width="7" height="18" rx="1" />
       </svg>
     </button>
-
-    <!-- Hover-revealed handle bar above the layout. Redundant mouse affordance —
-         the same selectLayout action is keyboard-reachable via the always-visible
-         selector button above, so this is hidden from assistive tech. -->
-    <div class="layout-region__handle" aria-hidden="true" @click.stop="selectLayout">
-      <span class="layout-region__handle-label">{{
-        layout.label || 'Column Layout'
-      }}</span>
-      <span class="layout-region__handle-meta">
-        {{ layout.display }} · {{ layout.columns }} cols
-      </span>
-    </div>
 
     <!-- Outer container — carries appearance (bg + padding + margin).
          Width-constrained when bg is NOT full-width. -->
@@ -279,7 +267,7 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   color: #4338ca;
   border: 1px solid #c7d2fe;
   border-radius: 0.375rem;
-  cursor: pointer;
+  cursor: grab;
   opacity: 0.6;
   transition: opacity 0.15s, background-color 0.15s, color 0.15s;
   padding: 0;
@@ -289,47 +277,13 @@ const slotPutFilter = (_to: any, _from: any, dragEl: HTMLElement) => {
   opacity: 1;
 }
 
+.layout-region__selector:active {
+  cursor: grabbing;
+}
+
 .layout-region__selector svg {
   width: 1rem;
   height: 1rem;
-}
-
-.layout-region__handle {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 3.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1rem;
-  background: rgba(79, 70, 229, 0.95);
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 500;
-  border-radius: 0.375rem 0.375rem 0 0;
-  cursor: pointer;
-  z-index: 20;
-  opacity: 0;
-  pointer-events: auto;
-  transition: opacity 0.15s;
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.layout-region__handle:hover,
-.layout-region--selected > .layout-region__handle {
-  opacity: 1;
-}
-
-.layout-region__handle-label {
-  font-weight: 600;
-}
-
-.layout-region__handle-meta {
-  font-size: 1.8rem;
-  opacity: 0.85;
-  font-variant-numeric: tabular-nums;
 }
 
 .layout-region__container {
