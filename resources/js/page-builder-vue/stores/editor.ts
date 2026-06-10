@@ -12,6 +12,7 @@ import type {
   EventRef,
   ThemePaletteEntry,
   BootstrapData,
+  ChromeBand,
   CreateWidgetPayload,
   UpdateWidgetPayload,
   CreateLayoutPayload,
@@ -155,12 +156,51 @@ export const useEditorStore = defineStore('editor', () => {
   const themeHeadingFamily = ref<string>("'Inter', system-ui, sans-serif")
   const themeBodyFamily = ref<string>("'Inter', system-ui, sans-serif")
 
+  // Read-only header/footer chrome bands rendered around the editable page
+  // flow (page mode only; resolved + rendered server-side). showChrome is
+  // the canvas control-bar toggle.
+  const chromeHeader = ref<ChromeBand | null>(null)
+  const chromeFooter = ref<ChromeBand | null>(null)
+  const showChrome = ref(true)
+
   // UI state
   const saving = ref(false)
   // True while a drag is in progress anywhere in the editor (root canvas or column slot).
   // Consumed by LayoutRegion to disable "+ Add widget" pointer events so the button
   // doesn't intercept drops when an empty slot is the target.
   const dragging = ref(false)
+
+  // Canvas viewport preset (px). Lifted out of useViewport so the canvas
+  // control bar, the canvas zoom derivation, and breakpoint-aware inspector
+  // controls all read one source of truth.
+  const presetViewport = ref(1920)
+
+  function setViewport(width: number): void {
+    presetViewport.value = width
+  }
+
+  // Full-screen editing mode. Deliberately not persisted across loads:
+  // entering an edit page always starts windowed so the surrounding Filament
+  // form (title, slug, status) stays discoverable.
+  const fullscreen = ref(false)
+  // Inspector drawer state while full-screen — starts collapsed every time
+  // the mode is entered.
+  const fullscreenInspectorOpen = ref(false)
+
+  function toggleFullscreen(): void {
+    fullscreen.value = !fullscreen.value
+    fullscreenInspectorOpen.value = false
+  }
+
+  // Groundwork for per-breakpoint authoring (the deferred session-335 item):
+  // the authoring breakpoint the canvas is simulating, derived from the
+  // viewport preset. This is the AUTHORING label future per-breakpoint
+  // inspector controls key their read/write off — not the public CSS tier
+  // (the 1024 preset maps to 'tablet' here even though the ≤768 public
+  // rules don't fire at 1024). Nothing consumes it yet.
+  const activeBreakpoint = computed<'desktop' | 'tablet' | 'mobile'>(() =>
+    presetViewport.value >= 1200 ? 'desktop' : presetViewport.value >= 768 ? 'tablet' : 'mobile'
+  )
 
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
@@ -244,6 +284,8 @@ export const useEditorStore = defineStore('editor', () => {
     themePalette.value = data.theme_palette ?? []
     if (data.theme_heading_family) themeHeadingFamily.value = data.theme_heading_family
     if (data.theme_body_family)    themeBodyFamily.value    = data.theme_body_family
+    chromeHeader.value = data.chrome?.header ?? null
+    chromeFooter.value = data.chrome?.footer ?? null
 
     populateFromItems(data.items ?? [])
     requiredLibs.value = data.required_libs
@@ -766,6 +808,12 @@ export const useEditorStore = defineStore('editor', () => {
     events,
     saving,
     dragging,
+    presetViewport,
+    setViewport,
+    fullscreen,
+    fullscreenInspectorOpen,
+    toggleFullscreen,
+    activeBreakpoint,
     inlineImageUploadUrl,
     heroiconsUrl,
     themeEditorUrl,
@@ -773,6 +821,9 @@ export const useEditorStore = defineStore('editor', () => {
     themePalette,
     themeHeadingFamily,
     themeBodyFamily,
+    chromeHeader,
+    chromeFooter,
+    showChrome,
     dedupPrompt,
 
     // Getters

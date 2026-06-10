@@ -53,6 +53,31 @@ it('widgetCss and widgetJs prefix manifest filenames with the public bundle path
     unlink($path);
 });
 
+it('widgetEditorCss returns the editor variant when the manifest declares one', function () {
+    $path = writeTempManifest([
+        'css'        => 'public-widgets-xyz.css',
+        'editor_css' => 'public-widgets-editor-xyz.css',
+    ]);
+
+    $resolver = new WidgetAssetResolver($path);
+
+    expect($resolver->widgetEditorCss())->toBe('/build/widgets/public-widgets-editor-xyz.css');
+
+    unlink($path);
+});
+
+it('widgetEditorCss falls back to the public bundle when the manifest predates the variant', function () {
+    $path = writeTempManifest([
+        'css' => 'public-widgets-xyz.css',
+    ]);
+
+    $resolver = new WidgetAssetResolver($path);
+
+    expect($resolver->widgetEditorCss())->toBe('/build/widgets/public-widgets-xyz.css');
+
+    unlink($path);
+});
+
 it('widgetCss and widgetJs return null when manifest entries are missing or empty', function () {
     $path = writeTempManifest(['css' => '']);
 

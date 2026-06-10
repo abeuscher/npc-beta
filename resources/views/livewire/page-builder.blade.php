@@ -25,9 +25,14 @@
         //     editor's H1–H6 sizing matches the inactive preview
         //     instead of dropping to Quill's defaults. — Session 308
         //     iteration 3.
+        // containerQueries: the breakpoint font-size ramps emit as
+        // `@container np-viewport (max-width: …)` so they track the preview's
+        // simulated viewport (the scope element is the np-viewport query
+        // container) instead of the real browser window.
         $__pbTypographyCss = \App\Services\TypographyCompiler::compileScoped(
             ['.widget-preview-scope', '.ql-snow .ql-editor'],
             $__pbTypography,
+            containerQueries: true,
         );
         $__pbBucketVars = [];
         $__pbHeadingFamily = $__pbTypography['buckets']['heading_family'] ?? null;
@@ -71,6 +76,18 @@
     {{-- ------------------------------------------------------------------ --}}
     @if ($previewContentSchemeVars)
         <style>.page-builder .widget-preview-scope { {!! $previewContentSchemeVars !!}; }</style>
+    @endif
+
+    {{-- ------------------------------------------------------------------ --}}
+    {{-- Chrome-band widget instance styles — the same per-widget <style>     --}}
+    {{-- output the public layout emits for the header/footer, so the         --}}
+    {{-- read-only chrome bands in the preview render with their styles.      --}}
+    {{-- ------------------------------------------------------------------ --}}
+    @php
+        $__chromeStyles = collect($bootstrapData['chrome'] ?? [])->filter()->pluck('styles')->filter()->implode("\n");
+    @endphp
+    @if ($__chromeStyles !== '')
+        <style>{!! $__chromeStyles !!}</style>
     @endif
 
     {{-- ------------------------------------------------------------------ --}}

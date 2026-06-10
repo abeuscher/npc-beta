@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useEditorStore } from '../stores/editor'
 import { scrollSelectionIntoCentre } from '../utils/focusScroll'
-import { useViewport, viewportPresets } from '../composables/useViewport'
+import { useViewport } from '../composables/useViewport'
 import { loadLibs, reinitAlpine } from '../composables/useLibraryLoader'
 import PreviewRegion from './PreviewRegion.vue'
 import LayoutRegion from './LayoutRegion.vue'
@@ -10,7 +10,7 @@ import draggable from 'vuedraggable'
 import type { ReorderItem, PageItem, Widget, PageLayout } from '../types'
 
 const store = useEditorStore()
-const { presetViewport, zoomFactor, computeZoom, setViewport } = useViewport()
+const { zoomFactor, computeZoom } = useViewport()
 
 const paneEl = ref<HTMLElement | null>(null)
 const scopeEl = ref<HTMLElement | null>(null)
@@ -149,14 +149,14 @@ function onDragEnd() {
 // Allow widgets and layouts at root, but reject layouts being dropped into other places
 const rootPutFilter = (_to: any, _from: any, _dragEl: HTMLElement) => true
 
-const isNarrowViewport = computed(() => presetViewport.value < 1920)
+const isNarrowViewport = computed(() => store.presetViewport < 1920)
 
 // CSS max-width for "contained" layouts inside the preview, mirroring the public
 // .site-container breakpoints (which are keyed off real browser width). The preview
 // uses a fixed pixel viewport, so we resolve the breakpoint up-front and pass it as
 // a CSS variable for any contained block (e.g. a column layout with content_full_width: false).
 const previewContainerMaxWidth = computed(() => {
-  const w = presetViewport.value
+  const w = store.presetViewport
   if (w >= 1400) return '1320px'
   if (w >= 1200) return '1140px'
   if (w >= 992) return '960px'
@@ -171,28 +171,26 @@ function measurePane() {
   }
 }
 
-function handleViewportChange(width: number) {
-  setViewport(width)
-  nextTick(() => {
-    measurePane()
-    requestAnimationFrame(() => {
+// The viewport preset is set by CanvasControlBar via the store; re-measure
+// the pane (the zoom denominator changed) and re-init Alpine for the
+// re-laid-out previews.
+watch(
+  () => store.presetViewport,
+  () => {
+    nextTick(() => {
+      measurePane()
       requestAnimationFrame(() => {
-        if (scopeEl.value) reinitAlpine(scopeEl.value)
+        requestAnimationFrame(() => {
+          if (scopeEl.value) reinitAlpine(scopeEl.value)
+        })
       })
     })
-  })
-}
+  }
+)
 
 function preventNavigation(e: MouseEvent) {
   const anchor = (e.target as HTMLElement)?.closest?.('a')
   if (anchor) e.preventDefault()
-}
-
-// Viewport presets with SVG icon paths
-const presetIcons: Record<number, string> = {
-  1920: 'M4 5h16a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM7 18h10',
-  1024: 'M7 4h10a1 1 0 011 1v14a1 1 0 01-1 1H7a1 1 0 01-1-1V5a1 1 0 011-1zm5 16v.01',
-  375: 'M9 3h6a1 1 0 011 1v16a1 1 0 01-1 1H9a1 1 0 01-1-1V4a1 1 0 011-1zm3 18v.01',
 }
 
 let resizeObserver: ResizeObserver | null = null
@@ -252,40 +250,6 @@ watch(
 
 <template>
   <div ref="paneEl" class="preview-canvas" style="min-width: 0">
-    <!-- Viewport toggle bar -->
-    <div class="preview-canvas__viewport-bar">
-      <span class="preview-canvas__viewport-label">Viewport:</span>
-      <button
-        v-for="vp in viewportPresets"
-        :key="vp.width"
-        type="button"
-        class="preview-canvas__viewport-btn"
-        :class="{
-          'preview-canvas__viewport-btn--active': presetViewport === vp.width,
-        }"
-        :title="`${vp.label} (${vp.width}px)`"
-        :aria-label="`${vp.label} viewport (${vp.width}px)`"
-        :aria-pressed="presetViewport === vp.width"
-        @click="handleViewportChange(vp.width)"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            :d="presetIcons[vp.width]"
-          />
-        </svg>
-      </button>
-      <span class="preview-canvas__viewport-size">{{ presetViewport }}px</span>
-    </div>
-
     <!-- Preview container -->
     <div
       class="preview-canvas__container"
@@ -299,16 +263,41 @@ watch(
         ref="scopeEl"
         class="widget-preview-scope np-site"
         :style="{
-          width: presetViewport + 'px',
+          width: store.presetViewport + 'px',
           zoom: zoomFactor,
           transformOrigin: 'top left',
-          flexShrink: isNarrowViewport ? 0 : undefined,
+          // The public bundle styles .np-site.widget-preview-scope with
+          // `flex: 1` (a <main> sibling rule from _base.scss), whose
+          // grow:1/basis:0% would stretch the scope to the full pane inside
+          // the narrow-mode flex container — defeating the preset width, so
+          // Tablet/Mobile rendered identical to Desktop. The full inline
+          // shorthand overrides all three components; in the desktop (block)
+          // container it is inert.
+          flex: '0 0 auto',
           '--np-preview-container-max-width': previewContainerMaxWidth,
           containerType: 'inline-size',
+          containerName: 'np-viewport',
         }"
         @click="preventNavigation"
         @submit.prevent
       >
+        <!-- Read-only header chrome band (resolved + rendered server-side
+             exactly as the public layout does). Inert content; the hover
+             affordance deep-links into the template chrome editor. -->
+        <div
+          v-if="store.showChrome && store.chromeHeader"
+          class="preview-chrome preview-chrome--header"
+        >
+          <div class="preview-chrome__html" v-html="store.chromeHeader.html"></div>
+          <a
+            v-if="store.chromeHeader.edit_url"
+            :href="store.chromeHeader.edit_url"
+            class="preview-chrome__edit"
+            title="Edit the site header (opens the template chrome editor)"
+            @click.stop
+          >Edit header ↗</a>
+        </div>
+
         <draggable
           :list="store.pageItems"
           :group="{ name: 'page-items', pull: true, put: rootPutFilter }"
@@ -319,7 +308,7 @@ watch(
           fallback-class="preview-region--drag-fallback"
           :swap-threshold="0.65"
           ghost-class="preview-region--ghost"
-          handle=".preview-region__handle, .layout-region__handle"
+          handle=".preview-region__handle, .layout-region__selector"
           @start="onDragStart"
           @end="onDragEnd"
         >
@@ -338,6 +327,21 @@ watch(
           class="preview-canvas__empty"
         >
           No blocks yet. Click <strong>+ Widget</strong> below to get started.
+        </div>
+
+        <!-- Read-only footer chrome band — mirror of the header band. -->
+        <div
+          v-if="store.showChrome && store.chromeFooter"
+          class="preview-chrome preview-chrome--footer"
+        >
+          <div class="preview-chrome__html" v-html="store.chromeFooter.html"></div>
+          <a
+            v-if="store.chromeFooter.edit_url"
+            :href="store.chromeFooter.edit_url"
+            class="preview-chrome__edit"
+            title="Edit the site footer (opens the template chrome editor)"
+            @click.stop
+          >Edit footer ↗</a>
         </div>
       </div>
     </div>
@@ -398,53 +402,62 @@ watch(
 </template>
 
 <style scoped>
-.preview-canvas__viewport-bar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-  padding: 0 0.25rem;
-}
-
-.preview-canvas__viewport-label {
-  margin-right: 0.25rem;
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-.preview-canvas__viewport-btn {
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  color: #9ca3af;
-  transition: color 0.15s, background-color 0.15s;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.preview-canvas__viewport-btn:hover {
-  color: #4b5563;
-  background-color: #f3f4f6;
-}
-
-.preview-canvas__viewport-btn--active {
-  color: var(--c-primary-700, #4338ca);
-  background-color: var(--c-primary-100, #e0e7ff);
-}
-
-.preview-canvas__viewport-size {
-  margin-left: 0.25rem;
-  font-size: 0.75rem;
-  color: #d1d5db;
-  font-variant-numeric: tabular-nums;
-}
-
 .preview-canvas__container {
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
   background: #fff;
   padding-top: 1.5rem;
+}
+
+/* ── Read-only chrome bands (header/footer context) ───────────────────── */
+
+.preview-chrome {
+  position: relative;
+}
+
+/* Inert: chrome is edited on its own screen, not here. */
+.preview-chrome__html {
+  pointer-events: none;
+}
+
+.preview-chrome:hover {
+  outline: 1px dashed #c7d2fe;
+  outline-offset: -1px;
+}
+
+.preview-chrome__edit {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.3125rem;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.preview-chrome--footer .preview-chrome__edit {
+  top: auto;
+  bottom: 0.375rem;
+}
+
+.preview-chrome:hover .preview-chrome__edit {
+  opacity: 1;
+}
+
+.preview-chrome__edit:hover {
+  color: var(--c-primary-700, #4338ca);
+  border-color: var(--c-primary-300, #a5b4fc);
 }
 
 .preview-canvas__empty {
@@ -616,10 +629,6 @@ watch(
   flex-shrink: 0;
 }
 
-html.dark .preview-canvas__viewport-label      { color: rgb(156 163 175); }
-html.dark .preview-canvas__viewport-btn        { color: rgb(156 163 175); }
-html.dark .preview-canvas__viewport-btn:hover  { color: rgb(229 231 235); background-color: rgb(55 65 81); }
-html.dark .preview-canvas__viewport-size       { color: rgb(107 114 128); }
 html.dark .preview-canvas__container           { background: rgb(31 41 55); border-color: rgb(55 65 81); }
 html.dark .preview-canvas__empty               { color: rgb(156 163 175); }
 </style>

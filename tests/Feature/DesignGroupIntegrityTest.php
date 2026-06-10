@@ -20,6 +20,7 @@ uses(TestCase::class);
 // files (the 296 AssetBundleDriftGuard stays in scope on purpose so the
 // scoped loop still catches the stale-stylesheet bug class).
 const DESIGN_GROUP_FILES = [
+    'tests/Unit/Services/EditorCssTransformerTest.php',
     'tests/Unit/TypographyCompilerTest.php',
     'tests/Unit/TypographyResolverTest.php',
     'tests/Unit/AppearanceStyleComposerTest.php',
@@ -108,6 +109,6 @@ it('keeps the design group equal to the reviewed explicit list', function () {
 });
 
 it('lists exactly the reviewed number of design-group files', function () {
-    expect(DESIGN_GROUP_FILES)->toHaveCount(24);
+    expect(DESIGN_GROUP_FILES)->toHaveCount(25);
     expect(DESIGN_GROUP_FILES)->toBe(array_unique(DESIGN_GROUP_FILES));
 });

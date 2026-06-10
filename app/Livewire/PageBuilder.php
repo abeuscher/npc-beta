@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\PostResource;
+use App\Filament\Resources\TemplateResource\Pages\EditPageTemplateChrome;
 use App\Http\Resources\WidgetPreviewResource;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -11,6 +12,7 @@ use App\Models\SiteSetting;
 use App\Models\Template;
 use App\Models\WidgetType;
 use App\Services\AppearanceStyleComposer;
+use App\Services\Media\ChromeRenderer;
 use App\Services\TemplateAppearanceResolver;
 use App\Services\WidgetPreviewRenderer;
 use App\Services\WidgetRegistry;
@@ -422,7 +424,78 @@ class PageBuilder extends Component
                 ?? ($typography['elements']['p']['font']['family'] ?? null)
                 ?? \App\Services\TypographyResolver::DEFAULT_FAMILY,
             'theme_editor_url'        => \App\Filament\Pages\DesignSystemPage::getUrl(['activeTab' => 'text-styles']),
+            'chrome'                  => $this->chromeBands(),
         ];
+    }
+
+    /**
+     * Header/footer chrome bands for the preview canvas — resolved exactly
+     * as the public layout does (chromeSlot suppression/inheritance + the
+     * custom.header/custom.footer view override), rendered by ChromeRenderer
+     * and shown read-only around the editable page flow. Only Page owners
+     * that receive chrome on the public site get bands; templates and
+     * system pages (the chrome pages themselves) get none. edit_url
+     * deep-links into the template chrome editor for operators holding
+     * edit_site_chrome.
+     *
+     * @return array{header: ?array{html: string, styles: string, edit_url: ?string}, footer: ?array{html: string, styles: string, edit_url: ?string}}
+     */
+    private function chromeBands(): array
+    {
+        $bands = ['header' => null, 'footer' => null];
+
+        $owner = $this->resolveOwner();
+        if (! $owner instanceof Page || $owner->type === 'system') {
+            return $bands;
+        }
+
+        $template = $this->resolveShellTemplate();
+        $canEdit = auth()->user()?->can('edit_site_chrome') ?? false;
+
+        foreach (['header', 'footer'] as $position) {
+            if (view()->exists('custom.' . $position)) {
+                continue;
+            }
+
+            $slot = $template?->chromeSlot($position) ?? ['suppressed' => false, 'page_id' => null];
+            if ($slot['suppressed']) {
+                continue;
+            }
+
+            $rendered = $slot['page_id']
+                ? ChromeRenderer::renderById($slot['page_id'])
+                : ChromeRenderer::render('_' . $position);
+            if (! $rendered) {
+                continue;
+            }
+
+            $bands[$position] = [
+                'html'     => $rendered['html'],
+                'styles'   => $rendered['styles'],
+                'edit_url' => $canEdit && $template
+                    ? EditPageTemplateChrome::getUrl(['record' => $template, 'view' => 'page_template_' . $position])
+                    : null,
+            ];
+        }
+
+        return $bands;
+    }
+
+    /**
+     * The previewed page's page-shell template, resolved exactly as
+     * PageController does (explicit template_id, else the default page
+     * template). Content-template stacks have no page shell and resolve to
+     * the default.
+     */
+    private function resolveShellTemplate(): ?Template
+    {
+        $owner = $this->resolveOwner();
+
+        $template = $owner instanceof Page
+            ? ($owner->template_id ? Template::find($owner->template_id) : null)
+            : null;
+
+        return $template ?? Template::query()->default()->first();
     }
 
     /**
@@ -436,17 +509,7 @@ class PageBuilder extends Component
      */
     public function previewContentSchemeVars(): string
     {
-        $owner = $this->resolveOwner();
-
-        $template = $owner instanceof Page
-            ? ($owner->template_id ? Template::find($owner->template_id) : null)
-            : null;
-
-        if (! $template) {
-            $template = Template::query()->default()->first();
-        }
-
-        return TemplateAppearanceResolver::inlineVars($template);
+        return TemplateAppearanceResolver::inlineVars($this->resolveShellTemplate());
     }
 
     public function render(): \Illuminate\View\View
