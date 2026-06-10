@@ -12,6 +12,7 @@ import type {
   EventRef,
   ThemePaletteEntry,
   BootstrapData,
+  ChromeBand,
   CreateWidgetPayload,
   UpdateWidgetPayload,
   CreateLayoutPayload,
@@ -155,6 +156,13 @@ export const useEditorStore = defineStore('editor', () => {
   const themeHeadingFamily = ref<string>("'Inter', system-ui, sans-serif")
   const themeBodyFamily = ref<string>("'Inter', system-ui, sans-serif")
 
+  // Read-only header/footer chrome bands rendered around the editable page
+  // flow (page mode only; resolved + rendered server-side). showChrome is
+  // the canvas control-bar toggle.
+  const chromeHeader = ref<ChromeBand | null>(null)
+  const chromeFooter = ref<ChromeBand | null>(null)
+  const showChrome = ref(true)
+
   // UI state
   const saving = ref(false)
   // True while a drag is in progress anywhere in the editor (root canvas or column slot).
@@ -276,6 +284,8 @@ export const useEditorStore = defineStore('editor', () => {
     themePalette.value = data.theme_palette ?? []
     if (data.theme_heading_family) themeHeadingFamily.value = data.theme_heading_family
     if (data.theme_body_family)    themeBodyFamily.value    = data.theme_body_family
+    chromeHeader.value = data.chrome?.header ?? null
+    chromeFooter.value = data.chrome?.footer ?? null
 
     populateFromItems(data.items ?? [])
     requiredLibs.value = data.required_libs
@@ -811,6 +821,9 @@ export const useEditorStore = defineStore('editor', () => {
     themePalette,
     themeHeadingFamily,
     themeBodyFamily,
+    chromeHeader,
+    chromeFooter,
+    showChrome,
     dedupPrompt,
 
     // Getters

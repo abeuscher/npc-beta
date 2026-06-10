@@ -50,6 +50,28 @@ const presetIcons: Record<number, string> = {
         </svg>
         <span class="canvas-control-bar__fullscreen-label">{{ store.fullscreen ? 'Exit full screen' : 'Full screen' }}</span>
       </button>
+
+      <button
+        v-if="store.chromeHeader || store.chromeFooter"
+        type="button"
+        class="canvas-control-bar__fullscreen-btn"
+        :class="{ 'canvas-control-bar__chrome-btn--off': !store.showChrome }"
+        :title="store.showChrome ? 'Hide the site header & footer' : 'Show the site header & footer'"
+        :aria-pressed="store.showChrome"
+        @click="store.showChrome = !store.showChrome"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="h-4 w-4"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16a1 1 0 011 1v3H3V5a1 1 0 011-1zm-1 7h18M3 19v-3h18v3a1 1 0 01-1 1H4a1 1 0 01-1-1z" />
+        </svg>
+        <span class="canvas-control-bar__fullscreen-label">Header &amp; footer</span>
+      </button>
     </div>
 
     <div class="canvas-control-bar__viewport">
@@ -122,6 +144,12 @@ const presetIcons: Record<number, string> = {
   color: var(--c-primary-700, #4338ca);
   background-color: #f3f4f6;
   border-color: var(--c-primary-300, #a5b4fc);
+}
+
+/* Chrome toggle in its hidden state — dimmed + struck through visually. */
+.canvas-control-bar__chrome-btn--off {
+  opacity: 0.55;
+  text-decoration: line-through;
 }
 
 /* Full-screen: the bar leaves the editor flow and pins to the top-left of

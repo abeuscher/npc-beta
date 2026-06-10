@@ -165,6 +165,14 @@ export interface ThemePaletteEntry {
 
 export type EditorMode = 'page' | 'dashboard' | 'record_detail'
 
+// Read-only header/footer context band around the editable page flow.
+// styles ride the blade (emitted server-side); Vue consumes html + edit_url.
+export interface ChromeBand {
+  html: string
+  styles?: string
+  edit_url: string | null
+}
+
 export interface BootstrapData {
   mode?: EditorMode
   owner_id?: string
@@ -199,6 +207,7 @@ export interface BootstrapData {
   theme_heading_family?: string
   theme_body_family?: string
   theme_editor_url: string
+  chrome?: { header: ChromeBand | null; footer: ChromeBand | null }
   allowed_appearance_fields?: string[]
   allowed_widget_handles?: string[]
   role_label?: string
