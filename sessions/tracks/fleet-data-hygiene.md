@@ -8,13 +8,11 @@ This doc carries: the premise, the **privacy boundary** (load-bearing), the prev
 
 ## Status snapshot
 
-**Last update:** 2026-06-09 (scoped during 349).
+**Last update:** 2026-06-10 (Phase 1 closed at session 352).
 
-**Status: NOT STARTED — pre-release priority, a couple items ahead.** A real problem confirmed on several live instances (no real events/posts, yet undeleted scrub-derived pages accumulating; media creep separately known).
+**Status: PHASE 1 ✅ CLOSED (session 352) — Phase 2 active next.** The in-repo prevention + detection half shipped: the CI keystone scrub-residue test (the launch gate) and the node-local `app:data-hygiene` audit, on a build-once `DataHygieneAudit` core whose count-only `counts()` is the seam Phase 2 consumes. Detail in *Phase Retrospectives* below; full landing in `sessions/352. Fleet Data Hygiene — Prevention & Detection — Log.md`. **Phase 2 (FM visibility — the count-only `/api/health` subcheck + the FM per-node maintenance toggle) is the boundary half; prompts drafted (session 353).**
 
-**Down-payment already made (session 349):** the *cause* of the event-page leak was fixed (landing pages now inherit the event's `source`; `EventObserver::deleted` cascades the landing page) and two cleanup commands exist — `pages:prune-orphan-events` and the pre-existing `media:prune-orphans` (both dry-run-default, `--force` to delete). What's missing is the *systemic guard* (so it can't regress before go-live) and the *visibility* (what's actually on each live box).
-
-**Trigger:** pre-release — must land before go-live (the prevention half is a launch gate). The owner has a couple of in-flight items ahead of it.
+**Trigger:** pre-release — the launch-gate prevention half is now in. Phase 2 (FM visibility, boundary/cross-repo) and Phase 3 (remediation, future) are the remainder.
 
 ---
 
@@ -52,9 +50,24 @@ Neither alone suffices: CI proves the cleanup *code* is correct; the audit tells
 
 ## Forward plan (sequenced)
 
-1. **Phase 1 — CRM prevention + detection (in-repo, no boundary; the launch gate).** The CI keystone scrub-residue test + targeted cascade tests; the `app:data-hygiene` audit command (count-only + deep modes). Run the audit on the live boxes to see the damage; clean with the prune commands. ~1–2 sessions.
+1. **Phase 1 — CRM prevention + detection ✅ closed (session 352, one session).** The CI keystone scrub-residue test + the `app:data-hygiene` audit shipped. Detail in *Phase Retrospectives*; full landing in `sessions/352. *— Log.md`.
 2. **Phase 2 — FM visibility (boundary).** Count-only `data_hygiene` health subcheck (contract bump) + the FM per-node maintenance toggle. Cross-repo. ~1 CRM session + FM-side absorption.
 3. **Phase 3 — bounded remediation (future).** Cleanup-on-upgrade via the established one-time-repair-migration pattern (shipped alongside the bug fix that caused the cruft, runs once on deploy), plus a toggle-gated remediation trigger. Never silent destructive auto-delete on every deploy.
+
+---
+
+## Phase Retrospectives
+
+### Phase 1 — CRM Prevention + Detection ✅ (session 352, one session)
+
+Non-boundary, v2.3.0, no schema. Built on the 349 down-payment (event-page cause fix + the `pages:prune-orphan-events` / `media:prune-orphans` commands).
+
+- **Prevention — the keystone scrub-residue test.** `RandomDataGeneratorServiceTest`'s "KEYSTONE …" case: snapshot every scrub-touched table + the `media` count → `generate()` a full spread (+ attach owned media) → `wipe()` → assert all counts return to baseline (raw `DB::table` counts, so even soft-deleted residue fails). Fast (~0.8s, `Queue::fake()` skips conversions) → in the primary fast suite as the launch gate. **Revert-checked** (fails *"residue left in media 6≠0"* without the fix). Catches the whole generates-but-doesn't-clean class.
+- **The in-scope `wipe()` fix it surfaced.** `wipe()` mass-deleted scrub events/products via the query builder, bypassing Spatie's per-model media teardown → orphan media rows + CAS files. Fixed with a `wipeEach(Builder)` per-model-delete helper (posts were already clean via `wipeScrubPages()`). Plus delete-model→owned-media cascade tests.
+- **Detection — `DataHygieneAudit` + `app:data-hygiene`.** Build-once core: `counts()` = the four-category non-PII aggregate (`orphan_event_pages` / `scrub_records` / `orphan_media_dirs` / `dead_owner_media`) — the Phase-2 seam; `--deep` records mode is node-local. The two prune commands refactored onto its detection (one source of truth).
+- **`media:prune-dead-owner` (new).** Spatie's `media-library:clean --delete-orphaned` crashes on this schema (`operator does not exist: character varying = uuid` — varchar `media.model_id` vs uuid owner PKs). The new command + a hardened pull-ids-compare-in-PHP `deadOwnerMedia()` sidestep it. Dry-run default; soft-deleted owners treated as alive.
+- **Live (nphelper):** the audit surfaced 252 orphan event pages (cleaned) + orphan media dirs. A separate 404 responsive-image incident (1350/1510 conversions claimed-but-absent) was diagnosed as a DB/media-tree out-of-sync load — **not** the hygiene cleanup, **not** import/export, **not** a code bug — and fixed with `media-library:regenerate --only-missing --force`.
+- **Carried forward:** dead-owner cleanup on live (`media:prune-dead-owner --force`, once 352 deploys); the varchar-`model_id`-vs-uuid mismatch (worked around, not migrated — see `docs/app-reference.md`); the collection-item-media export-portability gap (noted for a later session).
 
 ---
 
