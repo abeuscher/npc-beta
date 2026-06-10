@@ -266,7 +266,14 @@ watch(
           width: store.presetViewport + 'px',
           zoom: zoomFactor,
           transformOrigin: 'top left',
-          flexShrink: isNarrowViewport ? 0 : undefined,
+          // The public bundle styles .np-site.widget-preview-scope with
+          // `flex: 1` (a <main> sibling rule from _base.scss), whose
+          // grow:1/basis:0% would stretch the scope to the full pane inside
+          // the narrow-mode flex container — defeating the preset width, so
+          // Tablet/Mobile rendered identical to Desktop. The full inline
+          // shorthand overrides all three components; in the desktop (block)
+          // container it is inert.
+          flex: '0 0 auto',
           '--np-preview-container-max-width': previewContainerMaxWidth,
           containerType: 'inline-size',
           containerName: 'np-viewport',
