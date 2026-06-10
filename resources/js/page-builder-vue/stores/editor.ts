@@ -184,6 +184,16 @@ export const useEditorStore = defineStore('editor', () => {
     fullscreenInspectorOpen.value = false
   }
 
+  // Groundwork for per-breakpoint authoring (the deferred session-335 item):
+  // the authoring breakpoint the canvas is simulating, derived from the
+  // viewport preset. This is the AUTHORING label future per-breakpoint
+  // inspector controls key their read/write off — not the public CSS tier
+  // (the 1024 preset maps to 'tablet' here even though the ≤768 public
+  // rules don't fire at 1024). Nothing consumes it yet.
+  const activeBreakpoint = computed<'desktop' | 'tablet' | 'mobile'>(() =>
+    presetViewport.value >= 1200 ? 'desktop' : presetViewport.value >= 768 ? 'tablet' : 'mobile'
+  )
+
   // Debounced layout save state
   const pendingLayoutChanges = ref<Record<string, UpdateLayoutPayload>>({})
 
@@ -793,6 +803,7 @@ export const useEditorStore = defineStore('editor', () => {
     fullscreen,
     fullscreenInspectorOpen,
     toggleFullscreen,
+    activeBreakpoint,
     inlineImageUploadUrl,
     heroiconsUrl,
     themeEditorUrl,
