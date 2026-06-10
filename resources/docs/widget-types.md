@@ -124,7 +124,7 @@ Widgets that need record or list data declare a `dataContract($config)` and read
 
 ## Multi-column layouts
 
-Multi-column page layouts are no longer built from a `column_widget` widget type. They are first-class `page_layouts` rows with their own schema, lifecycle, and inspector panel. A `page_widgets` row references its containing layout via `layout_id` (and slot via `column_index`); root-level widgets have `layout_id IS NULL`. See [docs/schema/page_widgets.md](../../docs/schema/page_widgets.md) and [docs/schema/page_layouts.md](../../docs/schema/page_layouts.md) for the current data model.
+Multi-column page layouts are no longer built from a `column_widget` widget type. They are first-class `page_layouts` rows with their own schema, lifecycle, and inspector panel. A `page_widgets` row references its containing layout via `layout_id` (and slot via `column_index`); root-level widgets have `layout_id IS NULL`. See `docs/schema/page_widgets.md` and `docs/schema/page_layouts.md` for the current data model.
 
 ---
 
@@ -166,7 +166,7 @@ Every `page_widgets` row has an `appearance_config` jsonb column (default `{}`).
 }
 ```
 
-Keys are written sparsely — the renderer only emits inline style for keys that are present and non-empty. See [docs/schema/page_widgets.md](../../docs/schema/page_widgets.md) for the full shape reference including gradient alpha fields.
+Keys are written sparsely — the renderer only emits inline style for keys that are present and non-empty. See `docs/schema/page_widgets.md` for the full shape reference including gradient alpha fields.
 
 ### Rendering rules
 

@@ -5,6 +5,7 @@ version: "0.1"
 updated: 2026-05-18
 tags: [cms, export, import, portability, media, theme, bundles]
 category: cms
+standalone: true
 ---
 
 # Content, Theme & Media Portability

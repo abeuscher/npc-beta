@@ -47,6 +47,7 @@ const LAYERED_HOST_PARTIALS = [
     '_icons.scss',
     '_media.scss',
     '_custom.scss',
+    '_docs.scss',
 ];
 
 // Strip CSS/SCSS comments so a layer mention inside a comment is never counted

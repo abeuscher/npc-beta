@@ -68,24 +68,6 @@ class HelpArticlePage extends Page
 
     protected function loadRelatedArticles(): array
     {
-        $tags = $this->article->tags ?? [];
-
-        if (empty($tags)) {
-            return [];
-        }
-
-        $tagsJson = json_encode($tags);
-
-        return HelpArticle::query()
-            ->where('id', '!=', $this->article->id)
-            ->whereRaw("tags::jsonb ??| array(SELECT jsonb_array_elements_text(?::jsonb))", [$tagsJson])
-            ->selectRaw("help_articles.*, (
-                SELECT COUNT(*) FROM jsonb_array_elements_text(help_articles.tags::jsonb) AS t
-                WHERE t IN (SELECT jsonb_array_elements_text(?::jsonb))
-            ) AS overlap_count", [$tagsJson])
-            ->orderBy('title')
-            ->limit(6)
-            ->get()
-            ->toArray();
+        return app(\App\Services\HelpArticleService::class)->relatedTo($this->article);
     }
 }
