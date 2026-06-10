@@ -13,7 +13,7 @@ Widgets are the building blocks of pages on your public website. Every CMS page 
 
 ## Using widgets in the page builder
 
-When you edit a CMS page, the **+ Widget** button below the preview opens the widget picker. Pick a widget to add it to the page, click it to select, and use the inspector panel on the right to configure its content and appearance. See the [Pages](/admin/help/cms-pages) article for the full page-builder workflow.
+When you edit a CMS page, the **+ Widget** button below the preview opens the widget picker. Pick a widget to add it to the page, click it to select, and use the inspector panel on the right to configure its content and appearance. See the [Pages](cms-pages) article for the full page-builder workflow.
 
 Each widget has two inspector tabs — **Content** (the widget's data and copy) and **Appearance** (background, padding, full-width). Every inspector field has a label, and most have a one-line helper underneath that explains what the field controls. For most widgets that's enough.
 
@@ -70,7 +70,7 @@ A handful of widgets have enough configuration surface to warrant a dedicated he
                     <td x-text="row.label" style="padding:0.5rem; border-bottom:1px solid rgba(127,127,127,0.2);"></td>
                     <td x-text="row.category" style="padding:0.5rem; border-bottom:1px solid rgba(127,127,127,0.2);"></td>
                     <td x-text="row.description" style="padding:0.5rem; border-bottom:1px solid rgba(127,127,127,0.2);"></td>
-                    <td style="padding:0.5rem; border-bottom:1px solid rgba(127,127,127,0.2);"><a :href="'/admin/help/' + row.slug" x-text="row.slug"></a></td>
+                    <td style="padding:0.5rem; border-bottom:1px solid rgba(127,127,127,0.2);"><a :href="row.slug" x-text="row.slug"></a></td>
                 </tr>
             </template>
         </tbody>

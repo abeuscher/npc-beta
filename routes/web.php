@@ -6,6 +6,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DemoLoginController;
+use App\Http\Controllers\DocsController;
 use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
@@ -141,6 +142,22 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // LLMs.txt — AEO file describing the site to LLM crawlers
 Route::get('/llms.txt', [LlmsTxtController::class, 'index'])->name('llms-txt');
+
+// Public docs library — marketing instance only (every action 404s unless
+// isPublicWebsite()). /docs is a hardcoded reserved prefix, registered before
+// the page-slug catchall so a Page can never shadow it. The .md sibling route
+// registers first and its slug pattern excludes dots, so /docs/{slug}.md and
+// /docs/{slug} match unambiguously.
+Route::get('/docs', [DocsController::class, 'index'])->name('docs.index');
+Route::get('/docs/{slug}.md', [DocsController::class, 'raw'])
+    ->where('slug', '[^/.]+')
+    ->name('docs.raw');
+Route::get('/docs/{slug}', [DocsController::class, 'show'])
+    ->where('slug', '[^/.]+')
+    ->name('docs.show');
+
+// llms-full.txt — whole docs corpus in one fetch, marketing instance only
+Route::get('/llms-full.txt', [LlmsTxtController::class, 'full'])->name('llms-full-txt');
 
 // Widget thumbnail images (public, static assets served from app/Widgets/*/thumbnails/).
 Route::get('/widget-thumbnails/{handle}/{file}', [WidgetThumbnailController::class, 'show'])

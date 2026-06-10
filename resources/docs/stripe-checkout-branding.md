@@ -5,6 +5,7 @@ version: "0.1"
 updated: 2026-05-13
 tags: [stripe, payments, branding, checkout, setup]
 category: finance
+standalone: true
 ---
 
 # Stripe Checkout Branding
@@ -22,7 +23,7 @@ Do Half 1 first. Half 2 only matters once the Dashboard half is in place.
 
 ## Half 1 — Stripe Dashboard
 
-You will need a Stripe account with at least one user who can edit Settings. If you have not yet created the account or added the API keys to this app, see the [Finance Settings](settings-finance.md) doc first.
+You will need a Stripe account with at least one user who can edit Settings. If you have not yet created the account or added the API keys to this app, see the [Finance Settings](settings-finance) doc first.
 
 ### Step 1 — Branding (logo + color)
 
