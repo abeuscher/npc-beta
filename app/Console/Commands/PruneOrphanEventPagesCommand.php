@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Page;
+use App\Services\DataHygieneAudit;
 use Illuminate\Console\Command;
 
 /**
@@ -19,6 +19,9 @@ use Illuminate\Console\Command;
  *
  * Each page is force-deleted so PageObserver::deleting tears down its widgets +
  * layouts too. Destructive → dry-run report by default; --force to delete.
+ *
+ * Detection (which pages are orphans) lives in DataHygieneAudit so the audit
+ * (`app:data-hygiene`) and this cleanup command share one definition.
  */
 class PruneOrphanEventPagesCommand extends Command
 {
@@ -26,13 +29,9 @@ class PruneOrphanEventPagesCommand extends Command
 
     protected $description = "Remove type='event' landing pages that no Event references via landing_page_id.";
 
-    public function handle(): int
+    public function handle(DataHygieneAudit $audit): int
     {
-        $orphans = Page::query()
-            ->withTrashed()
-            ->where('type', 'event')
-            ->whereDoesntHave('event')
-            ->get();
+        $orphans = $audit->orphanEventPages()->get();
 
         if ($orphans->isEmpty()) {
             $this->info('No orphan event landing pages found.');

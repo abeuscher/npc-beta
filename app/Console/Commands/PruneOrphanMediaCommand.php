@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Services\DataHygieneAudit;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Sweeps the content-addressed media tree (cas/<hash[0:2]>/<hash>/) for
@@ -19,6 +19,9 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * Destructive, so a dry-run report is the default; the delete pass requires an
  * explicit --force. Local-only growth (the demo droplet restores, never seeds),
  * so this is on-demand, deliberately not wired into any deploy/demo path.
+ *
+ * Detection (which directories are orphans) lives in DataHygieneAudit so the
+ * audit (`app:data-hygiene`) and this cleanup command share one definition.
  */
 class PruneOrphanMediaCommand extends Command
 {
@@ -26,49 +29,17 @@ class PruneOrphanMediaCommand extends Command
 
     protected $description = 'Remove content-addressed media directories (cas/<hash>/) referenced by no live media row.';
 
-    public function handle(): int
+    public function handle(DataHygieneAudit $audit): int
     {
-        $disk    = Storage::disk(config('media-library.disk_name', 'public'));
-        $casRoot = $this->casRoot();
-
-        // The set of hashes still referenced by a live row. Built once from the
-        // index; a directory whose name is not in it is an orphan.
-        $live = Media::query()
-            ->whereNotNull('content_hash')
-            ->pluck('content_hash')
-            ->flip();
-
-        $orphans = [];
-        $bytes   = 0;
-
-        foreach ($disk->directories($casRoot) as $shard) {
-            foreach ($disk->directories($shard) as $hashDir) {
-                $hash = basename($hashDir);
-
-                // Only ever touch well-formed content-hash directories; leave
-                // anything else in the tree (legacy id dirs never live here, but
-                // be conservative) untouched.
-                if (strlen($hash) !== 64 || ! ctype_xdigit($hash)) {
-                    continue;
-                }
-
-                if ($live->has($hash)) {
-                    continue;
-                }
-
-                $orphans[] = $hashDir;
-
-                foreach ($disk->allFiles($hashDir) as $file) {
-                    $bytes += $disk->size($file);
-                }
-            }
-        }
+        $orphans = $audit->orphanMediaDirectories();
 
         if ($orphans === []) {
             $this->info('No orphan media directories found.');
 
             return self::SUCCESS;
         }
+
+        $bytes = array_sum(array_column($orphans, 'bytes'));
 
         $summary = sprintf(
             '%d orphan media director%s (%s)',
@@ -83,8 +54,11 @@ class PruneOrphanMediaCommand extends Command
             return self::SUCCESS;
         }
 
-        foreach ($orphans as $hashDir) {
-            $disk->deleteDirectory($hashDir);
+        $disk    = Storage::disk(config('media-library.disk_name', 'public'));
+        $casRoot = $audit->casRoot();
+
+        foreach ($orphans as $orphan) {
+            $disk->deleteDirectory($orphan['path']);
         }
 
         // Drop shard directories left empty by the sweep so the tree stays tidy.
@@ -97,13 +71,6 @@ class PruneOrphanMediaCommand extends Command
         $this->info("Pruned {$summary}.");
 
         return self::SUCCESS;
-    }
-
-    private function casRoot(): string
-    {
-        $prefix = (string) config('media-library.prefix', '');
-
-        return ($prefix !== '' ? rtrim($prefix, '/').'/' : '').'cas';
     }
 
     private function humanBytes(int $bytes): string

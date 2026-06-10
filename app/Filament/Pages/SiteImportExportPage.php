@@ -98,10 +98,15 @@ class SiteImportExportPage extends FilamentPage
                     $c['pages'] . ' page' . ($c['pages'] === 1 ? '' : 's'),
                     $c['templates'] . ' template' . ($c['templates'] === 1 ? '' : 's'),
                     'theme (' . $c['design_keys'] . ' design key' . ($c['design_keys'] === 1 ? '' : 's') . ')',
-                    $c['media_count'] . ' media file' . ($c['media_count'] === 1 ? '' : 's'),
                 ];
 
-                return 'A full site snapshot will be built in the background: ' . implode(', ', $bits) . '. You will be notified when the bundle is ready to download.';
+                // media_count is the whole library (Media::count()); the bundle
+                // only carries media referenced by the exported pages/templates,
+                // so state it as a library total, not as the export payload.
+                return 'A full site snapshot will be built in the background: ' . implode(', ', $bits)
+                    . '. Images used by those pages and templates are bundled too — your library holds '
+                    . $c['media_count'] . ' media file' . ($c['media_count'] === 1 ? '' : 's')
+                    . ' in total, but only the referenced ones travel. You will be notified when the bundle is ready to download.';
             })
             ->modalSubmitActionLabel('Export Site')
             ->extraAttributes(['data-testid' => 'site-export-action'])

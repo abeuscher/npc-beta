@@ -314,9 +314,29 @@ Local dev defaults to `BACKUP_DISKS=local`, which writes backups to `storage/app
 
 ### Orphan media sweep
 
-`spatie/laravel-medialibrary` ships `media-library:clean`, which removes orphan `media` rows (where the polymorphic owner is gone) and orphan conversion files (where the parent `media` row is gone but the conversion file lingers). Session 247 registered it in `bootstrap/app.php`'s `withSchedule()` block on a daily cadence (`->onOneServer()->withoutOverlapping()`). It does NOT walk the content-addressed tree looking for whole directories with no `media` row.
+`spatie/laravel-medialibrary` ships `media-library:clean`, which by default removes only deprecated conversion/responsive files (where the registered conversions changed) and numeric-id orphan directories. It removes orphan **`media` rows** (where the polymorphic owner is gone) **only when passed `--delete-orphaned`** — without that flag, dead-owner rows are left in place.
+
+**Known breakage on this app (session 352):** `--delete-orphaned` **crashes here** with `operator does not exist: character varying = uuid`. Its orphan check is `whereDoesntHave('model', …->withTrashed())`, which emits a correlated `media.model_id = <owner>.id` join — but `media.model_id` is `character varying` (it has to hold keys for mixed-PK owner models) while uuid-keyed owners (`pages.id`, `events.id`, …) have a `uuid` PK, and Postgres refuses the column-to-column comparison without an explicit cast. So Spatie's command **cannot** clean dead-owner rows on this schema. The fix is **`media:prune-dead-owner`** (session 352): it reuses `App\Services\DataHygieneAudit::deadOwnerMedia()`, which compares stringified ids in PHP rather than joining in SQL, then deletes each `Media` model so the refcounted `ContentAddressedFileRemover` fires (files go too). Dry-run by default; `--force` to delete; a soft-deleted (recoverable) owner counts as present and is never touched. Run `media:prune-orphans --force` afterwards to sweep any directories it frees. Session 247 registered `media-library:clean` (no `--delete-orphaned`, so unaffected) in `bootstrap/app.php`'s `withSchedule()` block on a daily cadence (`->onOneServer()->withoutOverlapping()`). It does NOT walk the content-addressed tree looking for whole directories with no `media` row.
 
 That wholesale-wipe gap is closed by **`media:prune-orphans`** (session 343). It builds the set of `content_hash` values still referenced by a live `media` row, walks the `cas/{hash[0:2]}/{hash}/` tree, and deletes the directories whose hash is in no live row — the orphans left behind when a bulk row clear (`migrate:fresh --seed`, `demo:reset`, scrub regeneration, Playwright `resetDatabase()`) truncates the table without firing the refcounted `ContentAddressedFileRemover`. It is **dry-run by default** (reports the count + bytes that would be freed); the destructive pass requires `--force`. Local-only growth — the demo droplet only restores, never seeds — so it is **on-demand, deliberately not scheduled or wired into any deploy/demo path** (and would be inert if it were, per the scheduler-runner gap below). Run `php artisan media:prune-orphans` to inspect, `--force` to sweep.
+
+### Data hygiene audit
+
+**`app:data-hygiene`** (session 352, Fleet Data Hygiene track — detection half) is a **read-only** audit of the derived/cruft data accumulated on the box it runs on. It reports four categories: orphan event landing pages (`type=event` with no backing `Event`), residual `source=scrub_data` records (a scrub run that was never wiped), orphan content-addressed media directories, and dead-owner media rows (a `media` row whose polymorphic owner is gone). Detection lives once in `App\Services\DataHygieneAudit`; `pages:prune-orphan-events` and `media:prune-orphans` share its primitives, and its count-only `counts()` method is the aggregate signal the future count-only `/api/health` `data_hygiene` subcheck (Phase 2) will read — counts only, never raw rows, per the track's privacy boundary.
+
+Default output is a count-only summary; `--deep` additionally lists the actual offending records (node-local — never crosses the FM wire). It **detects only — it deletes nothing.** The audit → clean operator flow:
+
+```
+docker compose exec app php artisan app:data-hygiene          # what's piled up (counts)
+docker compose exec app php artisan app:data-hygiene --deep   # the actual records (node-local)
+# then, per category:
+docker compose exec app php artisan pages:prune-orphan-events --force   # orphan event pages
+docker compose exec app php artisan media:prune-dead-owner --force      # dead-owner media rows
+docker compose exec app php artisan media:prune-orphans --force         # orphan media dirs (+ files freed by the prune above)
+# residual scrub_data is cleared by the admin Random Data → Wipe action (super-admin widget)
+```
+
+The keystone CI test `RandomDataGeneratorServiceTest` ("KEYSTONE — scrub generate-then-wipe leaves zero residue …") is the **prevention** half: it fails the build if any future scrub-generating code leaks rows or media that `RandomDataGenerator::wipe()` doesn't clean. The 352 down-payment fixed `wipe()` itself — it now deletes scrub events/products one model at a time so Spatie's media teardown fires (a query-builder mass delete bypassed it, orphaning media rows + files).
 
 ### Scheduler runner — known gap
 

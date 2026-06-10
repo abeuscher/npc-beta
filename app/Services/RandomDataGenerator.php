@@ -21,6 +21,7 @@ use App\Models\WidgetType;
 use App\Services\SampleImageLibrary;
 use App\WidgetPrimitive\Source;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -56,9 +57,9 @@ class RandomDataGenerator
                 'registrations' => EventRegistration::where('source', Source::SCRUB_DATA)->delete(),
                 'donations'     => Donation::where('source', Source::SCRUB_DATA)->delete(),
                 'memberships'   => Membership::where('source', Source::SCRUB_DATA)->withTrashed()->forceDelete(),
-                'events'        => Event::where('source', Source::SCRUB_DATA)->delete(),
+                'events'        => $this->wipeEach(Event::where('source', Source::SCRUB_DATA)),
                 'posts'         => $this->wipeScrubPages(),
-                'products'      => Product::where('source', Source::SCRUB_DATA)->delete(),
+                'products'      => $this->wipeEach(Product::where('source', Source::SCRUB_DATA)),
                 'organizations' => Organization::where('source', Source::SCRUB_DATA)->withTrashed()->forceDelete(),
                 'contacts'      => Contact::where('source', Source::SCRUB_DATA)->withTrashed()->forceDelete(),
             ];
@@ -70,6 +71,25 @@ class RandomDataGenerator
         $count = 0;
         foreach (Page::where('source', Source::SCRUB_DATA)->withTrashed()->get() as $page) {
             $page->forceDelete();
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * Delete each model in the query one at a time so Eloquent model events
+     * fire — critically Spatie's media teardown (and, for events,
+     * EventObserver::deleted's landing-page cascade). A query-builder
+     * ->delete() mass-deletes without firing those hooks, orphaning the
+     * media rows + content-addressed files behind the deleted owners
+     * (the residue the scrub-wipe keystone test guards against). Mirrors
+     * wipeScrubPages()'s per-row teardown. Returns the row count deleted.
+     */
+    protected function wipeEach(Builder $query): int
+    {
+        $count = 0;
+        foreach ($query->get() as $model) {
+            $model->delete();
             $count++;
         }
         return $count;

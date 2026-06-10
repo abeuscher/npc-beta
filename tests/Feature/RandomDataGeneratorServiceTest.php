@@ -16,6 +16,11 @@ use App\Services\RandomDataGenerator;
 use App\WidgetPrimitive\Source;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -523,3 +528,121 @@ it('wipe — also removes scrub-tagged organizations, leaving real ones intact',
         ->and(Organization::where('source', Source::SCRUB_DATA)->withTrashed()->count())->toBe(0)
         ->and(Organization::where('id', $realOrg->id)->exists())->toBeTrue();
 });
+
+// ── Media teardown on wipe (session 352 — Fleet Data Hygiene component A) ──────
+//
+// A query-builder mass delete bypasses Eloquent model events, so the pre-352
+// wipe (Event::where(...)->delete()) left every media row + content-addressed
+// file behind its deleted owner. wipe() now deletes events/products one model
+// at a time so Spatie's media teardown fires. These two cascade tests guard
+// that fix at the per-family level; the KEYSTONE test below guards the whole
+// class at once.
+
+it('wipe — tears down media owned by scrub events (no orphan media rows)', function () {
+    asSuperAdmin();
+    Storage::fake('public');
+    Queue::fake(); // skip image conversions — only the media row + its teardown matter
+
+    $service = app(RandomDataGenerator::class);
+    $service->generate(['events' => 2]);
+
+    // Generation's pool-image attach is a silent no-op without a seeded sample
+    // library, so attach a header directly to exercise the teardown path.
+    Event::where('source', Source::SCRUB_DATA)->get()->each(
+        fn (Event $event) => $event
+            ->addMedia(UploadedFile::fake()->image('event-hdr.jpg', 400, 300))
+            ->toMediaCollection('event_header')
+    );
+
+    expect(Media::count())->toBe(2);
+
+    $service->wipe();
+
+    expect(Event::where('source', Source::SCRUB_DATA)->count())->toBe(0)
+        ->and(Media::count())->toBe(0);
+});
+
+it('wipe — tears down media owned by scrub products (no orphan media rows)', function () {
+    asSuperAdmin();
+    Storage::fake('public');
+    Queue::fake();
+
+    $service = app(RandomDataGenerator::class);
+    $service->generate(['products' => 2]);
+
+    Product::where('source', Source::SCRUB_DATA)->get()->each(
+        fn (Product $product) => $product
+            ->addMedia(UploadedFile::fake()->image('product.jpg', 300, 300))
+            ->toMediaCollection('product_image')
+    );
+
+    expect(Media::count())->toBe(2);
+
+    $service->wipe();
+
+    expect(Product::where('source', Source::SCRUB_DATA)->count())->toBe(0)
+        ->and(Media::count())->toBe(0);
+});
+
+// ── KEYSTONE: scrub-wipe leaves no residue (the launch-gate invariant) ────────
+//
+// Snapshot every table the scrub spread touches (directly or via derived
+// artifacts: event landing pages, post widgets, product prices, owned media) →
+// generate a full spread → wipe → assert every table returns to baseline. Raw
+// DB::table counts ignore the soft-delete scope, so even a soft-deleted
+// leftover fails the invariant. Any future scrub-generating-but-not-cleaning
+// code breaks this automatically — it catches the whole class, not just the
+// 349/352 media bug.
+it('KEYSTONE — scrub generate-then-wipe leaves zero residue across every table + media', function () {
+    asSuperAdmin();
+    Storage::fake('public');
+    Queue::fake();
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $tables = [
+        'contacts', 'organizations', 'events', 'event_registrations',
+        'donations', 'memberships', 'transactions', 'pages', 'page_widgets',
+        'products', 'product_prices', 'media',
+    ];
+    $baseline = collect($tables)->mapWithKeys(fn ($t) => [$t => DB::table($t)->count()])->all();
+
+    $service = app(RandomDataGenerator::class);
+    $service->generate([
+        'contacts'      => 5,
+        'organizations' => 3,
+        'events'        => 3,
+        'registrations' => 4,
+        'donations'     => 4,
+        'memberships'   => 3,
+        'posts'         => 2,
+        'products'      => 3,
+    ]);
+
+    // Attach owned media to every media-bearing scrub family so wipe must tear
+    // it down (generation's pool-image attach no-ops without a seeded library).
+    Event::where('source', Source::SCRUB_DATA)->get()->each(
+        fn (Event $e) => $e->addMedia(UploadedFile::fake()->image('e.jpg', 400, 300))->toMediaCollection('event_header')
+    );
+    Page::where('source', Source::SCRUB_DATA)->where('type', 'post')->get()->each(
+        fn (Page $p) => $p->addMedia(UploadedFile::fake()->image('p.jpg', 400, 300))->toMediaCollection('post_header')
+    );
+    Product::where('source', Source::SCRUB_DATA)->get()->each(
+        fn (Product $pr) => $pr->addMedia(UploadedFile::fake()->image('pr.jpg', 300, 300))->toMediaCollection('product_image')
+    );
+
+    // Sanity: the spread actually grew the tables the invariant guards, so a
+    // silently-empty generate can't make the residue assertion vacuous.
+    // (transactions excluded — its growth is probabilistic on a random
+    // active/pending roll; its residue is still checked after wipe.)
+    foreach (array_diff($tables, ['transactions']) as $t) {
+        expect(DB::table($t)->count())->toBeGreaterThan($baseline[$t], "table {$t} did not grow under generate()");
+    }
+
+    $service->wipe();
+
+    foreach ($tables as $t) {
+        expect(DB::table($t)->count())->toBe($baseline[$t], "residue left in {$t} after wipe()");
+    }
+});
+// Fast (~0.8s with conversions faked) — the launch-gate invariant runs in the
+// primary fast suite, not ->group('slow').
