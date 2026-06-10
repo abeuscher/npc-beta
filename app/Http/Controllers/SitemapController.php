@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\HelpArticle;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Cache;
@@ -52,6 +53,30 @@ class SitemapController extends Controller
             $xml .= "    <loc>" . htmlspecialchars($loc) . "</loc>\n";
             $xml .= "    <lastmod>{$lastmod}</lastmod>\n";
             $xml .= "  </url>\n";
+        }
+
+        if (isPublicWebsite()) {
+            $articles = HelpArticle::query()
+                ->orderBy('slug')
+                ->get(['slug', 'last_updated', 'updated_at']);
+
+            if ($articles->isNotEmpty()) {
+                $indexLastmod = $articles->map(fn ($a) => $a->last_updated ?? $a->updated_at)->max();
+
+                $xml .= "  <url>\n";
+                $xml .= "    <loc>" . htmlspecialchars("{$baseUrl}/docs") . "</loc>\n";
+                $xml .= "    <lastmod>{$indexLastmod->toW3cString()}</lastmod>\n";
+                $xml .= "  </url>\n";
+
+                foreach ($articles as $article) {
+                    $lastmod = ($article->last_updated ?? $article->updated_at)->toW3cString();
+
+                    $xml .= "  <url>\n";
+                    $xml .= "    <loc>" . htmlspecialchars("{$baseUrl}/docs/{$article->slug}") . "</loc>\n";
+                    $xml .= "    <lastmod>{$lastmod}</lastmod>\n";
+                    $xml .= "  </url>\n";
+                }
+            }
         }
 
         $xml .= '</urlset>';

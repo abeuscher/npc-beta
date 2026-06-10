@@ -953,4 +953,4 @@ If your widget posts to a custom checkout endpoint (rather than the built-in Don
 
 **Format constraints to surface to your widget author UI.** If your widget exposes any operator-facing copy that ends up in `custom_text` or as a line-item name/description, mirror Stripe's constraints in your inspector helper text: plain text or limited Markdown (`**bold**`, `*italic*`, `[link](https://url)`); no HTML; max 1200 characters per `custom_text` slot. Statement descriptors are 5–22 characters, alphanumeric + spaces only, no punctuation.
 
-**See also:** the operator-facing [Stripe Checkout Branding](stripe-checkout-branding.md) help doc covers the Dashboard half (logo, brand color, business name, support email, ToS / Privacy URLs, account-level subscription statement descriptor) — work the operator does outside this app.
+**See also:** the operator-facing [Stripe Checkout Branding](stripe-checkout-branding) help doc covers the Dashboard half (logo, brand color, business name, support email, ToS / Privacy URLs, account-level subscription statement descriptor) — work the operator does outside this app.

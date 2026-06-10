@@ -16,6 +16,7 @@
 @use "icons";
 @use "media";
 @use "custom";
+@use "docs";
 
 // Reset + vendor CSS into the lowest layer. `@use` cannot carry a layer, so the
 // CSS is pulled in via meta.load-css() inside the @layer reset block. Physical
