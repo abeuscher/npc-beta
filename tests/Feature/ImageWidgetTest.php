@@ -4,6 +4,8 @@ use App\Models\Page;
 use App\Models\WidgetType;
 use App\Services\WidgetRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -107,4 +109,61 @@ it('omits the style attribute when max_width is empty', function () {
     $html = WidgetRenderer::render($pw)['html'];
 
     expect($html)->not->toContain('style="max-width');
+});
+
+// ── Loading priority / LCP (session 350) ─────────────────────────────────────
+
+it('registers loading_priority in the image widget schema', function () {
+    $keys = collect(WidgetType::where('handle', 'image')->firstOrFail()->config_schema)
+        ->pluck('key')->all();
+
+    expect($keys)->toContain('loading_priority');
+});
+
+it('lazy-loads by default and adds no fetchpriority', function () {
+    $pw = makeImagePage('image-lazy', []);
+
+    $html = WidgetRenderer::render($pw)['html'];
+
+    expect($html)
+        ->toContain('loading="lazy"')
+        ->not->toContain('fetchpriority');
+});
+
+it('eager-loads with high fetchpriority when loading_priority is eager', function () {
+    $pw = makeImagePage('image-eager', ['loading_priority' => 'eager']);
+
+    $html = WidgetRenderer::render($pw)['html'];
+
+    expect($html)
+        ->toContain('loading="eager"')
+        ->toContain('fetchpriority="high"');
+});
+
+it('threads eager loading + fetchpriority through x-picture for an uploaded image', function () {
+    Storage::fake('public');
+
+    $page = Page::factory()->create([
+        'type'         => 'default',
+        'slug'         => 'image-xpicture-eager',
+        'status'       => 'published',
+        'published_at' => now()->subDay(),
+    ]);
+
+    $pw = $page->widgets()->create([
+        'widget_type_id' => WidgetType::where('handle', 'image')->firstOrFail()->id,
+        'config'         => ['image' => 'hero.jpg', 'loading_priority' => 'eager'],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    $pw->addMedia(UploadedFile::fake()->image('hero.jpg', 1200, 800))
+        ->usingFileName('hero.jpg')
+        ->toMediaCollection('config_image', 'public');
+
+    $html = WidgetRenderer::render($pw->fresh())['html'];
+
+    expect($html)
+        ->toContain('loading="eager"')
+        ->toContain('fetchpriority="high"');
 });

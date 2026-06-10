@@ -51,18 +51,23 @@ class ImageDefinition extends WidgetDefinition
             ], 'helper' => 'When set, the image renders at this ratio regardless of source. Use Image fit (cover/contain) to control crop vs. letterbox.', 'group' => 'appearance'],
             ['key' => 'object_fit',   'type' => 'select', 'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain'], 'helper' => 'How the source image fills the box when an aspect ratio is enforced.', 'group' => 'appearance'],
             ['key' => 'max_width',    'type' => 'text',   'label' => 'Max width', 'default' => '', 'helper' => 'Optional CSS length (e.g. 400px, 60%, 20rem). Leave blank to fill the container.', 'group' => 'appearance'],
+            ['key' => 'loading_priority', 'type' => 'select', 'label' => 'Loading priority', 'default' => 'lazy', 'options' => [
+                'lazy'  => 'Lazy (default)',
+                'eager' => 'Eager (above the fold)',
+            ], 'helper' => 'Eager loads the image immediately and hints high priority — use for a hero / first image above the fold to improve LCP. Keep lazy for anything further down the page.', 'group' => 'appearance'],
         ];
     }
 
     public function defaults(): array
     {
         return [
-            'image'        => null,
-            'alt_text'     => '',
-            'link_url'     => '',
-            'aspect_ratio' => 'auto',
-            'object_fit'   => 'cover',
-            'max_width'    => '',
+            'image'            => null,
+            'alt_text'         => '',
+            'link_url'         => '',
+            'aspect_ratio'     => 'auto',
+            'object_fit'       => 'cover',
+            'max_width'        => '',
+            'loading_priority' => 'lazy',
         ];
     }
 

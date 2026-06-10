@@ -55,6 +55,11 @@ Route::get('/api/events.json', function () {
 
 Route::get('/', [PageController::class, 'home']);
 
+// Canonical homepage: /home 301s to / so a single URL exists. Without this the
+// catch-all /{slug} route below resolves the 'home' page at /home as a 200,
+// giving the homepage two crawlable URLs.
+Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
+
 // Blog routes — prefix is config-driven
 $blogPrefix = config('site.blog_prefix', 'news');
 Route::get("/{$blogPrefix}", [PostController::class, 'index'])->name('posts.index');

@@ -52,10 +52,13 @@ class WidgetRenderer
             }
         }
 
-        // Process inline images in richtext fields
+        // Process inline images, then normalise Quill list/heading semantics, in
+        // richtext fields. RichTextSemantics is render-time and non-destructive
+        // (stored HTML is untouched) — see App\Support\RichTextSemantics.
         foreach ($widgetType->config_schema ?? [] as $field) {
             if (($field['type'] ?? '') === 'richtext' && ! empty($config[$field['key']])) {
-                $config[$field['key']] = \App\Services\Media\InlineImageRenderer::process($config[$field['key']]);
+                $html = \App\Services\Media\InlineImageRenderer::process($config[$field['key']]);
+                $config[$field['key']] = \App\Support\RichTextSemantics::normalize($html);
             }
         }
 

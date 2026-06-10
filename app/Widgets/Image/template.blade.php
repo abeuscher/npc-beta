@@ -22,6 +22,11 @@
     $style = $maxWidth !== '' ? "max-width: {$maxWidth};" : '';
 
     $classes = trim('widget-image widget-image--' . $objectFit . ' ' . $ratioClass);
+
+    // LCP path: an eager image loads immediately and is hinted high-priority.
+    // Default lazy — only a hero / above-the-fold image should opt into eager.
+    $eager       = ($config['loading_priority'] ?? 'lazy') === 'eager';
+    $loadingAttr = $eager ? 'eager' : 'lazy';
 @endphp
 
 @if (!empty($configMedia['image']))
@@ -32,11 +37,13 @@
         :alt="$altText"
         :class="$classes"
         :style="$style"
+        :loading="$loadingAttr"
+        :fetchpriority="$eager ? 'high' : null"
     />
 
     @if ($linkUrl)</a>@endif
 @elseif ($demoUrl)
     @if ($linkUrl)<a href="{{ $linkUrl }}">@endif
-    <img src="{{ $demoUrl }}" alt="{{ $altText }}" class="{{ $classes }}" @if ($style) style="{{ $style }}" @endif loading="lazy">
+    <img src="{{ $demoUrl }}" alt="{{ $altText }}" class="{{ $classes }}" @if ($style) style="{{ $style }}" @endif loading="{{ $loadingAttr }}"@if ($eager) fetchpriority="high"@endif>
     @if ($linkUrl)</a>@endif
 @endif

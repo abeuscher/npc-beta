@@ -101,6 +101,91 @@ it('renders canonical URL as base_url for home page', function () {
         ->assertSee('<link rel="canonical" href="https://example.org">', false);
 });
 
+it('falls back to the page title for an empty-string meta_title (not just null)', function () {
+    // Concrete-values: meta_title is stored as '' when unset. The view must use
+    // ?: (empty-aware), not ?? (null-only), or the title/og:title render empty.
+    Page::factory()->create([
+        'slug'         => 'mission',
+        'title'        => 'Our Mission',
+        'meta_title'   => '',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/mission')
+        ->assertOk()
+        ->assertSee('<title>Our Mission</title>', false)
+        ->assertSee('<meta property="og:title" content="Our Mission">', false);
+});
+
+it('populates og:title from the page title across public page types', function () {
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home Org',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+    Page::factory()->create([
+        'slug'         => 'about',
+        'title'        => 'About Page',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+    Page::factory()->create([
+        'slug'         => 'news/hello-world',
+        'title'        => 'Hello Post',
+        'type'         => 'post',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+    Page::factory()->create([
+        'slug'         => 'events/gala',
+        'title'        => 'Gala Event',
+        'type'         => 'event',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')->assertSee('<meta property="og:title" content="Home Org">', false);
+    $this->get('/about')->assertSee('<meta property="og:title" content="About Page">', false);
+    $this->get('/news/hello-world')->assertSee('<meta property="og:title" content="Hello Post">', false);
+    $this->get('/events/gala')->assertSee('<meta property="og:title" content="Gala Event">', false);
+});
+
+// ── Canonical homepage URL ───────────────────────────────────────────────────
+
+it('301-redirects /home to / so the homepage has a single crawlable URL', function () {
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/home')
+        ->assertStatus(301)
+        ->assertRedirect('/');
+});
+
+// ── Client-side __site privacy ───────────────────────────────────────────────
+
+it('does not leak the contact email into the client-side __site script', function () {
+    config(['site.contact_email' => 'private@nphelper.com']);
+
+    Page::factory()->create([
+        'slug'         => 'home',
+        'title'        => 'Home',
+        'status'       => 'published',
+        'published_at' => now(),
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('window.__site', false)   // block still renders
+        ->assertDontSee('contactEmail', false)
+        ->assertDontSee('private@nphelper.com', false);
+});
+
 // ── Noindex ──────────────────────────────────────────────────────────────────
 
 it('renders noindex meta tag when noindex is true', function () {

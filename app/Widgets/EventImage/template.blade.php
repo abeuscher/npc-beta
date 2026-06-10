@@ -36,12 +36,17 @@
         $imgStyle .= 'aspect-ratio:' . $ratioCss . ';';
     }
     $wrapStyle = $maxWidth !== '' ? 'max-width:' . $maxWidth . ';' : '';
+
+    // LCP path: an eager image loads immediately and is hinted high-priority.
+    // Default lazy — only an above-the-fold event image should opt into eager.
+    $eager       = ($config['loading_priority'] ?? 'lazy') === 'eager';
+    $loadingAttr = $eager ? 'eager' : 'lazy';
 @endphp
 
 @if ($item && $src !== '')
     <div class="widget-event-image"@if ($wrapStyle) style="{{ $wrapStyle }}"@endif>
         @if ($linkUrl)<a href="{{ $linkUrl }}">@endif
-        <img src="{{ $src }}" alt="{{ $alt }}" style="{{ $imgStyle }}" loading="lazy">
+        <img src="{{ $src }}" alt="{{ $alt }}" style="{{ $imgStyle }}" loading="{{ $loadingAttr }}"@if ($eager) fetchpriority="high"@endif>
         @if ($linkUrl)</a>@endif
     </div>
 @endif

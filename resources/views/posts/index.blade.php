@@ -1,5 +1,5 @@
 @extends('layouts.public', [
-    'title'         => $page->meta_title ?? $page->title,
+    'title'         => $page->meta_title ?: $page->title,
     'description'   => $page->meta_description,
     'inlineStyles'  => $inlineStyles ?? '',
     'inlineScripts' => $inlineScripts ?? '',

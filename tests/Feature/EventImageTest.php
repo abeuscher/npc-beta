@@ -90,6 +90,30 @@ it('uses the alt text override when provided', function () {
         ->not->toContain('alt="Spring Gala"');
 });
 
+it('lazy-loads by default and adds no fetchpriority', function () {
+    Storage::fake('public');
+    $event = Event::factory()->create(['slug' => 'gala']);
+    attachEventImage($event, 'event_header', 'header.jpg');
+
+    $html = renderEventImage('gala');
+
+    expect($html)
+        ->toContain('loading="lazy"')
+        ->not->toContain('fetchpriority');
+});
+
+it('eager-loads with high fetchpriority when loading_priority is eager', function () {
+    Storage::fake('public');
+    $event = Event::factory()->create(['slug' => 'gala']);
+    attachEventImage($event, 'event_header', 'header.jpg');
+
+    $html = renderEventImage('gala', ['loading_priority' => 'eager']);
+
+    expect($html)
+        ->toContain('loading="eager"')
+        ->toContain('fetchpriority="high"');
+});
+
 it('applies an aspect ratio and max width as inline styles', function () {
     Storage::fake('public');
     $event = Event::factory()->create(['slug' => 'gala']);

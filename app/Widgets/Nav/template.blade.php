@@ -86,13 +86,23 @@
         return $item->url ?? '#';
     };
 
-    // Helper to render a template with tokens
-    $renderTemplate = function (string $template, string $label, string $url, string $activeClass) {
-        return str_replace(
+    // Helper to render a nav-item template. Beyond token substitution it:
+    //  (1) strips the wrapping <p> the Quill-backed template editor adds — nav
+    //      items are links, not prose, so the <p> is invalid leakage; and
+    //  (2) hoists role="menuitem" (plus any per-item ARIA passed in
+    //      $anchorAttrs, e.g. aria-current) onto the anchor, the actual
+    //      interactive element, rather than the layout wrapper <span>.
+    $renderTemplate = function (string $template, string $label, string $url, string $activeClass, string $anchorAttrs = '') {
+        $html = str_replace(
             ['{{label}}', '{{url}}', '{{active_class}}'],
             [e($label), e($url), e($activeClass)],
             $template
         );
+
+        $html = preg_replace('#^\s*<p\b[^>]*>(.*)</p>\s*$#is', '$1', $html) ?? $html;
+
+        $inject = trim('role="menuitem" ' . $anchorAttrs);
+        return preg_replace('/<a\b/i', '<a ' . $inject, $html, 1) ?? $html;
     };
 
     // Helper to check if a URL matches the current path
@@ -214,6 +224,7 @@
                 $activeClass = $active ? 'is-active' : '';
                 $hasChildren = $item->children->isNotEmpty();
                 $itemId = $widgetId . '-item-' . $index;
+                $anchorAttrs = $active ? 'aria-current="page"' : '';
             @endphp
             <li
                 role="none"
@@ -224,17 +235,15 @@
                 @endif
             >
                 <span
-                    role="menuitem"
                     class="widget-nav__item-wrap"
                     @if ($hasChildren)
                         aria-haspopup="true"
                         :aria-expanded="activeDropdown === '{{ $itemId }}' ? 'true' : 'false'"
                         @focusin="openDropdown('{{ $itemId }}')"
-                        @keydown.arrow-down.prevent="openDropdown('{{ $itemId }}'); $nextTick(() => $el.closest('.widget-nav__item').querySelector('[role=menu] [role=menuitem] a')?.focus())"
+                        @keydown.arrow-down.prevent="openDropdown('{{ $itemId }}'); $nextTick(() => $el.closest('.widget-nav__item').querySelector('[role=menu] [role=menuitem]')?.focus())"
                     @endif
-                    @if ($active) aria-current="page" @endif
                 >
-                    {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass) !!}
+                    {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass, $anchorAttrs) !!}
                     @if ($hasChildren)
                         <span class="widget-nav__caret" aria-hidden="true"></span>
                     @endif
@@ -257,6 +266,7 @@
                                 $childActiveClass = $childActive ? 'is-active' : '';
                                 $childHasChildren = $child->children->isNotEmpty();
                                 $childItemId = $itemId . '-' . $childIndex;
+                                $childAnchorAttrs = $childActive ? 'aria-current="page"' : '';
                             @endphp
                             <li
                                 role="none"
@@ -267,16 +277,14 @@
                                 @endif
                             >
                                 <span
-                                    role="menuitem"
                                     class="widget-nav__drop-item-wrap"
-                                    @if ($childActive) aria-current="page" @endif
                                     @if ($childHasChildren)
                                         aria-haspopup="true"
                                         :aria-expanded="activeDropdown === '{{ $childItemId }}' ? 'true' : 'false'"
                                         @focusin="openDropdown('{{ $childItemId }}')"
                                     @endif
                                 >
-                                    {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass) !!}
+                                    {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass, $childAnchorAttrs) !!}
                                     @if ($childHasChildren)
                                         <span class="widget-nav__caret widget-nav__caret--sub" aria-hidden="true"></span>
                                     @endif
@@ -297,10 +305,11 @@
                                                 $gcHref = $resolveUrl($grandchild);
                                                 $gcActive = $isActive($gcHref);
                                                 $gcActiveClass = $gcActive ? 'is-active' : '';
+                                                $gcAnchorAttrs = $gcActive ? 'aria-current="page"' : '';
                                             @endphp
                                             <li role="none" class="widget-nav__subdrop-item">
-                                                <span role="menuitem" class="widget-nav__subdrop-item-wrap" @if ($gcActive) aria-current="page" @endif>
-                                                    {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass) !!}
+                                                <span class="widget-nav__subdrop-item-wrap">
+                                                    {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
                                                 </span>
                                             </li>
                                         @endforeach
@@ -330,13 +339,14 @@
                     $activeClass = $active ? 'is-active' : '';
                     $hasChildren = $item->children->isNotEmpty();
                     $mobileItemId = $widgetId . '-mob-' . $index;
+                    $anchorAttrs = $active ? 'aria-current="page"' : '';
                 @endphp
                 <li class="widget-nav__mobile-item" role="none">
                     @if ($hasChildren)
                         <input type="checkbox" id="{{ $mobileItemId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($item->label) }}">
                     @endif
-                    <span role="menuitem" class="widget-nav__mobile-item-wrap">
-                        {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass) !!}
+                    <span class="widget-nav__mobile-item-wrap">
+                        {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass, $anchorAttrs) !!}
                         @if ($hasChildren)
                             <label for="{{ $mobileItemId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
                                 <span class="widget-nav__mobile-chevron"></span>
@@ -353,13 +363,14 @@
                                     $childActiveClass = $childActive ? 'is-active' : '';
                                     $childHasChildren = $child->children->isNotEmpty();
                                     $mobileChildId = $mobileItemId . '-' . $childIndex;
+                                    $childAnchorAttrs = $childActive ? 'aria-current="page"' : '';
                                 @endphp
                                 <li class="widget-nav__mobile-item widget-nav__mobile-item--child" role="none">
                                     @if ($childHasChildren)
                                         <input type="checkbox" id="{{ $mobileChildId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($child->label) }}">
                                     @endif
-                                    <span role="menuitem" class="widget-nav__mobile-item-wrap">
-                                        {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass) !!}
+                                    <span class="widget-nav__mobile-item-wrap">
+                                        {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass, $childAnchorAttrs) !!}
                                         @if ($childHasChildren)
                                             <label for="{{ $mobileChildId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
                                                 <span class="widget-nav__mobile-chevron"></span>
@@ -374,11 +385,10 @@
                                                     $gcHref = $resolveUrl($grandchild);
                                                     $gcActive = $isActive($gcHref);
                                                     $gcActiveClass = $gcActive ? 'is-active' : '';
+                                                    $gcAnchorAttrs = $gcActive ? 'aria-current="page"' : '';
                                                 @endphp
                                                 <li class="widget-nav__mobile-item widget-nav__mobile-item--grandchild" role="none">
-                                                    <span role="menuitem">
-                                                        {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass) !!}
-                                                    </span>
+                                                    {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
                                                 </li>
                                             @endforeach
                                         </ul>

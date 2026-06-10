@@ -67,6 +67,36 @@ it('renders menu items from a selected NavigationMenu', function () {
         ->toContain('<nav');
 });
 
+it('puts role=menuitem on the anchor and leaks no <p> wrapper', function () {
+    $navType = seedNavWidget();
+    $menu    = createNavMenu();
+    createNavItem($menu, ['label' => 'Home', 'url' => '/']);
+
+    $html = renderNavWidget($navType, ['navigation_menu_id' => $menu->id]);
+
+    // role lives on the interactive element (the anchor), not the wrapper span
+    expect($html)
+        ->toContain('<a role="menuitem"')
+        ->not->toContain('<span role="menuitem"')
+        // the richtext <p> wrapper no longer bleeds into nav output
+        ->not->toContain('<p>');
+});
+
+it('marks the active anchor with aria-current=page (on the anchor, not the span)', function () {
+    $navType = seedNavWidget();
+    $menu    = createNavMenu();
+    createNavItem($menu, ['label' => 'Home', 'url' => '/']);
+
+    $this->get('/'); // current path '/'
+
+    $html = renderNavWidget($navType, ['navigation_menu_id' => $menu->id]);
+
+    expect($html)
+        ->toContain('<a role="menuitem"')
+        ->toContain('aria-current="page"')
+        ->not->toContain('<span role="menuitem"');
+});
+
 it('renders 3-level nesting correctly', function () {
     $navType = seedNavWidget();
     $menu    = createNavMenu();

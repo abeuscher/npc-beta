@@ -246,7 +246,6 @@
     window.__site = {
         name: @json(config('site.name', config('app.name'))),
         blogPrefix: @json(config('site.blog_prefix', 'news')),
-        contactEmail: @json(config('site.contact_email', '')),
     };
     </script>
 
