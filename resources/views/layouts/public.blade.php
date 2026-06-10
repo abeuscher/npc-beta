@@ -106,6 +106,13 @@
         <script type="application/ld+json">{!! $seo['json_ld'] !!}</script>
     @endif
 
+    {{-- Operator-authored custom JSON-LD (site-wide + per-page), JSON-validated
+         and breakout-escaped by SeoMetaGenerator — emitted alongside the auto
+         graph above. --}}
+    @foreach ($seo['custom_json_ld'] ?? [] as $__customJsonLd)
+        <script type="application/ld+json">{!! $__customJsonLd !!}</script>
+    @endforeach
+
     @vite(['resources/scss/public.scss', 'resources/js/public.js'])
 
     @php

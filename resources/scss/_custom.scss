@@ -34,8 +34,16 @@
 .widget--hero {
     position: relative;
     overflow: hidden;
-    min-height: 24rem;
 
+    // min-height lives ONLY on the modifier classes below, never as a bare
+    // base declaration. The generic block wrapper (page-widgets.blade.php)
+    // also carries `widget--hero` (it's widget--{handle}, and the handle is
+    // "hero"), so a base min-height here pins that OUTER wrapper — and the
+    // inner template root, which is the element that actually carries the
+    // hero--height-* / hero--fullscreen modifier, can never shrink below it.
+    // That floor is why "Small" (16rem) was stuck at the old 24rem. The Hero
+    // template always emits exactly one modifier (a hero--height-* when not
+    // fullscreen, else hero--fullscreen), so coverage stays complete.
     &.hero--height-16 { min-height: 16rem; }
     &.hero--height-24 { min-height: 24rem; }
     &.hero--height-32 { min-height: 32rem; }

@@ -105,6 +105,13 @@ trait HasPageBuilderForm
                     Forms\Components\Toggle::make('noindex')
                         ->label('Hide from search engines')
                         ->helperText('Adds a noindex meta tag. Use for thank-you pages, confirmation pages, etc.'),
+
+                    Forms\Components\Textarea::make('custom_fields.json_ld')
+                        ->label('Custom JSON-LD')
+                        ->rows(6)
+                        ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                        ->rules([new \App\Rules\ValidJsonLd()])
+                        ->helperText('Optional structured-data graph for this page (a JSON object or array, e.g. a Person or Event graph). Emitted as an additional JSON-LD script alongside the auto-generated one. Leave blank to disable.'),
                 ])
                 ->columns(1)
                 ->collapsible()
