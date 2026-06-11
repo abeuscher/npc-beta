@@ -68,12 +68,41 @@ it('never clobbers an existing arrangement — no widgets seeded when the view a
         ->and($view->pageWidgets()->first()->label)->toBe('Custom Memos');
 });
 
-it('is a no-op when the super_admin role does not exist', function () {
-    Role::where('name', 'super_admin')->delete();
+it('skips a role that does not exist — no view seeded when both seeded roles are absent', function () {
+    Role::whereIn('name', ['super_admin', 'demo'])->delete();
 
     (new DashboardViewSeeder())->run();
 
     expect(DashboardView::count())->toBe(0);
+});
+
+it('creates a product-feel DashboardView for the demo role — no setup checklist or data generator', function () {
+    (new DashboardViewSeeder())->run();
+
+    $demo = Role::where('name', 'demo')->first();
+    $view = DashboardView::where('role_id', $demo->id)->first();
+
+    expect($view)->not->toBeNull();
+
+    $handles = $view->pageWidgets()->with('widgetType')->orderBy('sort_order')->get()
+        ->map(fn ($w) => $w->widgetType->handle)
+        ->all();
+
+    expect($handles)->toBe(['quick_actions', 'this_weeks_events', 'recent_donations', 'recent_notes', 'memos'])
+        ->and($handles)->not->toContain('setup_checklist')
+        ->and($handles)->not->toContain('random_data_generator');
+});
+
+it('the demo role resolves a dashboard arrangement — no empty state for a demo user', function () {
+    (new DashboardViewSeeder())->run();
+
+    $user = \App\Models\User::factory()->create();
+    $user->assignRole('demo');
+
+    $view = DashboardView::forUser($user->fresh());
+
+    expect($view)->not->toBeNull()
+        ->and($view->pageWidgets()->exists())->toBeTrue();
 });
 
 it('seeded widgets ship with the default configs the hardcoded widgets() used in session 214', function () {

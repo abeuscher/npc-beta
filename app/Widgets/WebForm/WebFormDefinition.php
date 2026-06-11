@@ -44,4 +44,13 @@ class WebFormDefinition extends WidgetDefinition
     {
         return ['keys' => ['form_handle'], 'message' => 'Select a form to embed.'];
     }
+
+    public function demoConfig(): array
+    {
+        // Point at the base-seeded newsletter signup form so the demo thumbnail
+        // renders a real embedded form rather than the empty placeholder.
+        return [
+            'form_handle' => 'newsletter-signup',
+        ];
+    }
 }

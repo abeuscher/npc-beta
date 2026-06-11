@@ -81,6 +81,17 @@ class LogoGardenDefinition extends WidgetDefinition
         return DemoSeeder::class;
     }
 
+    public function demoConfig(): array
+    {
+        // The dev render only sets collection_handle; map the seeded collection's
+        // image/name fields so the dataContract resolves each logo's media.
+        return [
+            'image_field' => 'logo',
+            'name_field'  => 'name',
+            'show_name'   => true,
+        ];
+    }
+
     public function dataContract(array $config): ?DataContract
     {
         $imageField = (string) ($config['image_field'] ?? '');

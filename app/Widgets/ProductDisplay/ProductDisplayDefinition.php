@@ -41,6 +41,16 @@ class ProductDisplayDefinition extends WidgetDefinition
         ];
     }
 
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
+
+    public function demoConfig(): array
+    {
+        return ['product_slug' => DemoSeeder::PRODUCT_SLUG];
+    }
+
     public function dataContract(array $config): ?DataContract
     {
         return new DataContract(

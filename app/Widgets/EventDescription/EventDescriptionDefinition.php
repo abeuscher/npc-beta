@@ -5,6 +5,7 @@ namespace App\Widgets\EventDescription;
 use App\Support\DateFormat;
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
+use Database\Seeders\DemoEventSeeder;
 
 class EventDescriptionDefinition extends WidgetDefinition
 {
@@ -47,6 +48,16 @@ class EventDescriptionDefinition extends WidgetDefinition
     public function requiredConfig(): ?array
     {
         return ['keys' => ['event_slug'], 'message' => 'Select an event to display its details.'];
+    }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoEventSeeder::class;
+    }
+
+    public function demoConfig(): array
+    {
+        return ['event_slug' => DemoEventSeeder::EVENT_SLUG];
     }
 
     public function dataContract(array $config): ?DataContract

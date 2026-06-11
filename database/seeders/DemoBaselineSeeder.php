@@ -48,6 +48,11 @@ class DemoBaselineSeeder extends Seeder
         } finally {
             $previous ? Auth::login($previous) : Auth::logout();
         }
+
+        // Ensure the demo (and super_admin) dashboard arrangements exist on every
+        // baseline restore — covers the soft-reset path, which skips
+        // migrate:fresh --seed. Idempotent.
+        (new DashboardViewSeeder())->run();
     }
 
     /**

@@ -12,24 +12,46 @@ class DashboardViewSeeder extends Seeder
 {
     public function run(): void
     {
-        $superAdmin = Role::where('name', 'super_admin')->where('guard_name', 'web')->first();
-        if (! $superAdmin) {
-            return;
-        }
-
-        $view = DashboardView::firstOrCreate(['role_id' => $superAdmin->id]);
-
-        if ($view->pageWidgets()->exists()) {
-            return;
-        }
-
-        $defaults = [
+        $this->seedRole('super_admin', [
             ['handle' => 'setup_checklist',        'config' => []],
             ['handle' => 'memos',                  'config' => ['limit' => 5]],
             ['handle' => 'quick_actions',          'config' => ['actions' => ['new_contact', 'new_event', 'new_post']]],
             ['handle' => 'this_weeks_events',      'config' => ['days_ahead' => 7]],
             ['handle' => 'random_data_generator',  'config' => []],
-        ];
+        ]);
+
+        // Demo prospects land on the dashboard under the shared `demo` role; give
+        // it a product-feel arrangement (no setup checklist or data generator) so
+        // it never shows the "ask an admin to configure one" empty state. Reaches
+        // the demo node via the baseline (demo:reset runs migrate:fresh --seed,
+        // and DemoBaselineSeeder also calls this seeder for the soft-reset path).
+        $this->seedRole('demo', [
+            ['handle' => 'quick_actions',     'config' => ['actions' => ['new_contact', 'new_event', 'new_post']]],
+            ['handle' => 'this_weeks_events', 'config' => ['days_ahead' => 7]],
+            ['handle' => 'recent_donations',  'config' => []],
+            ['handle' => 'recent_notes',      'config' => []],
+            ['handle' => 'memos',             'config' => ['limit' => 5]],
+        ]);
+    }
+
+    /**
+     * Seed a role's dashboard arrangement once. Idempotent — skips if the role is
+     * missing or its view already has widgets.
+     *
+     * @param  array<int, array{handle: string, config: array}>  $defaults
+     */
+    private function seedRole(string $roleName, array $defaults): void
+    {
+        $role = Role::where('name', $roleName)->where('guard_name', 'web')->first();
+        if (! $role) {
+            return;
+        }
+
+        $view = DashboardView::firstOrCreate(['role_id' => $role->id]);
+
+        if ($view->pageWidgets()->exists()) {
+            return;
+        }
 
         $sort = 0;
         foreach ($defaults as $entry) {

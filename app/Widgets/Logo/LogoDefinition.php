@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Logo;
 
+use App\Models\SampleImage;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class LogoDefinition extends WidgetDefinition
@@ -46,6 +47,20 @@ class LogoDefinition extends WidgetDefinition
             'logo'     => null,
             'text'     => '',
             'link_url' => '/',
+        ];
+    }
+
+    public function demoImages(): array
+    {
+        // Inject a sample logo URL into config.logo; the template renders it via
+        // the demo-URL fallback (mirrors the Image widget) so the thumbnail shows
+        // a real logo instead of the empty-state placeholder.
+        return [
+            [
+                'category' => SampleImage::CATEGORY_LOGOS,
+                'count'    => 1,
+                'target'   => 'config.logo',
+            ],
         ];
     }
 }

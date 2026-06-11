@@ -66,4 +66,13 @@ class MapEmbedDefinition extends WidgetDefinition
     {
         return ['keys' => ['map_input'], 'message' => 'Paste a Google Maps share link or embed code.'];
     }
+
+    public function demoConfig(): array
+    {
+        // A recognisable place URL so the demo thumbnail renders the map embed
+        // (MapEmbedParser turns this into a keyless Google Maps embed iframe).
+        return [
+            'map_input' => 'https://www.google.com/maps/place/Golden+Gate+Bridge,+San+Francisco,+CA',
+        ];
+    }
 }

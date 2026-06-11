@@ -94,6 +94,25 @@ it('demo server: the per-IP throttle returns 429 once the per-minute limit is ex
     expect($statuses)->toContain(429);
 });
 
+it('demo server: the login page shows a "Re-enter the demo" button pointing at demo.enter', function () {
+    enterDemoMode();
+
+    $response = $this->get('/admin/login');
+
+    $response->assertOk();
+    $response->assertSee('Re-enter the demo');
+    $response->assertSee(route('demo.enter'), false);
+});
+
+it('non-demo install: the login page has no demo re-enter button', function () {
+    expect(isDemoMode())->toBeFalse();
+
+    $response = $this->get('/admin/login');
+
+    $response->assertOk();
+    $response->assertDontSee('Re-enter the demo');
+});
+
 it('non-demo install: /demo/enter is inert — 404, no authentication, no Demo User row', function () {
     expect(isDemoMode())->toBeFalse();
 

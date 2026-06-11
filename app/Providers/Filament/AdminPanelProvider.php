@@ -288,6 +288,25 @@ class AdminPanelProvider extends PanelProvider
                     '<link rel="stylesheet" href="/css/admin.css">'
                 )
             )
+            // Demo mode only: a "Re-enter the demo" button below the login form so
+            // a logged-out demo visitor can get back in without credentials
+            // (auto-login via the demo.enter route). Renders nothing otherwise.
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                fn (): HtmlString => new HtmlString(
+                    isDemoMode()
+                        ? '<div class="mt-6 border-t border-gray-200 pt-6 text-center dark:border-gray-700">'
+                            . '<p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Just exploring? Skip the sign-in.</p>'
+                            . '<a href="' . e(route('demo.enter')) . '"'
+                            . ' class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2">'
+                            . '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">'
+                            . '<path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>'
+                            . '</svg>'
+                            . 'Re-enter the demo</a>'
+                            . '</div>'
+                        : ''
+                )
+            )
             // Site-wide Livewire loading bar — fixed top bar that appears on any
             // server round-trip after a 200 ms delay (so instant clicks don't flash).
             ->renderHook(

@@ -4,6 +4,7 @@ namespace App\Widgets\EventRegistration;
 
 use App\Widgets\Contracts\WidgetDefinition;
 use App\WidgetPrimitive\DataContract;
+use Database\Seeders\DemoEventSeeder;
 
 class EventRegistrationDefinition extends WidgetDefinition
 {
@@ -40,7 +41,18 @@ class EventRegistrationDefinition extends WidgetDefinition
             'event_slug' => '',
         ];
     }
-   public function demoAppearanceConfig(): array
+
+    public function demoSeeder(): ?string
+    {
+        return DemoEventSeeder::class;
+    }
+
+    public function demoConfig(): array
+    {
+        return ['event_slug' => DemoEventSeeder::EVENT_SLUG];
+    }
+
+    public function demoAppearanceConfig(): array
     {
         return [
             'layout'     => [

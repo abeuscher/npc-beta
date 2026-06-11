@@ -87,4 +87,14 @@ public function defaults(): array
     {
         return ['keys' => ['navigation_menu_id'], 'message' => 'Select a navigation menu.'];
     }
+
+    public function demoSeeder(): ?string
+    {
+        return DemoSeeder::class;
+    }
+
+    public function demoConfig(): array
+    {
+        return ['navigation_menu_id' => DemoSeeder::MENU_ID];
+    }
 }
