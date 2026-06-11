@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import type { ApiClient } from '../api'
-import type { DedupDecision, DedupMatch, Widget } from '../types'
+import type { DedupDecision, DedupMatch, MediaBrowserTarget, Widget } from '../types'
 import { sha256Hex } from '../utils/hashFile'
 
 export interface UseUploadActionsDeps {
@@ -93,6 +93,36 @@ export function useUploadActions(deps: UseUploadActionsDeps) {
     }
   }
 
+  // Attach an already-stored library image (chosen in the media browser) to a
+  // widget field or appearance background. The use-existing endpoints introduce
+  // no new file (CAS copy), so no dedup gate — this is the browse-and-pick path.
+  // Mirrors the use-existing branches of uploadImage / uploadAppearanceImage
+  // without touching them, so the existing upload/remove behaviour is untouched.
+  async function useExistingMedia(target: MediaBrowserTarget, mediaId: number): Promise<string | null> {
+    deps.saving.value = true
+    try {
+      const w = deps.widgets.value[target.widgetId]
+      if (target.kind === 'appearance') {
+        const res = await deps.requireApi().useExistingAppearanceImage(target.widgetId, mediaId)
+        if (w) w.appearance_image_url = res.url
+        deps.dirtyWidgets.value.add(target.widgetId)
+        deps.refreshPreview(target.widgetId)
+        return res.url
+      }
+
+      const res = await deps.requireApi().useExistingImage(target.widgetId, target.key, mediaId)
+      if (w) {
+        w.config = { ...w.config, [target.key]: res.media_id }
+        w.image_urls = { ...w.image_urls, [target.key]: res.url }
+      }
+      deps.dirtyWidgets.value.add(target.widgetId)
+      deps.refreshPreview(target.widgetId)
+      return res.url
+    } finally {
+      deps.saving.value = false
+    }
+  }
+
   async function removeAppearanceImage(widgetId: string): Promise<void> {
     deps.saving.value = true
     try {
@@ -112,5 +142,6 @@ export function useUploadActions(deps: UseUploadActionsDeps) {
     removeImage,
     uploadAppearanceImage,
     removeAppearanceImage,
+    useExistingMedia,
   }
 }

@@ -8,6 +8,7 @@ import PreviewCanvas from './components/PreviewCanvas.vue'
 import InspectorPanel from './components/InspectorPanel.vue'
 import InlineFormatToolbar from './components/InlineFormatToolbar.vue'
 import DedupPromptModal from './components/DedupPromptModal.vue'
+import MediaBrowserModal from './components/MediaBrowserModal.vue'
 
 const props = defineProps<{
   bootstrap: BootstrapData
@@ -121,6 +122,7 @@ onUnmounted(() => {
     <InlineFormatToolbar />
 
     <DedupPromptModal />
+    <MediaBrowserModal />
   </div>
 </template>
 

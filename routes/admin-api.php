@@ -60,6 +60,10 @@ Route::get('pages', [PageBuilderApiController::class, 'pages']);
 Route::get('events', [PageBuilderApiController::class, 'events']);
 Route::get('data-sources/{source}', [PageBuilderApiController::class, 'dataSources']);
 
+// Browsable image media for the media picker (read-only; not demo-gated —
+// browsing/selecting introduces no new file). New-file upload stays gated below.
+Route::get('media', [PageBuilderApiController::class, 'mediaList']);
+
 // Upload-time dedup check (owner-agnostic — hashes only).
 Route::post('media-dedup-check', [MediaDedupController::class, 'check']);
 

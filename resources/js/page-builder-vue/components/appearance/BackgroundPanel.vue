@@ -24,6 +24,7 @@ const emit = defineEmits<{
   update: [path: string, value: any]
   uploadImage: [file: File]
   removeImage: []
+  browseLibrary: []
 }>()
 
 const uploading = ref(false)
@@ -238,6 +239,13 @@ function triggerFileInput() {
         <span v-if="uploading">Uploading…</span>
         <span v-else>Click to upload an image</span>
       </button>
+
+      <button
+        type="button"
+        class="bg-panel__browse"
+        :disabled="useCurrentPageHeader"
+        @click="emit('browseLibrary')"
+      >Browse library</button>
     </div>
     </div>
 
@@ -448,6 +456,29 @@ function triggerFileInput() {
 .bg-panel__upload-block:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+/* ── Browse library button ───────────────────────────────────────────────── */
+
+.bg-panel__browse {
+  align-self: flex-start;
+  border: 1px solid var(--np-control-border);
+  border-radius: var(--np-control-radius);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  background: var(--np-control-chip-bg);
+  color: var(--np-control-icon-default);
+  cursor: pointer;
+}
+
+.bg-panel__browse:hover:not(:disabled) {
+  border-color: var(--c-primary-400, #818cf8);
+  color: var(--c-primary-600, #4f46e5);
+}
+
+.bg-panel__browse:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 html.dark .bg-panel__heading  { color: rgb(229 231 235); }

@@ -20,6 +20,7 @@ use App\Services\WidgetPreviewRenderer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class PageBuilderApiController extends Controller
@@ -350,6 +351,90 @@ class PageBuilderApiController extends Controller
         return response()->json([
             'options' => PageBuilderDataSources::resolve($source),
         ]);
+    }
+
+    // ── Media browser ──────────────────────────────────────────────────────
+
+    /**
+     * Browsable image media for the page-builder media picker. Returns distinct
+     * images (deduped by content_hash — the same bytes reused across widgets are
+     * one physical file under content-addressed storage), most-recent first,
+     * filename-searchable, paginated. WidgetType-owned chrome thumbnails are
+     * excluded; everything else image/* is author-pickable. Read-only and
+     * view_page-gated, so the demo role can browse — only new-file upload is gated.
+     */
+    public function mediaList(Request $request): JsonResponse
+    {
+        abort_unless(auth()->user()?->can('view_page'), 403);
+
+        $search = trim((string) $request->query('search', ''));
+        $perPage = 60;
+        $page = max(1, (int) $request->integer('page', 1));
+
+        $base = Media::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->where('model_type', '!=', WidgetType::class);
+
+        if ($search !== '') {
+            $base->where('file_name', 'like', '%' . $search . '%');
+        }
+
+        // One representative row (most-recent id) per distinct image. Rows with
+        // no content_hash (legacy / un-relocated) each stand alone via the id
+        // fallback, so they are never collapsed together.
+        $repIds = (clone $base)
+            ->selectRaw('MAX(id) as rep_id')
+            ->groupBy(DB::raw('COALESCE(content_hash, id::text)'))
+            ->orderByDesc('rep_id')
+            ->limit($perPage + 1)
+            ->offset(($page - 1) * $perPage)
+            ->pluck('rep_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $hasMore = count($repIds) > $perPage;
+        $repIds = array_slice($repIds, 0, $perPage);
+
+        $media = Media::query()->whereIn('id', $repIds)->get()->keyBy('id');
+
+        $data = collect($repIds)
+            ->map(fn (int $id) => $media->get($id))
+            ->filter()
+            ->map(fn (Media $m) => $this->describeBrowseMedia($m))
+            ->values()
+            ->all();
+
+        return response()->json([
+            'data'     => $data,
+            'has_more' => $hasMore,
+        ]);
+    }
+
+    private function describeBrowseMedia(Media $media): array
+    {
+        return [
+            'media_id'  => (int) $media->id,
+            'url'       => $this->browseThumbUrl($media),
+            'file_name' => $media->file_name,
+            'size'      => (int) $media->size,
+            'mime_type' => $media->mime_type,
+        ];
+    }
+
+    /**
+     * Thumbnail URL for the browser grid: the generated webp conversion when one
+     * exists (lighter), else the original. Introduces no new conversion — mirrors
+     * MediaLibraryPage's image column and MediaDedupService::previewUrl.
+     */
+    private function browseThumbUrl(Media $media): ?string
+    {
+        try {
+            return $media->hasGeneratedConversion('webp')
+                ? $media->getUrl('webp')
+                : $media->getUrl();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     // ── Image upload ─────────────────────────────────────────────────────────

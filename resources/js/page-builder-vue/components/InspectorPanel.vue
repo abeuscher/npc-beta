@@ -126,6 +126,11 @@ function onWidgetRemoveImage() {
   store.removeAppearanceImage(widget.value.id)
 }
 
+function onWidgetBrowseImage() {
+  if (!widget.value) return
+  store.openMediaBrowser({ kind: 'appearance', widgetId: widget.value.id })
+}
+
 // If a non-page mode lands on a tab that was hidden, coerce to a valid one.
 watch(
   [isPageMode, topTabs, bottomTabs],
@@ -248,6 +253,7 @@ watch(
               @update="onWidgetBackgroundUpdate"
               @upload-image="onWidgetUploadImage"
               @remove-image="onWidgetRemoveImage"
+              @browse-library="onWidgetBrowseImage"
             />
           </div>
           <div v-show="bottomTab === 'text'" class="inspector-pane__scroll">

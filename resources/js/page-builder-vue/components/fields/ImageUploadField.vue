@@ -39,6 +39,10 @@ async function handleFileSelect(event: Event) {
 async function handleRemove() {
   await store.removeImage(props.widget.id, props.field.key)
 }
+
+function openBrowser() {
+  store.openMediaBrowser({ kind: 'config', widgetId: props.widget.id, key: props.field.key })
+}
 </script>
 
 <template>
@@ -65,12 +69,20 @@ async function handleRemove() {
       >&times;</button>
     </div>
 
-    <input
-      type="file"
-      :accept="acceptTypes"
-      class="image-upload__input"
-      @change="handleFileSelect"
-    >
+    <div class="image-upload__actions">
+      <input
+        type="file"
+        :accept="acceptTypes"
+        class="image-upload__input"
+        @change="handleFileSelect"
+      >
+      <button
+        v-if="!isVideo"
+        type="button"
+        class="image-upload__browse"
+        @click="openBrowser"
+      >Browse library</button>
+    </div>
 
     <p v-if="uploading" class="image-upload__status">Uploading…</p>
   </div>
@@ -115,9 +127,33 @@ async function handleRemove() {
   background: #dc2626;
 }
 
+.image-upload__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .image-upload__input {
   font-size: 0.875rem;
   color: #4b5563;
+}
+
+.image-upload__browse {
+  flex: 0 0 auto;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.8125rem;
+  background: #f9fafb;
+  color: #374151;
+  cursor: pointer;
+}
+
+.image-upload__browse:hover {
+  background: #f3f4f6;
+  border-color: var(--c-primary-400, #818cf8);
+  color: var(--c-primary-600, #4f46e5);
 }
 
 .image-upload__status {
@@ -130,4 +166,5 @@ html.dark .image-upload          { background: rgb(31 41 55); border-color: rgb(
 html.dark .image-upload__preview { border-color: rgb(75 85 99); }
 html.dark .image-upload__status  { color: rgb(156 163 175); }
 html.dark .image-upload__remove  { color: rgb(248 113 113); }
+html.dark .image-upload__browse  { background: rgb(55 65 81); border-color: rgb(75 85 99); color: rgb(209 213 219); }
 </style>

@@ -21,6 +21,7 @@ import type {
   EditorMode,
   DedupMatch,
   DedupDecision,
+  MediaBrowserTarget,
 } from '../types'
 import { createApiClient, type ApiClient } from '../api'
 import { useDebouncedSave } from '../composables/useDebouncedSave'
@@ -544,6 +545,19 @@ export const useEditorStore = defineStore('editor', () => {
     resolve?.(decision)
   }
 
+  // Media browser (session 356). Open with the field's target (a widget config
+  // image key, or a widget's appearance background); the modal at app root reads
+  // `mediaBrowser` and calls useExistingMedia / uploadImage against the target.
+  const mediaBrowser = ref<{ target: MediaBrowserTarget } | null>(null)
+
+  function openMediaBrowser(target: MediaBrowserTarget): void {
+    mediaBrowser.value = { target }
+  }
+
+  function closeMediaBrowser(): void {
+    mediaBrowser.value = null
+  }
+
   const uploads = useUploadActions({
     widgets,
     dirtyWidgets,
@@ -825,6 +839,7 @@ export const useEditorStore = defineStore('editor', () => {
     chromeFooter,
     showChrome,
     dedupPrompt,
+    mediaBrowser,
 
     // Getters
     selectedWidget,
@@ -869,7 +884,10 @@ export const useEditorStore = defineStore('editor', () => {
     removeImage: uploads.removeImage,
     uploadAppearanceImage: uploads.uploadAppearanceImage,
     removeAppearanceImage: uploads.removeAppearanceImage,
+    useExistingMedia: uploads.useExistingMedia,
     resolveDedup,
+    openMediaBrowser,
+    closeMediaBrowser,
     updateLocalAppearanceConfig,
     updateLocalQueryConfig,
     applyPreset: presets.applyPreset,

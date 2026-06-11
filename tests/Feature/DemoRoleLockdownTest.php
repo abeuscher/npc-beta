@@ -217,6 +217,16 @@ it('still lets the demo role set an image from existing media (no new file)', fu
         ->assertOk();
 });
 
+it('still lets the demo role browse the media picker list (read-only, no new file)', function () {
+    // The media-browser list endpoint (session 356) is the read surface the
+    // reuse-by-id action above is selected from — it must stay open to demo, as
+    // browsing introduces no new file (only the upload affordance is gated).
+    $this->actingAs($this->demo)
+        ->getJson('/admin/api/page-builder/media')
+        ->assertOk()
+        ->assertJsonStructure(['data', 'has_more']);
+});
+
 it('still lets a non-demo user upload (the gate is scoped to the demo role, not demo mode)', function () {
     Storage::fake('public');
     $widget = demoUploadWidget();

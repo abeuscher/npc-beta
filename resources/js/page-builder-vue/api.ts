@@ -15,6 +15,7 @@ import type {
   PageRef,
   EventRef,
   DedupMatch,
+  MediaBrowserItem,
 } from './types'
 
 export class ApiError extends Error {
@@ -54,6 +55,9 @@ export interface ApiClient {
   getPages(): Promise<{ pages: PageRef[] }>
   getEvents(): Promise<{ events: EventRef[] }>
   getDataSource(source: string): Promise<{ options: Record<string, string> }>
+
+  // Browsable image media for the media picker
+  listMedia(params?: { search?: string; page?: number }): Promise<{ data: MediaBrowserItem[]; has_more: boolean }>
 
   // Upload-time dedup
   dedupCheck(hash: string, fileName?: string | null): Promise<{ matches: DedupMatch[] }>
@@ -231,6 +235,15 @@ export function createApiClient(
     },
     getDataSource(source) {
       return lookup('GET', `data-sources/${encodeURIComponent(source)}`)
+    },
+
+    // Browsable image media for the media picker
+    listMedia(params) {
+      const qs = new URLSearchParams()
+      if (params?.search) qs.set('search', params.search)
+      if (params?.page) qs.set('page', String(params.page))
+      const suffix = qs.toString()
+      return lookup('GET', suffix ? `media?${suffix}` : 'media')
     },
 
     // Upload-time dedup

@@ -280,3 +280,19 @@ export type DedupDecision =
   | { type: 'keep-new' }
   | { type: 'use-existing'; mediaId: number }
   | { type: 'cancel' }
+
+// One distinct browsable image in the media-picker grid (session 356). Deduped
+// by content_hash server-side; media_id is the representative row to attach.
+export interface MediaBrowserItem {
+  media_id: number
+  url: string | null
+  file_name: string
+  size: number
+  mime_type: string | null
+}
+
+// What the media browser is attaching to: a widget config image field (by key)
+// or a widget's appearance background image.
+export type MediaBrowserTarget =
+  | { kind: 'config'; widgetId: string; key: string }
+  | { kind: 'appearance'; widgetId: string }
