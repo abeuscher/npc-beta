@@ -122,7 +122,6 @@ function onLayoutUpdate(path: string, value: any) {
       <template v-if="activeTab === 'background'">
         <BackgroundPanel
           :config="layout.appearance_config ?? {}"
-          :id-prefix="layout.id"
           :show-image="false"
           @update="onBackgroundUpdate"
         />

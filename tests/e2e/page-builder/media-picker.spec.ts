@@ -97,7 +97,7 @@ test.describe('Page builder — media picker (browse or upload)', () => {
 
         const fieldA = page.locator('.inspector-pane--top .image-upload').first();
         await expect(fieldA).toBeVisible();
-        await fieldA.locator('.image-upload__input').setInputFiles({
+        await fieldA.locator('.image-upload-control__file-input').setInputFiles({
             name: 'picker-source.png',
             mimeType: 'image/png',
             buffer: makePng(220, 40, 40),
@@ -113,7 +113,7 @@ test.describe('Page builder — media picker (browse or upload)', () => {
 
         const fieldB = page.locator('.inspector-pane--top .image-upload').first();
         await expect(fieldB).toBeVisible();
-        await fieldB.locator('.image-upload__browse').click();
+        await fieldB.locator('.image-upload-control__browse').click();
 
         const browser = page.locator('.media-browser');
         await expect(browser).toBeVisible();
@@ -133,7 +133,7 @@ test.describe('Page builder — media picker (browse or upload)', () => {
         await expect(page.locator('.preview-region[data-widget-id]').first()).toBeVisible({ timeout: 15_000 });
         await page.locator(`.preview-region[data-widget-id="${widgetB}"]`).locator('.preview-region__overlay').click();
         await expect(
-            page.locator('.inspector-pane--top .image-upload__preview img').first()
+            page.locator('.inspector-pane--top .image-upload-control__preview img').first()
         ).toBeVisible({ timeout: 10_000 });
     });
 
@@ -153,7 +153,7 @@ test.describe('Page builder — media picker (browse or upload)', () => {
         await page.locator(`.preview-region[data-widget-id="${widgetC}"]`).locator('.preview-region__overlay').click();
         const fieldC = page.locator('.inspector-pane--top .image-upload').first();
         await expect(fieldC).toBeVisible();
-        await fieldC.locator('.image-upload__browse').click();
+        await fieldC.locator('.image-upload-control__browse').click();
 
         const browser = page.locator('.media-browser');
         await expect(browser).toBeVisible();

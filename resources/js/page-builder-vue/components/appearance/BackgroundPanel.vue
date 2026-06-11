@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import ColorPicker from '../primitives/ColorPicker.vue'
 import GradientPicker from '../primitives/GradientPicker.vue'
 import NinePointAlignment from '../primitives/NinePointAlignment.vue'
+import ImageUploadControl from '../primitives/ImageUploadControl.vue'
 import { composeGradientCss } from '../../utils/gradient'
 
 type BgTab = 'color' | 'gradient' | 'image' | null
@@ -11,7 +12,6 @@ const props = withDefaults(
   defineProps<{
     config: Record<string, any>
     imageUrl?: string | null
-    idPrefix: string
     showImage?: boolean
   }>(),
   {
@@ -86,27 +86,13 @@ function update(path: string, value: any) {
   emit('update', path, value)
 }
 
-async function handleImageUpload(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
+function onControlUpload(file: File) {
   uploading.value = true
   try {
     emit('uploadImage', file)
   } finally {
     uploading.value = false
-    input.value = ''
   }
-}
-
-function handleImageRemove() {
-  emit('removeImage')
-}
-
-function triggerFileInput() {
-  const input = document.getElementById(`bg-upload-${props.idPrefix}`) as HTMLInputElement | null
-  input?.click()
 }
 </script>
 
@@ -212,40 +198,15 @@ function triggerFileInput() {
         <span>Use current page's header image</span>
       </label>
 
-      <input
-        :id="`bg-upload-${idPrefix}`"
-        type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
-        class="bg-panel__file-input"
-        @change="handleImageUpload"
-      >
-
-      <div v-if="hasImage" class="bg-panel__image-preview" @click="triggerFileInput">
-        <img :src="imageUrl!" alt="Background image" />
-        <button
-          type="button"
-          class="bg-panel__image-remove"
-          title="Remove image"
-          @click.stop="handleImageRemove"
-        >&times;</button>
-      </div>
-      <button
-        v-else
-        type="button"
-        class="bg-panel__upload-block"
-        :disabled="uploading"
-        @click="triggerFileInput"
-      >
-        <span v-if="uploading">Uploading…</span>
-        <span v-else>Click to upload an image</span>
-      </button>
-
-      <button
-        type="button"
-        class="bg-panel__browse"
-        :disabled="useCurrentPageHeader"
-        @click="emit('browseLibrary')"
-      >Browse library</button>
+      <ImageUploadControl
+        :image-url="imageUrl"
+        :uploading="uploading"
+        :browse-disabled="useCurrentPageHeader"
+        alt="Background image"
+        @upload="onControlUpload"
+        @remove="emit('removeImage')"
+        @browse="emit('browseLibrary')"
+      />
     </div>
     </div>
 
@@ -385,100 +346,6 @@ function triggerFileInput() {
 
 .bg-panel__override input {
   margin: 0;
-}
-
-/* ── Hidden file input ───────────────────────────────────────────────────── */
-
-.bg-panel__file-input {
-  display: none;
-}
-
-/* ── Image preview inside Image panel ────────────────────────────────────── */
-
-.bg-panel__image-preview {
-  position: relative;
-  width: 100%;
-  min-height: 6rem;
-  max-height: 10rem;
-  border: 1px solid var(--np-control-border);
-  border-radius: var(--np-control-radius);
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.bg-panel__image-preview img {
-  width: 100%;
-  height: 100%;
-  max-height: 10rem;
-  object-fit: cover;
-  display: block;
-}
-
-.bg-panel__image-remove {
-  position: absolute;
-  top: 0.375rem;
-  right: 0.375rem;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: none;
-  border-radius: 50%;
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  text-align: center;
-  cursor: pointer;
-  padding: 0;
-}
-
-/* ── Upload block (full-width button in Image panel) ─────────────────────── */
-
-.bg-panel__upload-block {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 4rem;
-  border: 2px dashed var(--np-control-border);
-  border-radius: var(--np-control-radius);
-  background: var(--np-control-chip-bg);
-  color: var(--np-control-icon-default);
-  font-size: 0.8125rem;
-  cursor: pointer;
-  padding: 0.75rem;
-}
-
-.bg-panel__upload-block:hover {
-  border-color: var(--c-primary-400, #818cf8);
-  color: var(--c-primary-600, #4f46e5);
-}
-
-.bg-panel__upload-block:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-/* ── Browse library button ───────────────────────────────────────────────── */
-
-.bg-panel__browse {
-  align-self: flex-start;
-  border: 1px solid var(--np-control-border);
-  border-radius: var(--np-control-radius);
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
-  background: var(--np-control-chip-bg);
-  color: var(--np-control-icon-default);
-  cursor: pointer;
-}
-
-.bg-panel__browse:hover:not(:disabled) {
-  border-color: var(--c-primary-400, #818cf8);
-  color: var(--c-primary-600, #4f46e5);
-}
-
-.bg-panel__browse:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 html.dark .bg-panel__heading  { color: rgb(229 231 235); }

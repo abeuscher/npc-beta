@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import type { FieldDef, Widget } from '../../types'
 import { useEditorStore } from '../../stores/editor'
+import ImageUploadControl from '../primitives/ImageUploadControl.vue'
 
 const props = defineProps<{
   field: FieldDef
@@ -14,24 +15,26 @@ const uploading = ref(false)
 
 const isVideo = computed(() => props.field.type === 'video')
 
-const acceptTypes = computed(() =>
-  isVideo.value
-    ? 'video/mp4,video/webm'
-    : 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml'
-)
-
 const currentUrl = computed(() => props.widget.image_urls?.[props.field.key] ?? null)
 
-async function handleFileSelect(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
+// Shared with the video bare path below; the image path uses ImageUploadControl,
+// which emits the File directly.
+async function uploadFile(file: File) {
   uploading.value = true
   try {
     await store.uploadImage(props.widget.id, props.field.key, file)
   } finally {
     uploading.value = false
+  }
+}
+
+async function handleVideoFileSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await uploadFile(file)
+  } finally {
     input.value = ''
   }
 }
@@ -47,44 +50,45 @@ function openBrowser() {
 
 <template>
   <div class="image-upload">
-    <div v-if="currentUrl" class="image-upload__preview">
-      <video
-        v-if="isVideo"
-        :src="currentUrl"
-        class="image-upload__media"
-        muted
-        playsinline
-      />
-      <img
-        v-else
-        :src="currentUrl"
-        alt=""
-        class="image-upload__media"
-      >
-      <button
-        type="button"
-        class="image-upload__remove"
-        title="Remove"
-        @click="handleRemove"
-      >&times;</button>
-    </div>
+    <!-- Image fields: the shared upload control (converged on the background
+         model at session 357 — preview / upload-block / remove / Browse). -->
+    <ImageUploadControl
+      v-if="!isVideo"
+      :image-url="currentUrl"
+      :uploading="uploading"
+      @upload="uploadFile"
+      @remove="handleRemove"
+      @browse="openBrowser"
+    />
 
-    <div class="image-upload__actions">
-      <input
-        type="file"
-        :accept="acceptTypes"
-        class="image-upload__input"
-        @change="handleFileSelect"
-      >
-      <button
-        v-if="!isVideo"
-        type="button"
-        class="image-upload__browse"
-        @click="openBrowser"
-      >Browse library</button>
-    </div>
+    <!-- Video fields keep their bare file input (no Browse), unchanged. -->
+    <template v-else>
+      <div v-if="currentUrl" class="image-upload__preview">
+        <video
+          :src="currentUrl"
+          class="image-upload__media"
+          muted
+          playsinline
+        />
+        <button
+          type="button"
+          class="image-upload__remove"
+          title="Remove"
+          @click="handleRemove"
+        >&times;</button>
+      </div>
 
-    <p v-if="uploading" class="image-upload__status">Uploading…</p>
+      <div class="image-upload__actions">
+        <input
+          type="file"
+          accept="video/mp4,video/webm"
+          class="image-upload__input"
+          @change="handleVideoFileSelect"
+        >
+      </div>
+
+      <p v-if="uploading" class="image-upload__status">Uploading…</p>
+    </template>
   </div>
 </template>
 
@@ -139,23 +143,6 @@ function openBrowser() {
   color: #4b5563;
 }
 
-.image-upload__browse {
-  flex: 0 0 auto;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  padding: 0.3125rem 0.75rem;
-  font-size: 0.8125rem;
-  background: #f9fafb;
-  color: #374151;
-  cursor: pointer;
-}
-
-.image-upload__browse:hover {
-  background: #f3f4f6;
-  border-color: var(--c-primary-400, #818cf8);
-  color: var(--c-primary-600, #4f46e5);
-}
-
 .image-upload__status {
   margin: 0;
   font-size: 0.75rem;
@@ -166,5 +153,4 @@ html.dark .image-upload          { background: rgb(31 41 55); border-color: rgb(
 html.dark .image-upload__preview { border-color: rgb(75 85 99); }
 html.dark .image-upload__status  { color: rgb(156 163 175); }
 html.dark .image-upload__remove  { color: rgb(248 113 113); }
-html.dark .image-upload__browse  { background: rgb(55 65 81); border-color: rgb(75 85 99); color: rgb(209 213 219); }
 </style>

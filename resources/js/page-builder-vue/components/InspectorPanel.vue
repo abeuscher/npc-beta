@@ -249,7 +249,6 @@ watch(
             <BackgroundPanel
               :config="widget.appearance_config"
               :image-url="widget.appearance_image_url"
-              :id-prefix="widget.id"
               @update="onWidgetBackgroundUpdate"
               @upload-image="onWidgetUploadImage"
               @remove-image="onWidgetRemoveImage"
