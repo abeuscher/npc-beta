@@ -3,7 +3,7 @@ import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useEditorStore } from '../stores/editor'
 import { scrollSelectionIntoCentre } from '../utils/focusScroll'
 import { useViewport } from '../composables/useViewport'
-import { loadLibs, reinitAlpine } from '../composables/useLibraryLoader'
+import { hydrate } from '../../shared/hydrate'
 import PreviewRegion from './PreviewRegion.vue'
 import LayoutRegion from './LayoutRegion.vue'
 import draggable from 'vuedraggable'
@@ -216,7 +216,8 @@ watch(
       measurePane()
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (scopeEl.value) reinitAlpine(scopeEl.value)
+          // Re-layout only — libs are already present, so this is a pure re-init.
+          if (scopeEl.value) hydrate(scopeEl.value)
         })
       })
     })
@@ -230,7 +231,7 @@ function preventNavigation(e: MouseEvent) {
 
 let resizeObserver: ResizeObserver | null = null
 
-onMounted(async () => {
+onMounted(() => {
   document.addEventListener('click', closeDropdowns)
   measurePane()
 
@@ -239,12 +240,10 @@ onMounted(async () => {
     resizeObserver.observe(paneEl.value)
   }
 
-  await loadLibs(store.requiredLibs)
-
   requestAnimationFrame(() => {
     measurePane()
     requestAnimationFrame(() => {
-      if (scopeEl.value) reinitAlpine(scopeEl.value)
+      if (scopeEl.value) hydrate(scopeEl.value, { libs: store.requiredLibs })
     })
   })
 })
@@ -271,11 +270,10 @@ watch(
 watch(
   () => Object.values(store.widgets).map((w) => w.preview_html),
   async () => {
-    await loadLibs(store.requiredLibs)
     await nextTick()
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (scopeEl.value) reinitAlpine(scopeEl.value)
+        if (scopeEl.value) hydrate(scopeEl.value, { libs: store.requiredLibs })
       })
     })
   },

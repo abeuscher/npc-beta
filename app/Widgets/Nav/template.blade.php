@@ -161,6 +161,19 @@
         #{{ $widgetId }} .widget-nav__menu { display: none; }
         #{{ $widgetId }} .widget-nav__hamburger { display: block; }
     }
+    /* Page-builder preview: the canvas sizes a fixed-width scope inside a named
+       container (np-viewport) to simulate each viewport, but the real browser
+       window stays desktop-wide — so the @media rules above evaluate against the
+       window, not the simulated width, and the mobile/hamburger swap never fires
+       in the editor. Mirror the swap onto the container query so it fires at the
+       preset width. Inert on the public site (no np-viewport container exists
+       there). The :checked override re-enables the mobile menu, which the
+       desktop @media rule above force-hides with !important. */
+    @container np-viewport (max-width: {{ $mobileBreakpoint }}px) {
+        #{{ $widgetId }} .widget-nav__menu { display: none; }
+        #{{ $widgetId }} .widget-nav__hamburger { display: block; }
+        #{{ $widgetId }} .widget-nav__toggle:checked ~ .widget-nav__mobile { display: block !important; }
+    }
 </style>
 <nav
     id="{{ $widgetId }}"

@@ -4,6 +4,7 @@ import { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode
 import Chart from 'chart.js/auto'
 import customSelect from './admin/custom-select.js'
 import './portal/password-mismatch.js'
+import { hydrate } from './shared/hydrate'
 
 window.Swiper = Swiper
 window.SwiperModules = { Navigation, Pagination, Autoplay, EffectFade, EffectCoverflow, FreeMode }
@@ -29,4 +30,9 @@ Alpine.store('theme', {
     }
 })
 
-Alpine.start()
+// Widget hydration runs through the shared routine (session 355) — the same
+// `hydrate` the page-builder canvas calls per subtree. Here it is the
+// whole-document first init: the libs are already bundled + assigned above and
+// the customSelect component + theme store are registered, so first-init is just
+// Alpine.start() walking the document.
+hydrate(document, { firstInit: true })

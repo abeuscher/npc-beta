@@ -39,7 +39,7 @@ window.NPWidgets.blogListing = function () {
             // Guard the Swiper globals: this runs from an x-effect on init, which
             // can fire before the Swiper library has loaded (e.g. the page-builder
             // preview). buildOpts() reads window.SwiperModules unguarded, so bail
-            // until the lib is present — reinitAlpine re-runs init once it loads.
+            // until the lib is present — hydrate() re-runs init once it loads.
             if (!swiperEl || !window.Swiper || !window.SwiperModules) return;
             const indices = this.getFilteredIndices(this.search, this.cfg.sortDefault);
             if (this.swiper) this.swiper.destroy(true, true);
