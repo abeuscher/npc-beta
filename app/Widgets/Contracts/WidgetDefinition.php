@@ -234,6 +234,20 @@ abstract class WidgetDefinition
     }
 
     /**
+     * Opt out of automated static-thumbnail capture. When true,
+     * generate-thumbnails.js leaves this widget's committed
+     * thumbnails/static.png untouched (a --all regen never clobbers it), so a
+     * hand-framed or one-off tight capture survives. Use this for strip-shaped
+     * widgets that render a short, wide element floating in the 800×500 capture
+     * frame and read as mostly-empty when captured whole. Presets are still
+     * captured. Default false (the pipeline captures static.png as usual).
+     */
+    public function usesManualThumbnail(): bool
+    {
+        return false;
+    }
+
+    /**
      * Declare sample-image-pool dependencies for demo mode. Each entry:
      *   - category: sample_images folder name (e.g. 'still-photos', 'portraits').
      *   - count:    max number of images requested. The pool returns
@@ -298,6 +312,7 @@ abstract class WidgetDefinition
             'screenshots' => $this->screenshots(),
             'keywords'    => $this->keywords(),
             'presets'     => $this->presets(),
+            'uses_manual_thumbnail' => $this->usesManualThumbnail(),
         ];
     }
 

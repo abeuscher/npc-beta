@@ -91,7 +91,7 @@ Abstract base class. Concrete widget definitions extend it.
 
 - `toRow()` — returns the array shape `WidgetType::updateOrCreate()` expects.
 - `validate()` — throws when `defaults()` is missing a key declared in `schema()`.
-- `manifest()` — returns the aggregated metadata array (handle, label, description, category, version, author, license, screenshots, keywords, presets). Consumed by the widget browser UI; never written to the DB.
+- `manifest()` — returns the aggregated metadata array (handle, label, description, category, version, author, license, screenshots, keywords, presets, uses_manual_thumbnail). Consumed by the widget browser UI and the thumbnail generator; never written to the DB.
 
 ### `App\Services\WidgetRegistry`
 
@@ -216,10 +216,11 @@ The base class ships a `manifest(): array` that returns the full metadata surfac
     'screenshots' => $this->screenshots(),
     'keywords'    => $this->keywords(),
     'presets'     => $this->presets(),
+    'uses_manual_thumbnail' => $this->usesManualThumbnail(),
 ]
 ```
 
-The widget browser UI calls `manifest()` (via `WidgetRegistry::manifests()`) once per widget instead of eight getters. The key set is stable — third-party widgets will depend on it.
+The widget browser UI calls `manifest()` (via `WidgetRegistry::manifests()`) once per widget instead of eight getters. The key set is stable — third-party widgets will depend on it. `uses_manual_thumbnail` is also read by `scripts/generate-thumbnails.js` (see "Manual-thumbnail opt-out" below).
 
 ### Preset shape
 
@@ -382,6 +383,16 @@ node scripts/generate-thumbnails.js --base-url=http://localhost
 The script reads the widget list via `docker compose exec app php artisan widgets:manifest-json` and writes each PNG to `app/Widgets/{PascalName}/thumbnails/static.png`. Thumbnails are committed to the repo as part of the widget package — they are not build artifacts.
 
 Animated thumbnails (MP4/WebP) and the ffmpeg pipeline are deferred to Stage 4.5 Phase 2.
+
+### Auth-context rendering (`demoContext()`)
+
+Portal widgets read `auth('portal')->user()` and render blank in the isolated dev route because nobody is authenticated there. A widget that needs an auth context returns a descriptor from `demoContext(): ?array` — `['guard' => 'portal', 'seeder' => DemoPortalMemberSeeder::class, 'login' => DemoPortalMemberSeeder::ACCOUNT_EMAIL]`. The dev controller runs the seeder, sets the resolved member on the guard for the duration of the render (request-scoped — no session writes), and forgets it in a `finally`. The shared `DemoPortalMemberSeeder` mints one stand-in Contact + PortalAccount + an EventRegistration against the `DemoEventSeeder` event, so all four portal widgets render real data from one fixture.
+
+### Manual-thumbnail opt-out (`usesManualThumbnail()`)
+
+A widget that renders a short, wide element floating in the 800×500 capture frame (nav, logo, social sharing) reads as mostly-empty when captured whole. There is **no** per-widget capture-viewport feature; instead the widget returns `true` from `usesManualThumbnail(): bool` and commits a tightly-framed `static.png` (a one-off tight capture or hand-authored). The flag is surfaced through `manifest()`, so `generate-thumbnails.js` skips static capture for that widget — a `--all` regen never clobbers the committed image. Presets are still captured. This single mechanism covers framing and any "the generated thumb just looks bad" case.
+
+A committed framed PNG is non-blank, so opted-out widgets pass the thumbnail-coverage guard (`WidgetThumbnailCoverageTest`, group `widget-lint`) trivially.
 
 ---
 

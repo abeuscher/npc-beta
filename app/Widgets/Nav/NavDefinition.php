@@ -97,4 +97,12 @@ public function defaults(): array
     {
         return ['navigation_menu_id' => DemoSeeder::MENU_ID];
     }
+
+    public function usesManualThumbnail(): bool
+    {
+        // Strip-shaped: a short, full-width nav bar floats in the 800×500 frame.
+        // Ships a tightly-framed committed static.png instead of a whole-frame
+        // capture.
+        return true;
+    }
 }

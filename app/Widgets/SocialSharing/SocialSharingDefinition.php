@@ -76,4 +76,11 @@ class SocialSharingDefinition extends WidgetDefinition
             'mastodon_instance'  => 'mastodon.social',
         ];
     }
+
+    public function usesManualThumbnail(): bool
+    {
+        // Strip-shaped: a short row of icons floats in the 800×500 frame. Ships a
+        // tightly-framed committed static.png instead of a whole-frame capture.
+        return true;
+    }
 }

@@ -63,4 +63,11 @@ class LogoDefinition extends WidgetDefinition
             ],
         ];
     }
+
+    public function usesManualThumbnail(): bool
+    {
+        // Strip-shaped: a single logo floats in the 800×500 frame. Ships a
+        // tightly-framed committed static.png instead of a whole-frame capture.
+        return true;
+    }
 }

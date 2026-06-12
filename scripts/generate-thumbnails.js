@@ -124,7 +124,12 @@ async function main() {
     for (const handle of handles) {
         const outDir = path.join(PROJECT_ROOT, 'app', 'Widgets', pascalFolder(handle), 'thumbnails');
 
-        if (args.doStatic) {
+        if (args.doStatic && manifest[handle]?.uses_manual_thumbnail) {
+            // Widget opts out of automated static capture (WidgetDefinition::
+            // usesManualThumbnail). Leave the committed static.png as-is so a
+            // hand-framed / one-off tight capture survives a --all regen.
+            console.log(`SKIP ${handle} → manual thumbnail (uses_manual_thumbnail)`);
+        } else if (args.doStatic) {
             const url = `${args.baseUrl}/dev/widgets/${handle}`;
             const outFile = path.join(outDir, 'static.png');
             const page = await context.newPage();

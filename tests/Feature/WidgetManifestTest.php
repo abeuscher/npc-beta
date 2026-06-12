@@ -172,6 +172,7 @@ it('every widget manifest() returns the expected keys', function () {
     $expected = [
         'handle', 'label', 'description', 'category',
         'version', 'author', 'license', 'screenshots', 'keywords', 'presets',
+        'uses_manual_thumbnail',
     ];
 
     $registry = app(WidgetRegistry::class);
