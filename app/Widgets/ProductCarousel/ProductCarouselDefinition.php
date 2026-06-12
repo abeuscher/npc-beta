@@ -99,4 +99,14 @@ class ProductCarouselDefinition extends WidgetDefinition
             supportsTags: false,
         );
     }
+
+    public function usesManualThumbnail(): bool
+    {
+        // Renders real published `product` models via dataContract — no
+        // self-contained demo data — so an automated capture reflects whatever
+        // is in the products table at the time (a placeholder when none carry
+        // an image). Ships a committed photo-bearing static.png instead so a
+        // --all regen can't replace it with an empty-state capture.
+        return true;
+    }
 }
