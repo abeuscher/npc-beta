@@ -692,6 +692,16 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 
 *(C6 Membership renewal cycle was lifted post-Beta at 282 audit; C7 Email at volume was dropped at 282 audit. See entries above and `session-outlines.md` post-Beta backlog.)*
 
+── SECURITY AUDIT READY ── *(post-Beta-1 milestone — named at session 358 close prep)*
+
+The first post-Beta-1 stage and the gate for paying an external security firm. Charter: **address every vulnerability we can name ourselves before the paid audit**, so the audit validates an already-hardened surface instead of finding the obvious. The owner did not write the majority of this code, so a self-driven enumerate-and-fix pass precedes the external review — this milestone is where that pass lives.
+
+Scope is assembled, not invented fresh: (a) the security-flavoured items already parked in the post-Beta reservoir — CRM-side super-admin audit sink, API-key pattern validation + environment-mismatch hard gate, any "surface the `source` field" / accidental-exposure residue not closed pre-Beta; (b) the standing security flags raised but deliberately not gated during prior sessions (the "surface, don't gate" discipline parks them — they accrue here); (c) a deliberate threat-model enumeration pass (authn/authz, portal contact-scoping, file upload, SSRF/injection, secrets handling, dependency CVEs). Specific sessions are slotted from these when the stage is planned; count is unknown until the enumeration pass sizes it.
+
+Table-stakes security already inside the Beta-1 working set above (admin 2FA, the accidental-public-exposure guard, portal-scoping E2E) is **not** deferred to here — this is the *additional* hardening pass beyond it. The external paid audit runs against the surface this milestone produces.
+
+── SECURITY AUDIT PASSED ── *(external review — gate for general-availability confidence; out of session scope, owner-procured)*
+
 Numbered positions are not session numbers — they are *position in execution order*. Session numbers are assigned at session start (245, 246, …). When a position splits per Rule 11, subsequent positions retain their order.
 
 ---
