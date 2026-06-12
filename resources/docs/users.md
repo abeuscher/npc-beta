@@ -37,3 +37,7 @@ To remove admin access without deleting the account, change the user's role to o
 ## Your Own Account
 
 You can update your own name, email, and password from the profile menu in the top-right corner of the admin panel. You cannot change your own role.
+
+## Two-Factor Authentication
+
+Every admin account is required to set up two-factor authentication (2FA) on first sign-in — a one-time enrollment with an authenticator app, plus recovery codes. If a user loses their device and recovery codes, deleting and recreating their account clears their 2FA so they can enroll again. See [Two-Factor Authentication](two-factor-authentication) for the full walkthrough.

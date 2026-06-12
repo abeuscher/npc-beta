@@ -610,11 +610,11 @@ Four nodes running on production by Beta-1: marketing site, demo install, test/d
 
 ---
 
-### 2FA for Admin Accounts *(stub — pre-Beta 1; A5 in `release-plan.md`)*
+### 2FA for Admin Accounts ✅ *(A5 — closed at session 359)*
 
-A5 in `sessions/release-plan.md`. Foundational security feature; must close before C3 (Permission audit).
+Mandatory admin TOTP 2FA shipped at session 359 (A5 in `release-plan.md`) — Fortify primitives + Filament enrollment/challenge pages + a post-login enforcement gate, with the demo-mode exemption (`isDemoMode()`) and the testing-context posture designed in. FM `/api/*` path untouched (non-boundary, v2.4.0). See the `#### A5.` block in `release-plan.md` and `sessions/359. … — Log.md`.
 
-Admin login requires a second factor (TOTP via authenticator app) in addition to password. Recovery codes available at enrollment. Existing admin users have a one-time enrollment flow on next login. The FM-agent API key path is unaffected (it's not a user credential, per the contract spec). Tested across the standard Filament admin entry points. Help-doc entry on enrollment.
+**Follow-up → session 360:** mandatory 2FA widened the admin-lockout surface (lost device + lost recovery codes → no in-app reset by design), so the operator-mediated **admin account recovery** feature (FM-triggered reset endpoint + break-glass CLI; identity verified out-of-band against an external-vault PIN, no in-app secret) is session 360 — promoting the long-parked session-304 "admin lockout has no recovery" flag. Boundary-touching (CRM contract → v2.5.0).
 
 ---
 

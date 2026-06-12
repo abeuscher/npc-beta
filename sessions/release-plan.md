@@ -117,12 +117,12 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **artifact:** operator runbook in `docs/runbooks/db-wipe-restore.md`.
 - **estimated time cost:** 1 session.
 
-#### A5. 2FA for admin accounts
+#### A5. 2FA for admin accounts ✅
 
 - **gate:** release
 - **prerequisites:** none
-- **success criterion:** Admin login requires a second factor (TOTP via authenticator app) in addition to password. Recovery codes available at enrollment. Existing admin users have a one-time enrollment flow on next login. The FM-agent API key path is unaffected (it's not a user credential, per the contract spec). Tested across the standard Filament admin entry points.
-- **artifact:** the feature itself, plus help-doc entry on enrollment.
+- **success criterion** *(closed at session 359)*: Mandatory admin TOTP 2FA shipped on the Filament panel — built on Laravel Fortify's 2FA primitives (encrypted column shape, TOTP provider, recovery-code generation) with enrollment + challenge driven through Filament (Fortify routes/views suppressed via `Fortify::ignoreRoutes()`). One-time enrollment (QR + manual key + recovery codes shown once, confirmed with a live code before `two_factor_confirmed_at`), a rate-limited login challenge (TOTP or single-use recovery code), and a post-login enforcement gate (`EnsureTwoFactorAuthenticated` in the panel `authMiddleware`). Two carve-outs designed in: the **demo-mode exemption** (`isDemoMode()` short-circuits the gate so `/demo/enter` stays one click; demo user accrues no 2FA state) and the **testing-context posture** (gate bypasses the `testing` env by default + targeted opt-in, so the existing `actingAs` suite stays green). FM `/api/*` path proven untouched (non-boundary; contract stayed v2.4.0). One migration (`users` 2FA columns — first since the 348 squash); QR labels with the configured brand name. **Surfaced, not built:** mandatory 2FA widened the admin-lockout surface (lost device + lost recovery codes → no in-app reset) → the operator-mediated recovery feature is **session 360** (the s304 flag).
+- **artifact:** the feature itself, plus a help-doc entry on enrollment (`resources/docs/two-factor-authentication.md`). **Closed at session 359.** See `sessions/359. Admin 2FA — TOTP Enrollment, Recovery Codes & the Demo-Mode Exemption — Log.md`.
 - **estimated time cost:** 1 session.
 
 ### Phase B — Onboarding cluster
@@ -668,7 +668,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 46. **A2.** Fleet Manager — node operations parity *(moved here from position 4 at 282 audit; may be 2 sessions; FM-side resumes at FM 013+ after FM 012 absorbs v2.0.0 + v2.1.0)*
 47. **A3.** Multi-node operational readiness *(moved here from position 6 at 282 audit)*
 48. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
-49. **A5.** 2FA for admin accounts *(moved here from position 8 at 282 audit)*
+49. ~~**A5.** 2FA for admin accounts~~ ✅ *(closed at session 359 — mandatory admin TOTP 2FA; see the `#### A5.` block. Surfaced the admin-lockout-recovery follow-up → session 360.)*
 50. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
 51. **C3-deferred-concurrent.** Concurrent admin editing *(slim (b) refit at 282 audit; #32b. Note: session 281 was scheduled for the original (a)-scope plan but was never executed.)*
 52. **C3-deferred-exposure.** Accidental public exposure *(Path-A scope refit at 282 audit; #32c; depends on C3a)*

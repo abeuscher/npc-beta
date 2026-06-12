@@ -50,6 +50,21 @@ class AdminPanelProvider extends PanelProvider
             ->path(env('ADMIN_PATH', 'admin'))
             ->login()
             ->routes(function () {
+                // Two-factor authentication flow (session 359, A5). Registered
+                // here rather than via page auto-discovery because SimplePage
+                // isn't routable on its own — this gives the enrollment and
+                // challenge screens the simple, sidebar-free auth layout and the
+                // canonical `filament.admin.pages.*` route names. They sit behind
+                // Authenticate (must be logged in) but deliberately OUTSIDE the
+                // panel's authMiddleware, so the 2FA enforcement gate that lives
+                // there can never trap these pages in a redirect loop.
+                \Illuminate\Support\Facades\Route::get('/two-factor-setup', \App\Filament\Pages\TwoFactorSetup::class)
+                    ->name('pages.two-factor-setup')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                \Illuminate\Support\Facades\Route::get('/two-factor-challenge', \App\Filament\Pages\TwoFactorChallenge::class)
+                    ->name('pages.two-factor-challenge')
+                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+
                 \Illuminate\Support\Facades\Route::get('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'show'])
                     ->name('invitation.show');
                 \Illuminate\Support\Facades\Route::post('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'store'])
@@ -172,6 +187,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                // Mandatory admin 2FA enforcement gate (session 359, A5). Runs
+                // after Authenticate, so only on authenticated panel routes:
+                // redirects un-enrolled users to enrollment and un-challenged
+                // sessions to the challenge. Bypasses entirely in demo mode and
+                // (by default) in the test environment. The two-factor flow
+                // routes sit outside authMiddleware, so they never loop here.
+                \App\Http\Middleware\EnsureTwoFactorAuthenticated::class,
             ])
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandLogo(new HtmlString(

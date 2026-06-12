@@ -25,7 +25,13 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // We use Fortify only for its two-factor primitives (the encrypted
+        // column shape, TOTP provider, recovery-code generation); enrollment and
+        // the login challenge are driven through Filament ourselves. Fortify's
+        // own web routes/views would collide with Filament's stock login, so
+        // suppress them entirely — the package's classes stay available, no
+        // /user/* or /two-factor-* routes are registered. (session 359)
+        \Laravel\Fortify\Fortify::ignoreRoutes();
     }
 
     public function boot(): void
