@@ -10,6 +10,7 @@ use App\Services\SampleImageLibrary;
 use App\Services\WidgetRegistry;
 use App\Services\WidgetRenderer;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 
 class WidgetDemoController extends Controller
 {
@@ -26,7 +27,10 @@ class WidgetDemoController extends Controller
 
         [$config, $appearanceConfig] = $this->injectPoolImages($def->demoImages(), $config, $appearanceConfig);
 
-        return $this->renderWidget($handle, $widgetType, $config, $appearanceConfig);
+        return $this->withDemoContext(
+            $def->demoContext(),
+            fn () => $this->renderWidget($handle, $widgetType, $config, $appearanceConfig)
+        );
     }
 
     public function showPreset(string $handle, string $presetHandle)
@@ -48,7 +52,43 @@ class WidgetDemoController extends Controller
             [$config, $appearanceConfig] = $this->injectPoolImages($preset['demo_images'], $config, $appearanceConfig);
         }
 
-        return $this->renderWidget($handle, $widgetType, $config, $appearanceConfig);
+        return $this->withDemoContext(
+            $def->demoContext(),
+            fn () => $this->renderWidget($handle, $widgetType, $config, $appearanceConfig)
+        );
+    }
+
+    /**
+     * Render a widget under the auth context it declares (see
+     * WidgetDefinition::demoContext()). Widgets without a context render as
+     * before. For declaring widgets we seed the stand-in member, set it on the
+     * declared guard for the duration of the render, and forget it afterward in
+     * a finally — request-scoped only, so no session state is mutated.
+     */
+    private function withDemoContext(?array $context, \Closure $render)
+    {
+        if (! $context) {
+            return $render();
+        }
+
+        if ($seederClass = $context['seeder'] ?? null) {
+            Artisan::call('db:seed', ['--class' => $seederClass, '--force' => true]);
+        }
+
+        $guard = Auth::guard($context['guard']);
+        $member = $guard->getProvider()->retrieveByCredentials(['email' => $context['login']]);
+
+        if (! $member) {
+            abort(500, "Demo context member [{$context['login']}] not found on guard [{$context['guard']}].");
+        }
+
+        $guard->setUser($member);
+
+        try {
+            return $render();
+        } finally {
+            $guard->forgetUser();
+        }
     }
 
     private function injectPoolImages(array $requests, array $config, array $appearanceConfig): array

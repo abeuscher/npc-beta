@@ -3,6 +3,7 @@
 namespace App\Widgets\PortalChangePassword;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use Database\Seeders\DemoPortalMemberSeeder;
 
 class PortalChangePasswordDefinition extends WidgetDefinition
 {
@@ -39,6 +40,15 @@ class PortalChangePasswordDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [];
+    }
+
+    public function demoContext(): ?array
+    {
+        return [
+            'guard'  => 'portal',
+            'seeder' => DemoPortalMemberSeeder::class,
+            'login'  => DemoPortalMemberSeeder::ACCOUNT_EMAIL,
+        ];
     }
 
     public function assets(): array

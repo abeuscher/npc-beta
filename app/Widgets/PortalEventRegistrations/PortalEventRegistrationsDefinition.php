@@ -3,6 +3,7 @@
 namespace App\Widgets\PortalEventRegistrations;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use Database\Seeders\DemoPortalMemberSeeder;
 
 class PortalEventRegistrationsDefinition extends WidgetDefinition
 {
@@ -39,5 +40,14 @@ class PortalEventRegistrationsDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [];
+    }
+
+    public function demoContext(): ?array
+    {
+        return [
+            'guard'  => 'portal',
+            'seeder' => DemoPortalMemberSeeder::class,
+            'login'  => DemoPortalMemberSeeder::ACCOUNT_EMAIL,
+        ];
     }
 }

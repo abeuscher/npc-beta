@@ -3,6 +3,7 @@
 namespace App\Widgets\PortalContactEdit;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use Database\Seeders\DemoPortalMemberSeeder;
 
 class PortalContactEditDefinition extends WidgetDefinition
 {
@@ -39,5 +40,14 @@ class PortalContactEditDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [];
+    }
+
+    public function demoContext(): ?array
+    {
+        return [
+            'guard'  => 'portal',
+            'seeder' => DemoPortalMemberSeeder::class,
+            'login'  => DemoPortalMemberSeeder::ACCOUNT_EMAIL,
+        ];
     }
 }

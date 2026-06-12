@@ -3,6 +3,7 @@
 namespace App\Widgets\PortalAccountDashboard;
 
 use App\Widgets\Contracts\WidgetDefinition;
+use Database\Seeders\DemoPortalMemberSeeder;
 
 class PortalAccountDashboardDefinition extends WidgetDefinition
 {
@@ -39,5 +40,14 @@ class PortalAccountDashboardDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [];
+    }
+
+    public function demoContext(): ?array
+    {
+        return [
+            'guard'  => 'portal',
+            'seeder' => DemoPortalMemberSeeder::class,
+            'login'  => DemoPortalMemberSeeder::ACCOUNT_EMAIL,
+        ];
     }
 }

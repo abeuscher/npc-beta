@@ -49,6 +49,37 @@ it('returns 404 for the preset route when the widget is unknown', function () {
     $response->assertNotFound();
 });
 
+it('renders a portal widget demo with its demoContext member authenticated', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $response = $this->get('/dev/widgets/portal_account_dashboard');
+
+    $response->assertOk();
+    // The dashboard greets the stand-in contact and prints the portal email —
+    // both only render when auth('portal')->user() resolves the seeded member.
+    $response->assertSee('Jordan');
+    $response->assertSee(\Database\Seeders\DemoPortalMemberSeeder::ACCOUNT_EMAIL);
+});
+
+it('renders the portal event-registrations widget against the demo event row', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $response = $this->get('/dev/widgets/portal_event_registrations');
+
+    $response->assertOk();
+    // A real registration row resolves through the authenticated member.
+    $response->assertSee('Annual Community Gala');
+    $response->assertSee('Registered');
+});
+
+it('forgets the demoContext member after the render, leaving the portal guard guest', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+
+    $this->get('/dev/widgets/portal_account_dashboard')->assertOk();
+
+    expect(auth('portal')->check())->toBeFalse();
+});
+
 it('DevRoutesMiddleware aborts with 404 in the production environment', function () {
     app()->detectEnvironment(fn () => 'production');
 

@@ -213,6 +213,27 @@ abstract class WidgetDefinition
     }
 
     /**
+     * Declare the auth context a widget needs to render in demo mode. Portal
+     * widgets read auth('portal')->user() and render blank when nobody is
+     * logged in; this descriptor tells WidgetDemoController which member to
+     * stand up for the thumbnail capture. Shape:
+     *   - guard:  the auth guard to authenticate against (e.g. 'portal').
+     *   - seeder: a Seeder class minting the stand-in member (idempotent).
+     *   - login:  the identifier the guard's provider resolves the member by
+     *             (e.g. the member's email).
+     *
+     * Returning null (the default) means the widget renders without any auth
+     * context. WidgetDemoController seeds, authenticates for the render, and
+     * restores the prior auth state afterward.
+     *
+     * @return array{guard: string, seeder: class-string, login: string}|null
+     */
+    public function demoContext(): ?array
+    {
+        return null;
+    }
+
+    /**
      * Declare sample-image-pool dependencies for demo mode. Each entry:
      *   - category: sample_images folder name (e.g. 'still-photos', 'portraits').
      *   - count:    max number of images requested. The pool returns
