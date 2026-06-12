@@ -923,7 +923,7 @@ Design discussion first; implementation lands once rules are resolved. Out of sc
 
 ### Sovereign Widget System — Remaining Stages
 
-The Widget Definition Class, registry, config resolver, per-widget colocation, manifest/metadata, demos, static thumbnails, preset inspector, designer drafts, and preset thumbnails all shipped across sessions 170–177. Remaining stages are deferred until post-Beta 1.
+The Widget Definition Class, registry, config resolver, per-widget colocation, manifest/metadata, demos, static thumbnails, preset inspector, designer drafts, and preset thumbnails all shipped across sessions 170–177. **Stage 4.5 static-thumbnail fidelity — auth-context (portal) widget rendering via `demoContext()`, strip-widget framing via the manual-thumbnail opt-out, and a fingerprint-based coverage guard — completed at session 358.** Remaining stages are deferred until post-Beta 1.
 
 - **Stage 5d+ — Per-widget preset authoring.** Batched sessions (4–6 widgets each) writing preset libraries on the widgets where they matter most — three_buckets, carousel, bar_chart, logo_garden, board_members, event_calendar, donation_form, product_carousel, video_embed, web_form, text_block. Fed by the designer draft/export workflow delivered in session 176.
 - **Stage 6 — Widget Browser UI (admin).** Admin page listing all registered widgets in a browsable grid — search, filter by category, preview thumbnails + preset count chip. Consumes the static thumbnails and preset data already in place. Prepares the UI surface for later external-registry installs.
