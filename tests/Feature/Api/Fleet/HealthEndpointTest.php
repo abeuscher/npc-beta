@@ -46,10 +46,10 @@ it('returns the documented top-level keys on a successful poll', function () {
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
-it('reports contract_version 2.4.0', function () {
+it('reports contract_version 2.5.0', function () {
     $response = $this->getJson('/api/health');
 
-    $response->assertJsonPath('contract_version', '2.4.0');
+    $response->assertJsonPath('contract_version', '2.5.0');
 });
 
 it('returns the seven documented subcheck keys', function () {

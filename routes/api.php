@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Fleet\BackupController;
 use App\Http\Controllers\Api\Fleet\HealthController;
 use App\Http\Controllers\Api\Fleet\LogsController;
+use App\Http\Controllers\Api\Fleet\RecoveryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['throttle:60,1'])
@@ -16,3 +17,6 @@ Route::middleware(['throttle:6,1'])
 
 Route::middleware(['throttle:60,1'])
     ->get('/backup/blob', [BackupController::class, 'blob']);
+
+Route::middleware(['throttle:6,1'])
+    ->post('/admin/recover', [RecoveryController::class, 'recover']);

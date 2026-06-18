@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.4.0`
+**Contract Version:** `2.5.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -23,13 +23,14 @@ GET  /api/health
 GET  /api/logs
 POST /api/backup/trigger
 GET  /api/backup/blob
+POST /api/admin/recover
 ```
 
-- Four routes. `/api/health`, `/api/logs`, and `/api/backup/blob` are GET-only; `/api/backup/trigger` is POST-only.
+- Five routes. `/api/health`, `/api/logs`, and `/api/backup/blob` are GET-only; `/api/backup/trigger` and `/api/admin/recover` are POST-only.
 - Stateless — no session cookie, no CSRF token, not in the web middleware group.
-- Each route carries its own rate-limit bucket. `/api/health`, `/api/logs`, and `/api/backup/blob` are rate-limited at **60 requests per minute per IP** (Laravel `throttle:60,1`); `/api/backup/trigger` is rate-limited at **6 requests per minute per IP** (`throttle:6,1`) because backups are expensive to run. The throttles defend against polling-loop bugs and accidental retrigger storms on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
+- Each route carries its own rate-limit bucket. `/api/health`, `/api/logs`, and `/api/backup/blob` are rate-limited at **60 requests per minute per IP** (Laravel `throttle:60,1`); `/api/backup/trigger` and `/api/admin/recover` are rate-limited at **6 requests per minute per IP** (`throttle:6,1`) — backups are expensive to run, and admin recovery is a sensitive auth-mutating operation that should never see legitimate burst traffic. The throttles defend against polling-loop bugs and accidental retrigger storms on the FM side. Auth-failure storms cannot reach the throttle — nginx returns 403 / 400 before the request hits PHP, so the rate limiter only ever sees requests that already passed the mTLS gate.
 
-`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`. `/api/backup/trigger` is documented under `/api/backup/trigger — Request` and `/api/backup/trigger — Response`. `/api/backup/blob` is documented under `/api/backup/blob — Request` and `/api/backup/blob — Response`.
+`/api/health` is documented under `/api/health — Response`. `/api/logs` is documented under `/api/logs — Request` and `/api/logs — Response`. `/api/backup/trigger` is documented under `/api/backup/trigger — Request` and `/api/backup/trigger — Response`. `/api/backup/blob` is documented under `/api/backup/blob — Request` and `/api/backup/blob — Response`. `/api/admin/recover` is documented under `/api/admin/recover — Request` and `/api/admin/recover — Response`.
 
 ## Auth
 
@@ -37,10 +38,10 @@ GET  /api/backup/blob
 mTLS — terminated by nginx at the TLS layer.
 ```
 
-- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all four** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
+- Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all five** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`, `/api/admin/recover`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
 - Each CRM install trusts **exactly one** specific FM-side cert, configured at nginx via `ssl_client_certificate` pointed at `/etc/nginx/certs/fm-client.crt`. No CA, no PKI tooling, no chain. Direct trust against the per-install cert.
 - The FM operator pastes the trusted cert into the CRM droplet at `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container). Restart nginx to apply.
-- The application sees no auth signal. If the request reached the controller (any of the four), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
+- The application sees no auth signal. If the request reached the controller (any of the five), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
 - Authentication failures are emitted by nginx, not the application. With `ssl_verify_client optional` at the server level, the TLS handshake completes either way; nginx then returns an HTTP error before the request ever reaches PHP. The specific code depends on the failure mode:
   - **No client cert presented:** the per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` gate fires → `403 Forbidden`.
   - **A client cert is presented but does not match the trusted cert:** nginx's SSL error path fires → `400 Bad Request` with body "The SSL certificate error".
@@ -54,7 +55,7 @@ mTLS — terminated by nginx at the TLS layer.
   "status": "green|yellow|red",
   "version": "0.291.1",
   "timestamp": "2026-04-30T15:42:00+00:00",
-  "contract_version": "2.4.0",
+  "contract_version": "2.5.0",
   "subchecks": {
     "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
     "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
@@ -423,16 +424,95 @@ Returned when the storage layer surfaces a synchronous exception during disk res
 | `500` `backup_destinations_not_configured` | Install has no backup disks configured.                            | Operator sets `BACKUP_DISKS` in the install's `.env` and reloads.               |
 | `500` `backup_disk_error`                  | Storage driver surfaced a synchronous exception.                   | Operator action likely required (check disk credentials, paths, permissions).   |
 
+## `/api/admin/recover` — Request
+
+```
+POST /api/admin/recover
+```
+
+- POST-only. Non-POST requests do not invoke the controller — they fall through Laravel's route table and typically resolve to `404 Not Found` via the public-site page-slug catchall (same path-shape behaviour as `/api/backup/trigger` against non-POST).
+- mTLS-gated at nginx (same `fm-client.crt` as the other four endpoints; a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate ships on `/api/admin/recover` in both `docker/nginx/default.conf` and `docker/nginx/prod.conf`).
+- Throttled at **6 requests per minute per source IP** (`throttle:6,1`) — matching `/api/backup/trigger` rather than the 60-rpm polling endpoints. Admin recovery is a rare, sensitive operation that should never see burst traffic.
+- **Request body (JSON):**
+
+  | Field     | Type            | Required | Description                                                                                   |
+  |-----------|-----------------|----------|-----------------------------------------------------------------------------------------------|
+  | `email`   | string          | yes      | Email of the locked-out admin to recover. Identifies the target `User` row.                   |
+  | `actions` | array of string | yes      | One or more of `reset_2fa`, `reset_password`. Composable — FM asks for exactly what's needed. |
+
+  - `reset_2fa` — clears the target's two-factor enrollment (`two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`) so the admin re-enrolls on next login. Password is unchanged and assumed known.
+  - `reset_password` — sets a node-generated temporary password and returns it once in the response envelope (see the security note below). The admin signs in with it and changes it.
+
+### Auth model — "trust the connection," identity verified out-of-band
+
+This endpoint mutates an admin's authentication, but carries **no app-layer identity check** — it rides the same nginx mTLS gate as every other FM endpoint. The model: if the request arrived through the gate, FM presented the trusted client cert, and the operator has already verified the locked-out admin's identity out-of-band against their own external-vault recovery PIN ("telephone password"). **No recovery secret is stored, hashed, or verified anywhere in the CRM or FM** — the app holds no PIN. The audit records "operator reset 2FA/password for user Y via the endpoint," not "…after PIN verification": the identity check is a procedure the operator follows, not a control the system attests. This is the accepted trade-off for the current solo-operator, person-to-person trust model.
+
+The endpoint can recover **any** admin, including the protected oldest super-admin the admin UI's delete-guard hides (`User::isProtected()`) — that account is the likeliest lockout victim, and reset is not delete, so the guard is deliberately not consulted here.
+
+## `/api/admin/recover` — Response — `200 OK` (success)
+
+```json
+{
+  "contract_version": "2.5.0",
+  "status": "success",
+  "email": "admin@example.org",
+  "actions_applied": ["reset_2fa", "reset_password"],
+  "temporary_password": "k7mPq2tRv9xLnB4dWf6h",
+  "recovered_at": "2026-06-12T17:04:11+00:00",
+  "message": null
+}
+```
+
+### Fields
+
+| Field                | Type            | Description                                                                                                                          |
+|----------------------|-----------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `contract_version`   | string          | Semver. Same value `/api/health` reports.                                                                                            |
+| `status`             | string          | `"success"` when the requested actions were applied; `"failed"` otherwise. Enum `{success, failed}`. Always HTTP `200`.              |
+| `email`              | string \| null  | The target admin's email (echoes the request; `null` only when a malformed request omitted `email`).                                |
+| `actions_applied`    | array of string | The actions performed this call (subset of `reset_2fa`, `reset_password`). Empty on failure.                                        |
+| `temporary_password` | string \| null  | The one-time generated password — present **only** when `reset_password` ran; `null` otherwise. See the security note.              |
+| `recovered_at`       | string \| null  | ISO 8601 timestamp of the recovery; `null` on failure.                                                                              |
+| `message`            | string \| null  | `null` on success; a sanitised single-line operator-readable reason on failure.                                                     |
+
+### Security note — the temporary password crosses the wire once
+
+When `reset_password` is requested, the node generates a fresh random password, sets it on the admin, and returns the **plaintext** value in `temporary_password` so the operator can relay it to the locked-out admin. It transits **once**, inside the mTLS-encrypted response, and is **not stored anywhere in plaintext** (the CRM persists only the hash). This is a deliberate, documented exception to the contract's general "no user records / secrets in any response" rule — scoped to this endpoint, justified by the operator-recovery use case, and protected by the same mTLS gate that guards every other endpoint. FM-side handling should treat the field as a secret: show it once to the operator, never log it.
+
+## `/api/admin/recover` — Response — `200 OK` (failed)
+
+```json
+{
+  "contract_version": "2.5.0",
+  "status": "failed",
+  "email": "nobody@example.org",
+  "actions_applied": [],
+  "temporary_password": null,
+  "recovered_at": null,
+  "message": "no admin found for that email"
+}
+```
+
+### Failure modes
+
+All return HTTP `200` with `status: "failed"` (mirrors `/api/health` and `/api/backup/trigger` — the body is authoritative, never HTTP status alone):
+
+1. **No admin matches `email`.** `message: "no admin found for that email"`. Recoverable by retrying with the correct address.
+2. **Malformed request.** Missing/invalid `email`, or `actions` empty or containing an unrecognised value. `message` is the first validation error; `email` echoes whatever string was supplied, or `null`.
+3. **Unexpected exception during the reset.** `message` is a sanitised single-line string (same pipeline as `/api/backup/trigger`: application-root prefix strip, newline collapse to ` | `, 500-char cap). No stack traces.
+
+There is no separate non-200 application status for this endpoint; nginx still emits `403` / `400` for mTLS-gate failures and the route's throttle emits `429`.
+
 ## Response — auth-failure paths (nginx-emitted, not application)
 
-Applies to all four FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`). When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
+Applies to all five FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`, `/api/admin/recover`). When the request fails the mTLS gate, nginx emits the response without invoking PHP. The body is plain HTML (whatever nginx renders for the error code), not a JSON envelope.
 
 - **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
 - **`400 Bad Request`** — body "The SSL certificate error". A cert was presented but did not match the trusted cert at `ssl_client_certificate`. Fleet Manager seeing repeated `400`s should suspect cert misalignment (the FM-side cert no longer matches what the CRM trusts; the operator may need to re-paste).
 
 ## Response — `429 Too Many Requests`
 
-Applies to all four FM agent endpoints (each has its own throttle bucket). `/api/health`, `/api/logs`, and `/api/backup/blob` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` uses `throttle:6,1` (6 rpm per IP) because backups are expensive. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
+Applies to all five FM agent endpoints (each has its own throttle bucket). `/api/health`, `/api/logs`, and `/api/backup/blob` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` and `/api/admin/recover` use `throttle:6,1` (6 rpm per IP) — backups are expensive, and admin recovery is a sensitive auth-mutating operation. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
 
 ## Response — `503 Service Unavailable`
 
@@ -455,12 +535,12 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 
 ## Security posture
 
-- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for any of the four FM endpoints — request arrival IS the auth proof.
+- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for any of the five FM endpoints — request arrival IS the auth proof.
 - Per-install cert trust: each CRM install trusts exactly one FM-side cert. Compromise of one install's cert does not cascade across the fleet.
-- All four routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
-- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** (or sanitised `message` strings on `/api/backup/trigger` and `/api/backup/blob`) where useful. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
-- All four endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` cap (`throttle:6,1`) is intentionally tighter than the others' (`throttle:60,1`) because backups are expensive to run; blob downloads are I/O-bound and cheap, hence the 60/min ceiling on `/api/backup/blob`.
-- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these four endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
+- All five routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
+- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** (or sanitised `message` strings on `/api/backup/trigger` and `/api/backup/blob`) where useful. The **one deliberate, documented exception** is `/api/admin/recover`, which returns a one-time `temporary_password` when `reset_password` runs (see that endpoint's security note) — scoped to the operator-recovery use case, transiting once over the mTLS-encrypted channel, never stored in plaintext. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
+- All five endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` and `/api/admin/recover` caps (`throttle:6,1`) are intentionally tighter than the others' (`throttle:60,1`) — backups are expensive to run, and admin recovery is a sensitive auth-mutating operation; blob downloads are I/O-bound and cheap, hence the 60/min ceiling on `/api/backup/blob`.
+- The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these five endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. `/api/backup/blob` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface; there is no blob-write, blob-delete, or blob-mutation affordance on `/api/backup/blob` (write is mediated by `/api/backup/trigger` only).
 
 ### Data-access boundary — counts only, never raw node data *(governs the `data_hygiene` subcheck)*
@@ -503,6 +583,21 @@ The CRM-side `demo:restore` command lands in the demo session following 335; thi
 ---
 
 ## CHANGELOG
+
+### `2.5.0` — 2026-06-12 (session 360)
+
+**Additive within v2 major.** Adds a fifth endpoint, `POST /api/admin/recover`, the node half of **operator-mediated admin account recovery** — the Fleet-Manager-triggered reset for a locked-out admin. Promotes the session-304 "admin lockout has no recovery" flag, made urgent by session 359's mandatory admin TOTP 2FA (a correct password alone no longer gets a locked-out admin in). The FM control-panel UI that calls this endpoint is FM-repo work; this revision delivers the node endpoint it consumes (plus a node-local `admin:recover` break-glass artisan command, not part of the contract surface).
+
+- New endpoint at `POST /api/admin/recover`. POST-only; JSON body `{ email, actions }` where `actions` is one or more of `reset_2fa` / `reset_password` (composable). Response is a JSON envelope `{ contract_version, status, email, actions_applied, temporary_password, recovered_at, message }`; `status` is `success` / `failed`; HTTP status is always `200` on application-level conditions (matches `/api/health` and `/api/backup/trigger`).
+- `reset_2fa` clears the target's `two_factor_*` columns (re-enroll on next login); `reset_password` sets a node-generated temporary password and returns it **once** in `temporary_password` for the operator to relay (the **one documented exception** to the contract's "no user secrets in any response" rule — transits once over mTLS, only the hash is stored).
+- Reuses the existing nginx-terminated mTLS gate — a per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gate ships on `/api/admin/recover` in both `docker/nginx/default.conf` (local) and `docker/nginx/prod.conf` (prod). Same trusted `fm-client.crt`; operators do not re-paste anything.
+- **No app-layer identity check — "trust the connection."** Identity is verified out-of-band: the operator checks a recovery PIN against their own external vault before triggering, then the request rides the mTLS gate. **No recovery secret is stored, hashed, or verified in the CRM or FM.** Conscious trade-off (procedure-not-control) for the solo-operator trust model; the audit records "operator reset … for user Y," not "…after PIN verification."
+- Recovers **any** admin, including the protected oldest super-admin (`User::isProtected()`) the admin UI's delete-guard hides — the likeliest lockout victim; reset is not delete, so the guard is deliberately bypassed.
+- Throttle: `throttle:6,1` (6 rpm per source IP), matching `/api/backup/trigger` — admin recovery is rare and sensitive and should never see burst traffic.
+- Every recovery is audited via the app's existing activity log (`ActivityLogger` → `activity_logs`; subject = the target `User`, event `admin_recovery`, meta `{actions, path}`, `path` = `endpoint` vs the CLI's `cli`), so the reset shows up in that user's activity timeline. No new table, no schema change. (En passant, the vestigial Spatie `config/activitylog.php` `table_name` default was corrected from the non-existent `activity_log` to the real `activity_logs`.)
+- `HealthController::CONTRACT_VERSION` bumps `2.4.0 → 2.5.0` (via the shared `HasContractVersion` trait; `BackupController` reads the same constant, so its `contract_version` field moves to `2.5.0` automatically).
+- **Forward-compatible with v2.4.0 consumers.** A v2.4.0 consumer that doesn't call the new endpoint continues working unchanged. FM-side consumers wanting the recovery affordance upgrade their HTTP client to POST the new shape and build the operator-facing control-panel UI.
+- **Out of scope (FM-repo work / future).** The FM control-panel UI + the FM-side call; any in-app PIN storage/verification (the heavier hashed-in-app-PIN model is explicitly deferred); member/portal recovery; super-admin *creation/promotion* and force-password-change-on-next-login (omitted — the lockout victim already exists; the temp password stands until the admin changes it).
 
 ### `2.4.0` — 2026-06-10 (session 353)
 
