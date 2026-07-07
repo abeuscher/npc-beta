@@ -266,6 +266,16 @@ jobs:
           docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml logs --tail=100
           exit 1
 
+      # Media URLs (/storage/...) 404 without the public/storage symlink —
+      # deploy.yml runs storage:link on every deploy and local checkouts carry
+      # the link from dev use, but a fresh CI checkout does not, so every
+      # attached-media <img> renders 0x0 and any spec that gates on a
+      # media-backed preview being visible reads it as hidden (surfaced by
+      # media-picker's post-reload persistence check at A011). The symlink
+      # lands in the bind-mounted workspace, so nginx resolves it too.
+      - name: Link the public storage directory
+        run: docker compose -p nonprofitcrm_e2e -f docker-compose.e2e.yml exec -T app php artisan storage:link --force
+
       # Readiness gate: Playwright globalSetup must be able to log in, so
       # the admin login page has to actually serve its form first. Poll the
       # REAL precondition (HTTP 200 AND an email field present) — not a
