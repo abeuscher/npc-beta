@@ -68,13 +68,25 @@ class MailingListResource extends Resource
                     Forms\Components\Repeater::make('filters')
                         ->relationship('filters')
                         ->reorderable('sort_order')
+                        ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
+                            $data[static::filterValuePath($data['field'] ?? null)] = $data['value'] ?? null;
+
+                            return $data;
+                        })
+                        ->mutateRelationshipDataBeforeCreateUsing(fn (array $data): array => static::mapFilterValue($data))
+                        ->mutateRelationshipDataBeforeSaveUsing(fn (array $data): array => static::mapFilterValue($data))
                         ->schema([
                             Forms\Components\Select::make('field')
                                 ->label('Field')
                                 ->options(MailingListFieldRegistry::fields())
                                 ->required()
                                 ->live()
-                                ->afterStateUpdated(fn (Forms\Set $set) => $set('operator', null)),
+                                ->afterStateUpdated(function (Forms\Set $set) {
+                                    $set('operator', null);
+                                    $set('value_text', null);
+                                    $set('value_select', null);
+                                    $set('value_tag', null);
+                                }),
 
                             Forms\Components\Select::make('operator')
                                 ->label('Operator')
@@ -82,8 +94,13 @@ class MailingListResource extends Resource
                                 ->required()
                                 ->live(),
 
+                            // One value control per field type, each on its own state path —
+                            // components sharing a single `value` path get clobbered to NULL by
+                            // the hidden siblings at dehydration. Mapped onto the `value` column
+                            // by the repeater's mutate hooks above.
+
                             // Text value — visible for text fields when operator requires a value
-                            Forms\Components\TextInput::make('value')
+                            Forms\Components\TextInput::make('value_text')
                                 ->label('Value')
                                 ->nullable()
                                 ->visible(fn (Forms\Get $get): bool =>
@@ -92,7 +109,7 @@ class MailingListResource extends Resource
                                 ),
 
                             // Boolean select — visible for mailing_list_opt_in
-                            Forms\Components\Select::make('value')
+                            Forms\Components\Select::make('value_select')
                                 ->label('Value')
                                 ->options(['1' => 'Yes', '0' => 'No'])
                                 ->nullable()
@@ -102,7 +119,7 @@ class MailingListResource extends Resource
                                 ),
 
                             // Tag picker — visible for tags field
-                            Forms\Components\Select::make('value')
+                            Forms\Components\Select::make('value_tag')
                                 ->label('Tag')
                                 ->options(fn () => MailingListFieldRegistry::tagOptions())
                                 ->searchable()
@@ -161,6 +178,26 @@ class MailingListResource extends Resource
                 ->visible(fn () => auth()->user()?->can('use_advanced_list_filters')),
 
         ]);
+    }
+
+    // ── Filter value state paths ───────────────────────────────────────────────
+
+    private static function filterValuePath(?string $field): string
+    {
+        return match (MailingListFieldRegistry::valueTypeFor($field)) {
+            'select'     => 'value_select',
+            'tag_picker' => 'value_tag',
+            default      => 'value_text',
+        };
+    }
+
+    private static function mapFilterValue(array $data): array
+    {
+        $data['value'] = $data[static::filterValuePath($data['field'] ?? null)] ?? null;
+
+        unset($data['value_text'], $data['value_select'], $data['value_tag']);
+
+        return $data;
     }
 
     // ── Table ─────────────────────────────────────────────────────────────────
