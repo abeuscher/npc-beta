@@ -29,7 +29,9 @@
     </style>
 </head>
 <body class="np-widget-demo">
-    <div class="np-widget-demo__wrap" @if (! empty($appearance['inline_style'])) style="{{ $appearance['inline_style'] }}" @endif>
+    {{-- np-site is the public style namespace (see _base.scss) — without it,
+         namespaced styles like .btn never apply and thumbnails render bare. --}}
+    <div class="np-widget-demo__wrap np-site" @if (! empty($appearance['inline_style'])) style="{{ $appearance['inline_style'] }}" @endif>
         {!! $rendered['html'] !!}
     </div>
 

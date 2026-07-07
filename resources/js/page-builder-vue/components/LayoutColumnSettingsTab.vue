@@ -116,6 +116,44 @@ function setGridTemplate(value: string) {
 
 const gapPresets = ['0', '0.5rem', '1rem', '1.5rem', '2rem', '3rem']
 
+// Alignment presets (session 363, the s317 owner-settled shape): a macro
+// dropdown that resolves to the same underlying values as the raw CSS selects
+// below it — the raw controls stay for fine-tuning.
+const gridAlignmentPresets = [
+  { label: 'Fill cells (default)',  align_items: 'stretch', justify_items: 'stretch' },
+  { label: 'Top-align content',     align_items: 'start',   justify_items: 'stretch' },
+  { label: 'Center content',        align_items: 'center',  justify_items: 'center' },
+  { label: 'Bottom-align content',  align_items: 'end',     justify_items: 'stretch' },
+]
+
+const flexAlignmentPresets = [
+  { label: 'Default (start, full height)', justify_content: 'flex-start',    align_items: 'stretch' },
+  { label: 'Center content',               justify_content: 'center',        align_items: 'center' },
+  { label: 'Top-align columns',            justify_content: 'flex-start',    align_items: 'flex-start' },
+  { label: 'Space between columns',        justify_content: 'space-between', align_items: 'stretch' },
+  { label: 'Distribute evenly',            justify_content: 'space-evenly',  align_items: 'stretch' },
+]
+
+function applyGridAlignmentPreset(e: Event) {
+  const select = e.target as HTMLSelectElement
+  const preset = gridAlignmentPresets[parseInt(select.value, 10)]
+  if (!preset) return
+  store.updateLocalLayout(props.layout.id, {
+    layout_config: { align_items: preset.align_items, justify_items: preset.justify_items },
+  })
+  select.value = ''
+}
+
+function applyFlexAlignmentPreset(e: Event) {
+  const select = e.target as HTMLSelectElement
+  const preset = flexAlignmentPresets[parseInt(select.value, 10)]
+  if (!preset) return
+  store.updateLocalLayout(props.layout.id, {
+    layout_config: { justify_content: preset.justify_content, align_items: preset.align_items },
+  })
+  select.value = ''
+}
+
 function setFlexBasis(slotIdx: number, value: string) {
   const cur = Array.isArray(props.layout.layout_config?.flex_basis)
     ? [...(props.layout.layout_config!.flex_basis as string[])]
@@ -318,6 +356,22 @@ function getFlexBasis(slotIdx: number): string {
       </div>
 
       <div class="layout-inspector__field">
+        <label class="layout-inspector__label-row" for="layout-grid-alignment-preset">Alignment preset</label>
+        <select
+          id="layout-grid-alignment-preset"
+          class="layout-inspector__input"
+          value=""
+          @change="applyGridAlignmentPreset"
+        >
+          <option value="">Choose a preset…</option>
+          <option v-for="(preset, i) in gridAlignmentPresets" :key="preset.label" :value="i">
+            {{ preset.label }}
+          </option>
+        </select>
+        <p class="layout-inspector__hint">Sets align-items and justify-items together — fine-tune with the controls below.</p>
+      </div>
+
+      <div class="layout-inspector__field">
         <label class="layout-inspector__label-row" for="layout-grid-align-items">align-items</label>
         <select
           id="layout-grid-align-items"
@@ -354,6 +408,22 @@ function getFlexBasis(slotIdx: number): string {
     <!-- ── Flex controls ─────────────────────────────────────────── -->
     <template v-if="layout.display === 'flex'">
       <div class="layout-inspector__section-divider">Flex properties</div>
+
+      <div class="layout-inspector__field">
+        <label class="layout-inspector__label-row" for="layout-flex-alignment-preset">Alignment preset</label>
+        <select
+          id="layout-flex-alignment-preset"
+          class="layout-inspector__input"
+          value=""
+          @change="applyFlexAlignmentPreset"
+        >
+          <option value="">Choose a preset…</option>
+          <option v-for="(preset, i) in flexAlignmentPresets" :key="preset.label" :value="i">
+            {{ preset.label }}
+          </option>
+        </select>
+        <p class="layout-inspector__hint">Sets justify-content and align-items together — fine-tune with the controls below.</p>
+      </div>
 
       <div class="layout-inspector__field">
         <label class="layout-inspector__label-row" for="layout-flex-justify">justify-content</label>

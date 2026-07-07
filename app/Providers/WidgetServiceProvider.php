@@ -17,6 +17,7 @@ use App\WidgetPrimitive\Slots\RecordDetailSidebarSlot;
 use App\Widgets\BarChart\BarChartDefinition;
 use App\Widgets\BlogListing\BlogListingDefinition;
 use App\Widgets\BlogPager\BlogPagerDefinition;
+use App\Widgets\ButtonRow\ButtonRowDefinition;
 use App\Widgets\BoardMembers\BoardMembersDefinition;
 use App\Widgets\Carousel\CarouselDefinition;
 use App\Widgets\DonationForm\DonationFormDefinition;
@@ -84,6 +85,7 @@ class WidgetServiceProvider extends ServiceProvider
         $registry = $this->app->make(WidgetRegistry::class);
 
         $registry->register(new TextBlockDefinition());
+        $registry->register(new ButtonRowDefinition());
         $registry->register(new EventDescriptionDefinition());
         $registry->register(new EventImageDefinition());
         $registry->register(new EventRegistrationDefinition());
