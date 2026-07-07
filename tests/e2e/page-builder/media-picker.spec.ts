@@ -11,8 +11,14 @@ import {
 
 test.describe.configure({ mode: 'serial' });
 
-// ── A guaranteed-valid 1×1 PNG (built with a real CRC + zlib IDAT) so the
-// upload passes mime validation and any synchronous conversion can decode it. ──
+// ── A guaranteed-valid solid-colour PNG (built with a real CRC + zlib IDAT)
+// so the upload passes mime validation and any synchronous conversion can
+// decode it. Real dimensions matter: the widget's rendered box must come from
+// the image's natural size, because the aspect-ratio/box CSS classes live in
+// the widget bundle, which the isolated e2e stack deliberately does not build
+// (no build server in CI — see widget-color-tokens.spec.ts). A 1×1 image
+// collapses the preview region to ~1px there, and overlay clicks get
+// intercepted by the neighbouring region or the sticky admin topbar. ──
 
 function crc32(buf: Buffer): number {
     let c = 0xffffffff;
@@ -32,14 +38,17 @@ function pngChunk(type: string, data: Buffer): Buffer {
     return Buffer.concat([len, body, crc]);
 }
 
-function makePng(r: number, g: number, b: number): Buffer {
+function makePng(r: number, g: number, b: number, width = 400, height = 225): Buffer {
     const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     const ihdr = Buffer.alloc(13);
-    ihdr.writeUInt32BE(1, 0); // width
-    ihdr.writeUInt32BE(1, 4); // height
+    ihdr.writeUInt32BE(width, 0);
+    ihdr.writeUInt32BE(height, 4);
     ihdr[8] = 8; // bit depth
     ihdr[9] = 2; // color type: RGB
-    const idat = zlib.deflateSync(Buffer.from([0, r, g, b])); // filter byte + RGB
+    const rowPixels = Buffer.alloc(width * 3);
+    for (let x = 0; x < width; x++) rowPixels.set([r, g, b], x * 3);
+    const row = Buffer.concat([Buffer.from([0]), rowPixels]); // filter byte + RGB row
+    const idat = zlib.deflateSync(Buffer.concat(Array.from({ length: height }, () => row)));
     return Buffer.concat([
         sig,
         pngChunk('IHDR', ihdr),
@@ -49,9 +58,11 @@ function makePng(r: number, g: number, b: number): Buffer {
 }
 
 // An empty Image widget renders nothing (zero height — not selectable in the
-// canvas). Seeding a placeholder src + a fixed ratio + width gives the widget a
-// real rendered box to click, while leaving the inspector's upload/browse
-// controls in place (image_urls is empty until a media row is actually attached).
+// canvas). Seeding a placeholder src (real 400×225 natural size, so the box
+// exists even without the widget bundle's ratio CSS) + a fixed ratio + width
+// gives the widget a real rendered box to click, while leaving the inspector's
+// upload/browse controls in place (image_urls is empty until a media row is
+// actually attached).
 const PLACEHOLDER_SRC = 'data:image/png;base64,' + makePng(200, 200, 200).toString('base64');
 
 async function seedSelectablePlaceholder(widgetId: string): Promise<void> {
