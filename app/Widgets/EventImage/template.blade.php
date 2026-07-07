@@ -18,6 +18,19 @@
 
     $objectFit = in_array($config['object_fit'] ?? '', ['cover', 'contain'], true) ? $config['object_fit'] : 'cover';
 
+    $positionMap = [
+        'top-left'      => 'left top',
+        'top-center'    => 'center top',
+        'top-right'     => 'right top',
+        'middle-left'   => 'left center',
+        'center'        => 'center',
+        'middle-right'  => 'right center',
+        'bottom-left'   => 'left bottom',
+        'bottom-center' => 'center bottom',
+        'bottom-right'  => 'right bottom',
+    ];
+    $objectPosition = $positionMap[$config['object_position'] ?? 'center'] ?? 'center';
+
     $ratioMap = ['1:1' => '1 / 1', '4:3' => '4 / 3', '3:2' => '3 / 2', '16:9' => '16 / 9', '4:5' => '4 / 5', '3:4' => '3 / 4'];
     $ratioCss = $ratioMap[$config['aspect_ratio'] ?? 'auto'] ?? '';
 
@@ -31,7 +44,7 @@
         }
     }
 
-    $imgStyle = 'display:block;width:100%;height:auto;object-fit:' . $objectFit . ';';
+    $imgStyle = 'display:block;width:100%;height:auto;object-fit:' . $objectFit . ';object-position:' . $objectPosition . ';';
     if ($ratioCss !== '') {
         $imgStyle .= 'aspect-ratio:' . $ratioCss . ';';
     }

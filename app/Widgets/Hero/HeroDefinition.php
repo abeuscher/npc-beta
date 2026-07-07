@@ -37,17 +37,7 @@ class HeroDefinition extends WidgetDefinition
         return [
             ['key' => 'content',          'type' => 'richtext', 'label' => '', 'group' => 'content'],
             ['key' => 'background_video', 'type' => 'video',   'label' => 'Background Video', 'helper' => 'MP4 or WebM — plays on loop', 'group' => 'content'],
-            ['key' => 'text_position',    'type' => 'select',  'label' => 'Text Position', 'default' => 'center-center', 'options' => [
-                'top-left'       => 'Top Left',
-                'top-center'     => 'Top Center',
-                'top-right'      => 'Top Right',
-                'center-left'    => 'Center Left',
-                'center-center'  => 'Center',
-                'center-right'   => 'Center Right',
-                'bottom-left'    => 'Bottom Left',
-                'bottom-center'  => 'Bottom Center',
-                'bottom-right'   => 'Bottom Right',
-            ], 'group' => 'appearance'],
+            ['key' => 'text_position',    'type' => 'alignment', 'label' => 'Text Position', 'default' => 'center', 'group' => 'appearance'],
             ['key' => 'ctas',             'type' => 'buttons', 'label' => 'Buttons', 'group' => 'content', 'fields' => [
                 ['key' => 'text',  'type' => 'text',   'label' => 'Button Text'],
                 ['key' => 'url',   'type' => 'url',    'label' => 'Button URL'],
@@ -90,7 +80,7 @@ class HeroDefinition extends WidgetDefinition
         return [
             'content'                    => '',
             'background_video'           => '',
-            'text_position'              => 'center-center',
+            'text_position'              => 'center',
             'ctas'                       => '',
             'button_alignment'           => 'auto',
             'fullscreen'                 => false,
@@ -112,7 +102,7 @@ class HeroDefinition extends WidgetDefinition
                 'label'       => 'Bold Statement',
                 'description' => 'Full-viewport gradient banner — strong landing-page opener.',
                 'config'      => [
-                    'text_position'              => 'center-center',
+                    'text_position'              => 'center',
                     'fullscreen'                 => true,
                     'scroll_indicator'           => true,
                     'overlap_nav'                => true,
@@ -172,7 +162,7 @@ class HeroDefinition extends WidgetDefinition
                 'label'       => 'Minimal Left',
                 'description' => 'Quiet intro on a soft background — good for interior pages.',
                 'config'      => [
-                    'text_position' => 'center-left',
+                    'text_position' => 'middle-left',
                     'fullscreen'    => false,
                     'min_height'    => '16rem',
                 ],
@@ -214,7 +204,7 @@ class HeroDefinition extends WidgetDefinition
                 'label'       => 'Compact Announcement',
                 'description' => 'Short banner for news or alerts — sits tight under the navigation.',
                 'config'      => [
-                    'text_position' => 'center-center',
+                    'text_position' => 'center',
                     'fullscreen'    => false,
                     'min_height'    => '16rem',
                 ],

@@ -11,6 +11,7 @@ const props = defineProps<{ ctl: ReturnType<typeof useInlineLinkPopover> }>()
 const {
   linkState, linkUrlInput, pagePickerOpen, pageQuery, pageHighlight, filteredPages,
   saveLink, removeLink, cancelLinkPopover, pickPage, onUrlInput,
+  urlLooksLikeEmail, applyMailto,
 } = props.ctl
 </script>
 
@@ -26,6 +27,14 @@ const {
       @input="onUrlInput"
       @keydown.enter.prevent="saveLink"
     />
+
+    <button
+      v-if="urlLooksLikeEmail"
+      type="button"
+      class="ift-link-mailto"
+      @mousedown.prevent
+      @click="applyMailto"
+    >This looks like an email address — make it a mailto: link</button>
 
     <label class="ift-link-label">Or pick a page</label>
     <div class="ift-link-picker">
@@ -117,6 +126,21 @@ const {
   box-sizing: border-box;
 }
 .ift-link-input:focus { border-color: #818cf8; outline: none; }
+
+.ift-link-mailto {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px dashed #4b5563;
+  border-radius: 6px;
+  color: #a5b4fc;
+  font: 12px/1.3 'Inter', system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.ift-link-mailto:hover { background: #1f2937; border-color: #818cf8; }
 
 .ift-link-picker { position: relative; }
 .ift-link-picker__list {

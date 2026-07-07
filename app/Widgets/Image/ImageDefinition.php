@@ -50,6 +50,7 @@ class ImageDefinition extends WidgetDefinition
                 '3:4'  => 'Portrait (3:4)',
             ], 'helper' => 'When set, the image renders at this ratio regardless of source. Use Image fit (cover/contain) to control crop vs. letterbox.', 'group' => 'appearance'],
             ['key' => 'object_fit',   'type' => 'select', 'label' => 'Image fit', 'default' => 'cover', 'options' => ['cover' => 'Cover', 'contain' => 'Contain'], 'helper' => 'How the source image fills the box when an aspect ratio is enforced.', 'group' => 'appearance'],
+            ['key' => 'object_position', 'type' => 'alignment', 'label' => 'Image focus', 'default' => 'center', 'helper' => 'Which part of the image stays in view when Cover crops it.', 'group' => 'appearance'],
             ['key' => 'max_width',    'type' => 'text',   'label' => 'Max width', 'default' => '', 'helper' => 'Optional CSS length (e.g. 400px, 60%, 20rem). Leave blank to fill the container.', 'group' => 'appearance'],
             ['key' => 'loading_priority', 'type' => 'select', 'label' => 'Loading priority', 'default' => 'lazy', 'options' => [
                 'lazy'  => 'Lazy (default)',
@@ -66,6 +67,7 @@ class ImageDefinition extends WidgetDefinition
             'link_url'         => '',
             'aspect_ratio'     => 'auto',
             'object_fit'       => 'cover',
+            'object_position'  => 'center',
             'max_width'        => '',
             'loading_priority' => 'lazy',
         ];

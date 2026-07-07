@@ -242,6 +242,18 @@ export function useInlineLinkPopover(deps: {
     }
   }
 
+  // A bare email address in the URL field surfaces an explicit "make this a
+  // mailto: link" offer — never converted automatically (session 363).
+  const urlLooksLikeEmail = computed(() =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(linkState.value.url.trim())
+  )
+
+  function applyMailto(): void {
+    if (!urlLooksLikeEmail.value) return
+    linkState.value.url = 'mailto:' + linkState.value.url.trim()
+    linkState.value.pageSlug = ''
+  }
+
   return {
     linkState,
     linkUrlInput,
@@ -256,5 +268,7 @@ export function useInlineLinkPopover(deps: {
     closeLinkPopover,
     pickPage,
     onUrlInput,
+    urlLooksLikeEmail,
+    applyMailto,
   }
 }

@@ -21,7 +21,10 @@
     }
     $style = $maxWidth !== '' ? "max-width: {$maxWidth};" : '';
 
-    $classes = trim('widget-image widget-image--' . $objectFit . ' ' . $ratioClass);
+    $validPositions = ['top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+    $objectPosition = in_array($config['object_position'] ?? '', $validPositions, true) ? $config['object_position'] : 'center';
+
+    $classes = trim('widget-image widget-image--' . $objectFit . ' widget-image--pos-' . $objectPosition . ' ' . $ratioClass);
 
     // LCP path: an eager image loads immediately and is hinted high-priority.
     // Default lazy — only a hero / above-the-fold image should opt into eager.
