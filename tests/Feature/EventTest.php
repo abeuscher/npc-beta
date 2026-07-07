@@ -127,12 +127,15 @@ it('registration is blocked when capacity is reached', function () {
     $event = Event::factory()->withCapacity(1)->create(['status' => 'published']);
     $tier  = $event->ticketTiers()->first();
 
-    // Fill capacity
+    // Fill capacity — the registration observer auto-flips sold_out (session
+    // 363), so the follow-up attempt hits the sold-out gate.
     EventRegistration::factory()->create([
         'event_id'       => $event->id,
         'ticket_tier_id' => $tier->id,
         'status'         => 'registered',
     ]);
+
+    expect($event->fresh()->sold_out)->toBeTrue();
 
     $this->post(route('events.register', $event->slug), [
         'name'        => 'Extra Person',
@@ -140,7 +143,7 @@ it('registration is blocked when capacity is reached', function () {
         'quantities'  => [$tier->id => 1],
         '_form_start' => time() - 10,
         '_hp_name'    => '',
-    ])->assertRedirect()->assertSessionHasErrors('quantities');
+    ])->assertRedirect()->assertSessionHasErrors('register');
 
     expect(EventRegistration::count())->toBe(1);
 });

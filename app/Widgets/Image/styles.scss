@@ -12,6 +12,16 @@
     object-fit: contain;
 }
 
+.widget-image--pos-top-left      { object-position: left top; }
+.widget-image--pos-top-center    { object-position: center top; }
+.widget-image--pos-top-right     { object-position: right top; }
+.widget-image--pos-middle-left   { object-position: left center; }
+.widget-image--pos-center        { object-position: center; }
+.widget-image--pos-middle-right  { object-position: right center; }
+.widget-image--pos-bottom-left   { object-position: left bottom; }
+.widget-image--pos-bottom-center { object-position: center bottom; }
+.widget-image--pos-bottom-right  { object-position: right bottom; }
+
 .widget-image--ratio-1-1,
 .widget-image--ratio-4-3,
 .widget-image--ratio-3-2,

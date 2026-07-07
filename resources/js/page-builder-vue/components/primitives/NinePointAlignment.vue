@@ -40,8 +40,11 @@ type RowIndex = 0 | 1 | 2
 type ColIndex = 0 | 1 | 2
 
 function valueToCoords(value: string): { row: RowIndex; col: ColIndex } {
-  // The 'center' shorthand maps to middle/center.
-  if (value === 'center') return { row: 1, col: 1 }
+  // The 'center' shorthand maps to middle/center. Legacy hero-scheme values
+  // ('center-center', 'center-left', 'center-right') read as the middle row
+  // so configs saved before the nine-point control display correctly.
+  if (value === 'center' || value === 'center-center') return { row: 1, col: 1 }
+  value = value.replace(/^center-(left|right)$/, 'middle-$1')
 
   const [rowName, colName] = value.split('-') as [string, string]
   const rowIdx = ROW_NAMES.indexOf(rowName as any)

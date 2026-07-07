@@ -111,6 +111,24 @@ it('TemplateSeeder creates all built-in content templates', function () {
     expect($names)->toContain('Blank');
 });
 
+it('seeds the Blog Post template with a title hero, content, social sharing, and pager', function () {
+    $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
+    $this->artisan('db:seed', ['--class' => 'TemplateSeeder']);
+
+    $blogPost = Template::query()->content()->where('name', 'Blog Post')->firstOrFail();
+
+    $stack = $blogPost->widgets()->orderBy('sort_order')->with('widgetType')->get();
+
+    expect($stack->pluck('widgetType.handle')->all())
+        ->toBe(['hero', 'text_block', 'social_sharing', 'blog_pager']);
+
+    $hero = $stack->first();
+    expect($hero->config['content'])->toContain('{{title}}')
+        ->and($hero->config['content'])->toContain('{{date}}')
+        ->and($hero->config['min_height'])->toBe('16rem')
+        ->and($hero->config['text_position'])->toBe('middle-left');
+});
+
 // ── Event landing page creation via createLandingPageForEvent ────────────────
 
 beforeEach(function () {

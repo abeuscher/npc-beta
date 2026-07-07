@@ -280,12 +280,40 @@ it('renders schema defaults when widget config is empty', function () {
 
     expect($result['html'])
         ->toContain('widget--hero')
-        ->toContain('hero--pos-center-center')   // text_position default
+        ->toContain('hero--pos-center')          // text_position default
         ->toContain('hero--height-24')           // min_height default '24rem'
         ->toContain('--hero-overlay: 0.5')       // background_overlay_opacity default 50
         ->not->toContain('hero--fullscreen')     // fullscreen default false
         ->not->toContain('hero--overlap-nav')    // overlap_nav default false
         ->not->toContain('hero-scroll-indicator'); // scroll_indicator default false
+});
+
+it('normalizes legacy text_position values to the shared alignment vocabulary', function () {
+    // Pages saved before the nine-point control (session 363) carry the old
+    // select vocabulary; the template maps them to the canonical classes.
+    $hero = seedHeroWidget();
+    $page = Page::factory()->create(['title' => 'Hero Legacy', 'slug' => 'hero-legacy', 'status' => 'published']);
+
+    $cases = [
+        'center-center' => 'hero--pos-center',
+        'center-left'   => 'hero--pos-middle-left',
+        'center-right'  => 'hero--pos-middle-right',
+        'top-left'      => 'hero--pos-top-left',
+        'middle-left'   => 'hero--pos-middle-left',
+    ];
+
+    foreach ($cases as $stored => $expectedClass) {
+        $pw = $page->widgets()->create([
+            'widget_type_id' => $hero->id,
+            'config'         => ['content' => '<h1>Hi</h1>', 'text_position' => $stored],
+            'sort_order'     => 0,
+            'is_active'      => true,
+        ]);
+
+        expect(WidgetRenderer::render($pw)['html'])->toContain($expectedClass);
+
+        $pw->delete();
+    }
 });
 
 it('adds overlap-nav class when full bleed is enabled', function () {

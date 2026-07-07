@@ -48,9 +48,15 @@ class TemplateSeeder extends Seeder
             ['handle' => 'text_block', 'config' => []],
         ]);
 
-        $blogPost = $this->seedContentTemplate('Blog Post', 'Standard blog post layout with content and a prev/next pager.', [
-            ['handle' => 'text_block', 'config' => []],
-            ['handle' => 'blog_pager', 'config' => []],
+        $blogPost = $this->seedContentTemplate('Blog Post', 'Standard blog post layout with a title hero, content, social sharing, and a prev/next pager.', [
+            ['handle' => 'hero', 'config' => [
+                'content'       => '<h1>{{title}}</h1><p>{{date}}</p>',
+                'min_height'    => '16rem',
+                'text_position' => 'middle-left',
+            ]],
+            ['handle' => 'text_block',     'config' => []],
+            ['handle' => 'social_sharing', 'config' => ['heading' => 'Share this post']],
+            ['handle' => 'blog_pager',     'config' => []],
         ]);
 
         $this->seedContentTemplate('Blank', 'Empty page — no widgets.', []);

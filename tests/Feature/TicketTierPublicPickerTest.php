@@ -126,11 +126,18 @@ it('rejects registration when the chosen tier is at capacity', function () {
     $event = Event::factory()->withCapacity(1)->create(['status' => 'published']);
     $tier  = $event->ticketTiers()->first();
 
+    // A sibling tier with room keeps the event below capacity (so the session
+    // 363 sold-out auto-flip stays off) — the rejection under test is the
+    // per-tier one, not the whole-event gate.
+    TicketTier::factory()->for($event)->create(['name' => 'Open Tier', 'capacity' => 10]);
+
     EventRegistration::factory()->create([
         'event_id'       => $event->id,
         'ticket_tier_id' => $tier->id,
         'status'         => 'registered',
     ]);
+
+    expect($event->fresh()->sold_out)->toBeFalse();
 
     $this->post(route('events.register', $event->slug), [
         'name'        => 'Jane',

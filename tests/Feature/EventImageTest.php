@@ -124,3 +124,13 @@ it('applies an aspect ratio and max width as inline styles', function () {
     expect($html)->toContain('aspect-ratio:16 / 9')
         ->toContain('max-width:480px');
 });
+
+it('applies object_position as an inline style, defaulting to centre', function () {
+    Storage::fake('public');
+    $event = Event::factory()->create(['slug' => 'gala']);
+    attachEventImage($event, 'event_header', 'header.jpg');
+
+    expect(renderEventImage('gala'))->toContain('object-position:center;');
+    expect(renderEventImage('gala', ['object_position' => 'top-center']))->toContain('object-position:center top;');
+    expect(renderEventImage('gala', ['object_position' => 'sideways']))->toContain('object-position:center;');
+});

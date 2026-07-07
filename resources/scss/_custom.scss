@@ -115,16 +115,16 @@
 .hero--pos-top-center .hero-body > .site-container,
 .hero--pos-top-right .hero-body > .site-container       { justify-content: flex-start; }
 
-.hero--pos-center-left .hero-body > .site-container,
-.hero--pos-center-center .hero-body > .site-container,
-.hero--pos-center-right .hero-body > .site-container    { justify-content: center; }
+.hero--pos-middle-left .hero-body > .site-container,
+.hero--pos-center .hero-body > .site-container,
+.hero--pos-middle-right .hero-body > .site-container    { justify-content: center; }
 
 .hero--pos-bottom-left .hero-body > .site-container,
 .hero--pos-bottom-center .hero-body > .site-container,
 .hero--pos-bottom-right .hero-body > .site-container    { justify-content: flex-end; }
 
 .hero--pos-top-left .hero-body > .site-container,
-.hero--pos-center-left .hero-body > .site-container,
+.hero--pos-middle-left .hero-body > .site-container,
 .hero--pos-bottom-left .hero-body > .site-container     {
     align-items: flex-start;
 
@@ -142,11 +142,11 @@
 }
 
 .hero--pos-top-center .hero-body > .site-container,
-.hero--pos-center-center .hero-body > .site-container,
+.hero--pos-center .hero-body > .site-container,
 .hero--pos-bottom-center .hero-body > .site-container   { align-items: center; }
 
 .hero--pos-top-right .hero-body > .site-container,
-.hero--pos-center-right .hero-body > .site-container,
+.hero--pos-middle-right .hero-body > .site-container,
 .hero--pos-bottom-right .hero-body > .site-container    { align-items: flex-end; }
 
 // The hero content's text-align defaults to left independent of the outer

@@ -5,7 +5,7 @@
     $overlapNav      = ($config['overlap_nav'] ?? false) == true;
     $fullscreen      = ($config['fullscreen'] ?? false) == true;
     $showScroll      = ($config['scroll_indicator'] ?? false) == true;
-    $position        = $config['text_position'] ?? 'center-center';
+    $position        = $config['text_position'] ?? 'center';
     $minHeight       = $config['min_height'] ?? '24rem';
     $textMaxWidth    = $config['text_max_width'] ?? '42rem';
     $buttonAlignment = $config['button_alignment'] ?? 'auto';
@@ -19,7 +19,16 @@
     if ($fullscreen)  $classes[] = 'hero--fullscreen';
     if ($overlapNav)  $classes[] = 'hero--overlap-nav';
     if ($showScroll)  $classes[] = 'hero--has-scroll';
-    $classes[] = 'hero--pos-' . ($position ?: 'center-center');
+    // Legacy select values (pre nine-point control) normalize to the shared
+    // alignment vocabulary for the class only — the raw value still feeds the
+    // auto button-alignment below, so pages saved before the control change
+    // render unchanged (legacy 'center-left' centers auto buttons).
+    $positionClass = [
+        'center-center' => 'center',
+        'center-left'   => 'middle-left',
+        'center-right'  => 'middle-right',
+    ][$position] ?? ($position ?: 'center');
+    $classes[] = 'hero--pos-' . $positionClass;
     if (!$fullscreen) $classes[] = 'hero--height-' . str_replace('rem', '', $minHeight);
 
     $resolvedButtonAlignment = $buttonAlignment === 'auto'

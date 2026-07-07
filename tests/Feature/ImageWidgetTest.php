@@ -111,6 +111,47 @@ it('omits the style attribute when max_width is empty', function () {
     expect($html)->not->toContain('style="max-width');
 });
 
+// ── Image focus / object_position (session 363) ──────────────────────────────
+
+it('registers object_position in the image widget schema', function () {
+    $keys = collect(WidgetType::where('handle', 'image')->firstOrFail()->config_schema)
+        ->pluck('key')->all();
+
+    expect($keys)->toContain('object_position');
+});
+
+it('renders the centre position class by default', function () {
+    $pw = makeImagePage('image-pos-default', []);
+
+    $html = WidgetRenderer::render($pw)['html'];
+
+    expect($html)->toContain('widget-image--pos-center');
+});
+
+it('renders the matching position class for each alignment value', function () {
+    $positions = [
+        'top-left', 'top-center', 'top-right',
+        'middle-left', 'center', 'middle-right',
+        'bottom-left', 'bottom-center', 'bottom-right',
+    ];
+
+    foreach ($positions as $position) {
+        $pw = makeImagePage('image-pos-' . $position, ['object_position' => $position]);
+        $html = WidgetRenderer::render($pw)['html'];
+
+        expect($html)->toContain('widget-image--pos-' . $position);
+    }
+});
+
+it('falls back to centre for unknown object_position values', function () {
+    $pw = makeImagePage('image-pos-bad', ['object_position' => 'sideways']);
+
+    $html = WidgetRenderer::render($pw)['html'];
+
+    expect($html)->toContain('widget-image--pos-center')
+        ->not->toContain('widget-image--pos-sideways');
+});
+
 // ── Loading priority / LCP (session 350) ─────────────────────────────────────
 
 it('registers loading_priority in the image widget schema', function () {

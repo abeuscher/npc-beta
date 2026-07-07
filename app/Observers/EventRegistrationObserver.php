@@ -11,11 +11,20 @@ class EventRegistrationObserver
 {
     public function created(EventRegistration $registration): void
     {
+        $registration->loadMissing('event');
+
+        // Best-effort, one-way: a registration that fills the last tier flips the
+        // event to sold out. Never auto-cleared — a manual reopen stays until the
+        // next capacity hit.
+        if ($registration->event
+            && ! $registration->event->sold_out
+            && $registration->event->isAtCapacity()) {
+            $registration->event->update(['sold_out' => true]);
+        }
+
         if (! empty($registration->email)) {
             Mail::to($registration->email)->send(new RegistrationConfirmation($registration));
         }
-
-        $registration->loadMissing('event');
 
         if (empty($registration->email)) {
             return;
