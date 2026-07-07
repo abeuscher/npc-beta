@@ -315,33 +315,40 @@ export async function insertContactsFromCsv(csvPath: string): Promise<void> {
     });
 }
 
-// A fixed recovery code the seeded admin is enrolled with (below), so the e2e
-// auth helper can clear the session-359 two-factor challenge without a TOTP
-// time-window. Re-seeded on every reset, so it is always available for the one
-// admin login that immediately follows a reset.
+// A fixed recovery code enrolled users carry (below), so the e2e auth helpers
+// can clear the session-359 two-factor challenge without a TOTP time-window.
+// Recovery codes are single-use (TwoFactorChallenge::verifyCode replaces the
+// code on use), so callers re-seed via enrollTwoFactor() before each
+// interactive login rather than relying on the code surviving a prior one.
 export const E2E_ADMIN_RECOVERY_CODE = 'e2e0recovery-e2e0recovery';
 
-// Enroll the seeded admin in two-factor auth with a known secret + recovery
-// code. Without this the 2FA enforcement gate (EnsureTwoFactorAuthenticated,
+// Enroll a user in two-factor auth with a known secret + recovery code.
+// Without this the 2FA enforcement gate (EnsureTwoFactorAuthenticated,
 // session 359) redirects every authenticated admin request to the enrollment
-// page, so the whole admin e2e suite — not just the tour — cannot reach any
-// admin screen. The real demo node bypasses 2FA via isDemoMode(); the e2e stack
-// runs as env `dev`, which does not, so we enroll instead.
-function enrollAdminTwoFactor(): void {
+// page, so no admin screen is reachable. The real demo node bypasses 2FA via
+// isDemoMode(); the e2e stack runs as env `dev`, which does not, so we enroll
+// instead. With no email argument it targets the seeded admin (falling back
+// to the first user, matching the original reset behaviour); with an explicit
+// email it targets exactly that user and fails loudly if the user is missing.
+// Idempotent — re-running restores the fixed recovery code after a login
+// consumed it.
+export function enrollTwoFactor(email?: string): void {
     const php = [
         'require "/var/www/html/vendor/autoload.php";',
         '$app = require "/var/www/html/bootstrap/app.php";',
         '$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();',
-        '$email = env("ADMIN_EMAIL");',
-        '$u = App\\Models\\User::query()->where("email", $email)->first() ?? App\\Models\\User::query()->orderBy("id")->first();',
-        'if (! $u) { fwrite(STDERR, "[2fa] no user to enroll\\n"); exit(0); }',
+        '$explicit = ($argv[1] ?? "") !== "" ? $argv[1] : null;',
+        '$u = $explicit !== null',
+        '    ? App\\Models\\User::query()->where("email", $explicit)->first()',
+        '    : (App\\Models\\User::query()->where("email", env("ADMIN_EMAIL"))->first() ?? App\\Models\\User::query()->orderBy("id")->first());',
+        'if (! $u) { fwrite(STDERR, "[2fa] no user to enroll" . ($explicit ? ": $explicit" : "") . "\\n"); exit($explicit ? 1 : 0); }',
         '$secret = app(Laravel\\Fortify\\Contracts\\TwoFactorAuthenticationProvider::class)->generateSecretKey();',
         '$u->forceFill(["two_factor_secret" => encrypt($secret), "two_factor_recovery_codes" => encrypt(json_encode(["' +
             E2E_ADMIN_RECOVERY_CODE +
             '"])), "two_factor_confirmed_at" => now()])->save();',
         'fwrite(STDOUT, "[2fa] enrolled " . $u->email . "\\n");',
     ].join(' ');
-    execFileSync('docker', composeExecArgs(['php', '-r', php]), {
+    execFileSync('docker', composeExecArgs(['php', '-r', php, email ?? '']), {
         cwd: PROJECT_ROOT,
         stdio: 'inherit',
     });
@@ -353,7 +360,7 @@ export function resetDatabase(): void {
         composeExecArgs(['php', 'artisan', 'migrate:fresh', '--seed']),
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
-    enrollAdminTwoFactor();
+    enrollTwoFactor();
 }
 
 export async function findPageIdBySlug(slug: string): Promise<string | null> {
