@@ -163,12 +163,27 @@ export async function startTour(tourId, startIndex = 0) {
         },
         onNextClick: () => {
             if (!activeDriver) return;
-            if (activeDriver.getActiveIndex() < driverSteps.length - 1) {
+            const local = activeDriver.getActiveIndex();
+            const globalIndex = startIndex + local;
+            const step = steps[globalIndex];
+            // An interactive step invites the user's own click, but Next stays
+            // available for anyone not reading closely — it navigates to the
+            // same destination (the step's navigateTo URL-map key) and the
+            // launch flag continues the tour there.
+            if (step && step.navigateTo && globalIndex < steps.length - 1) {
+                const url = urls()[step.navigateTo];
+                if (url) {
+                    setLaunchFlag(tourId, globalIndex + 1);
+                    teardown();
+                    window.location.assign(url);
+                } else {
+                    stopTour();
+                }
+                return;
+            }
+            if (local < driverSteps.length - 1) {
                 activeDriver.moveNext();
             } else {
-                // Next only shows on a segment's last step when the tour ends
-                // here or the interactive element failed to resolve (nothing to
-                // click into) — either way the tour ends cleanly.
                 stopTour();
             }
         },
@@ -187,19 +202,15 @@ function buildStep(step, element, globalIndex, total, isSegmentStart) {
     const isLast = globalIndex === total - 1;
     const progress = `<span class="np-tour-progress">Step ${globalIndex + 1} of ${total}</span>`;
 
-    // Interactive steps hide Next — the user advances by clicking the real
-    // element the step points at. But only when that element actually resolved;
-    // if it didn't (e.g. no record to open into), keep Next so the tour can't
-    // strand the user on a centered step with no way forward.
-    const buttons =
-        step.interactive && element ? ['previous', 'close'] : ['previous', 'next', 'close'];
-
     const popover = {
         title: step.title || '',
         description: progress + (step.description || ''),
         side: step.side || 'bottom',
         align: step.align || 'start',
-        showButtons: buttons,
+        // Interactive steps keep Next too — the user's own click on the
+        // spotlighted element is the invitation, Next is the safety net for
+        // anyone not reading closely (both land on the same page).
+        showButtons: ['previous', 'next', 'close'],
         // Back never crosses a page boundary — the segment's first step is the
         // floor (for the tour's true first step, that is also step 1 of N).
         disableButtons: isSegmentStart ? ['previous'] : [],

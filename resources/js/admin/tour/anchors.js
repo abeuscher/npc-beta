@@ -63,15 +63,19 @@ function isHidden(el) {
 
 // Collapsed sidebar groups (every group is `->collapsed()` in this panel) hide
 // their links until the group is opened. Open the parent group so the link is
-// a real, measurable target before driver.js positions the popover.
+// a real, measurable target before driver.js positions the popover. Flag-
+// launched tours start at DOMContentLoaded, when Alpine may not have bound the
+// toggle yet — a click on a dead button does nothing — so retry until the
+// group actually opens (or the attempts run out).
 async function ensureNavVisible(link) {
     if (!isHidden(link)) return;
     const group = link.closest('.fi-sidebar-group');
     const toggle = group && group.querySelector('.fi-sidebar-group-button, button');
-    if (toggle) {
+    if (!toggle) return;
+    for (let attempt = 0; attempt < 8 && isHidden(link); attempt++) {
         toggle.click();
         await waitForElement(() => (isHidden(link) ? null : link), {
-            timeout: 1500,
+            timeout: 500,
             interval: 60,
         });
     }

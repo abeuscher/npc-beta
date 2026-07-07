@@ -43,8 +43,10 @@ test('walks every sidebar beat on the dashboard and ends clean', async ({ page }
     }
 
     // The conclusion offers both deep-dive handoffs, then Done ends the tour.
-    await expect(page.locator('[data-np-tour-goto="crm"]')).toBeVisible();
-    await expect(page.locator('[data-np-tour-goto="cms"]')).toBeVisible();
+    // (Scoped to the popover — the dashboard widget carries its own launchers
+    // with the same data attribute.)
+    await expect(page.locator('.driver-popover [data-np-tour-goto="crm"]')).toBeVisible();
+    await expect(page.locator('.driver-popover [data-np-tour-goto="cms"]')).toBeVisible();
     await nextBtn(page).click();
     await expect(page.locator('.driver-popover')).toHaveCount(0, { timeout: 15_000 });
 });
@@ -57,11 +59,21 @@ test('the conclusion link hands off to the CRM tour on the contacts page', async
     }
     await expect(title(page)).toHaveText('Conclusion', { timeout: 30_000 });
 
-    await page.locator('[data-np-tour-goto="crm"]').click();
+    await page.locator('.driver-popover [data-np-tour-goto="crm"]').click();
     await page.waitForURL(/\/admin\/contacts/, { timeout: 30_000 });
     await expect(title(page)).toHaveText('Intro', { timeout: 30_000 });
 
     // The launch flag is one-shot — consumed on the destination page.
     const flag = await page.evaluate(() => sessionStorage.getItem('np-tour-launch'));
     expect(flag).toBeNull();
+});
+
+test('the dashboard widget offers direct launchers for the two deep-dive tours', async ({ page }) => {
+    await page.goto('/admin');
+    await expect(page.locator('[data-np-tour-start="dashboard"]')).toBeVisible();
+    await expect(page.locator('[data-np-tour-goto="crm"]')).toBeVisible();
+
+    await page.locator('[data-np-tour-goto="cms"]').click();
+    await page.waitForURL(/\/admin\/pages/, { timeout: 30_000 });
+    await expect(title(page)).toHaveText('CMS', { timeout: 30_000 });
 });

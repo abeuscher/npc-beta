@@ -37,6 +37,7 @@ export const crmTour = {
         {
             anchor: { navRow: 'contactRecord' },
             interactive: true,
+            navigateTo: 'contactRecord',
             title: 'Contact Record View',
             description:
                 'Each contact record contains detailed information on the contacts activity, origin, and membership and donation information. <strong>Click this contact</strong> to open their record.',

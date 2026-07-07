@@ -54,9 +54,11 @@ test('walks the contacts list, drills into the hero record on the user\'s click,
     await nextBtn(page).click();
 
     // The contained hop: the spotlighted hero row's own link navigates, and the
-    // launch flag continues the tour on the record.
+    // launch flag continues the tour on the record. Next stays available as the
+    // safety net for users who don't read the click invitation.
     await expect(title(page)).toHaveText('Contact Record View', { timeout: 30_000 });
     await expect(active(page)).toBeVisible({ timeout: 30_000 });
+    await expect(nextBtn(page)).toBeVisible();
     await active(page).locator('a').first().click();
     await page.waitForURL(/\/admin\/contacts\/[^/]+\/edit/, { timeout: 30_000 });
 
@@ -73,4 +75,22 @@ test('walks the contacts list, drills into the hero record on the user\'s click,
     await expect(page.locator('.driver-popover')).toHaveCount(0, { timeout: 15_000 });
     const flag = await page.evaluate(() => sessionStorage.getItem('np-tour-launch'));
     expect(flag).toBeNull();
+});
+
+test('Next on the record step is the safety net — it navigates into the record too', async ({ page }) => {
+    await page.goto('/admin');
+    await page.evaluate(() => {
+        sessionStorage.setItem('np-tour-launch', JSON.stringify({ tour: 'crm', index: 0 }));
+    });
+    await page.goto('/admin/contacts');
+
+    for (const step of ['Intro', 'Contacts List View', 'Import / Export']) {
+        await expect(title(page)).toHaveText(step, { timeout: 30_000 });
+        await nextBtn(page).click();
+    }
+
+    await expect(title(page)).toHaveText('Contact Record View', { timeout: 30_000 });
+    await nextBtn(page).click();
+    await page.waitForURL(/\/admin\/contacts\/[^/]+\/edit/, { timeout: 30_000 });
+    await expect(title(page)).toHaveText('Contact Notes View', { timeout: 30_000 });
 });

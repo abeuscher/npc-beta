@@ -7,7 +7,7 @@
             <p class="text-sm text-gray-400 italic">Add a welcome message in General Settings.</p>
         @endif
 
-        <div class="mt-4">
+        <div class="mt-4 flex flex-wrap gap-2">
             <x-filament::button
                 type="button"
                 color="primary"
@@ -15,6 +15,22 @@
                 data-np-tour-start="dashboard"
             >
                 Tour the Product
+            </x-filament::button>
+            <x-filament::button
+                type="button"
+                color="gray"
+                icon="heroicon-m-play-circle"
+                data-np-tour-goto="crm"
+            >
+                Tour the CRM
+            </x-filament::button>
+            <x-filament::button
+                type="button"
+                color="gray"
+                icon="heroicon-m-play-circle"
+                data-np-tour-goto="cms"
+            >
+                Tour the CMS
             </x-filament::button>
         </div>
     </x-filament::section>

@@ -33,19 +33,19 @@ export function initTour() {
     });
 
     // A one-shot launch flag set before a navigation (a goto link, or an
-    // interactive step's click-through) continues the tour here. Wait for the
-    // full `load` event, not DOMContentLoaded: anchor resolution opens collapsed
-    // sidebar groups by clicking their Alpine toggles, and at DOMContentLoaded
-    // Alpine hasn't booted yet — the click lands on a dead button and the
-    // group's items stay hidden under the spotlight.
+    // interactive step's click-through) continues the tour here — at
+    // DOMContentLoaded, so the handoff feels immediate (waiting for the full
+    // `load` event left the destination page usable-but-tourless for seconds).
+    // The Alpine race this timing invites — sidebar group toggles not yet
+    // bound — is handled where it occurs, by ensureNavVisible's retries.
     const resume = () => {
         const flag = consumeLaunchFlag();
         if (flag && TOURS[flag.tour]) startTour(flag.tour, flag.index || 0);
     };
-    if (document.readyState === 'complete') {
-        resume();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resume);
     } else {
-        window.addEventListener('load', resume, { once: true });
+        resume();
     }
     // And after a Filament/Livewire SPA navigation too, in case the panel ever
     // enables wire:navigate (the tours' own transitions are hard loads).
