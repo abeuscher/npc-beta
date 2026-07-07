@@ -8,3 +8,4 @@ folds the survivors into `sessions/housekeeping-inbox.md`, then clears this
 file back to this header. Do not hand-curate here; capture and move on.
 
 ---
+
