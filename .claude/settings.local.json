@@ -117,7 +117,8 @@
       "Bash(grep -nE '^#{1,3} ' sessions/housekeeping-inbox.md)",
       "Bash(grep -nE '^#{2,3} ' sessions/housekeeping-inbox.md)",
       "Bash(awk 'BEGIN{p=\"\"} *)",
-      "Bash(git -c core.quotepath=false diff --name-only --diff-filter=U)"
+      "Bash(git -c core.quotepath=false diff --name-only --diff-filter=U)",
+      "mcp__Claude_Code_Remote__send_later"
     ],
     "additionalDirectories": [
       "/tmp",
