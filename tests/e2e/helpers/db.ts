@@ -315,12 +315,45 @@ export async function insertContactsFromCsv(csvPath: string): Promise<void> {
     });
 }
 
+// A fixed recovery code the seeded admin is enrolled with (below), so the e2e
+// auth helper can clear the session-359 two-factor challenge without a TOTP
+// time-window. Re-seeded on every reset, so it is always available for the one
+// admin login that immediately follows a reset.
+export const E2E_ADMIN_RECOVERY_CODE = 'e2e0recovery-e2e0recovery';
+
+// Enroll the seeded admin in two-factor auth with a known secret + recovery
+// code. Without this the 2FA enforcement gate (EnsureTwoFactorAuthenticated,
+// session 359) redirects every authenticated admin request to the enrollment
+// page, so the whole admin e2e suite — not just the tour — cannot reach any
+// admin screen. The real demo node bypasses 2FA via isDemoMode(); the e2e stack
+// runs as env `dev`, which does not, so we enroll instead.
+function enrollAdminTwoFactor(): void {
+    const php = [
+        'require "/var/www/html/vendor/autoload.php";',
+        '$app = require "/var/www/html/bootstrap/app.php";',
+        '$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();',
+        '$email = env("ADMIN_EMAIL");',
+        '$u = App\\Models\\User::query()->where("email", $email)->first() ?? App\\Models\\User::query()->orderBy("id")->first();',
+        'if (! $u) { fwrite(STDERR, "[2fa] no user to enroll\\n"); exit(0); }',
+        '$secret = app(Laravel\\Fortify\\Contracts\\TwoFactorAuthenticationProvider::class)->generateSecretKey();',
+        '$u->forceFill(["two_factor_secret" => encrypt($secret), "two_factor_recovery_codes" => encrypt(json_encode(["' +
+            E2E_ADMIN_RECOVERY_CODE +
+            '"])), "two_factor_confirmed_at" => now()])->save();',
+        'fwrite(STDOUT, "[2fa] enrolled " . $u->email . "\\n");',
+    ].join(' ');
+    execFileSync('docker', composeExecArgs(['php', '-r', php]), {
+        cwd: PROJECT_ROOT,
+        stdio: 'inherit',
+    });
+}
+
 export function resetDatabase(): void {
     execFileSync(
         'docker',
         composeExecArgs(['php', 'artisan', 'migrate:fresh', '--seed']),
         { cwd: PROJECT_ROOT, stdio: 'inherit' },
     );
+    enrollAdminTwoFactor();
 }
 
 export async function findPageIdBySlug(slug: string): Promise<string | null> {

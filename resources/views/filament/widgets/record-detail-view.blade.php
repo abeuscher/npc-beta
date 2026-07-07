@@ -6,8 +6,7 @@
                     @php
                         $rendered = \App\Services\WidgetRenderer::render($pw, [], [], 'record_detail_sidebar', $record);
                     @endphp
-                    <div class="np-record-detail-view__cell" data-widget-handle="{{ $pw->widgetType?->handle }}"
-                        @if ($pw->widgetType?->handle === 'membership_status') data-tour="record.membership" @endif>
+                    <div class="np-record-detail-view__cell" data-widget-handle="{{ $pw->widgetType?->handle }}">
                         @if ($rendered['styles'])
                             <style>{!! $rendered['styles'] !!}</style>
                         @endif

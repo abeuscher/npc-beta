@@ -413,6 +413,16 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE,
                 fn (): HtmlString => new HtmlString('<div data-tour="resource.records" class="np-tour-anchor"></div>')
             )
+            // The Memberships relation-manager on a contact record. The tour's
+            // membership step anchors here — the actual membership list, high on
+            // the record and stable under the form — not the lower at-a-glance
+            // status widget (which kept scrolling off the fold). Scoped to this
+            // one relation manager so the Notes manager is not also marked.
+            ->renderHook(
+                PanelsRenderHook::RESOURCE_RELATION_MANAGER_BEFORE,
+                fn (): HtmlString => new HtmlString('<div data-tour="record.memberships" class="np-tour-anchor"></div>'),
+                scopes: \App\Filament\Resources\ContactResource\RelationManagers\MembershipsRelationManager::class,
+            )
             // Tour route map: emit each tour-target page's URL only when the
             // current viewer's role can reach it. The tour skips steps whose page
             // is absent, so a restricted role (e.g. the demo prospect) gets a

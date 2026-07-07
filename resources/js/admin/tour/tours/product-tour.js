@@ -28,10 +28,10 @@ export const productTour = [
     },
     {
         page: 'contactRecord',
-        anchor: { tour: 'record.membership' },
+        anchor: { tour: 'record.memberships', target: 'next' },
         title: 'One record, the whole picture',
         description:
-            'Open a supporter and everything about them is right here. This is their membership — tier, status, and renewals, tracked automatically.',
+            'Open a supporter and everything about them is right here — including their memberships: tier, status, and renewal dates, tracked automatically.',
         side: 'top',
     },
     {

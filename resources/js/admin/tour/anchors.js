@@ -21,6 +21,39 @@ export function waitForElement(getter, { timeout = 8000, interval = 80 } = {}) {
     });
 }
 
+// Resolve once an element's geometry has settled — its bounding box unchanged
+// for `stableReads` consecutive polls. `waitForElement` resolves the moment a
+// marker *exists*, but existence is not settled layout: on a record page the
+// Livewire form above a panel keeps hydrating and growing after the marker
+// appears, so the panel shifts downward. If driver.js scrolls/positions the
+// spotlight against that pre-settle rect, the highlight lands off-target and
+// the target can end up below the fold (the session-338 membership step). Gate
+// the drive on this so every step is framed against final geometry, not stale.
+export function waitForStableRect(el, { interval = 60, stableReads = 4, timeout = 3000 } = {}) {
+    return new Promise((resolve) => {
+        if (!el || typeof el.getBoundingClientRect !== 'function') {
+            return resolve(el);
+        }
+        const start = Date.now();
+        let last = null;
+        let stable = 0;
+        const tick = () => {
+            const r = el.getBoundingClientRect();
+            const key = `${Math.round(r.top)}|${Math.round(r.left)}|${Math.round(r.width)}|${Math.round(r.height)}`;
+            if (key === last) {
+                stable += 1;
+            } else {
+                stable = 0;
+                last = key;
+            }
+            if (stable >= stableReads) return resolve(el);
+            if (Date.now() - start >= timeout) return resolve(el);
+            setTimeout(tick, interval);
+        };
+        tick();
+    });
+}
+
 function isHidden(el) {
     if (!el) return true;
     if (el.offsetParent === null) return true;

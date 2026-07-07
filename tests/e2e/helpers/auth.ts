@@ -3,7 +3,7 @@ import type { Browser, Page } from '@playwright/test';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as dotenv from 'dotenv';
-import { resetDatabase } from './db.js';
+import { resetDatabase, E2E_ADMIN_RECOVERY_CODE } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +25,15 @@ export async function loginAsAdmin(page: Page): Promise<void> {
     await page.locator('input[type=password]').fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.waitForURL((url) => !url.pathname.endsWith('/admin/login'), { timeout: 20_000 });
+
+    // 2FA enforcement gate (session 359): an enrolled admin lands on the
+    // challenge after the password step. The admin is seeded with a known
+    // recovery code (db.ts), so clear it with that — no TOTP time-window.
+    if (page.url().includes('two-factor-challenge')) {
+        await page.getByLabel('Authentication code').fill(E2E_ADMIN_RECOVERY_CODE);
+        await page.getByRole('button', { name: 'Verify' }).click();
+        await page.waitForURL((url) => !url.pathname.includes('two-factor'), { timeout: 20_000 });
+    }
 
     await page.goto('/admin/import-contacts-page');
     if (page.url().includes('/admin/login')) {

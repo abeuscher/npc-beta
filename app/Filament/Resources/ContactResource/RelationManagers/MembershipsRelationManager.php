@@ -14,6 +14,13 @@ class MembershipsRelationManager extends RelationManager
 {
     protected static string $relationship = 'memberships';
 
+    // Render eagerly rather than Filament's default lazy-on-load. Two reasons:
+    // it removes the layout jump when the table pops in after the rest of the
+    // record has painted, and the guided tour (session 338/361) anchors its
+    // membership step on this relation manager — a lazy, not-yet-loaded table is
+    // never in the DOM when the tour looks for it.
+    protected static bool $isLazy = false;
+
     public function form(Form $form): Form
     {
         return $form->schema([

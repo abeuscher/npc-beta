@@ -21,10 +21,15 @@
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { getState, setState, clearState } from './state.js';
-import { resolveAnchor } from './anchors.js';
+import { resolveAnchor, waitForStableRect } from './anchors.js';
 
 let activeDriver = null;
 let TOUR = [];
+// The persistent control bar element refs, and the current page-group bounds the
+// advance/back paths and the bar both read (single source of truth — the popover
+// buttons and the bar drive the exact same transitions, no divergent state).
+let tourBar = null;
+let groupCtx = null;
 
 export function registerTour(steps) {
     TOUR = Array.isArray(steps) ? steps : [];
@@ -59,6 +64,8 @@ function currentPath() {
 }
 
 function teardown() {
+    unmountTourBar();
+    groupCtx = null;
     if (activeDriver) {
         const d = activeDriver;
         activeDriver = null;
@@ -67,6 +74,99 @@ function teardown() {
         } catch {
             // already torn down
         }
+    }
+}
+
+// Advance / retreat: the single transition path the popover buttons AND the
+// persistent bar both call, so the two control sets can never diverge. Within
+// the current page-group they move the driver; at a group edge they persist the
+// next index and hard-navigate; off the last step they end the tour.
+function advanceTour() {
+    if (!activeDriver || !groupCtx) return;
+    const local = activeDriver.getActiveIndex();
+    if (local < groupCtx.len - 1) {
+        setState({ active: true, index: groupCtx.start + local + 1 });
+        activeDriver.moveNext();
+    } else if (!groupCtx.isLast) {
+        const tour = effectiveTour();
+        setState({ active: true, index: groupCtx.end + 1 });
+        navigateTo(tour[groupCtx.end + 1].page);
+    } else {
+        stopTour();
+    }
+}
+
+function retreatTour() {
+    if (!activeDriver || !groupCtx) return;
+    const local = activeDriver.getActiveIndex();
+    if (local > 0) {
+        setState({ active: true, index: groupCtx.start + local - 1 });
+        activeDriver.movePrevious();
+    } else if (!groupCtx.isFirst) {
+        const tour = effectiveTour();
+        setState({ active: true, index: groupCtx.start - 1 });
+        navigateTo(tour[groupCtx.start - 1].page);
+    }
+}
+
+// A second, always-visible set of tour controls (session 361). A mispositioned
+// popover can never strand the user: Back / Next / Exit and a "Step X of Y"
+// indicator are pinned to the bottom of the viewport regardless of where the
+// popover lands. Wired to the same advance/back/stop paths as the popover, so
+// there is no separate state to keep in sync.
+function mountTourBar() {
+    if (tourBar) return tourBar;
+
+    const bar = document.createElement('div');
+    bar.className = 'np-tour-bar';
+    bar.setAttribute('role', 'group');
+    bar.setAttribute('aria-label', 'Tour controls');
+    // Keep clicks on the bar from reaching driver's overlay (which closes the
+    // tour on click); the button handlers have already run by the time this
+    // bubbles up here.
+    bar.addEventListener('click', (event) => event.stopPropagation());
+
+    const exit = document.createElement('button');
+    exit.type = 'button';
+    exit.className = 'np-tour-bar__exit';
+    exit.textContent = 'Exit';
+    exit.addEventListener('click', () => stopTour());
+
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'np-tour-bar__back';
+    back.textContent = '← Back';
+    back.addEventListener('click', () => retreatTour());
+
+    const progress = document.createElement('span');
+    progress.className = 'np-tour-bar__progress';
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'np-tour-bar__next';
+    next.textContent = 'Next →';
+    next.addEventListener('click', () => advanceTour());
+
+    bar.append(exit, back, progress, next);
+    document.body.appendChild(bar);
+
+    tourBar = { bar, back, progress, next };
+    return tourBar;
+}
+
+function updateTourBar() {
+    if (!tourBar || !activeDriver || !groupCtx) return;
+    const globalIndex = groupCtx.start + activeDriver.getActiveIndex();
+    const total = groupCtx.total;
+    tourBar.progress.textContent = `Step ${globalIndex + 1} of ${total}`;
+    tourBar.back.disabled = globalIndex === 0;
+    tourBar.next.textContent = globalIndex === total - 1 ? 'Done' : 'Next →';
+}
+
+function unmountTourBar() {
+    if (tourBar) {
+        tourBar.bar.remove();
+        tourBar = null;
     }
 }
 
@@ -126,15 +226,37 @@ async function runFromCurrentPage() {
     while (groupEnd < tour.length - 1 && onThisPage(groupEnd + 1)) groupEnd++;
 
     const driverSteps = [];
+    let activeEl = null;
     for (let i = groupStart; i <= groupEnd; i++) {
         const el = await resolveAnchor(tour[i].anchor);
+        if (i === index) activeEl = el;
         driverSteps.push(buildStep(tour[i], el, i, tour.length));
     }
+
+    // Wait for the entry step's target to settle its geometry before driver
+    // positions/scrolls the spotlight. On a fresh page load the record form is
+    // still hydrating and growing, so an anchored step (e.g. membership) framed
+    // immediately lands against stale bounds and scrolls off the fold. Settling
+    // first lets driver's own scroll-into-view + popover placement land against
+    // final geometry — generalised to every page-group entry, not just one step.
+    // The window is deliberately long (and resets on any change) so an early
+    // hydration plateau can't be mistaken for the final layout before a later
+    // shift lands.
+    await waitForStableRect(activeEl, { interval: 80, stableReads: 6, timeout: 6000 });
 
     teardown();
 
     const isFirstGroup = groupStart === 0;
     const isLastGroup = groupEnd === tour.length - 1;
+
+    groupCtx = {
+        start: groupStart,
+        end: groupEnd,
+        isFirst: isFirstGroup,
+        isLast: isLastGroup,
+        len: driverSteps.length,
+        total: tour.length,
+    };
 
     activeDriver = driver({
         allowClose: true,
@@ -167,6 +289,10 @@ async function runFromCurrentPage() {
                     { once: true, capture: true }
                 );
             }
+
+            // Keep the persistent bar's progress + button states in step with the
+            // popover as the user moves within the page-group.
+            updateTourBar();
         },
         // A distinct "Exit Tour" affordance in the popover, same effect as the ✕.
         onPopoverRender: (popover) => {
@@ -178,33 +304,19 @@ async function runFromCurrentPage() {
             exit.addEventListener('click', () => stopTour());
             popover.footer.insertBefore(exit, popover.footer.firstChild);
         },
-        onNextClick: () => {
-            const local = activeDriver.getActiveIndex();
-            if (local < driverSteps.length - 1) {
-                setState({ active: true, index: groupStart + local + 1 });
-                activeDriver.moveNext();
-            } else if (!isLastGroup) {
-                setState({ active: true, index: groupEnd + 1 });
-                navigateTo(tour[groupEnd + 1].page);
-            } else {
-                stopTour();
-            }
-        },
-        onPrevClick: () => {
-            const local = activeDriver.getActiveIndex();
-            if (local > 0) {
-                setState({ active: true, index: groupStart + local - 1 });
-                activeDriver.movePrevious();
-            } else if (!isFirstGroup) {
-                setState({ active: true, index: groupStart - 1 });
-                navigateTo(tour[groupStart - 1].page);
-            }
-        },
+        onNextClick: () => advanceTour(),
+        onPrevClick: () => retreatTour(),
         onCloseClick: () => stopTour(),
         onDestroyStarted: () => stopTour(),
     });
 
     activeDriver.drive(index - groupStart);
+
+    // Mount the always-visible control bar and sync it to the entry step. It is
+    // torn down with the driver (teardown) and on stop, so it never leaks past
+    // the tour or across a cross-page navigation (the next page remounts it).
+    mountTourBar();
+    updateTourBar();
 }
 
 function buildStep(step, element, globalIndex, total) {
