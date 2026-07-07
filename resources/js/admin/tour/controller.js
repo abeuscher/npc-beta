@@ -87,6 +87,9 @@ export async function startTour(tourId, startIndex = 0) {
     if (startIndex < 0 || startIndex >= tour.steps.length) return;
 
     const steps = tour.steps;
+    // Serializes Next clicks while a background anchor resolution is awaited,
+    // so a double-click can't double-advance.
+    let advancing = false;
 
     // The drivable segment: from the entry step to the tour's end, or to the
     // first interactive step (inclusive) — the user's click on that element
@@ -99,12 +102,34 @@ export async function startTour(tourId, startIndex = 0) {
         }
     }
 
+    // Resolve ONLY the entry step's anchor before driving; the rest of the
+    // segment resolves in the background, each recorded as a promise the
+    // advance path awaits just before moving onto that step. Serializing every
+    // anchor upfront made a page handoff feel seconds-slow: one conditionally
+    // absent marker (e.g. the custom-fields section on an install with none)
+    // billed its full lookup timeout to the tour's first paint, and the
+    // sidebar-group opens stacked on top. Measured on the e2e stack, this cut
+    // the record-hop popover from ~9s after navigation to ~1s.
+    const entryEl = await resolveAnchor(steps[startIndex].anchor);
+
+    const resolvedAnchors = new Map();
+    resolvedAnchors.set(startIndex, Promise.resolve(entryEl));
+
     const driverSteps = [];
-    let entryEl = null;
     for (let i = startIndex; i <= segEnd; i++) {
-        const el = await resolveAnchor(steps[i].anchor);
-        if (i === startIndex) entryEl = el;
-        driverSteps.push(buildStep(steps[i], el, i, steps.length, i === startIndex));
+        driverSteps.push(
+            buildStep(steps[i], i === startIndex ? entryEl : null, i, steps.length, i === startIndex)
+        );
+        if (i === startIndex) continue;
+        const local = i - startIndex;
+        const pending = resolveAnchor(steps[i].anchor).then((el) => {
+            // Self-target anchors already carry a live selector; only
+            // element-anchored steps need the late fill-in (driver reads the
+            // step object at highlight time, so mutating it here is enough).
+            if (el && !driverSteps[local].element) driverSteps[local].element = el;
+            return el;
+        });
+        resolvedAnchors.set(i, pending);
     }
 
     // Wait for the entry step's target to settle its geometry before driver
@@ -161,8 +186,8 @@ export async function startTour(tourId, startIndex = 0) {
             exit.addEventListener('click', () => stopTour());
             popover.footer.insertBefore(exit, popover.footer.firstChild);
         },
-        onNextClick: () => {
-            if (!activeDriver) return;
+        onNextClick: async () => {
+            if (!activeDriver || advancing) return;
             const local = activeDriver.getActiveIndex();
             const globalIndex = startIndex + local;
             const step = steps[globalIndex];
@@ -182,7 +207,16 @@ export async function startTour(tourId, startIndex = 0) {
                 return;
             }
             if (local < driverSteps.length - 1) {
-                activeDriver.moveNext();
+                // Make sure the next step's background anchor resolution has
+                // landed before driver positions against it (normally already
+                // done by the time the user reads the current step).
+                advancing = true;
+                try {
+                    await resolvedAnchors.get(globalIndex + 1);
+                } finally {
+                    advancing = false;
+                }
+                if (activeDriver) activeDriver.moveNext();
             } else {
                 stopTour();
             }
