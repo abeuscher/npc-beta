@@ -1,28 +1,53 @@
-import { registerTour, resumeIfActive, startTour } from './controller.js';
-import { productTour } from './tours/product-tour.js';
+import { consumeLaunchFlag, gotoTour, registerTours, startTour } from './controller.js';
+import { dashboardTour } from './tours/dashboard.js';
+import { crmTour } from './tours/crm.js';
+import { cmsTour } from './tours/cms.js';
 
-// Wire the product tour into the admin panel: register the script, expose a
-// delegated launcher, and resume an in-progress tour on every page load.
+const TOURS = {
+    dashboard: dashboardTour,
+    crm: crmTour,
+    cms: cmsTour,
+};
+
+// Wire the three single-area tours into the admin panel: register the scripts,
+// expose the delegated launchers, and continue a handed-off tour on page load.
 export function initTour() {
-    registerTour(productTour);
+    registerTours(TOURS);
 
-    // Any element carrying [data-np-tour-start] launches the tour. Delegated on
-    // the document so it survives Livewire DOM morphs (the dashboard widget can
-    // re-render without re-binding).
+    // Delegated on the document so launchers survive Livewire DOM morphs.
+    // [data-np-tour-start="<id>"] starts that tour on the current page;
+    // [data-np-tour-goto="<id>"] navigates to the tour's home page and starts
+    // it there (the dashboard tour's conclusion links).
     document.addEventListener('click', (event) => {
-        const trigger = event.target.closest('[data-np-tour-start]');
-        if (!trigger) return;
-        event.preventDefault();
-        startTour();
+        const start = event.target.closest('[data-np-tour-start]');
+        if (start) {
+            event.preventDefault();
+            startTour(start.getAttribute('data-np-tour-start') || 'dashboard');
+            return;
+        }
+        const goto = event.target.closest('[data-np-tour-goto]');
+        if (goto) {
+            event.preventDefault();
+            gotoTour(goto.getAttribute('data-np-tour-goto'));
+        }
     });
 
-    const resume = () => resumeIfActive();
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', resume);
-    } else {
+    // A one-shot launch flag set before a navigation (a goto link, or an
+    // interactive step's click-through) continues the tour here. Wait for the
+    // full `load` event, not DOMContentLoaded: anchor resolution opens collapsed
+    // sidebar groups by clicking their Alpine toggles, and at DOMContentLoaded
+    // Alpine hasn't booted yet — the click lands on a dead button and the
+    // group's items stay hidden under the spotlight.
+    const resume = () => {
+        const flag = consumeLaunchFlag();
+        if (flag && TOURS[flag.tour]) startTour(flag.tour, flag.index || 0);
+    };
+    if (document.readyState === 'complete') {
         resume();
+    } else {
+        window.addEventListener('load', resume, { once: true });
     }
-    // Resume after a Filament/Livewire SPA navigation too, in case the panel
-    // ever enables wire:navigate (the tour's own transitions are hard loads).
+    // And after a Filament/Livewire SPA navigation too, in case the panel ever
+    // enables wire:navigate (the tours' own transitions are hard loads).
     document.addEventListener('livewire:navigated', resume);
 }

@@ -11,7 +11,6 @@
             type="button"
             x-on:click="open = true"
             title="Help"
-            data-tour="help.flyout"
             class="help-trigger fi-icon-btn"
         >
             <x-heroicon-o-question-mark-circle class="help-trigger-icon" />

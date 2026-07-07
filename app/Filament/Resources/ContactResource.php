@@ -100,6 +100,7 @@ class ContactResource extends Resource
                     ->columns(12),
 
                 Forms\Components\Section::make('Custom Fields')
+                    ->extraAttributes(['data-tour' => 'record.custom-fields'])
                     ->schema(fn () => CustomFieldDef::forModel('contact')->get()
                         ->map(fn ($def) => $def->toFilamentFormComponent())
                         ->toArray()

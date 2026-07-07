@@ -80,22 +80,47 @@ async function ensureNavVisible(link) {
 // anchor descriptors:
 //   null                                   → centered, anchorless step
 //   { nav: 'contacts' }                    → sidebar link, matched by our route URL
+//   { navGroup: 'contacts' }               → the sidebar group containing that link
 //   { tour: 'resource.records' }           → the [data-tour] marker element itself
 //   { tour: 'resource.records', target: 'next' }   → the marker's next sibling
-//   { tour: 'page.content', target: 'parent' }     → the marker's parent element
+//   { tour: 'record.custom-fields', target: 'parent' } → the marker's parent element
+//
+// Any descriptor may carry `timeout` (ms) to shorten the wait for anchors that
+// legitimately may not exist on a given install (e.g. a form section hidden
+// because nothing is configured) — the step then falls back to a centered
+// popover quickly instead of stalling the whole segment on the default wait.
 export async function resolveAnchor(anchor) {
     if (!anchor) return null;
+
+    const wait = anchor.timeout ? { timeout: anchor.timeout } : {};
 
     if (anchor.nav) {
         const urls = (window.__npTour && window.__npTour.urls) || {};
         const url = urls[anchor.nav];
         if (!url) return null;
         const path = new URL(url, window.location.origin).pathname;
-        const link = await waitForElement(() =>
-            document.querySelector(`.fi-sidebar a[href$="${path}"]`)
+        const link = await waitForElement(
+            () => document.querySelector(`.fi-sidebar a[href$="${path}"]`),
+            wait
         );
         if (link) await ensureNavVisible(link);
         return link;
+    }
+
+    // The whole sidebar group ("menu heading") that contains a given nav link —
+    // located through our own route URL, then the same `.fi-sidebar-group`
+    // containment hop ensureNavVisible already takes.
+    if (anchor.navGroup) {
+        const urls = (window.__npTour && window.__npTour.urls) || {};
+        const url = urls[anchor.navGroup];
+        if (!url) return null;
+        const path = new URL(url, window.location.origin).pathname;
+        const link = await waitForElement(
+            () => document.querySelector(`.fi-sidebar a[href$="${path}"]`),
+            wait
+        );
+        if (!link) return null;
+        return link.closest('.fi-sidebar-group') || link;
     }
 
     // The table row whose record link points at a given URL-map page — used to

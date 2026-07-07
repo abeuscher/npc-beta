@@ -1504,7 +1504,7 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     opacity: 0.75;
 }
 
-/* === Guided product tour (driver.js, session 338) === */
+/* === Guided single-area tours (driver.js; session 338 framework, session 362 redesign) === */
 /* Anchor markers are layout-invisible — the tour DOM-traverses from them to the
    real target (next sibling / parent); the marker itself is never highlighted. */
 .np-tour-anchor {
@@ -1572,82 +1572,26 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     border-radius: 4px;
 }
 
-/* Persistent tour control bar (session 361). A second, always-visible set of
-   controls — Back / Next / Exit + "Step X of Y" — pinned to the bottom of the
-   viewport above driver's overlay, so a mispositioned popover can never leave
-   the user with no way to advance, go back, or exit. Wired to the same paths as
-   the popover buttons. */
-.np-tour-bar {
-    position: fixed;
-    bottom: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
-    /* Sit just above driver's overlay (z-index 10000) so the bar is clickable,
-       but BELOW its popover (z-index 1000000000). Where a low popover overlaps
-       the bar, the popover's own buttons stay on top and usable; everywhere
-       else — and whenever a popover is mispositioned/off-screen — the bar is
-       fully visible. (A spatial fix, not a z-index war: the two never fight for
-       the same click.) */
-    z-index: 10001;
+/* Conclusion-modal handoff links (session 362): the dashboard tour ends in a
+   centered popover offering the CRM / CMS deep-dive tours. */
+.np-tour-links {
     display: flex;
-    align-items: center;
     gap: 0.6rem;
-    padding: 0.5rem 0.65rem;
-    border-radius: 9999px;
-    background: rgba(17, 24, 39, 0.97);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
-    color: #f9fafb;
+    margin-top: 0.9rem;
 }
-/* driver sets `.driver-active * { pointer-events: none }` on the whole page
-   while the tour runs; re-enable it for the bar and its controls (higher
-   specificity than driver's universal rule) or the buttons swallow no clicks. */
-.np-tour-bar,
-.np-tour-bar button,
-.np-tour-bar__progress {
-    pointer-events: auto;
-}
-.np-tour-bar__progress {
-    min-width: 6rem;
-    text-align: center;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    color: #d1d5db;
-}
-.np-tour-bar button {
+.np-tour-links button {
     border: none;
     cursor: pointer;
-    border-radius: 9999px;
-    padding: 0.45rem 0.95rem;
-    font-size: 0.9rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     line-height: 1;
-}
-.np-tour-bar__back {
-    background: rgba(255, 255, 255, 0.12);
-    color: #f9fafb;
-}
-.np-tour-bar__back:hover {
-    background: rgba(255, 255, 255, 0.22);
-}
-.np-tour-bar__back:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-.np-tour-bar__next {
     background-color: #f59e0b;
     color: #1f2937;
 }
-.np-tour-bar__next:hover {
+.np-tour-links button:hover {
     background-color: #d97706;
-}
-.np-tour-bar__exit {
-    background: none;
-    color: #9ca3af;
-    padding: 0.45rem 0.6rem;
-}
-.np-tour-bar__exit:hover {
-    color: #f87171;
 }
 
 /* Notification-bell unread count — solid red pill, white text, no ring, gentle

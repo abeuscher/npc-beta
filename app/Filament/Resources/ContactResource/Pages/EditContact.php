@@ -102,7 +102,6 @@ class EditContact extends ReadOnlyAwareEditRecord
             Actions\Action::make('view_transactions')
                 ->label('View transactions →')
                 ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
-                ->extraAttributes(['data-tour' => 'view-transactions'])
                 ->url(fn () => TransactionResource::getUrl('index')
                     . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 
@@ -112,7 +111,8 @@ class EditContact extends ReadOnlyAwareEditRecord
                     ->icon('heroicon-o-document-text')
                     ->color('secondary')
                     ->url(fn () => ContactResource::getUrl('notes', ['record' => $this->record->getKey()])),
-            ]),
+            ])
+                ->extraAttributes(['data-tour' => 'record.actions']),
         ];
     }
 
@@ -122,7 +122,6 @@ class EditContact extends ReadOnlyAwareEditRecord
             Actions\Action::make('view_transactions')
                 ->label('View transactions →')
                 ->hidden(fn () => ! auth()->user()?->can('view_any_transaction'))
-                ->extraAttributes(['data-tour' => 'view-transactions'])
                 ->url(fn () => TransactionResource::getUrl('index')
                     . '?tableFilters[contact_id][value]=' . $this->record->getKey()),
 
@@ -300,7 +299,8 @@ class EditContact extends ReadOnlyAwareEditRecord
                             ->title('Email marked as verified.')
                             ->send();
                     }),
-            ]),
+            ])
+                ->extraAttributes(['data-tour' => 'record.actions']),
         ];
     }
 }

@@ -12,7 +12,7 @@
                 type="button"
                 color="primary"
                 icon="heroicon-m-play-circle"
-                data-np-tour-start
+                data-np-tour-start="dashboard"
             >
                 Tour the Product
             </x-filament::button>

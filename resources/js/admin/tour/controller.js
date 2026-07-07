@@ -1,71 +1,37 @@
-// Multi-page tour controller.
+// Single-area tour controller (session 362 — supersedes the session-338
+// multi-page walkthrough engine).
 //
-// A tour is a flat, ordered list of steps; each step names the admin page it
-// lives on (a key into the server-injected URL map) plus its anchor + copy.
-// driver.js is single-page, so we drive one *page-group* (the maximal run of
-// consecutive steps that share the current page) per driver instance, and own
-// every cross-page transition: the active step index is persisted before a hard
-// navigation and resumed on the next page load.
+// A tour is an ordered list of steps that all live within one admin area. Most
+// steps are same-page: driver.js drives them directly. A step marked
+// `interactive` spotlights a real link and the user's own click carries the
+// tour into the next page — a one-shot launch flag (sessionStorage, consumed on
+// read) tells the destination page to continue from the following step. That
+// flag is the entire cross-page surface: there is no localStorage resume, no
+// page-group driving, no URL-keyed page map. An abandoned tour simply ends.
 //
-// Interactive steps (step.interactive) hand control to the user: the spotlighted
-// element is the real link/button, the Next button is hidden, and clicking the
-// element advances the tour through the navigation it triggers (a one-shot
-// listener persists the next step, then the native click navigates and resume
-// picks it up on the destination page).
-//
-// The reusable primitives here — `resolveAnchor` (anchors.js) plus
-// `driver().highlight()` for a buttonless single-element spotlight — are what a
-// later contextual-help mode points at one feature on demand; keep them
-// independent of the tour script.
+// The reusable primitives — `resolveAnchor` / `waitForStableRect` (anchors.js)
+// plus `driver().highlight()` for a buttonless single-element spotlight — stay
+// independent of any tour script; a later contextual-help mode points them at
+// one feature on demand.
 
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { getState, setState, clearState } from './state.js';
 import { resolveAnchor, waitForStableRect } from './anchors.js';
 
-let activeDriver = null;
-let TOUR = [];
-// The persistent control bar element refs, and the current page-group bounds the
-// advance/back paths and the bar both read (single source of truth — the popover
-// buttons and the bar drive the exact same transitions, no divergent state).
-let tourBar = null;
-let groupCtx = null;
+const LAUNCH_KEY = 'np-tour-launch';
 
-export function registerTour(steps) {
-    TOUR = Array.isArray(steps) ? steps : [];
+let TOURS = {};
+let activeDriver = null;
+
+export function registerTours(tours) {
+    TOURS = tours || {};
 }
 
 function urls() {
     return (window.__npTour && window.__npTour.urls) || {};
 }
 
-function norm(path) {
-    if (!path) return null;
-    const p = String(path).replace(/\/+$/, '');
-    return p === '' ? '/' : p;
-}
-
-// A step's page key maps to a route URL the server only emits when the viewer's
-// role can actually reach that page. No URL ⇒ the step is inaccessible.
-function pathForPage(pageKey) {
-    const url = urls()[pageKey];
-    if (!url) return null;
-    return norm(new URL(url, window.location.origin).pathname);
-}
-
-// The tour as the current viewer can walk it: steps whose page the role cannot
-// reach drop out, so a restricted role gets a shorter tour rather than a 404.
-function effectiveTour() {
-    return TOUR.filter((step) => pathForPage(step.page) !== null);
-}
-
-function currentPath() {
-    return norm(window.location.pathname);
-}
-
 function teardown() {
-    unmountTourBar();
-    groupCtx = null;
     if (activeDriver) {
         const d = activeDriver;
         activeDriver = null;
@@ -77,186 +43,79 @@ function teardown() {
     }
 }
 
-// Advance / retreat: the single transition path the popover buttons AND the
-// persistent bar both call, so the two control sets can never diverge. Within
-// the current page-group they move the driver; at a group edge they persist the
-// next index and hard-navigate; off the last step they end the tour.
-function advanceTour() {
-    if (!activeDriver || !groupCtx) return;
-    const local = activeDriver.getActiveIndex();
-    if (local < groupCtx.len - 1) {
-        setState({ active: true, index: groupCtx.start + local + 1 });
-        activeDriver.moveNext();
-    } else if (!groupCtx.isLast) {
-        const tour = effectiveTour();
-        setState({ active: true, index: groupCtx.end + 1 });
-        navigateTo(tour[groupCtx.end + 1].page);
-    } else {
-        stopTour();
-    }
-}
-
-function retreatTour() {
-    if (!activeDriver || !groupCtx) return;
-    const local = activeDriver.getActiveIndex();
-    if (local > 0) {
-        setState({ active: true, index: groupCtx.start + local - 1 });
-        activeDriver.movePrevious();
-    } else if (!groupCtx.isFirst) {
-        const tour = effectiveTour();
-        setState({ active: true, index: groupCtx.start - 1 });
-        navigateTo(tour[groupCtx.start - 1].page);
-    }
-}
-
-// A second, always-visible set of tour controls (session 361). A mispositioned
-// popover can never strand the user: Back / Next / Exit and a "Step X of Y"
-// indicator are pinned to the bottom of the viewport regardless of where the
-// popover lands. Wired to the same advance/back/stop paths as the popover, so
-// there is no separate state to keep in sync.
-function mountTourBar() {
-    if (tourBar) return tourBar;
-
-    const bar = document.createElement('div');
-    bar.className = 'np-tour-bar';
-    bar.setAttribute('role', 'group');
-    bar.setAttribute('aria-label', 'Tour controls');
-    // Keep clicks on the bar from reaching driver's overlay (which closes the
-    // tour on click); the button handlers have already run by the time this
-    // bubbles up here.
-    bar.addEventListener('click', (event) => event.stopPropagation());
-
-    const exit = document.createElement('button');
-    exit.type = 'button';
-    exit.className = 'np-tour-bar__exit';
-    exit.textContent = 'Exit';
-    exit.addEventListener('click', () => stopTour());
-
-    const back = document.createElement('button');
-    back.type = 'button';
-    back.className = 'np-tour-bar__back';
-    back.textContent = '← Back';
-    back.addEventListener('click', () => retreatTour());
-
-    const progress = document.createElement('span');
-    progress.className = 'np-tour-bar__progress';
-
-    const next = document.createElement('button');
-    next.type = 'button';
-    next.className = 'np-tour-bar__next';
-    next.textContent = 'Next →';
-    next.addEventListener('click', () => advanceTour());
-
-    bar.append(exit, back, progress, next);
-    document.body.appendChild(bar);
-
-    tourBar = { bar, back, progress, next };
-    return tourBar;
-}
-
-function updateTourBar() {
-    if (!tourBar || !activeDriver || !groupCtx) return;
-    const globalIndex = groupCtx.start + activeDriver.getActiveIndex();
-    const total = groupCtx.total;
-    tourBar.progress.textContent = `Step ${globalIndex + 1} of ${total}`;
-    tourBar.back.disabled = globalIndex === 0;
-    tourBar.next.textContent = globalIndex === total - 1 ? 'Done' : 'Next →';
-}
-
-function unmountTourBar() {
-    if (tourBar) {
-        tourBar.bar.remove();
-        tourBar = null;
-    }
-}
-
 export function stopTour() {
-    clearState();
     teardown();
 }
 
-export function startTour() {
-    if (!effectiveTour().length) return;
-    setState({ active: true, index: 0 });
-    runFromCurrentPage();
-}
-
-export function resumeIfActive() {
-    const state = getState();
-    if (state && state.active) runFromCurrentPage();
-}
-
-function navigateTo(pageKey) {
-    const path = pathForPage(pageKey);
-    if (!path) {
-        stopTour();
-        return;
+// One-shot cross-page handoff. Set before a navigation that should continue a
+// tour on the destination page; consumed (and cleared) on the next page load,
+// so it can never re-trigger later.
+export function setLaunchFlag(tourId, index) {
+    try {
+        sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({ tour: tourId, index }));
+    } catch {
+        // sessionStorage unavailable — the current segment still runs; the
+        // cross-page continuation is simply lost.
     }
+}
+
+export function consumeLaunchFlag() {
+    try {
+        const raw = sessionStorage.getItem(LAUNCH_KEY);
+        sessionStorage.removeItem(LAUNCH_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+// Navigate to a tour's home page and start it there (the conclusion-modal
+// links, and any launcher that lives outside the tour's own area).
+export function gotoTour(tourId) {
+    const tour = TOURS[tourId];
+    if (!tour) return;
+    const url = urls()[tour.startUrl];
+    if (!url) return;
+    setLaunchFlag(tourId, 0);
     teardown();
-    window.location.assign(path);
+    window.location.assign(url);
 }
 
-async function runFromCurrentPage() {
-    const state = getState();
-    if (!state || !state.active) return;
+export async function startTour(tourId, startIndex = 0) {
+    const tour = TOURS[tourId];
+    if (!tour || !Array.isArray(tour.steps) || !tour.steps.length) return;
+    if (startIndex < 0 || startIndex >= tour.steps.length) return;
 
-    const tour = effectiveTour();
-    const index = state.index || 0;
-    if (index < 0 || index >= tour.length) {
-        clearState();
-        return;
+    const steps = tour.steps;
+
+    // The drivable segment: from the entry step to the tour's end, or to the
+    // first interactive step (inclusive) — the user's click on that element
+    // navigates, and the destination page resumes the remainder via the flag.
+    let segEnd = steps.length - 1;
+    for (let i = startIndex; i < steps.length; i++) {
+        if (steps[i].interactive) {
+            segEnd = i;
+            break;
+        }
     }
-
-    const step = tour[index];
-    const stepPath = pathForPage(step.page);
-
-    // On the wrong page for this step → persist and hard-navigate; resume
-    // re-fires on the next page load.
-    if (stepPath && currentPath() !== stepPath) {
-        setState({ active: true, index });
-        navigateTo(step.page);
-        return;
-    }
-
-    // The maximal run of contiguous steps that live on the current page.
-    const onThisPage = (i) => pathForPage(tour[i].page) === currentPath();
-    let groupStart = index;
-    let groupEnd = index;
-    while (groupStart > 0 && onThisPage(groupStart - 1)) groupStart--;
-    while (groupEnd < tour.length - 1 && onThisPage(groupEnd + 1)) groupEnd++;
 
     const driverSteps = [];
-    let activeEl = null;
-    for (let i = groupStart; i <= groupEnd; i++) {
-        const el = await resolveAnchor(tour[i].anchor);
-        if (i === index) activeEl = el;
-        driverSteps.push(buildStep(tour[i], el, i, tour.length));
+    let entryEl = null;
+    for (let i = startIndex; i <= segEnd; i++) {
+        const el = await resolveAnchor(steps[i].anchor);
+        if (i === startIndex) entryEl = el;
+        driverSteps.push(buildStep(steps[i], el, i, steps.length, i === startIndex));
     }
 
     // Wait for the entry step's target to settle its geometry before driver
-    // positions/scrolls the spotlight. On a fresh page load the record form is
-    // still hydrating and growing, so an anchored step (e.g. membership) framed
-    // immediately lands against stale bounds and scrolls off the fold. Settling
-    // first lets driver's own scroll-into-view + popover placement land against
-    // final geometry — generalised to every page-group entry, not just one step.
-    // The window is deliberately long (and resets on any change) so an early
-    // hydration plateau can't be mistaken for the final layout before a later
-    // shift lands.
-    await waitForStableRect(activeEl, { interval: 80, stableReads: 6, timeout: 6000 });
+    // positions/scrolls the spotlight — on a fresh page load Livewire forms are
+    // still hydrating and growing, and framing against stale bounds lands the
+    // spotlight off the fold (the session-361 lesson). The window is long and
+    // resets on any change so an early hydration plateau can't be mistaken for
+    // the final layout.
+    await waitForStableRect(entryEl, { interval: 80, stableReads: 6, timeout: 6000 });
 
     teardown();
-
-    const isFirstGroup = groupStart === 0;
-    const isLastGroup = groupEnd === tour.length - 1;
-
-    groupCtx = {
-        start: groupStart,
-        end: groupEnd,
-        isFirst: isFirstGroup,
-        isLast: isLastGroup,
-        len: driverSteps.length,
-        total: tour.length,
-    };
 
     activeDriver = driver({
         allowClose: true,
@@ -267,32 +126,30 @@ async function runFromCurrentPage() {
         stageRadius: 8,
         popoverClass: 'np-tour-popover',
         steps: driverSteps,
-        // Interactive steps: attach a one-shot listener so the user's click on
-        // the real element advances the tour through its own navigation.
         onHighlightStarted: (element) => {
             // Clear any stale spotlight class driver left on a previous element
             // when a Livewire morph detached its reference — otherwise two
-            // elements stay ringed (seen on the same-page help finale).
+            // elements stay ringed.
             document.querySelectorAll('.driver-active-element').forEach((el) => {
                 if (el !== element && el.id !== 'driver-dummy-element') {
                     el.classList.remove('driver-active-element');
                 }
             });
 
-            const st = getState();
-            const gi = st ? st.index : null;
-            const t = gi != null ? tour[gi] : null;
-            if (t && t.interactive && element) {
+            // Interactive steps: a one-shot listener persists the next step,
+            // then the element's own navigation carries the user there. Attached
+            // only while the step is active, so a click on the element outside
+            // its step can never arm a stray continuation.
+            const local = activeDriver ? activeDriver.getActiveIndex() : 0;
+            const globalIndex = startIndex + local;
+            const step = steps[globalIndex];
+            if (step && step.interactive && element && globalIndex < steps.length - 1) {
                 element.addEventListener(
                     'click',
-                    () => setState({ active: true, index: gi + 1 }),
+                    () => setLaunchFlag(tourId, globalIndex + 1),
                     { once: true, capture: true }
                 );
             }
-
-            // Keep the persistent bar's progress + button states in step with the
-            // popover as the user moves within the page-group.
-            updateTourBar();
         },
         // A distinct "Exit Tour" affordance in the popover, same effect as the ✕.
         onPopoverRender: (popover) => {
@@ -304,29 +161,35 @@ async function runFromCurrentPage() {
             exit.addEventListener('click', () => stopTour());
             popover.footer.insertBefore(exit, popover.footer.firstChild);
         },
-        onNextClick: () => advanceTour(),
-        onPrevClick: () => retreatTour(),
+        onNextClick: () => {
+            if (!activeDriver) return;
+            if (activeDriver.getActiveIndex() < driverSteps.length - 1) {
+                activeDriver.moveNext();
+            } else {
+                // Next only shows on a segment's last step when the tour ends
+                // here or the interactive element failed to resolve (nothing to
+                // click into) — either way the tour ends cleanly.
+                stopTour();
+            }
+        },
+        onPrevClick: () => {
+            if (!activeDriver) return;
+            if (activeDriver.getActiveIndex() > 0) activeDriver.movePrevious();
+        },
         onCloseClick: () => stopTour(),
         onDestroyStarted: () => stopTour(),
     });
 
-    activeDriver.drive(index - groupStart);
-
-    // Mount the always-visible control bar and sync it to the entry step. It is
-    // torn down with the driver (teardown) and on stop, so it never leaks past
-    // the tour or across a cross-page navigation (the next page remounts it).
-    mountTourBar();
-    updateTourBar();
+    activeDriver.drive(0);
 }
 
-function buildStep(step, element, globalIndex, total) {
+function buildStep(step, element, globalIndex, total, isSegmentStart) {
     const isLast = globalIndex === total - 1;
-    const isFirst = globalIndex === 0;
     const progress = `<span class="np-tour-progress">Step ${globalIndex + 1} of ${total}</span>`;
 
     // Interactive steps hide Next — the user advances by clicking the real
     // element the step points at. But only when that element actually resolved;
-    // if it didn't (e.g. no contacts to open into), keep Next so the tour can't
+    // if it didn't (e.g. no record to open into), keep Next so the tour can't
     // strand the user on a centered step with no way forward.
     const buttons =
         step.interactive && element ? ['previous', 'close'] : ['previous', 'next', 'close'];
@@ -337,17 +200,17 @@ function buildStep(step, element, globalIndex, total) {
         side: step.side || 'bottom',
         align: step.align || 'start',
         showButtons: buttons,
-        disableButtons: isFirst ? ['previous'] : [],
+        // Back never crosses a page boundary — the segment's first step is the
+        // floor (for the tour's true first step, that is also step 1 of N).
+        disableButtons: isSegmentStart ? ['previous'] : [],
         nextBtnText: isLast ? 'Done' : 'Next →',
         prevBtnText: '← Back',
     };
     const built = { popover };
     // For self-target `data-tour` anchors, hand driver a live CSS selector so it
     // re-queries a fresh element on every highlight — immune to the Livewire DOM
-    // morph that detaches a captured element between two steps on the same page
-    // (e.g. the membership panel and "View transactions" on a contact record).
-    // Traversal anchors (next/parent/navRow) live on list pages we navigate away
-    // from, so the captured element is fine.
+    // morph that detaches a captured element between two steps on the same page.
+    // Traversal/nav anchors keep the captured element.
     if (step.anchor && step.anchor.tour && !step.anchor.target) {
         built.element = `[data-tour="${step.anchor.tour}"]`;
     } else if (element) {
