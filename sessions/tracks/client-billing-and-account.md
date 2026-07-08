@@ -23,15 +23,17 @@ Every judgment call in the design that needs your ratification, with my recommen
 
 ## Status snapshot
 
-**Last update:** 2026-07-08 (session A012 — track doc authored; no code, no schema, no contract change).
+**Last update:** 2026-07-08 (session 366 — **CB1 shipped**: the node half of client billing; contract v2.6.0).
 
-**Complete:** nothing — planning only. This doc + the session decomposition + the two appendices (draft release-plan entries, FM-side handoff) are the track's entire state.
+**Complete:** **CB1 (366)** — the node half. Ships the `SUSPENSION_STATE` flag + one enforcement middleware (`App\Http\Middleware\EnforceSuspensionState`: `admin_locked` → 403 admin lock with public site / donations / member portal staying up; `site_off` → 503 public maintenance with FM `/api/*` up; absent = none; unrecognized fails safe to none + logs), the display-only billing-state reader (`App\Services\Billing\BillingStateReader` + `BillingState` DTO + `SuspensionState` enum; reads the backup-excluded pushed JSON, null-object on missing/malformed), and the never-red / excluded-from-worst-of `suspension` `/api/health` subcheck. Fast Pest 3025/0. No vendor-Stripe anything CRM-side.
 
-**Active:** owner review of this doc and the open questions above.
+**Active:** **CB2** CRM-side (the "My Account" Filament page + `manage_account` permission + convention-drift guards — prompts drafted at the 366 close as session 367). FM-side: **FM-B1** (Stripe sync) can start now; **FM-B2** (push + verify) consumes the shipped v2.6.0 contract. CB2 depends on CB1 only, so the CRM and FM lanes run in parallel.
 
-**Cross-repo coordination state:** the CRM↔FM contract (`docs/fleet-manager-agent-contract.md`) is at **v2.5.0 and unchanged by this session**. The build will bump it additively to **v2.6.0** (the billing-state document, the suspension flag, and a new health subcheck are all new FM↔node surface); that bump is authored by the first CRM-side build session, not here. Per the Two-Repo Coordination Protocol, the sketch in § Design decision 7 is *shape*, not contract.
+**Cross-repo coordination state:** the CRM↔FM contract (`docs/fleet-manager-agent-contract.md`) is now at **v2.6.0** — bumped additively at session 366 (the billing-state document, the `SUSPENSION_STATE` flag semantics, and the `suspension` health subcheck are all authored there). **FM-side absorption is pending at FM-B2** (refresh the cached contract copy, then write the document + push the flag). The § Design decision 7 sketch is now realized as contract text.
 
-**Blocked on:** owner answers to the eight questions above; slotting decision.
+**Slotting:** resolved — CB1–CB3 folded into `sessions/release-plan.md` under the new `first-customer` gate at the 366 close; the owner sequenced CB1 (366) ahead of the rest of Phase A (A3 multi-node / A4 drill deferred).
+
+**Blocked on:** nothing blocking CB2 (depends on CB1 only). Open questions 1 + 6 answered at the 366 gate (14-day grace framing; member portal stays up under admin lock); **questions 5 + 7 gate CB2** (read-only account page / no local edit forms; `manage_account` granted to no shipped role); questions 2/3/4/8 remain owner-facing for later sessions.
 
 ---
 
@@ -210,7 +212,7 @@ Total ≈ **7–8 sessions across both repos** (≈3 CRM-side, ≈4–5 FM-side 
 
 *Written in the release plan's house style, ready for the owner to approve and a later local session to fold into `sessions/release-plan.md` (this session does not edit that file). Proposed gate label `first-customer` — these do not block Beta 1.*
 
-#### CB1. Client Billing — Contract v2.6.0 + Node Suspension Gate
+#### CB1. Client Billing — Contract v2.6.0 + Node Suspension Gate ✅ *(shipped at session 366)*
 
 - **gate:** first-customer
 - **prerequisites:** owner sign-off on the Client Billing & Account track doc (`sessions/tracks/client-billing-and-account.md`) open questions 1, 6, 8; A3 multi-node readiness recommended first (not a hard prerequisite for the code).
