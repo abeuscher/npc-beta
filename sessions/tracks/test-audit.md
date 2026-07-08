@@ -14,13 +14,13 @@ When a cycle closes, its retrospective lands here. Per-session detail stays in t
 
 ## Status snapshot
 
-**Last update:** 2026-05-22 (Cycle 1 closed at A005; retrospective + status landed here).
+**Last update:** 2026-07-07 (Cycle 2 closed at 364; retrospective + status landed here).
 
-**Complete:** Cycle 1 (**A005** — D1 Playwright spec discipline + D2 spec-claim integrity drain; `docs/testing/playwright-discipline.md` shipped).
+**Complete:** Cycle 1 (**A005** — D1 Playwright spec discipline + D2 spec-claim integrity drain; `docs/testing/playwright-discipline.md` shipped). Cycle 2 (**364** — D3 mutation slice against the Fleet controllers [326 mutants, MSI 100%, 10 `// guards:` markers, 0 deletions] + D4 relevance walk of the 60 oldest test files [53 keep / 7 update / 0 remove, the s363 flake fixed, 8 tests reclassified slow→fast]).
 
 **Active:** between cycles.
 
-**Next trigger:** approximately **session 365** (≈50 sessions of growth from A005's close position, with the numeric track around 314–318) **or** a forcing function — whichever fires first. The D2 drain-pressure rule is a standing forcing function: 5+ unresolved `[test-integrity]` entries in the housekeeping inbox lifts a D2 cycle regardless of cadence. Subsequent cycles default to the D3 (mutation slice) and D4 (Pest file relevance) dimensions not run in Cycle 1.
+**Next trigger:** approximately **session 414** (≈50 sessions of growth from 364) **or** a forcing function — whichever fires first. The D2 drain-pressure rule is a standing forcing function: 5+ unresolved `[test-integrity]` entries in the housekeeping inbox lifts a D2 cycle regardless of cadence. All four dimensions have now run at least once (D1+D2 at Cycle 1, D3+D4 at Cycle 2); subsequent cycles pick by evidence pressure. **Standing Cycle-3 queue from 364:** the ~290 Pest files D4 didn't reach (bounded to the 60 oldest this cycle); the two D3 `HealthEndpointTest` consolidation candidates; the D4 keep-verdict smells recorded in the inbox paper trail; and — if it hasn't been drained earlier — the `[0.324.01]` widget-knockout Playwright guard (a D1-adjacent standing-spec build).
 
 **Prior partial audits — pre-track precursors:**
 
@@ -70,9 +70,42 @@ Window covered: the full `tests/e2e/` suite plus the s296 `[test-integrity]` bac
 - **Page-builder cluster stays browser-required.** `inline-editing-foundation`, `inline-editing-phase2`, `layout-inspector` are JS-driven editor UI; kept. The `inline-editing-foundation:79` cold-load flake stays on passive watch rather than triggering selector-hardening this cycle (decide after evidence).
 - **A003 deletion records stay in the inbox** — they are informational `[test-integrity]` entries documenting already-executed dispositions, not actionable backlog.
 
----
+### Cycle 2 — D3 + D4 audit (364)
 
-## Forward plan
+Window covered: the Fleet Manager controller slice (D3) plus the 60 longest-untouched test files (D4). Single audit session; no carve-out (both dimensions fit). Test-code + doc changes only — no application code. Work on `session-364/1`. Fast Pest 2993 → 2988/0 (−13 false-confidence deletions, +8 real tests reclassified in from the slow group).
+
+#### Quantitative outcomes
+
+| Gate | Pre-cycle | Cycle 2 close | Net delta |
+|------|-----------|---------------|-----------|
+| D3 mutation slice | — | Fleet controllers + recovery services (~840 LOC), 326 mutants, **MSI 100%** (0 escaped, 0 uncovered) | first Fleet slice run |
+| D3 test dispositions | — | 10 `// guards:` markers, 0 deletions, 2 consolidation candidates flagged | evidence too noisy to delete on |
+| D4 files walked | — | 60 (of ~350) | 53 keep / 7 update / 0 remove |
+| Pest tests deleted (D4) | baseline | baseline −13 | 12 factory/framework/vacuous echoes + the s363-flake test's old shape |
+| Pest tests moved slow→fast | — | 8 | measured sub-5s; +1 file-level tag split per-test |
+| Workflow docs revised | — | `mutation-audits.md` (3 operational findings) | — |
+| `[test-integrity]` drained | localization scoping item | scoped (footprint NOT small), re-parked | knockout-guard left for a later cycle |
+
+#### Load-bearing decisions
+
+- **Fleet controllers picked for D3** (over `AppearanceStyleComposer`): the queue's most-grown, security-adjacent slice (v2.1.0 → v2.5.0 across sessions 251/263/268/353/360). MSI 100% confirmed the contract assertions genuinely constrain the response shape.
+- **No deletions on mutation evidence.** Catcher attribution (read from each killed mutant's `processOutput`, since `killedBy` isn't populated in the Pest-2 shim setup) proved unreliable — Pest truncates failure-summary titles (not fixable via `--columns`/`COLUMNS`) and attribution jitters run-to-run as timeout variance reshuffles which mutants land killed-with-output. Rule codified in `mutation-audits.md`: never delete/consolidate on catcher evidence alone; require two-run agreement + a source read; prefer `// guards:` markers (harmless if the signal was noise) over deletions. Route/throttle-shape tests always show zero catches (their subject isn't mutated) — that is not deadness.
+- **D4 default lean = route the test through the real production path** (A005 / ContactExportTest precedent), not expand or echo. Applied to all seven update files; deletions reserved for tests that constrained nothing (factory-echo, framework-echo, observer tests that pass with the observer unregistered).
+- **D4 bounded to the 60 oldest files, not the whole suite.** ~350 test files exist; a full per-file walk isn't one session. The remaining ~290 are an explicit Cycle-3 queue, logged rather than silently skipped.
+
+#### Blind spots that surfaced
+
+- **The full-suite PCOV initial run doesn't scale.** Infection's initial coverage run died mid-run at ~3,000-test scale with a misleading "Project tests must be in a passing state" (no PHP error). Fix — narrow the initial run to slice-consumer tests via `--test-framework-options` — is now in `mutation-audits.md`. A slice audit no longer implies a full-suite coverage pass.
+- **The s363 flake was a seam, not a test defect.** `DashboardBuilderApiControllerTest`'s unordered `first()` collided with the s357 demo-dashboard seeds (`recent_donations`/`recent_notes`, whose definitions declare only `record_detail_sidebar`). The test was hardened, but the underlying production seam — the seeder plants widgets the dashboard-builder API's own slot check would reject — was captured to the inbox, not fixed (audit discipline: no application code).
+- **Deleting false-confidence tests exposes real gaps.** Four coverage gaps surfaced under the deletions (ProductPriceObserver Stripe flow, ProductWaitlistController, RoleResource forms, the live EventCancellation wizard send) — captured for a housekeeping backfill, not closed here, per the A005 DonationCheckout precedent.
+
+#### Process incidents
+
+- **A stray Infection Pest process survived an interrupted first invocation** and held the test DB; identified via `/proc` cmdline inspection inside the container (container PIDs ≠ `docker top` host PIDs) and killed before re-running. Worth knowing for the next D3 pass: an aborted Infection run can leave a live child on the test DB.
+
+#### Won't-fixes / carry-forwards
+
+- **Old catcher-attribution ambition dropped.** The redundancy/dead-test analysis the s241 doc envisioned works cleanly on a small deterministic slice but not on an endpoint slice at this Pest version; the doc now scopes the technique's limits rather than promising per-test verdicts. Future slices lean on `// guards:` + MSI, not deletion math.
 
 ### Cycle shape — single audit session by default
 
