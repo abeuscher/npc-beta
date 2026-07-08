@@ -108,6 +108,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 - **success criterion:** Four nodes running on production: marketing site, demo install, test/deploy instance, spare-for-first-customer. Each node's purpose + URL + access creds documented. FM monitors all four. Test/deploy instance is the target environment for subsequent rehearsals.
 - **artifact:** node inventory doc.
 - **estimated time cost:** 1 session (mostly ops, not code; may extend if any node provisioning surfaces issues).
+- **status (2026-07-08):** drafted as a full session prompt at the 365 close (as session 366), then **deferred** at the 367→366 renumber when the owner prioritized the Client Billing & Account track (8–10 sessions, urgent) ahead of the rest of Phase A — the billing track took the 366 slot and the multi-node prompt draft was removed. This entry carries the substance. **Rider held for whenever A3 runs:** the session-365 cross-node restore fix (dump-side `--no-privileges --no-owner`) still needs its post-deploy live verification (deploy ≥ 0.365.01 → fresh backup → cross-node / demo-baseline restore → read-only-role check → the FM 020 backup-trigger sign-off) — full sequence in the FM-repo handoff `a2-runbook-handoff-from-crm.md`; fresh A3 provisioning is the natural vehicle. Also revisit the scheduler-runner gap (registered nightly backup commands don't fire without a runner — the standing carry-forward in the `fleet-manager-agent` track doc) when standing the nodes up.
 
 #### A4. DB wipe + backup recovery (Capsize drill — runbook polish)
 

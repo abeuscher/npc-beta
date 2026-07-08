@@ -48,18 +48,18 @@ it('returns the documented top-level keys on a successful poll', function () {
 });
 
 // guards: the contract_version pin FM's ContractValidator keys on; redundant catches are expected (every envelope test sees it)
-it('reports contract_version 2.5.0', function () {
+it('reports contract_version 2.6.0', function () {
     $response = $this->getJson('/api/health');
 
-    $response->assertJsonPath('contract_version', '2.5.0');
+    $response->assertJsonPath('contract_version', '2.6.0');
 });
 
 // guards: FM contract envelope clause (spec-mirror); deliberate overlap with the other shape tests
-it('returns the seven documented subcheck keys', function () {
+it('returns the eight documented subcheck keys', function () {
     $response = $this->getJson('/api/health');
 
     expect(array_keys($response->json('subchecks')))
-        ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version', 'data_hygiene']);
+        ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version', 'data_hygiene', 'suspension']);
 });
 
 // guards: FM contract envelope clause (spec-mirror); deliberate overlap with the other shape tests
@@ -383,6 +383,108 @@ it('excludes data_hygiene from the worst-of overall status — even a yellow (or
     expect($reflection->invoke($controller, $build([
         'app' => 'green', 'disk' => 'yellow', 'data_hygiene' => 'green',
     ])))->toBe('yellow');
+});
+
+// ── suspension subcheck (v2.6.0 — client billing, informational) ─────────────
+
+it('shapes suspension with a state string and a billing_state_as_of, and nothing else', function () {
+    $value = $this->getJson('/api/health')->json('subchecks.suspension.value');
+
+    expect(array_keys($value))
+        ->toEqualCanonicalizing(['state', 'billing_state_as_of']);
+});
+
+it('is green with state none and a null as_of on a node with no suspension and no document', function () {
+    // Default config('fleet.suspension.state') is 'none'; no billing-state.json
+    // on the faked local disk.
+    $response = $this->getJson('/api/health');
+
+    $response->assertJsonPath('subchecks.suspension.status', 'green')
+        ->assertJsonPath('subchecks.suspension.value.state', 'none')
+        ->assertJsonPath('subchecks.suspension.value.billing_state_as_of', null)
+        ->assertJsonPath('subchecks.suspension.threshold', null)
+        ->assertJsonPath('subchecks.suspension.message', null);
+});
+
+it('reports a soft yellow when admin_locked — never red', function () {
+    config(['fleet.suspension.state' => 'admin_locked']);
+
+    $response = $this->getJson('/api/health');
+
+    expect($response->json('subchecks.suspension.status'))->toBe('yellow')
+        ->and($response->json('subchecks.suspension.status'))->not->toBe('red');
+
+    $response->assertJsonPath('subchecks.suspension.value.state', 'admin_locked');
+});
+
+it('reports a soft yellow when site_off — never red', function () {
+    config(['fleet.suspension.state' => 'site_off']);
+
+    expect($this->getJson('/api/health')->json('subchecks.suspension.status'))->toBe('yellow');
+});
+
+it('reports the enforced state, failing an unrecognized flag value safe to none', function () {
+    config(['fleet.suspension.state' => 'garbled_value']);
+
+    $response = $this->getJson('/api/health');
+
+    // The enforced state is what the middleware would apply — a typo resolves to
+    // none (fail-safe), and the subcheck reports that same enforced reality.
+    $response->assertJsonPath('subchecks.suspension.status', 'green')
+        ->assertJsonPath('subchecks.suspension.value.state', 'none');
+});
+
+it('echoes the pushed billing document as_of when one is present', function () {
+    config(['fleet.suspension.state' => 'admin_locked']);
+    Storage::disk('local')->put('fleet/billing-state.json', json_encode([
+        'schema_version' => 1,
+        'as_of' => '2026-07-08T09:30:00+00:00',
+        'suspension' => ['state' => 'admin_locked', 'reason' => 'delinquent'],
+    ]));
+
+    $response = $this->getJson('/api/health');
+
+    $response->assertJsonPath('subchecks.suspension.value.billing_state_as_of', '2026-07-08T09:30:00+00:00');
+});
+
+it('carries no email, amount, or other PII on the wire — only a state string and a timestamp', function () {
+    config(['fleet.suspension.state' => 'admin_locked']);
+    Storage::disk('local')->put('fleet/billing-state.json', json_encode([
+        'schema_version' => 1,
+        'as_of' => '2026-07-08T09:30:00+00:00',
+        'billing_contact_email' => 'billing@example.org',
+        'plan' => ['name' => 'Standard', 'amount' => 4900, 'currency' => 'usd'],
+        'suspension' => ['state' => 'admin_locked', 'reason' => 'delinquent'],
+    ]));
+
+    $encoded = json_encode($this->getJson('/api/health')->json('subchecks.suspension'));
+
+    expect($encoded)->not->toContain('billing@example.org')
+        ->and($encoded)->not->toContain('4900')
+        ->and($encoded)->not->toContain('Standard');
+});
+
+it('excludes suspension from the worst-of overall status — even a yellow (or hypothetical red) never drags the top level', function () {
+    $reflection = new ReflectionMethod(HealthController::class, 'overallStatus');
+    $reflection->setAccessible(true);
+    $controller = new HealthController();
+
+    $build = fn (array $statuses) => array_map(
+        fn ($status) => ['status' => $status, 'value' => null, 'threshold' => null, 'message' => null],
+        $statuses,
+    );
+
+    // Every health subcheck green; suspension yellow → overall stays green.
+    expect($reflection->invoke($controller, $build([
+        'app' => 'green', 'database' => 'green', 'redis' => 'green',
+        'disk' => 'green', 'last_backup_at' => 'green', 'version' => 'green',
+        'data_hygiene' => 'green', 'suspension' => 'yellow',
+    ])))->toBe('green');
+
+    // suspension never emits red, but even a hypothetical red must not propagate.
+    expect($reflection->invoke($controller, $build([
+        'app' => 'green', 'suspension' => 'red',
+    ])))->toBe('green');
 });
 
 // ── Rate limit ───────────────────────────────────────────────────────────────

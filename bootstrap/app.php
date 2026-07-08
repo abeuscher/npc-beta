@@ -18,6 +18,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\PublicDevAuth::class);
 
+        // Client-billing suspension gate (contract v2.6.0), public surface.
+        // Prepended to the `web` group so `site_off` short-circuits the public
+        // site + member portal to a 503 maintenance notice before any other work.
+        // `admin_locked` is a no-op here (public + portal stay up); the admin
+        // surface is gated separately in AdminPanelProvider's base stack. The
+        // `api` group is deliberately untouched, so the FM /api/* endpoints stay
+        // up under every state. Absent flag = none = no-op.
+        $middleware->prependToGroup('web', \App\Http\Middleware\EnforceSuspensionState::class . ':' . \App\Http\Middleware\EnforceSuspensionState::SURFACE_PUBLIC);
+
         $middleware->validateCsrfTokens(except: [
             '/webhooks/*',
         ]);

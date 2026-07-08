@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Fleet;
 
 use App\Http\Controllers\Api\Fleet\Concerns\HasContractVersion;
 use App\Http\Controllers\Controller;
+use App\Services\Billing\BillingStateReader;
+use App\Services\Billing\SuspensionState;
 use App\Services\DataHygieneAudit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -41,6 +43,7 @@ class HealthController extends Controller
             'last_backup_at' => $this->checkLastBackupAt(),
             'version'        => $this->checkVersion(),
             'data_hygiene'   => $this->checkDataHygiene(),
+            'suspension'     => $this->checkSuspension(),
         ];
 
         return response()->json([
@@ -239,14 +242,46 @@ class HealthController extends Controller
         ];
     }
 
+    /**
+     * Suspension state signal (client billing, contract v2.6.0). Reports the
+     * node's currently-*enforced* suspension state (from config — the pushed
+     * SUSPENSION_STATE flag, fail-safe-resolved) plus the pushed billing-state
+     * document's `as_of` (null when no document), so Fleet Manager gets read-back
+     * verification that a suspension push took effect.
+     *
+     * Informational: a deliberately-suspended node is not an unhealthy node, so
+     * this subcheck is `green` when `none`, a soft `yellow` otherwise, NEVER
+     * `red`, and is excluded from the worst-of overall status (see
+     * overallStatus()) — exactly the data_hygiene posture. Value is a state
+     * string + a timestamp only: no email, no amounts, nothing personal, within
+     * the contract's counts-only / no-PII wire discipline.
+     */
+    private function checkSuspension(): array
+    {
+        $state = SuspensionState::current();
+
+        return [
+            'status'    => $state === SuspensionState::None ? 'green' : 'yellow',
+            'value'     => [
+                'state'               => $state->value,
+                'billing_state_as_of' => app(BillingStateReader::class)->read()->asOf(),
+            ],
+            'threshold' => null,
+            'message'   => $state === SuspensionState::None
+                ? null
+                : "node suspension state: {$state->value}",
+        ];
+    }
+
     private function overallStatus(array $subchecks): string
     {
-        // data_hygiene is informational — accumulated cruft is not a node-health
-        // emergency, so it is excluded from the worst-of derivation. Its own
-        // status still surfaces a soft yellow for attention; it just never drags
-        // the top-level status. Every other subcheck rolls in.
+        // data_hygiene and suspension are informational — accumulated cruft is
+        // not a node-health emergency, and a deliberately-suspended node is not an
+        // unhealthy one — so both are excluded from the worst-of derivation. Their
+        // own statuses still surface a soft yellow for attention; they just never
+        // drag the top-level status. Every other subcheck rolls in.
         $statuses = array_column(
-            array_diff_key($subchecks, ['data_hygiene' => true]),
+            array_diff_key($subchecks, ['data_hygiene' => true, 'suspension' => true]),
             'status',
         );
 

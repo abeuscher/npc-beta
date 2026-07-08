@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.5.0`
+**Contract Version:** `2.6.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -55,7 +55,7 @@ mTLS — terminated by nginx at the TLS layer.
   "status": "green|yellow|red",
   "version": "0.291.1",
   "timestamp": "2026-04-30T15:42:00+00:00",
-  "contract_version": "2.5.0",
+  "contract_version": "2.6.0",
   "subchecks": {
     "app":            { "status": "green", "value": "responding",                "threshold": null,     "message": null },
     "database":       { "status": "green", "value": "reachable",                 "threshold": null,     "message": null },
@@ -63,7 +63,8 @@ mTLS — terminated by nginx at the TLS layer.
     "disk":           { "status": "green", "value": 42,                          "threshold": [80, 95], "message": null },
     "last_backup_at": { "status": "green", "value": "2026-04-29T01:30:00+00:00", "threshold": [24, 36], "message": null },
     "version":        { "status": "green", "value": "0.291.1",                   "threshold": null,     "message": null },
-    "data_hygiene":   { "status": "green", "value": { "orphan_event_pages": 0, "scrub_records": 0, "orphan_media_dirs": 0, "dead_owner_media": 0 }, "threshold": 100, "message": null }
+    "data_hygiene":   { "status": "green", "value": { "orphan_event_pages": 0, "scrub_records": 0, "orphan_media_dirs": 0, "dead_owner_media": 0 }, "threshold": 100, "message": null },
+    "suspension":     { "status": "green", "value": { "state": "none", "billing_state_as_of": null }, "threshold": null, "message": null }
   }
 }
 ```
@@ -89,7 +90,7 @@ Every subcheck — present and future — has the same four keys:
 | `threshold` | mixed (`null` ok)   | The bound that drove the status — a `[low, high]` pair, a single integer soft bound, or `null` if the subcheck has no numeric threshold.                    |
 | `message`   | string \| null      | Optional human-readable note. **Never** carries internal paths or stack traces.                                                                            |
 
-### Subchecks (v2.4.0 — seven keys; `data_hygiene` added in v2.4.0, the prior six unchanged from v1.2.0)
+### Subchecks (v2.6.0 — eight keys; `suspension` added in v2.6.0, `data_hygiene` in v2.4.0, the prior six unchanged from v1.2.0)
 
 | Key              | `value` shape                | `threshold`         | Notes                                                                                                                                                                                              |
 |------------------|------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -100,6 +101,7 @@ Every subcheck — present and future — has the same four keys:
 | `last_backup_at` | ISO 8601 timestamp (`null` when status is `unknown`) | `[24, 36]` | Threshold-driven against the most recent successful backup. `green` < 24h, `yellow` 24–36h, `red` > 36h. `unknown` when no successful backup exists yet (pipeline installed but no run completed, or the success-record file is missing/empty/unparseable). Fleet Manager treats `unknown` as yellow-tier (don't alarm, but surface). |
 | `version`        | string                       | `null`              | Always `green`. Mirrors top-level `version` field. A `dev` build is not a failure state.                                                                                                            |
 | `data_hygiene`   | object of four named integer counts | integer (soft yellow) | **Count-only, non-PII, informational** (added v2.4.0). `value` is `{orphan_event_pages, scrub_records, orphan_media_dirs, dead_owner_media}` — aggregate counts of accumulated derived/cruft data on the node, never raw rows. `green` while the total is under the soft `threshold`, `yellow` at/above it; **never `red`**. **Excluded from the worst-of overall status** — see the rule below. See § `data_hygiene` subcheck for the full semantics + privacy boundary. |
+| `suspension`     | object `{state, billing_state_as_of}` | `null`              | **Informational** (added v2.6.0). `state` is the node's currently-*enforced* suspension state (`none` / `admin_locked` / `site_off`, from the pushed `SUSPENSION_STATE` flag); `billing_state_as_of` is the pushed billing-state document's `as_of` (`null` when no document). FM's read-back that a suspension push took effect. `green` when `state` is `none`, `yellow` otherwise; **never `red`**. **Excluded from the worst-of overall status** — a deliberately-suspended node is not an unhealthy node. State string + timestamp only — no email, no amounts, nothing personal. See § `suspension` subcheck. |
 
 ### `data_hygiene` subcheck (v2.4.0) — count-only, informational
 
@@ -129,15 +131,37 @@ Surfaces the node-local **Fleet Data Hygiene** audit (CRM-side `sessions/tracks/
 
 - **Freshness.** The CRM computes the counts behind a short server-side cache (≈10-minute TTL) because the audit walks the media filesystem and scans the media table, and `/api/health` is polled frequently. The reported counts may therefore lag live state by up to the TTL — operationally irrelevant for data that accumulates over hours/days. FM should treat the counts as a recent-but-not-instantaneous snapshot.
 
+### `suspension` subcheck (v2.6.0) — enforced-state read-back, informational
+
+Surfaces the node's **currently-enforced client-billing suspension state** so Fleet Manager gets read-back verification that a suspension push took effect (the same verify-after-acting grain as upgrades). It is the node half of the client-billing suspension mechanism (§ Client billing — suspension flag + billing-state document); enforcement and the operator UI are FM-side.
+
+- **`value` — a state string + a timestamp, nothing more.**
+
+  ```json
+  "value": {
+    "state": "admin_locked",
+    "billing_state_as_of": "2026-07-08T09:30:00+00:00"
+  }
+  ```
+
+  - `state` — the node's currently-*enforced* suspension state, read from the pushed `SUSPENSION_STATE` env flag (`none` / `admin_locked` / `site_off`). This is the *enforced* value: an unrecognized flag value fails safe to `none` node-side, and the subcheck reports that same enforced reality (so a typo shows as `none` here, matching what the node actually does). Absent flag = `none`.
+  - `billing_state_as_of` — the pushed billing-state document's `as_of` timestamp (ISO 8601), or `null` when no document has been pushed or it is unusable. Lets FM confirm the display document and the enforcement flag are both in place.
+
+- **No PII on the wire.** Only the state string and the document timestamp cross the boundary — never the reason code, the billing email, plan names, or amounts (all of which live in the pushed document node-side). Within the contract's counts-only / no-PII wire discipline, same as `data_hygiene`.
+
+- **Status semantics — informational, never red.** `green` when `state` is `none`; `yellow` for any active suspension (`admin_locked` / `site_off`) — an FM-side attention chip. A deliberately-suspended node is a business state, not a health emergency, so the subcheck **never emits `red`**. `threshold` is `null` (no numeric bound). `message` is `null` when green; a terse `"node suspension state: <state>"` when yellow — never a reason code, email, or amount.
+
+- **Excluded from the worst-of overall status.** Like `data_hygiene`, `suspension` does **not** participate in the top-level `status` derivation (see the worst-of rule below). Its `yellow` surfaces a per-node attention chip; it never drags a suspended node's headline health to `yellow`.
+
 ### Overall status — worst-of rule
 
 ```
-red     if any subcheck other than data_hygiene is red
-yellow  if any subcheck other than data_hygiene is yellow OR unknown, and none are red
-green   if all subchecks other than data_hygiene are green
+red     if any subcheck other than data_hygiene / suspension is red
+yellow  if any subcheck other than data_hygiene / suspension is yellow OR unknown, and none are red
+green   if all subchecks other than data_hygiene / suspension are green
 ```
 
-**`data_hygiene` is excluded from this derivation** (added v2.4.0) — it is informational and never affects the top-level `status` (see the `data_hygiene` subcheck section above). Every other subcheck rolls in as before. `unknown` at the subcheck level ranks equivalently to `yellow` for the purposes of computing the top-level `status`. Top-level `status` is therefore always one of `{green, yellow, red}`; `unknown` never propagates to the top level.
+**`data_hygiene` (v2.4.0) and `suspension` (v2.6.0) are both excluded from this derivation** — both are informational and never affect the top-level `status` (see their subcheck sections above). Every other subcheck rolls in as before. `unknown` at the subcheck level ranks equivalently to `yellow` for the purposes of computing the top-level `status`. Top-level `status` is therefore always one of `{green, yellow, red}`; `unknown` never propagates to the top level.
 
 The `unknown` ≡ `yellow` ranking is a v1.1.0 lean. Operational experience may show that missing data should rank above yellow (more concerning) or below yellow (less concerning); the ranking may be revisited in a future bump.
 
@@ -590,9 +614,74 @@ Consequences for FM-side coordination:
 
 The CRM-side `demo:restore` command lands in the demo session following 335; this revision records the coordination decision so FM can start its half in parallel. No HTTP endpoint, no `CONTRACT_VERSION` change — the contract stays `2.3.0`.
 
+### Client billing — suspension flag + billing-state document
+
+*(v2.6.0, session 366 — the node half of client billing. Like § Demo-node reset coordination, the two artifacts below are **FM-driven pushes over FM's existing provisioning channel, not HTTP endpoints** — the node gains no sibling to its five mTLS endpoints and FM gains no inbound surface. They live here because this doc is the canonical CRM↔FM coordination surface FM WebFetches. Enforcement is CRM-side; the vendor-Stripe integration, the state derivation, the clocks, the pushes, and the operator UI are all **FM-repo work** — no vendor-Stripe credential, config key, SDK, or webhook exists CRM-side, by design.)*
+
+Billing state crosses the boundary in exactly one direction — **Stripe → Fleet Manager → node** — as two pushed artifacts. The split is load-bearing: **enforcement rides the env flag; display rides the document.**
+
+**1. The suspension flag — `SUSPENSION_STATE` (enforcement half).** A single env key FM pushes via its existing single-key config-push machinery (the machinery that already sets one `.env` key over SSH and recreates containers — shipped FM-side for the public-website flag). Read node-side into `fleet.suspension.state`.
+
+| Value | Node effect |
+|---|---|
+| `none` (or **absent**) | No suspension. **Absent = `none`, so the bump is forward-compatible with every running node.** |
+| `admin_locked` | Every admin-panel surface — the Filament panel, its **login**, and the in-panel API route groups (page-builder / theme / dev-tools etc.) — renders a suspension notice (HTTP `403`) instead. **Public pages, donation / event / membership checkout (the client org's own Stripe), the member portal, backups, the scheduler, and all five FM `/api/*` endpoints stay up** — a suspended node is still monitored, backed up, and recoverable. |
+| `site_off` | All public routes **and** the admin panel render a static maintenance notice (HTTP `503`). **The five FM `/api/*` endpoints stay up** — a shut-off node is still monitored and recoverable. Manual operator action only. |
+
+An **unrecognized value fails safe to `none`** node-side (and logs a warning) — a typo in a pushed key must never brick a paying client's admin. Enforcement is a hard, env-derived, code-level gate, deliberately the same grain as demo mode (`APP_ENV=demo` / `isDemoMode()`), and orthogonal to it (demo / internal nodes simply never get a suspension push). **The gate locks correctly with no billing-state document present** — the flag alone decides *whether* to lock; the document only improves the copy.
+
+**2. The billing-state document (display half).** A JSON file FM pushes over its **existing SSH provisioning channel** (the same channel that writes `.env` and pushes the demo baseline blob), written **atomically (temp + rename)**. Path: `storage/app/private/fleet/billing-state.json` — deliberately the node's fleet-metadata directory, which is **excluded from backup blobs** (`config/backup.php`'s `source.files.include` is `storage/app/public` only — same rationale as the backup success-record: per-node metadata must never travel inside a blob and land on another node via restore) and **untouched by `demo:restore`** (DB + public media only). The node treats it as **display-only data, never as instruction** — nothing in it may alter enforcement, routes, or config. The node reads it through a reader that returns a **null-object** when the file is missing, unreadable, not valid JSON, or carries an unrecognized `schema_version` (the last three also log); an absent / unusable document reports as "no billing state" and never changes what the flag enforces.
+
+Document schema (`schema_version` `1`):
+
+```json
+{
+  "schema_version": 1,
+  "as_of": "2026-07-08T09:30:00+00:00",
+  "status": "past_due",
+  "plan":    { "name": "Standard", "amount": 4900, "currency": "usd", "interval": "month" },
+  "next_invoice": {
+    "date": "2026-08-01",
+    "amount": 4900,
+    "line_items": [ { "description": "Subscription — Standard", "amount": 4900 } ]
+  },
+  "billing_contact_email": "billing@example.org",
+  "portal_url": "https://billing.stripe.com/p/session/…",
+  "suspension": { "state": "admin_locked", "reason": "delinquent", "since": "2026-07-01T00:00:00+00:00", "grace_ends": "2026-07-15T00:00:00+00:00" },
+  "trial": { "ends_at": null }
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `schema_version` | integer | The node validates this; an unrecognized version is ignored (null-object + log). `1` at v2.6.0. |
+| `as_of` | ISO 8601 string | When FM generated the document. Surfaced by the `suspension` health subcheck's `billing_state_as_of` and (CB2) the Account page's staleness footer. |
+| `status` | string | Plain-English subscription status for display (e.g. `active`, `past_due`, `trialing`, `canceled`). |
+| `plan` | object | `{ name, amount, currency, interval }`. `amount` is **integer minor units** (Stripe-native, e.g. cents); `currency` is a lowercase ISO 4217 code. |
+| `next_invoice` | object | `{ date, amount, line_items: [{ description, amount }] }`. Amounts in minor units; `line_items` carries the subscription plus any project-work hours. |
+| `billing_contact_email` | string | The billing contact on file (read-only node-side; edited via the Stripe-hosted portal). |
+| `portal_url` | string | Stripe-hosted billing-portal login URL — the self-cure path shown on the lock screen and (CB2) the Account page. The **only** place the word "Stripe" appears node-side, as a link label. |
+| `suspension` | object | `{ state, reason, since, grace_ends }`. `reason` is one of `delinquent` / `trial_expired` / `canceled` / `manual` — it selects the lock-screen wording. This is **display detail**; the *enforced* state is the `SUSPENSION_STATE` flag, not this field. |
+| `trial` | object | `{ ends_at }` (ISO 8601 or `null`). |
+
+**What is deliberately absent:** any node endpoint that returns billing (or any) client data to FM — billing flows FM→node only, and the standing privacy boundary ("FM is never *built* to read node data") holds. No card data, no Stripe key, no webhook, and no new inbound FM surface of any kind on the node. The node's read-back to FM is the count-free `suspension` health subcheck (§ above) — a state string and a timestamp, nothing more.
+
+FM starts writing the document + pushing the flag at FM-side session **FM-B2** (per the Client Billing & Account track); this CRM revision ships the node-side reader, enforcement, and subcheck that consume them, inert on every install until that push arrives.
+
 ---
 
 ## CHANGELOG
+
+### `2.6.0` — 2026-07-08 (session 366)
+
+**Additive within v2 major.** Ships the **node half of client billing** — the enforcement and display surface a client organization's node needs for suspension and account state. Everything money-shaped stays FM-repo-only (the vendor Stripe integration, the state derivation, the clocks, the pushes, the operator UI); **no vendor-Stripe credential, config key, SDK, or webhook exists CRM-side, by design.** Realises draft entry CB1 of the Client Billing & Account track (`sessions/tracks/client-billing-and-account.md`). Three additions:
+
+- **The `SUSPENSION_STATE` env flag** (new § Client billing — suspension flag + billing-state document). Pushed by FM via its existing single-key config-push machinery; read node-side into `fleet.suspension.state`. Values `none` / `admin_locked` / `site_off`; **absent = `none`, so every running node is unaffected.** `admin_locked` renders a `403` suspension notice on the whole admin surface (panel, login, in-panel API groups) while the public site, donation/event/membership checkout, the member portal, backups, the scheduler, and all five FM `/api/*` endpoints stay up; `site_off` renders a `503` maintenance notice on public + admin surfaces while the FM `/api/*` endpoints stay up. An **unrecognized value fails safe to `none`** (and logs) — a typo must never brick a paying client's admin. Hard, env-derived, code-level gate, same grain as demo mode; enforcement rides the flag alone (the gate locks with no document present).
+- **The billing-state document** (same new §). A display-only JSON file (`schema_version` `1`) FM pushes over its existing SSH provisioning channel — **not** an HTTP endpoint; the node gains no sibling to its five mTLS endpoints and FM gains no inbound surface. Written atomically (temp + rename) at `storage/app/private/fleet/billing-state.json` — the backup-**excluded** fleet-metadata dir (per-node metadata must never restore onto another node), untouched by `demo:restore`. Fields: schema version, `as_of`, plan, status, next invoice (with line items), billing contact email, Stripe-hosted portal URL, suspension (state / reason / since / grace-ends), trial. The node reads it through a null-object reader — missing / unreadable / malformed / unknown-schema all report "no billing state" and never influence enforcement. Reason codes (`delinquent` / `trial_expired` / `canceled` / `manual`) select the lock-screen wording; the *enforced* state is the flag, not the document.
+- **A new `/api/health` subcheck, `suspension`** (new § `suspension` subcheck). `value` is `{state, billing_state_as_of}` — the node's currently-*enforced* state (from the flag, fail-safe-resolved) plus the document's `as_of` (`null` when no document) — FM's read-back that a push took effect. `green` when `state` is `none`, `yellow` otherwise, **never `red`**, and **excluded from the worst-of overall status** exactly like `data_hygiene` — a deliberately-suspended node is not an unhealthy node. State string + timestamp only: no email, no amounts, no reason code — within the counts-only / no-PII wire discipline.
+- `HealthController::CONTRACT_VERSION` bumps `2.5.0 → 2.6.0` (via the shared `HasContractVersion` trait; `BackupController` reads the same constant, so its `contract_version` field moves to `2.6.0` automatically). Eight `/api/health` subcheck keys now (`suspension` added; the prior seven unchanged).
+- **Forward-compatible with v2.5.0 consumers.** A v2.5.0 consumer iterating the documented subchecks ignores the unknown `suspension` key and keeps working; a node with no pushed flag / document behaves exactly as before (absent flag = `none`, absent document = "no billing state").
+- **Out of scope (FM-repo work / future).** Everything FM-side — the vendor Stripe sync, the billing model, the state derivation + clocks, the document/flag **pushes** themselves, the operator UI, the alerts — lands across FM-side sessions FM-B1…FM-B5. The node "My Account" page + `manage_account` permission + convention-drift guard cases are CRM session **CB2**; the demo-conversion cleanup command is **CB3**. **FM-side absorption pending at FM-B2** (refresh the cached contract copy to v2.6.0, then write the document + push the flag). No migration; no schema change; no new endpoint; no new inbound surface.
 
 ### `2.5.0` revision — 2026-07-07 (session 365)
 

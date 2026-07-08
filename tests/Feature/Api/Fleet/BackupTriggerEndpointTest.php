@@ -35,7 +35,7 @@ it('returns the documented envelope keys on a successful trigger', function () {
         ->toEqualCanonicalizing(['contract_version', 'status', 'last_backup_at', 'duration_ms', 'message']);
 });
 
-it('reports contract_version 2.5.0', function () {
+it('reports contract_version 2.6.0', function () {
     Artisan::shouldReceive('call')
         ->andReturnUsing(function () {
             Storage::disk('local')->put('fleet/last-backup-at', now()->toIso8601String());
@@ -45,7 +45,7 @@ it('reports contract_version 2.5.0', function () {
 
     $response = $this->postJson('/api/backup/trigger');
 
-    $response->assertJsonPath('contract_version', '2.5.0');
+    $response->assertJsonPath('contract_version', '2.6.0');
 });
 
 it('returns status success with the freshly-written last_backup_at when artisan exits 0 and the success record moves forward', function () {
@@ -85,7 +85,7 @@ it('returns status failed when artisan exits non-zero, sourcing the message from
 
     $response->assertStatus(200)
         ->assertJsonPath('status', 'failed')
-        ->assertJsonPath('contract_version', '2.5.0');
+        ->assertJsonPath('contract_version', '2.6.0');
 
     expect($response->json('message'))
         ->toBeString()

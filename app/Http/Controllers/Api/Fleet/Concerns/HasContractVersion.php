@@ -4,5 +4,5 @@ namespace App\Http\Controllers\Api\Fleet\Concerns;
 
 trait HasContractVersion
 {
-    public const CONTRACT_VERSION = '2.5.0';
+    public const CONTRACT_VERSION = '2.6.0';
 }

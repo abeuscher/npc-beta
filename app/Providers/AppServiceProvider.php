@@ -32,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
         // suppress them entirely — the package's classes stay available, no
         // /user/* or /two-factor-* routes are registered. (session 359)
         \Laravel\Fortify\Fortify::ignoreRoutes();
+
+        // The billing-state reader (client billing, contract v2.6.0) is a
+        // singleton so its first read is memoized for the life of the request —
+        // the pushed document changes rarely, and both the suspension lock screen
+        // and the health subcheck read it within a single request.
+        $this->app->singleton(\App\Services\Billing\BillingStateReader::class);
     }
 
     public function boot(): void

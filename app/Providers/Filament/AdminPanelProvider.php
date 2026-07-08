@@ -175,6 +175,14 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\DashboardSlotGridWidget::class,
             ])
             ->middleware([
+                // Client-billing suspension gate (contract v2.6.0). First in the
+                // base stack so a locked node short-circuits before session/cookie
+                // work. This base group wraps both the discovered panel pages AND
+                // the in-panel API route groups registered via ->routes() below,
+                // so a single registration covers the whole admin surface (panel,
+                // login, page-builder/theme/dev-tools APIs). Absent flag = none =
+                // no-op, so every existing install is unaffected.
+                \App\Http\Middleware\EnforceSuspensionState::class . ':' . \App\Http\Middleware\EnforceSuspensionState::SURFACE_ADMIN,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
