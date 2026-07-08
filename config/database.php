@@ -97,6 +97,20 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * spatie/laravel-backup reads this 'dump' block and maps each key onto
+             * the db-dumper (add_extra_option => addExtraOption). --no-privileges
+             * strips GRANT/REVOKE and --no-owner strips ALTER … OWNER TO from the
+             * pg_dump, both of which name this node's per-node read-only DB role
+             * (FM 037). Without it, restoring a backup blob on a *different* node
+             * aborts because that role does not exist there (cross-node restore
+             * portability — surfaced at FM 042). The restored DB's own read-only
+             * role is (re)granted node-side on provision, not carried in the dump.
+             */
+            'dump' => [
+                'add_extra_option' => '--no-privileges --no-owner',
+            ],
         ],
 
         'pgsql_readonly' => [

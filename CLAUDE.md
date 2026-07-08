@@ -1,3 +1,10 @@
+## Reporting to the human
+
+Summaries and status updates are for me, read cold. Follow the reporting
+rules in my user-level CLAUDE.md. Project-specific: translate these on first
+use — FM = Fleet Manager; A2 etc. = release-plan item IDs (say what they are);
+vN.N.N = CRM↔FM contract version; session-NNN = branch/iteration.
+
 ## Session Pacing
 
 - Never advance to the next milestone without an explicit user instruction. A milestone is "iteration ready for the user to deploy and test" — implementation complete, tests green, build clean. After completing one, stop and wait. (Cross-track work like Widget Autonomy may carry its own milestone definition; see the relevant track doc.)

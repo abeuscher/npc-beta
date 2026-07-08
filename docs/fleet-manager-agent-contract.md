@@ -359,6 +359,15 @@ Calling `/api/backup/blob` is "give me the freshest blob the install knows about
 - Treat HTTP status as authoritative for outcome classification (200 / 404 / 500 are distinct cases — see Response sections below).
 - Verify the downloaded blob's `Content-Length` matches the actual byte count received (transport integrity); SHA verification is FM-side optional.
 
+### Blob content — role-privilege-free dumps *(v2.5.0 revision, session 365 — no contract surface change, no version bump)*
+
+The PostgreSQL dump inside the blob is produced with `pg_dump --no-privileges --no-owner` (set via the CRM's `config/database.php` pgsql connection `dump` options), so it carries **no `GRANT`/`REVOKE` privilege statements and no `ALTER … OWNER TO` ownership statements**. This makes the blob **portable across nodes**. A CRM install's dump would otherwise name that install's **per-node read-only DB role** (the role Fleet Manager mints per node at provision time, FM 037), and restoring such a dump on a *different* node aborts on the missing role — the failure that blocked cross-node baseline restore before this revision (surfaced at FM 042, 2026-06-05). Two consequences for FM-side restore orchestration:
+
+- **Only blobs produced on/after the CRM image carrying this fix are portable.** A blob dumped by an older CRM image still carries role/ownership statements and will abort a cross-node restore. Re-record any baseline (including the demo baseline) from a fixed node before relying on it for a cross-node restore.
+- **The restored node's own read-only role may need re-granting.** Because privileges are stripped from the dump, a restore carries no `GRANT … TO <read-only role>`. Whether the node's per-node read-only role still has `SELECT` on the restored tables afterward depends on the node's default-privilege configuration (the FM-037 provision machinery) and on which role runs the restore — verify node-side after a cross-node restore. If the role has lost `SELECT`, re-run the provision-time grant step. This is an FM-side runbook step, not a CRM-code concern; see the A2 runbook handoff for detail.
+
+This is a dump-configuration change (`config/database.php`), not an HTTP-surface change; `CONTRACT_VERSION` stays `2.5.0`. FM consumers pick up this note on the next WebFetch refresh.
+
 ## `/api/backup/blob` — Response — `200 OK` (success)
 
 The response body is the raw zip stream. Headers:
@@ -577,12 +586,17 @@ Consequences for FM-side coordination:
 - **`IMAGE_TAG` unpin.** The demo node's `IMAGE_TAG` pin (handoff item 2, *"so rolling upgrades don't disrupt a live demo"*) is **lifted** — FM may upgrade the demo node like any other. To preserve the pin's original intent, schedule upgrades into the daily reset window (upgrade + restore together, off-peak) so an upgrade never interrupts a live prospect session.
 - **Baseline alignment.** FM and CRM align on the canonical baseline blob — how it is produced (the operator authors the demo, then snapshots via `backup:run` or the existing `/api/backup/trigger` + `/api/backup/blob` endpoints) and handed to FM for distribution. This is the *"we'll align the baseline"* step the handoff names.
 - **Faker / `--no-dev`.** The restore-from-blob route makes the demo's Faker dependency a non-issue on the node: synthetic data is generated in the authoring environment (dev-deps present) when the snapshot is built; the production demo node only ever restores a blob and never runs Faker.
+- **Cross-node blob portability (session 365).** The baseline blob is authored on one install and restored on the demo node — a *cross-node* restore. Backups dumped before CRM session 365 carried the authoring node's DB role grants/ownership and aborted `demo:restore` on the demo node's missing read-only role (surfaced at FM 042, 2026-06-05). Session 365 fixes this dump-side (`pg_dump --no-privileges --no-owner`); baselines re-recorded from a fixed CRM image restore cleanly cross-node. **The existing demo baseline must be re-recorded from a fixed node before the live demo-restore loop can close.** See § Blob content — role-privilege-free dumps.
 
 The CRM-side `demo:restore` command lands in the demo session following 335; this revision records the coordination decision so FM can start its half in parallel. No HTTP endpoint, no `CONTRACT_VERSION` change — the contract stays `2.3.0`.
 
 ---
 
 ## CHANGELOG
+
+### `2.5.0` revision — 2026-07-07 (session 365)
+
+**Documentation revision — no contract surface change, no version bump.** Records that the PostgreSQL dump inside a backup blob is now produced with `pg_dump --no-privileges --no-owner` (CRM `config/database.php` pgsql connection `dump` options), so blobs carry no role-privilege or ownership statements and are **portable across nodes**. Before this, a blob named the authoring node's per-node read-only DB role in `GRANT …` / `ALTER … OWNER` statements, so restoring it on a different node aborted on the missing role — the defect that blocked cross-node baseline restore since FM 042 (2026-06-05, `demo:restore` aborting on `role "crm_readonly_…" does not exist`). New sub-section § Blob content — role-privilege-free dumps under `/api/backup/blob`; consequence bullet added to § Demo-node reset coordination. **Old blobs stay non-portable — re-record baselines (including the demo baseline) from a fixed CRM image.** The node's own read-only role is re-granted node-side on provision, not carried in the dump; a cross-node restore may need the provision-time grant step re-run (FM-side runbook, see the A2 handoff). No HTTP surface change, no response-shape change; `HealthController::CONTRACT_VERSION` stays `2.5.0`. FM consumers pick this up on the next WebFetch refresh; no consumer-code change forced.
 
 ### `2.5.0` — 2026-06-12 (session 360)
 
