@@ -1,12 +1,8 @@
 <?php
 
-use App\Models\Contact;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\Purchase;
-use App\Models\Transaction;
-use App\Models\WaitlistEntry;
-use App\Observers\ProductPriceObserver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -85,92 +81,11 @@ it('correctly counts only active purchases for capacity', function () {
     expect($product->fresh()->isAtCapacity())->toBeTrue();
 });
 
-// ── Purchase creation ─────────────────────────────────────────────────────────
-
-it('creates a purchase record with correct attributes', function () {
-    $product = Product::factory()->create();
-    $price   = ProductPrice::factory()->create([
-        'product_id' => $product->id,
-        'amount'     => 99.99,
-    ]);
-    $contact = Contact::factory()->create();
-
-    $purchase = Purchase::factory()->create([
-        'product_id'        => $product->id,
-        'product_price_id'  => $price->id,
-        'contact_id'        => $contact->id,
-        'stripe_session_id' => 'cs_test_789',
-        'amount_paid'       => 99.99,
-        'status'            => 'active',
-    ]);
-
-    expect($purchase->product_id)->toBe($product->id)
-        ->and($purchase->product_price_id)->toBe($price->id)
-        ->and($purchase->contact_id)->toBe($contact->id)
-        ->and($purchase->amount_paid)->toBe('99.99')
-        ->and($purchase->status)->toBe('active');
-});
-
-// ── ProductPriceObserver (mocked Stripe) ──────────────────────────────────────
-
-it('has ProductPriceObserver registered on the model', function () {
-    // The observer requires a real Stripe key to create prices, so we verify
-    // the observer is wired up and skips when no key is configured.
-    config(['services.stripe.secret' => '']);
-
-    $product = Product::factory()->create();
-    $price   = ProductPrice::factory()->create([
-        'product_id' => $product->id,
-        'amount'     => 25.00,
-    ]);
-
-    // With no Stripe secret, the observer should exit early and leave stripe_price_id null
-    expect($price->stripe_price_id)->toBeNull();
-});
-
-it('does not attempt Stripe price creation when amount is zero', function () {
-    config(['services.stripe.secret' => '']);
-
-    $product = Product::factory()->create();
-    $price   = ProductPrice::factory()->create([
-        'product_id'      => $product->id,
-        'amount'          => 0.00,
-        'stripe_price_id' => null,
-    ]);
-
-    expect($price->stripe_price_id)->toBeNull();
-});
-
-// ── Waitlist ──────────────────────────────────────────────────────────────────
-
-it('creates a waitlist entry with waiting status', function () {
-    $product = Product::factory()->create();
-    $contact = Contact::factory()->create();
-
-    $entry = WaitlistEntry::factory()->create([
-        'product_id' => $product->id,
-        'contact_id' => $contact->id,
-        'status'     => 'waiting',
-    ]);
-
-    expect($entry->status)->toBe('waiting')
-        ->and($entry->product_id)->toBe($product->id)
-        ->and($entry->contact_id)->toBe($contact->id);
-});
-
-it('supports waitlist status transitions', function () {
-    $entry = WaitlistEntry::factory()->create(['status' => 'waiting']);
-
-    $entry->update(['status' => 'notified']);
-    expect($entry->fresh()->status)->toBe('notified');
-
-    $entry->update(['status' => 'converted']);
-    expect($entry->fresh()->status)->toBe('converted');
-});
-
-it('supports cancelled waitlist status', function () {
-    $entry = WaitlistEntry::factory()->create(['status' => 'waiting']);
-
-    $entry->update(['status' => 'cancelled']);
-    expect($entry->fresh()->status)->toBe('cancelled');
-});
+// The former "Purchase creation", "ProductPriceObserver", and "Waitlist"
+// sections were removed at the s364 test audit: the purchase test echoed its
+// own factory attributes; the two observer tests passed identically with the
+// observer unregistered (the factory never sets stripe_price_id and the
+// observer early-returns on an empty Stripe key); the waitlist tests updated
+// a plain fillable column and asserted Eloquent saved it. The real gaps —
+// the observer's archive-and-recreate flow and ProductWaitlistController —
+// are recorded in the housekeeping inbox, not papered over here.

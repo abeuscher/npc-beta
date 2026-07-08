@@ -101,7 +101,7 @@ it('cycles the organization dictionary when the requested count exceeds it', fun
 
     expect($summary['organizations'])->toBe($dictionarySize + 2)
         ->and(Organization::where('source', Source::SCRUB_DATA)->count())->toBe($dictionarySize + 2);
-})->group('slow');
+}); // s364 D4: 0.7s local — under the 5s slow boundary.
 
 it('generates contacts tagged with source = scrub_data', function () {
     asSuperAdmin();

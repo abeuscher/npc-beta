@@ -1,11 +1,62 @@
 {
     $schema: "vendor/infection/infection/resources/schema.json",
     source: {
+        // s364 D3 slice: the Fleet Manager API controllers + the admin-recovery
+        // support services. app/Services is scoped down to the two recovery files
+        // via excludes (Infection accepts directories only, not files).
         directories: [
-            "app/WidgetPrimitive"
+            "app/Http/Controllers/Api/Fleet",
+            "app/Services"
+        ],
+        excludes: [
+            "Import",
+            "ImportExport",
+            "Media",
+            "QuickBooks",
+            "Setup",
+            "ActivityLogger.php",
+            "AppearanceStyleComposer.php",
+            "AssetBuildService.php",
+            "BuildResult.php",
+            "ColorTokenCompiler.php",
+            "ColorTokenResolver.php",
+            "DataHygieneAudit.php",
+            "DemoDataService.php",
+            "DuplicateContactService.php",
+            "EditorCssTransformer.php",
+            "EventRegistrationQuantities.php",
+            "GradientComposer.php",
+            "HelpArticleService.php",
+            "ListExportService.php",
+            "MailChimpService.php",
+            "MailingListFieldRegistry.php",
+            "MailingListQueryBuilder.php",
+            "MapEmbedParser.php",
+            "PageBlockRenderer.php",
+            "PageBuilderDataSources.php",
+            "PageContext.php",
+            "PageContextTokens.php",
+            "PageTreeBuilder.php",
+            "PiiScanner.php",
+            "RandomDataGenerator.php",
+            "SampleImageLibrary.php",
+            "SeoMetaGenerator.php",
+            "StripeCheckoutService.php",
+            "TemplateAppearanceResolver.php",
+            "ThemeColorRelocation.php",
+            "TypographyCompiler.php",
+            "TypographyResolver.php",
+            "WidgetAssetResolver.php",
+            "WidgetConfigResolver.php",
+            "WidgetPreviewRenderer.php",
+            "WidgetRegistry.php",
+            "WidgetRenderer.php"
         ]
     },
-    timeout: 10,
+    // 120s: catcher-set runs (PEST_FOR_INFECTION_NO_STOP_ON_FAILURE=1) execute
+    // every covering test per mutant; endpoint tests are ~1s each so 10s would
+    // record legitimate full runs as timed_out and truncate the redundancy data.
+    timeout: 120,
     logs: {
         text: "infection-log.txt",
         html: "infection.html",

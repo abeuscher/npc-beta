@@ -37,7 +37,9 @@ What it fixes:
 
 2. **Junit log namespace rewrite.** PCOV's coverage-xml emits Pest's mangled namespace (`P\Tests\Feature\…`). PHPUnit's junit log emits the user-facing namespace (`Tests\Feature\…`). Infection cross-references the two by class name and the prefix mismatch makes the lookup fail with `TestNotFound`. The shim rewrites the junit log so both sides agree on the `P\` form.
 
-Optional knob: setting the env var `PEST_FOR_INFECTION_NO_STOP_ON_FAILURE=1` rewrites the per-mutant configs' `stopOnFailure="true"` to `"false"`. Default Infection runs with stopOnFailure=true, so Pest stops at the first failing test per mutant — meaning the report only sees the *first* test that caught each mutant. Setting the env var produces a complete catcher set per mutant (every test that would have failed runs to completion). 4–5× slower per mutant; only worth it when the question is "is test X uniquely catching anything, or are siblings catching the same things?" — i.e., the redundancy/dead-test analysis.
+Optional knob: setting the env var `PEST_FOR_INFECTION_NO_STOP_ON_FAILURE=1` rewrites the per-mutant configs' `stopOnFailure="true"` to `"false"`. Default Infection runs with stopOnFailure=true, so Pest stops at the first failing test per mutant — meaning the report only sees the *first* test that caught each mutant. Setting the env var produces a complete catcher set per mutant (every test that would have failed runs to completion). 4–5× slower per mutant; only worth it when the question is "is test X uniquely catching anything, or are siblings catching the same things?" — i.e., the redundancy/dead-test analysis. When using it, raise `timeout` in `infection.json5` (s364 used 120) — the 10s default records legitimate full catcher runs as timed_out.
+
+**Catcher-attribution limits (s364, read before acting on redundancy data).** The catcher sets are read from each killed mutant's `processOutput` in `infection.json` (`killedBy` is not populated in this setup) by grepping the `FAILED Tests\… > it …` lines. Two hard limits, both hit at s364: (a) Pest truncates long titles in the failure summary with an ellipsis at ~80 columns and neither `--columns` (progress output only) nor the `COLUMNS` env var widens it — resolve fragments by prefix-matching against the slice's `it()` titles, and treat any ambiguous fragment's candidates as *alive*; (b) attribution **jitters between runs** (timeout variance reshuffles which mutants land as killed-with-output), so a test showing zero catches in one run may show twenty in the next. Consequence: never delete or consolidate on catcher evidence alone — require agreement across at least two runs *plus* a source-level read, and prefer `// guards:` markers (harmless if the underlying signal was noise) over deletions. Route-shape and throttle-config tests will always show zero catches (their subject isn't mutated); that is not deadness.
 
 If a future Pest major version (Pest 3+) lands or an upstream Pest-Infection adapter is released that handles these compatibility issues natively, retire the shim.
 
@@ -48,6 +50,18 @@ docker compose exec app composer install
 ```
 
 If `composer install` reports the `infection/extension-installer` plugin is blocked, the allowlist entry is missing from `composer.json` (`config.allow-plugins.infection/extension-installer: true`) — fix and retry. (Already in place as of session 241.)
+
+### Narrow the initial test run to the slice's consumer tests
+
+The initial coverage run executes the configured test suite serially under PCOV. At full-suite scale this no longer works: at ~3,000 tests the PCOV-instrumented process accumulates coverage state until it dies mid-run with no PHP error (observed at s364 around the 600-test mark — Infection then reports the misleading "Project tests must be in a passing state"). It is also ~25 minutes of wall clock for coverage of which the slice uses a sliver.
+
+Scope the initial run to the tests that exercise the slice, via `--test-framework-options` at invocation (grep the slice's classes/routes across `tests/` to build the set — err inclusive):
+
+```
+--test-framework-options="--exclude-group=slow --filter='Fleet|AdminAccountRecovery|...'"
+```
+
+One consequence to keep in mind: a mutant only catchable by a test *outside* the filter would report as escaped — acceptable for slice audits because escaped mutants get human review anyway, but it is a reason to err inclusive when building the filter.
 
 ### PCOV opt-in flags
 
@@ -160,7 +174,7 @@ Queue, ordered by likely signal density. Pick whichever has the freshest test su
 - **Importer `FieldMapper`** — heavy branching, lots of edge cases, importer test surface has accumulated organically. Will produce noise; valuable when the importer test shape is up for review anyway.
 - **Page builder save flow** (`PageBuilderApiController` + the validators it calls) — recently consolidated; high-stakes.
 - **Filament resource action visibility** — gate-heavy code where mutations on the gate predicate would directly translate to security regressions.
-- **Fleet Manager controller** (`app/Http/Controllers/Api/Fleet/HealthController`) — substantial test surface accumulated across sessions 238 and 240; mutation evidence would tell us whether the contract assertions actually constrain the response shape.
+- ~~**Fleet Manager controller**~~ — **consumed at s364 (Test Audit Cycle 2, D3).** The slice had grown to all four controllers (`Health`, `Logs`, `Backup`, `Recovery`) + `AdminAccountRecovery`/`AdminRecoveryResult` (v2.1.0 → v2.5.0); 326 mutants, MSI 100% (0 escaped, 0 uncovered). Findings + dispositions in the s364 log.
 
 ---
 

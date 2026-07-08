@@ -40,50 +40,12 @@ it('cms_editor cannot access the roles create page', function () {
         ->assertForbidden();
 });
 
-// ── Role creation ─────────────────────────────────────────────────────────────
-
-it('super admin can create a role with permissions', function () {
-    $admin = User::factory()->create();
-    $admin->assignRole('super_admin');
-
-    $role = Role::create(['name' => 'fundraiser', 'guard_name' => 'web']);
-    $role->syncPermissions(['view_any_contact', 'view_contact', 'view_any_donation']);
-
-    expect($role->permissions->pluck('name'))
-        ->toContain('view_any_contact')
-        ->toContain('view_contact')
-        ->toContain('view_any_donation');
-});
-
-// ── Permission sync ───────────────────────────────────────────────────────────
-
-it('editing a role syncs its permissions correctly', function () {
-    $role = Role::create(['name' => 'development_director', 'guard_name' => 'web']);
-    $role->syncPermissions(['view_any_contact']);
-
-    // Replace the permission set entirely
-    $role->syncPermissions(['view_any_donation', 'create_donation']);
-
-    $role->refresh()->load('permissions');
-
-    expect($role->permissions->pluck('name'))
-        ->toContain('view_any_donation')
-        ->toContain('create_donation')
-        ->not->toContain('view_any_contact');
-});
-
-it('syncing permissions removes permissions that were unchecked', function () {
-    $role = Role::create(['name' => 'temp_editor', 'guard_name' => 'web']);
-    $role->syncPermissions(['view_any_contact', 'view_contact', 'create_contact']);
-
-    $role->syncPermissions(['view_any_contact']); // remove the others
-
-    $role->refresh()->load('permissions');
-
-    expect($role->permissions->pluck('name'))
-        ->toHaveCount(1)
-        ->toContain('view_any_contact');
-});
+// The "Role creation" and "Permission sync" sections were removed at the s364
+// test audit: their titles claimed resource-form behavior ("super admin can
+// create a role…", "editing a role syncs…") but their bodies called
+// Role::create / syncPermissions directly — pure Spatie framework API, no
+// actor, no RoleResource involvement. The resource-form create/edit paths
+// remain untested at the resource layer; recorded in the housekeeping inbox.
 
 // ── Built-in role protection ──────────────────────────────────────────────────
 
@@ -112,14 +74,10 @@ it('super admin can navigate to the cms_editor role edit page', function () {
 });
 
 // ── Custom role deletion ──────────────────────────────────────────────────────
-
-it('super admin can delete a custom role', function () {
-    $role = Role::create(['name' => 'temp_role', 'guard_name' => 'web']);
-
-    $role->delete();
-
-    expect(Role::where('name', 'temp_role')->exists())->toBeFalse();
-});
+// ("super admin can delete a custom role" was removed at the s364 audit — no
+// actor despite the title, and $role->delete() is pure Spatie. The
+// unassignment test below is kept deliberately: it pins the framework cascade
+// the app's permission gating relies on.)
 
 it('deleting a role unassigns it from users', function () {
     $role = Role::create(['name' => 'removable_role', 'guard_name' => 'web']);

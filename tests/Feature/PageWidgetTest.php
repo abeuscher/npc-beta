@@ -42,58 +42,39 @@ it('can be created and associated with a page', function () {
         ->and($widget->config['content'])->toBe('<p>Hello</p>');
 });
 
-it('widgetType relationship returns the correct WidgetType model', function () {
-    $page       = Page::factory()->create([
-        'title'        => 'Test Page',
-        'slug'         => 'test-page-2',
+// Two framework-echo tests were removed at the s364 test audit (belongsTo
+// resolution and null-on-unsaved-model assert Eloquent, not app code).
+
+it('excludes inactive widgets from the public page render', function () {
+    // Routes through the real loading path (PageController's is_active filter)
+    // rather than re-writing the where() clause inside the test — the previous
+    // version asserted its own query, so the production filter could regress
+    // without failing anything.
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $page = Page::factory()->create([
+        'title'  => 'Test Page',
+        'slug'   => 'inactive-widget-test',
         'status' => 'published',
     ]);
-    $widgetType = makeWidgetType(['handle' => 'text_block_2', 'label' => 'Text Block 2']);
-
-    $widget = $page->widgets()->create([
-        'widget_type_id' => $widgetType->id,
-        'config'         => [],
-        'sort_order'     => 0,
-        'is_active'      => true,
-    ]);
-
-    expect($widget->widgetType)->toBeInstanceOf(WidgetType::class)
-        ->and($widget->widgetType->handle)->toBe('text_block_2');
-});
-
-it('widgetType returns null when widget_type_id is missing', function () {
-    $widget = new PageWidget();
-
-    expect($widget->widgetType)->toBeNull();
-});
-
-it('inactive widgets are excluded when loading for a page', function () {
-    $page       = Page::factory()->create([
-        'title'        => 'Test Page',
-        'slug'         => 'test-page-4',
-        'status' => 'published',
-    ]);
-    $widgetType = makeWidgetType();
+    $textType = WidgetType::where('handle', 'text_block')->firstOrFail();
 
     $page->widgets()->create([
-        'widget_type_id' => $widgetType->id,
-        'config'         => ['content' => 'Active'],
+        'widget_type_id' => $textType->id,
+        'config'         => ['content' => '<p>ACTIVE-WIDGET-MARKER</p>'],
         'sort_order'     => 0,
         'is_active'      => true,
     ]);
 
     $page->widgets()->create([
-        'widget_type_id' => $widgetType->id,
-        'config'         => ['content' => 'Inactive'],
+        'widget_type_id' => $textType->id,
+        'config'         => ['content' => '<p>INACTIVE-WIDGET-MARKER</p>'],
         'sort_order'     => 1,
         'is_active'      => false,
     ]);
 
-    $active = $page->widgets()
-        ->where('is_active', true)
-        ->orderBy('sort_order')
-        ->get();
-
-    expect($active)->toHaveCount(1)
-        ->and($active->first()->config['content'])->toBe('Active');
+    $this->get('/' . $page->slug)
+        ->assertOk()
+        ->assertSee('ACTIVE-WIDGET-MARKER')
+        ->assertDontSee('INACTIVE-WIDGET-MARKER');
 });

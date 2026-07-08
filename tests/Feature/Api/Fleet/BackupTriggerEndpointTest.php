@@ -252,4 +252,4 @@ it('returns 429 once the per-minute limit is exceeded on /api/backup/trigger', f
     }
 
     $this->postJson('/api/backup/trigger')->assertStatus(429);
-})->group('slow');
+}); // s364 D4: 0.1s local/CI — well under the 5s slow boundary.

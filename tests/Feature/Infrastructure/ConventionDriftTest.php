@@ -35,7 +35,7 @@ it('has no [KNOWN-BAD] Filament signature-drift hits', function () {
 
     expect($result->successful())->toBeTrue();
     expect($result->output())->not->toContain('[KNOWN-BAD]');
-})->group('slow');
+}); // s364 D4: 0.5s local — the scan is cheap; re-tag slow only if it grows past 5s.
 
 // ── model_type lowercase short-name convention (the 275 trait bug class) ──
 

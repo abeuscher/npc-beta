@@ -54,7 +54,7 @@ it('rejects a blog prefix that matches an existing page slug', function () {
         ])
         ->call('save')
         ->assertHasFormErrors(['blog_prefix']);
-})->group('slow');
+}); // s364 D4: 0.7s local — under the 5s slow boundary.
 
 it('rejects a blog prefix that is a reserved word', function () {
     foreach (['admin', 'horizon', 'up', 'login', 'logout', 'register'] as $reserved) {
@@ -68,7 +68,7 @@ it('rejects a blog prefix that is a reserved word', function () {
             ->call('save')
             ->assertHasFormErrors(['blog_prefix']);
     }
-})->group('slow');
+}); // s364 D4: 2.8s local — under the 5s slow boundary.
 
 it('accepts a valid blog prefix', function () {
     Livewire::test(GeneralSettingsPage::class)

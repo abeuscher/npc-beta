@@ -16,6 +16,7 @@ beforeEach(function () {
 
 // ── Happy path ───────────────────────────────────────────────────────────────
 
+// guards: FM contract envelope clause (spec-mirror, v2.1.0); s364 mutation pass flagged it redundant with the tail-behavior tests — deliberate
 it('returns the documented envelope keys on a successful fetch', function () {
     Storage::disk('logs')->put('laravel.log', "line one\nline two\nline three\n");
 

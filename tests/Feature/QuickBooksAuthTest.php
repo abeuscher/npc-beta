@@ -34,10 +34,11 @@ function seedQbCredentials(): void
 
 // ── Token storage ───────────────────────────────────────────────────────────
 
-it('stores QB tokens as encrypted site settings', function () {
+it('getRealmId reads the realm through the encrypted site-setting pattern exchangeCode writes', function () {
     $auth = new QuickBooksAuth();
 
     // Simulate storing tokens via the same encrypted pattern exchangeCode uses.
+    // (exchangeCode itself needs a live QB response and is not exercised here.)
     SiteSetting::create([
         'key'   => 'qb_access_token',
         'value' => Crypt::encryptString('test_access_token'),
@@ -155,7 +156,10 @@ it('rejects QB callback with missing state parameter', function () {
     $response = $this->actingAs($admin)
         ->get('/admin/quickbooks/callback?code=test_code&realmId=123');
 
-    $response->assertRedirect();
+    // Rejection is material: bounced to Finance Settings with no token stored.
+    // (A bare assertRedirect() also passes on the success path.)
+    $response->assertRedirect(route('filament.admin.pages.finance-settings-page'));
+    expect(SiteSetting::get('qb_access_token'))->toBeNull();
 });
 
 it('rejects QB callback with mismatched state parameter', function () {
@@ -166,7 +170,8 @@ it('rejects QB callback with mismatched state parameter', function () {
         ->withSession(['qb_oauth_state' => 'correct_state'])
         ->get('/admin/quickbooks/callback?code=test_code&realmId=123&state=wrong_state');
 
-    $response->assertRedirect();
+    $response->assertRedirect(route('filament.admin.pages.finance-settings-page'));
+    expect(SiteSetting::get('qb_access_token'))->toBeNull();
 });
 
 // ── QB disconnect route auth gate ───────────────────────────────────────────

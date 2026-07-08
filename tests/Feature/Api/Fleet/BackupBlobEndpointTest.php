@@ -20,6 +20,7 @@ beforeEach(function () {
 
 // ── Success paths ────────────────────────────────────────────────────────────
 
+// guards: v2.3.0 contract clause — happy-path stream + headers; s364 mutation pass flagged the four success-path tests redundant with each other, but each pins a distinct documented clause
 it('streams the freshest blob from the local disk on a successful fetch', function () {
     $filename = '2026-05-08-12-30-00.zip';
     $bytes = "PK\x03\x04 fake zip body bytes";
@@ -37,6 +38,7 @@ it('streams the freshest blob from the local disk on a successful fetch', functi
     expect($response->streamedContent())->toBe($bytes);
 });
 
+// guards: v2.3.0 contract clause — newest-blob selection
 it('streams the newest blob when multiple blobs exist on the same disk', function () {
     $older = '2026-05-01-00-00-00.zip';
     $newer = '2026-05-08-12-30-00.zip';
@@ -50,6 +52,7 @@ it('streams the newest blob when multiple blobs exist on the same disk', functio
     expect($response->streamedContent())->toBe('new');
 });
 
+// guards: v2.3.0 contract clause — Content-Length header FM sizes downloads by
 it('reports a Content-Length header matching the blob byte count', function () {
     $filename = '2026-05-08-12-30-00.zip';
     $bytes = str_repeat('A', 4096);
@@ -61,6 +64,7 @@ it('reports a Content-Length header matching the blob byte count', function () {
     expect((int) $response->headers->get('Content-Length'))->toBe(strlen($bytes));
 });
 
+// guards: v2.3.0 contract clause — verbatim spatie filename in Content-Disposition
 it('passes through the spatie filename pattern verbatim in Content-Disposition', function () {
     $filename = '2026-05-08-12-30-00.zip';
     Storage::disk('local')->put("NonProfitCRM/{$filename}", 'x');
@@ -165,4 +169,4 @@ it('returns 429 once the per-minute limit is exceeded on /api/backup/blob', func
     }
 
     $this->get('/api/backup/blob')->assertStatus(429);
-})->group('slow');
+}); // s364 D4: 0.4s local/CI — well under the 5s slow boundary; each test boots a fresh app so the exhausted limiter cannot leak.

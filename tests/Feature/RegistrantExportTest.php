@@ -5,74 +5,68 @@ use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+// These tests invoke the REAL `exportRegistrants` Filament action on
+// EditEvent — the production path the UI triggers — not a re-implemented
+// copy of the CSV. The previous versions asserted only that the edit page
+// returned 200 and then rebuilt the CSV inline ("mirrors the action logic"),
+// so a broken export still passed. Mirrors the ContactExportTest rewrite.
+
 beforeEach(function () {
     $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\DatabaseSeeder']);
-    $user = User::factory()->create();
-    $user->assignRole('super_admin');
-    $this->actingAs($user);
+
+    $this->admin = User::factory()->create();
+    $this->admin->assignRole('super_admin');
 });
 
-it('exports registrants as csv with correct headers and row count', function () {
+it('export action streams a date-stamped CSV with the real header row and one row per registrant', function () {
     $event = Event::factory()->create(['slug' => 'test-gala']);
 
-    EventRegistration::factory()->count(3)->create([
-        'event_id' => $event->id,
-    ]);
-
-    $page = new EditEvent();
-    $page->record = $event;
-
-    // Invoke the action directly by calling the Livewire component
-    $response = $this->get(
-        \App\Filament\Resources\EventResource::getUrl('edit', ['record' => $event])
-    );
-
-    $response->assertOk();
-});
-
-it('csv download contains correct headers', function () {
-    $event = Event::factory()->create(['slug' => 'spring-gala']);
-
     EventRegistration::factory()->create([
-        'event_id' => $event->id,
-        'name'     => 'Alice Smith',
-        'email'    => 'alice@example.com',
-        'status'   => 'registered',
+        'event_id'      => $event->id,
+        'name'          => 'Alice First',
+        'registered_at' => now()->subDays(3),
+    ]);
+    EventRegistration::factory()->create([
+        'event_id'      => $event->id,
+        'name'          => 'Bob Second',
+        'registered_at' => now()->subDays(2),
+    ]);
+    EventRegistration::factory()->create([
+        'event_id'      => $event->id,
+        'name'          => 'Cara Third',
+        'registered_at' => now()->subDay(),
     ]);
 
-    // Build the CSV directly to verify structure (mirrors the action logic)
-    $rows   = [];
-    $handle = fopen('php://temp', 'r+');
+    $test = Livewire::actingAs($this->admin)
+        ->test(EditEvent::class, ['record' => $event->getRouteKey()])
+        ->callAction('exportRegistrants')
+        ->assertFileDownloaded('registrants-test-gala-' . now()->format('Y-m-d') . '.csv', null, 'text/csv');
 
-    fputcsv($handle, [
+    $body = base64_decode(data_get($test->effects, 'download.content'));
+    $rows = array_map('str_getcsv', preg_split("/\r\n|\n|\r/", trim($body)));
+
+    expect($rows[0])->toBe([
         'name', 'email', 'phone', 'company',
         'address_line_1', 'city', 'state', 'zip',
         'status', 'registered_at',
     ]);
 
-    $event->registrations()->each(function ($reg) use ($handle) {
-        fputcsv($handle, [
-            $reg->name, $reg->email, $reg->phone, $reg->company,
-            $reg->address_line_1, $reg->city, $reg->state, $reg->zip,
-            $reg->status, $reg->registered_at?->toDateTimeString(),
-        ]);
-    });
+    expect($rows)->toHaveCount(4); // header + 3 registrants
 
-    rewind($handle);
-    $csv = stream_get_contents($handle);
-    fclose($handle);
+    // Rows stream in registered_at order.
+    expect(array_column(array_slice($rows, 1), 0))
+        ->toBe(['Alice First', 'Bob Second', 'Cara Third']);
+});
 
-    $lines = array_filter(explode("\n", trim($csv)));
+it('export action is hidden when the event has no registrations', function () {
+    $event = Event::factory()->create(['slug' => 'empty-gala']);
 
-    expect(count($lines))->toBe(2); // header + 1 data row
-
-    $header = str_getcsv($lines[0]);
-    expect($header)->toContain('name')
-        ->toContain('email')
-        ->toContain('status')
-        ->toContain('registered_at');
+    Livewire::actingAs($this->admin)
+        ->test(EditEvent::class, ['record' => $event->getRouteKey()])
+        ->assertActionHidden('exportRegistrants');
 });

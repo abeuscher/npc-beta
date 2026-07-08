@@ -1,18 +1,32 @@
 <?php
 
-use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Models\SiteSetting;
+use App\Services\StripeCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-// ── Payment method setting storage and retrieval ────────────────────────────
+// The filtering tests invoke the REAL StripeCheckoutService::buildParams()
+// (the method every checkout path calls) — not a re-implemented copy of the
+// array_intersect. The previous versions rebuilt the subscription filter and
+// card fallback inline in the test bodies, so the production logic in
+// StripeCheckoutService could regress without a single failure here.
 
-it('stores payment method types as JSON site setting', function () {
-    $types = ['card', 'us_bank_account', 'link'];
+function buildCheckoutParams(string $mode): array
+{
+    return app(StripeCheckoutService::class)->buildParams(
+        lineItems: [['price' => 'price_test', 'quantity' => 1]],
+        metadata: [],
+        successUrl: 'https://example.test/success',
+        cancelUrl: 'https://example.test/cancel',
+        mode: $mode,
+    );
+}
 
+function setPaymentMethodTypes(array $types): void
+{
     SiteSetting::create([
         'key'   => 'stripe_payment_method_types',
         'value' => json_encode($types),
@@ -20,9 +34,15 @@ it('stores payment method types as JSON site setting', function () {
         'type'  => 'json',
     ]);
     Cache::forget('site_setting:stripe_payment_method_types');
+}
+
+// ── Payment method setting storage and retrieval ────────────────────────────
+
+it('stores payment method types as JSON site setting', function () {
+    setPaymentMethodTypes(['card', 'us_bank_account', 'link']);
 
     $stored = SiteSetting::get('stripe_payment_method_types');
-    expect($stored)->toBe($types);
+    expect($stored)->toBe(['card', 'us_bank_account', 'link']);
 });
 
 it('returns null for missing payment method types setting', function () {
@@ -30,96 +50,49 @@ it('returns null for missing payment method types setting', function () {
     expect($stored)->toBeNull();
 });
 
-it('defaults to card when payment method types setting is empty', function () {
-    SiteSetting::create([
-        'key'   => 'stripe_payment_method_types',
-        'value' => json_encode([]),
-        'group' => 'finance',
-        'type'  => 'json',
-    ]);
+// ── buildParams payment_method_types derivation ─────────────────────────────
+
+it('buildParams passes the configured payment methods through verbatim in payment mode', function () {
+    setPaymentMethodTypes(['card', 'cashapp']);
+
+    $params = buildCheckoutParams('payment');
+
+    expect($params['payment_method_types'])->toBe(['card', 'cashapp'])
+        ->and($params['mode'])->toBe('payment');
+});
+
+it('buildParams filters the configured methods to subscription-compatible types in subscription mode', function () {
+    setPaymentMethodTypes(['card', 'us_bank_account', 'cashapp', 'amazon_pay']);
+
+    $params = buildCheckoutParams('subscription');
+
+    expect($params['payment_method_types'])->toBe(['card', 'us_bank_account'])
+        ->and($params['payment_method_types'])->not->toContain('cashapp')
+        ->and($params['payment_method_types'])->not->toContain('amazon_pay');
+});
+
+it('buildParams falls back to card in subscription mode when no configured method is subscription-compatible', function () {
+    setPaymentMethodTypes(['cashapp', 'amazon_pay']);
+
+    $params = buildCheckoutParams('subscription');
+
+    expect($params['payment_method_types'])->toBe(['card']);
+});
+
+it('buildParams defaults the payment methods to card when the setting does not exist', function () {
     Cache::forget('site_setting:stripe_payment_method_types');
 
-    $stored = SiteSetting::get('stripe_payment_method_types');
-    expect($stored)->toBe([]);
+    $params = buildCheckoutParams('payment');
+
+    expect($params['payment_method_types'])->toBe(['card']);
 });
 
-// ── Subscription-compatible method filtering ────────────────────────────────
+it('buildParams defaults the payment methods to card when the setting is an empty list', function () {
+    setPaymentMethodTypes([]);
 
-it('filters payment methods to subscription-compatible types', function () {
-    $allMethods = ['card', 'us_bank_account', 'link', 'cashapp', 'amazon_pay'];
+    $params = buildCheckoutParams('payment');
 
-    $subscriptionMethods = array_values(array_intersect(
-        $allMethods,
-        FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
-    ));
-
-    expect($subscriptionMethods)->toBe(['card', 'us_bank_account', 'link']);
-});
-
-it('always includes card in subscription methods even when only non-subscription methods are configured', function () {
-    $methods = ['card', 'cashapp', 'amazon_pay'];
-
-    $subscriptionMethods = array_values(array_intersect(
-        $methods,
-        FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
-    ));
-
-    if (empty($subscriptionMethods)) {
-        $subscriptionMethods = ['card'];
-    }
-
-    expect($subscriptionMethods)->toBe(['card']);
-});
-
-// ── Checkout session payment method types ───────────────────────────────────
-
-it('donation checkout uses configured payment method types for one-off', function () {
-    config(['services.stripe.secret' => 'sk_test_fake']);
-
-    SiteSetting::create([
-        'key'   => 'stripe_payment_method_types',
-        'value' => json_encode(['card', 'cashapp']),
-        'group' => 'finance',
-        'type'  => 'json',
-    ]);
-    Cache::forget('site_setting:stripe_payment_method_types');
-
-    // The Stripe call will fail but we can verify the setting is read correctly
-    $stored = SiteSetting::get('stripe_payment_method_types');
-    expect($stored)->toBe(['card', 'cashapp']);
-});
-
-it('donation checkout filters to subscription-compatible methods for recurring', function () {
-    config(['services.stripe.secret' => 'sk_test_fake']);
-
-    SiteSetting::create([
-        'key'   => 'stripe_payment_method_types',
-        'value' => json_encode(['card', 'us_bank_account', 'cashapp', 'amazon_pay']),
-        'group' => 'finance',
-        'type'  => 'json',
-    ]);
-    Cache::forget('site_setting:stripe_payment_method_types');
-
-    $configuredMethods = SiteSetting::get('stripe_payment_method_types');
-    $subscriptionMethods = array_values(array_intersect(
-        $configuredMethods,
-        FinanceSettingsPage::SUBSCRIPTION_COMPATIBLE_METHODS,
-    ));
-
-    expect($subscriptionMethods)->toBe(['card', 'us_bank_account'])
-        ->and($subscriptionMethods)->not->toContain('cashapp')
-        ->and($subscriptionMethods)->not->toContain('amazon_pay');
-});
-
-it('defaults payment methods to card when setting does not exist', function () {
-    Cache::forget('site_setting:stripe_payment_method_types');
-
-    $configuredMethods = SiteSetting::get('stripe_payment_method_types') ?? ['card'];
-    if (empty($configuredMethods)) {
-        $configuredMethods = ['card'];
-    }
-
-    expect($configuredMethods)->toBe(['card']);
+    expect($params['payment_method_types'])->toBe(['card']);
 });
 
 // ── Checkout controller validation still works ──────────────────────────────

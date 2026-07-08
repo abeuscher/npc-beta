@@ -38,6 +38,7 @@ beforeEach(function () {
 
 // ── Response shape ──────────────────────────────────────────────────────────
 
+// guards: FM contract envelope clause (spec-mirror); s364 mutation pass flagged it redundant with sibling shape tests — the overlap is deliberate
 it('returns the documented top-level keys on a successful poll', function () {
     $response = $this->getJson('/api/health');
 
@@ -46,12 +47,14 @@ it('returns the documented top-level keys on a successful poll', function () {
         ->toEqualCanonicalizing(['status', 'version', 'timestamp', 'contract_version', 'subchecks']);
 });
 
+// guards: the contract_version pin FM's ContractValidator keys on; redundant catches are expected (every envelope test sees it)
 it('reports contract_version 2.5.0', function () {
     $response = $this->getJson('/api/health');
 
     $response->assertJsonPath('contract_version', '2.5.0');
 });
 
+// guards: FM contract envelope clause (spec-mirror); deliberate overlap with the other shape tests
 it('returns the seven documented subcheck keys', function () {
     $response = $this->getJson('/api/health');
 
@@ -59,6 +62,7 @@ it('returns the seven documented subcheck keys', function () {
         ->toEqualCanonicalizing(['app', 'database', 'redis', 'disk', 'last_backup_at', 'version', 'data_hygiene']);
 });
 
+// guards: FM contract envelope clause (spec-mirror); deliberate overlap with the other shape tests
 it('shapes each subcheck with status, value, threshold, message keys', function () {
     $response = $this->getJson('/api/health');
 
@@ -88,6 +92,7 @@ it('returns yellow overall in a healthy test environment because last_backup_at 
     );
 });
 
+// guards: the version field FM reads for per-client upgrade verification (s291); redundancy with checkVersion shape tests is deliberate
 it('mirrors config(fleet.agent.app_version) in both the top-level and subcheck version fields', function () {
     $response = $this->getJson('/api/health');
 
@@ -394,4 +399,4 @@ it('returns 429 once the per-minute limit is exceeded', function () {
     }
 
     $this->getJson('/api/health')->assertStatus(429);
-})->group('slow');
+}); // s364 D4: 2.4s local — under the 5s slow boundary.

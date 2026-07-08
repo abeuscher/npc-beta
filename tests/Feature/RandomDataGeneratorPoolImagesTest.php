@@ -10,7 +10,10 @@ use Database\Seeders\SampleImageLibrarySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class)->group('slow');
+// s364 D4: the slow tag moved from file level to the three image-attaching
+// tests (6–10s each — they seed the sample-image library and write real
+// media); the empty-pool no-op runs in ~0.5s and belongs in the fast suite.
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
@@ -31,7 +34,7 @@ it('attaches pool images to generated products when the pool has images', functi
     $products->each(function (Product $p) {
         expect($p->getMedia('product_image'))->toHaveCount(1);
     });
-});
+})->group('slow');
 
 it('attaches pool images to generated events for thumbnail and header collections', function () {
     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
@@ -45,7 +48,7 @@ it('attaches pool images to generated events for thumbnail and header collection
         expect($e->getMedia('event_thumbnail'))->toHaveCount(1);
         expect($e->getMedia('event_header'))->toHaveCount(1);
     });
-});
+})->group('slow');
 
 it('attaches pool images to generated blog posts for thumbnail and header collections', function () {
     $this->artisan('db:seed', ['--class' => SampleImageLibrarySeeder::class]);
@@ -59,7 +62,7 @@ it('attaches pool images to generated blog posts for thumbnail and header collec
         expect($page->getMedia('post_thumbnail'))->toHaveCount(1);
         expect($page->getMedia('post_header'))->toHaveCount(1);
     });
-});
+})->group('slow');
 
 it('no-ops gracefully when the product-photos pool is empty', function () {
     SampleImage::forCategory(SampleImage::CATEGORY_PRODUCT_PHOTOS);

@@ -70,7 +70,15 @@ it('rejects widget creation when the widget handle does not allow dashboard_grid
         ->map(fn ($def) => $def->handle())
         ->all();
 
-    $notDashboard = WidgetType::whereNotIn('handle', $dashboardHandles)->first();
+    // Ordered pick + delta assertion: DashboardViewSeeder plants PageWidget rows
+    // for non-dashboard handles on the demo-role view (recent_donations /
+    // recent_notes since s357), so an unordered first() could land on one of
+    // them and a bare count-is-zero assertion would fail on the seeded row —
+    // the s363 intermittent. What this test means is "the rejected request
+    // created nothing", which the before/after delta states directly.
+    $notDashboard = WidgetType::whereNotIn('handle', $dashboardHandles)->orderBy('handle')->first();
+
+    $countBefore = PageWidget::where('widget_type_id', $notDashboard->id)->count();
 
     $response = $this->actingAs($this->superAdmin)
         ->postJson(dashboardUrl($this->config->id, 'widgets'), [
@@ -80,7 +88,7 @@ it('rejects widget creation when the widget handle does not allow dashboard_grid
     $response->assertStatus(422)
         ->assertJsonFragment(['error' => "Widget [{$notDashboard->handle}] is not allowed in the dashboard grid slot."]);
 
-    expect(PageWidget::where('widget_type_id', $notDashboard->id)->count())->toBe(0);
+    expect(PageWidget::where('widget_type_id', $notDashboard->id)->count())->toBe($countBefore);
 });
 
 it('accepts widget creation for handles whose allowedSlots() includes dashboard_grid', function () {
