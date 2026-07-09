@@ -68,7 +68,7 @@ class AccountPage extends Page
 
     public function getBreadcrumbs(): array
     {
-        return [url()->current() => 'Account'];
+        return [self::getUrl() => 'Account'];
     }
 
     public function mount(): void
