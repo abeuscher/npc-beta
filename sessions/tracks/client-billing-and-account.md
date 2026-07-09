@@ -23,17 +23,20 @@ Every judgment call in the design that needs your ratification, with my recommen
 
 ## Status snapshot
 
-**Last update:** 2026-07-08 (session 366 — **CB1 shipped**: the node half of client billing; contract v2.6.0).
+**Last update:** 2026-07-09 (session 367 — **CB2 shipped**: the node's read-only account window; non-boundary, contract stays v2.6.0).
 
-**Complete:** **CB1 (366)** — the node half. Ships the `SUSPENSION_STATE` flag + one enforcement middleware (`App\Http\Middleware\EnforceSuspensionState`: `admin_locked` → 403 admin lock with public site / donations / member portal staying up; `site_off` → 503 public maintenance with FM `/api/*` up; absent = none; unrecognized fails safe to none + logs), the display-only billing-state reader (`App\Services\Billing\BillingStateReader` + `BillingState` DTO + `SuspensionState` enum; reads the backup-excluded pushed JSON, null-object on missing/malformed), and the never-red / excluded-from-worst-of `suspension` `/api/health` subcheck. Fast Pest 3025/0. No vendor-Stripe anything CRM-side.
+**Complete:**
 
-**Active:** **CB2** CRM-side (the "My Account" Filament page + `manage_account` permission + convention-drift guards — prompts drafted at the 366 close as session 367). FM-side: **FM-B1** (Stripe sync) can start now; **FM-B2** (push + verify) consumes the shipped v2.6.0 contract. CB2 depends on CB1 only, so the CRM and FM lanes run in parallel.
+- **CB1 (366)** — the node half. Ships the `SUSPENSION_STATE` flag + one enforcement middleware (`App\Http\Middleware\EnforceSuspensionState`: `admin_locked` → 403 admin lock with public site / donations / member portal staying up; `site_off` → 503 public maintenance with FM `/api/*` up; absent = none; unrecognized fails safe to none + logs), the display-only billing-state reader (`App\Services\Billing\BillingStateReader` + `BillingState` DTO + `SuspensionState` enum; reads the backup-excluded pushed JSON, null-object on missing/malformed), and the never-red / excluded-from-worst-of `suspension` `/api/health` subcheck. Fast Pest 3025/0. No vendor-Stripe anything CRM-side.
+- **CB2 (367)** — the account window. `App\Filament\Pages\Settings\AccountPage` (Settings group, "Account") renders **exclusively** from CB1's reader: plan + price, plain-English status badge (active / past-due / trial-countdown / canceled), next invoice + line items (minor units formatted), read-only billing contact, a "Manage billing" hand-off to `portal_url` (the only "Stripe" in the new code), and an "as of {relative time}" staleness footer. **Self-hides** — `canAccess()` requires `manage_account` **and** a present document, so internal / fresh-install nodes have no page and no nav item (403 on direct URL, super-admin included). **Two banners**, both `manage_account`-gated so billing state never leaks to non-billing roles: a prominent on-page pre-lock warning (naming the lock date from `grace_ends`) and a slim `panels::page.start` render-hook strip across every admin screen, suppressed on the Account page itself. `BillingState::needsBillingAttention()` is the single shared "is this a pre-lock delinquency" accessor. **`manage_account`** seeded, granted to **no shipped role** (super-admin-only via `Gate::before`) — documented as intentional in `docs/runbooks/permission-matrix.md` + pinned by `PermissionMatrixTest`. **The two-Stripes guard is now mechanical** (§ Design decision 6 realized): two `ConventionDriftTest` cases ban vendor-billing identifiers CRM-wide and Stripe SDK/config references in the billing/account code, with a positive control asserting the donation surface still matches the banned pattern so the guard can't silently degrade into a test that catches nothing. Help doc `resources/docs/account.md`. Fast Pest 3045/0. No migration.
+
+**Active:** **CB3** CRM-side — the demo-conversion cleanup command (node half; prompts drafted at the 367 close as session 368). It is the **last CRM entry in the track**; deliberately not folded into CB2. FM-side: **FM-B1** (Stripe sync) can start now; **FM-B2** (push + verify) consumes the shipped v2.6.0 contract and is what **makes CB2's Account page visible on real nodes** — until FM pushes a document, the page is inert and hidden everywhere, by design.
 
 **Cross-repo coordination state:** the CRM↔FM contract (`docs/fleet-manager-agent-contract.md`) is now at **v2.6.0** — bumped additively at session 366 (the billing-state document, the `SUSPENSION_STATE` flag semantics, and the `suspension` health subcheck are all authored there). **FM-side absorption is pending at FM-B2** (refresh the cached contract copy, then write the document + push the flag). The § Design decision 7 sketch is now realized as contract text.
 
 **Slotting:** resolved — CB1–CB3 folded into `sessions/release-plan.md` under the new `first-customer` gate at the 366 close; the owner sequenced CB1 (366) ahead of the rest of Phase A (A3 multi-node / A4 drill deferred).
 
-**Blocked on:** nothing blocking CB2 (depends on CB1 only). Open questions 1 + 6 answered at the 366 gate (14-day grace framing; member portal stays up under admin lock); **questions 5 + 7 gate CB2** (read-only account page / no local edit forms; `manage_account` granted to no shipped role); questions 2/3/4/8 remain owner-facing for later sessions.
+**Blocked on:** nothing blocking CB3 (depends on CB1 only). Open questions 1 + 6 answered at the 366 gate (14-day grace framing; member portal stays up under admin lock); **questions 5 + 7 answered at the 367 gate** — the account page's editable parts are all read-only hand-offs to the Stripe-hosted portal (no local forms, no node→FM write path), and `manage_account` is granted to **no shipped role** (super-admin-only by default, documented as intentional). Questions **2 / 3 / 4 / 8** (trial policy, hourly-work logging shape, payment default, overall slotting) remain owner-facing and gate **FM-side** work, not CRM.
 
 ---
 
@@ -220,7 +223,7 @@ Total ≈ **7–8 sessions across both repos** (≈3 CRM-side, ≈4–5 FM-side 
 - **artifact:** the contract doc at v2.6.0 + the enforcement middleware + subcheck.
 - **estimated time cost:** 1 session.
 
-#### CB2. Client Billing — "My Account" Page + Manage-Account Permission
+#### CB2. Client Billing — "My Account" Page + Manage-Account Permission ✅ *(shipped at session 367)*
 
 - **gate:** first-customer
 - **prerequisites:** CB1 (the pushed-document schema it renders).

@@ -138,13 +138,13 @@ The Client Billing & Account track (`sessions/tracks/client-billing-and-account.
 - **artifact:** the contract at v2.6.0 + the enforcement middleware + the billing-state reader + the subcheck. **Closed at session 366.** See `sessions/366. Client Billing — Contract v2.6.0 + Node Suspension Gate — Log.md`.
 - **estimated time cost:** 1 session.
 
-#### CB2. Client Billing — "My Account" Page + Manage-Account Permission
+#### CB2. Client Billing — "My Account" Page + Manage-Account Permission ✅ *(shipped at session 367)*
 
 - **gate:** first-customer
 - **prerequisites:** CB1 (the pushed-document schema it renders). **Not blocked on any FM session** — builds + tests against a fixture document.
 - **success criterion:** Filament page (Settings group, "Account") rendering exclusively from the pushed billing-state document — plan, plain-English status badge, next invoice with line items, read-only billing contact, Stripe-hosted portal link, "as of {relative time}" staleness footer; page self-hides when no document exists; a past-due/grace banner on the page plus a slim panel-wide warning banner; a new seeded `manage_account` permission (granted to **no shipped role** — deliberately super-admin-only, documented as intentional in `docs/runbooks/permission-matrix.md` + probe test); convention-drift guard cases banning vendor-billing identifiers CRM-wide and Stripe SDK/config references in the billing/account code; help doc; tests.
 - **artifact:** the page + permission + guard cases. Prompts drafted at the 366 close (`sessions/367. …`).
-- **estimated time cost:** 1 session.
+- **estimated time cost:** 1 session. *(Actual: 1 session — 367. Page + `manage_account` (no shipped role) + both banners + the two guard cases + help doc; fast Pest 3025 → 3045/0. Non-boundary — contract stayed v2.6.0. CB3 deliberately **not** folded in.)*
 
 #### CB3. Client Billing — Demo Conversion Cleanup Command (node half)
 
@@ -700,7 +700,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 47. **A3.** Multi-node operational readiness *(moved here from position 6 at 282 audit)*
 48. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
 48a. **CB1.** Client Billing — Contract v2.6.0 + Node Suspension Gate ✅ *(session 366 — folded in at 366 close under the new `first-customer` gate; owner sequenced it ahead of the deferred A3/A4. Additive v2.5.0 → v2.6.0: node suspension flag + one enforcement middleware, the display-only billing-state reader, the `suspension` health subcheck. Non-Beta-1-blocking. See the `#### CB1.` block.)*
-48b. **CB2.** Client Billing — "My Account" Page + Manage-Account Permission *(CRM; depends on CB1 only; prompts drafted at 366 close as session 367)*
+48b. **CB2.** Client Billing — "My Account" Page + Manage-Account Permission ✅ *(session 367 — non-boundary, contract stayed v2.6.0, no schema. Read-only Filament "Account" page rendering exclusively from the FM-pushed billing-state document; self-hides with no document; prominent past-due/grace banner + slim `page.start` panel-wide banner (both `manage_account`-gated); `manage_account` seeded and granted to **no shipped role** — the deliberate version of the s280 unassigned-permission finding; two convention-drift guard cases pin the two-Stripes separation. See the `#### CB2.` block.)*
 48c. **CB3.** Client Billing — Demo Conversion Cleanup Command (node half) *(CRM; pairs with FM-B4; ≤0.5 session, fold candidate into CB2)*
 49. ~~**A5.** 2FA for admin accounts~~ ✅ *(closed at session 359 — mandatory admin TOTP 2FA; see the `#### A5.` block. Surfaced the admin-lockout-recovery follow-up → session 360.)*
 50. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
