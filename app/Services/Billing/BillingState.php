@@ -110,6 +110,29 @@ final class BillingState
         return $this->array('trial');
     }
 
+    // ── Derived display helpers (CB2 banners) ────────────────────────────────
+
+    /**
+     * True when the subscription is in a pre-lock delinquency window (Stripe
+     * dunning `past_due`/`unpaid`, or FM's grace clock running) — the state the
+     * Account page and the panel-wide banner warn about, so the person who can
+     * fix it sees it before the admin panel locks, not at it.
+     *
+     * DISPLAY-ONLY, like everything here: this drives banner copy, never
+     * enforcement. Once the flag actually locks the panel, the middleware
+     * replaces the whole admin response and these banners never render. An
+     * absent/unusable document is never "attention" (null-object → false).
+     */
+    public function needsBillingAttention(): bool
+    {
+        if (! $this->present) {
+            return false;
+        }
+
+        return in_array($this->status(), ['past_due', 'unpaid'], true)
+            || $this->graceEndsAt() !== null;
+    }
+
     // ── Internal typed access ────────────────────────────────────────────────
 
     private function string(string $key): ?string

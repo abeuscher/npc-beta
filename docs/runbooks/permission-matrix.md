@@ -94,6 +94,7 @@ Pulled from [`database/seeders/PermissionSeeder.php`](../../database/seeders/Per
 | **edit_others_note** *(session 276)* | ✓* | ✓ | — | — | — | — | — | — |
 | **manage_dashboard_config** | ✓* | — | — | — | — | — | — | — |
 | **manage_record_detail_views** | ✓* | — | — | — | — | — | — | — |
+| **manage_account** *(session 367 — intentionally no role)* | ✓* | — | — | — | — | — | — | — |
 
 `✓*` denotes super_admin's `Gate::before` bypass — the permission row may not be explicitly granted in the seeder, but `Gate::before` returns true regardless.
 
@@ -220,6 +221,7 @@ Columns appear in this order in every per-surface table: `super_admin → develo
 | **CmsSettingsPage** | [`manage_cms_settings`](../../app/Filament/Pages/Settings/CmsSettingsPage.php#L21) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
 | **FinanceSettingsPage** | [`manage_financial_settings`](../../app/Filament/Pages/Settings/FinanceSettingsPage.php#L25) | allow* | allow | deny | deny | deny | deny | deny | allow | redirect |
 | **MailSettingsPage** | [`manage_mail_settings`](../../app/Filament/Pages/Settings/MailSettingsPage.php#L22) | allow* | allow | deny | deny | deny | deny | deny | deny | redirect |
+| **AccountPage** | [`manage_account`](../../app/Filament/Pages/Settings/AccountPage.php#L51) **and** a pushed billing-state document present | allow*† | deny | deny | deny | deny | deny | deny | deny | redirect |
 
 ### Help pages (non-navigation-registered, all-admin-accessible)
 
@@ -243,6 +245,7 @@ These pages don't register in nav (`$shouldRegisterNavigation = false`) but thei
 - **GeneralSettingsPage** — `manage_routing_prefixes` (developer only) — narrower than expected; sections like "Notes toggle" (session 276) are gated within the page via per-section super-admin checks.
 - **FinanceSettingsPage** — `manage_financial_settings` (treasurer + developer + super_admin).
 - **CmsSettingsPage / MailSettingsPage** — both gated by capabilities developer holds.
+- **AccountPage** (client billing, session 367 / CB2) — the read-only "My Account" page. Two gates in one `canAccess()`: the `manage_account` ability **and** a pushed billing-state document present on the node. `manage_account` is seeded but **granted to no shipped role by default** — deliberately super-admin-only (via the `Gate::before` bypass) unless a client adds it to a custom role. This is the **intentional** version of the "unassigned permission" shape Finding 1 below flagged as an accident for `manage_dashboard_config` / `manage_record_detail_views`; here it is by design and pinned by `PermissionMatrixTest`. `†` The page also **self-hides** (absent from navigation, 403 on direct URL) for *everyone including super_admin* on nodes with no billing-state document (internal / fresh installs) — additive by construction, since client billing is inert until Fleet Manager pushes a document. The page holds no billing logic and no vendor-Stripe credential; every edit affordance is a hand-off to Stripe's hosted portal.
 
 ---
 

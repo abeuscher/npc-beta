@@ -136,3 +136,61 @@ it('gates every Filament Resource via an explicit canAccess() or an overridden c
 
     expect($ungated)->toBe([]);
 });
+
+// ── Two-Stripes separation guard (CB2 / session 367, track § Design decision 6) ──
+// The app's existing Stripe integration is the client org's OWN donation Stripe.
+// Vendor billing (the owner's Stripe) is touched ONLY by Fleet Manager, in the FM
+// repo — the CRM node holds no vendor credential, config key, or SDK call and
+// renders a pushed document alone. These two cases keep the two from co-mingling.
+
+it('bans vendor-billing identifiers anywhere in CRM code (the FM-side names are reserved)', function () {
+    // stripe_billing / vendor_stripe / STRIPE_BILLING* are Fleet-Manager-side
+    // identifiers (FM's disjoint `services.stripe_billing.*` namespace + env keys).
+    // No CRM code may reference them — the donation surface uses `services.stripe.*`
+    // and `stripe_*_key`, never these. Scans source (app/) and config/ only, so
+    // this test's own banned-token list (in tests/) never self-trips.
+    $banned = '/(stripe_billing|vendor_stripe)/i';
+    $offenders = [];
+
+    foreach ([app_path(), config_path()] as $root) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
+        );
+        foreach ($files as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+            if (preg_match($banned, (string) file_get_contents($file->getPathname()))) {
+                $offenders[] = str_replace(base_path() . '/', '', $file->getPathname());
+            }
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
+
+it('keeps the billing/account code free of Stripe SDK/config references (renders the pushed document alone)', function () {
+    // The billing-state reader/DTO + the Account page render the FM-pushed document
+    // and nothing else: no `services.stripe.*` config read, no StripeClient, no
+    // Stripe SDK namespace. The word "Stripe" is allowed as a link label (in the
+    // Blade view / comments) — this scans the PHP code files only.
+    $files = array_merge(
+        glob(app_path('Services/Billing/*.php')),
+        [app_path('Filament/Pages/Settings/AccountPage.php')],
+    );
+    $banned = '/(services\.stripe|StripeClient|Stripe\\\\)/';
+    $offenders = [];
+
+    foreach ($files as $file) {
+        if (preg_match($banned, (string) file_get_contents($file))) {
+            $offenders[] = str_replace(base_path() . '/', '', $file);
+        }
+    }
+
+    expect($offenders)->toBe([]);
+
+    // Positive control: the mapped donation surface DOES reference these and is
+    // deliberately OUTSIDE the scanned set — the guard must never catch it.
+    expect(file_get_contents(app_path('Services/StripeCheckoutService.php')))
+        ->toMatch($banned);
+});

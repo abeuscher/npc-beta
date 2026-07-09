@@ -6,6 +6,8 @@ use App\Models\MembershipTier;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -205,4 +207,55 @@ it('canEdit returns false for the super_admin role even when called by super_adm
     $this->actingAs($user);
 
     expect(\App\Filament\Resources\RoleResource::canEdit($superAdminRole))->toBeFalse();
+});
+
+// ── manage_account: seeded, granted to NO shipped role (session 367 / CB2) ──────
+// The deliberate version of the "unassigned permission" shape session-280
+// Finding 1 flagged as an accident. Documented as intentional in the matrix.
+
+function putActiveBillingState(): void
+{
+    Storage::fake('local');
+    Storage::disk('local')->put('fleet/billing-state.json', json_encode([
+        'schema_version'        => 1,
+        'as_of'                 => '2026-07-08T12:00:00+00:00',
+        'status'                => 'active',
+        'plan'                  => ['name' => 'Standard', 'amount' => 4900, 'currency' => 'usd', 'interval' => 'month'],
+        'billing_contact_email' => 'billing@example.org',
+        'portal_url'            => 'https://billing.stripe.com/p/session/test_123',
+    ]));
+}
+
+it('seeds manage_account but grants it to no shipped role (super-admin-only by design)', function () {
+    // The ability exists in the vocabulary...
+    expect(Permission::where('name', 'manage_account')->where('guard_name', 'web')->exists())->toBeTrue();
+
+    // ...but no shipped role holds it — super-admin-only via the Gate::before
+    // bypass unless a client adds it to a custom role.
+    $rolesWithIt = Role::whereHas('permissions', fn ($q) => $q->where('name', 'manage_account'))
+        ->pluck('name')
+        ->all();
+
+    expect($rolesWithIt)->toBe([]);
+});
+
+it('allows super_admin to reach AccountPage when a billing-state document is present', function () {
+    putActiveBillingState();
+    $user = makeUser('super_admin');
+
+    $this->actingAs($user)->get('/admin/account-page')->assertOk();
+});
+
+it('denies a role without manage_account (developer) from AccountPage even with a document present', function () {
+    putActiveBillingState();
+    $user = makeUser('developer');
+
+    expect($this->actingAs($user)->get('/admin/account-page')->getStatusCode())->toBe(403);
+});
+
+it('self-hides AccountPage (403) even from super_admin when no billing-state document exists', function () {
+    Storage::fake('local'); // no document pushed — internal / fresh install
+    $user = makeUser('super_admin');
+
+    expect($this->actingAs($user)->get('/admin/account-page')->getStatusCode())->toBe(403);
 });

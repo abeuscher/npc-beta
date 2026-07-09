@@ -99,6 +99,18 @@ class PermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        // Gates the read-only "My Account" page (client billing, CB2 / session 367).
+        // Seeded but DELIBERATELY granted to NO shipped role — super-admin-only by
+        // default (via the Gate::before bypass) unless a client explicitly adds it
+        // to a custom role. This is the intentional version of the "unassigned
+        // permission" shape the session-280 permission audit flagged as an accident;
+        // it is documented as intended in docs/runbooks/permission-matrix.md and
+        // pinned by PermissionMatrixTest. Never add this to any $role->syncPermissions.
+        Permission::firstOrCreate([
+            'name'       => 'manage_account',
+            'guard_name' => 'web',
+        ]);
+
         Permission::firstOrCreate([
             'name'       => 'manage_donations',
             'guard_name' => 'web',

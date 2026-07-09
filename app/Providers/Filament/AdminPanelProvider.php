@@ -345,6 +345,49 @@ class AdminPanelProvider extends PanelProvider
                     '<div wire:loading.delay class="fixed inset-x-0 top-0 z-[200] h-0.5 bg-primary-500 animate-pulse pointer-events-none"></div>'
                 )
             )
+            // Slim panel-wide client-billing warning (CB2 / session 367). On every
+            // admin page, for manage_account holders only, when the pushed
+            // billing-state document flags a pre-lock delinquency (past-due /
+            // grace) — so the person who can fix it sees it before the admin panel
+            // locks. Renders nothing otherwise. Suppressed on the Account page,
+            // which shows its own prominent banner. Reads through the same
+            // per-request BillingStateReader singleton; no Stripe reference here —
+            // it renders the pushed document alone.
+            ->renderHook(
+                PanelsRenderHook::PAGE_START,
+                function (array $scopes = []): \Illuminate\Contracts\Support\Htmlable|string {
+                    if (! (auth()->user()?->can('manage_account') ?? false)) {
+                        return '';
+                    }
+
+                    if (in_array(\App\Filament\Pages\Settings\AccountPage::class, $scopes, true)) {
+                        return '';
+                    }
+
+                    $state = app(\App\Services\Billing\BillingStateReader::class)->read();
+
+                    if (! $state->needsBillingAttention()) {
+                        return '';
+                    }
+
+                    $locksAt = null;
+                    if (is_string($state->graceEndsAt())) {
+                        try {
+                            $locksAt = \App\Support\DateFormat::format(
+                                \Illuminate\Support\Carbon::parse($state->graceEndsAt()),
+                                \App\Support\DateFormat::LONG_DATE,
+                            );
+                        } catch (\Throwable) {
+                            $locksAt = null;
+                        }
+                    }
+
+                    return view('filament.billing.panel-warning-banner', [
+                        'locksAt' => $locksAt,
+                        'accountUrl' => \App\Filament\Pages\Settings\AccountPage::getUrl(),
+                    ]);
+                }
+            )
             // Help search component in the top bar.
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
