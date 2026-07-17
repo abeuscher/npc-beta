@@ -9,8 +9,8 @@ This is the active product roadmap. Forward-looking only — what's coming, what
 - **Tracks** — long-running architectural arcs that span multiple sessions and (eventually) multiple releases live in `sessions/tracks/{name}.md`. Each track doc carries a status snapshot, compressed phase retrospectives (history), and the forward plan. **When a phase inside a track closes, its history compresses into the track doc and its entry in this roadmap collapses to a one-liner.**
 - **Releases** — per-release scope will eventually live in `sessions/releases/{version}.md`. Not in use yet — emerges when a release approaches.
 - **Public Website Complete milestone** ✅ **REACHED at session 323 close** *(lifted at session 282 audit; reached at session 323 close)* — the first pre-Beta milestone, sequenced inside Beta 1 scope. Landed when the CMS surface was polished enough to build a credible-looking public website for the investment-conversation demo. Same total scope as before, just front-loaded. The boundary is marked with a `── PUBLIC WEBSITE COMPLETE ──` divider in `release-plan.md`'s execution-order list and is governed by Rule 12. Closing items: E16 Header/footer defaults overhaul (session 322), E17 Border tool — universal widget appearance borders (session 323).
-- **Beta One milestone** — the first shippable, demonstrable version: a live hosted site and a live install demo performable for prospects in real time. All sessions before the Beta 1 marker below are planned for Beta 1 delivery; sessions after the marker are deferred until post-Beta 1.
-- **Security Audit Ready milestone** *(named at session 358 close prep)* — the first post-Beta-1 stage and the gate for paying an external security firm. Charter: address every vulnerability we can name ourselves before the paid audit, so the audit validates an already-hardened surface. Scope is assembled from the security-flavoured post-Beta reservoir items (super-admin audit sink, API-key/test-mode validation + environment-mismatch gate, accidental-exposure residue), the standing security flags parked under the "surface, don't gate" discipline, and a deliberate threat-model enumeration pass (authn/authz, portal contact-scoping, file upload, injection/SSRF, secrets, dependency CVEs). Table-stakes security inside the Beta-1 working set (admin 2FA, accidental-public-exposure guard, portal-scoping E2E) is not deferred here — this is the additional hardening pass beyond it. Full charter + the `── SECURITY AUDIT READY ──` divider live in `release-plan.md`.
+- **Launch (replaces "Beta One" as the release target — session 369 replan)** — release = three launch gates passed: **Gate 1**, the public site + demo look professional to paid traffic (essentially passed; one floating session remains — demo tighten-up from designer feedback + the owner's final page/component review, combined); **Gate 2**, safe to hold one real client's money and donor PII (donations end-to-end with automatic tax receipt, event ticketing including the $0 path, backup/restore proven, Privacy + ToS live); **Gate 3**, the owner believes it's secure (the Security Hardening track, internal-review bar). **Nothing goes live until Gates 2 and 3 both pass.** The ratified schedule (16 sessions + 1 floating, ~30–40 session budget, end-of-July target) lives in `release-plan.md` § Launch schedule; the plain-English steering copy is `sessions/launch-plan-summary.md`.
+- **Security Hardening track (Gate 3)** *(promoted at the 369 replan from the post-Beta "Security Audit Ready" milestone named at 358)* — the self-driven enumerate-and-fix pass is now **launch-gating**, decomposed into five sessions S1–S5 (perimeter/CSP · fleet-endpoint second lock · XSS containment + exposure · two adversarial passes absorbing the portal-scoping and permission-matrix E2E suites). Internal review is the release bar; a paid external audit is explicitly not the bar (post-launch, owner-procured if ever). Track doc: `sessions/tracks/security-hardening.md`.
 
 ---
 
@@ -55,6 +55,7 @@ What remains for this feature: (1) the **help-system launch surface** (slide-ove
 
 ## Active tracks
 
+- **Security Hardening** — *active (opened at the 369 launch replan) — this track IS Gate 3 of the launch* — five sessions, none started: **S1** perimeter headers + CSP + editor self-hosting (= session 370, prompts drafted; folds in the Stripe test-mode generator guard + the demo-role seeding gate), **S2** app-layer second lock on the five FM `/api/*` endpoints (the track's one boundary-touching session — additive contract bump planned), **S3** XSS write-path containment + the accidental-exposure audit (absorbs release-plan #32c), **S4** adversarial pass over the public write surface + the portal-scoping E2E suite (absorbs F2; the form-spam/CAPTCHA inbox item lands here), **S5** permission-matrix E2E + demo-server hardening (absorbs F3; assembles the Gate-3 findings register for the owner walkthrough). Bar: self-driven internal review — every enumerated item fixed or consciously accepted. Evidence base: the session-368 security surface map, folded into the track doc as Appendix A. Track doc: `sessions/tracks/security-hardening.md`.
 - **Fleet Data Hygiene** — *Phase 1 ✅ closed (352) — Phase 2 CRM half ✅ shipped (353, v2.4.0); FM-side toggle + subcheck consumption pending* — prevent + detect silent cruft accumulation on live instances (orphan event/post landing pages, leftover scrub data, media creep) under a **hard privacy boundary: FM is never *built* to read raw node data — counts only over the wire; a per-node FM "maintenance/auditable" toggle gates any data-touching op; deep audit is node-local + consent-gated.** **Phase 1 (352)** shipped the in-repo half: a CI keystone "scrub-wipe leaves no residue" test (launch-gate prevention) + the node-local `app:data-hygiene` audit on a build-once `DataHygieneAudit` core (+ a new `media:prune-dead-owner`). **Phase 2 (353, boundary-touching) shipped the CRM half:** its count-only `counts()` surfaced as a `data_hygiene` `/api/health` subcheck (additive **v2.3.0 → v2.4.0**) — informational, never-red, excluded from the worst-of overall status, cached ~10 min, counts-only over the wire. **Remaining Phase-2 work is FM-side** (handed off via `data-hygiene-handoff-from-crm.md`): consume the subcheck + build the per-node maintenance/auditable toggle. Phase 3 (bounded remediation) future. Down-payment at 349 (`pages:prune-orphan-events` / `media:prune-orphans`). Full design, forward plan + Phase Retrospectives: `sessions/tracks/fleet-data-hygiene.md`.
 - **Widget Primitive** — *substantially complete* (Phase 6 closed at session 237). See `sessions/tracks/widget-primitive.md` (premise: `widget-primitive-premise.md`). Carry-forwards remain (none scheduled): Forms widget retrofit, `PageContext` full retirement, per-record-type `RecordContextTokens::TOKENS` expansion, `PageContextTokens` namespace migration.
 - **Fleet Manager Agent** — *active* — Phase 2 Backup Pipeline closed at session 242; reopened at session 248 for the v2.0.0 mTLS migration (auth handshake swap from bearer to nginx-terminated mTLS); additive `/api/logs` endpoint shipped at session 251 (v2.1.0); CRM-side absorption of FM Security Posture Pivot at session 253 (rotation script `bin/rotate-fm-cert.sh` + compromise-recovery runbook + additive Security Posture spec language; no version bump); additive `/api/backup/trigger` endpoint shipped at session 263 (v2.2.0); additive `/api/backup/blob` endpoint shipped at session 268 (v2.3.0); **Beta-1-blocking work resumes** for node operations parity (install / backup / restore / log-reading) per `sessions/release-plan.md` § A2 once FM 012 has absorbed v2.0.0 + v2.1.0. See `sessions/tracks/fleet-manager-agent.md`. Product spec for both repos: `sessions/fleet-manager-planning-spec.md`. Contract surface live at v2.3.0; spec doc canonical at [`docs/fleet-manager-agent-contract.md`](../docs/fleet-manager-agent-contract.md). Carry-forwards remaining: BackupHasFailed event listener, backup-restore tooling, per-install retention configuration beyond the 14-day default, scheduler runner on the worker container.
@@ -256,7 +257,7 @@ Bottom line: the gating is structurally sound. No bypass exists for any of the 2
 
 ---
 
-### Concurrent Admin Editing *(stub — pre-Beta 1; #32b in `release-plan.md` execution order)*
+### Concurrent Admin Editing *(stub — DEFERRED UNTIL FIRST CUSTOMER at the 369 replan; #32b in `release-plan.md` — the first install runs solo-administered)*
 
 Lifted at 279-close as the deferred half of C3, further split at 280-close, scope refit at 282 Phase C audit to the slim **(b) path**. Shipping shape:
 
@@ -270,7 +271,7 @@ Sized 1 session. Small migration (`currently_editing_by_user_id` + `currently_ed
 
 ---
 
-### Accidental Public Exposure *(stub — pre-Beta 1; #32c in `release-plan.md` execution order)*
+### Accidental Public Exposure *(stub — ABSORBED into Security Hardening S3 at the 369 replan, without the C3a accountability prereq; #32c in `release-plan.md`; see `sessions/tracks/security-hardening.md` § S3)*
 
 Lifted at 280-close as the further-split tail of the original 32b combined stub. Scope refit at 282 Phase C audit to **Path A only** — the original release-plan bullet:
 
@@ -288,7 +289,7 @@ Sized 1 session post-C3a. See `sessions/release-plan.md` § C3's "Accidental pub
 
 ---
 
-### Page-Action Accountability + Audit Trail *(stub — pre-Beta 1; C3a in `release-plan.md`; prereq stub for #32c)*
+### Page-Action Accountability + Audit Trail *(stub — DEFERRED UNTIL FIRST CUSTOMER at the 369 replan; C3a in `release-plan.md`; no longer a prereq for #32c, whose protection audit moved to Security Hardening S3)*
 
 Lifted at 282 Phase C audit as the prereq for the #32c accidental-exposure drill. Three pieces ship together:
 
@@ -300,7 +301,7 @@ Sized 1–2 sessions. Migration + observer/listener wiring + email template + To
 
 ---
 
-### Auto Tax Receipt Email *(stub — pre-Beta 1; C3b in `release-plan.md`; prereq stub for C4 rehearsal)*
+### Auto Tax Receipt Email *(stub — gate 2, launch-schedule position 4 at the 369 replan; C3b in `release-plan.md`; prereq stub for C4 rehearsal)*
 
 Lifted at 282 Phase C audit. Successful donation (via Stripe Checkout webhook) automatically dispatches a tax-receipt email — donor name, amount, date, transaction id, fund (if specified), org tax-id/EIN, IRS-compliant language. Email template configurable via existing `manage_email_templates` admin surface. The current manual "Send Receipts" admin action on DonorsPage stays as a backfill/resend affordance.
 
@@ -308,7 +309,7 @@ Sized 1 session. See `sessions/release-plan.md` § C3b.
 
 ---
 
-### Comp-Tier Polish + Skip-Stripe-on-Zero-Total *(stub — pre-Beta 1; C3c in `release-plan.md`; prereq stub for C5 rehearsal)*
+### Comp-Tier Polish + Skip-Stripe-on-Zero-Total *(stub — gate 2, launch-schedule position 5 at the 369 replan; C3c in `release-plan.md`; prereq stub for C5 rehearsal)*
 
 Lifted at 282 Phase C audit. Event-registration flow handles comp tickets cleanly — when chosen tier(s) total $0, the public flow skips Stripe Checkout entirely and confirms the registration server-side, sending the thank-you email immediately. Admin can mark a tier `is_complimentary` (label in the picker; behavior driven by zero-price). Mixed-tier orders (e.g. 1 comp + 1 paid) continue through Stripe unchanged.
 
@@ -493,7 +494,7 @@ Canonical (all archived under `sessions/archived/` once the close-out sweep land
 
 ---
 
-### Test Suite Audit — Cost, Coverage, and Shape *(stub — pre-Beta 1)*
+### Test Suite Audit — Cost, Coverage, and Shape *(stub — the D4 remainder was DEFERRED UNTIL FIRST CUSTOMER at the 369 replan; the 298/299 early-lift slices shipped long ago)*
 
 **Iteration-speed + parallelization slices lifted early (sessions 298 & 299).** Per the sanctioned Rule-11 carry-forward exception in `release-plan.md` § D4, the inner-loop / async-CI / close-gate slice (session **298** — Test Feedback Loop — Scoped Loop & Async Verification) and the `--parallel` + test-isolation-cleanup slice (session **299** — Test Suite Parallelization & Isolation Cleanup) were carved out as standalone fix-shape sessions; run order 298 → 299, before the colour-arc RISK session 300. This stub / D4 retains **only** the mutation-proven pruning, assertion-density, and coverage-shape work — the *what-runs* questions, not the *when/where/who-waits/how-fast* ones.
 
@@ -590,7 +591,7 @@ Closed at session 245. See `sessions/release-plan.md` § A1 (✅) and `sessions/
 
 ---
 
-### Fleet Manager — Node Operations Parity *(stub — pre-Beta 1; A2 in `release-plan.md`)*
+### Fleet Manager — Node Operations Parity *(stub — ✅ A2 CRM-side CLOSED at session 365; header staleness noted at the 369 sweep — see the `#### A2.` block in `release-plan.md`; FM-side runbook finalization tracked in the FM repo)*
 
 A2 in `sessions/release-plan.md`. Re-opens the Fleet Manager Agent track for a specific Beta-1-blocking capability subset.
 
@@ -605,11 +606,11 @@ Likely 2 sessions (install + backup + restore in one; log-reading separately, di
 
 ---
 
-### Multi-Node Operational Readiness *(stub — pre-Beta 1; A3 in `release-plan.md`)*
+### Multi-Node Operational Readiness *(stub — gate 2, launch-schedule position 6, RIGHT-SIZED at the 369 replan; A3 in `release-plan.md`)*
 
-A3 in `sessions/release-plan.md`. Operational provisioning, mostly not code. Prerequisites: A2 substantially complete; E1 (Onboarding/Install Dashboard Widget).
+A3 in `sessions/release-plan.md`. Operational provisioning, mostly not code. Prerequisites: A2 (✅ CRM-side closed at 365); E1 (✅ closed at 249).
 
-Four nodes running on production by Beta-1: marketing site, demo install, test/deploy instance, spare-for-first-customer. Each node's purpose + URL + access creds documented. FM monitors all four. Test/deploy instance is the target environment for subsequent rehearsals.
+**Right-sized at 369:** verify + document the two live conversion nodes (marketing, demo) and stand up the test/deploy instance (the A4 drill target); the spare-for-first-customer node is **deferred until a customer exists** (FM provisions a node in under a day). Each node's purpose + URL + access creds documented; FM monitors all. Carries the session-365 cross-node-restore live-verification rider + the scheduler-runner gap revisit.
 
 ---
 
@@ -621,7 +622,7 @@ Mandatory admin TOTP 2FA shipped at session 359 (A5 in `release-plan.md`) — Fo
 
 ---
 
-### Stripe Test-Mode Detection & Random Data Generator Production Guard *(stub — pre-Beta 1, release blocker; surfaced at session 245)*
+### Stripe Test-Mode Detection & Random Data Generator Production Guard *(stub — FOLDED into Security Hardening S1 = session 370 at the 369 replan; surfaced at session 245 as a release blocker)*
 
 The Random Data Generator (session 245) gives super-admins the ability to generate arbitrary financial-shape data (donations, transactions, memberships, registrations) tagged `source = 'scrub_data'`. This is safe in test installs and rehearsal environments, but **if the Stripe integration is configured against a real (non-test) Stripe account**, an operator clicking "generate donations" against scrub data could in principle create real Stripe customer/subscription IDs in the production Stripe account. The 245 generator does not attach real Stripe IDs to its scrub donations, but the architectural boundary is fragile — any future code path that pushes a scrub donation through Stripe (a rehearsal walkthrough, a misconfigured webhook, a copy-paste between environments) could touch real Stripe.
 
@@ -665,13 +666,13 @@ Lifted entirely to post-Beta backlog. See the "Workflows — Post-Beta 1" sectio
 #### C7. Email at volume *(DROPPED at 282 audit)*
 Dropped entirely. Bulk emails go through Mailchimp via the existing webhook integration; Mailchimp-as-an-integration coverage absorbs into D3 (Integration retest).
 
-#### D1. Scale rehearsal
+#### D1. Scale rehearsal *(DEFERRED UNTIL FIRST CUSTOMER at the 369 replan)*
 See `sessions/release-plan.md` § D1.
 
-#### D2. Compatibility cluster *(Browser bingo + Accessibility + Flaky connection — folded)*
+#### D2. Compatibility cluster *(SPLIT at the 369 replan — flaky-connection slice → F1, public browser spot-check → the floating Gate-1 session; remainder deferred until first customer)*
 See `sessions/release-plan.md` § D2.
 
-#### D3. Integration retest *(absolute last rehearsal)*
+#### D3. Integration retest *(absolute last rehearsal; slimmed at the 369 replan to launch-relevant integrations — gate 2, position 15)*
 See `sessions/release-plan.md` § D3.
 
 ---
@@ -712,7 +713,7 @@ Format extensions beyond CSV — XLSX, JSON, source-system-specific shapes — l
 
 Closed at session 257. See `sessions/release-plan.md` § G1 (✅) and `sessions/257. Importer Test-Fixture Generator — CSV Foundation — Log.md` for the full landing. Artisan command `import-fixtures:generate` ships with all seven importers × five shapes × the three presets `FieldMapper::presets()` actually exposes (Neon dropped during scope-out — preset doesn't exist in code). `App\Services\Import\FixtureRunner` lifted to drive importers off-Livewire. Parametrized Pest runner in `tests/Feature/Generated/`. Authoring doc at `docs/runbooks/import-fixture-generator.md`. Pre-existing fix lifted in-session: Org + auto-created Contact creation paths now write "Imported from X" timeline notes (was missing in four places). Findings recorded for B2 to inherit without re-discovery.
 
-### G2 — Importer Test-Fixture Generator: Cross-importer Pairs, Replay, Adversarial Dedup *(stub — pre-Beta 1)*
+### G2 — Importer Test-Fixture Generator: Cross-importer Pairs, Replay, Adversarial Dedup *(stub — DEFERRED UNTIL FIRST CUSTOMER at the 369 replan; internal QA hygiene under a deadline)*
 
 Three additional fixture-set modes layered on G1:
 
@@ -729,7 +730,7 @@ Phase F in [`release-plan.md`](release-plan.md). Pre-T1 deep Playwright sweeps f
 
 Track introduced at session 256 close after the Organizations importer's deep Playwright pass surfaced two pre-existing bugs that earlier per-importer tests had missed (a `serializeColumnMaps` regression silently dropping custom-field columns; a Choices.js `selectOption` pattern broken across multiple importer specs). Pattern is: deep, fixture-heavy, judgment-led — better suited to occasional sweeps than per-merge regression. Three slots on the working set: payments, portal, role gates.
 
-### F1 — On-Demand E2E: Donation / payment-flow integration depth pass *(stub — pre-Beta 1)*
+### F1 — On-Demand E2E: Donation / payment-flow integration depth pass *(stub — gate 2, launch-schedule position 10 at the 369 replan; absorbs D2's flaky-connection no-double-charge slice)*
 
 Public donation form → Stripe test-mode checkout → webhook → `Donation` + `Transaction` records → tax-receipt email content. Specs simulate signed Stripe webhook payloads and verify idempotency under retries.
 
@@ -746,7 +747,7 @@ Stripe is already running in test mode; webhook signing setup is the new infrast
 
 Prerequisites per release plan: C4 (donation rehearsal), E4 (Stripe Checkout Branding), D3 (so the surface as it ships is what gets exercised). Artifact: spec suite + `docs/runbooks/payments-on-demand-coverage.md`.
 
-### F2 — On-Demand E2E: Member portal self-service & contact-scoping security *(stub — pre-Beta 1)*
+### F2 — On-Demand E2E: Member portal self-service & contact-scoping security *(stub — ABSORBED into Security Hardening S4 at the 369 replan; see `sessions/tracks/security-hardening.md` § S4)*
 
 The CLAUDE.md portal-security rule — every portal route and query strictly scoped to the authenticated portal user's own `contact_id` — is the load-bearing invariant. This session walks each portal route from two authenticated contact fixtures (Alice + Bob) and asserts data isolation under URL-fishing attempts.
 
@@ -761,7 +762,7 @@ Coverage:
 
 Prerequisites per release plan: C3 (permission audit informs the scoping invariant), A3 (production-shape install for portal mail flows). Artifact: spec suite + `docs/runbooks/portal-security-audit.md`.
 
-### F3 — On-Demand E2E: Permission / role-gate matrix *(stub — pre-Beta 1)*
+### F3 — On-Demand E2E: Permission / role-gate matrix *(stub — ABSORBED into Security Hardening S5 at the 369 replan; see `sessions/tracks/security-hardening.md` § S5)*
 
 C3 produces a permission matrix at `docs/runbooks/permission-matrix.md`. F3 mechanically validates that matrix: each role fixture (super-admin, staff-admin, board-read-only, volunteer, public-visitor) walks the admin surface and asserts the matrix's documented expected outcome for every (role × resource × action) cell.
 
@@ -802,7 +803,9 @@ Real-user testing of the onboarding flow, run by people outside the project. Dis
 
 ---
 
-## End of Roadmap — Beta 1
+## End of Roadmap — Launch
+
+*(The "Beta 1 Scope" section headers above are retained as historical organization; the release target is the three launch gates per the 369 replan — see the Launch bullet at the top and `release-plan.md` § Launch schedule.)*
 
 ### Onboarding / Install Dashboard Widget *(complete — closed at session 249)*
 
