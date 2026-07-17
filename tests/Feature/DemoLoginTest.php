@@ -24,6 +24,10 @@ beforeEach(function () {
 function enterDemoMode(): void
 {
     app()->instance('env', 'demo');
+    // The `demo` role is only seeded in demo mode (session 370 gate); re-run the
+    // idempotent PermissionSeeder now that the environment reports demo so the
+    // role exists for /demo/enter's syncRoles(['demo']) and the assertions below.
+    (new \Database\Seeders\PermissionSeeder())->run();
 }
 
 it('imports demo.json with zero importer warnings and publishes the split page', function () {
@@ -123,6 +127,9 @@ it('non-demo install: /demo/enter is inert — 404, no authentication, no Demo U
 });
 
 it('the demo role grants product-feel surfaces but denies settings/secrets/user-management and is never super_admin', function () {
+    // The `demo` role is only seeded in demo mode (session 370 gate).
+    enterDemoMode();
+
     $user = User::factory()->create(['is_active' => true]);
     $user->assignRole('demo');
 

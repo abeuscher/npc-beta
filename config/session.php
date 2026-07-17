@@ -169,7 +169,15 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Enforced prod-hardening default (session 370, Security S1): secure cookies
+    // are ON by default everywhere except the HTTP-based development and test
+    // environments (local / dev / testing), so a production or demo node that
+    // never set SESSION_SECURE_COOKIE still refuses to send the session cookie
+    // over plain HTTP. A node can still override explicitly via the env var.
+    'secure' => env(
+        'SESSION_SECURE_COOKIE',
+        ! in_array(env('APP_ENV', 'production'), ['local', 'dev', 'testing'], true)
+    ),
 
     /*
     |--------------------------------------------------------------------------

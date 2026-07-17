@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Settings;
 use App\Filament\Pages\Concerns\InteractsWithSectionedSettings;
 use App\Models\SiteSetting;
 use App\Models\Template;
+use App\Rules\ValidCspHostList;
 use App\Rules\ValidHtmlSnippet;
 use App\Services\Media\ImageSizeProfile;
 use Filament\Actions\Action;
@@ -53,6 +54,12 @@ class CmsSettingsPage extends Page
             'site_head_snippet'      => SiteSetting::get('site_head_snippet', ''),
             'site_body_open_snippet' => SiteSetting::get('site_body_open_snippet', ''),
             'site_body_snippet'      => SiteSetting::get('site_body_snippet', ''),
+            'csp_script_src_extra'   => SiteSetting::get('csp_script_src_extra', ''),
+            'csp_connect_src_extra'  => SiteSetting::get('csp_connect_src_extra', ''),
+            'csp_img_src_extra'      => SiteSetting::get('csp_img_src_extra', ''),
+            'csp_frame_src_extra'    => SiteSetting::get('csp_frame_src_extra', ''),
+            'csp_style_src_extra'    => SiteSetting::get('csp_style_src_extra', ''),
+            'csp_font_src_extra'     => SiteSetting::get('csp_font_src_extra', ''),
             'site_default_og_image'  => null,
             'image_breakpoints'   => collect(ImageSizeProfile::configuredBreakpoints())
                 ->map(fn ($w) => ['width' => $w])
@@ -314,6 +321,61 @@ class CmsSettingsPage extends Page
                         $this->sectionSaveAction('code-snippets', 'Custom Code Snippets')->columnSpanFull(),
                     ]),
 
+                Forms\Components\Section::make('Allowed External Hosts (Content Security Policy)')
+                    ->description('The site enforces a Content Security Policy that only permits scripts, styles, and other resources from this site by default — the second line of defense against injected code. If a code snippet above loads from a third party (Google Tag Manager / Analytics, a chat widget, an external font or map), add its host here so the browser allows it. One host per line, e.g. https://www.googletagmanager.com or *.example.com. Most organizations only need the Scripts, Connections, and Images fields for analytics.')
+                    ->collapsed()
+                    ->schema([
+                        Forms\Components\Textarea::make('csp_script_src_extra')
+                            ->label('Scripts')
+                            ->helperText('Hosts that may load JavaScript (e.g. https://www.googletagmanager.com).')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('csp_connect_src_extra')
+                            ->label('Connections (XHR / fetch / beacons)')
+                            ->helperText('Hosts that scripts may send data to (e.g. https://www.google-analytics.com).')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('csp_img_src_extra')
+                            ->label('Images')
+                            ->helperText('Hosts that may load images, including tracking pixels and an external image CDN.')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('csp_frame_src_extra')
+                            ->label('Frames (embeds)')
+                            ->helperText('Hosts that may be embedded in an iframe beyond the built-in video and map widgets.')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('csp_style_src_extra')
+                            ->label('Styles')
+                            ->helperText('Hosts that may load stylesheets (rarely needed for third parties).')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('csp_font_src_extra')
+                            ->label('Fonts')
+                            ->helperText('Hosts that may load web fonts (rarely needed for third parties).')
+                            ->rows(2)
+                            ->extraInputAttributes(['style' => 'font-family:monospace;font-size:0.85rem;'])
+                            ->rules([new ValidCspHostList()])
+                            ->columnSpanFull(),
+
+                        $this->sectionSaveAction('csp-hosts', 'Allowed External Hosts')->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make('Image Sizes')
                     ->description('Responsive breakpoints used when generating optimized image variants. Widths in pixels, sorted largest to smallest.')
                     ->schema([
@@ -473,6 +535,11 @@ class CmsSettingsPage extends Page
                 SiteSetting::set('site_head_snippet', $data['site_head_snippet'] ?? '');
                 SiteSetting::set('site_body_open_snippet', $data['site_body_open_snippet'] ?? '');
                 SiteSetting::set('site_body_snippet', $data['site_body_snippet'] ?? '');
+            })(),
+            'csp-hosts' => (function () use ($data) {
+                foreach (['script_src', 'connect_src', 'img_src', 'frame_src', 'style_src', 'font_src'] as $directive) {
+                    SiteSetting::set("csp_{$directive}_extra", trim((string) ($data["csp_{$directive}_extra"] ?? '')));
+                }
             })(),
             'image-sizes' => (function () use ($data) {
                 $breakpoints = collect($data['image_breakpoints'] ?? [])

@@ -77,6 +77,11 @@ it('skips a role that does not exist — no view seeded when both seeded roles a
 });
 
 it('creates a product-feel DashboardView for the demo role — no setup checklist or data generator', function () {
+    // The `demo` role is only seeded in demo mode (session 370 gate); re-run the
+    // idempotent PermissionSeeder there so this demo-view path has its role.
+    app()->instance('env', 'demo');
+    (new \Database\Seeders\PermissionSeeder())->run();
+
     (new DashboardViewSeeder())->run();
 
     $demo = Role::where('name', 'demo')->first();
@@ -94,6 +99,10 @@ it('creates a product-feel DashboardView for the demo role — no setup checklis
 });
 
 it('the demo role resolves a dashboard arrangement — no empty state for a demo user', function () {
+    // The `demo` role is only seeded in demo mode (session 370 gate).
+    app()->instance('env', 'demo');
+    (new \Database\Seeders\PermissionSeeder())->run();
+
     (new DashboardViewSeeder())->run();
 
     $user = \App\Models\User::factory()->create();

@@ -183,6 +183,11 @@ class AdminPanelProvider extends PanelProvider
                 // login, page-builder/theme/dev-tools APIs). Absent flag = none =
                 // no-op, so every existing install is unaffected.
                 \App\Http\Middleware\EnforceSuspensionState::class . ':' . \App\Http\Middleware\EnforceSuspensionState::SURFACE_ADMIN,
+                // Perimeter security headers (session 370, Security S1). The
+                // admin surface takes the Report-Only CSP (Filament/Alpine/
+                // Livewire compatibility is unproven — see config/security.php);
+                // the header baseline (HSTS, X-Frame-Options, etc.) is enforced.
+                \App\Http\Middleware\SecurityHeaders::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
@@ -296,19 +301,13 @@ class AdminPanelProvider extends PanelProvider
                     "<script>(function(){try{if(localStorage.getItem('np-fullscreen')==='1'){document.documentElement.classList.add('np-fullscreen');}}catch(e){}})();</script>"
                 )
             )
-            // Load Quill v2 on all admin pages — used by the page builder and any
-            // QuillEditor form fields (e.g. event description, meeting details).
-            // Quill toolbar visual language + dark mode overrides live in
-            // public/css/admin.css and must load AFTER quill.snow.css to win
-            // cascade ties against Quill's default chrome.
-            ->renderHook(
-                'panels::head.end',
-                fn (): HtmlString => new HtmlString('
-                    <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
-                    <style>.ql-editor { min-height: 16rem; }</style>
-                    <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
-                ')
-            )
+            // Quill v2 is self-hosted (session 370, Security S1): the library +
+            // its snow theme CSS are bundled into resources/js/admin.js (loaded by
+            // the first head.end hook above) and exposed as window.Quill, retiring
+            // the former cdn.jsdelivr.net <script>/<link>. The `.ql-editor`
+            // min-height and the toolbar visual-language overrides live in
+            // public/css/admin.css, which loads after the bundle's quill.snow.css
+            // so it still wins cascade ties against Quill's default chrome.
             // Admin panel style overrides (form borders, Trix toolbar, Quill
             // toolbar visual language). Loaded last among admin-side stylesheets
             // so its rules win equal-specificity cascade ties.

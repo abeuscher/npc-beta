@@ -249,7 +249,7 @@
         @endif
     @endunless
 
-    <script>
+    <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
     window.__site = {
         name: @json(config('site.name', config('app.name'))),
         blogPrefix: @json(config('site.blog_prefix', 'news')),

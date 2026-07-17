@@ -1,6 +1,6 @@
 # Track: Security Hardening
 
-**Status snapshot (2026-07-17, session 369):** Track created at the session-369 launch replan. Five sessions, S1–S5, none started. S1 is session 370 (first item of the launch schedule; prompts drafted at 369). Evidence base: the session-368 security surface map, folded in below as Appendix A. CRM contract at v2.6.0; **S2 is the track's one boundary-touching session** (contract bump planned). This track *is* Gate 3 of the launch plan.
+**Status snapshot (2026-07-17, session 370):** Track opened at the session-369 launch replan. Five sessions, S1–S5. **S1 complete (session 370)** — the perimeter security-headers layer + enforced public CSP (admin Report-Only), self-hosted Quill (2.0.3), enforced prod-hardening defaults, the Stripe live-key generator guard, and the demo-role seeding gate all shipped; a same-branch follow-on made the CSP host allow-list admin-editable (CMS Settings → Site → Allowed External Hosts). **Next: S3 (session 371, prompts drafted)** — the schedule runs S1 → S3 → S2. S2, S4, S5 not started. **Open Gate-3 residuals from S1** (for the closing findings register): (a) the **admin-panel CSP ships Report-Only**, not enforced — Filament/Alpine/Livewire enforcement deferred, env-flippable via `SECURITY_CSP_ADMIN_REPORT_ONLY=false` once browser-validated; (b) external-analytics hosts (GTM/GA) are now managed via the admin allow-list / env floor rather than being blocked outright. Evidence base: the session-368 security surface map, folded in below as Appendix A. CRM contract at v2.6.0; **S2 is the track's one boundary-touching session** (contract bump planned). This track *is* Gate 3 of the launch plan.
 
 ---
 
@@ -18,7 +18,7 @@ Standing decision rule (project memory): when security and usability directly co
 
 Scopes below are canonical (release-plan entries point here). Per Rule 11, any session may split if it surfaces more than one context can hold.
 
-### S1 — Perimeter: headers, CSP, editor self-hosting *(session 370; prompts drafted at 369)*
+### S1 — Perimeter: headers, CSP, editor self-hosting ✅ *(complete — session 370)*
 
 Targets Appendix A risks #3 and #5, plus the CSP half of #2.
 

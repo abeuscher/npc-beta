@@ -42,6 +42,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Enforced prod-hardening (session 370, Security S1): never serve debug
+        // pages on a production node, even if a copied .env left APP_DEBUG=true.
+        // Debug mode leaks stack traces carrying DB credentials and secrets; this
+        // guard makes the safe posture a code-level default rather than a per-node
+        // .env convention that a bad copy could defeat.
+        if ($this->app->environment('production') && config('app.debug')) {
+            config(['app.debug' => false]);
+        }
+
         BasePage::formActionsAlignment(Alignment::End);
 
         // Hash every media's stored original once, as it lands, then relocate it
@@ -128,6 +137,20 @@ class AppServiceProvider extends ServiceProvider
                 'site.admin_primary_color'           => $settings->get('admin_primary_color')?->value        ?? '#f59e0b',
                 'site.admin_secondary_color'         => $settings->get('admin_secondary_color')?->value      ?? '#73bbbb',
             ]);
+
+            // CSP per-node host allow-list (session 370, Security S1). Admin-edited
+            // additional hosts (CMS Settings → Allowed External Hosts) are merged
+            // onto the env-configured floor for each directive, so the
+            // SecurityHeaders middleware reads a single resolved config value. The
+            // admin field can only widen to named hosts (ValidCspHostList); it can
+            // never introduce a wildcard or an unsafe-* keyword.
+            foreach (['script_src', 'style_src', 'img_src', 'font_src', 'connect_src', 'frame_src'] as $cspDirective) {
+                $dbHosts = trim((string) ($settings->get("csp_{$cspDirective}_extra")?->value ?? ''));
+                if ($dbHosts !== '') {
+                    $envHosts = (string) config("security.csp.extra.{$cspDirective}");
+                    config(["security.csp.extra.{$cspDirective}" => trim($envHosts . ' ' . $dbHosts)]);
+                }
+            }
         } catch (\Throwable $e) {
             // DB not ready (fresh install before migrations) — fall through to defaults
         }

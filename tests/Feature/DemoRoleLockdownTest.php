@@ -32,7 +32,13 @@ uses(TestCase::class, RefreshDatabase::class);
  * destruction capability and this guard must be re-reviewed deliberately.
  */
 beforeEach(function () {
+    // The `demo` role is only seeded in demo mode (session 370 gate); seed it
+    // there, then restore the `testing` env — the lockdown assertions turn on the
+    // role's permissions, not the runtime env, and staying in demo mode would
+    // flip runningUnitTests() off and re-enable CSRF on the POST cases below.
+    app()->instance('env', 'demo');
     (new \Database\Seeders\PermissionSeeder())->run();
+    app()->instance('env', 'testing');
 
     $this->demo = User::factory()->create(['is_active' => true]);
     $this->demo->assignRole('demo');

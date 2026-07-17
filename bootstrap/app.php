@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\PublicDevAuth::class);
 
+        // Perimeter security headers (session 370, Security S1). Appended to the
+        // `web` group so public pages + the member portal carry the enforced CSP
+        // and header baseline. The admin panel registers it separately in
+        // AdminPanelProvider (its own middleware stack); the `api` group is
+        // deliberately excluded so the FM /api/* contract surface stays untouched.
+        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
+
         // Client-billing suspension gate (contract v2.6.0), public surface.
         // Prepended to the `web` group so `site_off` short-circuits the public
         // site + member portal to a 503 maintenance notice before any other work.

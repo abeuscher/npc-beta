@@ -21,6 +21,21 @@
             </div>
         @endif
 
+        @if (\App\Support\StripeMode::isLive())
+            {{-- Live-Stripe guard (session 370, Security S1): refuse to render the
+                 generate form when a live key is configured, so synthetic donations
+                 and transactions can never be created on a real-payments install.
+                 The wipe action below stays available to clear any existing scrub
+                 data off such an install. --}}
+            <div class="np-random-data-generator__alert np-random-data-generator__alert--error">
+                <strong>Generation disabled — live Stripe key detected.</strong>
+                This install is configured against a live Stripe key
+                (<code>sk_live_…</code>), so the generator will not create synthetic
+                data here: fake donations and transactions must never mingle with
+                real donor records. Switch to a test key to generate. The wipe action
+                below remains available to clear any existing scrub data.
+            </div>
+        @else
         <form method="POST"
               action="{{ route('filament.admin.dev-tools.random-data.store') }}"
               x-data="{
@@ -88,6 +103,7 @@
                 </div>
             </div>
         </form>
+        @endif
 
         <hr class="np-random-data-generator__divider">
 

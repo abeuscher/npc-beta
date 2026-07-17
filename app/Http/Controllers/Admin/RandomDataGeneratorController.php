@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\RandomDataGenerator;
+use App\Support\StripeMode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,16 @@ class RandomDataGeneratorController extends Controller
     public function store(Request $request, RandomDataGenerator $generator): RedirectResponse
     {
         abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        // Live-Stripe guard (session 370, Security S1): refuse to generate
+        // synthetic data — including fake donations/transactions — on an install
+        // configured against a live Stripe key. The widget hides the form in this
+        // state; this backstops a direct POST. Wipe stays available.
+        if (StripeMode::isLive()) {
+            return back()->withErrors([
+                'rdg' => 'Data generation is disabled on a live-Stripe install (sk_live_…). Switch to a test key to generate synthetic data.',
+            ]);
+        }
 
         $validated = $request->validate([
             'counts'               => ['required', 'array'],

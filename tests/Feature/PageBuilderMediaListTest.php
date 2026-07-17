@@ -139,6 +139,11 @@ it('forbids the list without view_page permission', function () {
 });
 
 it('lets the demo role browse the list (no new file involved)', function () {
+    // The `demo` role is only seeded in demo mode (session 370 gate); re-run the
+    // idempotent PermissionSeeder there so the role exists for this assertion.
+    app()->instance('env', 'demo');
+    (new \Database\Seeders\PermissionSeeder())->run();
+
     $image = mlAttach($this->widget, 'config_logo', mlPng(11), 'demo.png');
 
     $demo = User::factory()->create(['is_active' => true]);

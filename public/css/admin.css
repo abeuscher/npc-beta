@@ -790,6 +790,13 @@ html.dark .help-related-article-title { color: #f3f4f6; }
     --np-form-label:                rgb(229 231 235); /* gray-200 */
 }
 
+/* Minimum authoring height for standard (non-inline) Quill editor fields.
+ * Relocated here from the AdminPanelProvider Quill CDN render hook when Quill
+ * was self-hosted (session 370); loads after the bundled quill.snow.css. */
+.ql-editor {
+    min-height: 16rem;
+}
+
 /* ── Quill toolbar visual language (session 197) ──────────────────────────*/
 /* Reference: /mnt/e/Clients/nonprofitcrm/test_import_data/wysiwyg toolbar.jpg
  * Two-row compact toolbar, light-grey chrome, grouped buttons, chip-shaped

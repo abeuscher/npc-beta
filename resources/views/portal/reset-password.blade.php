@@ -48,7 +48,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
 document.addEventListener('DOMContentLoaded', function () {
     window.NPPasswordMismatch({
         passwordEl: document.getElementById('password'),

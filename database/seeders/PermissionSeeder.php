@@ -341,41 +341,50 @@ class PermissionSeeder extends Seeder
         // management, mail/email-template/financial/routing/theme/CMS settings,
         // API keys, imports, and any secret, integration, instance-config, or
         // real-data-exfiltration surface. Never super_admin.
-        $demo = Role::firstOrCreate(
-            ['name' => 'demo', 'guard_name' => 'web'],
-            ['label' => 'Demo'],
-        );
-        $demo->update(['label' => 'Demo']);
-        $demo->syncPermissions(array_merge(
-            $fullPermissions('contact'),
-            $fullPermissions('organization'),
-            $fullPermissions('household'),
-            $fullPermissions('membership'),
-            $fullPermissions('note'),
-            $fullPermissions('tag'),
-            $fullPermissions('mailing_list'),
-            $fullPermissions('page'),
-            $fullPermissions('post'),
-            $fullPermissions('form'),
-            $fullPermissions('collection'),
-            $fullPermissions('collection_item'),
-            // The header/footer link structure lives in NavigationMenu/NavigationItem —
-            // a different model the page `locked` flag cannot reach. The demo has no
-            // need to edit the site nav, so it stays view-only (session 328).
-            $viewPermissions('navigation_menu'),
-            $fullPermissions('product'),
-            $fullPermissions('event'),
-            $fullPermissions('donation'),
-            $viewPermissions('transaction'),
-            $viewPermissions('fund'),
-            $viewPermissions('campaign'),
-            [
-                'view_any_member',
-                'use_advanced_list_filters',
-                'view_any_form_submission',
-                'view_form_submission',
-            ],
-        ));
+        //
+        // Gated to demo mode (session 370, Security S1): the role is only created
+        // where it can be legitimately used — the public shared-account threat
+        // model is demo-node-specific. A production node carries no vestigial
+        // `demo` role. Mirrors the demo-user gate already in DatabaseSeeder. The
+        // demo node's own reset path (demo:reset → migrate:fresh --seed) runs in
+        // demo mode, so the role is (re)created there on every rebuild.
+        if (isDemoMode()) {
+            $demo = Role::firstOrCreate(
+                ['name' => 'demo', 'guard_name' => 'web'],
+                ['label' => 'Demo'],
+            );
+            $demo->update(['label' => 'Demo']);
+            $demo->syncPermissions(array_merge(
+                $fullPermissions('contact'),
+                $fullPermissions('organization'),
+                $fullPermissions('household'),
+                $fullPermissions('membership'),
+                $fullPermissions('note'),
+                $fullPermissions('tag'),
+                $fullPermissions('mailing_list'),
+                $fullPermissions('page'),
+                $fullPermissions('post'),
+                $fullPermissions('form'),
+                $fullPermissions('collection'),
+                $fullPermissions('collection_item'),
+                // The header/footer link structure lives in NavigationMenu/NavigationItem —
+                // a different model the page `locked` flag cannot reach. The demo has no
+                // need to edit the site nav, so it stays view-only (session 328).
+                $viewPermissions('navigation_menu'),
+                $fullPermissions('product'),
+                $fullPermissions('event'),
+                $fullPermissions('donation'),
+                $viewPermissions('transaction'),
+                $viewPermissions('fund'),
+                $viewPermissions('campaign'),
+                [
+                    'view_any_member',
+                    'use_advanced_list_filters',
+                    'view_any_form_submission',
+                    'view_form_submission',
+                ],
+            ));
+        }
 
         // ── super_admin ──────────────────────────────────────────────────────
         // No explicit permissions — Gate::before bypass in AuthServiceProvider.

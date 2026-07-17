@@ -91,7 +91,7 @@
     </main>
 
     @if (!empty($inlineScripts))
-        <script>{!! $inlineScripts !!}</script>
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">{!! $inlineScripts !!}</script>
     @endif
 
     {{-- Widget JS bundle from the build-server manifest (mirrors layouts.public). --}}
