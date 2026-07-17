@@ -49,9 +49,12 @@ class ListExportService
     {
         $handle = fopen('php://output', 'w');
 
-        fputcsv($handle, array_merge(
-            array_column($columnSpec, 'header'),
-            $customDefs->pluck('label')->toArray(),
+        fputcsv($handle, array_map(
+            [$this, 'neutralizeFormula'],
+            array_merge(
+                array_column($columnSpec, 'header'),
+                $customDefs->pluck('label')->toArray(),
+            ),
         ));
 
         $query->each(function (Model $model) use ($handle, $columnSpec, $customDefs) {
@@ -64,7 +67,10 @@ class ListExportService
                 ->map(fn ($def) => $model->custom_fields[$def->handle] ?? '')
                 ->toArray();
 
-            fputcsv($handle, array_merge($standardValues, $customValues));
+            fputcsv($handle, array_map(
+                [$this, 'neutralizeFormula'],
+                array_merge($standardValues, $customValues),
+            ));
         });
 
         fclose($handle);
@@ -117,9 +123,12 @@ class ListExportService
             $dateStyle     = (new Style())->setFormat('yyyy-mm-dd');
             $datetimeStyle = (new Style())->setFormat('yyyy-mm-dd hh:mm:ss');
 
-            $writer->addRow(Row::fromValues(array_merge(
-                array_column($columnSpec, 'header'),
-                $customDefs->pluck('label')->toArray(),
+            $writer->addRow(Row::fromValues(array_map(
+                [$this, 'neutralizeFormula'],
+                array_merge(
+                    array_column($columnSpec, 'header'),
+                    $customDefs->pluck('label')->toArray(),
+                ),
             )));
 
             $query->each(function (Model $model) use ($writer, $columnSpec, $customDefs, $dateStyle, $datetimeStyle) {
@@ -134,11 +143,11 @@ class ListExportService
                         default    => null,
                     };
 
-                    $cells[] = Cell::fromValue($coerced, $style);
+                    $cells[] = Cell::fromValue($this->neutralizeFormula($coerced), $style);
                 }
 
                 foreach ($customDefs as $def) {
-                    $cells[] = Cell::fromValue($model->custom_fields[$def->handle] ?? '');
+                    $cells[] = Cell::fromValue($this->neutralizeFormula($model->custom_fields[$def->handle] ?? ''));
                 }
 
                 $writer->addRow(new Row($cells));
@@ -150,6 +159,32 @@ class ListExportService
         } finally {
             @unlink($tempPath);
         }
+    }
+
+    /**
+     * Neutralize CSV/spreadsheet formula injection. A cell whose first character
+     * is a formula trigger (`=`, `+`, `-`, `@`, tab, carriage return) is executed
+     * by Excel/Sheets when the exported file is re-opened; prefixing a leading
+     * apostrophe forces the spreadsheet to treat it as literal text (the
+     * apostrophe is stripped on display). Plain numeric values (e.g. a negative
+     * amount "-50.00") are left untouched so they stay numeric — a number can
+     * never be a formula. Non-string values pass through unchanged.
+     */
+    private function neutralizeFormula(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        if (! in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return $value;
+        }
+
+        return "'" . $value;
     }
 
     private function coerceForXlsx(mixed $value, ?string $type): bool|float|int|string|\DateTimeInterface|null

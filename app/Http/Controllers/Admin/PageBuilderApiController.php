@@ -17,6 +17,7 @@ use App\Services\PageBuilderDataSources;
 use App\Services\PageTreeBuilder;
 use App\Services\WidgetConfigResolver;
 use App\Services\WidgetPreviewRenderer;
+use App\Services\WidgetRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,18 @@ class PageBuilderApiController extends Controller
         ]);
 
         $widgetType = WidgetType::findOrFail($validated['widget_type_id']);
+
+        // Enforce the widget's allowed-slots at write time, not only in the
+        // picker UI. Record-context/admin widgets are canvas-excluded; without
+        // this a crafted request could attach one to a public page. The picker
+        // (WidgetType::forPicker) already filters on this — mirror it here so
+        // the server is the authority. Parallels DashboardBuilderApiController.
+        $def = app(WidgetRegistry::class)->find($widgetType->handle);
+        if (! $def || ! in_array('page_builder_canvas', $def->allowedSlots(), true)) {
+            return response()->json([
+                'error' => "Widget [{$widgetType->handle}] is not allowed on the page canvas.",
+            ], 422);
+        }
 
         $layoutId = $validated['layout_id'] ?? null;
         if ($layoutId) {

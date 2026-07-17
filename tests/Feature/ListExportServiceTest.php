@@ -400,6 +400,81 @@ it('passes through values without a type hint as strings', function () {
     expect($rows[1][2]->getValue())->toBe('ada@example.com');
 });
 
+it('neutralises spreadsheet formula-injection across trigger chars while preserving numbers in CSV', function () {
+    // A stored value whose first char is a formula trigger executes when the
+    // exported file is re-opened in Excel/Sheets. The exporter prefixes a
+    // leading apostrophe to force literal text — except plain numbers, which
+    // can never be a formula and stay numeric.
+    $cases = [
+        'f_eq'   => ['=1+2',      "'=1+2"],
+        'f_plus' => ['+cmd|calc', "'+cmd|calc"],
+        'f_at'   => ['@SUM(A1)',  "'@SUM(A1)"],
+        'f_dash' => ['-2+3+cmd',  "'-2+3+cmd"],
+        'f_neg'  => ['-50.00',    '-50.00'],
+    ];
+
+    $sort = 1;
+    foreach ($cases as $handle => $case) {
+        CustomFieldDef::create([
+            'model_type' => 'contact',
+            'handle'     => $handle,
+            'label'      => $handle,
+            'field_type' => 'text',
+            'sort_order' => $sort++,
+        ]);
+    }
+
+    Contact::factory()->create([
+        'first_name'    => 'Mallory',
+        'custom_fields' => array_map(fn ($c) => $c[0], $cases),
+    ]);
+
+    $response = app(ListExportService::class)->stream(
+        query: Contact::query()->orderBy('created_at'),
+        columnSpec: ContactResource::exportColumnSpec(),
+        format: 'csv',
+        filename: 'contacts.csv',
+        cfModelKey: 'contact',
+    );
+
+    $rows   = array_map('str_getcsv', preg_split("/\r\n|\n|\r/", trim(captureStream($response))));
+    $header = $rows[0];
+    $data   = $rows[1];
+
+    foreach ($cases as $handle => [$raw, $expected]) {
+        $idx = array_search($handle, $header, true);
+        expect($data[$idx])->toBe($expected);
+    }
+});
+
+it('neutralises formula-injection in XLSX exports', function () {
+    CustomFieldDef::create([
+        'model_type' => 'contact',
+        'handle'     => 'note',
+        'label'      => 'Note',
+        'field_type' => 'text',
+        'sort_order' => 1,
+    ]);
+
+    Contact::factory()->create([
+        'first_name'    => 'Mallory',
+        'custom_fields' => ['note' => '=HYPERLINK("http://evil","x")'],
+    ]);
+
+    $response = app(ListExportService::class)->stream(
+        query: Contact::query()->orderBy('created_at'),
+        columnSpec: ContactResource::exportColumnSpec(),
+        format: 'xlsx',
+        filename: 'contacts.xlsx',
+        cfModelKey: 'contact',
+    );
+
+    $rows = readXlsxRows(captureStream($response));
+    $data = array_map(fn ($cell) => $cell->getValue(), $rows[1]);
+
+    expect(end($data))->toBe('\'=HYPERLINK("http://evil","x")');
+});
+
 it('cleans up the temp file even when row iteration throws mid-stream', function () {
     Contact::factory()->count(3)->create();
 

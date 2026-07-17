@@ -7,6 +7,7 @@ use App\Models\Page;
 use App\Models\SiteSetting;
 use Filament\Forms;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 
 class CmsFormFields
 {
@@ -46,6 +47,23 @@ class CmsFormFields
                 if ($state === 'published' && ! $get('published_at')) {
                     $set('published_at', now());
                 }
+            })
+            // Public-exposure warning gate (#32c): flags, at the moment of
+            // publishing, that the content becomes publicly visible. Member and
+            // system pages publish behind the portal login, so they don't warn.
+            ->helperText(function (Forms\Get $get) use ($type): ?HtmlString {
+                $publicSurface = $type !== 'page'
+                    || ! in_array($get('type'), ['member', 'system'], true);
+
+                if ($get('status') !== 'published' || ! $publicSurface) {
+                    return null;
+                }
+
+                return new HtmlString(
+                    '<span class="font-medium text-warning-600 dark:text-warning-400">'
+                    . 'Once published, this content is visible to anyone on the internet.'
+                    . '</span>'
+                );
             });
     }
 

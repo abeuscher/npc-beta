@@ -153,7 +153,9 @@ class EventImporter
                     'ticket_type'         => $regRow['ticket_type'] ?? null,
                     'ticket_fee'          => $regRow['ticket_fee'] ?? null,
                     'payment_state'       => $regRow['payment_state'] ?? null,
-                    'custom_fields'       => $regRow['custom_fields'] ?? [],
+                    'custom_fields'       => EventRegistration::sanitizeRichTextCustomFields(
+                        is_array($regRow['custom_fields'] ?? null) ? $regRow['custom_fields'] : [],
+                    ),
                 ]));
             }
         }

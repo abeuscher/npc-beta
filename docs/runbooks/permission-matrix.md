@@ -2,7 +2,7 @@
 
 Walks every admin surface (Filament resources, Filament pages, admin-shaped controllers) from each shipped role's perspective. Two gate layers per cell: the **UI gate** (Filament's `canAccess()` / `canViewAny()` / `canCreate()` / `canEdit()` / `canDelete()` / `->hidden()` table-action callbacks) and the **controller gate** (Laravel route middleware + the page-level abort hook for direct-URL reachability).
 
-Produced by session 280 (`sessions/280. Permission Audit.md`). The accidental-public-exposure data-classification notes append at 32b (`sessions/release-plan.md` § C3 — deferred half).
+Produced by session 280 (`sessions/280. Permission Audit.md`). The public-exposure controls (accidental-public-exposure work, release-plan item #32c Path A) were added by session 371 — Security S3; see the **Public-exposure controls** section below.
 
 ---
 
@@ -280,7 +280,7 @@ Controllers in `app/Http/Controllers/Admin/` are registered under the admin pane
 | **PresetController** | model policy (widget presets) | Standard. |
 | **WidgetDefaultsController** | model policy (widget defaults) | Standard. |
 | **HeroiconController** | auth-only (icon picker; no sensitive data) | Standard. |
-| **InlineImageUploadController** | auth-only (Quill editor inline image upload) | Standard. Sensitive consideration: any authenticated user can upload arbitrary inline images — disk quota concern, not a permission concern. Flag for 32b's data-classification work. |
+| **InlineImageUploadController** | auth-only (Quill editor inline image upload) | Standard. Sensitive consideration: any authenticated user can upload arbitrary inline images — disk quota concern, not a permission concern. |
 | **InvitationController** | `view_any_user` / `create_user` (presumed for show/store) | Only super_admin today (no role has `view_any_user`). |
 | **RandomDataGeneratorController** | super-admin only (dev tooling) per the Stripe test-mode detection stub | Production-guard work pending; see release-plan entry. |
 | **SetupChecklistController** | auth-only (setup checklist actions) | Standard. |
@@ -409,18 +409,34 @@ These tests pin the audit's empirical findings against regression. A future seed
 
 ---
 
-## Data classification
+## Public-exposure controls
 
-_(Partial — appended at 32b alongside the accidental-public-exposure work.)_
+_(Produced by session 371 — Security S3, absorbing release-plan item #32c "accidental public exposure" (Path A). Supersedes the session-280 "data classification" stub.)_
 
-The classification axis is orthogonal to the role axis: which **fields** within each surface carry sensitivity (home addresses, donor amounts, internal notes), independent of which roles can reach the surface. The matrix above gates surface-level access; field-level classification gates which fields a role with surface access can see / edit. 32b is the session that lifts this work.
+**Deliberate non-goal: there is no field-level sensitivity registry.** The app does not tag columns as "sensitive" vs "not sensitive." An authoritative taxonomy is a maintenance and liability burden — every field omitted from it reads as an assertion that the field is safe to expose. Protection is instead **structural** (sensitive CRM data has no path to a public surface) and **action-based** (the moment an admin makes content public, a warning fires). Both are described below.
 
-Items already surfaced as scope for 32b:
+### Sensitive CRM data cannot reach a public surface (structural)
 
-- **Contact home addresses** — `treasurer` can view contacts (read-only) to support donation receipt mailing, but should they see home addresses? Donation receipts use address; debate is whether the address column should be visible in the list view vs only on the print-receipt surface.
-- **Donor amounts on the contact detail page** — should `volunteer_coordinator` (who has full contact edit) see donation history on a contact? Today the contact detail page surfaces donations; volunteer-coordinators might not need that view.
-- **Internal notes** — `is_internal` flag on Note records doesn't exist today (carried-forward decision from session 276). A future "internal notes" feature would need field-level visibility gates per role.
-- **Public-content indicators** — pages / posts / collections / widgets carry various "public" flags (published, is_public, etc.). The accidental-exposure work documents each one and any warning UX before flipping a flag from private to public.
+Contacts, Donations, Memberships, Organizations, and internal Notes are architecturally excluded from the public CMS. This is enforced in code, not by convention:
+
+- **No public data path exists for them.** The widget contract resolver (`app/WidgetPrimitive/ContractResolver.php`) has no `contact` source arm — a contact's home address is surfaced by no page-canvas widget at all.
+- **The donor / note / membership widgets are admin-only and fail closed.** `RecentDonations`, `RecentNotes`, and `MembershipStatus` declare `allowedSlots = ['record_detail_sidebar']`, carry a `requiredPermission` (`view_donation` / `view_note` / `view_membership`), and resolve to empty unless the ambient record is the `Contact` being viewed. On a public or member-page canvas the ambient record is null and the permission check runs against the (absent) admin guard, so they render nothing.
+- **Write-time slot enforcement.** The page-builder add-widget API (`PageBuilderApiController::store`) rejects (422) any widget whose `allowedSlots` excludes `page_builder_canvas` — mirroring the dashboard and record-detail builders. A crafted request cannot attach an admin / record-context widget to a page even though it would render blank anyway.
+- **Collections gate on `publicSurface`.** A collection is queryable from a public page only when `is_public = true` (and items only when `is_published = true`); admin slots pass `publicSurface: false`. CRM entities are excluded from the collection system entirely (see the header note on `CollectionResource`).
+- **Member pages self-scope.** Member-facing data widgets (`PortalEventRegistrations`, `PortalAccountDashboard`, `PortalContactEdit`) read strictly through `auth('portal')->user()->contact` — no request-supplied identifier selects the contact, so a member cannot reach another member's data (regression-guarded by `MemberPageWidgetScopingTest`).
+
+### Making content public is a warning gate, never silent (action-based)
+
+Publishing is a legitimate everyday action, so these are warnings + indicators, not hard blocks (project rule: security over usability moves friction to the UX layer, it does not cripple the core feature). The leak-capable switches:
+
+| Switch | Surface | Warning UX |
+|---|---|---|
+| Page `status` → `published` | `CmsFormFields::statusField` (all CMS resources) | Reactive warning: "Once published, this content is visible to anyone on the internet." Suppressed for `member` / `system` pages (portal-gated, not public). |
+| Page `type` (public vs `member`) | `PageResource` create form | `member` pages publish behind the portal login; only public types warn. `type` is set at create and has no edit-time control to flip an existing `member` page public. |
+| Collection `is_public` | `CollectionResource` | Reactive warning when enabled: do not enable for collections holding personal, financial, or membership data. |
+| `CollectionItem.is_published` | Collection item relation | Per-item publish gate; only published items render publicly. |
+
+The accountability / audit-trail half (release-plan **C3a** — who flipped what, when) is deferred until the first customer; the protections above do not depend on it.
 
 ---
 

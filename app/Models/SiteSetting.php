@@ -18,6 +18,26 @@ class SiteSetting extends Model
     ];
 
     /**
+     * Save-time sanitizer backstop. SiteSetting is the one rich-text model whose
+     * sanitization historically lived only in set(); this hook funnels every
+     * write path (create/update/firstOrCreate/seeders) for a rich-text key
+     * through HtmlSanitizer, so no path can store raw HTML. Encrypted-type rows
+     * are skipped — set() sanitizes those before encrypting.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $setting): void {
+            if (
+                in_array($setting->key, self::RICH_TEXT_KEYS, true)
+                && $setting->type !== 'encrypted'
+                && is_string($setting->value)
+            ) {
+                $setting->value = HtmlSanitizer::sanitize($setting->value);
+            }
+        });
+    }
+
+    /**
      * Read a setting from cache/DB, returning $default if the key doesn't exist.
      * Value is cast based on the row's `type` column.
      */

@@ -31,3 +31,43 @@ it('does not sanitise non-rich-text keys', function () {
 
     expect(SiteSetting::get('admin_email'))->toBe('admin@example.com');
 });
+
+// The save-time hook is the backstop for write paths that skip set() — direct
+// create()/update() and the firstOrCreate() the seeders use. Read the stored
+// column directly (not the cached get()) so these prove the DB write itself.
+
+it('sanitises a rich-text key written via create() (bypassing set())', function () {
+    SiteSetting::create([
+        'key'   => 'dashboard_welcome',
+        'value' => '<p>Hi.</p><script>alert(1)</script>',
+        'group' => 'general',
+        'type'  => 'string',
+    ]);
+
+    expect(SiteSetting::where('key', 'dashboard_welcome')->value('value'))
+        ->toBe('<p>Hi.</p>');
+});
+
+it('sanitises a rich-text key written via firstOrCreate (the seeder path)', function () {
+    SiteSetting::firstOrCreate(
+        ['key' => 'system_page_content_email_verify'],
+        ['value' => '<h1>Verify</h1><script>bad()</script>', 'group' => 'system', 'type' => 'string'],
+    );
+
+    expect(SiteSetting::where('key', 'system_page_content_email_verify')->value('value'))
+        ->toBe('<h1>Verify</h1>');
+});
+
+it('sanitises a rich-text key on a direct model update()', function () {
+    $setting = SiteSetting::create([
+        'key'   => 'dashboard_welcome',
+        'value' => '<p>clean</p>',
+        'group' => 'general',
+        'type'  => 'string',
+    ]);
+
+    $setting->update(['value' => '<p onclick="x()">edited</p>']);
+
+    expect(SiteSetting::where('key', 'dashboard_welcome')->value('value'))
+        ->toBe('<p>edited</p>');
+});

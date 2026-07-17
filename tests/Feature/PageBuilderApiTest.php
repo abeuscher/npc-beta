@@ -868,3 +868,31 @@ it('buildTree eager-loads owner so widget count does not drive query count', fun
 
     expect(count($queries))->toBeLessThan(29);
 });
+
+// ── Public-exposure: write-time slot enforcement (S3) ────────────────────────
+
+it('rejects adding a record-context/admin widget to a page canvas at write time', function () {
+    $page = apiPage();
+    $wt   = WidgetType::where('handle', 'recent_donations')->firstOrFail();
+
+    $response = $this->actingAs(apiUser())
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
+            'widget_type_id' => $wt->id,
+        ]);
+
+    $response->assertStatus(422);
+    expect(PageWidget::forOwner($page)->count())->toBe(0);
+});
+
+it('still allows a canvas-eligible widget to be added to a page', function () {
+    $page = apiPage();
+    $wt   = WidgetType::where('handle', 'text_block')->firstOrFail();
+
+    $this->actingAs(apiUser())
+        ->postJson(apiPrefix() . "/pages/{$page->id}/widgets", [
+            'widget_type_id' => $wt->id,
+        ])
+        ->assertStatus(201);
+
+    expect(PageWidget::forOwner($page)->count())->toBe(1);
+});

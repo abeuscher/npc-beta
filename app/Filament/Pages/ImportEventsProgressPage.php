@@ -471,7 +471,12 @@ class ImportEventsProgressPage extends Page
         }
 
         if (! empty($customFields)) {
-            $payload['custom_fields'] = $customFields;
+            // withoutEvents() below suppresses the SanitisesRichTextCustomFields
+            // saving() hook along with the observer, so funnel rich-text custom
+            // fields through the sanitizer explicitly here.
+            $payload['custom_fields'] = EventRegistration::sanitizeRichTextCustomFields(
+                is_array($customFields) ? $customFields : [],
+            );
         }
 
         if ($this->importSessionId) {

@@ -28,6 +28,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class CollectionResource extends Resource
@@ -95,10 +96,17 @@ class CollectionResource extends Resource
 
                 Forms\Components\Toggle::make('is_public')
                     ->label('Public')
-                    ->helperText(
-                        'Only public collections can be queried from public-facing components. ' .
-                        'Do not enable for collections containing personal, financial, or membership data.'
-                    ),
+                    ->live()
+                    // Public-exposure warning gate (#32c): escalates to a visible
+                    // warning the moment the collection is made public-queryable.
+                    ->helperText(fn (Forms\Get $get): HtmlString => $get('is_public')
+                        ? new HtmlString(
+                            '<span class="font-medium text-warning-600 dark:text-warning-400">'
+                            . 'Public collections can be queried from public-facing components — '
+                            . 'do not enable for collections containing personal, financial, or membership data.'
+                            . '</span>'
+                        )
+                        : new HtmlString('Only public collections can be queried from public-facing components.')),
 
                 Forms\Components\Toggle::make('is_active')
                     ->label('Active')
