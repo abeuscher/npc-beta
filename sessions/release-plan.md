@@ -128,7 +128,7 @@ Each entry carries: gate, prerequisites, success criterion, artifact, estimated 
 
 ### First-customer stage — Client Billing & Account *(gate: `first-customer`)*
 
-The Client Billing & Account track (`sessions/tracks/client-billing-and-account.md`, planned at agentic session A012) folded in here at the 366 close. **Gate `first-customer`, not `release`** — this is *commercial* readiness (how a client org pays, sees its account, and is suspended / offboarded), not Beta-1 *product* readiness, so it does **not** block Beta 1. Stripe holds the money + risk; Fleet Manager owns billing centrally and pushes state to nodes; each node gets a read-only account window + a hard suspension gate. **No vendor-Stripe anything CRM-side, by design.** The owner sequenced **CB1 as session 366, ahead of the rest of Phase A** (A3 multi-node / A4 drill deferred), because the billing track is urgent (8–10 sessions across both repos). CRM-side entries are CB1–CB3 below; FM-side is FM-B1…FM-B5 (track doc Appendix B, FM repo). CB2 depends only on CB1 (not on any FM session) — the two repos run in parallel from here.
+The Client Billing & Account track (`sessions/tracks/client-billing-and-account.md`, planned at agentic session A012) folded in here at the 366 close. **Gate `first-customer`, not `release`** — this is *commercial* readiness (how a client org pays, sees its account, and is suspended / offboarded), not Beta-1 *product* readiness, so it does **not** block Beta 1. Stripe holds the money + risk; Fleet Manager owns billing centrally and pushes state to nodes; each node gets a read-only account window + a hard suspension gate. **No vendor-Stripe anything CRM-side, by design.** The owner sequenced **CB1 as session 366, ahead of the rest of Phase A** (A3 multi-node / A4 drill deferred), because the billing track is urgent (8–10 sessions across both repos). CRM-side entries are CB1–CB3 below; FM-side is FM-B1…FM-B5 (track doc Appendix B, FM repo). CB2 depends only on CB1 (not on any FM session) — the two repos run in parallel from here. **CB3 was withdrawn at session 368 on a false premise** (it assumed a prospect's server runs in demo mode), so **the CRM lane of this track is complete at CB1 + CB2**; everything remaining is FM-side.
 
 #### CB1. Client Billing — Contract v2.6.0 + Node Suspension Gate ✅
 
@@ -146,13 +146,13 @@ The Client Billing & Account track (`sessions/tracks/client-billing-and-account.
 - **artifact:** the page + permission + guard cases. Prompts drafted at the 366 close (`sessions/367. …`).
 - **estimated time cost:** 1 session. *(Actual: 1 session — 367. Page + `manage_account` (no shipped role) + both banners + the two guard cases + help doc; fast Pest 3025 → 3045/0. Non-boundary — contract stayed v2.6.0. CB3 deliberately **not** folded in.)*
 
-#### CB3. Client Billing — Demo Conversion Cleanup Command (node half)
+#### CB3. Client Billing — Demo Conversion Cleanup Command (node half) ❌ *(withdrawn at session 368)*
 
 - **gate:** first-customer
-- **prerequisites:** CB1; pairs with the FM-side conversion-flow session (FM-B4).
-- **success criterion:** a one-shot idempotent artisan command run post-conversion over FM's SSH channel — removes the shared demo login account, unlocks demo-locked pages; non-destructive by design; safe to re-run; tests. *(Small — fold into CB2 if scheduling favors it.)*
-- **artifact:** the command.
-- **estimated time cost:** ≤ 0.5 session (fold candidate).
+- **withdrawn, not deferred — the entry had no work in it.** It assumed a prospect's server is a "personalized demo" running in demo mode, flipped to production at conversion, leaving a shared demo login account and blanket-locked pages behind for a cleanup command to sweep. **False premise.** A prospect's node is an ordinary production node: `isDemoMode()` is the only demo switch in the CRM, `/demo/enter` (the sole creator of `demo@demo.local`) 404s unless it is true, and the two commands that lock pages both hard-gate on it. There was nothing to remove and nothing to unlock. Session 368 corrected the track doc's § Design decision 4 — which was the source of the conflation — added a § Vocabulary table fixing "demo" to mean the shared public sandbox and nothing else, and shrank the FM-side conversion sequence (FM-B4) from seven steps to four. **No code changed. CB1 + CB2 are the complete CRM lane of the track.**
+- **findings that outlive the entry:** (1) `pages.author_id` + `events.author_id` are `NOT NULL` with `ON DELETE RESTRICT` against `users`, so **row-deleting any user who has authored a page or event raises a foreign-key violation** — verified empirically; nothing hits it today because the demo server rebuilds by dropping tables, not deleting rows. Any future work that deletes a user must reassign authorship first (`Page` soft-deletes, so trashed pages still hold the constraint). (2) The `demo` **role** is seeded on every node (`PermissionSeeder`, no environment check) while the demo **account** is correctly gated (`DatabaseSeeder`, `isDemoMode()`) — owner-logged at 368 for a future housekeeping pass.
+- **artifact:** none. See `sessions/368. Client Billing — Demo Conversion Cleanup Command — Log.md`.
+- **estimated time cost:** 0 (withdrawn).
 
 ### Phase B — Onboarding cluster
 
@@ -701,7 +701,7 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 48. **A4.** DB wipe + backup recovery — runbook polish *(moved here from position 7 at 282 audit)*
 48a. **CB1.** Client Billing — Contract v2.6.0 + Node Suspension Gate ✅ *(session 366 — folded in at 366 close under the new `first-customer` gate; owner sequenced it ahead of the deferred A3/A4. Additive v2.5.0 → v2.6.0: node suspension flag + one enforcement middleware, the display-only billing-state reader, the `suspension` health subcheck. Non-Beta-1-blocking. See the `#### CB1.` block.)*
 48b. **CB2.** Client Billing — "My Account" Page + Manage-Account Permission ✅ *(session 367 — non-boundary, contract stayed v2.6.0, no schema. Read-only Filament "Account" page rendering exclusively from the FM-pushed billing-state document; self-hides with no document; prominent past-due/grace banner + slim `page.start` panel-wide banner (both `manage_account`-gated); `manage_account` seeded and granted to **no shipped role** — the deliberate version of the s280 unassigned-permission finding; two convention-drift guard cases pin the two-Stripes separation. See the `#### CB2.` block.)*
-48c. **CB3.** Client Billing — Demo Conversion Cleanup Command (node half) *(CRM; pairs with FM-B4; ≤0.5 session, fold candidate into CB2)*
+48c. ~~**CB3.** Client Billing — Demo Conversion Cleanup Command (node half)~~ ❌ **withdrawn at 368** — false premise (a prospect's node is an ordinary production node, never a demo node); no work in it. CRM lane of the billing track closes at CB2.
 49. ~~**A5.** 2FA for admin accounts~~ ✅ *(closed at session 359 — mandatory admin TOTP 2FA; see the `#### A5.` block. Surfaced the admin-lockout-recovery follow-up → session 360.)*
 50. **C3a.** Page-action accountability + audit trail *(feature half lifted at 282 audit as prereq for #32c; precedes #32c)*
 51. **C3-deferred-concurrent.** Concurrent admin editing *(slim (b) refit at 282 audit; #32b. Note: session 281 was scheduled for the original (a)-scope plan but was never executed.)*
