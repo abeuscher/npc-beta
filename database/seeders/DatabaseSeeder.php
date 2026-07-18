@@ -152,6 +152,12 @@ class DatabaseSeeder extends Seeder
                 'footer_reason' => 'You received this email because you made a donation to {{org_name}} in {{tax_year}}.',
             ],
             [
+                'handle'        => 'donation_acknowledgment',
+                'subject'       => 'Thank you for your donation — {{org_name}}',
+                'body'          => '<p>Dear {{contact_name}},</p><p>Thank you for your generous gift of <strong>${{amount}}</strong> to {{org_name}}, received on {{date}}. This letter is your official receipt for this contribution.</p><p><strong>Gift details</strong><br>Amount: ${{amount}}<br>Date: {{date}}<br>Fund: {{fund}}<br>Reference: {{reference}}</p><p>No goods or services were provided in exchange for this contribution. Please retain this letter for your tax records.</p><p>With gratitude,<br>{{org_name}}</p>',
+                'footer_reason' => 'You received this email because you made a donation to {{org_name}}.',
+            ],
+            [
                 'handle'  => 'form_submission',
                 'subject' => 'New submission: {{form_title}}',
                 'body'    => '<p>A new submission was received from the <strong>{{form_title}}</strong> form.</p>{{submission}}',

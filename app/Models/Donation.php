@@ -45,6 +45,7 @@ class Donation extends Model
         'stripe_customer_id',
         'started_at',
         'ended_at',
+        'acknowledged_at',
         'import_source_id',
         'import_session_id',
         'external_id',
@@ -52,10 +53,11 @@ class Donation extends Model
     ];
 
     protected $casts = [
-        'amount'        => 'decimal:2',
-        'started_at'    => 'datetime',
-        'ended_at'      => 'datetime',
-        'custom_fields' => 'array',
+        'amount'          => 'decimal:2',
+        'started_at'      => 'datetime',
+        'ended_at'        => 'datetime',
+        'acknowledged_at' => 'datetime',
+        'custom_fields'   => 'array',
     ];
 
     public function contact(): BelongsTo

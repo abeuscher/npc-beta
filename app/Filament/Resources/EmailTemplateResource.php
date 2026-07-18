@@ -150,6 +150,10 @@ class EmailTemplateResource extends Resource
             return '`{{form_title}}` `{{submission}}` — {{submission}} expands to a table of the submitted field values (body only; not available in the subject line).';
         }
 
+        if ($handle === 'donation_acknowledgment') {
+            return '`{{contact_name}}` `{{org_name}}` `{{amount}}` `{{date}}` `{{fund}}` `{{reference}}` — the automatic per-gift receipt sent when a donation clears.';
+        }
+
         $all = '`{{first_name}}` `{{last_name}}` `{{event_title}}` `{{site_name}}`';
 
         $extra = match ($handle) {

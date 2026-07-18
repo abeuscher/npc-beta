@@ -18,6 +18,7 @@ Stripe-backed donation records. One row per donation commitment (one-off or recu
 | stripe_customer_id | string | yes | Stripe customer ID; set for recurring donations |
 | started_at | timestamp | yes | Set when status transitions to active |
 | ended_at | timestamp | yes | Set when subscription is cancelled |
+| acknowledged_at | timestamp | yes | Set when the automatic per-gift tax-acknowledgment email is queued (session 373 / C3b). Null = not yet acknowledged. Per-gift idempotency marker so a webhook replay never double-emails the donor; distinct from the annual `donation_receipts` table keyed `(contact_id, tax_year)`. Marks the initial gift only — recurring renewals are a per-charge concern (fast-follow). |
 | import_source_id | uuid | yes | FK→import_sources, nullOnDelete. Set for imported donations. |
 | import_session_id | uuid | yes | FK→import_sessions, nullOnDelete. Set for imported donations so rollback can cascade. |
 | external_id | string | yes | Source-system record ID for dedupe. |

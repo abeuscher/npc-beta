@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DonationAcknowledgment;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\EventRegistration;
@@ -12,6 +13,7 @@ use App\Models\Transaction;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\Response;
@@ -129,7 +131,7 @@ class StripeWebhookController extends Controller
             'started_at'             => now(),
         ]);
 
-        Transaction::recordStripe([
+        $transaction = Transaction::recordStripe([
             'subject_type' => Donation::class,
             'subject_id'   => $donation->id,
             'contact_id'   => $contact?->id,
@@ -137,7 +139,51 @@ class StripeWebhookController extends Controller
             'stripe_id'    => $intentId,
         ]);
 
+        $this->sendDonationAcknowledgment($donation, $contact, $amountTotal, $transaction);
+
         return response('OK', 200);
+    }
+
+    /**
+     * Queue the automatic per-gift tax acknowledgment for a completed donation.
+     *
+     * Idempotent by two independent guards: handleDonationCheckout() already
+     * early-returns on a webhook replay (a Transaction for this payment_intent
+     * exists), and `donations.acknowledged_at` is the explicit per-gift marker —
+     * set once the send is queued — so the same gift is never emailed twice even
+     * if the transaction guard is ever bypassed. Queued (not sent) so a
+     * mail-provider hiccup cannot fail the webhook, which must return 200 fast.
+     *
+     * Scope: the initial gift (checkout.session.completed). Recurring renewals
+     * (invoice.payment_succeeded) are a separate per-charge concern — one
+     * recurring donation row spans many charges, so acknowledged_at is the wrong
+     * grain for them — and are a deliberate fast-follow (session 373 / C3b).
+     */
+    private function sendDonationAcknowledgment(
+        Donation $donation,
+        ?Contact $contact,
+        int $amountTotal,
+        Transaction $transaction,
+    ): void {
+        if ($donation->acknowledged_at !== null) {
+            return;
+        }
+
+        if (! $contact || ! $contact->email) {
+            return;
+        }
+
+        $donation->loadMissing('fund');
+
+        Mail::to($contact->email)->queue(new DonationAcknowledgment(
+            contact:      $contact,
+            amount:       number_format($amountTotal / 100, 2),
+            donationDate: now()->format('F j, Y'),
+            reference:    $transaction->id,
+            fundName:     $donation->fund?->name,
+        ));
+
+        $donation->update(['acknowledged_at' => now()]);
     }
 
     private function handleEventRegistrationCheckout(object $session, object $metadata): Response
