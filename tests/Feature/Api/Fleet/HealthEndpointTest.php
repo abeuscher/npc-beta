@@ -48,10 +48,10 @@ it('returns the documented top-level keys on a successful poll', function () {
 });
 
 // guards: the contract_version pin FM's ContractValidator keys on; redundant catches are expected (every envelope test sees it)
-it('reports contract_version 2.6.0', function () {
+it('reports contract_version 2.7.0', function () {
     $response = $this->getJson('/api/health');
 
-    $response->assertJsonPath('contract_version', '2.6.0');
+    $response->assertJsonPath('contract_version', '2.7.0');
 });
 
 // guards: FM contract envelope clause (spec-mirror); deliberate overlap with the other shape tests

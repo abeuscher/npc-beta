@@ -34,7 +34,7 @@ it('returns the documented success envelope and resets the target', function () 
     ]);
 
     $response->assertStatus(200)
-        ->assertJsonPath('contract_version', '2.6.0')
+        ->assertJsonPath('contract_version', '2.7.0')
         ->assertJsonPath('status', 'success')
         ->assertJsonPath('email', $admin->email)
         ->assertJsonPath('actions_applied', ['reset_2fa', 'reset_password'])

@@ -1,6 +1,6 @@
 # Fleet Manager Agent Contract
 
-**Contract Version:** `2.6.0`
+**Contract Version:** `2.7.0`
 **Status:** active
 **Owner repo:** [npc-beta](https://github.com/abeuscher/npc-beta) (CRM)
 **Consumer repo:** Fleet Manager (separate repo, to be created)
@@ -41,12 +41,28 @@ mTLS — terminated by nginx at the TLS layer.
 - Authentication happens during the TLS handshake. Nginx is configured with `ssl_verify_client optional` at the server level and per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` strict-gates on **all five** FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup/trigger`, `/api/backup/blob`, `/api/admin/recover`). Public routes (admin, portal, marketing pages) stay reachable without a client cert; only the FM agent endpoints are gated.
 - Each CRM install trusts **exactly one** specific FM-side cert, configured at nginx via `ssl_client_certificate` pointed at `/etc/nginx/certs/fm-client.crt`. No CA, no PKI tooling, no chain. Direct trust against the per-install cert.
 - The FM operator pastes the trusted cert into the CRM droplet at `/opt/nonprofitcrm/nginx-certs/fm-client.crt` (bind-mounted into the nginx container). Restart nginx to apply.
-- The application sees no auth signal. If the request reached the controller (any of the five), nginx already validated the client-cert presentation. PHP does not authenticate, does not read the cert, does not derive identity from it. The discipline is "trust the connection."
+- The application does not read the client cert. If the request reached the controller (any of the five), nginx already validated the client-cert presentation. PHP does not read the cert, does not derive identity from it. The mTLS discipline is "trust the connection." **(As of v2.7.0 the app adds an *independent* second gate behind this — a shared-secret header the app checks, not derived from the cert. See § App-layer second gate below. When that gate is enforced, request arrival at the controller is no longer proof of auth on its own: the request also carried a valid gate secret.)**
 - Authentication failures are emitted by nginx, not the application. With `ssl_verify_client optional` at the server level, the TLS handshake completes either way; nginx then returns an HTTP error before the request ever reaches PHP. The specific code depends on the failure mode:
   - **No client cert presented:** the per-location `if ($ssl_client_verify != "SUCCESS") { return 403; }` gate fires → `403 Forbidden`.
   - **A client cert is presented but does not match the trusted cert:** nginx's SSL error path fires → `400 Bad Request` with body "The SSL certificate error".
-  In both cases the body is plain HTML emitted by nginx, not a JSON envelope. There is no application-layer JSON `401` envelope in v2.0.0; consumers should not expect one for auth failures.
+  In both cases the body is plain HTML emitted by nginx, not a JSON envelope. These are the **mTLS-layer** failures. **A separate app-layer JSON `401` was added in v2.7.0** for the second-gate failure (a request that passes mTLS but fails the shared-secret check) — see § App-layer second gate and § Response — app-layer gate failure. The two are distinguishable by shape: nginx failures are plain HTML `403`/`400`; the app-gate failure is a JSON `401`.
 - **One cert per install in v2.x.** Reusing the same cert across multiple CRM installs is forbidden — Fleet Manager treats each install as a distinct credential boundary, and a leaked shared keypair would compromise the entire fleet at once. Multi-FM-instance support (one CRM trusting multiple FM-side certs) would land as an additive v2.x bump.
+
+### App-layer second gate (mTLS backstop, v2.7.0)
+
+Before v2.7.0 the nginx mTLS check was the **only** authentication on the five FM endpoints: each endpoint hung on a single per-location `if ($ssl_client_verify != "SUCCESS")`, and the app deliberately trusted the connection. One nginx regression, misconfig, or location-shadowing on the blob or recover endpoint silently exposed the whole donor DB or an admin credential reset. v2.7.0 adds a **second, independent lock inside the application**, behind the mTLS termination, so two things must both hold — not one.
+
+```
+App gate — a per-install shared secret, sent as an HTTP request header, checked in the application.
+```
+
+- **The header.** When enforced, every request to all five FM endpoints must carry `X-Fleet-Gate-Key: <per-install secret>`. The application compares it against the node's configured secret with a constant-time comparison. This is **not derived from the client cert** — it is a separate credential on a separate channel, which is what makes it independent of the TLS layer: an nginx misconfiguration that lets an un-certed request through still fails the app gate, because the secret never passes through nginx's cert machinery.
+- **Backstop, not replacement.** The gate does **not** replace nginx's `ssl_client_verify` check — it backstops it. Both locks stand; both must hold when the gate is enforced. mTLS remains the primary, TLS-layer authentication.
+- **Inert until provisioned — additive, no flag day.** The secret lives in a node env value (`FLEET_GATE_SECRET`). **Absent = the gate is inert**, and the endpoints behave exactly as they did at v2.6.0 (mTLS is the only lock). So a v2.7.0 CRM image is a no-op on every running node until a secret is provisioned — the bump is additive by construction, like `SUSPENSION_STATE` (absent = `none`). The second lock becomes live on a node the moment that node has a secret.
+- **Enforced behaviour.** When the node's secret is set, a request missing the header, or carrying a header that does not match, is rejected by the application with a JSON `401` envelope (see § Response — app-layer gate failure). This is the **first app-layer auth envelope in v2.x** — it supersedes the earlier "there is no application-layer JSON `401`" statement for the enforced case. Requests that carry the correct header proceed to the controller as before.
+- **One secret per install.** Like the cert, the gate secret is per-install and never shared across nodes. Fleet Manager generates a distinct high-entropy secret per node.
+- **FM-side absorption — send the header first, then push the secret.** Fleet Manager provisions the secret over its **existing single-key `.env` config-push channel** (the same machinery that pushes `SUSPENSION_STATE` and per-node config over SSH, then recreates the container) — no new inbound surface on the node, no HTTP endpoint. To absorb without a flag day, the order is load-bearing: FM first ships the client change that **sends `X-Fleet-Gate-Key` on every request** (harmless while the node's secret is still unset and the gate inert), and only **then pushes `FLEET_GATE_SECRET`** to the node to switch enforcement on. Doing it in the other order — pushing the secret before FM sends the header — would lock FM out for one poll cycle. There is no window in which a correctly-absorbing FM is rejected.
+- **Why a shared secret and not cert-fingerprint forwarding.** Forwarding nginx's verified client-cert fingerprint to the app for re-verification was considered and rejected: it re-checks a value nginx populates, so it still trusts the same nginx layer the second lock exists to backstop, and it would add new cert-forwarding surface to the nginx config. A shared secret the app owns is genuinely TLS-independent.
 
 ## `/api/health` — Response — `200 OK` (success, including subcheck failures)
 
@@ -543,6 +559,21 @@ Applies to all five FM agent endpoints (`/api/health`, `/api/logs`, `/api/backup
 - **`403 Forbidden`** — no client cert presented. The TLS handshake completes (because `ssl_verify_client` is `optional` at the server level so public routes stay reachable); the per-location gate then fires `if ($ssl_client_verify != "SUCCESS") { return 403; }`. Fleet Manager seeing repeated `403`s should suspect FM-side config (the HTTP client is not configured to present its cert).
 - **`400 Bad Request`** — body "The SSL certificate error". A cert was presented but did not match the trusted cert at `ssl_client_certificate`. Fleet Manager seeing repeated `400`s should suspect cert misalignment (the FM-side cert no longer matches what the CRM trusts; the operator may need to re-paste).
 
+## Response — app-layer gate failure (v2.7.0, application-emitted)
+
+Applies to all five FM agent endpoints. Emitted by the **application** (not nginx) when the node has a gate secret configured (the gate is enforced) and the request either omits `X-Fleet-Gate-Key` or presents a value that does not match. Distinct from the nginx-emitted mTLS failures above: this is a JSON envelope, and it means the request **passed** mTLS but failed the second lock.
+
+```json
+{
+  "error": "fleet_gate_unauthorized",
+  "message": "missing or invalid Fleet Manager gate credential"
+}
+```
+
+- **HTTP `401 Unauthorized`.** JSON body, `{error, message}` shape (mirrors the `/api/logs` error envelopes — no `contract_version` field, no secret echoed, no PII, no hint about the expected value).
+- The `message` is a fixed string; it never reflects the supplied value back.
+- When the node has **no** gate secret configured, this response is never emitted — the gate is inert and requests reach the controller under mTLS alone (see § App-layer second gate). Fleet Manager seeing a `401` here should suspect it is not sending `X-Fleet-Gate-Key`, or the secret it holds no longer matches the node's (re-provision via the config-push channel).
+
 ## Response — `429 Too Many Requests`
 
 Applies to all five FM agent endpoints (each has its own throttle bucket). `/api/health`, `/api/logs`, and `/api/backup/blob` use `throttle:60,1` (60 rpm per IP); `/api/backup/trigger` and `/api/admin/recover` use `throttle:6,1` (6 rpm per IP) — backups are expensive, and admin recovery is a sensitive auth-mutating operation. Standard Laravel rate-limiter response. Fleet Manager should back off with exponential jitter and retry. The throttles defend against polling-bug storms on the FM side; well-behaved consumers will never see this.
@@ -568,10 +599,10 @@ The CRM-side reads its emitted `contract_version` from the `HealthController::CO
 
 ## Security posture
 
-- Authentication is enforced at the TLS layer by nginx. The application has no auth code path for any of the five FM endpoints — request arrival IS the auth proof.
+- Authentication is enforced at the TLS layer by nginx (mTLS), and — as of v2.7.0 — backstopped by an independent app-layer shared-secret gate (§ App-layer second gate). Two locks: nginx validates the client cert; the application separately validates a per-install secret header. When the gate is enforced, both must hold. The gate is inert on a node with no secret configured, in which case mTLS is the only lock, exactly as before v2.7.0.
 - Per-install cert trust: each CRM install trusts exactly one FM-side cert. Compromise of one install's cert does not cascade across the fleet.
 - All five routes are in the API middleware group — stateless, no session, no CSRF. The throttle middleware applies independently of cert presentation.
-- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** (or sanitised `message` strings on `/api/backup/trigger` and `/api/backup/blob`) where useful. The **one deliberate, documented exception** is `/api/admin/recover`, which returns a one-time `temporary_password` when `reset_password` runs (see that endpoint's security note) — scoped to the operator-recovery use case, transiting once over the mTLS-encrypted channel, never stored in plaintext. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. If a future audit surfaces a leak, redaction lands as a separate session, not retroactively.
+- No DB rows, user records, request payloads, exception messages, or stack traces appear in any response — only the documented response shapes and exception **class names** (or sanitised `message` strings on `/api/backup/trigger` and `/api/backup/blob`) where useful. The **one deliberate, documented exception** is `/api/admin/recover`, which returns a one-time `temporary_password` when `reset_password` runs (see that endpoint's security note) — scoped to the operator-recovery use case, transiting once over the mTLS-encrypted channel, never stored in plaintext. The `/api/logs` body returns Laravel application log lines verbatim and inherits the team's "don't log secrets" discipline; the endpoint does **not** re-redact. **This is a consciously-accepted residual (Security Hardening track, S2 / session 372 — recorded for the Gate-3 findings register).** The rationale, revisited at S2: the raw log tail is now behind **two** independent locks (mTLS + the app-layer gate), the FM operator is the node's own data controller with full node access regardless, and the correct control for "PII in logs" is logging hygiene at the write site — not lossy read-time redaction that would gut the endpoint's debugging value. If a future audit surfaces a concrete leak, redaction lands as a separate session, not retroactively.
 - All five endpoints are rate-limited at the application layer; nginx can apply additional rate-limiting if needed. The `/api/backup/trigger` and `/api/admin/recover` caps (`throttle:6,1`) are intentionally tighter than the others' (`throttle:60,1`) — backups are expensive to run, and admin recovery is a sensitive auth-mutating operation; blob downloads are I/O-bound and cheap, hence the 60/min ceiling on `/api/backup/blob`.
 - The cert at `ssl_client_certificate` has **no read access to anything** in the CRM beyond these five endpoints. It is not a user credential, not a session bootstrap, not a webhook secret. The application doesn't even read the cert — nginx alone validates it.
 - `/api/logs` is read-only. `/api/backup/blob` is read-only. There is no log-write, log-rotate, or log-delete affordance on the contract surface; there is no blob-write, blob-delete, or blob-mutation affordance on `/api/backup/blob` (write is mediated by `/api/backup/trigger` only).
@@ -671,6 +702,19 @@ FM starts writing the document + pushing the flag at FM-side session **FM-B2** (
 ---
 
 ## CHANGELOG
+
+### `2.7.0` — 2026-07-17 (session 372)
+
+**Additive within v2 major.** Adds an **app-layer second gate** behind the existing nginx mTLS termination on all five FM `/api/*` endpoints — the Security Hardening track's S2, acting on the "mTLS-only, no app-layer auth" risk concentration (a single per-location nginx `if` was the only lock on the whole donor DB via `/api/backup/blob` and admin credential reset via `/api/admin/recover`). The gate is a **per-install shared secret** the application checks independently of the TLS layer; it does **not** replace mTLS, it backstops it (two locks, both must hold when enforced). Nothing money-shaped or PII-shaped crosses the wire; no schema change, no migration, no new inbound surface on the node.
+
+- **The gate (new § App-layer second gate).** When enforced, every request to the five endpoints must carry `X-Fleet-Gate-Key: <per-install secret>`; the app compares it constant-time against the node's `FLEET_GATE_SECRET`. The secret is **not cert-derived** — a separate credential on a separate channel — so an nginx misconfig/regression/location-shadow that lets an un-certed request through still fails the app gate. Cert-fingerprint forwarding was considered and rejected (it re-trusts the nginx-populated value the second lock exists to backstop, and adds nginx surface).
+- **Inert until provisioned — additive, no flag day.** `FLEET_GATE_SECRET` **absent = gate inert**, endpoints behave exactly as at v2.6.0 (mTLS the only lock). A v2.7.0 image is a no-op on every running node until a secret is provisioned — additive by construction, same shape as `SUSPENSION_STATE` (absent = `none`). One secret per install, never shared (same discipline as the cert).
+- **Enforced failure = app-layer JSON `401`** (new § Response — app-layer gate failure). Missing/invalid header → `401 {error: "fleet_gate_unauthorized", message}` — a JSON envelope, distinct from nginx's plain-HTML `403`/`400` mTLS failures, so FM can tell "passed mTLS, failed the second lock" from "failed mTLS." This is the **first app-layer auth envelope in v2.x**; supersedes the earlier "no application-layer `401`" statement for the enforced case.
+- **FM-side absorption — send the header first, then push the secret.** FM provisions the secret over its **existing single-key `.env` config-push channel** (the `SUSPENSION_STATE` machinery), keeps its own copy, and sends it as the header on every request to all five endpoints. Order is load-bearing to avoid a flag day: ship the header-sending change **first** (harmless while the node secret is unset and the gate inert), **then** push `FLEET_GATE_SECRET` to enable enforcement. The reverse order locks FM out for one poll cycle.
+- **`/api/logs` PII tension resolved (conscious acceptance).** The raw-log-tail endpoint keeps returning verbatim Laravel log lines — now behind two locks, with the FM operator the node's own data controller, and logging-hygiene-at-the-write-site (not lossy read-time redaction) the correct control. Recorded as an accepted residual for the Gate-3 findings register (§ Security posture).
+- `HealthController::CONTRACT_VERSION` bumps `2.6.0 → 2.7.0` (via the shared `HasContractVersion` trait; `BackupController` and `RecoveryController` read the same constant, so their `contract_version` fields move to `2.7.0` automatically). Subcheck keys unchanged (still eight); response **shapes** unchanged.
+- **Forward-compatible with v2.6.0 consumers.** A v2.6.0 FM that does not yet send the header keeps working against any node that has not been given a secret (the common case at ship time). To turn the second lock on for a node, FM absorbs (send header, then push secret) per the order above.
+- **Out of scope (future / FM-repo).** Secret rotation tooling (rotate like the cert, via the config-push channel — no contract change); multi-secret / overlap windows; nginx-level rate-limiting of gate-failure storms (the app gate is a cheap constant-time check behind mTLS). No new endpoint; no schema change.
 
 ### `2.6.0` — 2026-07-08 (session 366)
 

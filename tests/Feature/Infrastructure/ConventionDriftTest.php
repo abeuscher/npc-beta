@@ -68,7 +68,7 @@ it('exposes the load-bearing trait constants with their expected shapes', functi
     // directly); ORG_SENTINEL_TYPES and DATE_PREFIX_PATTERN are private consts
     // accessed self:: from their host context — read all three via reflection.
     $contractVersion = (new ReflectionClassConstant(HasContractVersion::class, 'CONTRACT_VERSION'))->getValue();
-    expect($contractVersion)->toBe('2.6.0');
+    expect($contractVersion)->toBe('2.7.0');
 
     $sentinels = (new ReflectionClassConstant(InteractsWithImportWizard::class, 'ORG_SENTINEL_TYPES'))->getValue();
     expect($sentinels)->toBeArray()->not->toBeEmpty();
