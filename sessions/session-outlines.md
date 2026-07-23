@@ -302,11 +302,9 @@ Sized 1–2 sessions. Migration + observer/listener wiring + email template + To
 
 ---
 
-### Auto Tax Receipt Email *(stub — gate 2, launch-schedule position 4 at the 369 replan; C3b in `release-plan.md`; prereq stub for C4 rehearsal)*
+### Auto Tax Receipt Email — ✅ shipped at session 373 (C3b)
 
-Lifted at 282 Phase C audit. Successful donation (via Stripe Checkout webhook) automatically dispatches a tax-receipt email — donor name, amount, date, transaction id, fund (if specified), org tax-id/EIN, IRS-compliant language. Email template configurable via existing `manage_email_templates` admin surface. The current manual "Send Receipts" admin action on DonorsPage stays as a backfill/resend affordance.
-
-Sized 1 session. See `sessions/release-plan.md` § C3b.
+Automatic per-gift donation acknowledgment wired onto the Stripe donation-checkout webhook: new `donation_acknowledgment` email-template handle (admin-editable), `acknowledged_at` idempotency marker on `donations`, queued dispatch. **Initial gift only** — recurring renewals (`invoice.payment_succeeded`) a noted per-charge fast-follow. **No EIN stored** (owner data-minimization call — the IRS-required elements ship; EIN is self-serviceable via the editable template body). Annual `donation_receipt` statement + DonorsPage "Send Receipts" flow untouched. Non-boundary; contract stayed v2.7.0. See `sessions/373. C3b — Auto Tax Receipt Email — Log.md`.
 
 ---
 
