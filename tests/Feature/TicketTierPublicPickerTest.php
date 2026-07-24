@@ -220,3 +220,62 @@ it('projects tiers onto the EventRegistration contract with remaining_capacity',
         ->and($dto['item']['tiers'][0]['remaining_capacity'])->toBe(10)
         ->and($dto['item']['tiers'][0]['is_at_capacity'])->toBeFalse();
 });
+
+// ── Complimentary label (session 374 / C3c) — display-only ───────────────────
+
+it('projects is_complimentary onto the EventRegistration contract', function () {
+    $event = Event::factory()->create(['status' => 'published']);
+    TicketTier::factory()->for($event)->create(['name' => 'Comp', 'price' => 0, 'is_complimentary' => true]);
+
+    $contract = (new \App\Widgets\EventRegistration\EventRegistrationDefinition())
+        ->dataContract(['event_slug' => $event->slug]);
+
+    $context = new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext());
+    $dto = app(\App\WidgetPrimitive\ContractResolver::class)->resolve([$contract], $context)[0];
+
+    expect($dto['item']['tiers'][0]['is_complimentary'])->toBeTrue();
+});
+
+it('renders Complimentary for a comp $0 tier and Free for a plain $0 tier', function () {
+    (new \Database\Seeders\WidgetTypeSeeder())->run();
+
+    $event = Event::factory()->create(['status' => 'published']);
+    TicketTier::factory()->for($event)->create(['name' => 'Open Seat', 'price' => 0, 'is_complimentary' => false, 'sort_order' => 0]);
+    TicketTier::factory()->for($event)->create(['name' => 'Sponsor Comp', 'price' => 0, 'is_complimentary' => true, 'sort_order' => 1]);
+
+    $host = \App\Models\Page::factory()->create(['status' => 'published']);
+    $host->widgets()->create([
+        'widget_type_id' => \App\Models\WidgetType::where('handle', 'event_registration')->firstOrFail()->id,
+        'config'         => ['event_slug' => $event->slug],
+        'sort_order'     => 0,
+        'is_active'      => true,
+    ]);
+
+    // Render via a real page request — the widget template reads the shared
+    // $errors bag, which only exists inside the HTTP cycle.
+    $response = $this->get('/' . $host->slug);
+
+    $response->assertOk()
+        ->assertSee('Complimentary')
+        ->assertSee('Free');
+});
+
+it('the comp flag does not change routing — a mixed comp+paid order still goes to Stripe', function () {
+    config(['services.stripe.secret' => 'sk_test_fake']);
+
+    $event = Event::factory()->create(['status' => 'published']);
+    $paid  = TicketTier::factory()->for($event)->create(['name' => 'General', 'price' => 25, 'sort_order' => 0]);
+    $comp  = TicketTier::factory()->for($event)->create(['name' => 'Comp', 'price' => 0, 'is_complimentary' => true, 'sort_order' => 1]);
+
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Jane',
+        'email'       => 'jane@example.com',
+        'quantities'  => [$paid->id => 1, $comp->id => 1],
+        '_form_start' => time() - 10,
+    ]);
+
+    // The paid path creates pending rows, then deletes them when Stripe
+    // rejects the fake key. Either way, nothing lands as source=human —
+    // proof the order routed to Stripe rather than the free path.
+    expect(EventRegistration::where('email', 'jane@example.com')->where('source', 'human')->count())->toBe(0);
+});

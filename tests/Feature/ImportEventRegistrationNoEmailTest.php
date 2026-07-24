@@ -15,10 +15,11 @@ uses(TestCase::class, RefreshDatabase::class);
 /**
  * Flag 344-C (session 345): registrations created by the importers are
  * historical data, not live sign-ups, so the EventRegistrationObserver
- * (synchronous confirmation email + contact auto-create) must not fire. Both
- * importer seams wrap the create in EventRegistration::withoutEvents(); this
- * file pins the bundle (ContentImporter) seam, and asserts the observer still
- * fires for a normal registration so the suppression isn't global.
+ * (contact auto-create; the confirmation email until its session-374 move to
+ * the confirm-points) must not fire. Both importer seams wrap the create in
+ * EventRegistration::withoutEvents(); this file pins the bundle
+ * (ContentImporter) seam, and asserts a normal registration still emails so
+ * the suppression isn't global.
  */
 it('does not send a confirmation email for bundle-imported event registrations', function () {
     Mail::fake();
@@ -54,17 +55,18 @@ it('does not send a confirmation email for bundle-imported event registrations',
 });
 
 it('still sends a confirmation email for a normal (non-import) registration', function () {
+    // Session 374 relocated the dispatch from the observer to the confirm-
+    // points, so the contrast case goes through the public controller — the
+    // free-path confirm-point — rather than a bare model create.
     Mail::fake();
 
-    $event = Event::factory()->create(['auto_create_contacts' => true]);
+    $event = Event::factory()->create(['auto_create_contacts' => true, 'status' => 'published']);
 
-    EventRegistration::create([
-        'event_id'      => $event->id,
-        'name'          => 'Walk-up Guest',
-        'email'         => 'walkup@example.com',
-        'status'        => 'registered',
-        'registered_at' => now(),
-    ]);
+    $this->post(route('events.register', $event->slug), [
+        'name'        => 'Walk-up Guest',
+        'email'       => 'walkup@example.com',
+        '_form_start' => time() - 10,
+    ])->assertRedirect();
 
     Mail::assertSent(RegistrationConfirmation::class);
 });

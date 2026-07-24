@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\DonationAcknowledgment;
+use App\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\EventRegistration;
@@ -225,6 +226,15 @@ class StripeWebhookController extends Controller
             'amount'       => $amountTotal / 100,
             'stripe_id'    => $intentId,
         ]);
+
+        // One thank-you per order, at confirm time — payment is the confirm-
+        // point for the paid path (the free path emails in the registration
+        // controllers). Idempotent via the pending-only filter above: a webhook
+        // replay finds no pending rows and early-returns before reaching here.
+        // Queued (not sent) so a mail-provider hiccup cannot fail the webhook.
+        if (! empty($first->email)) {
+            Mail::to($first->email)->queue(new RegistrationConfirmation($first));
+        }
 
         return response('OK', 200);
     }

@@ -162,7 +162,7 @@ The admin panel is built with Filament 3 and lives at `/admin`. Each resource ha
 | Product checkout (POST) | `ProductCheckoutController::store` |
 | Donation checkout (POST) | `DonationCheckoutController::store` |
 | Web form submission (POST) | `FormSubmissionController::store` |
-| Event checkout (POST) | `EventCheckoutController::store` |
+| Portal event registration (POST) | `Portal\EventRegistrationController::store` |
 | Membership checkout (POST) | `MembershipCheckoutController::store` |
 | Product waitlist (POST) | `ProductWaitlistController::store` |
 | Events API (JSON) (`/api/events.json`) | `Api\EventsController::index` |

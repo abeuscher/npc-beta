@@ -98,3 +98,26 @@ it('rejects duplicate tier names within an event', function () {
 
     expect($event->fresh()->ticketTiers)->toHaveCount(0);
 });
+
+it('persists the is_complimentary toggle via the repeater', function () {
+    $admin = User::factory()->create();
+    $admin->assignRole('super_admin');
+    $this->actingAs($admin);
+
+    $event = Event::factory()->create();
+
+    Livewire::test(EditEvent::class, ['record' => $event->id])
+        ->fillForm([
+            'ticketTiers' => [
+                ['name' => 'General', 'price' => 25.00, 'capacity' => null, 'is_complimentary' => false],
+                ['name' => 'Comp',    'price' => 0,     'capacity' => 10,   'is_complimentary' => true],
+            ],
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $tiers = $event->fresh()->ticketTiers;
+    expect($tiers)->toHaveCount(2)
+        ->and($tiers->firstWhere('name', 'General')->is_complimentary)->toBeFalse()
+        ->and($tiers->firstWhere('name', 'Comp')->is_complimentary)->toBeTrue();
+});

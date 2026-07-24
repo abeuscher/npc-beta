@@ -19,12 +19,14 @@ class TicketTier extends Model
         'price',
         'capacity',
         'sort_order',
+        'is_complimentary',
     ];
 
     protected $casts = [
-        'price'      => 'decimal:2',
-        'capacity'   => 'integer',
-        'sort_order' => 'integer',
+        'price'            => 'decimal:2',
+        'capacity'         => 'integer',
+        'sort_order'       => 'integer',
+        'is_complimentary' => 'boolean',
     ];
 
     public function event(): BelongsTo

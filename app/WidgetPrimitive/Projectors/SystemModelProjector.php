@@ -232,6 +232,7 @@ final class SystemModelProjector
                 'registered'         => $registered,
                 'remaining_capacity' => $remaining,
                 'is_at_capacity'     => $isAtCap,
+                'is_complimentary'   => (bool) $tier->is_complimentary,
             ];
         })->values()->all();
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\RegistrationConfirmation;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\EventRegistrationQuantities;
@@ -9,6 +10,7 @@ use App\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class EventController extends Controller
 {
@@ -70,7 +72,7 @@ class EventController extends Controller
                 return back()->withErrors(['register' => 'This event is at capacity.']);
             }
 
-            EventRegistration::create([
+            $registration = EventRegistration::create([
                 ...$validated,
                 'event_id'            => $event->id,
                 'ticket_tier_id'      => null,
@@ -82,14 +84,17 @@ class EventController extends Controller
                 'mailing_list_opt_in' => (bool) ($validated['mailing_list_opt_in'] ?? false),
             ]);
 
+            $this->sendConfirmation($registration);
+
             return redirect($eventPageUrl)->with('registration_success', true);
         }
 
         $quantities = EventRegistrationQuantities::fromRequest($event, $request);
 
         if (! $quantities->isPaid()) {
+            $registrations = [];
             foreach ($quantities->lines as $line) {
-                EventRegistration::create([
+                $registrations[] = EventRegistration::create([
                     ...$validated,
                     'event_id'            => $event->id,
                     'ticket_tier_id'      => $line['tier']->id,
@@ -101,6 +106,10 @@ class EventController extends Controller
                     'mailing_list_opt_in' => (bool) ($validated['mailing_list_opt_in'] ?? false),
                 ]);
             }
+
+            // One thank-you per order, not per tier line. The template is
+            // event-level, so any row of the order carries the right tokens.
+            $this->sendConfirmation($registrations[0]);
 
             return redirect($eventPageUrl)->with('registration_success', true);
         }
@@ -147,5 +156,14 @@ class EventController extends Controller
             ->update(['stripe_session_id' => $session->id]);
 
         return redirect()->away($session->url);
+    }
+
+    private function sendConfirmation(EventRegistration $registration): void
+    {
+        if (empty($registration->email)) {
+            return;
+        }
+
+        Mail::to($registration->email)->send(new RegistrationConfirmation($registration));
     }
 }

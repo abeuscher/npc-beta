@@ -15,6 +15,7 @@ those rows; the registration flow picks one tier per registration via the
 | price | decimal(8,2) | no | default: 0; per-tier price in the site's currency |
 | capacity | unsignedInteger | yes | null = unlimited capacity for this tier |
 | sort_order | unsignedInteger | no | default: 0; lower values render first in the public picker |
+| is_complimentary | boolean | no | default: false; display-only "Complimentary" label in the admin repeater + public picker. Routing stays price-driven — a tier is free because `price = 0`, never because this flag is set. |
 | created_at | timestamp | no | |
 | updated_at | timestamp | no | |
 

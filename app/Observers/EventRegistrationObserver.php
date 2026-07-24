@@ -2,13 +2,17 @@
 
 namespace App\Observers;
 
-use App\Mail\RegistrationConfirmation;
 use App\Models\Contact;
 use App\Models\EventRegistration;
-use Illuminate\Support\Facades\Mail;
 
 class EventRegistrationObserver
 {
+    // The confirmation email is NOT sent here. Row creation is not order
+    // confirmation: paid rows are created `pending` before payment, and one
+    // order spans multiple rows. Dispatch lives at the confirm-points —
+    // EventController::register / Portal\EventRegistrationController::store
+    // (free path) and StripeWebhookController::handleEventRegistrationCheckout
+    // (paid path) — one email per order.
     public function created(EventRegistration $registration): void
     {
         $registration->loadMissing('event');
@@ -20,10 +24,6 @@ class EventRegistrationObserver
             && ! $registration->event->sold_out
             && $registration->event->isAtCapacity()) {
             $registration->event->update(['sold_out' => true]);
-        }
-
-        if (! empty($registration->email)) {
-            Mail::to($registration->email)->send(new RegistrationConfirmation($registration));
         }
 
         if (empty($registration->email)) {

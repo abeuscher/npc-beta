@@ -463,7 +463,15 @@ class EventResource extends Resource
                                         ->nullable()
                                         ->minValue(1)
                                         ->helperText('Leave blank for unlimited.')
-                                        ->columnSpan(5),
+                                        ->columnSpan(3),
+
+                                    Forms\Components\Toggle::make('is_complimentary')
+                                        ->label('Complimentary')
+                                        ->default(false)
+                                        ->inline(false)
+                                        ->dehydrateStateUsing(fn ($state) => (bool) $state)
+                                        ->helperText('Label only — a tier is free when its price is $0.')
+                                        ->columnSpan(2),
                                 ])
                                 ->columns(12)
                                 ->itemLabel(function (array $state): ?string {

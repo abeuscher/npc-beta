@@ -90,7 +90,12 @@
                     $remaining   = $tier['remaining_capacity'] ?? null;
                     $max         = $isOut ? 0 : ($remaining !== null ? (int) $remaining : 99);
                     $priceCents  = (int) round((float) $tier['price'] * 100);
-                    $priceStr    = ((float) $tier['price']) > 0 ? '$' . number_format((float) $tier['price'], 2) : 'Free';
+                    $isComp      = (bool) ($tier['is_complimentary'] ?? false);
+                    $priceStr    = match (true) {
+                        ((float) $tier['price']) > 0 => '$' . number_format((float) $tier['price'], 2),
+                        $isComp                      => 'Complimentary',
+                        default                      => 'Free',
+                    };
                     $oldQty      = old('quantities.' . $tier['id']);
                     $defaultQty  = $oldQty !== null ? max(0, (int) $oldQty) : $singleDefault;
                     if ($defaultQty > $max) {
