@@ -443,6 +443,9 @@ class EventResource extends Resource
                                     Forms\Components\TextInput::make('name')
                                         ->label('Name')
                                         ->required()
+                                        // Syncs on blur so the add-tier button's
+                                        // blank-row gate re-evaluates as names are filled.
+                                        ->live(onBlur: true)
                                         ->maxLength(255)
                                         ->placeholder('e.g. General, VIP, Member')
                                         ->columnSpan(4),
@@ -497,6 +500,15 @@ class EventResource extends Resource
                                 })
                                 ->defaultItems(0)
                                 ->addActionLabel('Add tier')
+                                // One blank row at a time: adding is blocked while any
+                                // tier still has no name. Clicking add collapses the
+                                // existing rows client-side so only the fresh form is open.
+                                ->addAction(fn (\Filament\Forms\Components\Actions\Action $action, Forms\Components\Repeater $component) => $action
+                                    ->extraAttributes([
+                                        'x-on:click' => "\$dispatch('repeater-collapse', '{$component->getStatePath()}')",
+                                    ])
+                                    ->disabled(fn (Forms\Components\Repeater $component): bool => collect($component->getState())
+                                        ->contains(fn ($item): bool => blank(((array) $item)['name'] ?? null))))
                                 ->collapsible()
                                 // Saved tiers load as static summary rows; click a row
                                 // to expand and edit. New tiers open expanded for entry.
