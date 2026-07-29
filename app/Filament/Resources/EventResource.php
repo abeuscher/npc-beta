@@ -479,15 +479,28 @@ class EventResource extends Resource
                                     if (blank($name)) {
                                         return null;
                                     }
+
                                     $price = $state['price'] ?? null;
-                                    if ($price === null || $price === '') {
-                                        return $name;
+                                    $label = match (true) {
+                                        $price === null || $price === '' => $name,
+                                        (float) $price > 0               => $name . ' — $' . number_format((float) $price, 2),
+                                        ! empty($state['is_complimentary']) => $name . ' — Complimentary',
+                                        default                          => $name . ' — Free',
+                                    };
+
+                                    $capacity = $state['capacity'] ?? null;
+                                    if ($capacity !== null && $capacity !== '') {
+                                        $label .= ' · ' . (int) $capacity . ' seat' . ((int) $capacity === 1 ? '' : 's');
                                     }
-                                    return $name . ' — $' . number_format((float) $price, 2);
+
+                                    return $label;
                                 })
                                 ->defaultItems(0)
                                 ->addActionLabel('Add tier')
                                 ->collapsible()
+                                // Saved tiers load as static summary rows; click a row
+                                // to expand and edit. New tiers open expanded for entry.
+                                ->collapsed()
                                 ->cloneable(),
                         ]),
                 ],
