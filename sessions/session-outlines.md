@@ -308,11 +308,11 @@ Automatic per-gift donation acknowledgment wired onto the Stripe donation-checko
 
 ---
 
-### Comp-Tier Polish + Skip-Stripe-on-Zero-Total *(stub — gate 2, launch-schedule position 5 at the 369 replan; C3c in `release-plan.md`; prereq stub for C5 rehearsal)*
+### Comp-Tier Polish + Skip-Stripe-on-Zero-Total — ✅ shipped at session 374 (C3c)
 
-Lifted at 282 Phase C audit. Event-registration flow handles comp tickets cleanly — when chosen tier(s) total $0, the public flow skips Stripe Checkout entirely and confirms the registration server-side, sending the thank-you email immediately. Admin can mark a tier `is_complimentary` (label in the picker; behavior driven by zero-price). Mixed-tier orders (e.g. 1 comp + 1 paid) continue through Stripe unchanged.
+`ticket_tiers.is_complimentary` display-only label (repeater toggle + "Complimentary" in the public picker; behaviour stays price-driven) + the confirmation-email timing fix — dispatch relocated from the per-row `EventRegistrationObserver` to the confirm-points (free-path controllers synchronous, paid webhook queued on `pending → registered`), one email per order, replay-idempotent via the pending-only filter; the pre-existing skip-Stripe-on-$0 path locked in with regression tests. Also shipped mid-session at owner request: collapsed-summary ticket-tier repeater rows + Add-tier blank-row gating. Non-boundary; contract stayed v2.7.0. See `sessions/374. C3c — Comp-Tier Polish + Skip-Stripe-on-Zero-Total — Log.md`.
 
-Sized 1 session. See `sessions/release-plan.md` § C3c.
+**Priorities pivot at 374 (owner ruling):** outreach ended; the project is now a **portfolio piece** — technical quality is the point. The launch schedule (A3 was next) is **suspended, not resolved**; session **375** fixes the production console errors (the enforced S1 CSP breaks Alpine's eval — the correct migration, not a policy loosening) and session **376** (plugin-architecture feasibility discussion) owns the roadmap reconciliation. Prompts for both drafted + owner-directed at 374.
 
 ---
 
