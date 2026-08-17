@@ -292,7 +292,10 @@ it('logo garden carousel renders default spaceBetween when gap is not set', func
     $response = $this->get('/logo-gap-default');
 
     $response->assertOk();
-    $response->assertSee('spaceBetween: 16', false);
+    // Swiper options moved from an inline x-data into the widget's JSON config
+    // block at session 375 (the CSP-safe Alpine build takes no inline methods);
+    // `gap` is what script.js passes to Swiper as spaceBetween.
+    $response->assertSee('"gap":16', false);
 });
 
 it('logo garden carousel renders custom spaceBetween from gap config', function () {
@@ -339,5 +342,5 @@ it('logo garden carousel renders custom spaceBetween from gap config', function 
     $response = $this->get('/logo-gap-custom');
 
     $response->assertOk();
-    $response->assertSee('spaceBetween: 48', false);
+    $response->assertSee('"gap":48', false);
 });

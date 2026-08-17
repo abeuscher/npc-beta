@@ -120,8 +120,12 @@ it('renders Alpine copy-link markup when copy_link is enabled', function () {
         ]]
     );
 
+    // The clipboard call moved into the widget's registered Alpine component at
+    // session 375 — the CSP-safe Alpine build cannot reach `navigator` from a
+    // template expression. The template now names the component and its method.
     expect($html)
-        ->toContain('navigator.clipboard.writeText')
+        ->toContain('x-data="socialSharingCopy"')
+        ->toContain('x-on:click="copy"')
         ->toContain('Copied!')
         ->toContain('<button');
 });

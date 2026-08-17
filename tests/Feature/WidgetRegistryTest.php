@@ -103,7 +103,10 @@ it('seeder-sourced nav row matches registry-sourced nav row', function () {
     expect($row->category)->toBe($expected['category']);
     expect($row->background_full_width)->toBe($expected['background_full_width']);
     expect($row->content_full_width)->toBe($expected['content_full_width']);
-    expect($row->assets)->toBe($expected['assets']);
+    // toEqual, not toBe: `assets` round-trips through a Postgres jsonb column,
+    // which normalises key order (shortest key first) rather than preserving
+    // insertion order. Only the key/value pairs are meaningful.
+    expect($row->assets)->toEqual($expected['assets']);
     expect($row->template)->toBe($expected['template']);
     expect($row->required_config)->toBe($expected['required_config']);
 
