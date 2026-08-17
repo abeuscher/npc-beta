@@ -110,7 +110,7 @@
     data-list-mode="{{ $listMode }}"
     data-today="{{ $todayKey }}"
     data-current-index="1"
-    x-data="NPWidgets.eventMiniCalendar()"
+    x-data="eventMiniCalendar"
 >
     <div class="widget-event-mini-calendar__scale">
     @include('widget-shared.inline-prose', ['tag' => 'div', 'class' => 'widget-event-mini-calendar__heading', 'key' => 'heading', 'type' => 'richtext', 'value' => $heading, 'label' => 'Heading'])

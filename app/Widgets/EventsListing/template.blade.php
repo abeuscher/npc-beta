@@ -168,8 +168,8 @@
 <div
     class="{{ $rootClass }}"
     @unless ($isStatic)
-        x-data="NPWidgets.eventsListing()"
-        x-effect="if (cfg && search !== undefined) { typeFilter; search; rebuildSlides() }"
+        x-data="eventsListing"
+        x-effect="rebuildOnFilters"
     @endunless
 >
     @unless ($isStatic)

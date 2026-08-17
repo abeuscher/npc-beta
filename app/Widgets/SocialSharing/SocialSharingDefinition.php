@@ -33,7 +33,10 @@ class SocialSharingDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['scss' => ['app/Widgets/SocialSharing/styles.scss']];
+        return [
+            'scss' => ['app/Widgets/SocialSharing/styles.scss'],
+            'js'   => ['app/Widgets/SocialSharing/script.js'],
+        ];
     }
    public function demoAppearanceConfig(): array
     {

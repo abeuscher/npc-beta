@@ -31,6 +31,11 @@ class DonationFormDefinition extends WidgetDefinition
         return true;
     }
 
+    public function assets(): array
+    {
+        return ['js' => ['app/Widgets/DonationForm/script.js']];
+    }
+
     public function schema(): array
     {
         return [

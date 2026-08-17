@@ -44,8 +44,8 @@
 
 <div
     class="widget-blog-listing"
-    x-data="NPWidgets.blogListing()"
-    x-effect="if (cfg && search !== undefined) rebuildSlides()"
+    x-data="blogListing"
+    x-effect="rebuildOnSearch"
 >
     <script x-ref="listingData" type="application/json">{!! $listingData !!}</script>
 

@@ -33,6 +33,7 @@ class LogoGardenDefinition extends WidgetDefinition
     {
         return [
             'scss' => ['app/Widgets/LogoGarden/styles.scss'],
+            'js'   => ['app/Widgets/LogoGarden/script.js'],
             'libs' => ['swiper'],
         ];
     }

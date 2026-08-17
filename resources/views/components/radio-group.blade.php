@@ -8,10 +8,15 @@
 
 @php
     $selected = $value ?? old($name);
+
+    // Single-quoted literals rather than Blade's @js(), which compiles to
+    // JSON.parse(…) — the public site's CSP-safe Alpine build cannot reach the
+    // JSON global from a template expression (session 375).
+    $jsString = fn ($v) => "'" . str_replace(["\\", "'"], ["\\\\", "\\'"], (string) $v) . "'";
 @endphp
 
 <div
-    x-data="{ value: @js($selected ?? '') }"
+    x-data="{ value: {{ $jsString($selected ?? '') }} }"
     class="radio-group radio-group--{{ $layout }}"
     role="radiogroup"
 >
@@ -26,10 +31,10 @@
         <button
             type="button"
             role="radio"
-            :aria-checked="value === @js($optValue) ? 'true' : 'false'"
+            :aria-checked="value === {{ $jsString($optValue) }} ? 'true' : 'false'"
             class="radio-group__option"
-            :class="value === @js($optValue) && 'is-selected'"
-            @click="value = @js($optValue)"
+            :class="value === {{ $jsString($optValue) }} && 'is-selected'"
+            @click="value = {{ $jsString($optValue) }}"
             id="{{ $optId }}"
         >{{ $optLabel }}</button>
     @endforeach

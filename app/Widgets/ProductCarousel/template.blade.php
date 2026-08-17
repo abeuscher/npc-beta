@@ -5,46 +5,23 @@
     $autoplay = $config['autoplay'] ?? false;
     $interval = (int) ($config['interval'] ?? 5000);
     $successPage = $config['success_page'] ?? '';
+
+    $productCarouselConfig = [
+        'navigation' => (bool) $showNavigation,
+        'pagination' => (bool) $showPagination,
+        'autoplay'   => (bool) $autoplay,
+        'loop'       => count($products) > 2,
+        'interval'   => $interval,
+    ];
 @endphp
 
 @if (count($products) > 0)
     <div
-        x-data="{
-            swiper: null,
-            init() {
-                if (!window.Swiper || !window.SwiperModules) return;
-                const modules = [window.SwiperModules.EffectCoverflow];
-                @if($showNavigation) modules.push(window.SwiperModules.Navigation); @endif
-                @if($showPagination) modules.push(window.SwiperModules.Pagination); @endif
-                @if($autoplay) modules.push(window.SwiperModules.Autoplay); @endif
-
-                this.swiper = new window.Swiper(this.$refs.container, {
-                    modules: modules,
-                    effect: 'coverflow',
-                    centeredSlides: true,
-                    slidesPerView: 'auto',
-                    coverflowEffect: {
-                        rotate: 30,
-                        stretch: 0,
-                        depth: 100,
-                        modifier: 1,
-                        slideShadows: false,
-                    },
-                    loop: {{ count($products) > 2 ? 'true' : 'false' }},
-                    @if($autoplay)
-                    autoplay: { delay: {{ $interval }}, disableOnInteraction: false },
-                    @endif
-                    @if($showPagination)
-                    pagination: { el: this.$refs.pagination, clickable: true },
-                    @endif
-                    @if($showNavigation)
-                    navigation: { nextEl: this.$refs.next, prevEl: this.$refs.prev },
-                    @endif
-                });
-            }
-        }"
+        x-data="productCarousel"
         class="widget-product-carousel"
     >
+        <script x-ref="config" type="application/json">@json($productCarouselConfig)</script>
+
         <div class="widget-product-carousel__fade-left" aria-hidden="true"></div>
         <div class="widget-product-carousel__fade-right" aria-hidden="true"></div>
 

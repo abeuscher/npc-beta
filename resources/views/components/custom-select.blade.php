@@ -20,21 +20,25 @@
         }
     }
     $isSearchable = filter_var($searchable, FILTER_VALIDATE_BOOLEAN);
+
+    $customSelectConfig = [
+        'value'         => $selected ?? '',
+        'selectedLabel' => $selectedLabel,
+        'placeholder'   => $placeholder,
+        'searchable'    => $isSearchable,
+        'options'       => collect($options)->map(fn ($o) => ['value' => $o['value'] ?? '', 'label' => $o['label'] ?? $o['value'] ?? ''])->values()->all(),
+        'inputId'       => $inputId,
+    ];
 @endphp
 
 <div
-    x-data="customSelect({
-        value: @js($selected ?? ''),
-        selectedLabel: @js($selectedLabel),
-        placeholder: @js($placeholder),
-        searchable: {{ $isSearchable ? 'true' : 'false' }},
-        options: @js(collect($options)->map(fn ($o) => ['value' => $o['value'] ?? '', 'label' => $o['label'] ?? $o['value'] ?? ''])->values()->all()),
-        inputId: @js($inputId),
-    })"
+    x-data="customSelect"
     @click.outside="close()"
-    @keydown="!searchable && onKeydown($event)"
+    @keydown="onKeydownUnlessSearchable($event)"
     class="custom-select"
 >
+    <script x-ref="config" type="application/json">@json($customSelectConfig)</script>
+
     {{-- Hidden native select for form submission --}}
     <select
         x-ref="nativeSelect"

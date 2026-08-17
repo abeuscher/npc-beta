@@ -1,6 +1,13 @@
 @php
     $tiers = \App\Models\MembershipTier::where('is_active', true)->where('is_archived', false)->orderBy('sort_order')->get();
     $hasPaidTiers = $tiers->contains(fn ($t) => $t->default_price && $t->default_price > 0);
+
+    $signupConfig = [
+        'tiers'          => $tiers->map(fn ($t) => ['id' => $t->id, 'price' => (float) $t->default_price])->values(),
+        'selectedTierId' => old('tier_id', ''),
+        'checkoutUrl'    => route('membership.checkout'),
+        'signupUrl'      => route('portal.signup.post'),
+    ];
 @endphp
 
 <div class="portal-auth portal-auth--wide">
@@ -19,9 +26,10 @@
 @endif
 
 <form method="POST"
-      x-data="{ tierId: '{{ old('tier_id', '') }}', tiers: {{ Js::from($tiers->map(fn ($t) => ['id' => $t->id, 'price' => (float) $t->default_price])) }} }"
-      :action="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? '{{ route('membership.checkout') }}' : '{{ route('portal.signup.post') }}'; })()"
+      x-data="portalSignup"
+      :action="action"
       class="form-grid">
+    <script x-ref="config" type="application/json">@json($signupConfig)</script>
     @csrf
 
     {{-- Honeypot --}}
@@ -71,7 +79,7 @@
     </div>
 
     @if ($tiers->isNotEmpty())
-        <div class="col-{{ \App\Support\FormFieldConfig::width('tier_id') }}" @custom-select-change="tierId = $event.detail.value">
+        <div class="col-{{ \App\Support\FormFieldConfig::width('tier_id') }}" @custom-select-change="setTier($event)">
             <label for="sw_tier" class="form-label">Membership tier</label>
             @php
                 $tierOptions = $tiers->map(function ($tier) {
@@ -103,7 +111,7 @@
 
     <div class="col-12">
         <button type="submit" class="btn btn--primary portal-auth-card__submit">
-            <span x-text="(() => { const t = tiers.find(t => t.id === tierId); return t && t.price > 0 ? 'Create account & pay' : 'Create account'; })()">Create account</span>
+            <span x-text="submitLabel">Create account</span>
         </button>
     </div>
 </form>

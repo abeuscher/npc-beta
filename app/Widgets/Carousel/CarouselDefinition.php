@@ -31,7 +31,10 @@ class CarouselDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['libs' => ['swiper']];
+        return [
+            'js'   => ['app/Widgets/Carousel/script.js'],
+            'libs' => ['swiper'],
+        ];
     }
 
     public function schema(): array

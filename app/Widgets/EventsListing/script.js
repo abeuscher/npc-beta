@@ -79,6 +79,19 @@ window.NPWidgets.eventsListing = function () {
             };
         },
 
+        // x-effect entry point. Reads both filter properties so Alpine tracks
+        // them as dependencies, then guards on init state — the template cannot
+        // do either, since the public site's CSP-safe Alpine build has no `if`
+        // statements and no multi-statement expressions (session 375).
+        rebuildOnFilters() {
+            const search = this.search;
+            const typeFilter = this.typeFilter;
+
+            if (this.cfg && search !== undefined && typeFilter !== undefined) {
+                this.rebuildSlides();
+            }
+        },
+
         rebuildSlides() {
             const swiperEl = this.$refs.swiperEl;
             // Guard the Swiper globals: this runs from an x-effect on init, which

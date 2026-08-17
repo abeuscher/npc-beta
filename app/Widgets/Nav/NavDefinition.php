@@ -28,7 +28,10 @@ class NavDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['scss' => ['app/Widgets/Nav/styles.scss']];
+        return [
+            'scss' => ['app/Widgets/Nav/styles.scss'],
+            'js'   => ['app/Widgets/Nav/script.js'],
+        ];
     }
 
     public function schema(): array

@@ -18,47 +18,29 @@
     if ($effect === 'fade') {
         $slidesPerView = 1;
     }
+
+    $carouselConfig = [
+        'navigation'    => (bool) $showNavigation,
+        'pagination'    => (bool) $showPagination,
+        'autoplay'      => (bool) $autoplay,
+        'effect'        => $effect,
+        'slidesPerView' => $slidesPerView,
+        'loop'          => (bool) $loop,
+        'speed'         => $speed,
+        'interval'      => $interval,
+    ];
 @endphp
 
 @if (count($slides) > 0)
     <div
-        x-data="{
-            swiper: null,
-            init() {
-                if (!window.Swiper || !window.SwiperModules) return;
-                const modules = [];
-                @if($showNavigation) modules.push(window.SwiperModules.Navigation); @endif
-                @if($showPagination) modules.push(window.SwiperModules.Pagination); @endif
-                @if($autoplay) modules.push(window.SwiperModules.Autoplay); @endif
-                @if($effect === 'fade') modules.push(window.SwiperModules.EffectFade); @endif
-
-                this.swiper = new window.Swiper(this.$refs.container, {
-                    modules: modules,
-                    slidesPerView: {{ $slidesPerView }},
-                    spaceBetween: {{ $slidesPerView > 1 ? 16 : 0 }},
-                    loop: {{ $loop ? 'true' : 'false' }},
-                    speed: {{ $speed }},
-                    effect: '{{ $effect }}',
-                    @if($effect === 'fade')
-                    fadeEffect: { crossFade: true },
-                    @endif
-                    @if($autoplay)
-                    autoplay: { delay: {{ $interval }}, disableOnInteraction: false },
-                    @endif
-                    @if($showPagination)
-                    pagination: { el: this.$refs.pagination, clickable: true },
-                    @endif
-                    @if($showNavigation)
-                    navigation: { nextEl: this.$refs.next, prevEl: this.$refs.prev },
-                    @endif
-                });
-            }
-        }"
+        x-data="carousel"
         class="widget-carousel"
         @if($linkColor || $textColor)
         style="{{ $textColor ? 'color: ' . e($textColor) . ';' : '' }}{{ $linkColor ? '--carousel-link-color: ' . e($linkColor) . ';' : '' }}"
         @endif
     >
+        <script x-ref="config" type="application/json">@json($carouselConfig)</script>
+
         <div x-ref="container" class="swiper">
             <div class="swiper-wrapper">
                 @foreach ($slides as $slide)

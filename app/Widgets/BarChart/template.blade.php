@@ -26,7 +26,7 @@
     @php return; @endphp
 @endif
 
-<div class="widget-bar-chart" x-data="NPWidgets.barChart()">
+<div class="widget-bar-chart" x-data="barChart">
     <script x-ref="chartCfg" type="application/json">{!! $chartConfig !!}</script>
 
     <div style="position: relative; width: 100%;">

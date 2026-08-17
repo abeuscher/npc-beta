@@ -1,13 +1,29 @@
-export default (config) => ({
+// Config arrives in a sibling `<script type="application/json" x-ref="config">`
+// block rather than as an `x-data` argument (session 375). Blade's `@js()`
+// helper compiles to `JSON.parse(...)`, and the public site's CSP-safe Alpine
+// build cannot reach globals like `JSON` from a template expression — the JSON
+// block keeps one shape working on both the public site and the admin panel.
+export default () => ({
     open: false,
-    value: config.value ?? '',
-    label: config.value ? config.selectedLabel : config.placeholder,
+    value: '',
+    label: '',
     activeIndex: -1,
-    allOptions: config.options,
-    searchable: !!config.searchable,
+    allOptions: [],
+    searchable: false,
     query: '',
-    placeholder: config.placeholder,
-    inputId: config.inputId,
+    placeholder: '',
+    inputId: '',
+
+    init() {
+        const config = JSON.parse(this.$refs.config.textContent);
+
+        this.value = config.value ?? '';
+        this.label = config.value ? config.selectedLabel : config.placeholder;
+        this.allOptions = config.options;
+        this.searchable = !!config.searchable;
+        this.placeholder = config.placeholder;
+        this.inputId = config.inputId;
+    },
 
     get isEmpty() {
         return this.value === '' || this.value === null;
@@ -83,6 +99,11 @@ export default (config) => ({
     onSearchKeydown(e) {
         if (e.key === ' ') return;
         this.onKeydown(e);
+    },
+    // When the dropdown has its own search input, that input owns the keyboard;
+    // the root listener only applies to the non-searchable variant.
+    onKeydownUnlessSearchable(e) {
+        if (!this.searchable) this.onKeydown(e);
     },
     scrollToActive() {
         const list = this.$refs.listbox;

@@ -40,7 +40,11 @@ class ProductCarouselDefinition extends WidgetDefinition
 
     public function assets(): array
     {
-        return ['scss' => ['app/Widgets/ProductCarousel/styles.scss'], 'libs' => ['swiper']];
+        return [
+            'scss' => ['app/Widgets/ProductCarousel/styles.scss'],
+            'js'   => ['app/Widgets/ProductCarousel/script.js'],
+            'libs' => ['swiper'],
+        ];
     }
 
     public function schema(): array

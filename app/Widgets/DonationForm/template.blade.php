@@ -18,69 +18,17 @@
 
     $activeFunds    = \App\Models\Fund::where('is_active', true)->where('is_archived', false)->orderBy('name')->get();
     $showFunds      = $activeFunds->isNotEmpty();
+
+    $donationFormConfig = [
+        'checkoutUrl' => $checkoutUrl,
+        'successPage' => $successPage,
+        'csrfToken'   => csrf_token(),
+    ];
 @endphp
 
-<div x-data="{
-    amount: null,
-    customAmount: '',
-    showCustom: false,
-    frequency: 'one_off',
-    fundId: null,
-    loading: false,
-    error: null,
-    selectAmount(val) {
-        this.amount = val;
-        this.showCustom = false;
-        this.customAmount = '';
-    },
-    selectCustom() {
-        this.amount = null;
-        this.showCustom = true;
-    },
-    getAmount() {
-        return this.showCustom ? parseFloat(this.customAmount) : this.amount;
-    },
-    async submit() {
-        this.error = null;
-        const amt = this.getAmount();
-        if (!amt || isNaN(amt) || amt < 1) {
-            this.error = 'Please enter an amount of at least $1.';
-            return;
-        }
-        if (amt > 10000) {
-            this.error = 'Amount cannot exceed $10,000.';
-            return;
-        }
-        this.loading = true;
-        try {
-            const res = await fetch('{{ $checkoutUrl }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount: amt,
-                    type: this.frequency === 'one_off' ? 'one_off' : 'recurring',
-                    frequency: this.frequency === 'one_off' ? null : this.frequency,
-                    @if ($successPage) success_page: @js($successPage), @endif
-                    ...(this.fundId ? { fund_id: this.fundId } : {}),
-                }),
-            });
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                this.error = data.error ?? 'Something went wrong. Please try again.';
-                this.loading = false;
-            }
-        } catch (e) {
-            this.error = 'Something went wrong. Please try again.';
-            this.loading = false;
-        }
-    }
-}">
+<div x-data="donationForm">
+    <script x-ref="config" type="application/json">@json($donationFormConfig)</script>
+
 
     @include('widget-shared.inline-prose', ['tag' => 'h2', 'class' => '', 'key' => 'heading', 'type' => 'text', 'value' => $heading, 'label' => 'Heading'])
 
@@ -146,7 +94,7 @@
         @endif
 
         @if ($showFunds)
-        <div class="donation-section" @custom-select-change="fundId = $event.detail.value">
+        <div class="donation-section" @custom-select-change="setFund($event)">
             <label for="donation_fund" class="form-label">Designate to a fund (optional)</label>
             <x-custom-select
                 name="fund_id"

@@ -47,8 +47,8 @@
                             class="social-sharing__link"
                             title="{{ $titles[$platform] }}"
                             aria-label="{{ $titles[$platform] }}"
-                            x-data="{ copied: false }"
-                            x-on:click="navigator.clipboard.writeText(window.location.href).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
+                            x-data="socialSharingCopy"
+                            x-on:click="copy"
                         >
                             @include('widget-shared.share-icons.copy_link')
                             <span class="social-sharing__copied" x-show="copied" x-cloak x-transition.opacity>Copied!</span>

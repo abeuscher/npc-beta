@@ -34,6 +34,14 @@ window.NPWidgets.blogListing = function () {
             };
         },
 
+        // x-effect entry point. The reactive dependency (`search`) and the
+        // not-yet-initialized guard both live here rather than in the template:
+        // the public site runs the CSP-safe Alpine build, whose expression
+        // grammar has no `if` statements (session 375).
+        rebuildOnSearch() {
+            if (this.cfg && this.search !== undefined) this.rebuildSlides();
+        },
+
         rebuildSlides() {
             const swiperEl = this.$refs.swiperEl;
             // Guard the Swiper globals: this runs from an x-effect on init, which

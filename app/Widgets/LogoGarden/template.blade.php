@@ -25,29 +25,25 @@
             $resolvedLogos[] = ['media' => $logoImage, 'name' => $name];
         }
     }
+
+    $logoGardenConfig = [
+        'mode'        => $displayMode,
+        'logosPerRow' => $logosPerRow,
+        'gap'         => (int) ($config['gap'] ?? 16),
+        'duration'    => $carouselDuration,
+    ];
 @endphp
 
 @if (count($resolvedLogos) > 0)
     @if ($displayMode === 'carousel')
         {{-- Carousel mode — Swiper.js, automatic, no user controls --}}
         <div
-            x-data="{
-                swiper: null,
-                init() {
-                    if (!window.Swiper || !window.SwiperModules) return;
-                    this.swiper = new window.Swiper(this.$refs.container, {
-                        modules: [window.SwiperModules.Autoplay],
-                        slidesPerView: {{ $logosPerRow }},
-                        spaceBetween: {{ (int) ($config['gap'] ?? 16) }},
-                        loop: true,
-                        autoplay: { delay: {{ $carouselDuration }}, disableOnInteraction: false },
-                        allowTouchMove: false
-                    });
-                }
-            }"
+            x-data="logoGarden"
             class="widget-logo-garden widget-logo-garden--carousel"
             style="--logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
+            <script x-ref="config" type="application/json">@json($logoGardenConfig)</script>
+
             <div x-ref="container" class="swiper">
                 <div class="swiper-wrapper">
                     @foreach ($resolvedLogos as $logo)
@@ -73,25 +69,12 @@
     @elseif ($displayMode === 'smooth')
         {{-- Smooth scroll mode — continuous ribbon loop --}}
         <div
-            x-data="{
-                swiper: null,
-                init() {
-                    if (!window.Swiper || !window.SwiperModules) return;
-                    this.swiper = new window.Swiper(this.$refs.container, {
-                        modules: [window.SwiperModules.Autoplay, window.SwiperModules.FreeMode],
-                        slidesPerView: {{ $logosPerRow }},
-                        spaceBetween: {{ (int) ($config['gap'] ?? 16) }},
-                        loop: true,
-                        freeMode: true,
-                        speed: {{ $carouselDuration }},
-                        autoplay: { delay: 0, disableOnInteraction: false },
-                        allowTouchMove: false
-                    });
-                }
-            }"
+            x-data="logoGarden"
             class="widget-logo-garden widget-logo-garden--carousel"
             style="--logo-container-bg: {{ e($bgColor) }}; --logo-max-height: {{ $logoMaxHeight }}px;"
         >
+            <script x-ref="config" type="application/json">@json($logoGardenConfig)</script>
+
             <div x-ref="container" class="swiper">
                 <div class="swiper-wrapper">
                     @foreach ($resolvedLogos as $logo)
@@ -126,8 +109,8 @@
                     $delay = $i * 200;
                 @endphp
                 <div
-                    x-data="{ flipped: false }"
-                    x-init="setInterval(() => { flipped = !flipped }, {{ $flipDuration }})"
+                    x-data="logoGardenFlipper"
+                    data-flip-duration="{{ $flipDuration }}"
                     class="logo-garden__flip-container"
                     style="animation-delay: {{ $delay }}ms;"
                 >

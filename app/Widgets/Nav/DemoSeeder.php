@@ -11,6 +11,11 @@ use Illuminate\Database\Seeder;
  * top-level links, so the dev thumbnail renders a real nav bar instead of
  * rendering blank (no seeded menu has items). Idempotent — keyed on a fixed
  * menu id that demoConfig() points the widget at.
+ *
+ * "Programs" carries child items so the demo exercises the dropdown — the
+ * widget's one piece of real interactivity, and the surface that was dead in
+ * production from the CSP deploy until session 375. The children do not change
+ * the thumbnail: a dropdown is hidden until opened.
  */
 class DemoSeeder extends Seeder
 {
@@ -18,10 +23,17 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
-        $menu = NavigationMenu::updateOrCreate(
-            ['id' => self::MENU_ID],
-            ['label' => 'Demo Navigation', 'handle' => 'demo-nav'],
-        );
+        // The id is assigned explicitly rather than through updateOrCreate():
+        // it is not in NavigationMenu's $fillable, so mass assignment drops it
+        // and HasUuids then generates a random key — which demoConfig() would
+        // never find.
+        $menu = NavigationMenu::find(self::MENU_ID);
+
+        if (! $menu) {
+            $menu = new NavigationMenu(['label' => 'Demo Navigation', 'handle' => 'demo-nav']);
+            $menu->id = self::MENU_ID;
+            $menu->save();
+        }
 
         if ($menu->items()->count() > 0) {
             return;
@@ -36,7 +48,7 @@ class DemoSeeder extends Seeder
         ];
 
         foreach ($links as $i => $link) {
-            NavigationItem::create([
+            $item = NavigationItem::create([
                 'navigation_menu_id' => $menu->id,
                 'label'              => $link['label'],
                 'url'                => $link['url'],
@@ -44,6 +56,22 @@ class DemoSeeder extends Seeder
                 'target'             => '_self',
                 'is_visible'         => true,
             ]);
+
+            if ($link['label'] !== 'Programs') {
+                continue;
+            }
+
+            foreach ([['Tutoring', '/programs/tutoring'], ['Mentoring', '/programs/mentoring']] as $j => [$label, $url]) {
+                NavigationItem::create([
+                    'navigation_menu_id' => $menu->id,
+                    'parent_id'          => $item->id,
+                    'label'              => $label,
+                    'url'                => $url,
+                    'sort_order'         => $j,
+                    'target'             => '_self',
+                    'is_visible'         => true,
+                ]);
+            }
         }
     }
 }

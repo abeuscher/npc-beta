@@ -2,6 +2,17 @@
     @php
         $scrubCounts = app(\App\Services\RandomDataGenerator::class)->scrubCounts();
         $totalScrub  = array_sum($scrubCounts);
+
+        $generatorCounts = [
+            'contacts'      => (int) old('counts.contacts', 0),
+            'organizations' => (int) old('counts.organizations', 0),
+            'events'        => (int) old('counts.events', 0),
+            'registrations' => (int) old('counts.registrations', 0),
+            'donations'     => (int) old('counts.donations', 0),
+            'memberships'   => (int) old('counts.memberships', 0),
+            'posts'         => (int) old('counts.posts', 0),
+            'products'      => (int) old('counts.products', 0),
+        ];
     @endphp
     <div class="np-random-data-generator">
         <h3 class="np-random-data-generator__heading">Random Data Generator</h3>
@@ -38,23 +49,9 @@
         @else
         <form method="POST"
               action="{{ route('filament.admin.dev-tools.random-data.store') }}"
-              x-data="{
-                  confirming: false,
-                  counts: {
-                      contacts: {{ (int) old('counts.contacts', 0) }},
-                      organizations: {{ (int) old('counts.organizations', 0) }},
-                      events: {{ (int) old('counts.events', 0) }},
-                      registrations: {{ (int) old('counts.registrations', 0) }},
-                      donations: {{ (int) old('counts.donations', 0) }},
-                      memberships: {{ (int) old('counts.memberships', 0) }},
-                      posts: {{ (int) old('counts.posts', 0) }},
-                      products: {{ (int) old('counts.products', 0) }},
-                  },
-                  total() {
-                      return Object.values(this.counts).reduce((sum, v) => sum + (parseInt(v) || 0), 0);
-                  }
-              }"
+              x-data="randomDataGenerator"
               class="np-random-data-generator__form">
+            <script x-ref="config" type="application/json">@json($generatorCounts)</script>
             @csrf
 
             <fieldset class="np-random-data-generator__fields">

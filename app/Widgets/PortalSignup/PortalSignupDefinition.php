@@ -36,6 +36,11 @@ class PortalSignupDefinition extends WidgetDefinition
         return [];
     }
 
+    public function assets(): array
+    {
+        return ['js' => ['app/Widgets/PortalSignup/script.js']];
+    }
+
     public function js(): ?string
     {
         return "(function () {

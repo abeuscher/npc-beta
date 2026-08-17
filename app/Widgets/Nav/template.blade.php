@@ -179,20 +179,7 @@
     id="{{ $widgetId }}"
     class="widget-nav widget-nav--{{ $orientation }} widget-nav--drop-{{ $dropAnimation }} widget-nav--mobile-{{ $mobileAnimation }}"
     aria-label="{{ $navMenu->label ?? 'Navigation' }}"
-    x-data="{
-        activeDropdown: null,
-        hoverTimeout: null,
-        openDropdown(id) {
-            clearTimeout(this.hoverTimeout);
-            this.activeDropdown = id;
-        },
-        closeDropdown(id) {
-            this.hoverTimeout = setTimeout(() => {
-                if (this.activeDropdown === id) this.activeDropdown = null;
-            }, 150);
-        },
-        closeAll() { this.activeDropdown = null; },
-    }"
+    x-data="nav"
     @keydown.escape.window="closeAll()"
     style="--nav-justify: {{ $justifyContent }}; --nav-align: {{ $alignItems }}{{ !empty($navColorVars) ? '; ' . implode('; ', $navColorVars) : '' }}"
 >
@@ -253,7 +240,7 @@
                         aria-haspopup="true"
                         :aria-expanded="activeDropdown === '{{ $itemId }}' ? 'true' : 'false'"
                         @focusin="openDropdown('{{ $itemId }}')"
-                        @keydown.arrow-down.prevent="openDropdown('{{ $itemId }}'); $nextTick(() => $el.closest('.widget-nav__item').querySelector('[role=menu] [role=menuitem]')?.focus())"
+                        @keydown.arrow-down.prevent="openDropdownAndFocus('{{ $itemId }}', $event)"
                     @endif
                 >
                     {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass, $anchorAttrs) !!}
@@ -270,7 +257,7 @@
                         x-show="activeDropdown === '{{ $itemId }}'"
                         x-cloak
                         @if ($dropStyleAttr) style="{{ $dropStyleAttr }}" @endif
-                        @keydown.escape.prevent="closeAll(); $el.closest('.widget-nav__item').querySelector('[role=menuitem]')?.focus()"
+                        @keydown.escape.prevent="closeAllAndRestoreFocus($event)"
                     >
                         @foreach ($item->children as $childIndex => $child)
                             @php

@@ -32,6 +32,11 @@ class RandomDataGeneratorDefinition extends WidgetDefinition
         return ['dashboard_grid'];
     }
 
+    public function assets(): array
+    {
+        return ['js' => ['app/Widgets/RandomDataGenerator/script.js']];
+    }
+
     public function acceptedSources(): array
     {
         return [Source::HUMAN];
