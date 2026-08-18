@@ -33,7 +33,7 @@
             </div>
         @endif
 
-        @if (\App\Support\StripeMode::isLive())
+        @if (\Plugins\Payments\Support\StripeMode::isLive())
             {{-- Live-Stripe guard (session 370, Security S1): refuse to render the
                  generate form when a live key is configured, so synthetic donations
                  and transactions can never be created on a real-payments install.

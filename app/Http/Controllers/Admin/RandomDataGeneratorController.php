@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\RandomDataGenerator;
-use App\Support\StripeMode;
+use Plugins\Payments\Support\StripeMode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 

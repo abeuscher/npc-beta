@@ -6,7 +6,7 @@ use App\Mail\RegistrationConfirmation;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\EventRegistrationQuantities;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

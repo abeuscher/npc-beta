@@ -8,7 +8,7 @@ use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

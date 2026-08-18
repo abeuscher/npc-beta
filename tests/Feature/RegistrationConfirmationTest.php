@@ -136,7 +136,7 @@ it('sends exactly one confirmation for a portal member free registration', funct
 
 function invokeEventRegistrationWebhook(string $sessionId, string $email = 'paid@example.com'): void
 {
-    $controller = new \App\Http\Controllers\StripeWebhookController();
+    $controller = new \Plugins\Payments\Http\Controllers\StripeWebhookController();
     $reflection = new ReflectionMethod($controller, 'handleEventRegistrationCheckout');
     $reflection->setAccessible(true);
 

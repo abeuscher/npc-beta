@@ -3,7 +3,7 @@
 use App\Models\Contact;
 use App\Models\SiteSetting;
 use App\Models\User;
-use App\Support\StripeMode;
+use Plugins\Payments\Support\StripeMode;
 use App\WidgetPrimitive\Source;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

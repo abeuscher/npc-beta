@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Donation;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

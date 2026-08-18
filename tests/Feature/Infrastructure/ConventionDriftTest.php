@@ -191,6 +191,7 @@ it('keeps the billing/account code free of Stripe SDK/config references (renders
 
     // Positive control: the mapped donation surface DOES reference these and is
     // deliberately OUTSIDE the scanned set — the guard must never catch it.
-    expect(file_get_contents(app_path('Services/StripeCheckoutService.php')))
+    // Lives in the Payments plugin since session 380 (arc P4).
+    expect(file_get_contents(base_path('plugins/Payments/Services/StripeCheckoutService.php')))
         ->toMatch($banned);
 });

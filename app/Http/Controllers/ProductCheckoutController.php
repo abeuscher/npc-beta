@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductPrice;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 

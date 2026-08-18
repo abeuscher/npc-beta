@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Plugins\Payments\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Mail\DonationAcknowledgment;
 use App\Mail\RegistrationConfirmation;
 use App\Models\Contact;

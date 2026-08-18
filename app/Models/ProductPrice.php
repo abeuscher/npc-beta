@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Observers\ProductPriceObserver;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[ObservedBy(ProductPriceObserver::class)]
+// The Stripe price observer is registered by the Payments plugin's provider
+// (plugins/Payments) — absent plugin means no observer, by design.
 class ProductPrice extends Model
 {
     use HasFactory, HasUuids;

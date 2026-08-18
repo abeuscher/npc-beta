@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\SiteSetting;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;

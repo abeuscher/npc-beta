@@ -4,7 +4,7 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Fund;
 use App\Models\Transaction;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

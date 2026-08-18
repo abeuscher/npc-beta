@@ -11,4 +11,5 @@
 
 return [
     Plugins\LogoGarden\LogoGardenServiceProvider::class,
+    Plugins\Payments\PaymentsServiceProvider::class,
 ];

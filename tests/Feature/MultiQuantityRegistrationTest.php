@@ -177,7 +177,7 @@ it('webhook promotes all pending registrations sharing a stripe_session_id and r
     ]);
 
     // Build a Stripe-event-shaped payload and invoke the controller handler.
-    $controller = new \App\Http\Controllers\StripeWebhookController();
+    $controller = new \Plugins\Payments\Http\Controllers\StripeWebhookController();
     $reflection = new ReflectionMethod($controller, 'handleEventRegistrationCheckout');
     $reflection->setAccessible(true);
 

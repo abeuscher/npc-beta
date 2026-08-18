@@ -11,7 +11,6 @@ use App\Http\Controllers\DonationCheckoutController;
 use App\Http\Controllers\ProductCheckoutController;
 use App\Http\Controllers\ProductWaitlistController;
 use App\Http\Controllers\MailChimpWebhookController;
-use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
@@ -32,10 +31,9 @@ Route::post("/webhooks/{$mailchimpPath}", [MailChimpWebhookController::class, 'h
 Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
     ->name('webhooks.mailchimp.verify');
 
-// Stripe webhook — no auth, no CSRF (covered by /webhooks/* exemption in bootstrap/app.php).
-// Signature is verified inside the controller using the webhook secret.
-Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])
-    ->name('webhooks.stripe');
+// The Stripe webhook route (POST /webhooks/stripe) is registered by the
+// Payments plugin (plugins/Payments/routes/web.php); the /webhooks/* CSRF
+// exemption in bootstrap/app.php stays core path-policy.
 
 // Public event JSON endpoint — feeds the calendar widget
 Route::get('/api/events.json', function () {

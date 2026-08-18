@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Observers;
+namespace Plugins\Payments\Observers;
 
 use App\Models\ProductPrice;
 use Illuminate\Support\Facades\Log;

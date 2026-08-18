@@ -5,7 +5,7 @@ use App\Models\MembershipTier;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\SiteSetting;
-use App\Services\StripeCheckoutService;
+use Plugins\Payments\Services\StripeCheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Stripe\Checkout\Session;
 use Tests\TestCase;

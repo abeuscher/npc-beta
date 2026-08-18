@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace Plugins\Payments\Services;
 
 use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Models\SiteSetting;

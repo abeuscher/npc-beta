@@ -130,9 +130,8 @@ class AppServiceProvider extends ServiceProvider
                 'services.mailchimp.audience_id'    => $settings->get('mailchimp_audience_id')?->value    ?? '',
                 'services.mailchimp.webhook_path'   => $settings->get('mailchimp_webhook_path')?->value   ?? 'mailchimp',
                 'services.mailchimp.webhook_secret' => $settings->get('mailchimp_webhook_secret')?->value ?? '',
-                'services.stripe.publishable_key'    => SiteSetting::get('stripe_publishable_key', ''),
-                'services.stripe.secret'             => SiteSetting::get('stripe_secret_key', ''),
-                'services.stripe.webhook_secret'     => SiteSetting::get('stripe_webhook_secret', ''),
+                // services.stripe.* is populated by the Payments plugin's provider
+                // (plugins/Payments) — absent plugin means unpopulated keys, by design.
                 'services.quickbooks.key'            => SiteSetting::get('quickbooks_api_key', ''),
                 'site.admin_primary_color'           => $settings->get('admin_primary_color')?->value        ?? '#f59e0b',
                 'site.admin_secondary_color'         => $settings->get('admin_secondary_color')?->value      ?? '#73bbbb',
