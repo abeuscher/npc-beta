@@ -1,6 +1,7 @@
-@if (auth()->user()?->isSuperAdmin())
+@php $tool = $widgetData['item'] ?? null; @endphp
+@if ($tool !== null)
     @php
-        $scrubCounts = app(\App\Services\RandomDataGenerator::class)->scrubCounts();
+        $scrubCounts = $tool['counts'];
         $totalScrub  = array_sum($scrubCounts);
 
         $generatorCounts = [

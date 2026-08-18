@@ -47,11 +47,13 @@ it('returns the full page-context token map when the contract declares no fields
         ->and($dto['date'])->toBe('April 22, 2026');
 });
 
-it('returns empty strings for every token when fields are omitted and the page is null', function () {
+it('returns empty strings for every page-derived token when fields are omitted and the page is null', function () {
     $contract = new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT);
 
     $dto = app(PageContextProjector::class)->project($contract, null);
 
+    // site_name is site-global (session 378): it resolves without a page so
+    // brand reads never depend on which page hosts the widget.
     expect($dto)->toBe([
         'title'     => '',
         'date'      => '',
@@ -59,5 +61,16 @@ it('returns empty strings for every token when fields are omitted and the page i
         'author'    => '',
         'starts_at' => '',
         'location'  => '',
+        'site_name' => config('app.name'),
     ]);
+});
+
+it('resolves site_name without a page when the contract declares it', function () {
+    \App\Models\SiteSetting::set('site_name', 'Global Brand Co');
+
+    $contract = new DataContract('1.0.0', DataContract::SOURCE_PAGE_CONTEXT, ['site_name']);
+
+    $dto = app(PageContextProjector::class)->project($contract, null);
+
+    expect($dto)->toBe(['site_name' => 'Global Brand Co']);
 });

@@ -25,10 +25,7 @@
 
     @if (!empty($ctas))
         <div class="widget-text-block__ctas">
-            @include('widget-shared.buttons', [
-                'buttons'   => $ctas,
-                'alignment' => $ctaAlignment,
-            ])
+            <x-widget-buttons :buttons="$ctas" :alignment="$ctaAlignment" />
         </div>
     @endif
 </div>

@@ -1,6 +1,6 @@
 <div class="portal-auth">
     <div class="portal-auth-card">
-        <p class="portal-auth-card__brand">{{ \App\Models\SiteSetting::get('site_name', config('app.name')) }}</p>
+        <p class="portal-auth-card__brand">{{ $widgetData['site_name'] ?? '' }}</p>
         <h1 class="portal-auth-card__title">Reset your password</h1>
         <p class="text-muted portal-auth-card__intro">Enter your email and we'll send you a link to set a new password.</p>
 

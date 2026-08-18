@@ -8,6 +8,7 @@ final class DataContract
     public const SOURCE_RECORD_CONTEXT = 'record_context';
     public const SOURCE_SYSTEM_MODEL = 'system_model';
     public const SOURCE_WIDGET_CONTENT_TYPE = 'widget_content_type';
+    public const SOURCE_SERVICE = 'service';
 
     public const CARDINALITY_MANY = 'many';
     public const CARDINALITY_ONE = 'one';
@@ -17,7 +18,7 @@ final class DataContract
      * @param  string  $source  One of the SOURCE_* constants.
      * @param  array<int, string>  $fields  Field names the widget declares it consumes. Fail-closed: anything not declared is not populated. Omit or pass an empty array for SOURCE_PAGE_CONTEXT contracts — the source itself is the capability boundary (see PageContextTokens::TOKENS).
      * @param  array<string, mixed>  $filters  Query-shape options (limit, order_by, etc.). Single-row contracts carry their unique-key lookup here (e.g. ['slug' => $slug]).
-     * @param  string|null  $model  For SOURCE_SYSTEM_MODEL: which model ('post' for now).
+     * @param  string|null  $model  For SOURCE_SYSTEM_MODEL: which model. For SOURCE_SERVICE: which service-backed dataset ('setup_checklist', 'scrub_counts').
      * @param  string|null  $resourceHandle  For SOURCE_WIDGET_CONTENT_TYPE: the collection handle to read items from.
      * @param  ContentType|null  $contentType  For SOURCE_WIDGET_CONTENT_TYPE: the widget-declared content shape.
      * @param  QuerySettings|null  $querySettings  Honored-knob declaration. List-shaped contracts carry one; PAGE_CONTEXT and single-row contracts pass null.

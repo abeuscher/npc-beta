@@ -1,13 +1,10 @@
 @php
-    $portalUser = auth('portal')->user();
-    $contact    = $portalUser?->contact;
-    $regs       = $contact
-        ? $contact->eventRegistrations()->with('event')->orderByDesc('registered_at')->get()
-        : collect();
+    $member = $widgetData['item'] ?? null;
+    $regs   = $member['event_registrations'] ?? [];
 @endphp
 
-@if ($portalUser && $contact)
-    @if ($regs->isEmpty())
+@if ($member && $member['has_contact'])
+    @if ($regs === [])
         <p class="text-muted">No event registrations on file.</p>
     @else
         <div class="table-wrap">
@@ -22,9 +19,9 @@
                 <tbody>
                     @foreach ($regs as $reg)
                         <tr>
-                            <td>{{ $reg->event->title ?? '—' }}</td>
-                            <td>{{ \App\Support\DateFormat::format($reg->event?->starts_at, \App\Support\DateFormat::LONG_DATE) ?: '—' }}</td>
-                            <td>{{ ucfirst($reg->status) }}</td>
+                            <td>{{ $reg['event_title'] !== '' ? $reg['event_title'] : '—' }}</td>
+                            <td>{{ $reg['event_date'] !== '' ? $reg['event_date'] : '—' }}</td>
+                            <td>{{ ucfirst($reg['status']) }}</td>
                         </tr>
                     @endforeach
                 </tbody>

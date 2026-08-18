@@ -2,6 +2,7 @@
 
 namespace App\Widgets\PortalChangePassword;
 
+use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
 use Database\Seeders\DemoPortalMemberSeeder;
 
@@ -54,5 +55,16 @@ class PortalChangePasswordDefinition extends WidgetDefinition
     public function assets(): array
     {
         return ['js' => ['app/Widgets/PortalChangePassword/script.js']];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['id'],
+            model: 'portal_member',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

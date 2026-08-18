@@ -25,7 +25,7 @@ final class PageContextProjector
      */
     public function project(DataContract $contract, ?Page $page): array
     {
-        $all = $page ? $this->pageContextTokens->values($page) : [];
+        $all = $page ? $this->pageContextTokens->values($page) : $this->pageContextTokens->globalValues();
 
         if ($contract->fields === []) {
             $dto = [];

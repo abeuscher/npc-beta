@@ -55,10 +55,7 @@
 
             @if (!empty($ctas))
                 <div class="hero-ctas">
-                    @include('widget-shared.buttons', [
-                        'buttons'   => $ctas,
-                        'alignment' => $resolvedButtonAlignment,
-                    ])
+                    <x-widget-buttons :buttons="$ctas" :alignment="$resolvedButtonAlignment" />
                 </div>
             @endif
             </div>

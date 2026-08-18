@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Page;
+use App\Models\SiteSetting;
 use App\Support\DateFormat;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,7 @@ class PageContextTokens
         'author',
         'starts_at',
         'location',
+        'site_name',
     ];
 
     /**
@@ -77,6 +79,20 @@ class PageContextTokens
             'author'    => (string) ($page->author?->name ?? ''),
             'starts_at' => DateFormat::format($event?->starts_at, DateFormat::LONG_DATETIME),
             'location'  => $this->composeLocation($event),
+        ] + $this->globalValues();
+    }
+
+    /**
+     * Tokens whose values are site-global, not page-derived. Resolvable with
+     * no current page (the page-context projector falls back to these), so a
+     * brand read never depends on which page hosts the widget.
+     *
+     * @return array<string,string>
+     */
+    public function globalValues(): array
+    {
+        return [
+            'site_name' => (string) SiteSetting::get('site_name', (string) config('app.name')),
         ];
     }
 

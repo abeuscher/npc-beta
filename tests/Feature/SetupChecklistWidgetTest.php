@@ -11,6 +11,26 @@ beforeEach(function () {
     (new \Database\Seeders\PermissionSeeder())->run();
 });
 
+
+/**
+ * Render the widget template through the contract path: the resolver's
+ * service arm applies the super-admin gate and projects the DTO, exactly as
+ * WidgetRenderer does in production (session 378 template-purity retrofit).
+ */
+function renderSetupChecklistWidget(): string
+{
+    $definition = app(\App\Services\WidgetRegistry::class)->find('setup_checklist');
+    $widgetData = app(\App\WidgetPrimitive\ContractResolver::class)->resolve(
+        [$definition->dataContract([])],
+        new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext()),
+    )[0];
+
+    return view('widgets::SetupChecklist.template')
+        ->with('errors', new \Illuminate\Support\ViewErrorBag())
+        ->with('widgetData', $widgetData)
+        ->render();
+}
+
 function actingAsSetupSuperAdmin(): User
 {
     $admin = User::factory()->create(['is_active' => true]);
@@ -24,17 +44,13 @@ it('widget template renders empty for non-super-admin user', function () {
     $user = User::factory()->create();
     test()->actingAs($user);
 
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     expect(trim($rendered))->toBe('');
 });
 
 it('widget template renders empty for unauthenticated visitor', function () {
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     expect(trim($rendered))->toBe('');
 });
@@ -44,9 +60,7 @@ it('widget template — first-run mode shows every checklist item under its cate
 
     SiteSetting::set('installation_completed_at', null);
 
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     expect($rendered)
         ->toContain('Setup Checklist')
@@ -64,9 +78,7 @@ it('widget template — first-run mode renders the mark-complete form, not the r
     actingAsSetupSuperAdmin();
     SiteSetting::set('installation_completed_at', null);
 
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     expect($rendered)
         ->toContain(route('filament.admin.setup-checklist.mark-complete'))
@@ -77,9 +89,7 @@ it('widget template — health-check mode hides done items and shows the reset f
     $admin = actingAsSetupSuperAdmin();
     SiteSetting::set('installation_completed_at', now()->toIso8601String());
 
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     // Active super_admin exists ⇒ admin_user check is done ⇒ should be hidden in health-check mode.
     expect($rendered)
@@ -120,9 +130,7 @@ it('widget template — health-check mode shows the all-clear copy when nothing 
     ]);
     \App\Models\Contact::factory()->create(['source' => 'import']);
 
-    $rendered = view('widgets::SetupChecklist.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderSetupChecklistWidget();
 
     expect($rendered)->toContain('All items are configured.');
 });

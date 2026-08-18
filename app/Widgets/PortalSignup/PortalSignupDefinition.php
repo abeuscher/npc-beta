@@ -2,6 +2,7 @@
 
 namespace App\Widgets\PortalSignup;
 
+use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class PortalSignupDefinition extends WidgetDefinition
@@ -58,5 +59,22 @@ class PortalSignupDefinition extends WidgetDefinition
     password.addEventListener('input', check);
     confirmation.addEventListener('input', check);
 }());";
+    }
+
+    public function dataContracts(array $config): array
+    {
+        return [
+            'tiers' => new DataContract(
+                version: '1.0.0',
+                source: DataContract::SOURCE_SYSTEM_MODEL,
+                fields: ['id', 'name', 'default_price', 'billing_interval'],
+                model: 'membership_tier',
+            ),
+            'brand' => new DataContract(
+                version: '1.0.0',
+                source: DataContract::SOURCE_PAGE_CONTEXT,
+                fields: ['site_name'],
+            ),
+        ];
     }
 }

@@ -1,9 +1,8 @@
 @php
-    $tiers = \App\Models\MembershipTier::where('is_active', true)->where('is_archived', false)->orderBy('sort_order')->get();
-    $hasPaidTiers = $tiers->contains(fn ($t) => $t->default_price && $t->default_price > 0);
+    $tiers = $widgetData['tiers']['items'] ?? [];
 
     $signupConfig = [
-        'tiers'          => $tiers->map(fn ($t) => ['id' => $t->id, 'price' => (float) $t->default_price])->values(),
+        'tiers'          => array_map(fn ($t) => ['id' => $t['id'], 'price' => (float) $t['default_price']], $tiers),
         'selectedTierId' => old('tier_id', ''),
         'checkoutUrl'    => route('membership.checkout'),
         'signupUrl'      => route('portal.signup.post'),
@@ -12,7 +11,7 @@
 
 <div class="portal-auth portal-auth--wide">
     <div class="portal-auth-card">
-        <p class="portal-auth-card__brand">{{ \App\Models\SiteSetting::get('site_name', config('app.name')) }}</p>
+        <p class="portal-auth-card__brand">{{ $widgetData['brand']['site_name'] ?? '' }}</p>
         <h1 class="portal-auth-card__title">Create your account</h1>
 
 @if ($errors->any())
@@ -78,25 +77,25 @@
                autocomplete="new-password" minlength="12">
     </div>
 
-    @if ($tiers->isNotEmpty())
+    @if ($tiers !== [])
         <div class="col-{{ \App\Support\FormFieldConfig::width('tier_id') }}" @custom-select-change="setTier($event)">
             <label for="sw_tier" class="form-label">Membership tier</label>
             @php
-                $tierOptions = $tiers->map(function ($tier) {
-                    $label = $tier->name;
-                    if ($tier->default_price && $tier->default_price > 0) {
-                        $interval = match ($tier->billing_interval) {
+                $tierOptions = array_map(function ($tier) {
+                    $label = $tier['name'];
+                    if ($tier['default_price'] && $tier['default_price'] > 0) {
+                        $interval = match ($tier['billing_interval']) {
                             'monthly' => 'month',
                             'annual' => 'year',
                             'lifetime' => 'lifetime',
                             default => 'one-time',
                         };
-                        $label .= ' — $' . number_format((float) $tier->default_price, 2) . '/' . $interval;
+                        $label .= ' — $' . number_format((float) $tier['default_price'], 2) . '/' . $interval;
                     } else {
                         $label .= ' — Free';
                     }
-                    return ['value' => (string) $tier->id, 'label' => $label];
-                })->values()->all();
+                    return ['value' => (string) $tier['id'], 'label' => $label];
+                }, $tiers);
             @endphp
             <x-custom-select
                 name="tier_id"

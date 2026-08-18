@@ -7,7 +7,10 @@ use App\Models\CollectionItem;
 use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
+use App\Models\Fund;
 use App\Models\Membership;
+use App\Models\MembershipTier;
+use App\Models\NavigationMenu;
 use App\Models\Note;
 use App\Models\Page;
 use App\Models\Product;
@@ -70,6 +73,7 @@ final class ContractResolver
                 DataContract::SOURCE_RECORD_CONTEXT      => $this->recordContextProjector->project($contract, $this->recordFromContext($context)),
                 DataContract::SOURCE_SYSTEM_MODEL        => $this->resolveSystemModel($contract, $cache, $context),
                 DataContract::SOURCE_WIDGET_CONTENT_TYPE => $this->resolveWidgetContentType($contract, $context, $cache, $fallback),
+                DataContract::SOURCE_SERVICE             => $this->resolveService($contract),
                 default                                  => [],
             };
         }
@@ -92,21 +96,212 @@ final class ContractResolver
     {
         if ($contract->cardinality === DataContract::CARDINALITY_ONE) {
             return match ($contract->model) {
-                'event'      => $this->resolveEventOne($contract, $cache),
-                'product'    => $this->resolveProductOne($contract, $cache),
-                'membership' => $this->resolveMembershipOne($contract, $cache, $context),
-                default      => ['item' => null],
+                'event'           => $this->resolveEventOne($contract, $cache),
+                'product'         => $this->resolveProductOne($contract, $cache),
+                'membership'      => $this->resolveMembershipOne($contract, $cache, $context),
+                'navigation_menu' => $this->resolveNavigationMenuOne($contract, $cache),
+                'portal_member'   => $this->resolvePortalMemberOne($contract),
+                default           => ['item' => null],
             };
         }
 
         return match ($contract->model) {
-            'post'     => $this->resolvePost($contract, $cache),
-            'event'    => $this->resolveEvent($contract, $cache),
-            'product'  => $this->resolveProduct($contract, $cache),
-            'note'     => $this->resolveNote($contract, $cache, $context),
-            'donation' => $this->resolveDonationList($contract, $cache, $context),
-            default    => ['items' => []],
+            'post'            => $this->resolvePost($contract, $cache),
+            'event'           => $this->resolveEvent($contract, $cache),
+            'product'         => $this->resolveProduct($contract, $cache),
+            'note'            => $this->resolveNote($contract, $cache, $context),
+            'donation'        => $this->resolveDonationList($contract, $cache, $context),
+            'fund'            => $this->resolveFundList($contract, $cache),
+            'membership_tier' => $this->resolveMembershipTierList($contract, $cache),
+            default           => ['items' => []],
         };
+    }
+
+    /**
+     * Resolve a list of active, non-archived Funds for donation designation.
+     * The scope (is_active, not archived, name order) lives in the arm, not
+     * the template — the widget only declares which fields it consumes.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveFundList(DataContract $contract, array &$cache): array
+    {
+        $key = 'fund:list';
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = Fund::query()
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve a list of active, non-archived MembershipTiers in sort order,
+     * for the portal signup tier picker. Scope lives in the arm.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function resolveMembershipTierList(DataContract $contract, array &$cache): array
+    {
+        $key = 'membership_tier:list';
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = MembershipTier::query()
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->orderBy('sort_order')
+                ->get();
+        }
+
+        return $this->systemModelProjector->project($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve a single NavigationMenu by id, with its visible item tree
+     * (three levels, sort-ordered, page relations loaded) attached for the
+     * projector. Missing/invalid id or menu yields ['item' => null] — the
+     * Nav template's existing render-nothing branch.
+     *
+     * @param  array<string, mixed>  $cache
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveNavigationMenuOne(DataContract $contract, array &$cache): array
+    {
+        $id = (string) ($contract->filters['id'] ?? '');
+        if ($id === '') {
+            return ['item' => null];
+        }
+
+        $key = 'navigation_menu:one:' . $id;
+        if (! array_key_exists($key, $cache)) {
+            $menu = NavigationMenu::query()->find($id);
+            if ($menu !== null) {
+                $menu->setRelation('items', $menu->items()
+                    ->where('is_visible', true)
+                    ->whereNull('parent_id')
+                    ->orderBy('sort_order')
+                    ->with([
+                        'page',
+                        'children' => fn ($q) => $q->where('is_visible', true)->orderBy('sort_order')->with([
+                            'page',
+                            'children' => fn ($q2) => $q2->where('is_visible', true)->orderBy('sort_order')->with('page'),
+                        ]),
+                    ])
+                    ->get());
+            }
+            $cache[$key] = $menu;
+        }
+
+        return $this->systemModelProjector->projectOne($contract, $cache[$key]);
+    }
+
+    /**
+     * Resolve the authenticated portal member (PortalAccount + linked Contact).
+     * Logged-out = ['item' => null] — exactly the render-nothing branch the
+     * portal templates already take. PII-sensitive arm: only contract-declared
+     * fields project (fail-closed), and the registrations relation loads only
+     * when the contract declares `event_registrations`, so presence-only
+     * widgets pay no extra query.
+     *
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolvePortalMemberOne(DataContract $contract): array
+    {
+        $member = auth('portal')->user();
+        if ($member === null) {
+            return ['item' => null];
+        }
+
+        $member->loadMissing('contact');
+        if (in_array('event_registrations', $contract->fields, true) && $member->contact !== null) {
+            $member->contact->load(['eventRegistrations' => fn ($q) => $q->with('event')->orderByDesc('registered_at')]);
+        }
+
+        return $this->systemModelProjector->projectOne($contract, $member);
+    }
+
+    /**
+     * Dispatch a SOURCE_SERVICE contract to its service-backed arm. Services
+     * resolve lazily (per arm, not per resolver construction) so widgets that
+     * never declare these contracts pay nothing.
+     *
+     * @return array<string, mixed>
+     */
+    private function resolveService(DataContract $contract): array
+    {
+        return match ($contract->model) {
+            'setup_checklist' => $this->resolveSetupChecklist($contract),
+            'scrub_counts'    => $this->resolveScrubCounts($contract),
+            default           => $contract->cardinality === DataContract::CARDINALITY_ONE
+                ? ['item' => null]
+                : ['items' => []],
+        };
+    }
+
+    /**
+     * Setup-checklist dataset for the super-admin SetupChecklist widget. The
+     * arm hard-gates on super-admin: anyone else gets ['item' => null], which
+     * the template renders as nothing — its existing behavior.
+     *
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveSetupChecklist(DataContract $contract): array
+    {
+        if (! (auth()->user()?->isSuperAdmin() ?? false)) {
+            return ['item' => null];
+        }
+
+        $service = app(\App\Services\Setup\SetupChecklist::class);
+
+        return $this->projectServiceItem($contract, [
+            'is_first_run' => (bool) $service->isFirstRun(),
+            'items'        => array_map(fn (array $item) => [
+                'title'         => (string) ($item['title'] ?? ''),
+                'description'   => (string) ($item['description'] ?? ''),
+                'message'       => (string) ($item['message'] ?? ''),
+                'status'        => (string) ($item['status'] ?? ''),
+                'category'      => (string) ($item['category'] ?? ''),
+                'configure_url' => (string) ($item['configure_url'] ?? ''),
+            ], $service->items()),
+        ]);
+    }
+
+    /**
+     * Scrub-data counts for the super-admin RandomDataGenerator widget. Same
+     * hard super-admin gate as the setup checklist.
+     *
+     * @return array{item: array<string, mixed>|null}
+     */
+    private function resolveScrubCounts(DataContract $contract): array
+    {
+        if (! (auth()->user()?->isSuperAdmin() ?? false)) {
+            return ['item' => null];
+        }
+
+        return $this->projectServiceItem($contract, [
+            'counts' => array_map('intval', app(\App\Services\RandomDataGenerator::class)->scrubCounts()),
+        ]);
+    }
+
+    /**
+     * Fail-closed field filter for service-backed single-row DTOs — mirror of
+     * SystemModelProjector::projectOne for non-model datasets.
+     *
+     * @param  array<string, mixed>  $full
+     * @return array{item: array<string, mixed>}
+     */
+    private function projectServiceItem(DataContract $contract, array $full): array
+    {
+        $out = [];
+        foreach ($contract->fields as $field) {
+            $out[$field] = $full[$field] ?? '';
+        }
+
+        return ['item' => $out];
     }
 
     /**

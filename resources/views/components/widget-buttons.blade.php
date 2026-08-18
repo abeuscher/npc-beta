@@ -1,5 +1,10 @@
+{{-- Core view infrastructure (like <x-picture>): renders a widget's CTA
+     button group. Lives in components/ — not widget-shared/ — because it
+     resolves the design system's button_styles setting itself; widget
+     templates are pure and may not reach models (session 378 boundary,
+     WidgetTemplateBoundaryTest). --}}
+@props(['buttons' => [], 'alignment' => 'left'])
 @php
-    $alignment = $alignment ?? 'left';
     $siteHost = parse_url(config('app.url'), PHP_URL_HOST) ?: 'localhost';
     $buttonStyles = \App\Models\SiteSetting::get('button_styles') ?? [];
 @endphp

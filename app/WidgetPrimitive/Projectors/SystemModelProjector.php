@@ -2,12 +2,19 @@
 
 namespace App\WidgetPrimitive\Projectors;
 
+use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Event;
+use App\Models\Fund;
 use App\Models\Membership;
+use App\Models\MembershipTier;
+use App\Models\NavigationItem;
+use App\Models\NavigationMenu;
 use App\Models\Note;
 use App\Models\Page;
+use App\Models\PortalAccount;
 use App\Models\Product;
+use App\Services\GradientComposer;
 use App\Support\DateFormat;
 use App\WidgetPrimitive\DataContract;
 use App\WidgetPrimitive\Source;
@@ -17,6 +24,10 @@ use Illuminate\Support\Str;
 
 final class SystemModelProjector
 {
+    public function __construct(
+        private readonly GradientComposer $gradientComposer,
+    ) {}
+
     /**
      * Project a pre-fetched Eloquent collection into a row-set DTO.
      *
@@ -80,13 +91,17 @@ final class SystemModelProjector
     private function projectorFor(DataContract $contract): ?callable
     {
         return match ($contract->model) {
-            'post'       => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
-            'event'      => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
-            'product'    => fn (Product $product) => $this->projectProduct($product),
-            'note'       => fn (Note $note) => $this->projectNote($note),
-            'membership' => fn (Membership $membership) => $this->projectMembership($membership),
-            'donation'   => fn (Donation $donation) => $this->projectDonation($donation),
-            default      => null,
+            'post'            => fn (Page $post) => $this->projectPost($post, config('site.blog_prefix', 'news'), $contract->formatHints),
+            'event'           => fn (Event $event) => $this->projectEvent($event, $contract->formatHints),
+            'product'         => fn (Product $product) => $this->projectProduct($product),
+            'note'            => fn (Note $note) => $this->projectNote($note),
+            'membership'      => fn (Membership $membership) => $this->projectMembership($membership),
+            'donation'        => fn (Donation $donation) => $this->projectDonation($donation),
+            'fund'            => fn (Fund $fund) => $this->projectFund($fund),
+            'membership_tier' => fn (MembershipTier $tier) => $this->projectMembershipTier($tier),
+            'navigation_menu' => fn (NavigationMenu $menu) => $this->projectNavigationMenu($menu, $contract->filters),
+            'portal_member'   => fn (PortalAccount $member) => $this->projectPortalMember($member),
+            default           => null,
         };
     }
 
@@ -443,5 +458,134 @@ final class SystemModelProjector
             Source::HUMAN          => 'Manual',
             default                => '',
         };
+    }
+
+    /**
+     * Flat row shape derived from a Fund model. Only the designation-picker
+     * fields are exposed; internal columns (goal amounts, descriptions, flags)
+     * fall through to the fail-closed empty string.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectFund(Fund $fund): array
+    {
+        return [
+            'id'   => $fund->id,
+            'name' => (string) $fund->name,
+        ];
+    }
+
+    /**
+     * Flat row shape derived from a MembershipTier model — the signup-picker
+     * surface only. `default_price` keeps its decimal-string cast (templates
+     * cast to float for math, per the RecentDonations precedent).
+     *
+     * @return array<string, mixed>
+     */
+    private function projectMembershipTier(MembershipTier $tier): array
+    {
+        return [
+            'id'               => $tier->id,
+            'name'             => (string) $tier->name,
+            'default_price'    => $tier->default_price === null ? '' : (string) $tier->default_price,
+            'billing_interval' => (string) ($tier->billing_interval ?? ''),
+        ];
+    }
+
+    /**
+     * Flat row shape derived from a NavigationMenu with its visible item tree
+     * pre-loaded by the resolver arm. `items` is a nested DTO (three levels);
+     * each node carries label / href / target / is_link / children — the
+     * template renders structure only, no model walking.
+     *
+     * `drop_fill_gradient_css` is the widget's dropdown gradient, precomputed
+     * here from the contract's filters (config-supplied) so the template needs
+     * no GradientComposer service call (session-378 boundary rule).
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function projectNavigationMenu(NavigationMenu $menu, array $filters): array
+    {
+        $gradient = $filters['drop_fill_gradient'] ?? null;
+
+        return [
+            'id'                     => $menu->id,
+            'label'                  => (string) ($menu->label ?? ''),
+            'items'                  => $menu->relationLoaded('items') ? $this->projectNavItems($menu->items) : [],
+            'drop_fill_gradient_css' => $this->gradientComposer->compose(is_array($gradient) ? $gradient : null),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, NavigationItem>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function projectNavItems(Collection $items): array
+    {
+        return $items->map(fn (NavigationItem $item) => [
+            'label'    => (string) ($item->label ?? ''),
+            'href'     => $this->navItemHref($item),
+            'target'   => (string) ($item->target ?? '_self'),
+            'is_link'  => (bool) ($item->page_id || ($item->url && $item->url !== '#')),
+            'children' => $item->relationLoaded('children') ? $this->projectNavItems($item->children) : [],
+        ])->values()->all();
+    }
+
+    private function navItemHref(NavigationItem $item): string
+    {
+        if ($item->page_id && $item->relationLoaded('page') && $item->page) {
+            return url('/' . $item->page->slug);
+        }
+
+        return (string) ($item->url ?? '#') ?: '#';
+    }
+
+    /**
+     * Flat row shape derived from the authenticated PortalAccount and its
+     * linked Contact. PII-sensitive map: nothing beyond the portal widgets'
+     * own display surface is exposed, and the contract's field whitelist
+     * filters further (non-leak tested). `event_registrations` is a nested
+     * DTO projected only when the arm eager-loaded the relation.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectPortalMember(PortalAccount $member): array
+    {
+        $contact = $member->contact;
+        $inHousehold = $contact !== null
+            && $contact->household_id
+            && $contact->household_id !== $contact->id;
+
+        return [
+            'id'                  => $member->id,
+            'email'               => (string) ($member->email ?? ''),
+            'has_contact'         => $contact !== null,
+            'first_name'          => (string) ($contact?->first_name ?? ''),
+            'last_name'           => (string) ($contact?->last_name ?? ''),
+            'city'                => (string) ($contact?->city ?? ''),
+            'state'               => (string) ($contact?->state ?? ''),
+            'postal_code'         => (string) ($contact?->postal_code ?? ''),
+            'country'             => (string) ($contact?->country ?? ''),
+            'in_household'        => $inHousehold,
+            'household_name'      => ($contact !== null && $contact->household_id) ? $contact->householdName() : '',
+            'event_registrations' => $this->projectPortalRegistrations($contact),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function projectPortalRegistrations(?Contact $contact): array
+    {
+        if ($contact === null || ! $contact->relationLoaded('eventRegistrations')) {
+            return [];
+        }
+
+        return $contact->eventRegistrations->map(fn ($reg) => [
+            'event_title' => (string) ($reg->event?->title ?? ''),
+            'event_date'  => DateFormat::format($reg->event?->starts_at, DateFormat::LONG_DATE),
+            'status'      => (string) ($reg->status ?? ''),
+        ])->values()->all();
     }
 }

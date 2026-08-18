@@ -16,8 +16,8 @@
     $showFrequency  = $showMonthly || $showAnnual;
     $successPage    = $config['success_page'] ?? null;
 
-    $activeFunds    = \App\Models\Fund::where('is_active', true)->where('is_archived', false)->orderBy('name')->get();
-    $showFunds      = $activeFunds->isNotEmpty();
+    $activeFunds    = $widgetData['items'] ?? [];
+    $showFunds      = $activeFunds !== [];
 
     $donationFormConfig = [
         'checkoutUrl' => $checkoutUrl,
@@ -99,7 +99,7 @@
             <x-custom-select
                 name="fund_id"
                 id="donation_fund"
-                :options="$activeFunds->map(fn ($f) => ['value' => (string) $f->id, 'label' => $f->name])->values()->all()"
+                :options="array_map(fn ($f) => ['value' => (string) $f['id'], 'label' => $f['name']], $activeFunds)"
                 placeholder="General / Unrestricted"
             />
         </div>

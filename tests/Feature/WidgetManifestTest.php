@@ -1,16 +1,9 @@
 <?php
 
 use App\Services\WidgetRegistry;
-use App\Widgets\Contracts\WidgetDefinition;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 uses(TestCase::class);
-
-function widgetFolder(WidgetDefinition $def): string
-{
-    return Str::replaceLast('Definition', '', class_basename($def));
-}
 
 it('every widget version() matches semver', function () {
     $registry = app(WidgetRegistry::class);
@@ -37,9 +30,11 @@ it('every widget screenshot path exists on disk', function () {
     expect($registry->all())->not->toBeEmpty();
 
     foreach ($registry->all() as $def) {
-        $folder = widgetFolder($def);
+        // Resolved from the definition's own folder (baseDir), so the check
+        // holds for core app/Widgets/ and plugins/ modules alike — the
+        // session-377 capture item, absorbed at 378.
         foreach ($def->screenshots() as $path) {
-            $absolute = base_path('app/Widgets/' . $folder . '/' . $path);
+            $absolute = $def->baseDir() . '/' . $path;
             expect(file_exists($absolute))->toBeTrue(
                 "Widget [{$def->handle()}] screenshot missing: {$path}"
             );

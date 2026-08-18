@@ -144,7 +144,7 @@ it('generates button override css in the build pipeline', function () {
 it('appends external link icon for outbound urls', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'Internal', 'url' => '/about', 'style' => 'primary'],
             ['text' => 'External', 'url' => 'https://other-site.com/page', 'style' => 'primary'],
@@ -163,7 +163,7 @@ it('appends external link icon for outbound urls', function () {
 it('does not flag subdomain urls as external', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'Subdomain', 'url' => 'https://blog.example.org/post', 'style' => 'primary'],
         ],
@@ -173,7 +173,7 @@ it('does not flag subdomain urls as external', function () {
 });
 
 it('does not flag relative urls as external', function () {
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'Relative', 'url' => '/contact', 'style' => 'primary'],
         ],
@@ -187,7 +187,7 @@ it('does not flag relative urls as external', function () {
 it('honors an explicit new-tab target on an internal-url button', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'Docs', 'url' => '/docs', 'style' => 'primary', 'target' => '_blank'],
         ],
@@ -203,7 +203,7 @@ it('honors an explicit new-tab target on an internal-url button', function () {
 it('honors an explicit same-tab target overriding the external auto-new-tab', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'Partner', 'url' => 'https://other-site.com/x', 'style' => 'primary', 'target' => '_self'],
         ],
@@ -216,7 +216,7 @@ it('honors an explicit same-tab target overriding the external auto-new-tab', fu
 it('falls back to the external auto-new-tab when no target is set (legacy buttons unchanged)', function () {
     config(['app.url' => 'https://example.org']);
 
-    $view = view('widget-shared.buttons', [
+    $view = view('components.widget-buttons', [
         'buttons' => [
             ['text' => 'External', 'url' => 'https://other-site.com/x', 'style' => 'primary'],
             ['text' => 'Internal', 'url' => '/about', 'style' => 'primary'],

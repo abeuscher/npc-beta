@@ -2,6 +2,7 @@
 
 namespace App\Widgets\PortalForgotPassword;
 
+use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class PortalForgotPasswordDefinition extends WidgetDefinition
@@ -39,5 +40,14 @@ class PortalForgotPasswordDefinition extends WidgetDefinition
     public function defaults(): array
     {
         return [];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_PAGE_CONTEXT,
+            fields: ['site_name'],
+        );
     }
 }

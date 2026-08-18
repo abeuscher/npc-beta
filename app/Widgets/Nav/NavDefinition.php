@@ -2,6 +2,7 @@
 
 namespace App\Widgets\Nav;
 
+use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
 
 class NavDefinition extends WidgetDefinition
@@ -107,5 +108,22 @@ public function defaults(): array
         // Ships a tightly-framed committed static.png instead of a whole-frame
         // capture.
         return true;
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        // drop_fill_gradient travels via filters so the resolver precomputes
+        // drop_fill_gradient_css — the template never calls GradientComposer.
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['label', 'items', 'drop_fill_gradient_css'],
+            filters: [
+                'id'                 => (string) ($config['navigation_menu_id'] ?? ''),
+                'drop_fill_gradient' => $config['drop_fill_gradient'] ?? null,
+            ],
+            model: 'navigation_menu',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

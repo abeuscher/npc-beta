@@ -1,6 +1,6 @@
 # Plugin Contract
 
-**Contract Version:** `0.1.0`
+**Contract Version:** `0.2.0`
 **Status:** active — Stage A (in-repo module boundaries)
 **Owner:** core (this repo). Plugins implement against this document.
 **Canonical plan:** `sessions/plugin-architecture-plan.md` (architecture rationale, arc, question dispositions)
@@ -45,9 +45,12 @@ A plugin registers `App\Widgets\Contracts\WidgetDefinition` subclasses into the 
 
 - **Views:** the plugin registers its own Blade namespace in `boot()` (pilot: `plugin-logo-garden::`, pointing at the plugin folder) and overrides `template()` to include through it. The shared `widgets::` namespace (→ `app/Widgets`) stays core-only.
 - **Thumbnails:** core resolves a widget's thumbnail directory via `WidgetDefinition::thumbnailDir()` — derived by reflection from the concrete definition class's own file location, so it holds in core and in plugins with no override. Ship `thumbnails/static.png` (and `preset-*.png`) next to the definition; `scripts/generate-thumbnails.js` writes to whichever of `app/Widgets/{Name}/` or `plugins/{Name}/` exists.
-- **Data access:** widget templates render only `$config` + `$widgetData` via the declared `dataContract()` (the data-contract path). No model calls in templates. (Mandatory across all widgets at arc P2.)
+- **Data access (ENFORCED, session 378 — arc P2):** widget templates are pure renderers — they read only `$config` / `$configMedia` / `$widgetData` / `$pageContext` and render-layer helpers. No model calls, no `auth()`, no `app()`/`resolve()`/`@inject`, no `DB::`/`Auth::` in any template. The standing guard `tests/Feature/WidgetTemplateBoundaryTest.php` scans `app/Widgets/*/template.blade.php`, `plugins/*/template.blade.php`, and `resources/views/widget-shared/*` and fails on any such reach, with **no allowlist**. Core Blade components (`<x-picture>`, `<x-widget-buttons>`, …) are core view infrastructure and outside the scan.
+- **Declaring contracts:** the singular `dataContract(array $config): ?DataContract` remains the common case. Widgets consuming several sources override `dataContracts(array $config): array` — named contracts (`['event' => …, 'member' => …]`); their templates receive `$widgetData` keyed by contract name, while single-contract widgets keep the unkeyed `['items' => …]` / `['item' => …]` shape. User query-config merges into the primary (first) contract only.
+- **Sources & arms (exercised by the P2 retrofit):** `SOURCE_SYSTEM_MODEL` arms now include `fund`, `membership_tier`, `navigation_menu` (single, id filter), and `portal_member` (single; resolves the portal guard inside the arm, logged-out ⇒ `['item' => null]`, non-leak tested). `SOURCE_SERVICE` covers service-backed datasets (`setup_checklist`, `scrub_counts`) whose arms hard-gate on super-admin. `SOURCE_PAGE_CONTEXT` contracts may declare fields (e.g. `site_name`, a site-global token) for direct `$widgetData` reads. Every arm projects contract-declared fields only, fail-closed.
+- **Widget folder paths:** `WidgetDefinition::baseDir()` resolves the widget's own folder by reflection (generalizing 377's `thumbnailDir()`); anything declared relative to the widget folder (thumbnails, screenshots) resolves through it in core and plugins alike.
 
-Proven by: the pilot's registration, sync-row, and view-namespace tests (`PluginPilotSession377Test`), and render parity through the contract resolver (`LogoGardenContractRetrofitTest`).
+Proven by: the pilot's registration, sync-row, and view-namespace tests (`PluginPilotSession377Test`), render parity through the contract resolver (`LogoGardenContractRetrofitTest`), the all-41 retrofit's arm + parity tests (`WidgetBoundaryArmsSession378Test`, `WidgetBoundaryRetrofitSession378Test`), and the standing boundary guard (`WidgetTemplateBoundaryTest`).
 
 ### 3. Admin contribution — **DECLARED**
 
@@ -124,4 +127,5 @@ The detection API lands at arc P4 (Payments foundation module).
 
 ## Changelog
 
+- **0.2.0** (session 378, 2026-08-18) — surface 2's template-purity rule made real across all 41 widgets (arc P2): the twelve model/auth/service-reaching templates routed through declared contracts; `dataContracts()` (named, multi-source) added alongside the singular `dataContract()`; new resolver arms `fund`, `membership_tier`, `navigation_menu`, `portal_member` and the `SOURCE_SERVICE` source (`setup_checklist`, `scrub_counts`, super-admin-gated in the arm); `site_name` added to the page-context token set; `WidgetDefinition::baseDir()` generalizes folder-relative resolution; standing guard `WidgetTemplateBoundaryTest` enforces the boundary with zero allowlist.
 - **0.1.0** (session 377, 2026-08-18) — initial draft from the LogoGarden pilot extraction (arc P1). Surfaces 1, 2, 11, 12 PROVEN; all others DECLARED. In-repo plugin shape (`plugins/` + `config/plugins.php` + `PluginServiceProvider` loader) established. Normative rules recorded from the session-376 dispositions.

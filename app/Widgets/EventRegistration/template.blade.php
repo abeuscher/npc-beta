@@ -1,4 +1,4 @@
-@php $item = $widgetData['item'] ?? null; @endphp
+@php $item = $widgetData['event']['item'] ?? null; @endphp
 @if ($item)
     @php
         $isCancelled    = $item['status'] === 'cancelled';
@@ -9,8 +9,7 @@
         $tiers          = $item['tiers'] ?? [];
         $tierCount      = count($tiers);
         $regOpen        = $mode === 'open' && ! $isCancelled && ! $isAtCapacity && ! $isSoldOut;
-        $portalUser     = auth('portal')->user();
-        $portalContact  = $portalUser?->contact;
+        $portalUser     = ($widgetData['member']['item'] ?? null) !== null;
 
         $singleTier  = $tierCount === 1 ? $tiers[0] : null;
         $singleIsPaid = $singleTier ? ((float) $singleTier['price']) > 0 : false;

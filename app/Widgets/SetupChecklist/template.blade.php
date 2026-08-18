@@ -1,19 +1,21 @@
-@if (auth()->user()?->isSuperAdmin())
+@php $tool = $widgetData['item'] ?? null; @endphp
+@if ($tool !== null)
     @php
-        $service       = app(\App\Services\Setup\SetupChecklist::class);
-        $items         = $service->items();
-        $isFirstRun    = $service->isFirstRun();
+        $items         = $tool['items'];
+        $isFirstRun    = $tool['is_first_run'];
         $statusMessage = session('setup_checklist_status');
 
+        // Category/status values are contract-projected strings; the labels
+        // here mirror App\Services\Setup\SetupChecklist's constants.
         $sectionLabels = [
-            \App\Services\Setup\SetupChecklist::CATEGORY_REQUIRED_TO_BOOT     => 'Required to launch',
-            \App\Services\Setup\SetupChecklist::CATEGORY_REQUIRED_FOR_FEATURE => 'Required for specific features',
-            \App\Services\Setup\SetupChecklist::CATEGORY_OPTIONAL             => 'Optional',
+            'required_to_boot'     => 'Required to launch',
+            'required_for_feature' => 'Required for specific features',
+            'optional'             => 'Optional',
         ];
 
         $grouped = collect($items);
         if (! $isFirstRun) {
-            $grouped = $grouped->reject(fn ($item) => $item['status'] === \App\Services\Setup\SetupChecklist::STATUS_DONE);
+            $grouped = $grouped->reject(fn ($item) => $item['status'] === 'done');
         }
         $grouped = $grouped->groupBy('category');
     @endphp
@@ -45,10 +47,10 @@
                                 <li class="np-setup-checklist__item np-setup-checklist__item--{{ str_replace('_', '-', $item['status']) }}">
                                     <span class="np-setup-checklist__pill np-setup-checklist__pill--{{ str_replace('_', '-', $item['status']) }}">
                                         @switch($item['status'])
-                                            @case(\App\Services\Setup\SetupChecklist::STATUS_DONE)         Done @break
-                                            @case(\App\Services\Setup\SetupChecklist::STATUS_INCOMPLETE)   Incomplete @break
-                                            @case(\App\Services\Setup\SetupChecklist::STATUS_WARNING)      Warning @break
-                                            @default                                                       Optional
+                                            @case('done')       Done @break
+                                            @case('incomplete') Incomplete @break
+                                            @case('warning')    Warning @break
+                                            @default            Optional
                                         @endswitch
                                     </span>
                                     <div class="np-setup-checklist__body">

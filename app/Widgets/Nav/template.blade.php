@@ -1,5 +1,7 @@
 @php
-    $menuId          = $config['navigation_menu_id'];
+    $navData         = $widgetData['item'] ?? null;
+    $navItems        = $navData['items'] ?? [];
+    $menuLabel       = ($navData['label'] ?? '') !== '' ? $navData['label'] : 'Navigation';
     $brandingType    = $config['branding_type'];
     $brandingText    = $config['branding_text'];
     $brandingMedia   = $configMedia['branding_image'] ?? null;
@@ -10,7 +12,6 @@
     $dropBorderColor = $config['drop_border_color'];
     $dropBorderWidth = (int) $config['drop_border_width'];
     $dropFillColor   = $config['drop_fill_color'];
-    $dropFillGradient = is_array($config['drop_fill_gradient']) ? $config['drop_fill_gradient'] : null;
     $mobileAnimation = $config['mobile_animation'];
     $mobileBreakpoint = 768;
     $parentTemplate  = $config['parent_template'];
@@ -29,26 +30,6 @@
     if ($dropLinkColor && preg_match($hexPattern, $dropLinkColor)) $navColorVars[] = '--nav-drop-link-color:' . $dropLinkColor;
     if ($dropHoverColor && preg_match($hexPattern, $dropHoverColor)) $navColorVars[] = '--nav-drop-hover-color:' . $dropHoverColor;
 
-    // Resolve navigation menu
-    $navMenu = $menuId
-        ? \App\Models\NavigationMenu::find($menuId)
-        : null;
-
-    $navItems = $navMenu
-        ? $navMenu->items()
-            ->where('is_visible', true)
-            ->whereNull('parent_id')
-            ->orderBy('sort_order')
-            ->with([
-                'page',
-                'children' => fn ($q) => $q->where('is_visible', true)->orderBy('sort_order')->with([
-                    'page',
-                    'children' => fn ($q2) => $q2->where('is_visible', true)->orderBy('sort_order')->with('page'),
-                ]),
-            ])
-            ->get()
-        : collect();
-
     $currentPath = '/' . ltrim(request()->path(), '/');
 
     // Dropdown panel inline styles
@@ -56,7 +37,7 @@
     if ($dropBorderWidth > 0 && preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $dropBorderColor)) {
         $dropStyles[] = 'border:' . $dropBorderWidth . 'px solid ' . $dropBorderColor;
     }
-    $gradientCss = app(\App\Services\GradientComposer::class)->compose($dropFillGradient);
+    $gradientCss = (string) ($navData['drop_fill_gradient_css'] ?? '');
     if ($gradientCss !== '') {
         $dropStyles[] = 'background-image:' . $gradientCss;
     } elseif (preg_match('/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $dropFillColor)) {
@@ -77,14 +58,6 @@
     $alignMap   = ['top' => 'flex-start', 'middle' => 'center', 'bottom' => 'flex-end'];
     $justifyContent = $justifyMap[$alignHoriz] ?? 'flex-start';
     $alignItems     = $alignMap[$alignVert] ?? 'center';
-
-    // Helper to resolve an item's URL
-    $resolveUrl = function ($item) {
-        if ($item->page_id && $item->page) {
-            return url('/' . $item->page->slug);
-        }
-        return $item->url ?? '#';
-    };
 
     // Helper to render a nav-item template. Beyond token substitution it:
     //  (1) strips the wrapping <p> the Quill-backed template editor adds — nav
@@ -114,35 +87,35 @@
     $widgetId = 'nav-' . substr(md5(uniqid()), 0, 8);
 @endphp
 
-@if ($navItems->isEmpty())
+@if ($navItems === [])
     {{-- Empty state: render nothing --}}
 @elseif ($orientation === 'columns')
     {{-- Columns / footer preset: each top-level item is a heading column with
          its children listed beneath. No dropdowns, no JS — every link visible. --}}
     <nav
         class="widget-nav widget-nav--columns"
-        aria-label="{{ $navMenu->label ?? 'Navigation' }}"
+        aria-label="{{ $menuLabel }}"
         style="--nav-justify: {{ $justifyContent }}{{ !empty($navColorVars) ? '; ' . implode('; ', $navColorVars) : '' }}"
     >
         <ul class="widget-nav__columns">
             @foreach ($navItems as $item)
                 @php
-                    $href = $resolveUrl($item);
-                    $headingIsLink = $item->page_id || ($item->url && $item->url !== '#');
+                    $href = $item['href'];
+                    $headingIsLink = $item['is_link'];
                 @endphp
                 <li class="widget-nav__column">
                     @if ($headingIsLink)
-                        <a href="{{ $href }}" target="{{ $item->target ?? '_self' }}" class="widget-nav__column-heading">{{ $item->label }}</a>
+                        <a href="{{ $href }}" target="{{ $item['target'] }}" class="widget-nav__column-heading">{{ $item['label'] }}</a>
                     @else
-                        <span class="widget-nav__column-heading">{{ $item->label }}</span>
+                        <span class="widget-nav__column-heading">{{ $item['label'] }}</span>
                     @endif
 
-                    @if ($item->children->isNotEmpty())
+                    @if ($item['children'] !== [])
                         <ul class="widget-nav__column-links">
-                            @foreach ($item->children as $child)
-                                @php $childHref = $resolveUrl($child); @endphp
+                            @foreach ($item['children'] as $child)
+                                @php $childHref = $child['href']; @endphp
                                 <li>
-                                    <a href="{{ $childHref }}" target="{{ $child->target ?? '_self' }}" class="widget-nav__column-link {{ ($childHref !== '#' && $isActive($childHref)) ? 'is-active' : '' }}">{{ $child->label }}</a>
+                                    <a href="{{ $childHref }}" target="{{ $child['target'] }}" class="widget-nav__column-link {{ ($childHref !== '#' && $isActive($childHref)) ? 'is-active' : '' }}">{{ $child['label'] }}</a>
                                 </li>
                             @endforeach
                         </ul>
@@ -178,7 +151,7 @@
 <nav
     id="{{ $widgetId }}"
     class="widget-nav widget-nav--{{ $orientation }} widget-nav--drop-{{ $dropAnimation }} widget-nav--mobile-{{ $mobileAnimation }}"
-    aria-label="{{ $navMenu->label ?? 'Navigation' }}"
+    aria-label="{{ $menuLabel }}"
     x-data="nav"
     @keydown.escape.window="closeAll()"
     style="--nav-justify: {{ $justifyContent }}; --nav-align: {{ $alignItems }}{{ !empty($navColorVars) ? '; ' . implode('; ', $navColorVars) : '' }}"
@@ -219,10 +192,10 @@
     <ul class="widget-nav__menu" role="menubar" id="{{ $widgetId }}-menu">
         @foreach ($navItems as $index => $item)
             @php
-                $href = $resolveUrl($item);
+                $href = $item['href'];
                 $active = $isActive($href);
                 $activeClass = $active ? 'is-active' : '';
-                $hasChildren = $item->children->isNotEmpty();
+                $hasChildren = $item['children'] !== [];
                 $itemId = $widgetId . '-item-' . $index;
                 $anchorAttrs = $active ? 'aria-current="page"' : '';
             @endphp
@@ -243,7 +216,7 @@
                         @keydown.arrow-down.prevent="openDropdownAndFocus('{{ $itemId }}', $event)"
                     @endif
                 >
-                    {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass, $anchorAttrs) !!}
+                    {!! $renderTemplate($parentTemplate, $item['label'], $href, $activeClass, $anchorAttrs) !!}
                     @if ($hasChildren)
                         <span class="widget-nav__caret" aria-hidden="true"></span>
                     @endif
@@ -253,18 +226,18 @@
                     <ul
                         class="widget-nav__dropdown widget-nav__dropdown--{{ $dropAlign }}"
                         role="menu"
-                        aria-label="{{ $item->label }}"
+                        aria-label="{{ $item['label'] }}"
                         x-show="activeDropdown === '{{ $itemId }}'"
                         x-cloak
                         @if ($dropStyleAttr) style="{{ $dropStyleAttr }}" @endif
                         @keydown.escape.prevent="closeAllAndRestoreFocus($event)"
                     >
-                        @foreach ($item->children as $childIndex => $child)
+                        @foreach ($item['children'] as $childIndex => $child)
                             @php
-                                $childHref = $resolveUrl($child);
+                                $childHref = $child['href'];
                                 $childActive = $isActive($childHref);
                                 $childActiveClass = $childActive ? 'is-active' : '';
-                                $childHasChildren = $child->children->isNotEmpty();
+                                $childHasChildren = $child['children'] !== [];
                                 $childItemId = $itemId . '-' . $childIndex;
                                 $childAnchorAttrs = $childActive ? 'aria-current="page"' : '';
                             @endphp
@@ -284,7 +257,7 @@
                                         @focusin="openDropdown('{{ $childItemId }}')"
                                     @endif
                                 >
-                                    {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass, $childAnchorAttrs) !!}
+                                    {!! $renderTemplate($childTemplate, $child['label'], $childHref, $childActiveClass, $childAnchorAttrs) !!}
                                     @if ($childHasChildren)
                                         <span class="widget-nav__caret widget-nav__caret--sub" aria-hidden="true"></span>
                                     @endif
@@ -294,22 +267,22 @@
                                     <ul
                                         class="widget-nav__subdrop widget-nav__subdrop--{{ $dropAlign }}"
                                         role="menu"
-                                        aria-label="{{ $child->label }}"
+                                        aria-label="{{ $child['label'] }}"
                                         x-show="activeDropdown === '{{ $childItemId }}'"
                                         x-cloak
                                         @if ($dropStyleAttr) style="{{ $dropStyleAttr }}" @endif
                                         @keydown.escape.prevent="closeAll()"
                                     >
-                                        @foreach ($child->children as $grandchild)
+                                        @foreach ($child['children'] as $grandchild)
                                             @php
-                                                $gcHref = $resolveUrl($grandchild);
+                                                $gcHref = $grandchild['href'];
                                                 $gcActive = $isActive($gcHref);
                                                 $gcActiveClass = $gcActive ? 'is-active' : '';
                                                 $gcAnchorAttrs = $gcActive ? 'aria-current="page"' : '';
                                             @endphp
                                             <li role="none" class="widget-nav__subdrop-item">
                                                 <span class="widget-nav__subdrop-item-wrap">
-                                                    {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
+                                                    {!! $renderTemplate($childTemplate, $grandchild['label'], $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
                                                 </span>
                                             </li>
                                         @endforeach
@@ -328,25 +301,25 @@
         class="widget-nav__mobile"
         id="{{ $widgetId }}-mobile"
         role="menu"
-        aria-label="{{ $navMenu->label ?? 'Navigation' }}"
+        aria-label="{{ $menuLabel }}"
         @if (!empty($navColorVars)) style="{{ implode('; ', $navColorVars) }}" @endif
     >
         <ul class="widget-nav__mobile-list">
             @foreach ($navItems as $index => $item)
                 @php
-                    $href = $resolveUrl($item);
+                    $href = $item['href'];
                     $active = $isActive($href);
                     $activeClass = $active ? 'is-active' : '';
-                    $hasChildren = $item->children->isNotEmpty();
+                    $hasChildren = $item['children'] !== [];
                     $mobileItemId = $widgetId . '-mob-' . $index;
                     $anchorAttrs = $active ? 'aria-current="page"' : '';
                 @endphp
                 <li class="widget-nav__mobile-item" role="none">
                     @if ($hasChildren)
-                        <input type="checkbox" id="{{ $mobileItemId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($item->label) }}">
+                        <input type="checkbox" id="{{ $mobileItemId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($item['label']) }}">
                     @endif
                     <span class="widget-nav__mobile-item-wrap">
-                        {!! $renderTemplate($parentTemplate, $item->label, $href, $activeClass, $anchorAttrs) !!}
+                        {!! $renderTemplate($parentTemplate, $item['label'], $href, $activeClass, $anchorAttrs) !!}
                         @if ($hasChildren)
                             <label for="{{ $mobileItemId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
                                 <span class="widget-nav__mobile-chevron"></span>
@@ -356,21 +329,21 @@
 
                     @if ($hasChildren)
                         <ul class="widget-nav__mobile-sub" role="menu">
-                            @foreach ($item->children as $childIndex => $child)
+                            @foreach ($item['children'] as $childIndex => $child)
                                 @php
-                                    $childHref = $resolveUrl($child);
+                                    $childHref = $child['href'];
                                     $childActive = $isActive($childHref);
                                     $childActiveClass = $childActive ? 'is-active' : '';
-                                    $childHasChildren = $child->children->isNotEmpty();
+                                    $childHasChildren = $child['children'] !== [];
                                     $mobileChildId = $mobileItemId . '-' . $childIndex;
                                     $childAnchorAttrs = $childActive ? 'aria-current="page"' : '';
                                 @endphp
                                 <li class="widget-nav__mobile-item widget-nav__mobile-item--child" role="none">
                                     @if ($childHasChildren)
-                                        <input type="checkbox" id="{{ $mobileChildId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($child->label) }}">
+                                        <input type="checkbox" id="{{ $mobileChildId }}-sub" class="widget-nav__mobile-subtoggle" aria-label="Expand {{ e($child['label']) }}">
                                     @endif
                                     <span class="widget-nav__mobile-item-wrap">
-                                        {!! $renderTemplate($childTemplate, $child->label, $childHref, $childActiveClass, $childAnchorAttrs) !!}
+                                        {!! $renderTemplate($childTemplate, $child['label'], $childHref, $childActiveClass, $childAnchorAttrs) !!}
                                         @if ($childHasChildren)
                                             <label for="{{ $mobileChildId }}-sub" class="widget-nav__mobile-toggle" aria-hidden="true">
                                                 <span class="widget-nav__mobile-chevron"></span>
@@ -380,15 +353,15 @@
 
                                     @if ($childHasChildren)
                                         <ul class="widget-nav__mobile-sub widget-nav__mobile-sub--l3" role="menu">
-                                            @foreach ($child->children as $grandchild)
+                                            @foreach ($child['children'] as $grandchild)
                                                 @php
-                                                    $gcHref = $resolveUrl($grandchild);
+                                                    $gcHref = $grandchild['href'];
                                                     $gcActive = $isActive($gcHref);
                                                     $gcActiveClass = $gcActive ? 'is-active' : '';
                                                     $gcAnchorAttrs = $gcActive ? 'aria-current="page"' : '';
                                                 @endphp
                                                 <li class="widget-nav__mobile-item widget-nav__mobile-item--grandchild" role="none">
-                                                    {!! $renderTemplate($childTemplate, $grandchild->label, $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
+                                                    {!! $renderTemplate($childTemplate, $grandchild['label'], $gcHref, $gcActiveClass, $gcAnchorAttrs) !!}
                                                 </li>
                                             @endforeach
                                         </ul>

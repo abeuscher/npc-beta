@@ -2,6 +2,7 @@
 
 namespace App\Widgets\PortalEventRegistrations;
 
+use App\WidgetPrimitive\DataContract;
 use App\Widgets\Contracts\WidgetDefinition;
 use Database\Seeders\DemoPortalMemberSeeder;
 
@@ -49,5 +50,16 @@ class PortalEventRegistrationsDefinition extends WidgetDefinition
             'seeder' => DemoPortalMemberSeeder::class,
             'login'  => DemoPortalMemberSeeder::ACCOUNT_EMAIL,
         ];
+    }
+
+    public function dataContract(array $config): ?DataContract
+    {
+        return new DataContract(
+            version: '1.0.0',
+            source: DataContract::SOURCE_SYSTEM_MODEL,
+            fields: ['has_contact', 'event_registrations'],
+            model: 'portal_member',
+            cardinality: DataContract::CARDINALITY_ONE,
+        );
     }
 }

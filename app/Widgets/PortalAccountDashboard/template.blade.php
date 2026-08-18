@@ -1,21 +1,18 @@
-@php
-    $portalUser = auth('portal')->user();
-    $contact    = $portalUser?->contact;
-@endphp
+@php $member = $widgetData['item'] ?? null; @endphp
 
-@if ($portalUser && $contact)
-    <p class="text-muted portal-description">Welcome back, {{ $contact->first_name }}.</p>
+@if ($member && $member['has_contact'])
+    <p class="text-muted portal-description">Welcome back, {{ $member['first_name'] }}.</p>
 
     <dl class="portal-dl">
         <div class="portal-dl__row">
             <dt class="portal-dl__label">Email</dt>
-            <dd class="portal-dl__value">{{ $portalUser->email }}</dd>
+            <dd class="portal-dl__value">{{ $member['email'] }}</dd>
         </div>
 
-        @if ($contact->household_id && $contact->household_id !== $contact->id)
+        @if ($member['in_household'])
         <div class="portal-dl__row">
             <dt class="portal-dl__label">Household</dt>
-            <dd class="portal-dl__value">{{ $contact->householdName() }}</dd>
+            <dd class="portal-dl__value">{{ $member['household_name'] }}</dd>
         </div>
         @endif
     </dl>

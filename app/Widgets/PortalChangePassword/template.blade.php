@@ -1,4 +1,4 @@
-@if (auth('portal')->check())
+@if (($widgetData['item'] ?? null) !== null)
 
     {{-- Validation/success alerts render once at the top of the account page via
          the PortalContactEdit widget (the shared $errors bag + session flash),

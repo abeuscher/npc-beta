@@ -102,13 +102,30 @@ it('end-to-end — generate then wipe via controller leaves real data intact', f
         ->and(Contact::where('id', $realContact->id)->exists())->toBeTrue();
 });
 
+/**
+ * Render the widget template through the contract path: the resolver's
+ * service arm applies the super-admin gate and projects the scrub counts,
+ * exactly as WidgetRenderer does in production (session 378 retrofit).
+ */
+function renderRandomDataGeneratorWidget(): string
+{
+    $definition = app(\App\Services\WidgetRegistry::class)->find('random_data_generator');
+    $widgetData = app(\App\WidgetPrimitive\ContractResolver::class)->resolve(
+        [$definition->dataContract([])],
+        new \App\WidgetPrimitive\SlotContext(new \App\WidgetPrimitive\AmbientContexts\PageAmbientContext()),
+    )[0];
+
+    return view('widgets::RandomDataGenerator.template')
+        ->with('errors', new \Illuminate\Support\ViewErrorBag())
+        ->with('widgetData', $widgetData)
+        ->render();
+}
+
 it('widget template renders empty for non-super-admin user', function () {
     $user = User::factory()->create();
     test()->actingAs($user);
 
-    $rendered = view('widgets::RandomDataGenerator.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderRandomDataGeneratorWidget();
 
     expect(trim($rendered))->toBe('');
 });
@@ -116,9 +133,7 @@ it('widget template renders empty for non-super-admin user', function () {
 it('widget template renders content for super-admin user', function () {
     actAsSuperAdmin();
 
-    $rendered = view('widgets::RandomDataGenerator.template')
-        ->with('errors', new \Illuminate\Support\ViewErrorBag())
-        ->render();
+    $rendered = renderRandomDataGeneratorWidget();
 
     expect($rendered)->toContain('Random Data Generator')
         ->and($rendered)->toContain('counts[contacts]')

@@ -88,4 +88,24 @@ class EventRegistrationDefinition extends WidgetDefinition
             'js' => ['app/Widgets/EventRegistration/script.js'],
         ];
     }
+
+    /**
+     * Two sources: the event being registered for (primary — user query
+     * config merges here) and the authenticated portal member, whose presence
+     * decides member-vs-guest form rendering. $widgetData arrives keyed:
+     * $widgetData['event']['item'] / $widgetData['member']['item'].
+     */
+    public function dataContracts(array $config): array
+    {
+        return [
+            'event'  => $this->dataContract($config),
+            'member' => new DataContract(
+                version: '1.0.0',
+                source: DataContract::SOURCE_SYSTEM_MODEL,
+                fields: ['id'],
+                model: 'portal_member',
+                cardinality: DataContract::CARDINALITY_ONE,
+            ),
+        ];
+    }
 }

@@ -132,6 +132,23 @@ abstract class WidgetDefinition
     }
 
     /**
+     * Declare the widget's named data contracts. The default wraps the
+     * singular dataContract() under the 'default' key, so single-contract
+     * widgets keep today's unkeyed $widgetData shape (['items' => …] /
+     * ['item' => …]) with no template churn. Widgets that consume several
+     * sources (e.g. EventRegistration: event + portal member) override this
+     * to return ['name' => DataContract, …]; their templates receive
+     * $widgetData keyed by contract name ($widgetData['member']['item']).
+     * User query-config merges into the primary (first) contract only.
+     */
+    public function dataContracts(array $config): array
+    {
+        $contract = $this->dataContract($config);
+
+        return $contract === null ? [] : ['default' => $contract];
+    }
+
+    /**
      * Declare honored query knobs for this widget. List-shaped widgets override
      * to opt into the QuerySettings inspector panel (limit / order_by /
      * direction / include_tags / exclude_tags) — null means no panel renders
@@ -300,14 +317,23 @@ abstract class WidgetDefinition
     }
 
     /**
-     * Absolute path to this widget's thumbnails directory. Resolved from the
-     * concrete definition class's own file location, so it holds wherever the
-     * widget lives — a core app/Widgets/{Name}/ folder or a plugins/{Name}/
-     * module — without per-widget overrides.
+     * Absolute path to the widget's own folder — wherever it lives, a core
+     * app/Widgets/{Name}/ folder or a plugins/{Name}/ module — resolved from
+     * the concrete definition class's file location, no per-widget overrides.
+     * Everything declared relative to the widget folder (thumbnails,
+     * screenshots) resolves through this.
+     */
+    public function baseDir(): string
+    {
+        return dirname((new \ReflectionClass(static::class))->getFileName());
+    }
+
+    /**
+     * Absolute path to this widget's thumbnails directory.
      */
     public function thumbnailDir(): string
     {
-        return dirname((new \ReflectionClass(static::class))->getFileName()) . '/thumbnails';
+        return $this->baseDir() . '/thumbnails';
     }
 
     public function manifest(): array

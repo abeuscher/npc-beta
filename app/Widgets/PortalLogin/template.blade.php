@@ -1,6 +1,6 @@
 <div class="portal-auth" data-tour="portal.login">
     <div class="portal-auth-card">
-        <p class="portal-auth-card__brand">{{ \App\Models\SiteSetting::get('site_name', config('app.name')) }}</p>
+        <p class="portal-auth-card__brand">{{ $widgetData['site_name'] ?? '' }}</p>
         <h1 class="portal-auth-card__title">Sign in to your account</h1>
 
         @if ($errors->any())

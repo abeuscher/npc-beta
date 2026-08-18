@@ -85,11 +85,19 @@ class WidgetRenderer
         $contract = null;
         $definition = app(WidgetRegistry::class)->find($widgetType->handle);
         if ($definition !== null) {
-            $contract = $definition->dataContract($config);
-            if ($contract !== null) {
-                $contract = self::mergeUserQueryConfig($contract, $pw->query_config ?? []);
+            $contracts = array_filter($definition->dataContracts($config));
+            if ($contracts !== []) {
+                $names = array_keys($contracts);
+                $list = array_values($contracts);
+                $list[0] = self::mergeUserQueryConfig($list[0], $pw->query_config ?? []);
+                $contract = $list[0];
 
-                $skip = $contract->source === DataContract::SOURCE_PAGE_CONTEXT
+                // Skip only the token-substitution case: a lone field-less
+                // page-context contract with no {{tokens}} in config. Contracts
+                // that declare page-context fields (brand reads) always resolve.
+                $skip = count($list) === 1
+                    && $contract->source === DataContract::SOURCE_PAGE_CONTEXT
+                    && $contract->fields === []
                     && ! self::configHasTokens($config);
 
                 if (! $skip) {
@@ -100,7 +108,8 @@ class WidgetRenderer
                     } else {
                         $slot = app(SlotRegistry::class)->find($slotHandle)->ambientContext();
                     }
-                    $widgetData = app(ContractResolver::class)->resolve([$contract], $slot, $fallbackCollectionData)[0];
+                    $resolved = app(ContractResolver::class)->resolve($list, $slot, $fallbackCollectionData);
+                    $widgetData = count($list) === 1 ? $resolved[0] : array_combine($names, $resolved);
                 }
             }
         }
@@ -209,6 +218,8 @@ class WidgetRenderer
             resourceHandle: $contract->resourceHandle,
             contentType: $contract->contentType,
             querySettings: $contract->querySettings,
+            cardinality: $contract->cardinality,
+            requiredPermission: $contract->requiredPermission,
             formatHints: $contract->formatHints,
         );
     }

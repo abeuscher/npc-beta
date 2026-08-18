@@ -7,9 +7,6 @@
 
 @if (!empty($buttons))
     <div class="widget-button-row">
-        @include('widget-shared.buttons', [
-            'buttons'   => $buttons,
-            'alignment' => $alignment,
-        ])
+        <x-widget-buttons :buttons="$buttons" :alignment="$alignment" />
     </div>
 @endif

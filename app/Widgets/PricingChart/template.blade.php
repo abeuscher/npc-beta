@@ -104,10 +104,7 @@
 
                     <div class="pricing-chart__column-ctas">
                         @if (! empty($colCtas))
-                            @include('widget-shared.buttons', [
-                                'buttons'   => $colCtas,
-                                'alignment' => 'left',
-                            ])
+                            <x-widget-buttons :buttons="$colCtas" alignment="left" />
                         @endif
                     </div>
                 </div>
