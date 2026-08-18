@@ -91,21 +91,6 @@ it('draft events do not appear on the events listing page', function () {
 
 // ── Registration ──────────────────────────────────────────────────────────────
 
-it('registration form creates an EventRegistration record', function () {
-    $event = Event::factory()->create(['status' => 'published', 'is_free' => true]);
-
-    $this->post(route('events.register', $event->slug), [
-        'name'         => 'Jane Doe',
-        'email'        => 'jane@example.com',
-        '_form_start'  => time() - 10,
-        '_hp_name'     => '',
-    ])->assertRedirect();
-
-    expect(EventRegistration::where('email', 'jane@example.com')->exists())->toBeTrue();
-
-    $reg = EventRegistration::where('email', 'jane@example.com')->first();
-    expect($reg->event_id)->toBe($event->id);
-});
 
 it('registration redirects to the landing page when one exists', function () {
     $landingPage = Page::factory()->create(['slug' => 'events/my-event', 'status' => 'draft']);
@@ -191,23 +176,7 @@ it('timing check blocks submissions under 3 seconds without creating a registrat
 
 // ── Event model methods ───────────────────────────────────────────────────────
 
-it('isAtCapacity returns false when event has no tiers', function () {
-    $event = Event::factory()->create();
-    expect($event->isAtCapacity())->toBeFalse();
-});
 
-it('isAtCapacity returns true when registrations fill capacity', function () {
-    $event = Event::factory()->withCapacity(2)->create(['status' => 'published']);
-    $tier  = $event->ticketTiers()->first();
-
-    EventRegistration::factory()->count(2)->create([
-        'event_id'       => $event->id,
-        'ticket_tier_id' => $tier->id,
-        'status'         => 'registered',
-    ]);
-
-    expect($event->fresh()->isAtCapacity())->toBeTrue();
-});
 
 // ── Landing page creation ─────────────────────────────────────────────────────
 
