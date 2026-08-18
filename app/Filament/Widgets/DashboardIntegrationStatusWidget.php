@@ -20,9 +20,9 @@ class DashboardIntegrationStatusWidget extends Widget
         $integrations = [
             'MailChimp'   => config('services.mailchimp.api_key'),
             'Resend'      => config('services.resend.key'),
-            // Session 380: asked through the capability API — the old
-            // config('services.stripe.key') read named a key nothing sets, so
-            // Stripe never showed as connected.
+            // Session 380: asked through the capability API — the old config
+            // read named services.stripe.key, which nothing sets, so Stripe
+            // never showed as connected.
             'Stripe'      => app(CapabilityRegistry::class)->enabled('payments'),
             'QuickBooks'  => config('services.quickbooks.key'),
         ];

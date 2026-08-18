@@ -19,7 +19,8 @@ Stripe is the source of financial truth. The platform maintains a local mirror o
 - A local mirror enables fast reporting queries without hitting the Stripe API on every report
 - Webhooks provide near-real-time sync. Webhook processing is idempotent and logged
 - QuickBooks receives outbound sync from the local mirror — it does not write back to the platform
-- This pattern is well-supported by Laravel Cashier, which manages the Stripe integration
+
+**Correction (session 380, August 2026):** Laravel Cashier was never actually used — no `Billable` trait, no Cashier config or subscription tables ever existed; the integration talks to Stripe directly through `stripe/stripe-php` (now a direct composer dependency; Cashier removed). The Stripe rails (checkout-session service, webhook controller, price observer, live-mode sniff) live in the Payments foundation plugin at `plugins/Payments/`, consumed by verticals through the core capability API and the core-owned `CheckoutProvider` contract (`docs/plugin-contract.md` surface 13). The decision itself — Stripe as financial source of truth, local mirror via idempotent webhooks — stands unchanged.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
 # Plugin Contract
 
-**Contract Version:** `0.3.0`
+**Contract Version:** `0.4.0`
 **Status:** active — Stage A (in-repo module boundaries)
 **Owner:** core (this repo). Plugins implement against this document.
 **Canonical plan:** `sessions/plugin-architecture-plan.md` (architecture rationale, arc, question dispositions)
@@ -13,7 +13,7 @@ The single source of truth for the surface **core publishes to plugins**. A plug
 
 **Marking discipline:** every surface below is marked **PROVEN** (exercised end-to-end by a shipped extraction, with tests) or **DECLARED** (specified, not yet exercised). A surface is only promoted to PROVEN in the session that exercises it. The version bumps FM-contract-style: additive clarifications bump the patch/minor version; changing a PROVEN surface's shape is a breaking change and bumps the major version once this doc reaches 1.0.0.
 
-**Reference implementation:** the LogoGarden pilot at `plugins/LogoGarden/` (extracted session 377 — arc P1). One folder: definition, service provider, template, SCSS, JS, demo seeder, thumbnails.
+**Reference implementations:** the LogoGarden pilot at `plugins/LogoGarden/` (extracted session 377 — arc P1) for a widget plugin, and the Payments foundation plugin at `plugins/Payments/` (extracted session 380 — arc P4) for a non-widget plugin owning services, an HTTP surface, an observer, and a capability declaration.
 
 ---
 
@@ -37,7 +37,7 @@ plugins/{PascalName}/
 
 One service provider per plugin. Stage A: the provider class is listed in `config/plugins.php` and registered by core's `PluginServiceProvider` during bootstrap. Stage B replaces the config list with Laravel package auto-discovery per composer package; the provider remains the single entry point either way.
 
-Proven by: `Plugins\LogoGarden\LogoGardenServiceProvider` — registered through the config list, asserted loaded in `tests/Feature/PluginPilotSession377Test.php`.
+Proven by: `Plugins\LogoGarden\LogoGardenServiceProvider` — registered through the config list, asserted loaded in `tests/Feature/PluginPilotSession377Test.php`. Second shipping consumer (session 380): `Plugins\Payments\PaymentsServiceProvider`, the first non-widget plugin — its provider owns contract bindings and a capability declaration at `register()`, and config injection, an observer, and a route file at `boot()` (`PaymentsPluginSession380Test` + the removal mirror).
 
 ### 2. Widget contribution — **PROVEN** (session 377)
 
@@ -102,6 +102,8 @@ Registry entries (`app/Importers/*FieldRegistry.php` precedent) plus the Filamen
 
 Laravel events for cross-plugin reaction (e.g. Donations fires, Mailchimp listens). Plugins listen to core and foundation-plugin events; they never call into another vertical.
 
+**Named P5 work — the inbound payments inversion (decided at session 380, not silently deferred):** the Payments plugin's webhook controller still writes vertical models directly (Donation, EventRegistration, Membership, Purchase) — a plugin→core hard dependency, allowed today. When the first domain vertical extracts (arc P5), its webhook handlers invert to this surface: the Payments module emits typed payment-settled events and the vertical listens, scoped per-vertical as each one extracts. That is the moment a webhook write would otherwise become a forbidden plugin→vertical reach.
+
 ### 11. Front-end assets — **PROVEN** (session 377)
 
 A widget's `assets()` declares repo-relative `scss` / `js` file paths plus `libs` identifiers. `widgets:sync` writes them to `widget_types.assets`; `AssetBuildService::collectSources()` resolves each path via `base_path()` off disk — plugin paths (`plugins/{Name}/…`) resolve exactly like core paths. `build:public` compiles the bundle out-of-band on the build server and regenerates `public/build/widgets/manifest.json`.
@@ -114,15 +116,21 @@ Proven by: the pilot's SCSS + JS + `swiper` lib building from `plugins/LogoGarde
 
 This contract doc is the versioned artifact, maintained with the same discipline as `docs/fleet-manager-agent-contract.md`: version header, changelog, both sides update before the next boundary-touching session. "Does this follow the contract?" is the arbiter that replaces most in-session judgment calls (execution posture, 376).
 
-### 13. Capability detection / soft dependencies — **DECLARED** *(normative rules settled)*
+### 13. Capability detection / soft dependencies — **PROVEN** (session 380)
 
-A plugin can ask "is capability X present and enabled?" and must degrade gracefully when it isn't. Dependency rules (owner guideline, 376):
+A consumer can ask "is capability X present and enabled?" and must degrade gracefully when it isn't. Mechanics (session 380, arc P4):
+
+- **`App\Plugins\CapabilityRegistry`** — core-owned singleton, bound by `PluginServiceProvider` alongside `PluginAdminRegistry` before any plugin registers. A foundation plugin declares `provide(string $name, Closure $enabled)` from its provider's `register()`; consumers ask `present($name)` (a registered plugin provides it) and `enabled($name)` (present AND the lazy resolver returns true — evaluated on every call, never cached).
+- **Capability-scoped contracts are core-owned.** Alongside the boolean question, core owns the interfaces a capability's consumers program against — `App\Payments\Contracts\CheckoutProvider` (checkout-session creation + per-flow default image; callers rely only on the returned object's `->id`/`->url`) and `App\Payments\Contracts\PaymentModeProvider` (live-credential detection, consumed via the static `App\Payments\PaymentMode::isLive()`, false when nothing binds — an install without payments is never live). The plugin binds its implementations at `register()`; **nothing in `app/` may reference the `Plugins\Payments\` namespace, the Stripe SDK, or `services.stripe.*` config** — enforced with zero allowlist by the standing guard `tests/Feature/Infrastructure/PaymentModuleBoundaryTest.php`.
+- **`payments`** is the first capability: resolver `filled(config('services.stripe.secret'))`, the same truthiness the five pre-carve controller guards tested. Remove the plugin's `config/plugins.php` line and present/enabled are false, every checkout endpoint returns its existing not-configured response, the webhook route is gone, and the free/$0 paths run untouched (`PaymentsPluginRemovalSession380Test`).
+
+Dependency rules (owner guideline, 376):
 
 - **Verticals never depend on each other.**
 - **Hard dependencies point only at core.**
 - **Optional dependencies point at foundation plugins** (composer `suggests`, never `require`), consumed through capability detection — e.g. Events without Payments = free events only.
 
-The detection API lands at arc P4 (Payments foundation module).
+Proven by: five shipping vertical call sites (donation, product, membership, and both event-registration checkout controllers) plus `DashboardIntegrationStatusWidget` consuming `enabled('payments')`; the capability-semantics tests (`CapabilityRegistrySession380Test`) and the enabled/removal twin pair.
 
 ---
 
@@ -139,6 +147,7 @@ The detection API lands at arc P4 (Payments foundation module).
 
 ## Changelog
 
+- **0.4.0** (session 380, 2026-08-18) — surface 13 PROVEN (arc P4): the Stripe rails carved into `plugins/Payments/`, the first shipping foundation plugin; core `CapabilityRegistry` (`provide`/`present`/`enabled`, lazy resolvers) bound by `PluginServiceProvider`; core-owned `App\Payments\Contracts\CheckoutProvider` + `PaymentModeProvider` contracts with the plugin binding implementations at `register()`; five vertical checkout call sites + the dashboard integration widget consume the API. Surface 1 gains its second shipping consumer (`PaymentsServiceProvider`). Surface 10 records the named P5 inbound-inversion plan. Standing guard `PaymentModuleBoundaryTest` bans the Stripe SDK, the plugin namespace, and `services.stripe.*` config reads in `app/` with zero allowlist. `laravel/cashier` removed (never used; two dead vendor routes dropped), `stripe/stripe-php` now a direct dependency.
 - **0.3.0** (session 379, 2026-08-18) — surfaces 3 and 4's mechanics built and fixture-tested (arc P3), statuses kept DECLARED per the honesty rule. Admin socket: `App\Plugins\AdminContribution` + `App\Plugins\PluginAdminRegistry` (populated at plugin `register()`, consumed by `AdminPanelProvider`) declaring Filament discovery paths, an in-panel route file (always wrapped in `Authenticate` by core), and permission names (seeded idempotently by `PermissionSeeder`, granted to no shipped role). Core's inline `->routes()` closure decomposed into per-feature `routes/admin/` files with exact route-list parity. The three session-376 Filament conventions made mechanical; convention 3 enforced by the standing guard `PluginAdminCssGuardTest` (no plugin admin CSS, widget SCSS exempt). Fixture: `tests/Fixtures/Plugins/SocketProbe/` with enabled + removal test mirrors.
 - **0.2.0** (session 378, 2026-08-18) — surface 2's template-purity rule made real across all 41 widgets (arc P2): the twelve model/auth/service-reaching templates routed through declared contracts; `dataContracts()` (named, multi-source) added alongside the singular `dataContract()`; new resolver arms `fund`, `membership_tier`, `navigation_menu`, `portal_member` and the `SOURCE_SERVICE` source (`setup_checklist`, `scrub_counts`, super-admin-gated in the arm); `site_name` added to the page-context token set; `WidgetDefinition::baseDir()` generalizes folder-relative resolution; standing guard `WidgetTemplateBoundaryTest` enforces the boundary with zero allowlist.
 - **0.1.0** (session 377, 2026-08-18) — initial draft from the LogoGarden pilot extraction (arc P1). Surfaces 1, 2, 11, 12 PROVEN; all others DECLARED. In-repo plugin shape (`plugins/` + `config/plugins.php` + `PluginServiceProvider` loader) established. Normative rules recorded from the session-376 dispositions.
