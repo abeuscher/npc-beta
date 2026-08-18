@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Plugins\Events\Console\Commands;
 
 use App\Mail\EventReminder;
 use App\Models\Event;

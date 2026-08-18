@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Portal;
+namespace Plugins\Events\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Mail\RegistrationConfirmation;
@@ -8,11 +8,11 @@ use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Payments\Contracts\CheckoutProvider;
 use App\Plugins\CapabilityRegistry;
-use App\Services\EventRegistrationQuantities;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Plugins\Events\Services\EventRegistrationQuantities;
 
 class EventRegistrationController extends Controller
 {

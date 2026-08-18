@@ -6,7 +6,7 @@ use App\Models\EventRegistration;
 use App\Models\PortalAccount;
 use App\Models\TicketTier;
 use App\Models\Transaction;
-use App\Services\EventRegistrationQuantities;
+use Plugins\Events\Services\EventRegistrationQuantities;
 use App\WidgetPrimitive\Source;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

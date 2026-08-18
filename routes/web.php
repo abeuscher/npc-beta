@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\EventController;
 use App\Http\Controllers\MembershipCheckoutController;
 use App\Http\Controllers\FormSubmissionController;
 use App\Http\Controllers\DemoLoginController;
@@ -14,7 +13,6 @@ use App\Http\Controllers\MailChimpWebhookController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Portal\AccountController;
 use App\Http\Controllers\Portal\EmailVerificationController;
-use App\Http\Controllers\Portal\EventRegistrationController as PortalEventRegistrationController;
 use App\Http\Controllers\Portal\ForgotPasswordController;
 use App\Http\Controllers\Portal\LoginController;
 use App\Http\Controllers\Portal\ResetPasswordController;
@@ -35,22 +33,8 @@ Route::get("/webhooks/{$mailchimpPath}", fn () => response('OK', 200))
 // Payments plugin (plugins/Payments/routes/web.php); the /webhooks/* CSRF
 // exemption in bootstrap/app.php stays core path-policy.
 
-// Public event JSON endpoint — feeds the calendar widget
-Route::get('/api/events.json', function () {
-    return \App\Models\Event::query()
-        ->published()
-        ->where('starts_at', '>=', now()->subMonths(6))
-        ->orderBy('starts_at')
-        ->get()
-        ->map(fn ($e) => [
-            'id'          => $e->id,
-            'title'       => $e->title,
-            'from'        => $e->starts_at?->toIso8601String(),
-            'to'          => $e->ends_at?->toIso8601String(),
-            'description' => $e->description ? \Illuminate\Support\Str::limit(strip_tags($e->description), 200) : null,
-            'url'         => $e->landingPage ? url($e->landingPage->slug) : null,
-        ]);
-})->name('api.events.json');
+// The events routes (api.events.json, events.register, portal.events.register)
+// are registered by the Events plugin (plugins/Events/routes/web.php).
 
 Route::get('/', [PageController::class, 'home']);
 
@@ -63,12 +47,6 @@ Route::get('/home', fn () => redirect('/', 301))->name('home.redirect');
 $blogPrefix = config('site.blog_prefix', 'news');
 Route::get("/{$blogPrefix}", [PostController::class, 'index'])->name('posts.index');
 Route::get("/{$blogPrefix}/{slug}", [PostController::class, 'show'])->name('posts.show');
-
-// Event registration — GET routes removed (served by PageController via page slugs)
-$eventsPrefix = config('site.events_prefix', 'events');
-Route::post("/{$eventsPrefix}/{slug}/register", [EventController::class, 'register'])
-    ->name('events.register')
-    ->middleware('throttle:10,1');
 
 // Donation checkout
 $donationsPrefix = config('site.donations_prefix', 'donate');
@@ -130,8 +108,6 @@ Route::get("{$systemBase}/account", function () {
 
     return redirect('/' . $prefix);
 })->name('portal.account')->middleware($portalAuth);
-
-Route::post('/account/events/{slug}/register', [PortalEventRegistrationController::class, 'store'])->name('portal.events.register')->middleware($portalAuth);
 
 Route::patch('/account/address', [AccountController::class, 'updateAddress'])->name('portal.account.update-address')->middleware($portalAuth);
 Route::patch('/account/password', [AccountController::class, 'updatePassword'])->name('portal.account.update-password')->middleware($portalAuth);

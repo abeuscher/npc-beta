@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace Plugins\Events\Services;
 
 use App\Models\Event;
 use App\Models\TicketTier;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Policies;
+namespace Plugins\Events\Policies;
 
 use App\Models\Event;
 use App\Models\User;

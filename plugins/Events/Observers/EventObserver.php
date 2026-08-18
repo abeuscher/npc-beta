@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Observers;
+namespace Plugins\Events\Observers;
 
 use App\Models\Event;
 use App\Models\Page;

@@ -3,12 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\SanitisesRichTextCustomFields;
-use App\Observers\EventObserver;
 use App\Support\HtmlSanitizer;
 use App\WidgetPrimitive\EnforcesScrubInheritance;
 use App\WidgetPrimitive\HasSourcePolicy;
 use App\WidgetPrimitive\Source;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +20,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[ObservedBy(EventObserver::class)]
+// Observed by the Events plugin's EventObserver, registered from its provider.
 class Event extends Model implements HasMedia
 {
     use EnforcesScrubInheritance;
