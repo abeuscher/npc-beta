@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Mail\RegistrationConfirmation;
 use App\Models\Event;
 use App\Models\EventRegistration;
+use App\Payments\Contracts\CheckoutProvider;
+use App\Plugins\CapabilityRegistry;
 use App\Services\EventRegistrationQuantities;
-use Plugins\Payments\Services\StripeCheckoutService;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -114,10 +115,11 @@ class EventController extends Controller
             return redirect($eventPageUrl)->with('registration_success', true);
         }
 
-        $secret = config('services.stripe.secret');
-        if (empty($secret)) {
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
             return back()->withErrors(['register' => 'Payment processing is not configured.']);
         }
+
+        $checkout = app(CheckoutProvider::class);
 
         $registrations = [];
         foreach ($quantities->lines as $line) {
@@ -135,10 +137,10 @@ class EventController extends Controller
         }
 
         $eventImage = $event->getFirstMediaUrl('event_thumbnail')
-            ?: StripeCheckoutService::defaultImageUrl('event');
+            ?: $checkout->defaultImageUrl('event');
 
         try {
-            $session = app(StripeCheckoutService::class)->createSession(
+            $session = $checkout->createSession(
                 lineItems: $quantities->stripeLineItems($event->title, $eventImage ?: null),
                 metadata: ['event_registration_checkout' => '1'],
                 successUrl: $eventPageUrl . '?registration=success',

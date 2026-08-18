@@ -5,8 +5,9 @@ use App\Models\MembershipTier;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\SiteSetting;
-use Plugins\Payments\Services\StripeCheckoutService;
+use App\Payments\Contracts\CheckoutProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Plugins\Payments\Services\StripeCheckoutService;
 use Stripe\Checkout\Session;
 use Tests\TestCase;
 
@@ -49,7 +50,7 @@ class FakeStripeCheckoutService extends StripeCheckoutService
 function bindFakeStripe(): FakeStripeCheckoutService
 {
     $fake = new FakeStripeCheckoutService();
-    app()->instance(StripeCheckoutService::class, $fake);
+    app()->instance(CheckoutProvider::class, $fake);
 
     return $fake;
 }
@@ -164,16 +165,18 @@ it('omits submit_type in subscription mode regardless of input', function () {
 });
 
 it('returns null defaultImageUrl when no SiteSetting exists for that flow', function () {
-    expect(StripeCheckoutService::defaultImageUrl('donation'))->toBeNull()
-        ->and(StripeCheckoutService::defaultImageUrl('event'))->toBeNull()
-        ->and(StripeCheckoutService::defaultImageUrl('product'))->toBeNull()
-        ->and(StripeCheckoutService::defaultImageUrl('membership'))->toBeNull();
+    $checkout = app(CheckoutProvider::class);
+
+    expect($checkout->defaultImageUrl('donation'))->toBeNull()
+        ->and($checkout->defaultImageUrl('event'))->toBeNull()
+        ->and($checkout->defaultImageUrl('product'))->toBeNull()
+        ->and($checkout->defaultImageUrl('membership'))->toBeNull();
 });
 
 it('returns absolute URL from defaultImageUrl when SiteSetting points to a stored path', function () {
     SiteSetting::set('stripe_default_donation_image', 'site/stripe-branding/donation.png');
 
-    $url = StripeCheckoutService::defaultImageUrl('donation');
+    $url = app(CheckoutProvider::class)->defaultImageUrl('donation');
 
     expect($url)->toContain('site/stripe-branding/donation.png');
 });

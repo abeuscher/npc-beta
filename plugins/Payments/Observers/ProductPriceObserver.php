@@ -3,18 +3,18 @@
 namespace Plugins\Payments\Observers;
 
 use App\Models\ProductPrice;
+use App\Plugins\CapabilityRegistry;
 use Illuminate\Support\Facades\Log;
 
 class ProductPriceObserver
 {
     public function saved(ProductPrice $productPrice): void
     {
-        $secret = config('services.stripe.secret');
-        if (empty($secret)) {
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
             return;
         }
 
-        $stripe        = new \Stripe\StripeClient($secret);
+        $stripe        = new \Stripe\StripeClient(config('services.stripe.secret'));
         $newAmount     = (float) $productPrice->amount;
         $oldStripeId   = $productPrice->getOriginal('stripe_price_id');
         $amountChanged = $productPrice->wasChanged('amount');

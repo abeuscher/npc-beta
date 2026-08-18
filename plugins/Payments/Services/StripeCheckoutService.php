@@ -4,11 +4,12 @@ namespace Plugins\Payments\Services;
 
 use App\Filament\Pages\Settings\FinanceSettingsPage;
 use App\Models\SiteSetting;
+use App\Payments\Contracts\CheckoutProvider;
 use Illuminate\Support\Facades\Storage;
 use Stripe\Checkout\Session;
 use Stripe\StripeClient;
 
-class StripeCheckoutService
+class StripeCheckoutService implements CheckoutProvider
 {
     public function createSession(
         array $lineItems,
@@ -104,7 +105,7 @@ class StripeCheckoutService
         return $params;
     }
 
-    public static function defaultImageUrl(string $flow): ?string
+    public function defaultImageUrl(string $flow): ?string
     {
         $key = match ($flow) {
             'donation'   => 'stripe_default_donation_image',

@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductPrice;
-use Plugins\Payments\Services\StripeCheckoutService;
+use App\Payments\Contracts\CheckoutProvider;
+use App\Plugins\CapabilityRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -23,10 +24,11 @@ class ProductCheckoutController extends Controller
             return back()->withErrors(['checkout' => 'This product is no longer available — it has reached capacity.']);
         }
 
-        $secret = config('services.stripe.secret');
-        if (empty($secret)) {
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
             return back()->withErrors(['checkout' => 'Payment processing is not configured.']);
         }
+
+        $checkout = app(CheckoutProvider::class);
 
         $referer    = strtok($request->header('Referer', url('/')), '?');
         $successUrl = isset($validated['success_page'])
@@ -35,7 +37,7 @@ class ProductCheckoutController extends Controller
         $cancelUrl  = $referer . '?checkout=cancelled';
 
         $productImage = $product->getFirstMediaUrl('product_image')
-            ?: StripeCheckoutService::defaultImageUrl('product');
+            ?: $checkout->defaultImageUrl('product');
         $imagesArr = filled($productImage) ? ['images' => [$productImage]] : [];
 
         $lineItem = $price->stripe_price_id
@@ -52,7 +54,7 @@ class ProductCheckoutController extends Controller
             ];
 
         try {
-            $session = app(StripeCheckoutService::class)->createSession(
+            $session = $checkout->createSession(
                 lineItems: [$lineItem],
                 metadata: ['product_price_id' => $price->id],
                 successUrl: $successUrl,

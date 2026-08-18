@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\RandomDataGenerator;
-use Plugins\Payments\Support\StripeMode;
+use App\Payments\PaymentMode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +18,7 @@ class RandomDataGeneratorController extends Controller
         // synthetic data — including fake donations/transactions — on an install
         // configured against a live Stripe key. The widget hides the form in this
         // state; this backstops a direct POST. Wipe stays available.
-        if (StripeMode::isLive()) {
+        if (PaymentMode::isLive()) {
             return back()->withErrors([
                 'rdg' => 'Data generation is disabled on a live-Stripe install (sk_live_…). Switch to a test key to generate synthetic data.',
             ]);

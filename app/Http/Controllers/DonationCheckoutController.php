@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Donation;
-use Plugins\Payments\Services\StripeCheckoutService;
+use App\Payments\Contracts\CheckoutProvider;
+use App\Plugins\CapabilityRegistry;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,8 +21,7 @@ class DonationCheckoutController extends Controller
             'fund_id'      => ['nullable', 'uuid', 'exists:funds,id'],
         ]);
 
-        $secret = config('services.stripe.secret');
-        if (empty($secret)) {
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
             return response()->json(['error' => 'Payment processing is not configured.'], 422);
         }
 
@@ -43,12 +43,12 @@ class DonationCheckoutController extends Controller
 
         $amountCents = (int) round($validated['amount'] * 100);
 
-        $imageUrl  = StripeCheckoutService::defaultImageUrl('donation');
+        $checkout = app(CheckoutProvider::class);
+
+        $imageUrl  = $checkout->defaultImageUrl('donation');
         $imagesArr = $imageUrl !== null ? ['images' => [$imageUrl]] : [];
 
         try {
-            $checkout = app(StripeCheckoutService::class);
-
             if ($validated['type'] === 'one_off') {
                 $session = $checkout->createSession(
                     lineItems: [[

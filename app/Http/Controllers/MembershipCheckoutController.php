@@ -8,7 +8,8 @@ use App\Models\Membership;
 use App\Models\MembershipTier;
 use App\Models\PortalAccount;
 use App\Models\SiteSetting;
-use Plugins\Payments\Services\StripeCheckoutService;
+use App\Payments\Contracts\CheckoutProvider;
+use App\Plugins\CapabilityRegistry;
 use App\WidgetPrimitive\Source;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,8 +48,7 @@ class MembershipCheckoutController extends Controller
             return back()->withErrors(['tier_id' => 'This tier does not require payment.']);
         }
 
-        $secret = config('services.stripe.secret');
-        if (empty($secret)) {
+        if (! app(CapabilityRegistry::class)->enabled('payments')) {
             return back()->withErrors(['checkout' => 'Payment processing is not configured.']);
         }
 
@@ -119,12 +119,12 @@ class MembershipCheckoutController extends Controller
 
         $isSubscription = in_array($tier->billing_interval, ['monthly', 'annual']);
 
-        $imageUrl  = StripeCheckoutService::defaultImageUrl('membership');
+        $checkout = app(CheckoutProvider::class);
+
+        $imageUrl  = $checkout->defaultImageUrl('membership');
         $imagesArr = $imageUrl !== null ? ['images' => [$imageUrl]] : [];
 
         try {
-            $checkout = app(StripeCheckoutService::class);
-
             if ($isSubscription) {
                 $interval = $tier->billing_interval === 'annual' ? 'year' : 'month';
 

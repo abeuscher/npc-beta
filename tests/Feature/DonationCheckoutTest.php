@@ -4,7 +4,7 @@ use App\Models\Contact;
 use App\Models\Donation;
 use App\Models\Fund;
 use App\Models\Transaction;
-use Plugins\Payments\Services\StripeCheckoutService;
+use App\Payments\Contracts\CheckoutProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -62,7 +62,8 @@ it('creates a pending donation and returns the Stripe checkout url on success', 
     config(['services.stripe.secret' => 'sk_test_fake']);
 
     $session = \Stripe\Checkout\Session::constructFrom(['url' => 'https://checkout.stripe.test/session_123']);
-    $this->mock(StripeCheckoutService::class, function ($mock) use ($session) {
+    $this->mock(CheckoutProvider::class, function ($mock) use ($session) {
+        $mock->shouldReceive('defaultImageUrl')->andReturn(null);
         $mock->shouldReceive('createSession')->once()->andReturn($session);
     });
 
@@ -84,7 +85,8 @@ it('creates a pending donation and returns the Stripe checkout url on success', 
 it('deletes the pending donation when Stripe checkout creation fails', function () {
     config(['services.stripe.secret' => 'sk_test_fake']);
 
-    $this->mock(StripeCheckoutService::class, function ($mock) {
+    $this->mock(CheckoutProvider::class, function ($mock) {
+        $mock->shouldReceive('defaultImageUrl')->andReturn(null);
         $mock->shouldReceive('createSession')->once()->andThrow(new \Exception('stripe unreachable'));
     });
 

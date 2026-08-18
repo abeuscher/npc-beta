@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\SiteSetting;
+use App\Plugins\CapabilityRegistry;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Http;
 
@@ -19,7 +20,10 @@ class DashboardIntegrationStatusWidget extends Widget
         $integrations = [
             'MailChimp'   => config('services.mailchimp.api_key'),
             'Resend'      => config('services.resend.key'),
-            'Stripe'      => config('services.stripe.key'),
+            // Session 380: asked through the capability API — the old
+            // config('services.stripe.key') read named a key nothing sets, so
+            // Stripe never showed as connected.
+            'Stripe'      => app(CapabilityRegistry::class)->enabled('payments'),
             'QuickBooks'  => config('services.quickbooks.key'),
         ];
 

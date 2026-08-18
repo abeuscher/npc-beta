@@ -3,7 +3,7 @@
 use App\Models\Contact;
 use App\Models\SiteSetting;
 use App\Models\User;
-use Plugins\Payments\Support\StripeMode;
+use App\Payments\PaymentMode;
 use App\WidgetPrimitive\Source;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,20 +22,22 @@ beforeEach(function () {
     $this->admin->assignRole('super_admin');
 });
 
-it('StripeMode detects sk_live_ and rk_live_ keys as live, test keys as not', function () {
-    expect(StripeMode::isLive())->toBeFalse();
+it('PaymentMode detects sk_live_ and rk_live_ keys as live, test keys as not', function () {
+    // Through the core seam (App\Payments\PaymentMode → the plugin's
+    // StripeMode binding) — the path both RDG consumers use since session 380.
+    expect(PaymentMode::isLive())->toBeFalse();
 
     SiteSetting::set('stripe_secret_key', 'sk_live_abc123');
-    expect(StripeMode::isLive())->toBeTrue();
+    expect(PaymentMode::isLive())->toBeTrue();
 
     SiteSetting::set('stripe_secret_key', 'rk_live_abc123');
-    expect(StripeMode::isLive())->toBeTrue();
+    expect(PaymentMode::isLive())->toBeTrue();
 
     SiteSetting::set('stripe_secret_key', 'sk_test_abc123');
-    expect(StripeMode::isLive())->toBeFalse();
+    expect(PaymentMode::isLive())->toBeFalse();
 
     SiteSetting::set('stripe_secret_key', 'rk_test_abc123');
-    expect(StripeMode::isLive())->toBeFalse();
+    expect(PaymentMode::isLive())->toBeFalse();
 });
 
 it('refuses to generate synthetic data when a live Stripe key is configured', function () {
