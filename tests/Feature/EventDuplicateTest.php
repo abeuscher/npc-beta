@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EventResource;
+use Plugins\Events\Filament\Resources\EventResource;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\TicketTier;

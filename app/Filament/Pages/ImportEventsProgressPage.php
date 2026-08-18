@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Pages\Concerns\ImportDryRunRollback;
 use App\Filament\Pages\Concerns\InteractsWithImportProgress;
-use App\Filament\Resources\EventResource;
+use App\Services\EventLandingPageFactory;
 use App\Importers\EventImportFieldRegistry;
 use App\Models\Contact;
 use App\Models\Event;
@@ -442,7 +442,7 @@ class ImportEventsProgressPage extends Page
 
         // Every event gets a landing page so calendar/listing links resolve.
         // Imported events carry no ticket tiers, so this is a free preset.
-        EventResource::createLandingPageForEvent($event);
+        EventLandingPageFactory::createForEvent($event);
 
         return $event;
     }

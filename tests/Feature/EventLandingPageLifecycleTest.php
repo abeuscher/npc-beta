@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EventResource;
+use App\Services\EventLandingPageFactory;
 use App\Models\Event;
 use App\Models\Page;
 use App\Models\PageWidget;
@@ -14,7 +14,7 @@ it('event landing pages inherit the event source', function () {
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $event = Event::factory()->create(['source' => Source::SCRUB_DATA, 'landing_page_id' => null]);
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
     $event->refresh();
 
     $page = Page::find($event->landing_page_id);
@@ -28,7 +28,7 @@ it('deleting an event force-deletes its landing page and the page widgets', func
     $this->artisan('db:seed', ['--class' => 'WidgetTypeSeeder']);
 
     $event = Event::factory()->create(['landing_page_id' => null]);
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
     $event->refresh();
     $pageId = $event->landing_page_id;
 
@@ -51,7 +51,7 @@ it('prunes orphan event landing pages but keeps pages with a live event', functi
 
     // Linked: an event with its landing page.
     $linked = Event::factory()->create(['landing_page_id' => null]);
-    EventResource::createLandingPageForEvent($linked);
+    EventLandingPageFactory::createForEvent($linked);
     $linked->refresh();
     $linkedPageId = $linked->landing_page_id;
 

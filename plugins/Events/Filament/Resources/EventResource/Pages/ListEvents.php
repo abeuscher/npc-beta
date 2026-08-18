@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace Plugins\Events\Filament\Resources\EventResource\Pages;
 
-use App\Filament\Resources\EventResource;
 use App\Services\ListExportService;
+use Plugins\Events\Filament\Resources\EventResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Contracts\HasTable;

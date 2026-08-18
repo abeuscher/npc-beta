@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EventResource\Pages\EditEvent;
+use Plugins\Events\Filament\Resources\EventResource\Pages\EditEvent;
 use App\Filament\Resources\PageResource\Pages\EditPage;
 use App\Filament\Resources\PostResource\Pages\EditPost;
 use App\Models\Event;

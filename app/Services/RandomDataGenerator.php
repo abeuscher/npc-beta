@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Filament\Resources\EventResource;
 use App\Models\Contact;
 use App\Models\CustomFieldDef;
 use App\Models\Donation;
@@ -251,7 +250,7 @@ class RandomDataGenerator
 
             // Every generated event gets a landing page so the calendar and
             // listing always have a resolvable URL to link to.
-            EventResource::createLandingPageForEvent($event);
+            EventLandingPageFactory::createForEvent($event);
         }
 
         return ['events' => $n];

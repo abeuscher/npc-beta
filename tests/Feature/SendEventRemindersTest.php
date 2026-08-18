@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\EventReminder;
+use Plugins\Events\Mail\EventReminder;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use Illuminate\Foundation\Testing\RefreshDatabase;

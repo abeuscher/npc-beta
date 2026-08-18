@@ -2,11 +2,11 @@
 
 namespace App\Filament\Resources\OrganizationResource\RelationManagers;
 
-use App\Filament\Resources\EventResource;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Route;
 
 class EventsSponsoredRelationManager extends RelationManager
 {
@@ -29,7 +29,12 @@ class EventsSponsoredRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')->badge(),
             ])
             ->defaultSort('starts_at', 'desc')
-            ->recordUrl(fn ($record) => EventResource::getUrl('edit', ['record' => $record]))
+            // Resolved by route name — the resource lives in the Events plugin,
+            // which core cannot reference. Rows lose their link (not their data)
+            // when the plugin is absent.
+            ->recordUrl(fn ($record) => Route::has('filament.admin.resources.events.edit')
+                ? route('filament.admin.resources.events.edit', ['record' => $record])
+                : null)
             ->headerActions([])
             ->actions([])
             ->bulkActions([]);

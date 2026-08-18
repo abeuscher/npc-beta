@@ -4,7 +4,7 @@ use App\Filament\Resources\CollectionResource;
 use App\Filament\Resources\ContactResource;
 use App\Filament\Resources\DonationResource;
 use App\Filament\Resources\EmailTemplateResource;
-use App\Filament\Resources\EventResource;
+use Plugins\Events\Filament\Resources\EventResource;
 use App\Filament\Resources\FundResource;
 use App\Filament\Resources\MembershipTierResource;
 use App\Filament\Resources\PageResource;

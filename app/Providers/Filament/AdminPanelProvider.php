@@ -417,7 +417,6 @@ class AdminPanelProvider extends PanelProvider
                         'contacts'          => \App\Filament\Resources\ContactResource::class,
                         'memberships'       => \App\Filament\Resources\MembershipResource::class,
                         'donations'         => \App\Filament\Resources\DonationResource::class,
-                        'events'            => \App\Filament\Resources\EventResource::class,
                         'mailingLists'      => \App\Filament\Resources\MailingListResource::class,
                         'notes'             => \App\Filament\Resources\NoteResource::class,
                         'recordDetailViews' => \App\Filament\Resources\RecordDetailViewResource::class,
@@ -433,6 +432,18 @@ class AdminPanelProvider extends PanelProvider
                             }
                         } catch (\Throwable) {
                         }
+                    }
+
+                    // The events resource lives in the Events plugin, which
+                    // core cannot name — resolve by route name + the same
+                    // permission its policy's viewAny checks. Absent plugin =
+                    // no entry (the tour step falls back to a popover).
+                    try {
+                        if (\Illuminate\Support\Facades\Route::has('filament.admin.resources.events.index')
+                            && (auth()->user()?->can('view_any_event') ?? false)) {
+                            $urls['events'] = route('filament.admin.resources.events.index');
+                        }
+                    } catch (\Throwable) {
                     }
 
                     $pages = [

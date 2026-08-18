@@ -1,12 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace Plugins\Events\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Actions\EmailPreviewWizardAction;
-use App\Filament\Resources\EventResource;
 use App\Filament\Resources\TransactionResource;
-use App\Mail\EventCancellation;
-use App\Mail\EventReminder;
 use App\Models\Contact;
 use App\Models\EmailTemplate;
 use App\Models\SiteSetting;
@@ -15,6 +12,9 @@ use Filament\Notifications\Notification;
 use App\Filament\Resources\Pages\ReadOnlyAwareEditRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Plugins\Events\Filament\Resources\EventResource;
+use Plugins\Events\Mail\EventCancellation;
+use Plugins\Events\Mail\EventReminder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EditEvent extends ReadOnlyAwareEditRecord
@@ -99,7 +99,7 @@ class EditEvent extends ReadOnlyAwareEditRecord
                     // still arrive here without one are duplicates and imports;
                     // create it on demand so the link always resolves.
                     if ($event->landing_page_id === null) {
-                        EventResource::createLandingPageForEvent($event);
+                        \App\Services\EventLandingPageFactory::createForEvent($event);
                         $event = $event->fresh();
                     }
 

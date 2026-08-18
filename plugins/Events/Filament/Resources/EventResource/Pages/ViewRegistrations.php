@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace Plugins\Events\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\ContactResource;
-use App\Filament\Resources\EventResource;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Services\ListExportService;
@@ -13,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Plugins\Events\Filament\Resources\EventResource;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ViewRegistrations extends Page implements HasTable
@@ -21,7 +21,7 @@ class ViewRegistrations extends Page implements HasTable
 
     protected static string $resource = EventResource::class;
 
-    protected static string $view = 'filament.pages.event-registrations';
+    protected static string $view = 'plugin-events::filament.event-registrations';
 
     public Event $record;
 

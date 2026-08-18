@@ -2,10 +2,10 @@
 
 namespace Plugins\Events\Console\Commands;
 
-use App\Mail\EventReminder;
 use App\Models\Event;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
+use Plugins\Events\Mail\EventReminder;
 
 class SendEventReminders extends Command
 {

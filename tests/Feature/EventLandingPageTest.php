@@ -1,7 +1,7 @@
 <?php
 
-use App\Filament\Resources\EventResource;
-use App\Filament\Resources\EventResource\Pages\CreateEvent;
+use App\Services\EventLandingPageFactory;
+use Plugins\Events\Filament\Resources\EventResource\Pages\CreateEvent;
 use App\Filament\Resources\PageResource;
 use App\Filament\Resources\PageResource\Pages\ListPages;
 use App\Models\Event;
@@ -35,7 +35,7 @@ function landingPageHandles(Page $page): array
 it('createLandingPageForEvent creates a page of type event at the correct slug', function () {
     $event = Event::factory()->create(['slug' => 'my-event', 'title' => 'My Event']);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/my-event')->first();
     expect($page)->not->toBeNull();
@@ -47,7 +47,7 @@ it('createLandingPageForEvent creates a page of type event at the correct slug',
 it('createLandingPageForEvent sets landing_page_id on the event', function () {
     $event = Event::factory()->create(['slug' => 'my-event']);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/my-event')->first();
     expect($event->fresh()->landing_page_id)->toBe($page->id);
@@ -57,7 +57,7 @@ it('createLandingPageForEvent is a no-op when landing_page_id is already set', f
     $existing = Page::factory()->create(['slug' => 'events/other', 'type' => 'event']);
     $event = Event::factory()->create(['slug' => 'my-event', 'landing_page_id' => $existing->id]);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     expect(Page::where('slug', 'events/my-event')->exists())->toBeFalse();
     expect($event->fresh()->landing_page_id)->toBe($existing->id);
@@ -68,7 +68,7 @@ it('createLandingPageForEvent is a no-op when landing_page_id is already set', f
 it('seeds image + description + share and no registration for a free, uncapped event', function () {
     $event = Event::factory()->create(['slug' => 'free-talk']);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/free-talk')->firstOrFail();
     expect(landingPageHandles($page))->toBe(['event_image', 'event_description', 'social_sharing']);
@@ -77,7 +77,7 @@ it('seeds image + description + share and no registration for a free, uncapped e
 it('lays the free preset out as two columns: image left, description + share right', function () {
     $event = Event::factory()->create(['slug' => 'two-col-free']);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/two-col-free')->firstOrFail();
 
@@ -109,7 +109,7 @@ it('adds the registration widget when the event has a paid tier', function () {
     $event = Event::factory()->create(['slug' => 'gala']);
     $event->ticketTiers()->create(['name' => 'General', 'price' => 25.00, 'capacity' => null, 'sort_order' => 1]);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/gala')->firstOrFail();
     expect(landingPageHandles($page))->toBe(['event_image', 'event_description', 'event_registration', 'social_sharing']);
@@ -119,7 +119,7 @@ it('adds the registration widget when the event has a free but capacity-capped t
     $event = Event::factory()->create(['slug' => 'rsvp-dinner']);
     $event->ticketTiers()->create(['name' => 'RSVP', 'price' => 0, 'capacity' => 40, 'sort_order' => 1]);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::where('slug', 'events/rsvp-dinner')->firstOrFail();
     expect(landingPageHandles($page))->toContain('event_registration');
@@ -127,18 +127,18 @@ it('adds the registration widget when the event has a free but capacity-capped t
 
 it('eventNeedsRegistration is false for a free, uncapped event and true for paid or capped', function () {
     $free = Event::factory()->create();
-    expect(EventResource::eventNeedsRegistration($free))->toBeFalse();
+    expect(EventLandingPageFactory::eventNeedsRegistration($free))->toBeFalse();
 
     $free->ticketTiers()->create(['name' => 'Free', 'price' => 0, 'capacity' => null, 'sort_order' => 1]);
-    expect(EventResource::eventNeedsRegistration($free->fresh()))->toBeFalse();
+    expect(EventLandingPageFactory::eventNeedsRegistration($free->fresh()))->toBeFalse();
 
     $paid = Event::factory()->create();
     $paid->ticketTiers()->create(['name' => 'Paid', 'price' => 10, 'capacity' => null, 'sort_order' => 1]);
-    expect(EventResource::eventNeedsRegistration($paid->fresh()))->toBeTrue();
+    expect(EventLandingPageFactory::eventNeedsRegistration($paid->fresh()))->toBeTrue();
 
     $capped = Event::factory()->create();
     $capped->ticketTiers()->create(['name' => 'Capped', 'price' => 0, 'capacity' => 50, 'sort_order' => 1]);
-    expect(EventResource::eventNeedsRegistration($capped->fresh()))->toBeTrue();
+    expect(EventLandingPageFactory::eventNeedsRegistration($capped->fresh()))->toBeTrue();
 });
 
 // ── Create-form lifecycle: tiers are persisted before the LP is built ──────────

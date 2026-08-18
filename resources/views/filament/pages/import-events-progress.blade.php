@@ -392,7 +392,7 @@
                         <x-slot:icon><x-heroicon-o-clock class="h-4 w-4" /></x-slot:icon>
                         View import history
                     </x-loading-link>
-                    <x-loading-link :href="\App\Filament\Resources\EventResource::getUrl('index')"
+                    <x-loading-link :href="route('filament.admin.resources.events.index')"
                                     class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
                         <x-slot:icon><x-heroicon-o-calendar class="h-4 w-4" /></x-slot:icon>
                         Go to events

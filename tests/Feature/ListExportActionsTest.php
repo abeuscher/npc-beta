@@ -3,8 +3,8 @@
 use App\Filament\Resources\CampaignResource\Pages\ListCampaigns;
 use App\Filament\Resources\ContactResource\Pages\ListContacts;
 use App\Filament\Resources\DonationResource\Pages\ListDonations;
-use App\Filament\Resources\EventResource\Pages\ListEvents;
-use App\Filament\Resources\EventResource\Pages\ViewRegistrations;
+use Plugins\Events\Filament\Resources\EventResource\Pages\ListEvents;
+use Plugins\Events\Filament\Resources\EventResource\Pages\ViewRegistrations;
 use App\Filament\Resources\FundResource\Pages\ListFunds;
 use App\Filament\Resources\MembershipResource\Pages\ListMemberships;
 use App\Filament\Resources\NoteResource\Pages\ListNotes;

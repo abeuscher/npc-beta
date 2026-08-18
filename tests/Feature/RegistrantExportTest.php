@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EventResource\Pages\EditEvent;
+use Plugins\Events\Filament\Resources\EventResource\Pages\EditEvent;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\User;

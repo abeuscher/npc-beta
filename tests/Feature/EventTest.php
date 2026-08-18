@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EventResource;
+use App\Services\EventLandingPageFactory;
 use App\Models\Collection;
 use App\Models\Event;
 use App\Models\EventRegistration;
@@ -216,7 +216,7 @@ it('creates a landing page with events/ slug prefix and type=event', function ()
 
     $event = Event::factory()->create(['title' => 'Test Event', 'slug' => 'test-event']);
 
-    EventResource::createLandingPageForEvent($event);
+    EventLandingPageFactory::createForEvent($event);
 
     $page = Page::find($event->fresh()->landing_page_id);
 

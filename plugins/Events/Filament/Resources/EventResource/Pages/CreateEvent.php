@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\Pages;
+namespace Plugins\Events\Filament\Resources\EventResource\Pages;
 
-use App\Filament\Resources\EventResource;
 use App\Models\Event;
+use App\Services\EventLandingPageFactory;
+use Plugins\Events\Filament\Resources\EventResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
 
@@ -31,6 +32,6 @@ class CreateEvent extends CreateRecord
 
     protected function afterCreate(): void
     {
-        EventResource::createLandingPageForEvent($this->getRecord());
+        EventLandingPageFactory::createForEvent($this->getRecord());
     }
 }

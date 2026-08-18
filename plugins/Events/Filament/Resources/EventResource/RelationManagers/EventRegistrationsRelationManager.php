@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\EventResource\RelationManagers;
+namespace Plugins\Events\Filament\Resources\EventResource\RelationManagers;
 
 use App\Models\EventRegistration;
 use Filament\Forms\Form;

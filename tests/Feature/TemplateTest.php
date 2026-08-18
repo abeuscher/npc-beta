@@ -140,7 +140,7 @@ it('createLandingPageForEvent creates a page with correct slug and type', functi
 
     $event = Event::factory()->create(['slug' => 'test-event', 'title' => 'Test Event']);
 
-    \App\Filament\Resources\EventResource::createLandingPageForEvent($event);
+    \App\Services\EventLandingPageFactory::createForEvent($event);
 
     $page = Page::find($event->fresh()->landing_page_id);
     expect($page)->not->toBeNull();

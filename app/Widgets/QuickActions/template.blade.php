@@ -14,9 +14,11 @@
                         $entry = $registry[$key];
                         $url = $entry['url']();
                     @endphp
-                    <li class="np-quick-actions__item">
-                        <a href="{{ $url }}" class="np-quick-actions__link">{{ $entry['label'] }}</a>
-                    </li>
+                    @if ($url !== null)
+                        <li class="np-quick-actions__item">
+                            <a href="{{ $url }}" class="np-quick-actions__link">{{ $entry['label'] }}</a>
+                        </li>
+                    @endif
                 @endif
             @endforeach
         </ul>
