@@ -12,8 +12,12 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Install PHP dependencies (only needed for Tailwind content scanning)
+# Install PHP dependencies (only needed for Tailwind content scanning).
+# Plugin package manifests must land before composer install so the path
+# repository resolves; the symlinked package contents arrive with the
+# source COPYs below.
 COPY composer.json composer.lock ./
+COPY plugins/LogoGarden/composer.json plugins/LogoGarden/
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader --no-dev --ignore-platform-reqs
 
 # Install Node dependencies
@@ -107,8 +111,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # Copy only the dependency manifests first so composer install is cached
-# independently of application code changes.
+# independently of application code changes. Plugin package manifests are
+# part of that set: the path repository needs them to resolve, and the
+# symlink it creates points at the full plugin source once `COPY . .` lands.
 COPY composer.json composer.lock ./
+COPY plugins/LogoGarden/composer.json plugins/LogoGarden/
 
 # Install PHP dependencies — dev packages included for public-dev builds
 RUN if [ "$BUILD_ENV" = "public-dev" ]; then \

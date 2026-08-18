@@ -1,7 +1,7 @@
 # Plugin Contract
 
-**Contract Version:** `0.5.0`
-**Status:** active — Stage A (in-repo module boundaries)
+**Contract Version:** `0.6.0`
+**Status:** active — Stage B (real packages, one workspace)
 **Owner:** core (this repo). Plugins implement against this document.
 **Canonical plan:** `sessions/plugin-architecture-plan.md` (architecture rationale, arc, question dispositions)
 
@@ -29,13 +29,31 @@ plugins/{PascalName}/
 - **Namespace:** `Plugins\{PascalName}\`, autoloaded via the `"Plugins\\": "plugins/"` PSR-4 entry in `composer.json`.
 - **Wiring:** one line in `config/plugins.php` — an ordered list of plugin service-provider class strings, registered at bootstrap by core's `App\Providers\PluginServiceProvider` (listed in `bootstrap/providers.php` after `WidgetServiceProvider`, so core singletons exist before any plugin boots). **Remove the line and the plugin is gone**: no registration, no views, no synced `widget_types` row on the next `widgets:sync`. This list is the in-repo miniature of the future distribution-manifest / per-install-activation layer.
 
+## Package shape (Stage B)
+
+A Stage B plugin keeps the Stage A shape and folder location and additionally becomes a real composer package resolved through a path repository (first shipping example: `nonprofitcrm/logo-garden`, session 382 — arc P6):
+
+```
+plugins/{PascalName}/
+    composer.json                     ← name, "type": "library", explicit "version",
+                                        PSR-4 "Plugins\{PascalName}\": "", PHP constraint
+    {PascalName}ServiceProvider.php   ← still the single entry point
+    ...everything else the plugin owns
+```
+
+- **Resolution:** the root `composer.json` carries a `path` repository entry for the plugin folder and a bound version requirement; `composer install` symlinks `vendor/{vendor}/{package}` → the plugin folder. The package declares an explicit `version` field so resolution is deterministic everywhere the build runs without git metadata (the Docker image build excludes `.git/`).
+- **Activation and ordering stay with `config/plugins.php`** — see surface 1. The package declares **no** `extra.laravel.providers`; Laravel auto-discovery is deliberately unused.
+- **PSR-4 overlap (accepted, documented):** the root `"Plugins\\": "plugins/"` mapping still covers every in-repo plugin; a packaged plugin's own PSR-4 maps the same files. Both mappings resolve to identical paths, composer tolerates the overlap, and the root mapping retires per-plugin as each becomes a package.
+- **Image builds:** plugin package manifests are part of the Dockerfile's manifests-before-source layer set — `plugins/{PascalName}/composer.json` is copied before both `composer install` layers so the path repository resolves while layer caching (source edits never bust the dependency layers) is preserved; the install-time symlink resolves fully once the full source lands.
+- **Core dependency modeling** (the package requiring core at composer level) is deliberately absent at P6 — the package programs against this contract; modeling the dependency is P7+ territory.
+
 ---
 
 ## The 13 surfaces
 
 ### 1. Registration — **PROVEN** (session 377)
 
-One service provider per plugin. Stage A: the provider class is listed in `config/plugins.php` and registered by core's `PluginServiceProvider` during bootstrap. Stage B replaces the config list with Laravel package auto-discovery per composer package; the provider remains the single entry point either way.
+One service provider per plugin, listed in `config/plugins.php` and registered by core's `PluginServiceProvider` during bootstrap. **The config list is the sole activation + ordering authority through Stage B** (amended at session 382, superseding the earlier "Stage B replaces the config list with package auto-discovery" posture): packages declare no `extra.laravel.providers` and Laravel auto-discovery is deliberately unused, because the remove-the-line guarantee, the registries-before-plugins binding order, and plugin-boot-before-core-routes ordering are all load-bearing and all keyed on the config list — auto-discovery would move activation to composer edits and surrender ordering to installation order. The provider remains the single entry point at every stage; the config list is the in-repo miniature of the future distribution-manifest / per-install-activation layer (arc P8).
 
 Proven by: `Plugins\LogoGarden\LogoGardenServiceProvider` — registered through the config list, asserted loaded in `tests/Feature/PluginPilotSession377Test.php`. Second shipping consumer (session 380): `Plugins\Payments\PaymentsServiceProvider`, the first non-widget plugin — its provider owns contract bindings and a capability declaration at `register()`, and config injection, an observer, and a route file at `boot()` (`PaymentsPluginSession380Test` + the removal mirror).
 
@@ -86,7 +104,7 @@ Proven by: the Events vertical (session 381) — `plugins/Events/routes/web.php`
 
 ### 5. Migrations — **DECLARED**
 
-`loadMigrationsFrom` per plugin. The squash-discipline interaction (core schema dump excludes plugin tables; deterministic install order core → enabled plugins → seeders; per-composition fresh-install identity check) is specified in the plan doc §6.7 and lands with the first domain-vertical extraction (P5/P6).
+`loadMigrationsFrom` per plugin. The squash-discipline interaction (core schema dump excludes plugin tables; deterministic install order core → enabled plugins → seeders; per-composition fresh-install identity check) is specified in the plan doc §6.7 and lands at P7, when the Events vertical becomes a package (scope split settled at the 381 close; the plain T1 squash landed at P6 with the boundary unchanged).
 
 ### 6. Seed / config packs — **DECLARED**
 
@@ -166,6 +184,7 @@ Proven by: five shipping vertical call sites (donation, product, membership, and
 
 ## Changelog
 
+- **0.6.0** (session 382, 2026-08-18) — Stage B entry (arc P6): the LogoGarden pilot becomes the first true composer package (`nonprofitcrm/logo-garden` — own `composer.json` with explicit `version`, resolved through a root path repository into a vendor symlink; committed lockfile; `composer validate --strict` clean). New **Package shape (Stage B)** section records the shape, the deterministic-version rationale, the accepted PSR-4 overlap with the root `"Plugins\\": "plugins/"` mapping, and the Dockerfile manifests-before-source rule (plugin manifests copied before both `composer install` layers, layer caching preserved). **Surface 1's Stage B sentence amended** (owner-approved, 381 P6 recommendation): `config/plugins.php` stays the sole activation + ordering authority through Stage B; Laravel auto-discovery deliberately unused. Payments and Events remain plain in-repo folders until P7. Rides with the absorbed T1 migration squash (three live migrations collapsed into the regenerated dump, 348-precedent identity check; representational only — the events tables stay in core's dump until P7's boundary redraw).
 - **0.5.0** (session 381, 2026-08-18) — the first domain vertical (arc P5): the Events behavioral surface carved into `plugins/Events/` (controllers/routes, quantities service, observers, three mailables, reminders command + schedule, policy, `EventResource` + four pages, two import wizard pages, seven widgets, the events importer). Surface 3 **PROVEN** (first shipping admin-page plugin; extracted-vertical permission nuance recorded — pre-existing resource permissions stay core-seeded, the plugin declares none). Surface 4 **PROVEN** (three public routes with byte-identical names/URIs/middleware; front-of-house route-file half documented; the in-panel `routesFile` pull stays fixture-covered by SocketProbe, kept as a standing regression fixture). Surface 8 **PROVEN**: core `ImporterContribution` + `ImporterRegistry`; the hub, CSV-template streamer, fixture runner, and demo-source seeding resolve plugin importers through it; core importers stay hard-wired until their domains extract. Surface 10 **PROVEN scoped to the events slice**: core `App\Payments\Events\CheckoutSettled` dispatched by the Payments webhook's events branch; the Events listener owns fulfillment; remaining branches invert per-vertical. Surface 2 notes the at-scale widget contributor (7 widgets, nested `Widgets/` shape, partials + assets). Surface 13 notes the first in-plugin vertical consumer + the tested presence matrix. Standing guard `EventModuleBoundaryTest` bans `Plugins\Events\` in `app/` with zero allowlist; core reaches the events admin surface only by route name, and the landing-page factory lives in core (`App\Services\EventLandingPageFactory`) because the models are core at Stage A. Models/schema/permissions stay core (P7's squash redraw moves the schema).
 - **0.4.0** (session 380, 2026-08-18) — surface 13 PROVEN (arc P4): the Stripe rails carved into `plugins/Payments/`, the first shipping foundation plugin; core `CapabilityRegistry` (`provide`/`present`/`enabled`, lazy resolvers) bound by `PluginServiceProvider`; core-owned `App\Payments\Contracts\CheckoutProvider` + `PaymentModeProvider` contracts with the plugin binding implementations at `register()`; five vertical checkout call sites + the dashboard integration widget consume the API. Surface 1 gains its second shipping consumer (`PaymentsServiceProvider`). Surface 10 records the named P5 inbound-inversion plan. Standing guard `PaymentModuleBoundaryTest` bans the Stripe SDK, the plugin namespace, and `services.stripe.*` config reads in `app/` with zero allowlist. `laravel/cashier` removed (never used; two dead vendor routes dropped), `stripe/stripe-php` now a direct dependency.
 - **0.3.0** (session 379, 2026-08-18) — surfaces 3 and 4's mechanics built and fixture-tested (arc P3), statuses kept DECLARED per the honesty rule. Admin socket: `App\Plugins\AdminContribution` + `App\Plugins\PluginAdminRegistry` (populated at plugin `register()`, consumed by `AdminPanelProvider`) declaring Filament discovery paths, an in-panel route file (always wrapped in `Authenticate` by core), and permission names (seeded idempotently by `PermissionSeeder`, granted to no shipped role). Core's inline `->routes()` closure decomposed into per-feature `routes/admin/` files with exact route-list parity. The three session-376 Filament conventions made mechanical; convention 3 enforced by the standing guard `PluginAdminCssGuardTest` (no plugin admin CSS, widget SCSS exempt). Fixture: `tests/Fixtures/Plugins/SocketProbe/` with enabled + removal test mirrors.

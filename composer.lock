@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b17a05e8dc7b3a7b287b6f62cf54ea24",
+    "content-hash": "7d7729777b9b8b815f0e49464bb8b886",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4412,6 +4412,31 @@
                 "source": "https://github.com/nette/utils/tree/v4.1.3"
             },
             "time": "2026-02-13T03:05:33+00:00"
+        },
+        {
+            "name": "nonprofitcrm/logo-garden",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "plugins/LogoGarden",
+                "reference": "4e72a63b13cfba1964a0ecdbe16f9eec72dd94d2"
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Plugins\\LogoGarden\\": ""
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Logo Garden widget plugin — grid or carousel of partner/sponsor logos from a custom collection.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "nunomaduro/termwind",
