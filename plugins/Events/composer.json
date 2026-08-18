@@ -1,0 +1,15 @@
+{
+    "name": "nonprofitcrm/events",
+    "description": "Events vertical plugin — public event pages and registration, ticket tiers, admin resource, importer, reminders, and seven event widgets.",
+    "type": "library",
+    "license": "MIT",
+    "version": "0.1.0",
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Events\\": ""
+        }
+    }
+}
