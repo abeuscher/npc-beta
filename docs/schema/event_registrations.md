@@ -1,5 +1,7 @@
 ## event_registrations
 
+**Owned by `plugins/Events/`** — created by the plugin's `database/migrations/`, not core's schema dump (session 383).
+
 Registrations submitted for an event.
 
 | Column | Type | Nullable | Notes |

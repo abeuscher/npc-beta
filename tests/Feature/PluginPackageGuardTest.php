@@ -49,3 +49,27 @@ it('the root composer.json keeps the Plugins PSR-4 mapping while unpackaged plug
 
     expect(data_get($root, 'autoload.psr-4.Plugins\\'))->toBe('plugins/');
 })->group('widget-lint');
+
+it('keeps plugin-owned tables out of the core schema dump', function () {
+    // The P7 squash-boundary redraw (session 383, contract surface 5): the
+    // core dump covers core tables only; a plugin's tables are created by its
+    // own database/migrations/. A regenerated dump that re-absorbs a plugin
+    // table would silently re-couple every composition to that plugin's
+    // schema — run schema:dump only on a database whose plugin tables were
+    // dropped first (see docs/schema/README.md, plugin-owned schema note).
+    $dump = file_get_contents(base_path('database/schema/pgsql-schema.sql'));
+
+    $pluginTables = [
+        'events'              => 'plugins/Events',
+        'event_registrations' => 'plugins/Events',
+        'ticket_tiers'        => 'plugins/Events',
+    ];
+
+    foreach ($pluginTables as $table => $owner) {
+        expect(str_contains($dump, "CREATE TABLE public.{$table} ("))
+            ->toBeFalse("{$table} is {$owner}-owned and must not appear in the core dump.");
+
+        expect(glob(base_path("{$owner}/database/migrations/*_create_{$table}_table.php")))
+            ->not->toBeEmpty("{$owner} must carry the create-table migration for {$table}.");
+    }
+})->group('widget-lint');

@@ -1,5 +1,7 @@
 ## events
 
+**Owned by `plugins/Events/`** — created by the plugin's `database/migrations/`, not core's schema dump (session 383).
+
 Events with dates, registration, and venue information. Per-event price and
 capacity live on [ticket_tiers](ticket_tiers.md) — an event with zero tiers is
 free and uncapped.

@@ -70,7 +70,12 @@ class PageContextTokens
             return $this->cache[$key];
         }
 
-        $event = $page->event;
+        // Only event landing pages have an associated event, and the events
+        // table itself is plugin-owned schema (arc P7) — absent entirely on a
+        // composition without the Events plugin. Gate on the page type (the
+        // AppearanceStyleComposer / SeoMetaGenerator pattern) so non-event
+        // pages never touch the table.
+        $event = $page->type === 'event' ? $page->event : null;
 
         return $this->cache[$key] = [
             'title'     => (string) ($page->title ?? ''),

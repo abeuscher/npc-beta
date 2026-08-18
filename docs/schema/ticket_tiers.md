@@ -1,5 +1,7 @@
 ## ticket_tiers
 
+**Owned by `plugins/Events/`** — created by the plugin's `database/migrations/`, not core's schema dump (session 383).
+
 Per-event ticket tiers — the canonical price and capacity for event registration.
 
 Tiers are event-scoped (no shared tier pool). An event with zero tiers is free

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict fgn6NToL1FDjYdIYuMgM0NE12HBgvuhCvmTSgbjT37ELugc11sLgxz1vKI8ys4E
+\restrict efkchSMPDYx91pSPdS1HawkrPLRZ7UhWJQXoDdg3wY8aKfTwvUyYbJHe94u59i9
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -379,93 +379,6 @@ CREATE SEQUENCE public.email_templates_id_seq
 --
 
 ALTER SEQUENCE public.email_templates_id_seq OWNED BY public.email_templates.id;
-
-
---
--- Name: event_registrations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.event_registrations (
-    id uuid NOT NULL,
-    contact_id uuid,
-    name character varying(255) NOT NULL,
-    email character varying(255) NOT NULL,
-    phone character varying(50),
-    company character varying(255),
-    address_line_1 character varying(255),
-    address_line_2 character varying(255),
-    city character varying(100),
-    state character varying(100),
-    zip character varying(20),
-    status character varying(255) DEFAULT 'registered'::character varying NOT NULL,
-    registered_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    stripe_payment_intent_id character varying(255),
-    notes text,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    event_id uuid NOT NULL,
-    mailing_list_opt_in boolean DEFAULT false NOT NULL,
-    stripe_session_id character varying(255),
-    ticket_type character varying(255),
-    ticket_fee numeric(10,2),
-    payment_state character varying(255),
-    transaction_id uuid,
-    import_session_id uuid,
-    custom_fields jsonb DEFAULT '{}'::jsonb NOT NULL,
-    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
-    organization_id uuid,
-    ticket_tier_id uuid,
-    quantity smallint DEFAULT '1'::smallint NOT NULL,
-    CONSTRAINT event_registrations_status_check CHECK (((status)::text = ANY (ARRAY['pending'::text, 'registered'::text, 'waitlisted'::text, 'cancelled'::text, 'attended'::text])))
-);
-
-
---
--- Name: events; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.events (
-    id uuid NOT NULL,
-    title character varying(255) NOT NULL,
-    slug character varying(255) NOT NULL,
-    description text,
-    status character varying(255) DEFAULT 'draft'::character varying NOT NULL,
-    is_in_person boolean DEFAULT true NOT NULL,
-    address_line_1 character varying(255),
-    address_line_2 character varying(255),
-    city character varying(100),
-    state character varying(100),
-    zip character varying(20),
-    map_url character varying(2048),
-    map_label character varying(255),
-    is_virtual boolean DEFAULT false NOT NULL,
-    meeting_url character varying(2048),
-    is_free boolean DEFAULT true NOT NULL,
-    is_recurring boolean DEFAULT false NOT NULL,
-    recurrence_type character varying(255),
-    recurrence_rule json,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    landing_page_id uuid,
-    meeting_label character varying(255),
-    meeting_details text,
-    external_registration_url character varying(255),
-    registration_mode character varying(255) DEFAULT 'open'::character varying NOT NULL,
-    auto_create_contacts boolean DEFAULT true NOT NULL,
-    mailing_list_opt_in_enabled boolean DEFAULT false NOT NULL,
-    custom_fields jsonb,
-    starts_at timestamp(0) without time zone NOT NULL,
-    ends_at timestamp(0) without time zone,
-    registrants_deleted_at timestamp(0) without time zone,
-    author_id bigint NOT NULL,
-    import_session_id uuid,
-    published_at timestamp(0) without time zone,
-    source character varying(255) DEFAULT 'human'::character varying NOT NULL,
-    sponsor_organization_id uuid,
-    sold_out boolean DEFAULT false NOT NULL,
-    CONSTRAINT events_recurrence_type_check CHECK (((recurrence_type)::text = ANY (ARRAY[('manual'::character varying)::text, ('rule'::character varying)::text]))),
-    CONSTRAINT events_status_check CHECK (((status)::text = ANY (ARRAY[('draft'::character varying)::text, ('published'::character varying)::text, ('cancelled'::character varying)::text])))
-);
 
 
 --
@@ -1576,23 +1489,6 @@ CREATE TABLE public.templates (
 
 
 --
--- Name: ticket_tiers; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.ticket_tiers (
-    id uuid NOT NULL,
-    event_id uuid NOT NULL,
-    name character varying(255) NOT NULL,
-    price numeric(8,2) DEFAULT '0'::numeric NOT NULL,
-    capacity integer,
-    sort_order integer DEFAULT 0 NOT NULL,
-    created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone,
-    is_complimentary boolean DEFAULT false NOT NULL
-);
-
-
---
 -- Name: transactions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2024,30 +1920,6 @@ ALTER TABLE ONLY public.email_templates
 
 ALTER TABLE ONLY public.email_templates
     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
-
-
---
--- Name: event_registrations event_registrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_pkey PRIMARY KEY (id);
-
-
---
--- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
-
-
---
--- Name: events events_slug_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_slug_unique UNIQUE (slug);
 
 
 --
@@ -2595,14 +2467,6 @@ ALTER TABLE ONLY public.templates
 
 
 --
--- Name: ticket_tiers ticket_tiers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ticket_tiers
-    ADD CONSTRAINT ticket_tiers_pkey PRIMARY KEY (id);
-
-
---
 -- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2790,41 +2654,6 @@ CREATE INDEX donations_organization_id_index ON public.donations USING btree (or
 --
 
 CREATE INDEX donations_source_index ON public.donations USING btree (source);
-
-
---
--- Name: event_registrations_organization_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX event_registrations_organization_id_index ON public.event_registrations USING btree (organization_id);
-
-
---
--- Name: event_registrations_source_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX event_registrations_source_index ON public.event_registrations USING btree (source);
-
-
---
--- Name: events_landing_page_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX events_landing_page_id_index ON public.events USING btree (landing_page_id);
-
-
---
--- Name: events_source_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX events_source_index ON public.events USING btree (source);
-
-
---
--- Name: events_sponsor_organization_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX events_sponsor_organization_id_index ON public.events USING btree (sponsor_organization_id);
 
 
 --
@@ -3164,13 +2993,6 @@ CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING
 
 
 --
--- Name: ticket_tiers_event_id_sort_order_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX ticket_tiers_event_id_sort_order_index ON public.ticket_tiers USING btree (event_id, sort_order);
-
-
---
 -- Name: transactions_contact_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3369,86 +3191,6 @@ ALTER TABLE ONLY public.donations
 
 ALTER TABLE ONLY public.donations
     ADD CONSTRAINT donations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
-
-
---
--- Name: event_registrations event_registrations_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_contact_id_foreign FOREIGN KEY (contact_id) REFERENCES public.contacts(id) ON DELETE SET NULL;
-
-
---
--- Name: event_registrations event_registrations_event_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_event_id_foreign FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
-
-
---
--- Name: event_registrations event_registrations_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
-
-
---
--- Name: event_registrations event_registrations_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_organization_id_foreign FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
-
-
---
--- Name: event_registrations event_registrations_ticket_tier_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_ticket_tier_id_foreign FOREIGN KEY (ticket_tier_id) REFERENCES public.ticket_tiers(id) ON DELETE SET NULL;
-
-
---
--- Name: event_registrations event_registrations_transaction_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.event_registrations
-    ADD CONSTRAINT event_registrations_transaction_id_foreign FOREIGN KEY (transaction_id) REFERENCES public.transactions(id) ON DELETE SET NULL;
-
-
---
--- Name: events events_author_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_author_id_foreign FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
-
-
---
--- Name: events events_import_session_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_import_session_id_foreign FOREIGN KEY (import_session_id) REFERENCES public.import_sessions(id) ON DELETE SET NULL;
-
-
---
--- Name: events events_landing_page_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_landing_page_id_foreign FOREIGN KEY (landing_page_id) REFERENCES public.pages(id) ON DELETE SET NULL;
-
-
---
--- Name: events events_sponsor_organization_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.events
-    ADD CONSTRAINT events_sponsor_organization_id_foreign FOREIGN KEY (sponsor_organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
 
 
 --
@@ -3796,14 +3538,6 @@ ALTER TABLE ONLY public.templates
 
 
 --
--- Name: ticket_tiers ticket_tiers_event_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.ticket_tiers
-    ADD CONSTRAINT ticket_tiers_event_id_foreign FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
-
-
---
 -- Name: transactions transactions_contact_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3863,13 +3597,13 @@ ALTER TABLE ONLY public.widget_presets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict fgn6NToL1FDjYdIYuMgM0NE12HBgvuhCvmTSgbjT37ELugc11sLgxz1vKI8ys4E
+\unrestrict efkchSMPDYx91pSPdS1HawkrPLRZ7UhWJQXoDdg3wY8aKfTwvUyYbJHe94u59i9
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict 8E77B3bdif6dNzMYNCBfzRvCXIjUzUTHf4A2YBheeUmc3JtyCJXo2GjulECf8Oo
+\restrict SKzMRcXijQX6dQotlHLscoG5wyDFYTgj8eypOFhMIJVpNOpbPQUSh6zYvtbFQMn
 
 -- Dumped from database version 17.9
 -- Dumped by pg_dump version 17.9 (Debian 17.9-0+deb13u1)
@@ -4019,5 +3753,5 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 114, true);
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8E77B3bdif6dNzMYNCBfzRvCXIjUzUTHf4A2YBheeUmc3JtyCJXo2GjulECf8Oo
+\unrestrict SKzMRcXijQX6dQotlHLscoG5wyDFYTgj8eypOFhMIJVpNOpbPQUSh6zYvtbFQMn
 

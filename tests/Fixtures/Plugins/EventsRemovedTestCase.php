@@ -31,6 +31,15 @@ abstract class EventsRemovedTestCase extends TestCase
 
         $app->make(Kernel::class)->bootstrap();
 
+        // Disabled ≠ uninstalled (session 383, arc P7 — contract surface 5).
+        // This fixture models installed-then-disabled: activation stripped,
+        // schema present, data kept. The provider never boots, so its
+        // loadMigrationsFrom never runs — register the plugin's migration
+        // path directly so migrate:fresh still creates the events tables the
+        // data-kept assertions query. A never-installed composition is proven
+        // by the per-composition fresh-install identity check, not here.
+        $app->make('migrator')->path($app->basePath('plugins/Events/database/migrations'));
+
         return $app;
     }
 }
