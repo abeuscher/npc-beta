@@ -727,6 +727,8 @@ Sessions run sequentially in this flat order. Per Rule 11, any session that surf
 
 ### Launch schedule — the July sprint
 
+> **PARKED at session 376 (2026-08-18).** The July launch sprint is formally suspended — the session-374 owner pivot ended launch-as-target; the project is now a portfolio piece. Everything below this note is preserved as history and as the resurrection map if launch resumes. Positions closed before the pivot: S1 (session 370), S3 (371), S2 (372), C3b (373), C3c (374). Remaining positions dispositioned by owner ruling at 376: **parked** — A3, A4, C4, C5, F1, S4, S5, E13, E14, D3, and the floating Gate-1 session (each resurrects with launch; the Gate-3 findings register and track docs stand intact); **absorbed** — T1's migration squash into the Plugin Architecture arc's Stage B (the squash boundary is redrawn there; extraction-time reduction supersedes the light review). The active spine is now the **Plugin Architecture arc** — canonical plan `sessions/plugin-architecture-plan.md`; arc summary in the § Plugin Architecture arc section below.
+
 Release = **all three launch gates passed; nothing goes live until Gates 2 and 3 are both complete** (owner ruling at 369 — there is no partial go-live, so the ordering below is work discipline, not release staging). Ordering rationale: hardening before rehearsals, so every rehearsal proves its flow against the *final* surface (a CSP or sanitizer change after a rehearsal invalidates it — Rule 9's logic applied at the front). Positions are execution order, not session numbers; session numbers are assigned at session start (370, 371, …).
 
 1. **S1.** Security — perimeter headers, CSP, editor self-hosting *(gate 3; session 370, prompts drafted at 369)*
@@ -751,6 +753,18 @@ Release = **all three launch gates passed; nothing goes live until Gates 2 and 3
 **Budget:** 16 scheduled + 1 floating ≈ **17 sessions** against the ~30–40 owner budget (pace 3–4 sessions/day, ~10 working days, end-of-July target) — roughly 2× headroom for Rule-11 splits, emergent work, designer-feedback iterations, and FM-side attention.
 
 **FM repo:** nothing new from Fleet Manager is launch-gating. Monitoring, provisioning, backup, and restore already work; the billing lane (FM-B1…FM-B5) stays FM-side and off this plan — the first client can be billed by hand in Stripe, and FM-B2 lights up the shipped Account page whenever it lands. The one CRM-plan item leaning on deployed infrastructure is A3's restore-verification rider.
+
+── PLUGIN ARCHITECTURE PIVOT (session 376) — the active spine ──
+
+### Plugin Architecture arc
+
+Canonical plan: `sessions/plugin-architecture-plan.md` (session 376; that doc is this arc's track doc — there is no separate track file). Thin core + contracted plugins; ~9–15 sessions to a demonstrable full-vision-in-miniature. Execution posture: binary success criteria, behavior-preserving extractions, minimal UAT, decisions front-loaded into prompts.
+
+- **Stage A — in-repo module boundaries (~4–6 sessions):** P1 (session 377) pilot widget as a self-registering module + `docs/plugin-contract.md` v0.1 → P2 (378) widget boundary made mandatory across all 41 widgets + a standing guard test banning model calls in widget templates → P3 (379) admin-shell sockets (panel-provider decomposition; nav-group/permission/theme conventions) → P4 (380) Payments foundation module behind the capability API → P5 (381) first domain vertical in-repo (Donations vs Events decided at P4 close).
+- **Stage B — real packages, one workspace (~3–5 sessions):** P6 composer path-repo mechanics + squash-boundary redraw (absorbs the parked T1 squash) → P7 the vertical becomes a package with its own migrations and test suite (test-monolith dismantling begins) → P8 central build assembles the workspace + the per-install activation layer.
+- **Stage C-lite — separate repos proven once (~2–4 sessions):** P9 one plugin to its own repo, FM-style contract discipline, **deliverable includes the extraction runbook** (the owner will repeat the process rapidly across remaining plugins) → P10 distribution manifest + central build composing core + the external plugin (touches `deploy.yml` → future FM coordination per the Two-Repo Coordination Protocol) → P11 (optional, gated on owner niche research) first niche distribution pack.
+
+Labels P1–P11 are execution order, not session numbers; session numbers assigned at session start per the standing rule.
 
 ── LAUNCH (Gates 1 + 2 + 3 passed) ──
 

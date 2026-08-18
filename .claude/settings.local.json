@@ -118,7 +118,21 @@
       "Bash(grep -nE '^#{2,3} ' sessions/housekeeping-inbox.md)",
       "Bash(awk 'BEGIN{p=\"\"} *)",
       "Bash(git -c core.quotepath=false diff --name-only --diff-filter=U)",
-      "mcp__Claude_Code_Remote__send_later"
+      "mcp__Claude_Code_Remote__send_later",
+      "Bash(curl -s -o /tmp/claude-1000/-home-al-nonprofitcrm/941aba06-a9a3-4890-b738-847cf6c54a9f/scratchpad/hp-home.html -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" https://hphelper.com/)",
+      "Bash(curl -sI https://hphelper.com/)",
+      "Bash(curl -sv --max-time 15 https://hphelper.com/ -o /dev/null)",
+      "Bash(curl -s -o /tmp/claude-1000/-home-al-nonprofitcrm/941aba06-a9a3-4890-b738-847cf6c54a9f/scratchpad/np-home.html -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" https://nphelper.com/)",
+      "Bash(curl -sI https://nphelper.com/)",
+      "Bash(grep -oE 'on\\(click|load|error|submit|change|input\\)=\"[^\"]{0,60}' np-home.html)",
+      "Bash(grep -v \"build/\\\\|storage/\\\\|\\\\.css\\\\|\\\\.js\\\\|mailto\\\\|#$\")",
+      "Bash(PATH=/home/al/.nvm/versions/node/v24.14.1/bin:__TRACKED_VAR__ node /tmp/claude-1000/-home-al-nonprofitcrm/941aba06-a9a3-4890-b738-847cf6c54a9f/scratchpad/console-collector.mjs)",
+      "Bash(cp /tmp/claude-1000/-home-al-nonprofitcrm/941aba06-a9a3-4890-b738-847cf6c54a9f/scratchpad/console-collector.mjs /home/al/nonprofitcrm/console-collector.tmp.mjs)",
+      "Bash(PATH=/home/al/.nvm/versions/node/v24.14.1/bin:__TRACKED_VAR__ node console-collector.tmp.mjs)",
+      "Bash(curl -sI http://localhost/)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git -C /home/al/nonprofitcrm mv \"sessions/373. C3b — Auto Tax Receipt Email — Log.md\" \"sessions/373. C3b — Auto Tax Receipt Email.md\" \"sessions/373. base-prompt.md\" sessions/archived/)"
     ],
     "additionalDirectories": [
       "/tmp",
@@ -129,7 +143,8 @@
       "/home/al/nonprofitcrm/app/Widgets/Contracts",
       "/home/al/nonprofitcrm/resources/docs",
       "/home/al/nonprofitcrm/vendor/filament/filament/src/Resources/Pages",
-      "/home/al/nonprofitcrm/app/Models"
+      "/home/al/nonprofitcrm/app/Models",
+      "/home/al/nonprofitcrm"
     ]
   }
 }
