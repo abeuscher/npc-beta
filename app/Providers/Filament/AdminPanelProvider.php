@@ -44,109 +44,47 @@ class AdminPanelProvider extends PanelProvider
         $logoSrc = $hasLogo ? Storage::disk('public')->url($logoPath) : '';
 
 
-        return $panel
+        $panel = $panel
             ->default()
             ->id('admin')
             ->path(env('ADMIN_PATH', 'admin'))
             ->login()
             ->routes(function () {
-                // Two-factor authentication flow (session 359, A5). Registered
-                // here rather than via page auto-discovery because SimplePage
-                // isn't routable on its own — this gives the enrollment and
-                // challenge screens the simple, sidebar-free auth layout and the
-                // canonical `filament.admin.pages.*` route names. They sit behind
-                // Authenticate (must be logged in) but deliberately OUTSIDE the
-                // panel's authMiddleware, so the 2FA enforcement gate that lives
-                // there can never trap these pages in a redirect loop.
-                \Illuminate\Support\Facades\Route::get('/two-factor-setup', \App\Filament\Pages\TwoFactorSetup::class)
-                    ->name('pages.two-factor-setup')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-                \Illuminate\Support\Facades\Route::get('/two-factor-challenge', \App\Filament\Pages\TwoFactorChallenge::class)
-                    ->name('pages.two-factor-challenge')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                // Per-feature admin route files (session 379, arc P3 — the
+                // routes surface of docs/plugin-contract.md). Each file is
+                // self-contained: middleware, prefixes, and names live with the
+                // routes. The three builder APIs keep their prefix + auth at
+                // the pull site, matching the pre-decomposition shape; list
+                // order preserves the original inline registration order.
+                $pulls = [
+                    'two-factor'            => [],
+                    'invitations'           => [],
+                    'media'                 => [],
+                    'quickbooks'            => [],
+                    'builder-page'          => ['prefix' => 'api/page-builder', 'middleware' => Authenticate::class],
+                    'builder-dashboard'     => ['prefix' => 'api/dashboard-builder', 'middleware' => Authenticate::class],
+                    'builder-record-detail' => ['prefix' => 'api/record-detail-view-builder', 'middleware' => Authenticate::class],
+                    'theme'                 => [],
+                    'dev-tools'             => [],
+                    'setup-checklist'       => [],
+                    'exports'               => [],
+                ];
 
-                \Illuminate\Support\Facades\Route::get('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'show'])
-                    ->name('invitation.show');
-                \Illuminate\Support\Facades\Route::post('/invitation/{token}', [\App\Http\Controllers\Admin\InvitationController::class, 'store'])
-                    ->name('invitation.store');
-                // New-file upload — gated against the demo role (session 329).
-                \Illuminate\Support\Facades\Route::post('/inline-image-upload', [\App\Http\Controllers\Admin\InlineImageUploadController::class, 'store'])
-                    ->name('inline-image-upload')
-                    ->middleware([\Filament\Http\Middleware\Authenticate::class, \App\Http\Middleware\BlockDemoUploads::class]);
+                foreach ($pulls as $file => $attributes) {
+                    \Illuminate\Support\Facades\Route::group($attributes, base_path("routes/admin/{$file}.php"));
+                }
 
-                \Illuminate\Support\Facades\Route::post('/media-dedup-check', [\App\Http\Controllers\Admin\MediaDedupController::class, 'check'])
-                    ->name('media-dedup-check')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-
-                \Illuminate\Support\Facades\Route::get('/heroicons', [\App\Http\Controllers\Admin\HeroiconController::class, 'index'])
-                    ->name('heroicons.index')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-
-                // QuickBooks OAuth
-                \Illuminate\Support\Facades\Route::get('/quickbooks/connect', [\App\Http\Controllers\QuickBooksCallbackController::class, 'connect'])
-                    ->name('quickbooks.connect')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-                \Illuminate\Support\Facades\Route::get('/quickbooks/callback', [\App\Http\Controllers\QuickBooksCallbackController::class, 'callback'])
-                    ->name('quickbooks.callback')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-                \Illuminate\Support\Facades\Route::post('/quickbooks/disconnect', [\App\Http\Controllers\QuickBooksCallbackController::class, 'disconnect'])
-                    ->name('quickbooks.disconnect')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
-
-                // Page builder API (Vue editor)
-                \Illuminate\Support\Facades\Route::prefix('api/page-builder')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->group(base_path('routes/admin-api.php'));
-
-                // Dashboard builder API (Vue editor, dashboard mode)
-                \Illuminate\Support\Facades\Route::prefix('api/dashboard-builder')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->group(base_path('routes/admin-dashboard-api.php'));
-
-                // Record detail view builder API (Vue editor, record_detail mode)
-                \Illuminate\Support\Facades\Route::prefix('api/record-detail-view-builder')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->group(base_path('routes/admin-record-detail-view-api.php'));
-
-                // Theme editor (Vue typography island + SCSS export)
-                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->group(function () {
-                        \Illuminate\Support\Facades\Route::post('/api/theme/typography', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'update'])
-                            ->name('theme.typography.update');
-                        \Illuminate\Support\Facades\Route::get('/design-system/typography/export.scss', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'export'])
-                            ->name('theme.typography.export');
-                        \Illuminate\Support\Facades\Route::post('/api/theme/typography/rebuild', [\App\Http\Controllers\Admin\ThemeTypographyController::class, 'rebuild'])
-                            ->name('theme.typography.rebuild');
-                    });
-
-                // Dev tools — Random Data Generator
-                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->prefix('dev-tools')
-                    ->name('dev-tools.')
-                    ->group(function () {
-                        \Illuminate\Support\Facades\Route::post('/random-data', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'store'])
-                            ->name('random-data.store');
-                        \Illuminate\Support\Facades\Route::post('/random-data/wipe', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'wipe'])
-                            ->name('random-data.wipe');
-                        \Illuminate\Support\Facades\Route::post('/random-data/seed-collections', [\App\Http\Controllers\Admin\RandomDataGeneratorController::class, 'seedCollections'])
-                            ->name('random-data.seed-collections');
-                    });
-
-                // Setup checklist widget actions
-                \Illuminate\Support\Facades\Route::middleware(\Filament\Http\Middleware\Authenticate::class)
-                    ->prefix('setup-checklist')
-                    ->name('setup-checklist.')
-                    ->group(function () {
-                        \Illuminate\Support\Facades\Route::post('/mark-complete', [\App\Http\Controllers\Admin\SetupChecklistController::class, 'markComplete'])
-                            ->name('mark-complete');
-                        \Illuminate\Support\Facades\Route::post('/reset', [\App\Http\Controllers\Admin\SetupChecklistController::class, 'reset'])
-                            ->name('reset');
-                    });
-
-                // Gated download of a queued export artifact (session 303).
-                \Illuminate\Support\Facades\Route::get('/exports/bundles/{token}', \App\Http\Controllers\Admin\BundleExportDownloadController::class)
-                    ->name('exports.bundle.download')
-                    ->middleware(\Filament\Http\Middleware\Authenticate::class);
+                // Plugin in-panel route files (docs/plugin-contract.md
+                // surface 4). Core wraps every pull in Authenticate — a plugin
+                // admin route can never opt out of panel auth; the plugin's
+                // file carries everything else (names, prefixes, extra
+                // middleware).
+                foreach (app(\App\Plugins\PluginAdminRegistry::class)->all() as $contribution) {
+                    if ($contribution->routesFile !== null) {
+                        \Illuminate\Support\Facades\Route::middleware(Authenticate::class)
+                            ->group($contribution->routesFile);
+                    }
+                }
             })
             ->colors([
                 'primary'   => Color::hex($primaryColor),
@@ -534,5 +472,24 @@ class AdminPanelProvider extends PanelProvider
                     );
                 }
             );
+
+        // Plugin admin socket (session 379, arc P3 — docs/plugin-contract.md
+        // surface 3). Plugin providers declare contributions into the core
+        // registry at register() time; bootstrap/providers.php loads
+        // PluginServiceProvider before this provider, so the registry is
+        // fully populated by the time the panel is built. Nav grouping and
+        // ordering use Filament-native $navigationGroup / $navigationSort on
+        // the plugin's own pages, constrained to core's ->navigationGroups()
+        // list above — plugins never add groups.
+        foreach (app(\App\Plugins\PluginAdminRegistry::class)->all() as $contribution) {
+            if ($contribution->resourcesPath !== null) {
+                $panel->discoverResources(in: $contribution->resourcesPath, for: $contribution->resourcesNamespace);
+            }
+            if ($contribution->pagesPath !== null) {
+                $panel->discoverPages(in: $contribution->pagesPath, for: $contribution->pagesNamespace);
+            }
+        }
+
+        return $panel;
     }
 }

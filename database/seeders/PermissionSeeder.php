@@ -394,6 +394,21 @@ class PermissionSeeder extends Seeder
         );
         Role::where('name', 'super_admin')->update(['label' => 'Super Admin']);
 
+        // ── Plugin-declared permissions ──────────────────────────────────────
+        // Each enabled plugin (config/plugins.php) declares permission names in
+        // its admin-socket registry entry (docs/plugin-contract.md surface 3,
+        // session 379). Seeding is idempotent and grants them to NO shipped
+        // role — super-admin reaches via the Gate::before bypass, the
+        // manage_account precedent above. Removing a plugin from the config
+        // list stops the seeding but never deletes already-seeded rows
+        // (disabled-is-inert normative rule: they remain, gating nothing).
+        foreach (app(\App\Plugins\PluginAdminRegistry::class)->permissions() as $permission) {
+            Permission::firstOrCreate([
+                'name'       => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
         // Refresh cache after seeding
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }

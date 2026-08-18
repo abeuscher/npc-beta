@@ -1,6 +1,6 @@
 # Plugin Contract
 
-**Contract Version:** `0.2.0`
+**Contract Version:** `0.3.0`
 **Status:** active — Stage A (in-repo module boundaries)
 **Owner:** core (this repo). Plugins implement against this document.
 **Canonical plan:** `sessions/plugin-architecture-plan.md` (architecture rationale, arc, question dispositions)
@@ -52,19 +52,31 @@ A plugin registers `App\Widgets\Contracts\WidgetDefinition` subclasses into the 
 
 Proven by: the pilot's registration, sync-row, and view-namespace tests (`PluginPilotSession377Test`), render parity through the contract resolver (`LogoGardenContractRetrofitTest`), the all-41 retrofit's arm + parity tests (`WidgetBoundaryArmsSession378Test`, `WidgetBoundaryRetrofitSession378Test`), and the standing boundary guard (`WidgetTemplateBoundaryTest`).
 
-### 3. Admin contribution — **DECLARED**
+### 3. Admin contribution — **DECLARED** *(mechanics built and fixture-tested, session 379 — arc P3)*
 
-Filament resources/pages via per-package discovery paths; nav-group self-assignment. Three settled conventions (owner-approved, session 376):
+A plugin declares its admin-shell contribution from its provider's `register()` by handing an `App\Plugins\AdminContribution` to the core `App\Plugins\PluginAdminRegistry` singleton (bound by `PluginServiceProvider` before any plugin registers; `AdminPanelProvider` reads the registry when Filament builds the panel — `bootstrap/providers.php` guarantees the ordering). The contribution declares:
 
-1. Core owns the nav-group list; a plugin declares which group its pages join, plus a sort weight.
-2. A plugin declares its permissions; core seeds them at enable time, granted to no shipped role by default except super-admin (the `manage_account` precedent).
-3. Plugin admin pages inherit core's admin theme — plugins ship no admin CSS.
+- **Filament discovery paths** — `resourcesPath`/`resourcesNamespace` and `pagesPath`/`pagesNamespace`, joined to core's own `discoverResources`/`discoverPages` calls. `null` = the plugin contributes nothing on that axis.
+- **Permission names** — seeded by core's `PermissionSeeder` (idempotent `firstOrCreate`, guard `web`) wherever core permission seeding runs; "enabled" in Stage A = listed in `config/plugins.php`. Granted to **no shipped role** — super-admin reaches via the `Gate::before` bypass (the `manage_account` precedent). Disabling a plugin stops the seeding but never deletes seeded rows (disabled-is-inert rule: they remain, gating nothing).
+- **An in-panel route file** — see surface 4.
 
-Lands at arc P3 (panel-provider decomposition).
+Three settled conventions (owner-approved, session 376), now mechanical:
 
-### 4. Routes — **DECLARED**
+1. Core owns the nav-group list (the five `->navigationGroups()` entries in `AdminPanelProvider`, the single source). A plugin's pages join a group with Filament-native `$navigationGroup` — which **must** name a core group; no plugin-invented groups in Stage A — and order themselves with `$navigationSort`.
+2. A plugin declares its permissions in its registry entry; core seeds them at enable time, granted to no shipped role by default except super-admin.
+3. Plugin admin pages inherit core's admin theme — plugins ship no admin CSS. **Enforced** by the standing guard `tests/Feature/PluginAdminCssGuardTest.php`: no `.css` files under `plugins/`, no `viteTheme`/render-hook stylesheet injection in plugin PHP. Widget-scoped SCSS/JS (surface 11) is legitimate and does not trip it.
 
-Per-plugin route files, loaded by the plugin's provider. Precedent: the three admin-builder API route files pulled in by the panel provider. Lands at P3.
+Removing the plugin's `config/plugins.php` line removes the whole contribution — page, routes, permission seeding (the surface-1 remove-the-line guarantee, extended to the admin socket).
+
+Fixture-tested by `tests/Feature/PluginAdminSocketSession379Test.php` (+ the removal mirror `PluginAdminSocketRemovalSession379Test.php`) via the `SocketProbe` fixture plugin at `tests/Fixtures/Plugins/SocketProbe/` — one page in a core nav group with a sort weight, one route file, one permission. **Stays DECLARED per the honesty rule**: promotion to PROVEN waits for the first shipping plugin with admin pages (P5+).
+
+### 4. Routes — **DECLARED** *(mechanics built and fixture-tested, session 379 — arc P3)*
+
+Core's own admin routes are the precedent: `AdminPanelProvider`'s former ~100-line inline `->routes()` closure is decomposed into per-feature files under `routes/admin/` (session 379, route-list parity verified) — each file self-contained, carrying its own middleware/prefixes/names, pulled into the panel's route group.
+
+A plugin contributes the same shape: the `routesFile` path in its `AdminContribution` is pulled into the panel's `->routes()` group after core's files. **Core wraps every plugin pull in Filament's `Authenticate` middleware — a plugin admin route can never opt out of panel auth**; the plugin's file carries everything else (names, prefixes, extra middleware). Routes land inside the panel's base middleware stack (suspension gate, security headers, session, CSRF) and under the panel's name prefix (`filament.admin.`).
+
+Fixture-tested by the same SocketProbe tests as surface 3. **Stays DECLARED per the honesty rule** until a shipping plugin registers routes (P5+).
 
 ### 5. Migrations — **DECLARED**
 
@@ -127,5 +139,6 @@ The detection API lands at arc P4 (Payments foundation module).
 
 ## Changelog
 
+- **0.3.0** (session 379, 2026-08-18) — surfaces 3 and 4's mechanics built and fixture-tested (arc P3), statuses kept DECLARED per the honesty rule. Admin socket: `App\Plugins\AdminContribution` + `App\Plugins\PluginAdminRegistry` (populated at plugin `register()`, consumed by `AdminPanelProvider`) declaring Filament discovery paths, an in-panel route file (always wrapped in `Authenticate` by core), and permission names (seeded idempotently by `PermissionSeeder`, granted to no shipped role). Core's inline `->routes()` closure decomposed into per-feature `routes/admin/` files with exact route-list parity. The three session-376 Filament conventions made mechanical; convention 3 enforced by the standing guard `PluginAdminCssGuardTest` (no plugin admin CSS, widget SCSS exempt). Fixture: `tests/Fixtures/Plugins/SocketProbe/` with enabled + removal test mirrors.
 - **0.2.0** (session 378, 2026-08-18) — surface 2's template-purity rule made real across all 41 widgets (arc P2): the twelve model/auth/service-reaching templates routed through declared contracts; `dataContracts()` (named, multi-source) added alongside the singular `dataContract()`; new resolver arms `fund`, `membership_tier`, `navigation_menu`, `portal_member` and the `SOURCE_SERVICE` source (`setup_checklist`, `scrub_counts`, super-admin-gated in the arm); `site_name` added to the page-context token set; `WidgetDefinition::baseDir()` generalizes folder-relative resolution; standing guard `WidgetTemplateBoundaryTest` enforces the boundary with zero allowlist.
 - **0.1.0** (session 377, 2026-08-18) — initial draft from the LogoGarden pilot extraction (arc P1). Surfaces 1, 2, 11, 12 PROVEN; all others DECLARED. In-repo plugin shape (`plugins/` + `config/plugins.php` + `PluginServiceProvider` loader) established. Normative rules recorded from the session-376 dispositions.

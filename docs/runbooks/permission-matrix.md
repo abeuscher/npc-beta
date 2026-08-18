@@ -273,7 +273,7 @@ Controllers in `app/Http/Controllers/Admin/` are registered under the admin pane
 
 | Controller | Per-action gates | Notes |
 |---|---|---|
-| **DashboardBuilderApiController** | `manage_dashboard_config` per `routes/admin-dashboard-api.php` doc comment + IDOR guard on widget→config ownership | **`manage_dashboard_config` is unassigned to any role — only super_admin reaches.** Same finding as DashboardSettingsPage. |
+| **DashboardBuilderApiController** | `manage_dashboard_config` per `routes/admin/builder-dashboard.php` doc comment + IDOR guard on widget→config ownership | **`manage_dashboard_config` is unassigned to any role — only super_admin reaches.** Same finding as DashboardSettingsPage. |
 | **PageBuilderApiController** | `ResolvePageBuilderOwner` middleware verifies model policy (page or template) | Standard policy-backed. |
 | **RecordDetailViewBuilderApiController** | `manage_record_detail_views` (assumed; verify per-action) | **`manage_record_detail_views` is unassigned to any role.** Same finding. |
 | **ThemeTypographyController** | `edit_theme_scss` (presumed) | Theme editor; developer + super_admin only. |
