@@ -312,7 +312,13 @@ Automatic per-gift donation acknowledgment wired onto the Stripe donation-checko
 
 `ticket_tiers.is_complimentary` display-only label (repeater toggle + "Complimentary" in the public picker; behaviour stays price-driven) + the confirmation-email timing fix — dispatch relocated from the per-row `EventRegistrationObserver` to the confirm-points (free-path controllers synchronous, paid webhook queued on `pending → registered`), one email per order, replay-idempotent via the pending-only filter; the pre-existing skip-Stripe-on-$0 path locked in with regression tests. Also shipped mid-session at owner request: collapsed-summary ticket-tier repeater rows + Add-tier blank-row gating. Non-boundary; contract stayed v2.7.0. See `sessions/374. C3c — Comp-Tier Polish + Skip-Stripe-on-Zero-Total — Log.md`.
 
-**Priorities pivot at 374 (owner ruling):** outreach ended; the project is now a **portfolio piece** — technical quality is the point. The launch schedule (A3 was next) is **suspended, not resolved**; session **375** fixes the production console errors (the enforced S1 CSP breaks Alpine's eval — the correct migration, not a policy loosening) and session **376** (plugin-architecture feasibility discussion) owns the roadmap reconciliation. Prompts for both drafted + owner-directed at 374.
+**Priorities pivot at 374 (owner ruling):** outreach ended; the project is now a **portfolio piece** — technical quality is the point. The launch schedule (A3 was next) is **suspended, not resolved**; session **376** (plugin-architecture feasibility discussion) owns the roadmap reconciliation and is **next**. The console-error half shipped at 375 (below).
+
+---
+
+### Public Console Errors — Alpine Under the Enforced CSP — ✅ shipped at session 375
+
+The enforced public CSP from S1 (session 370) grants no `'unsafe-eval'`, and standard Alpine evaluates every directive through `new Function()` — so **every public page threw `EvalError` at startup and no Alpine component initialized** from the S1 deploy until the 374 recon: nav dropdowns, custom selects and the theme store were dead in production, not merely noisy. Fixed the correct way — **the CSP was not weakened** and the middleware was not edited: the public bundle moved to `@alpinejs/csp` and twelve widgets moved their JS into registered components (`app/Widgets/{Name}/script.js`), with a shared bridge registering them on both the public site and the admin panel so the page-builder preview keeps working. `custom-select` and `radio-group` also moved off Blade's `@js()`. Two standing guards now cover the class — a browser-free static check and a Playwright spec asserting the pages are console-clean **and** the components still respond. Production re-audit after deploy: **0 issues across 8 pages**, down from 32.
 
 ---
 
